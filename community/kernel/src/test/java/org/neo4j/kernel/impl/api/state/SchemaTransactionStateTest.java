@@ -32,21 +32,21 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.Neo4jTypes;
-import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.Cursors;
+import org.neo4j.storageengine.api.Neo4jTypes;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -59,7 +59,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.kernel.api.procedures.ProcedureSignature.procedureSignature;
+import static org.neo4j.storageengine.api.procedure.ProcedureSignature.procedureSignature;
 
 public class SchemaTransactionStateTest
 {
@@ -138,7 +138,7 @@ public class SchemaTransactionStateTest
         txContext.indexCreate( state, labelId1, key1 );
 
         // WHEN
-        IndexDescriptor rule = txContext.indexesGetForLabelAndPropertyKey( state, labelId1, key1 );
+        IndexDescriptor rule = txContext.indexGetForLabelAndPropertyKey( state, labelId1, key1 );
         Iterator<IndexDescriptor> labelRules = txContext.indexesGetForLabel( state, labelId1 );
 
         // THEN
@@ -153,15 +153,15 @@ public class SchemaTransactionStateTest
         // GIVEN
         // -- the store already have an index on the label and a different property
         IndexDescriptor existingRule1 = new IndexDescriptor( labelId1, key1 );
-        when( store.indexesGetForLabelAndPropertyKey( labelId1, key1 ) ).thenReturn( existingRule1 );
+        when( store.indexGetForLabelAndPropertyKey( labelId1, key1 ) ).thenReturn( existingRule1 );
         // -- the store already have an index on a different label with the same property
         IndexDescriptor existingRule2 = new IndexDescriptor( labelId2, key2 );
-        when( store.indexesGetForLabelAndPropertyKey( labelId2, key2 ) ).thenReturn( existingRule2 );
+        when( store.indexGetForLabelAndPropertyKey( labelId2, key2 ) ).thenReturn( existingRule2 );
         // -- a non-existent rule has been added in the transaction
         txContext.indexCreate( state, labelId1, key2 );
 
         // WHEN
-        IndexDescriptor rule = txContext.indexesGetForLabelAndPropertyKey( state, labelId1, key2 );
+        IndexDescriptor rule = txContext.indexGetForLabelAndPropertyKey( state, labelId1, key2 );
 
         // THEN
         assertEquals( new IndexDescriptor( labelId1, key2 ), rule );
@@ -173,16 +173,16 @@ public class SchemaTransactionStateTest
         // GIVEN
         // -- the store already have an index on the label and a different property
         IndexDescriptor existingRule1 = new IndexDescriptor( labelId1, key1 );
-        when( store.indexesGetForLabelAndPropertyKey(labelId1, key1) ).thenReturn( existingRule1 );
+        when( store.indexGetForLabelAndPropertyKey(labelId1, key1) ).thenReturn( existingRule1 );
         // -- the store already have an index on a different label with the same property
         IndexDescriptor existingRule2 = new IndexDescriptor( labelId2, key2 );
-        when( store.indexesGetForLabelAndPropertyKey( labelId2, key2 ) ).thenReturn( existingRule2 );
+        when( store.indexGetForLabelAndPropertyKey( labelId2, key2 ) ).thenReturn( existingRule2 );
         // -- a non-existent rule has been added in the transaction
         txContext.indexCreate( state, labelId1, key2 );
 
         // WHEN
-        IndexDescriptor lookupRule1 = txContext.indexesGetForLabelAndPropertyKey( state, labelId1, key1 );
-        IndexDescriptor lookupRule2 = txContext.indexesGetForLabelAndPropertyKey( state, labelId2, key2 );
+        IndexDescriptor lookupRule1 = txContext.indexGetForLabelAndPropertyKey( state, labelId1, key1 );
+        IndexDescriptor lookupRule2 = txContext.indexGetForLabelAndPropertyKey( state, labelId2, key2 );
 
         // THEN
         assertEquals( existingRule1, lookupRule1 );
@@ -200,7 +200,7 @@ public class SchemaTransactionStateTest
         txContext.indexDrop( state, rule );
 
         // WHEN
-        assertNull( txContext.indexesGetForLabelAndPropertyKey( state, labelId1, key1 ) );
+        assertNull( txContext.indexGetForLabelAndPropertyKey( state, labelId1, key1 ) );
         Iterator<IndexDescriptor> rulesByLabel = txContext.indexesGetForLabel( state, labelId1 );
 
         // THEN
@@ -330,7 +330,8 @@ public class SchemaTransactionStateTest
 
         for ( Map.Entry<Integer, Collection<Long>> entry : allLabels.entrySet() )
         {
-            when( store.nodesGetForLabel( state, entry.getKey() ) ).then( asAnswer( entry.getValue() ) );
+            when( store.nodesGetForLabel( state.getStoreStatement(), entry.getKey() ) )
+                    .then( asAnswer( entry.getValue() ) );
         }
     }
 

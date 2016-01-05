@@ -25,6 +25,8 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.TokenFactory;
 
 /**
  * Keeps a cache of tokens using {@link InMemoryTokenCache}.

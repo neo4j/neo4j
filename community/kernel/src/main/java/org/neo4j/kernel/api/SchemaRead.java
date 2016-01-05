@@ -30,15 +30,15 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
-import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
-import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
+import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
+import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 
 interface SchemaRead
 {
     /** Returns the index rule for the given labelId and propertyKey. */
-    IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
+    IndexDescriptor indexGetForLabelAndPropertyKey( int labelId, int propertyKey )
             throws SchemaRuleNotFoundException;
 
     /** Get all indexes for a label. */

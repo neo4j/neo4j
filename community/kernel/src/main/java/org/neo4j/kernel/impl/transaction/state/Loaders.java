@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -42,8 +41,9 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
+import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public class Loaders
 {

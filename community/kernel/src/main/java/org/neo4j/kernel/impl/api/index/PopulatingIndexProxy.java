@@ -26,23 +26,23 @@ import java.util.concurrent.Future;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexPopulation;
-
 
 public class PopulatingIndexProxy implements IndexProxy
 {

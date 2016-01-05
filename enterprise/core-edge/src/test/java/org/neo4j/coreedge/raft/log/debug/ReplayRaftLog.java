@@ -31,8 +31,8 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.storageengine.api.StorageCommand;
 
 public class ReplayRaftLog
 {
@@ -64,10 +64,10 @@ public class ReplayRaftLog
             {
                 ReplicatedTransaction tx = (ReplicatedTransaction) content;
                 ReplicatedTransactionFactory.extractTransactionRepresentation( tx, new byte[0] ).accept(
-                        new Visitor<Command, IOException>()
+                        new Visitor<StorageCommand, IOException>()
                         {
                             @Override
-                            public boolean visit( Command element ) throws IOException
+                            public boolean visit( StorageCommand element ) throws IOException
                             {
                                 System.out.println(element);
                                 return false;

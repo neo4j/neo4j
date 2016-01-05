@@ -24,7 +24,7 @@ import java.util.Iterator;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.storageengine.api.Token;
 
 interface TokenRead
 {

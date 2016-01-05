@@ -25,12 +25,12 @@ import java.util.function.Consumer;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.storageengine.api.PropertyItem;
 
 /**
  * Cursor for all properties on a node or relationship.

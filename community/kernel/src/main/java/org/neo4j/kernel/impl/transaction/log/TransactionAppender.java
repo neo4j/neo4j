@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
+import org.neo4j.kernel.internal.DatabaseHealth;
 
 /**
  * Writes batches of transactions, each containing groups of commands to a log that is guaranteed to be recoverable,

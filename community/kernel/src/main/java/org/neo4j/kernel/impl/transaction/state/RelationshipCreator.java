@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -28,6 +27,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.util.DirectionWrapper;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
 
 public class RelationshipCreator
 {
@@ -51,7 +51,7 @@ public class RelationshipCreator
      * @param secondNodeId The id of the end node.
      */
     public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId,
-            RecordAccessSet recordChangeSet, Locks.Client locks )
+            RecordAccessSet recordChangeSet, ResourceLocker locks )
     {
         // TODO could be unnecessary to mark as changed here already, dense nodes may not need to change
         NodeRecord firstNode = recordChangeSet.getNodeRecords().getOrLoad( firstNodeId, null ).forChangingLinkage();
@@ -75,7 +75,7 @@ public class RelationshipCreator
 
     private void convertNodeToDenseIfNecessary( NodeRecord node,
             RecordAccess<Long, RelationshipRecord, Void> relRecords,
-            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords, Locks.Client locks )
+            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
     {
         if ( node.isDense() )
         {
@@ -101,7 +101,7 @@ public class RelationshipCreator
     private void connectRelationship( NodeRecord firstNode,
             NodeRecord secondNode, RelationshipRecord rel,
             RecordAccess<Long, RelationshipRecord, Void> relRecords,
-            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords, Locks.Client locks )
+            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
     {
         // Assertion interpreted: if node is a normal node and we're trying to create a
         // relationship that we already have as first rel for that node --> error
@@ -155,7 +155,7 @@ public class RelationshipCreator
 
     private void connectRelationshipToDenseNode( NodeRecord node, RelationshipRecord rel,
             RecordAccess<Long, RelationshipRecord, Void> relRecords,
-            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords, Locks.Client locks )
+            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
     {
         RelationshipGroupRecord group =
                 relGroupGetter.getOrCreateRelationshipGroup( node, rel.getType(), relGroupRecords ).forChangingData();
@@ -167,14 +167,14 @@ public class RelationshipCreator
     }
 
     private void connect( NodeRecord node, RelationshipRecord rel,
-            RecordAccess<Long, RelationshipRecord, Void> relRecords, Locks.Client locks )
+            RecordAccess<Long, RelationshipRecord, Void> relRecords, ResourceLocker locks )
     {
         connect( node.getId(), node.getNextRel(), rel, relRecords, locks );
     }
 
     private void convertNodeToDenseNode( NodeRecord node, RelationshipRecord firstRel,
             RecordAccess<Long, RelationshipRecord, Void> relRecords,
-            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords, Locks.Client locks )
+            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
     {
         node.setDense( true );
         node.setNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
@@ -194,7 +194,7 @@ public class RelationshipCreator
     }
 
     private void connect( long nodeId, long firstRelId, RelationshipRecord rel,
-            RecordAccess<Long, RelationshipRecord, Void> relRecords, Locks.Client locks )
+            RecordAccess<Long, RelationshipRecord, Void> relRecords, ResourceLocker locks )
     {
         long newCount = 1;
         if ( firstRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )

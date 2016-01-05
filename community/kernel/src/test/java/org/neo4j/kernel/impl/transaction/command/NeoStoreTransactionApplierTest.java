@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -68,6 +67,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
+import org.neo4j.storageengine.api.Token;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.junit.Assert.assertFalse;
@@ -81,8 +81,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.kernel.impl.transaction.command.CommandHandlerContract.apply;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 public class NeoStoreTransactionApplierTest
 {
@@ -442,7 +442,7 @@ public class NeoStoreTransactionApplierTest
         after.setInUse( true );
         after.setNameId( 323 );
         final Command.RelationshipTypeTokenCommand command =
-                (RelationshipTypeTokenCommand) new Command.RelationshipTypeTokenCommand( before, after );
+                new Command.RelationshipTypeTokenCommand( before, after );
         final RelationshipTypeToken token = new RelationshipTypeToken( "token", 21 );
         when( relationshipTypeTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
 
@@ -489,7 +489,7 @@ public class NeoStoreTransactionApplierTest
         after.setInUse( true );
         after.setNameId( 323 );
         final Command.LabelTokenCommand command =
-                (LabelTokenCommand) new Command.LabelTokenCommand( before, after );
+                new Command.LabelTokenCommand( before, after );
         final Token token = new Token( "token", 21 );
         when( labelTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
 
@@ -537,7 +537,7 @@ public class NeoStoreTransactionApplierTest
         after.setInUse( true );
         after.setNameId( 323 );
         final Command.PropertyKeyTokenCommand command =
-                (PropertyKeyTokenCommand) new Command.PropertyKeyTokenCommand( before, after );
+                new Command.PropertyKeyTokenCommand( before, after );
         final Token token = new Token( "token", 21 );
         when( propertyKeyTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
 

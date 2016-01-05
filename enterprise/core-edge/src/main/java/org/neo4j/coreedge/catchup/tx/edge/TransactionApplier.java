@@ -28,12 +28,12 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.storageengine.api.StorageEngine;
 
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
 /**
  * Receives and unpacks {@link Response responses}.

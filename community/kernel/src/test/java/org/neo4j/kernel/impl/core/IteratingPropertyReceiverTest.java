@@ -21,8 +21,9 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.storageengine.api.StorageProperty;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -30,10 +31,10 @@ import static org.junit.Assert.assertFalse;
 public class IteratingPropertyReceiverTest
 {
     @Test
-    public void shouldAcceptAndThenIterateOverProperties()
+    public void shouldAcceptAndThenIterateOverProperties() throws PropertyNotFoundException
     {
         // GIVEN
-        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
+        IteratingPropertyReceiver<StorageProperty> receiver = new IteratingPropertyReceiver<>();
         int propertyCount = 100;
         for ( int i = 0; i < propertyCount; i++ )
         {
@@ -44,7 +45,7 @@ public class IteratingPropertyReceiverTest
         int count = 0;
         while ( receiver.hasNext() )
         {
-            DefinedProperty property = receiver.next();
+            StorageProperty property = receiver.next();
             assertEquals( count++, ((Integer) property.value()).intValue() );
         }
         assertFalse( receiver.hasNext() );

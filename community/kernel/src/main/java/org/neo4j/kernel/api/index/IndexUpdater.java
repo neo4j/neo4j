@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import java.io.IOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 
 /**
  * IndexUpdaters are responsible for updating indexes during the commit process. There is one new instance handling

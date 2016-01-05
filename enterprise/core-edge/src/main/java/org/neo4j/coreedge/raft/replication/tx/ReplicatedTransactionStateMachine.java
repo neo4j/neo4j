@@ -35,11 +35,11 @@ import org.neo4j.coreedge.server.core.CurrentReplicatedLockState;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 

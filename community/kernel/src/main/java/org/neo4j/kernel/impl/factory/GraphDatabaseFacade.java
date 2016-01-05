@@ -58,7 +58,6 @@ import org.neo4j.kernel.KernelEventHandlers;
 import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.TransactionEventHandlers;
-import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
@@ -86,6 +85,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.security.URLAccessValidationError;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.EntityType;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
@@ -509,7 +509,7 @@ public class GraphDatabaseFacade
     {
         try
         {
-            IndexDescriptor descriptor = readOps.indexesGetForLabelAndPropertyKey( labelId, propertyId );
+            IndexDescriptor descriptor = readOps.indexGetForLabelAndPropertyKey( labelId, propertyId );
 
             if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )
             {

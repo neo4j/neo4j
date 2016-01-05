@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -37,6 +35,8 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 
 public class GuardingStatementOperations implements
         EntityWriteOperations,

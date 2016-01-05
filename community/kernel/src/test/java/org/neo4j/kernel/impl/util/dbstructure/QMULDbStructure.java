@@ -20,9 +20,8 @@
 package org.neo4j.kernel.impl.util.dbstructure;
 
 import org.neo4j.helpers.collection.Visitable;
-import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor;
-
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor;
 
 //
 // GENERATED FILE. DO NOT EDIT. 

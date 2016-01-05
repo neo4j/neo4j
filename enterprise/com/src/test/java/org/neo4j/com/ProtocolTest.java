@@ -30,12 +30,12 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -71,10 +71,10 @@ public class ProtocolTest
         assertEquals( timeCommitted, readTransaction.getTimeCommitted() );
     }
 
-    private Collection<Command> justOneNode()
+    private Collection<StorageCommand> justOneNode()
     {
         NodeRecord node = new NodeRecord( 0 );
         node.setInUse( true );
-        return Arrays.<Command>asList( new NodeCommand( new NodeRecord( node.getId() ), node ) );
+        return Arrays.<StorageCommand>asList( new NodeCommand( new NodeRecord( node.getId() ), node ) );
     }
 }

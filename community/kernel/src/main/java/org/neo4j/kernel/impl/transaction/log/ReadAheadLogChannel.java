@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.storageengine.api.ReadPastEndException;
 
 import static java.lang.Math.min;
 import static java.lang.System.arraycopy;

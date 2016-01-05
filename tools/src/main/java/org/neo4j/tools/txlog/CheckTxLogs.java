@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.LogTestUtils;
 import org.neo4j.tools.txlog.checktypes.CheckType;
 import org.neo4j.tools.txlog.checktypes.CheckTypes;
@@ -104,7 +105,7 @@ public class CheckTxLogs
                     LogEntry entry = logEntryCursor.get();
                     if ( entry instanceof LogEntryCommand )
                     {
-                        Command command = ((LogEntryCommand) entry).getXaCommand();
+                        StorageCommand command = ((LogEntryCommand) entry).getXaCommand();
                         if ( check.commandClass().isInstance( command ) )
                         {
                             long logVersion = PhysicalLogFiles.getLogVersion( log );

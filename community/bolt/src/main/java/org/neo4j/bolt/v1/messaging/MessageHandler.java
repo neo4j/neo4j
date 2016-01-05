@@ -21,8 +21,8 @@ package org.neo4j.bolt.v1.messaging;
 
 import java.util.Map;
 
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.bolt.v1.runtime.spi.Record;
+import org.neo4j.kernel.api.exceptions.Status;
 
 public interface MessageHandler<E extends Exception>
 {

@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -37,9 +36,10 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -343,8 +343,8 @@ public class LabelTransactionStateTest
 
         for ( Map.Entry<Integer,Collection<Long>> entry : allLabels.entrySet() )
         {
-            when( store.nodesGetForLabel( state, entry.getKey() ) ).then( answerAsPrimitiveLongIteratorFrom( entry
-                    .getValue() ) );
+            when( store.nodesGetForLabel( state.getStoreStatement(), entry.getKey() ) )
+                    .then( answerAsPrimitiveLongIteratorFrom( entry.getValue() ) );
         }
     }
 

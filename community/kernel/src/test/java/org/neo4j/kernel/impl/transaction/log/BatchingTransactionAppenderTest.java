@@ -29,23 +29,12 @@ import java.io.Flushable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
-
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -55,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeRule;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.CleanupRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -77,8 +67,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
@@ -367,49 +355,9 @@ public class BatchingTransactionAppenderTest
         verify( databaseHealth, times( 1 ) ).panic( ioex );
     }
 
-    private TransactionRepresentation transactionWithLegacyIndexCommand()
-    {
-        Collection<Command> commands = new ArrayList<>();
-        IndexDefineCommand command = new IndexDefineCommand();
-        command.init( new HashMap<String,Integer>(), new HashMap<String,Integer>() );
-        commands.add( command );
-        PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
-        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
-        return transaction;
-    }
-
-    private TransactionToApply tryComplete( Future<?> future, int millis )
-    {
-        try
-        {
-            // Let's wait a full second here since in the green case it will return super quickly
-            return (TransactionToApply) future.get( millis, MILLISECONDS );
-        }
-        catch ( InterruptedException | ExecutionException e )
-        {
-            throw new RuntimeException( "A committer that was expected to be done wasn't", e );
-        }
-        catch ( TimeoutException e )
-        {
-            return null;
-        }
-    }
-
-    private boolean anyBoolean( boolean[] array, boolean lookFor )
-    {
-        for ( boolean item : array )
-        {
-            if ( item == lookFor )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public final @Rule CleanupRule cleanup = new CleanupRule();
 
-    private TransactionRepresentation transaction( Collection<Command> commands, byte[] additionalHeader,
+    private TransactionRepresentation transaction( Collection<StorageCommand> commands, byte[] additionalHeader,
             int masterId, int authorId, long timeStarted, long latestCommittedTxWhenStarted, long timeCommitted )
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
@@ -418,56 +366,9 @@ public class BatchingTransactionAppenderTest
         return tx;
     }
 
-    /**
-     * @param transactions a {@code true} "transaction" means it should issue legacy index changes.
-     */
-    @SuppressWarnings( "rawtypes" )
-    private Future[] committersStartYourEngines( final TransactionAppender appender, boolean... transactions )
+    private Collection<StorageCommand> singleCreateNodeCommand( long id )
     {
-        ExecutorService executor = cleanup.add( Executors.newCachedThreadPool() );
-        Future[] futures = new Future[transactions.length];
-        for ( int i = 0; i < transactions.length; i++ )
-        {
-            final TransactionRepresentation transaction = createTransaction( transactions[i], i );
-            futures[i] = executor.submit( new Callable<TransactionToApply>()
-            {
-                @Override
-                public TransactionToApply call() throws IOException
-                {
-                    TransactionToApply tx = new TransactionToApply( transaction );
-                    appender.append( tx, logAppendEvent );
-                    return tx;
-                }
-            } );
-        }
-        return futures;
-    }
-
-    private TransactionRepresentation createTransaction( boolean includeLegacyIndexCommands, int i )
-    {
-        Collection<Command> commands = new ArrayList<>();
-        if ( includeLegacyIndexCommands )
-        {
-            IndexDefineCommand defineCommand = new IndexDefineCommand();
-            defineCommand.init(
-                    MapUtil.<String,Integer>genericMap( "one", 1 ),
-                    MapUtil.<String,Integer>genericMap( "two", 2 ) );
-            commands.add( defineCommand );
-        }
-        else
-        {
-            NodeRecord record = new NodeRecord( 1 + i );
-            record.setInUse( true );
-            commands.add( new NodeCommand( new NodeRecord( record.getId() ), record ) );
-        }
-        PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
-        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, -1 );
-        return transaction;
-    }
-
-    private Collection<Command> singleCreateNodeCommand( long id )
-    {
-        Collection<Command> commands = new ArrayList<>();
+        Collection<StorageCommand> commands = new ArrayList<>();
         NodeRecord before = new NodeRecord( id );
         NodeRecord after = new NodeRecord( id );
         after.setInUse( true );

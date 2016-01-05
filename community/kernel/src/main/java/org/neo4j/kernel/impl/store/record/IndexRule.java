@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.graphdb.Label;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.storageengine.api.schema.IndexSchemaRule;
 
 import static org.neo4j.helpers.UTF8.getDecodedStringFrom;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
@@ -31,7 +32,7 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
  */
-public class IndexRule extends AbstractSchemaRule
+public class IndexRule extends AbstractSchemaRule implements IndexSchemaRule
 {
     private static final long NO_OWNING_CONSTRAINT = -1;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
@@ -120,16 +121,19 @@ public class IndexRule extends AbstractSchemaRule
         return providerDescriptor;
     }
 
+    @Override
     public int getPropertyKey()
     {
         return propertyKey;
     }
 
+    @Override
     public boolean isConstraintIndex()
     {
         return owningConstraint != null;
     }
 
+    @Override
     public Long getOwningConstraint()
     {
         if ( !isConstraintIndex() )
@@ -171,7 +175,8 @@ public class IndexRule extends AbstractSchemaRule
     public void serialize( ByteBuffer target )
     {
         target.putInt( label );
-        target.put( kind.id() );
+        // 0 is reserved, so use ordinal + 1
+        target.put( (byte) (kind.ordinal()+1) );
         UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
         UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
         target.putShort( (short) 1 /*propertyKeys.length*/ );

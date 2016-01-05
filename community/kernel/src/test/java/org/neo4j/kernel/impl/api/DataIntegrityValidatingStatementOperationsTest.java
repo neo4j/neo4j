@@ -33,14 +33,14 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.kernel.api.procedures.ProcedureSignature.procedureSignature;
+import static org.neo4j.storageengine.api.procedure.ProcedureSignature.procedureSignature;
 
 public class DataIntegrityValidatingStatementOperationsTest
 {

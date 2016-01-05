@@ -377,9 +377,14 @@ public class NeoStores implements AutoCloseable
      */
     public void verifyStoreOk()
     {
-        visitStore( element -> {
-            element.checkStoreOk();
-            return false;
+        visitStore( new Visitor<CommonAbstractStore,RuntimeException>()
+        {
+            @Override
+            public boolean visit( CommonAbstractStore store )
+            {
+                store.checkStoreOk();
+                return false;
+            }
         } );
     }
 
@@ -427,9 +432,14 @@ public class NeoStores implements AutoCloseable
 
     public void deleteIdGenerators()
     {
-        visitStore( store -> {
-            store.deleteIdGenerator();
-            return false;
+        visitStore( new Visitor<CommonAbstractStore,RuntimeException>()
+        {
+            @Override
+            public boolean visit( CommonAbstractStore store ) throws RuntimeException
+            {
+                store.deleteIdGenerator();
+                return false;
+            }
         } );
     }
 

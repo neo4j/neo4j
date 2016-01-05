@@ -79,6 +79,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -90,7 +91,6 @@ import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.MutableInteger;
@@ -98,6 +98,7 @@ import org.neo4j.legacy.consistency.RecordType;
 import org.neo4j.legacy.consistency.checking.GraphStoreFixture;
 import org.neo4j.legacy.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.logging.FormattedLog;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.junit.Assert.assertEquals;
@@ -1063,7 +1064,7 @@ public class FullCheckIntegrationTest
     public static Collection<DynamicRecord> serializeRule( SchemaRule rule, Collection<DynamicRecord> records )
     {
         RecordSerializer serializer = new RecordSerializer();
-        serializer.append( rule );
+        serializer.append( (AbstractSchemaRule)rule );
 
         byte[] data = serializer.serialize();
         PreAllocatedRecords dynamicRecordAllocator = new PreAllocatedRecords( data.length );

@@ -22,11 +22,12 @@ package org.neo4j.kernel.impl.api;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.storageengine.api.CommandsToApply;
 
 /**
  * This class wraps several {@link BatchTransactionApplier}s which will do their work sequentially. See also {@link
- * TransactionApplierFacade} which is used to wrap the {@link #startTx(TransactionToApply)} and {@link
- * #startTx(TransactionToApply, LockGroup)} methods.
+ * TransactionApplierFacade} which is used to wrap the {@link #startTx(CommandsToApply)} and {@link
+ * #startTx(CommandsToApply, LockGroup)} methods.
  */
 public class BatchTransactionApplierFacade implements BatchTransactionApplier
 {
@@ -39,7 +40,7 @@ public class BatchTransactionApplierFacade implements BatchTransactionApplier
     }
 
     @Override
-    public TransactionApplier startTx( TransactionToApply transaction ) throws IOException
+    public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
     {
         TransactionApplier[] txAppliers = new TransactionApplier[appliers.length];
         for ( int i = 0; i < appliers.length; i++ )
@@ -50,7 +51,7 @@ public class BatchTransactionApplierFacade implements BatchTransactionApplier
     }
 
     @Override
-    public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup ) throws IOException
+    public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup ) throws IOException
     {
         TransactionApplier[] txAppliers = new TransactionApplier[appliers.length];
         for ( int i = 0; i < appliers.length; i++ )

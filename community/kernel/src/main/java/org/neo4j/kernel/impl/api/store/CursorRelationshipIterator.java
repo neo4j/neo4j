@@ -23,8 +23,8 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.storageengine.api.RelationshipItem;
 
 /**
  * Convert a {@link RelationshipItem} cursor into a {@link RelationshipIterator} that implements {@link Resource).

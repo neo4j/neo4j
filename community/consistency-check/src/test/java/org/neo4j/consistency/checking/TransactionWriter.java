@@ -33,11 +33,12 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.kernel.impl.store.TokenStore.NAME_STORE_BLOCK_SIZE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -50,7 +51,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
  */
 public class TransactionWriter
 {
-    private final List<Command> commands = new ArrayList<>();
+    private final List<StorageCommand> commands = new ArrayList<>();
 
     public TransactionRepresentation representation( byte[] additionalHeader, int masterId, int authorId,
             long startTime, long lastCommittedTx, long committedTime )

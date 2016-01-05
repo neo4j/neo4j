@@ -41,8 +41,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 @SuppressWarnings("unchecked")
 public class ReplicatedTransactionCommitProcessTest

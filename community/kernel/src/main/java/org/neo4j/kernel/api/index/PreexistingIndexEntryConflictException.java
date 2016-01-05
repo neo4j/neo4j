@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+
 import static java.lang.String.format;
 
 /**

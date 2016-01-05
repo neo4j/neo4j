@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -34,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.TokenCreator;
+import org.neo4j.storageengine.api.Token;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccess;
 
 class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<DuplicateCluster>, IOException>

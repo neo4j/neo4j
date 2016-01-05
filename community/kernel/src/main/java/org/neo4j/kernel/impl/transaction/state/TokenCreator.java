@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
 
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.storageengine.api.Token;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;

@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 

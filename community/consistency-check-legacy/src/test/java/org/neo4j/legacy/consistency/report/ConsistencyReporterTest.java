@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.legacy.consistency.RecordType;
 import org.neo4j.legacy.consistency.checking.CheckerEngine;
 import org.neo4j.legacy.consistency.checking.ComparativeRecordChecker;
@@ -70,6 +69,7 @@ import org.neo4j.legacy.consistency.store.RecordReference;
 import org.neo4j.legacy.consistency.store.synthetic.CountsEntry;
 import org.neo4j.legacy.consistency.store.synthetic.IndexEntry;
 import org.neo4j.legacy.consistency.store.synthetic.LabelScanDocument;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
 

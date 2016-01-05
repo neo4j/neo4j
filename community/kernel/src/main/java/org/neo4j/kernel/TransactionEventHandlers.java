@@ -33,13 +33,13 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.api.txstate.ReadableTxState;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TxStateTransactionDataSnapshot;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
  * Handle the collection of transaction event handlers, and fire events as needed.
@@ -111,7 +111,7 @@ public class TransactionEventHandlers
     }
 
     @Override
-    public TransactionHandlerState beforeCommit( ReadableTxState state, KernelTransaction transaction,
+    public TransactionHandlerState beforeCommit( ReadableTransactionState state, KernelTransaction transaction,
             StoreReadLayer storeReadLayer )
     {
         if ( transactionEventHandlers.isEmpty() )
@@ -140,7 +140,7 @@ public class TransactionEventHandlers
 
     @Override
     @SuppressWarnings("unchecked")
-    public void afterCommit( ReadableTxState state,
+    public void afterCommit( ReadableTransactionState state,
             KernelTransaction transaction,
             TransactionHandlerState handlerState )
     {
@@ -157,7 +157,7 @@ public class TransactionEventHandlers
 
     @Override
     @SuppressWarnings("unchecked")
-    public void afterRollback( ReadableTxState state,
+    public void afterRollback( ReadableTransactionState state,
             KernelTransaction transaction,
             TransactionHandlerState handlerState )
     {

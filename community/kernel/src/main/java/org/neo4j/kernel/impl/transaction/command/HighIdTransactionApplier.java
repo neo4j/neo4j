@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionApplier;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupComman
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.TokenCommand;
+import org.neo4j.storageengine.api.Token;
 
 public class HighIdTransactionApplier extends TransactionApplier.Adapter
 {

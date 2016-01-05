@@ -37,13 +37,13 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;

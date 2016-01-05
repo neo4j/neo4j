@@ -22,13 +22,13 @@ package org.neo4j.legacy.consistency.checking.full;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.legacy.consistency.checking.CheckerEngine;
 import org.neo4j.legacy.consistency.checking.RecordCheck;
 import org.neo4j.legacy.consistency.report.ConsistencyReport;
 import org.neo4j.legacy.consistency.store.DiffRecordAccess;
 import org.neo4j.legacy.consistency.store.RecordAccess;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class LabelsMatchCheck implements
         RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport>

@@ -29,12 +29,13 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -51,7 +52,9 @@ public class KernelTransactionFactory
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.neoStores() ).thenReturn( mock( NeoStores.class ) );
-        when( storageEngine.storeReadLayer() ).thenReturn( mock( StoreReadLayer.class ) );
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        when( storeReadLayer.acquireStatement() ).thenReturn( mock( StorageStatement.class ) );
+        when( storageEngine.storeReadLayer() ).thenReturn( storeReadLayer );
 
         return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
                 mock( SchemaWriteGuard.class ),

@@ -23,11 +23,8 @@ package org.neo4j.graphdb;
  * Resource that should be closed when not needed anymore. Extends {@link AutoCloseable}
  * with {@link #close()} not throwing any checked exception.
  */
-public interface Resource extends AutoCloseable
+public interface Resource extends org.neo4j.Resource
 {
-    @Override
-    void close();
-
     /**
      * Empty resource that doesn't {@link #close() close} anything.
      */

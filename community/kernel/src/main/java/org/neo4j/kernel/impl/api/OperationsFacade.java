@@ -39,8 +39,6 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -63,12 +61,8 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
-import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -80,8 +74,14 @@ import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
+import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 
@@ -317,7 +317,18 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getRelationships( direction, relTypes );
+            return node.get().getRelationships( direction( direction ), relTypes );
+        }
+    }
+
+    private org.neo4j.storageengine.api.Direction direction( Direction direction )
+    {
+        switch ( direction )
+        {
+        case OUTGOING: return org.neo4j.storageengine.api.Direction.OUTGOING;
+        case INCOMING: return org.neo4j.storageengine.api.Direction.INCOMING;
+        case BOTH: return org.neo4j.storageengine.api.Direction.BOTH;
+        default: throw new IllegalArgumentException( direction.name() );
         }
     }
 
@@ -329,7 +340,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getRelationships( direction );
+            return node.get().getRelationships( direction( direction ) );
         }
     }
 
@@ -339,7 +350,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().degree( direction, relType );
+            return node.get().degree( direction( direction ), relType );
         }
     }
 
@@ -349,7 +360,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().degree( direction );
+            return node.get().degree( direction( direction ) );
         }
     }
 
@@ -553,11 +564,11 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     // <SchemaRead>
     @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public IndexDescriptor indexGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
             throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
-        IndexDescriptor descriptor = schemaRead().indexesGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
+        IndexDescriptor descriptor = schemaRead().indexGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
         if ( descriptor == null )
         {
             throw new IndexSchemaRuleNotFoundException( labelId, propertyKeyId );
@@ -1027,31 +1038,30 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
     // </SchemaWrite>
 
-
     // <Locking>
     @Override
-    public void acquireExclusive( Locks.ResourceType type, long id )
+    public void acquireExclusive( ResourceType type, long id )
     {
         statement.assertOpen();
         locking().acquireExclusive( statement, type, id );
     }
 
     @Override
-    public void acquireShared( Locks.ResourceType type, long id )
+    public void acquireShared( ResourceType type, long id )
     {
         statement.assertOpen();
         locking().acquireShared( statement, type, id );
     }
 
     @Override
-    public void releaseExclusive( Locks.ResourceType type, long id )
+    public void releaseExclusive( ResourceType type, long id )
     {
         statement.assertOpen();
         locking().releaseExclusive( statement, type, id );
     }
 
     @Override
-    public void releaseShared( Locks.ResourceType type, long id )
+    public void releaseShared( ResourceType type, long id )
     {
         statement.assertOpen();
         locking().releaseShared( statement, type, id );

@@ -29,18 +29,24 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.WritableChannel;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.util.Bits.bitFlag;
+import static org.neo4j.kernel.impl.util.Bits.bitFlags;
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.relationshipType;
 
@@ -48,7 +54,7 @@ import static org.neo4j.kernel.impl.util.IdPrettyPrinter.relationshipType;
  * Command implementations for all the commands that can be performed on a Neo
  * store.
  */
-public abstract class Command
+public abstract class Command implements StorageCommand
 {
     private int keyHash;
     private long key;
@@ -126,10 +132,41 @@ public abstract class Command
         return format( " -%s%n         +%s", before, after );
     }
 
+    void writeDynamicRecords( WritableChannel channel, Collection<DynamicRecord> records ) throws IOException
+    {
+        channel.putInt( records.size() ); // 4
+        for ( DynamicRecord record : records )
+        {
+            writeDynamicRecord( channel, record );
+        }
+    }
+
+    void writeDynamicRecord( WritableChannel channel, DynamicRecord record ) throws IOException
+    {
+        // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
+        if ( record.inUse() )
+        {
+            byte inUse = Record.IN_USE.byteValue();
+            if ( record.isStartRecord() )
+            {
+                inUse |= Record.FIRST_IN_CHAIN.byteValue();
+            }
+            channel.putLong( record.getId() ).putInt( record.getType() ).put( inUse ).putInt( record.getLength() )
+                   .putLong( record.getNextBlock() );
+            byte[] data = record.getData();
+            assert data != null;
+            channel.put( data, data.length );
+        }
+        else
+        {
+            byte inUse = Record.NOT_IN_USE.byteValue();
+            channel.putLong( record.getId() ).putInt( record.getType() ).put( inUse );
+        }
+    }
 
     public static abstract class BaseCommand<RECORD extends Abstract64BitRecord> extends Command
     {
-        private final RECORD before;
+        protected final RECORD before;
         protected final RECORD after;
 
         public BaseCommand( RECORD before, RECORD after )
@@ -168,6 +205,31 @@ public abstract class Command
         {
             return handler.visitNodeCommand( this );
         }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            channel.put( NeoCommandType.NODE_COMMAND );
+            channel.putLong( after.getId() );
+            writeNodeRecord( channel, before );
+            writeNodeRecord( channel, after );
+        }
+
+        private boolean writeNodeRecord( WritableChannel channel, NodeRecord record ) throws IOException
+        {
+            byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
+            channel.put( inUse );
+            if ( record.inUse() )
+            {
+                channel.put( record.isDense() ? (byte) 1 : (byte) 0 );
+                channel.putLong( record.getNextRel() ).putLong( record.getNextProp() );
+                channel.putLong( record.getLabelField() );
+            }
+            // Always write dynamic label records because we want to know which ones have been deleted
+            // especially if the node has been deleted.
+            writeDynamicRecords( channel, record.getDynamicLabelRecords() );
+            return false;
+        }
     }
 
     public static class RelationshipCommand extends BaseCommand<RelationshipRecord>
@@ -181,6 +243,34 @@ public abstract class Command
         public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitRelationshipCommand( this );
+        }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            channel.put( NeoCommandType.REL_COMMAND );
+            channel.putLong( after.getId() );
+            writeRelationshipRecord( channel, before );
+            writeRelationshipRecord( channel, after );
+        }
+
+        private void writeRelationshipRecord( WritableChannel channel, RelationshipRecord record ) throws IOException
+        {
+            byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                    bitFlag( record.isCreated(), Record.CREATED_IN_TX ) );
+            channel.put( flags );
+            if ( record.inUse() )
+            {
+                channel.putLong( record.getFirstNode() ).putLong( record.getSecondNode() ).putInt( record.getType() )
+                       .putLong( record.getFirstPrevRel() ).putLong( record.getFirstNextRel() )
+                       .putLong( record.getSecondPrevRel() ).putLong( record.getSecondNextRel() )
+                       .putLong( record.getNextProp() )
+                       .put( (byte) ((record.isFirstInFirstChain() ? 1 : 0) | (record.isFirstInSecondChain() ? 2 : 0)) );
+            }
+            else
+            {
+                channel.putInt( record.getType() );
+            }
         }
     }
 
@@ -196,6 +286,27 @@ public abstract class Command
         {
             return handler.visitRelationshipGroupCommand( this );
         }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            channel.put( NeoCommandType.REL_GROUP_COMMAND );
+            channel.putLong( after.getId() );
+            writeRelationshipGroupRecord( channel, before );
+            writeRelationshipGroupRecord( channel, after );
+        }
+
+        private void writeRelationshipGroupRecord( WritableChannel channel, RelationshipGroupRecord record )
+                throws IOException
+        {
+            channel.put( (byte) (record.inUse() ? Record.IN_USE.intValue() : Record.NOT_IN_USE.intValue()) );
+            channel.putShort( (short) record.getType() );
+            channel.putLong( record.getNext() );
+            channel.putLong( record.getFirstOut() );
+            channel.putLong( record.getFirstIn() );
+            channel.putLong( record.getFirstLoop() );
+            channel.putLong( record.getOwningNode() );
+        }
     }
 
     public static class NeoStoreCommand extends BaseCommand<NeoStoreRecord>
@@ -209,6 +320,19 @@ public abstract class Command
         public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitNeoStoreCommand( this );
+        }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            channel.put( NeoCommandType.NEOSTORE_COMMAND );
+            writeNeoStoreRecord( channel, before );
+            writeNeoStoreRecord( channel, after );
+        }
+
+        private void writeNeoStoreRecord( WritableChannel channel, NeoStoreRecord record ) throws IOException
+        {
+            channel.putLong( record.getNextProp() );
         }
     }
 
@@ -234,12 +358,88 @@ public abstract class Command
         {
             return after.getRelId();
         }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            channel.put( NeoCommandType.PROP_COMMAND );
+            channel.putLong( after.getId() );
+            writePropertyRecord( channel, before );
+            writePropertyRecord( channel, after );
+        }
+
+        private void writePropertyRecord( WritableChannel channel, PropertyRecord record ) throws IOException
+        {
+            byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
+            if ( record.getRelId() != -1 )
+            {
+                // Here we add 2, i.e. set the second lsb.
+                inUse += Record.REL_PROPERTY.byteValue();
+            }
+            channel.put( inUse ); // 1
+            channel.putLong( record.getNextProp() ).putLong( record.getPrevProp() ); // 8 + 8
+            long nodeId = record.getNodeId();
+            long relId = record.getRelId();
+            if ( nodeId != -1 )
+            {
+                channel.putLong( nodeId ); // 8 or
+            }
+            else if ( relId != -1 )
+            {
+                channel.putLong( relId ); // 8 or
+            }
+            else
+            {
+                // means this records value has not changed, only place in
+                // prop chain
+                channel.putLong( -1 ); // 8
+            }
+            channel.put( (byte) record.numberOfProperties() ); // 1
+            for ( PropertyBlock block : record )
+            {
+                assert block.getSize() > 0 : record + " seems kinda broken";
+                writePropertyBlock( channel, block );
+            }
+            writeDynamicRecords( channel, record.getDeletedRecords() );
+        }
+
+        private void writePropertyBlock( WritableChannel channel, PropertyBlock block ) throws IOException
+        {
+            byte blockSize = (byte) block.getSize();
+            assert blockSize > 0 : blockSize + " is not a valid block size value";
+            channel.put( blockSize ); // 1
+            long[] propBlockValues = block.getValueBlocks();
+            for ( long propBlockValue : propBlockValues )
+            {
+                channel.putLong( propBlockValue );
+            }
+            /*
+             * For each block we need to keep its dynamic record chain if
+             * it is just created. Deleted dynamic records are in the property
+             * record and dynamic records are never modified. Also, they are
+             * assigned as a whole, so just checking the first should be enough.
+             */
+            if ( block.isLight() )
+            {
+                /*
+                 *  This has to be int. If this record is not light
+                 *  then we have the number of DynamicRecords that follow,
+                 *  which is an int. We do not currently want/have a flag bit so
+                 *  we simplify by putting an int here always
+                 */
+                channel.putInt( 0 ); // 4 or
+            }
+            else
+            {
+                writeDynamicRecords( channel, block.getValueRecords() );
+            }
+        }
     }
 
     public static abstract class TokenCommand<RECORD extends TokenRecord> extends Command
     {
-        private final RECORD before;
-        private final RECORD after;
+        protected final RECORD before;
+        protected final RECORD after;
 
         public TokenCommand( RECORD before, RECORD after )
         {
@@ -277,6 +477,32 @@ public abstract class Command
         {
             return handler.visitPropertyKeyTokenCommand( this );
         }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            channel.put( NeoCommandType.PROP_INDEX_COMMAND );
+            channel.putInt( after.getId() );
+            writePropertyKeyTokenRecord( channel, before );
+            writePropertyKeyTokenRecord( channel, after );
+        }
+
+        private void writePropertyKeyTokenRecord( WritableChannel channel, PropertyKeyTokenRecord record )
+                throws IOException
+        {
+            // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
+            byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
+            channel.put( inUse );
+            channel.putInt( record.getPropertyCount() ).putInt( record.getNameId() );
+            if ( record.isLight() )
+            {
+                channel.putInt( 0 );
+            }
+            else
+            {
+                writeDynamicRecords( channel, record.getNameRecords() );
+            }
+        }
     }
 
     public static class RelationshipTypeTokenCommand extends TokenCommand<RelationshipTypeTokenRecord>
@@ -292,6 +518,32 @@ public abstract class Command
         {
             return handler.visitRelationshipTypeTokenCommand( this );
         }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            channel.put( NeoCommandType.REL_TYPE_COMMAND );
+            channel.putInt( after.getId() );
+            writeRelationshipTypeTokenRecord( channel, before );
+            writeRelationshipTypeTokenRecord( channel, after );
+        }
+
+        private void writeRelationshipTypeTokenRecord( WritableChannel channel, RelationshipTypeTokenRecord record )
+                throws IOException
+        {
+            // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
+            byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
+            channel.put( inUse );
+            channel.putInt( record.getNameId() );
+            if ( record.isLight() )
+            {
+                channel.putInt( 0 );
+            }
+            else
+            {
+                writeDynamicRecords( channel, record.getNameRecords() );
+            }
+        }
     }
 
     public static class LabelTokenCommand extends TokenCommand<LabelTokenRecord>
@@ -305,6 +557,23 @@ public abstract class Command
         public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitLabelTokenCommand( this );
+        }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            channel.put( NeoCommandType.LABEL_KEY_COMMAND );
+            channel.putInt( after.getId() );
+            writeLabelTokenRecord( channel, before );
+            writeLabelTokenRecord( channel, after );
+        }
+
+        private void writeLabelTokenRecord( WritableChannel channel, LabelTokenRecord record ) throws IOException
+        {
+            // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
+            byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
+            channel.put( inUse ).putInt( record.getNameId() );
+            writeDynamicRecords( channel, record.getNameRecords() );
         }
     }
 
@@ -353,6 +622,15 @@ public abstract class Command
         {
             return recordsBefore;
         }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            channel.put( NeoCommandType.SCHEMA_RULE_COMMAND );
+            writeDynamicRecords( channel, recordsBefore );
+            writeDynamicRecords( channel, recordsAfter );
+            channel.put( first( recordsAfter ).isCreated() ? (byte) 1 : 0 );
+        }
     }
 
     public static class NodeCountsCommand extends Command
@@ -389,6 +667,14 @@ public abstract class Command
         public long delta()
         {
             return delta;
+        }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            channel.put( NeoCommandType.UPDATE_NODE_COUNTS_COMMAND );
+            channel.putInt( labelId() )
+                   .putLong( delta() );
         }
     }
 
@@ -442,6 +728,16 @@ public abstract class Command
         public long delta()
         {
             return delta;
+        }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            channel.put( NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND );
+            channel.putInt( startLabelId() )
+                   .putInt( typeId() )
+                   .putInt( endLabelId() )
+                   .putLong( delta() );
         }
     }
 }

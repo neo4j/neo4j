@@ -30,17 +30,16 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.DynamicRecordAdder;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-
-import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
+import org.neo4j.kernel.impl.transaction.command.CommandReading.DynamicRecordAdder;
+import org.neo4j.storageengine.api.ReadableChannel;
+import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 
 public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
 {
     @Override
-    protected Command read( byte commandType, ReadableLogChannel channel ) throws IOException
+    protected Command read( byte commandType, ReadableChannel channel ) throws IOException
     {
         switch ( commandType )
         {
@@ -61,7 +60,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         }
     }
 
-    private Command visitNodeCommand( ReadableLogChannel channel ) throws IOException
+    private Command visitNodeCommand( ReadableChannel channel ) throws IOException
     {
         long id = channel.getLong();
         NodeRecord record = readNodeRecord( id, channel );
@@ -72,7 +71,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         return new Command.NodeCommand( record, record );
     }
 
-    private Command visitRelationshipCommand( ReadableLogChannel channel ) throws IOException
+    private Command visitRelationshipCommand( ReadableChannel channel ) throws IOException
     {
         long id = channel.getLong();
         byte inUseFlag = channel.get();
@@ -115,7 +114,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         return new Command.RelationshipCommand( null, record );
     }
 
-    protected Command visitPropertyCommand( ReadableLogChannel channel ) throws IOException
+    protected Command visitPropertyCommand( ReadableChannel channel ) throws IOException
     {
         // ID
         long id = channel.getLong(); // 8
@@ -127,7 +126,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         return new Command.PropertyCommand( record, record );
     }
 
-    private Command visitRelationshipTypeTokenCommand( ReadableLogChannel channel ) throws IOException
+    private Command visitRelationshipTypeTokenCommand( ReadableChannel channel ) throws IOException
     {
         // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
         int id = channel.getInt();
@@ -157,7 +156,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         return new Command.RelationshipTypeTokenCommand( null, record );
     }
 
-    private Command visitPropertyKeyTokenCommand( ReadableLogChannel channel ) throws IOException
+    private Command visitPropertyKeyTokenCommand( ReadableChannel channel ) throws IOException
     {
         // id+in_use(byte)+count(int)+key_blockId(int)
         int id = channel.getInt();
@@ -183,7 +182,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         return new Command.PropertyKeyTokenCommand( null, record );
     }
 
-    private Command visitNeoStoreCommand( ReadableLogChannel channel ) throws IOException
+    private Command visitNeoStoreCommand( ReadableChannel channel ) throws IOException
     {
         long nextProp = channel.getLong();
         NeoStoreRecord record = new NeoStoreRecord();
@@ -191,7 +190,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         return new Command.NeoStoreCommand( null, record );
     }
 
-    private NodeRecord readNodeRecord( long id, ReadableLogChannel channel ) throws IOException
+    private NodeRecord readNodeRecord( long id, ReadableChannel channel ) throws IOException
     {
         byte inUseFlag = channel.get();
         boolean inUse = false;
@@ -217,7 +216,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         return record;
     }
 
-    private DynamicRecord readDynamicRecord( ReadableLogChannel channel ) throws IOException
+    private DynamicRecord readDynamicRecord( ReadableChannel channel ) throws IOException
     {
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         long id = channel.getLong();
@@ -245,7 +244,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         return record;
     }
 
-    private <T> int readDynamicRecords( ReadableLogChannel channel, T target, DynamicRecordAdder<T> adder )
+    private <T> int readDynamicRecords( ReadableChannel channel, T target, DynamicRecordAdder<T> adder )
             throws IOException
     {
         final int numberOfRecords = channel.getInt();
@@ -263,7 +262,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         return numberOfRecords;
     }
 
-    private PropertyRecord readPropertyRecord( long id, ReadableLogChannel channel ) throws IOException
+    private PropertyRecord readPropertyRecord( long id, ReadableChannel channel ) throws IOException
     {
         // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
         // prev_prop_id(long)+next_prop_id(long)
@@ -318,7 +317,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         return record;
     }
 
-    private PropertyBlock readPropertyBlock( ReadableLogChannel channel ) throws IOException
+    private PropertyBlock readPropertyBlock( ReadableChannel channel ) throws IOException
     {
         PropertyBlock toReturn = new PropertyBlock();
         byte blockSize = channel.get(); // the size is stored in bytes // 1
@@ -346,7 +345,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         return toReturn;
     }
 
-    private long[] readLongs( ReadableLogChannel channel, int count ) throws IOException
+    private long[] readLongs( ReadableChannel channel, int count ) throws IOException
     {
         long[] result = new long[count];
         for ( int i = 0; i < count; i++ )

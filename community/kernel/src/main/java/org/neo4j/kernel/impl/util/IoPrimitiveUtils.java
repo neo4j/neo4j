@@ -28,12 +28,12 @@ import java.util.Map;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 public abstract class IoPrimitiveUtils
 {
-    public static String readString( ReadableLogChannel channel, int length ) throws IOException
+    public static String readString( ReadableChannel channel, int length ) throws IOException
     {
         assert length >= 0 : "invalid array length " + length;
         byte[] chars = new byte[length];
@@ -41,7 +41,7 @@ public abstract class IoPrimitiveUtils
         return UTF8.decode( chars );
     }
 
-    public static void write3bLengthAndString( WritableLogChannel channel, String string ) throws IOException
+    public static void write3bLengthAndString( WritableChannel channel, String string ) throws IOException
     {
         byte[] chars = UTF8.encode( string );
         // 3 bytes to represent the length (4 is a bit overkill)... maybe
@@ -51,7 +51,7 @@ public abstract class IoPrimitiveUtils
         channel.put(chars, chars.length);
     }
 
-    public static String read3bLengthAndString( ReadableLogChannel channel ) throws IOException
+    public static String read3bLengthAndString( ReadableChannel channel ) throws IOException
     {
         short lengthShort = channel.getShort();
         byte lengthByte = channel.get();
@@ -61,14 +61,14 @@ public abstract class IoPrimitiveUtils
         return UTF8.decode( chars );
     }
 
-    public static void write2bLengthAndString( WritableLogChannel channel, String string ) throws IOException
+    public static void write2bLengthAndString( WritableChannel channel, String string ) throws IOException
     {
         byte[] chars = UTF8.encode( string );
         channel.putShort( (short)chars.length );
         channel.put(chars, chars.length);
     }
 
-    public static String read2bLengthAndString( ReadableLogChannel channel ) throws IOException
+    public static String read2bLengthAndString( ReadableChannel channel ) throws IOException
     {
         short length = channel.getShort();
         return readString( channel, length );
@@ -139,7 +139,7 @@ public abstract class IoPrimitiveUtils
         return readAndFlip( channel, ByteBuffer.wrap( array ), length ) ? array : null;
     }
 
-    public static Map<String, String> read2bMap( ReadableLogChannel channel ) throws IOException
+    public static Map<String, String> read2bMap( ReadableChannel channel ) throws IOException
     {
         short size = channel.getShort();
         Map<String, String> map = new HashMap<>();

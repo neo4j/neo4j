@@ -31,6 +31,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.kernel.api.index.ParameterizedSuiteRunner;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.TargetDirectory;
@@ -137,7 +139,7 @@ public abstract class LockingCompatibilityTestSuite
 
         protected LockCommand acquireExclusive(
                 final Locks.Client client,
-                final Locks.ResourceType resourceType,
+                final ResourceType resourceType,
                 final long key )
         {
             return new LockCommand(clientToThreadMap.get( client ), client)
@@ -152,7 +154,7 @@ public abstract class LockingCompatibilityTestSuite
 
         protected LockCommand acquireShared(
                 Locks.Client client,
-                final Locks.ResourceType resourceType,
+                final ResourceType resourceType,
                 final long key )
         {
             return new LockCommand(clientToThreadMap.get( client ), client)
@@ -167,7 +169,7 @@ public abstract class LockingCompatibilityTestSuite
 
         protected LockCommand release(
                 final Locks.Client client,
-                final Locks.ResourceType resourceType,
+                final ResourceType resourceType,
                 final long key )
         {
             return new LockCommand(clientToThreadMap.get( client ), client)

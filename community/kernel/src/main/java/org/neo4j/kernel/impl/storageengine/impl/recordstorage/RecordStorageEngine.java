@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -38,23 +37,18 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
-import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsStoreBatchTransactionApplier;
+import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.LegacyBatchIndexApplier;
 import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
-import org.neo4j.kernel.impl.api.StatementOperationParts;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplierFacade;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -63,7 +57,6 @@ import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.api.store.DiskLayer;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -74,16 +67,11 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.storageengine.CommandReaderFactory;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.CacheInvalidationBatchTransactionApplier;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.HighIdBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexUpdatesWork;
@@ -103,6 +91,18 @@ import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.CommandReaderFactory;
+import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.helpers.Settings.BOOLEAN;
@@ -170,10 +170,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
         this.labelTokenHolder = labelTokens;
         this.schemaStateChangeCallback = schemaStateChangeCallback;
-        this.constraintSemantics = constraintSemantics;
         this.lockService = lockService;
         this.databaseHealth = databaseHealth;
         this.indexConfigStore = indexConfigStore;
+        this.constraintSemantics = constraintSemantics;
+
         final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
         neoStores = storeFactory.openAllNeoStores( true );
 
@@ -193,12 +194,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaStateChangeCallback,
                     propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
 
-            DiskLayer diskLayer = new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
-                    schemaStorage,
-                    neoStores, indexingService, storeStatementFactory( neoStores, config, lockService ) );
+            labelScanStore = labelScanStoreProvider.getLabelScanStore();
+            DiskLayer diskLayer = new DiskLayer(
+                    propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
+                    schemaStorage, neoStores, indexingService,
+                    storeStatementSupplier( neoStores, config, lockService ) );
             procedureCache = new ProcedureCache();
             storeLayer = new CacheLayer( diskLayer, schemaCache, procedureCache );
-            labelScanStore = labelScanStoreProvider.getLabelScanStore();
             legacyIndexApplierLookup = new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup );
             legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
 
@@ -214,12 +216,17 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
     }
 
-    private static Factory<StoreStatement> storeStatementFactory(
+    private Supplier<StorageStatement> storeStatementSupplier(
             NeoStores neoStores, Config config, LockService lockService )
     {
         final LockService currentLockService =
                 config.get( use_read_locks_on_property_reads ) ? lockService : NO_LOCK_SERVICE;
-        return () -> new StoreStatement( neoStores, currentLockService );
+        final Supplier<LabelScanReader> labelScanReaderSupplier = labelScanStore::newReader;
+
+        return () -> {
+            return new StoreStatement( neoStores, currentLockService,
+                    new IndexReaderFactory.Caching( indexingService ), labelScanReaderSupplier );
+        };
     }
 
     @Override
@@ -236,18 +243,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     @SuppressWarnings( "resource" )
     @Override
-    public Collection<Command> createCommands(
-            TransactionState txState,
-            LegacyIndexTransactionState legacyIndexTransactionState,
-            Locks.Client locks,
-            StatementOperationParts operations,
-            StoreStatement storeStatement,
+    public void createCommands(
+            Collection<StorageCommand> commands,
+            ReadableTransactionState txState,
+            ResourceLocker locks,
             long lastTransactionIdWhenStarted )
             throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationKernelException
     {
-        // Create objects to be populated with command-friendly changes
-        Collection<Command> commands = new ArrayList<>();
-
         if ( txState != null )
         {
             NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStores, locks );
@@ -256,14 +258,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState,
-                    schemaStateChangeCallback, schemaStorage, constraintSemantics, providerMap,
-                    legacyIndexTransactionState, procedureCache );
+                    schemaStateChangeCallback, schemaStorage, constraintSemantics, providerMap, procedureCache );
             CountsRecordState countsRecordState = new CountsRecordState();
             txStateVisitor = constraintSemantics.decorateTxStateVisitor(
-                    operations,
-                    storeStatement,
                     storeLayer,
-                    new DirectTxStateHolder( txState, legacyIndexTransactionState ),
+                    txState,
                     txStateVisitor );
             txStateVisitor = new TransactionCountingStateVisitor(
                     txStateVisitor, storeLayer, txState, countsRecordState );
@@ -276,32 +275,24 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             recordState.extractCommands( commands );
             countsRecordState.extractCommands( commands );
         }
-
-        if ( legacyIndexTransactionState != null )
-        {
-            legacyIndexTransactionState.extractCommands( commands );
-        }
-
-        return commands;
     }
 
     @Override
-    public void apply( TransactionToApply batch, TransactionApplicationMode mode ) throws Exception
+    public void apply( CommandsToApply batch, TransactionApplicationMode mode ) throws Exception
     {
         // Have these command appliers as separate try-with-resource to have better control over
         // point between closing this and the locks above
         try ( BatchTransactionApplier batchApplier = applier( mode ) )
         {
-            TransactionToApply tx = batch;
-            while ( tx != null )
+            while ( batch != null )
             {
                 try ( LockGroup locks = new LockGroup() )
                 {
-                    try ( TransactionApplier txApplier = batchApplier.startTx( tx, locks ) )
+                    try ( TransactionApplier txApplier = batchApplier.startTx( batch, locks ) )
                     {
-                        tx.transactionRepresentation().accept( txApplier );
+                        batch.accept( txApplier );
                     }
-                    tx = tx.next();
+                    batch = batch.next();
                 }
                 catch ( Throwable cause )
                 {

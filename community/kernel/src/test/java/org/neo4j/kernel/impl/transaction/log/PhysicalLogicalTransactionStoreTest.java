@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -370,9 +371,9 @@ public class PhysicalLogicalTransactionStoreTest
         appender.append( new TransactionToApply( transaction ), LogAppendEvent.NULL );
     }
 
-    private Collection<Command> singleCreateNodeCommand()
+    private Collection<StorageCommand> singleCreateNodeCommand()
     {
-        Collection<Command> commands = new ArrayList<>();
+        Collection<StorageCommand> commands = new ArrayList<>();
 
         long id = 0;
         NodeRecord before = new NodeRecord( id );

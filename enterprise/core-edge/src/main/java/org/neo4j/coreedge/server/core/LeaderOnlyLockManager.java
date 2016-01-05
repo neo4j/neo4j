@@ -21,9 +21,10 @@ package org.neo4j.coreedge.server.core;
 
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.server.core.CurrentReplicatedLockState.LockSession;
-import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.LockClientAlreadyClosedException;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
  * Each member of the cluster uses its own {@link LeaderOnlyLockManager} which wraps a local {@link Locks}.

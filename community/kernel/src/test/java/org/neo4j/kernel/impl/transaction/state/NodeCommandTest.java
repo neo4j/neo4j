@@ -40,11 +40,10 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -65,7 +64,6 @@ public class NodeCommandTest
     private NodeStore nodeStore;
     InMemoryLogChannel channel = new InMemoryLogChannel();
     private final CommandReader commandReader = new PhysicalLogCommandReaderV2_2();
-    private final CommandWriter commandWriter = new CommandWriter( channel );
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private NeoStores neoStores;
@@ -152,7 +150,7 @@ public class NodeCommandTest
         after.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
         // When
         Command.NodeCommand cmd = new Command.NodeCommand( before, after );
-        cmd.handle( commandWriter );
+        cmd.serialize( channel );
         Command.NodeCommand result = (Command.NodeCommand) commandReader.read( channel );
         // Then
         assertThat( result, equalTo( cmd ) );
@@ -168,7 +166,7 @@ public class NodeCommandTest
             throws IOException
     {
         channel.reset();
-        cmd.handle( commandWriter );
+        cmd.serialize( channel );
         Command.NodeCommand result = (Command.NodeCommand) commandReader.read( channel );
         // Then
         assertThat( result, equalTo( cmd ) );

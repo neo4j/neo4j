@@ -31,7 +31,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.DatabaseRule.RestartAction;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -52,7 +51,6 @@ import static org.neo4j.io.fs.FileUtils.deleteRecursively;
  */
 public class LuceneLabelScanStoreChaosIT
 {
-
     @Rule
     public final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
     private final Random random = new Random();

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
+import org.neo4j.storageengine.api.Token;
 
 public class InMemoryTokenCache<TOKEN extends Token>
 {

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
+import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 
 /**
  * Interface for managing the schema of your graph database. This currently includes

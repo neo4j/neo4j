@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.test.DoubleLatch;
 

@@ -22,21 +22,22 @@ package org.neo4j.kernel.impl.core;
 import java.util.Arrays;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
+import org.neo4j.storageengine.api.StorageProperty;
 
 /**
  * A {@link PropertyReceiver} which can be iterated over once populated. The receiver and iterator is the
  * same object to save garbage.
  */
-public class IteratingPropertyReceiver extends PrefetchingIterator<DefinedProperty> implements PropertyReceiver
+public class IteratingPropertyReceiver<P extends StorageProperty> extends PrefetchingIterator<P>
+        implements PropertyReceiver<P>
 {
-    private DefinedProperty[] properties = new DefinedProperty[9];
+    private StorageProperty[] properties = new StorageProperty[9];
     private int writeCursor;
     private int readCursor;
 
     @Override
-    public void receive( DefinedProperty property, long propertyRecordId )
+    public void receive( P property, long propertyRecordId )
     {
         if ( writeCursor >= properties.length )
         {
@@ -45,13 +46,14 @@ public class IteratingPropertyReceiver extends PrefetchingIterator<DefinedProper
         properties[writeCursor++] = property;
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
-    protected DefinedProperty fetchNextOrNull()
+    protected P fetchNextOrNull()
     {
         if ( readCursor >= properties.length )
         {
             return null;
         }
-        return properties[readCursor++];
+        return (P) properties[readCursor++];
     }
 }

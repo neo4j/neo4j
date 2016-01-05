@@ -21,7 +21,10 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
 
-public abstract class AbstractSchemaRule implements SchemaRule
+import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.storageengine.api.schema.SchemaRule;
+
+public abstract class AbstractSchemaRule implements SchemaRule, RecordSerializable
 {
     protected final Kind kind;
     protected final long id;
@@ -73,4 +76,63 @@ public abstract class AbstractSchemaRule implements SchemaRule
 
     @Override
     public abstract String toString();
+
+    public static SchemaRule deserialize( long id, ByteBuffer buffer ) throws MalformedSchemaRuleException
+    {
+        int labelId = buffer.getInt();
+        Kind kind = Kind.forId( buffer.get() );
+        try
+        {
+            SchemaRule rule = newRule( kind, id, labelId, buffer );
+            if ( null == rule )
+            {
+                throw new MalformedSchemaRuleException( null,
+                        "Deserialized null schema rule for id %d with kind %s", id, kind.name() );
+            }
+            return rule;
+        }
+        catch ( Exception e )
+        {
+            throw new MalformedSchemaRuleException( e,
+                    "Could not deserialize schema rule for id %d with kind %s", id, kind.name() );
+        }
+    }
+
+    protected static SchemaRule newRule( Kind kind, long id, int labelId, ByteBuffer buffer )
+    {
+        switch ( kind )
+        {
+        case INDEX_RULE:
+            return IndexRule.readIndexRule( id, false, labelId, buffer );
+        case CONSTRAINT_INDEX_RULE:
+            return IndexRule.readIndexRule( id, true, labelId, buffer );
+        case UNIQUENESS_CONSTRAINT:
+            return UniquePropertyConstraintRule.readUniquenessConstraintRule( id, labelId, buffer );
+        case NODE_PROPERTY_EXISTENCE_CONSTRAINT:
+            return NodePropertyExistenceConstraintRule.readNodePropertyExistenceConstraintRule( id, labelId, buffer );
+        case RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT:
+            return RelationshipPropertyExistenceConstraintRule
+                    .readRelPropertyExistenceConstraintRule( id, labelId, buffer );
+        default:
+            throw new IllegalArgumentException( kind.name() );
+        }
+    }
+
+    public static Class<?> getRuleClass( Kind kind )
+    {
+        switch ( kind )
+        {
+        case INDEX_RULE:
+        case CONSTRAINT_INDEX_RULE:
+            return IndexRule.class;
+        case UNIQUENESS_CONSTRAINT:
+            return UniquePropertyConstraintRule.class;
+        case NODE_PROPERTY_EXISTENCE_CONSTRAINT:
+            return NodePropertyExistenceConstraintRule.class;
+        case RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT:
+            return RelationshipPropertyExistenceConstraintRule.class;
+        default:
+            throw new IllegalArgumentException( kind.name() );
+        }
+    }
 }

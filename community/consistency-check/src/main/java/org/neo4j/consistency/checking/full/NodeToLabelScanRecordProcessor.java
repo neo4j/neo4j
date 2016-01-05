@@ -22,9 +22,9 @@ package org.neo4j.consistency.checking.full;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class NodeToLabelScanRecordProcessor implements RecordProcessor<NodeRecord>
 {

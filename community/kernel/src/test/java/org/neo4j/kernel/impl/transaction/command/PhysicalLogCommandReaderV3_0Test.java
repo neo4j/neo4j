@@ -21,11 +21,12 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.storageengine.api.CommandReader;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -37,10 +38,9 @@ public class PhysicalLogCommandReaderV3_0Test
     {
         // Given
         InMemoryLogChannel channel = new InMemoryLogChannel();
-        CommandWriter writer = new CommandWriter( channel );
         RelationshipRecord before = new RelationshipRecord( 42, -1, -1, -1 );
         RelationshipRecord after = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
-        writer.visitRelationshipCommand( new Command.RelationshipCommand( before, after ) );
+        new Command.RelationshipCommand( before, after ).serialize( channel );
 
         // When
         PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
@@ -59,12 +59,11 @@ public class PhysicalLogCommandReaderV3_0Test
     {
         // Given
         InMemoryLogChannel channel = new InMemoryLogChannel();
-        CommandWriter writer = new CommandWriter( channel );
         RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 3 );
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
         after.setCreated();
 
-        writer.visitRelationshipGroupCommand( new Command.RelationshipGroupCommand( before, after ) );
+        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
 
         // When
         PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
@@ -83,12 +82,11 @@ public class PhysicalLogCommandReaderV3_0Test
     {
         // Given
         InMemoryLogChannel channel = new InMemoryLogChannel();
-        CommandWriter writer = new CommandWriter( channel );
         NeoStoreRecord before = new NeoStoreRecord();
         NeoStoreRecord after = new NeoStoreRecord();
         after.setNextProp( 42 );
 
-        writer.visitNeoStoreCommand( new Command.NeoStoreCommand( before, after ) );
+        new Command.NeoStoreCommand( before, after ).serialize( channel );
 
         // When
         PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
@@ -100,5 +98,27 @@ public class PhysicalLogCommandReaderV3_0Test
         // Then
         assertEquals( before.getNextProp(), neoStoreCommand.getBefore().getNextProp() );
         assertEquals( after.getNextProp(), neoStoreCommand.getAfter().getNextProp() );
+    }
+
+    @Test
+    public void shouldReadSomeCommands() throws Exception
+    {
+        // GIVEN
+        InMemoryLogChannel channel = new InMemoryLogChannel();
+        Commands.createNode( 0 ).serialize( channel );
+        Commands.createNode( 1 ).serialize( channel );
+        Commands.createRelationshipTypeToken( 0, 0 ).serialize( channel );
+        Commands.createRelationship( 0, 0, 1, 0 ).serialize( channel );
+        Commands.createPropertyKeyToken( 0, 0 ).serialize( channel );
+        Commands.createProperty( 0, PropertyType.SHORT_STRING, 0 ).serialize( channel );
+        CommandReader reader = new PhysicalLogCommandReaderV3_0();
+
+        // THEN
+        assertTrue( reader.read( channel ) instanceof Command.NodeCommand );
+        assertTrue( reader.read( channel ) instanceof Command.NodeCommand );
+        assertTrue( reader.read( channel ) instanceof Command.RelationshipTypeTokenCommand );
+        assertTrue( reader.read( channel ) instanceof Command.RelationshipCommand );
+        assertTrue( reader.read( channel ) instanceof Command.PropertyKeyTokenCommand );
+        assertTrue( reader.read( channel ) instanceof Command.PropertyCommand );
     }
 }

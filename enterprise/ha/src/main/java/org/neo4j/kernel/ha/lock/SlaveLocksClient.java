@@ -32,9 +32,10 @@ import org.neo4j.kernel.AvailabilityGuard.UnavailableException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static org.neo4j.kernel.impl.locking.LockType.READ;
 import static org.neo4j.kernel.impl.locking.LockType.WRITE;
@@ -56,8 +57,8 @@ class SlaveLocksClient implements Locks.Client
     private final AvailabilityGuard availabilityGuard;
 
     // Using atomic ints to avoid creating garbage through boxing.
-    private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> sharedLocks;
-    private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> exclusiveLocks;
+    private final Map<ResourceType, Map<Long, AtomicInteger>> sharedLocks;
+    private final Map<ResourceType, Map<Long, AtomicInteger>> exclusiveLocks;
     private boolean initialized = false;
 
     public SlaveLocksClient(
@@ -77,8 +78,8 @@ class SlaveLocksClient implements Locks.Client
     }
 
     private Map<Long, AtomicInteger> getLockMap(
-            Map<Locks.ResourceType, Map<Long, AtomicInteger>> resourceMap,
-            Locks.ResourceType resourceType )
+            Map<ResourceType, Map<Long, AtomicInteger>> resourceMap,
+            ResourceType resourceType )
     {
         Map<Long, AtomicInteger> lockMap = resourceMap.get( resourceType );
         if ( lockMap == null )
@@ -90,7 +91,7 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( Locks.ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
+    public void acquireShared( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
     {
         Map<Long, AtomicInteger> lockMap = getLockMap( sharedLocks, resourceType );
         AtomicInteger preExistingLock = lockMap.get( resourceId );
@@ -114,7 +115,7 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void acquireExclusive( Locks.ResourceType resourceType, long resourceId ) throws
+    public void acquireExclusive( ResourceType resourceType, long resourceId ) throws
             AcquireLockTimeoutException
     {
         Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
@@ -139,19 +140,19 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public boolean tryExclusiveLock( Locks.ResourceType resourceType, long resourceId )
+    public boolean tryExclusiveLock( ResourceType resourceType, long resourceId )
     {
         throw newUnsupportedDirectTryLockUsageException();
     }
 
     @Override
-    public boolean trySharedLock( Locks.ResourceType resourceType, long resourceId )
+    public boolean trySharedLock( ResourceType resourceType, long resourceId )
     {
         throw newUnsupportedDirectTryLockUsageException();
     }
 
     @Override
-    public void releaseShared( Locks.ResourceType resourceType, long resourceId )
+    public void releaseShared( ResourceType resourceType, long resourceId )
     {
         Map<Long, AtomicInteger> lockMap = getLockMap( sharedLocks, resourceType );
         AtomicInteger counter = lockMap.get( resourceId );
@@ -168,7 +169,7 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void releaseExclusive( Locks.ResourceType resourceType, long resourceId )
+    public void releaseExclusive( ResourceType resourceType, long resourceId )
     {
         Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
         AtomicInteger counter = lockMap.get( resourceId );
@@ -231,7 +232,7 @@ class SlaveLocksClient implements Locks.Client
         return initialized ? client.getLockSessionId() : -1;
     }
 
-    private boolean getReadLockOnMaster( Locks.ResourceType resourceType, long resourceId )
+    private boolean getReadLockOnMaster( ResourceType resourceType, long resourceId )
     {
         if ( resourceType == ResourceTypes.NODE
                 || resourceType == ResourceTypes.RELATIONSHIP
@@ -256,7 +257,7 @@ class SlaveLocksClient implements Locks.Client
         }
     }
 
-    private boolean acquireExclusiveOnMaster( Locks.ResourceType resourceType, long resourceId )
+    private boolean acquireExclusiveOnMaster( ResourceType resourceType, long resourceId )
     {
         makeSureTxHasBeenInitialized();
         RequestContext requestContext = newRequestContextFor( this );

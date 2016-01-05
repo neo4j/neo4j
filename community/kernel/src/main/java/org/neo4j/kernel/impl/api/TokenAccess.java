@@ -28,7 +28,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.storageengine.api.Token;
 
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;

@@ -23,11 +23,11 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
-import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -39,14 +39,14 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
-import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
+import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 

@@ -30,12 +30,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionApplier;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -46,6 +43,8 @@ import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.RecoveryIndexUpdates;
+import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -54,7 +53,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  * Gather node and property changes, converting them into logical updates to the indexes. {@link #close()} will actually
  * apply the indexes.
  */
-public class IndexBatchTransactionApplier implements BatchTransactionApplier
+public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapter
 {
     private final IndexingService indexingService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
@@ -77,15 +76,9 @@ public class IndexBatchTransactionApplier implements BatchTransactionApplier
     }
 
     @Override
-    public TransactionApplier startTx( TransactionToApply transaction )
+    public TransactionApplier startTx( CommandsToApply transaction )
     {
         return transactionApplier;
-    }
-
-    @Override
-    public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup ) throws IOException
-    {
-        return startTx( transaction );
     }
 
     private void applyIndexUpdates()

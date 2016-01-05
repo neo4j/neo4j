@@ -27,39 +27,30 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class KernelStatement implements TxStateHolder, Statement
 {
     protected final Locks.Client locks;
     protected final TxStateHolder txStateHolder;
-    protected final IndexReaderFactory indexReaderFactory;
-    protected final LabelScanStore labelScanStore;
-    private final StoreStatement storeStatement;
+    private final StorageStatement storeStatement;
     private final KernelTransactionImplementation transaction;
     private final OperationsFacade facade;
     private LabelScanReader labelScanReader;
     private int referenceCount;
     private boolean closed;
 
-    public KernelStatement( KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory,
-            LabelScanStore labelScanStore, TxStateHolder txStateHolder, Locks.Client locks,
-            StatementOperationParts operations, StoreStatement storeStatement )
+    public KernelStatement( KernelTransactionImplementation transaction, TxStateHolder txStateHolder,
+            Locks.Client locks, StatementOperationParts operations, StorageStatement storeStatement )
     {
         this.transaction = transaction;
         this.locks = locks;
-        this.indexReaderFactory = indexReaderFactory;
         this.txStateHolder = txStateHolder;
-        this.labelScanStore = labelScanStore;
         this.storeStatement = storeStatement;
         this.facade = new OperationsFacade( this, operations );
     }
@@ -137,25 +128,6 @@ public class KernelStatement implements TxStateHolder, Statement
         return locks;
     }
 
-    public IndexReader getIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        return indexReaderFactory.newReader( descriptor );
-    }
-
-    public IndexReader getFreshIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        return indexReaderFactory.newUnCachedReader( descriptor );
-    }
-
-    public LabelScanReader getLabelScanReader()
-    {
-        if ( labelScanReader == null )
-        {
-            labelScanReader = labelScanStore.newReader();
-        }
-        return labelScanReader;
-    }
-
     final void acquire()
     {
         referenceCount++;
@@ -181,7 +153,7 @@ public class KernelStatement implements TxStateHolder, Statement
 
     private void cleanupResources()
     {
-        indexReaderFactory.close();
+        storeStatement.close();
 
         if ( null != labelScanReader )
         {
@@ -191,7 +163,7 @@ public class KernelStatement implements TxStateHolder, Statement
         transaction.releaseStatement( this );
     }
 
-    public StoreStatement getStoreStatement()
+    public StorageStatement getStoreStatement()
     {
         return storeStatement;
     }

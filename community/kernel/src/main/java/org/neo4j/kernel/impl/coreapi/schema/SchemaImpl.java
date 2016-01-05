@@ -60,9 +60,9 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -220,7 +220,7 @@ public class SchemaImpl implements Schema
                 throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
             }
 
-            IndexDescriptor descriptor = statement.readOperations().indexesGetForLabelAndPropertyKey( labelId, propertyKeyId );
+            IndexDescriptor descriptor = statement.readOperations().indexGetForLabelAndPropertyKey( labelId, propertyKeyId );
             InternalIndexState indexState = statement.readOperations().indexGetState( descriptor );
             switch ( indexState )
             {
@@ -263,7 +263,7 @@ public class SchemaImpl implements Schema
                 throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
             }
 
-            IndexDescriptor descriptor = statement.readOperations().indexesGetForLabelAndPropertyKey( labelId,
+            IndexDescriptor descriptor = statement.readOperations().indexGetForLabelAndPropertyKey( labelId,
                     propertyKeyId );
             return statement.readOperations().indexGetPopulationProgress( descriptor );
         }
@@ -295,7 +295,7 @@ public class SchemaImpl implements Schema
                 throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
             }
 
-            IndexDescriptor indexId = statement.readOperations().indexesGetForLabelAndPropertyKey( labelId, propertyKeyId );
+            IndexDescriptor indexId = statement.readOperations().indexGetForLabelAndPropertyKey( labelId, propertyKeyId );
             return statement.readOperations().indexGetFailure( indexId );
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
@@ -369,10 +369,42 @@ public class SchemaImpl implements Schema
         while ( constraints.hasNext() )
         {
             PropertyConstraint constraint = constraints.next();
-            definitions.add( constraint.asConstraintDefinition( actions, readOperations ) );
+            definitions.add( asConstraintDefinition( constraint, readOperations ) );
         }
 
         return definitions;
+    }
+
+    private ConstraintDefinition asConstraintDefinition( PropertyConstraint constraint, ReadOperations readOperations )
+    {
+        // This was turned inside out. Previously a low-level constraint object would reference a public enum type
+        // which made it impossible to break out the low-level component from kernel. There could be a lower level
+        // constraint type introduced to mimic the public ConstraintType, but that would be a duplicate of it
+        // essentially. Checking instanceof here is OKish since the objects it checks here are part of the
+        // internal storage engine API.
+        if ( constraint instanceof NodePropertyExistenceConstraint )
+        {
+            StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
+            return new NodePropertyExistenceConstraintDefinition( actions,
+                    Label.label( lookup.labelGetName( ((NodePropertyConstraint) constraint).label() ) ),
+                    lookup.propertyKeyGetName( constraint.propertyKey() ) );
+        }
+        else if ( constraint instanceof UniquenessConstraint )
+        {
+            StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
+            return new UniquenessConstraintDefinition( actions,
+                    Label.label( lookup.labelGetName( ((NodePropertyConstraint) constraint).label() ) ),
+                    lookup.propertyKeyGetName( constraint.propertyKey() ) );
+        }
+        else if ( constraint instanceof RelationshipPropertyExistenceConstraint )
+        {
+            StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperations );
+            return new RelationshipPropertyExistenceConstraintDefinition( actions,
+                    RelationshipType.withName( lookup.relationshipTypeGetName(
+                            ((RelationshipPropertyConstraint) constraint).relationshipType() ) ),
+                    lookup.propertyKeyGetName( constraint.propertyKey() ) );
+        }
+        throw new IllegalArgumentException( "Unknown constraint " + constraint );
     }
 
     private static class GDBSchemaActions implements InternalSchemaActions
@@ -429,7 +461,7 @@ public class SchemaImpl implements Schema
                             .NO_SUCH_PROPERTY_KEY )
                     {
                         statement.schemaWriteOperations().indexDrop(
-                                statement.readOperations().indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
+                                statement.readOperations().indexGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
                     }
                 }
                 catch ( SchemaRuleNotFoundException | DropIndexFailureException e )

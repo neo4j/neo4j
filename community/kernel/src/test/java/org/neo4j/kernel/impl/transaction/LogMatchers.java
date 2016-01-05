@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -195,7 +194,7 @@ public class LogMatchers
                     return false;
                 }
 
-                Command command = commandEntry.getXaCommand();
+                Command command = (Command) commandEntry.getXaCommand();
                 return command.getKey() == key &&
                        command.getClass().equals( commandClass );
             }

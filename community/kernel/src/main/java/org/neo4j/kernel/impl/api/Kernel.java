@@ -46,7 +46,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * A read will, similarly, pass through {@link LockingStatementOperations}. It then reaches
  * {@link StateHandlingStatementOperations}, which includes any changes that exist in the current transaction, and then
- * finally {@link org.neo4j.kernel.impl.api.store.StoreReadLayer} will read the current committed state from
+ * finally {@link org.neo4j.storageengine.api.StoreReadLayer} will read the current committed state from
  * the stores or caches.
  *
  * <h1>Refactoring</h1>

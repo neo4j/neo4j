@@ -58,8 +58,7 @@ public class LockingStatementOperationsTest
     private final Locks.Client locks = mock( Locks.Client.class );
     private final InOrder order;
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-    private final KernelStatement state = new KernelStatement( transaction, null, null, null, locks, null,
-            null );
+    private final KernelStatement state = new KernelStatement( transaction, null, locks, null, null );
     private final SchemaStateOperations schemaStateOps;
 
     public LockingStatementOperationsTest()

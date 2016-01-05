@@ -23,15 +23,16 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 /**
  * This class reuses the same {@link LegacyIndexTransactionApplier} for all transactions in the batch for performance
  * reasons. The {@link LegacyIndexTransactionApplier} contains appliers specific for each {@link IndexCommand} which
  * are closed here on the batch level in {@link #close()}, before the last transaction locks are released.
  */
-public class LegacyBatchIndexApplier implements BatchTransactionApplier
+public class LegacyBatchIndexApplier extends BatchTransactionApplier.Adapter
 {
     private final IdOrderingQueue transactionOrdering;
     private final TransactionApplicationMode mode;
@@ -52,7 +53,7 @@ public class LegacyBatchIndexApplier implements BatchTransactionApplier
     }
 
     @Override
-    public TransactionApplier startTx( TransactionToApply transaction ) throws IOException
+    public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
     {
         long activeTransactionId = transaction.transactionId();
         try
@@ -64,7 +65,7 @@ public class LegacyBatchIndexApplier implements BatchTransactionApplier
                         transactionOrdering );
             }
 
-            if ( transaction.commitment().hasLegacyIndexChanges() )
+            if ( transaction.requiresApplicationOrdering() )
             {
                 // Index operations must preserve order so wait for previous tx to finish
                 transactionOrdering.waitFor( activeTransactionId );
@@ -89,12 +90,6 @@ public class LegacyBatchIndexApplier implements BatchTransactionApplier
             throw new IOException( "Interrupted while waiting for applying tx:" + activeTransactionId +
                     " legacy index updates", e );
         }
-    }
-
-    @Override
-    public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup ) throws IOException
-    {
-        return startTx( transaction );
     }
 
     @Override

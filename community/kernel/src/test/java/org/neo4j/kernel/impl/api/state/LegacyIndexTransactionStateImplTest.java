@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
@@ -193,9 +194,9 @@ public class LegacyIndexTransactionStateImplTest
         assertEquals( expectedCommands, extractCommands( state ) );
     }
 
-    private static Set<Command> extractCommands( LegacyIndexTransactionStateImpl state )
+    private static Set<StorageCommand> extractCommands( LegacyIndexTransactionStateImpl state )
     {
-        Set<Command> commands = new HashSet<>();
+        Set<StorageCommand> commands = new HashSet<>();
         state.extractCommands( commands );
         return commands;
     }

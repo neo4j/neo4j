@@ -25,7 +25,6 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -68,7 +67,7 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
         life.start();
 
         WritableLogChannel channel = logFile.getWriter();
-        this.writer = new TransactionLogWriter( new LogEntryWriter( channel, new CommandWriter( channel ) ) );
+        this.writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
     }
 
     @Override

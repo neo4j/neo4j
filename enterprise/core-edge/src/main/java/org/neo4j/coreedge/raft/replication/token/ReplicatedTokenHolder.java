@@ -29,14 +29,11 @@ import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.InMemoryTokenCache;
 import org.neo4j.kernel.impl.core.NonUniqueTokenException;
-import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.core.TokenFactory;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -52,6 +49,10 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.TokenFactory;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 
@@ -232,7 +233,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
             {
                 try
                 {
-                    Collection<Command> commands =  ReplicatedTokenRequestSerializer.extractCommands( tokenRequest.commandBytes() );
+                    Collection<StorageCommand> commands =  ReplicatedTokenRequestSerializer.extractCommands( tokenRequest.commandBytes() );
                     tokenId = applyToStore( commands, logIndex );
                 }
                 catch ( NoSuchEntryException e )
@@ -247,7 +248,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         }
     }
 
-    private int applyToStore( Collection<Command> commands, long logIndex ) throws NoSuchEntryException
+    private int applyToStore( Collection<StorageCommand> commands, long logIndex ) throws NoSuchEntryException
     {
         int tokenId = extractTokenId( commands );
 
@@ -270,9 +271,9 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         return tokenId;
     }
 
-    private int extractTokenId( Collection<Command> commands ) throws NoSuchEntryException
+    private int extractTokenId( Collection<StorageCommand> commands ) throws NoSuchEntryException
     {
-        for ( Command command : commands )
+        for ( StorageCommand command : commands )
         {
             if( command instanceof Command.TokenCommand )
             {

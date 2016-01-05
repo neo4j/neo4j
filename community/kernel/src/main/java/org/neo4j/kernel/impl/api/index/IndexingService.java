@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
@@ -36,11 +37,11 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -62,6 +63,7 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
 import static org.neo4j.helpers.collection.Iterables.toList;

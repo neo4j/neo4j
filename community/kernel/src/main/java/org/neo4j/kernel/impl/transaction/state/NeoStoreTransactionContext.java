@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -36,8 +35,10 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public class NeoStoreTransactionContext
 {
@@ -47,9 +48,9 @@ public class NeoStoreTransactionContext
     private final PropertyDeleter propertyDeleter;
     private final RecordAccessSet recordChangeSet;
     private final NeoStores neoStores;
-    private final Client locks;
+    private final ResourceLocker locks;
 
-    public NeoStoreTransactionContext( NeoStores neoStores, Client locks )
+    public NeoStoreTransactionContext( NeoStores neoStores, ResourceLocker locks )
     {
         this.neoStores = neoStores;
         this.locks = locks;

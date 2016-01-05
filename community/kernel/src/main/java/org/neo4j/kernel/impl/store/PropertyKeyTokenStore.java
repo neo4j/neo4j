@@ -26,9 +26,9 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.Token;
 
 /**
  * Implementation of the property store.

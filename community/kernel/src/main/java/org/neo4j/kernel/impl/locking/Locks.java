@@ -20,7 +20,10 @@
 package org.neo4j.kernel.impl.locking;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
+import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.storageengine.api.lock.WaitStrategy;
 
 /**
  * API for managing locks.
@@ -61,17 +64,7 @@ public interface Locks
                 long lockIdentityHashCode );
     }
 
-    /** Locks are split by resource types. It is up to the implementation to define the contract for these. */
-    interface ResourceType
-    {
-        /** Must be unique among all existing resource types, should preferably be a sequence starting at 0. */
-        int typeId();
-
-        /** What to do if the lock cannot immediately be acquired. */
-        WaitStrategy waitStrategy();
-    }
-
-    interface Client extends AutoCloseable
+    interface Client extends ResourceLocker, AutoCloseable
     {
         /**
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
@@ -84,6 +77,7 @@ public interface Locks
          * while one client holds an exclusive lock. If the lock cannot be acquired,
          * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
          */
+        @Override
         void acquireExclusive( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException;
 
         /** Try grabbing exclusive lock, not waiting and returning a boolean indicating if we got the lock. */

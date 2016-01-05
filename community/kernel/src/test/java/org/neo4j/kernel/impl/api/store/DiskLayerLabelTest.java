@@ -30,7 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
@@ -113,8 +113,8 @@ public class DiskLayerLabelTest extends DiskLayerTest
         int labelId2 = disk.labelGetForName( label2.name() );
 
         // WHEN
-        PrimitiveLongIterator nodesForLabel1 = disk.nodesGetForLabel( state, labelId1 );
-        PrimitiveLongIterator nodesForLabel2 = disk.nodesGetForLabel( state, labelId2 );
+        PrimitiveLongIterator nodesForLabel1 = disk.nodesGetForLabel( state.getStoreStatement(), labelId1 );
+        PrimitiveLongIterator nodesForLabel2 = disk.nodesGetForLabel( state.getStoreStatement(), labelId2 );
 
         // THEN
         assertEquals( asSet( node1.getId(), node2.getId() ), IteratorUtil.asSet( nodesForLabel1 ) );

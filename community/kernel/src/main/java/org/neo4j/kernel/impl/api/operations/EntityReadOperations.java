@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.api.operations;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
@@ -32,6 +30,8 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 
 public interface EntityReadOperations
 {

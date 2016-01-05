@@ -68,7 +68,7 @@ public class OperationsFacadeTest
         expectedException.expect( new KernelExceptionUserMessageMatcher<>( tokenNameLookup,
                 "Index for label 'Label1' and property 'Prop1' not found." ) );
 
-        operationsFacade.indexesGetForLabelAndPropertyKey( LABEL1_ID, PROP1_ID );
+        operationsFacade.indexGetForLabelAndPropertyKey( LABEL1_ID, PROP1_ID );
     }
 
     @Test

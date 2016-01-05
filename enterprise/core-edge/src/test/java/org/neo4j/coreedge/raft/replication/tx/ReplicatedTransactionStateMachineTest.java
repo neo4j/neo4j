@@ -30,11 +30,11 @@ import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.CurrentReplicatedLockState;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;

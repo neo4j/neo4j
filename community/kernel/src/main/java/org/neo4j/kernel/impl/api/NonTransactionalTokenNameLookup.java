@@ -23,8 +23,8 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.storageengine.api.Token;
 
 import static java.lang.String.format;
 

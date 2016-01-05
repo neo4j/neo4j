@@ -45,11 +45,13 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.Mode;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
@@ -127,7 +129,7 @@ public class TransactionRecordState implements RecordState
     }
 
     @Override
-    public void extractCommands( Collection<Command> commands ) throws TransactionFailureException
+    public void extractCommands( Collection<StorageCommand> commands ) throws TransactionFailureException
     {
     	assert !prepared : "Transaction has already been prepared";
 
@@ -221,7 +223,7 @@ public class TransactionRecordState implements RecordState
     }
 
     @SafeVarargs
-    private final void addFiltered( Collection<Command> target, Mode mode,
+    private final void addFiltered( Collection<StorageCommand> target, Mode mode,
                                     Collection<? extends Command>... commands )
     {
         for ( Collection<? extends Command> c : commands )
@@ -560,8 +562,8 @@ public class TransactionRecordState implements RecordState
         records.addAll( schemaStore.allocateFrom( indexRule ) );
     }
 
-    public interface PropertyReceiver
+    public interface PropertyReceiver<P extends StorageProperty>
     {
-        void receive( DefinedProperty property, long propertyRecordId );
+        void receive( P property, long propertyRecordId );
     }
 }

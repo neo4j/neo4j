@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.storageengine.api.PropertyItem;
 
 /**
  * Base class for NodeProxy/RelationshipProxy with common methods for PropertyContainer

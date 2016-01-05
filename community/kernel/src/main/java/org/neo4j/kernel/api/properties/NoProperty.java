@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.storageengine.api.EntityType;
 
 final class NoProperty extends Property
 {

@@ -234,39 +234,38 @@ public class LuceneIndexRecoveryIT
 
     private void startDb( KernelExtensionFactory<?> indexProviderFactory )
     {
-       if ( db != null )
-    {
-        db.shutdown();
-    }
+        if ( db != null )
+        {
+            db.shutdown();
+        }
 
-       TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-       factory.setFileSystem( fs.get() );
-       factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( indexProviderFactory ) );
-       db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        factory.setFileSystem( fs.get() );
+        factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( indexProviderFactory ) );
+        db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
 
     private void killDb()
     {
-       if ( db != null )
-       {
-           fs.snapshot( new Runnable()
-           {
-               @Override
-               public void run()
-               {
-                   db.shutdown();
-                   db = null;
-               }
-           } );
-       }
+        if ( db != null )
+        {
+            fs.snapshot( new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    db.shutdown();
+                    db = null;
+                }
+            } );
+        }
     }
 
     private void rotateLogsAndCheckPoint() throws IOException
     {
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
-                new SimpleTriggerInfo( "test" )
-        );
+                new SimpleTriggerInfo( "test" ) );
     }
 
     private IndexDefinition createIndex( Label label )

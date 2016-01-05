@@ -26,20 +26,22 @@ import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateEntitySchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.EntitySchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
+import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.storageengine.api.schema.SchemaRule.Kind;
 
 import static org.neo4j.function.Functions.cast;
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -47,32 +49,50 @@ import static org.neo4j.helpers.collection.Iterables.map;
 
 public class SchemaStorage implements SchemaRuleAccess
 {
-    public enum IndexRuleKind
+    public enum IndexRuleKind implements Predicate<SchemaRule.Kind>
     {
         INDEX
-                {
-                    @Override
-                    public boolean isOfKind( IndexRule rule )
-                    {
-                        return !rule.isConstraintIndex();
-                    }
-                },
+        {
+            @Override
+            public boolean isOfKind( IndexRule rule )
+            {
+                return !rule.isConstraintIndex();
+            }
+
+            @Override
+            public boolean test( Kind kind )
+            {
+                return kind == Kind.INDEX_RULE;
+            }
+        },
         CONSTRAINT
-                {
-                    @Override
-                    public boolean isOfKind( IndexRule rule )
-                    {
-                        return rule.isConstraintIndex();
-                    }
-                },
+        {
+            @Override
+            public boolean isOfKind( IndexRule rule )
+            {
+                return rule.isConstraintIndex();
+            }
+
+            @Override
+            public boolean test( Kind kind )
+            {
+                return kind == Kind.CONSTRAINT_INDEX_RULE;
+            }
+        },
         ALL
-                {
-                    @Override
-                    public boolean isOfKind( IndexRule rule )
-                    {
-                        return true;
-                    }
-                };
+        {
+            @Override
+            public boolean isOfKind( IndexRule rule )
+            {
+                return true;
+            }
+
+            @Override
+            public boolean test( Kind t )
+            {
+                return true;
+            }
+        };
 
         public abstract boolean isOfKind( IndexRule rule );
     }
@@ -159,7 +179,7 @@ public class SchemaStorage implements SchemaRuleAccess
     {
         @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
         Function<SchemaRule, T> ruleConversion = (Function) conversion;
-        return map( ruleConversion, filter( rule -> ruleType.isAssignableFrom( rule.getKind().getRuleClass() ) &&
+        return map( ruleConversion, filter( rule -> ruleType.isAssignableFrom( AbstractSchemaRule.getRuleClass( rule.getKind() ) ) &&
                                             predicate.test( (R) rule ), loadAllSchemaRules() ) );
     }
 

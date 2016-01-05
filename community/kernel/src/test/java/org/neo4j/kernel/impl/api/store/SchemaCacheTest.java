@@ -39,8 +39,8 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;

@@ -416,7 +416,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     IdempotentResult(statement.schemaWriteOperations().indexCreate(labelId, propertyKeyId))
   } catch {
     case _: AlreadyIndexedException =>
-      val indexDescriptor = statement.readOperations().indexesGetForLabelAndPropertyKey(labelId, propertyKeyId)
+      val indexDescriptor = statement.readOperations().indexGetForLabelAndPropertyKey(labelId, propertyKeyId)
       if(statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
         throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
      IdempotentResult(indexDescriptor, wasCreated = false)

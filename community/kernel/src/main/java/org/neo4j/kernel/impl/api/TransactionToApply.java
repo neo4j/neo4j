@@ -19,9 +19,15 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.io.IOException;
+
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.Visitor;
 
 /**
  * A chain of transactions to apply. Transactions form a linked list, each pointing to the {@link #next()}
@@ -48,7 +54,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
  * <li>Data about the commit can now also be accessed using f.ex {@link #commitment()} or {@link #transactionId()}</li>
  * </ol>
  */
-public class TransactionToApply
+public class TransactionToApply implements CommandsToApply
 {
     public static final long TRANSACTION_ID_NOT_SPECIFIED = 0;
 
@@ -90,14 +96,27 @@ public class TransactionToApply
         return commitment;
     }
 
+    @Override
     public long transactionId()
     {
         return transactionId;
     }
 
+    @Override
+    public void accept( Visitor<StorageCommand,IOException> visitor ) throws IOException
+    {
+        transactionRepresentation.accept( visitor );
+    }
+
     public TransactionRepresentation transactionRepresentation()
     {
         return transactionRepresentation;
+    }
+
+    @Override
+    public boolean requiresApplicationOrdering()
+    {
+        return commitment.hasLegacyIndexChanges();
     }
 
     public void commitment( Commitment commitment, long transactionId )
@@ -106,6 +125,7 @@ public class TransactionToApply
         this.transactionId = transactionId;
     }
 
+    @Override
     public TransactionToApply next()
     {
         return nextTransactionInBatch;

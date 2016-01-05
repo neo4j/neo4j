@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 public class LockResource
 {
-    private final Locks.ResourceType resourceType;
+    private final ResourceType resourceType;
     private final long resourceId;
 
     /** Local reference count, used for each client to count references to a lock. */
     private int refCount = 1;
 
-    public LockResource( Locks.ResourceType resourceType, long resourceId )
+    public LockResource( ResourceType resourceType, long resourceId )
     {
         this.resourceType = resourceType;
         this.resourceId = resourceId;
@@ -90,7 +90,7 @@ public class LockResource
         return resourceId;
     }
 
-    public Locks.ResourceType type()
+    public ResourceType type()
     {
         return resourceType;
     }

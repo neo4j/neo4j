@@ -42,7 +42,7 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
     val labelId = statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    getOnlineIndex(statement.readOperations().indexesGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    getOnlineIndex(statement.readOperations().indexGetForLabelAndPropertyKey(labelId, propertyKeyId))
   }
 
   def hasIndexRule(labelName: String): Boolean = {

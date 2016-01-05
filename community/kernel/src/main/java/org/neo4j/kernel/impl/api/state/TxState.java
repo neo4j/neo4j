@@ -32,7 +32,6 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
@@ -40,21 +39,13 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.cursor.LabelItem;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.PropertyItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.txstate.ReadableTxState;
 import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
 import org.neo4j.kernel.impl.api.cursor.TxIteratorNodeCursor;
@@ -67,10 +58,23 @@ import org.neo4j.kernel.impl.api.cursor.TxSingleRelationshipCursor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
-import org.neo4j.kernel.impl.util.diffsets.DiffSetsVisitor;
-import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
-import org.neo4j.kernel.impl.util.diffsets.ReadableRelationshipDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.RelationshipDiffSets;
+import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.LabelItem;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature;
+import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
+import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.RelationshipState;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -106,32 +110,32 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             state.labelStatesMap = map;
         }
     };
-    private Map<Long/*Node ID*/, NodeState.Mutable> nodeStatesMap;
-    private static final NodeState.Defaults NODE_STATE = new NodeState.Defaults()
+    private Map<Long/*Node ID*/, NodeStateImpl> nodeStatesMap;
+    private static final NodeStateImpl.Defaults NODE_STATE = new NodeStateImpl.Defaults()
     {
         @Override
-        Map<Long, NodeState.Mutable> getMap( TxState state )
+        Map<Long, NodeStateImpl> getMap( TxState state )
         {
             return state.nodeStatesMap;
         }
 
         @Override
-        void setMap( TxState state, Map<Long, NodeState.Mutable> map )
+        void setMap( TxState state, Map<Long, NodeStateImpl> map )
         {
             state.nodeStatesMap = map;
         }
     };
-    private Map<Long/*Relationship ID*/, RelationshipState.Mutable> relationshipStatesMap;
-    private static final RelationshipState.Defaults RELATIONSHIP_STATE = new RelationshipState.Defaults()
+    private Map<Long/*Relationship ID*/, RelationshipStateImpl> relationshipStatesMap;
+    private static final RelationshipStateImpl.Defaults RELATIONSHIP_STATE = new RelationshipStateImpl.Defaults()
     {
         @Override
-        Map<Long, RelationshipState.Mutable> getMap( TxState state )
+        Map<Long, RelationshipStateImpl> getMap( TxState state )
         {
             return state.relationshipStatesMap;
         }
 
         @Override
-        void setMap( TxState state, Map<Long, RelationshipState.Mutable> map )
+        void setMap( TxState state, Map<Long, RelationshipStateImpl> map )
         {
             state.relationshipStatesMap = map;
         }
@@ -166,9 +170,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private PrimitiveLongSet relationshipsDeletedInTx;
 
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint;
-
-    private Map<String, Map<String, String>> createdNodeLegacyIndexes;
-    private Map<String, Map<String, String>> createdRelationshipLegacyIndexes;
 
     private PrimitiveIntObjectMap<Map<DefinedProperty, DiffSets<Long>>> indexUpdates;
     private PrimitiveIntObjectMap<DiffSets<RelationshipPropertyConstraint>> relationshipConstraintChanges;
@@ -336,22 +337,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
                 visitor.visitCreatedRelationshipTypeToken( entry.getValue(), entry.getKey() );
             }
         }
-
-        if ( createdNodeLegacyIndexes != null )
-        {
-            for ( Map.Entry<String, Map<String, String>> entry : createdNodeLegacyIndexes.entrySet() )
-            {
-                visitor.visitCreatedNodeLegacyIndex( entry.getKey(), entry.getValue() );
-            }
-        }
-
-        if ( createdRelationshipLegacyIndexes != null )
-        {
-            for ( Map.Entry<String, Map<String, String>> entry : createdRelationshipLegacyIndexes.entrySet() )
-            {
-                visitor.visitCreatedRelationshipLegacyIndex( entry.getKey(), entry.getValue() );
-            }
-        }
     }
 
     private static DiffSetsVisitor<Long> deletedNodesVisitor( final TxStateVisitor visitor )
@@ -390,7 +375,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         };
     }
 
-    private static DiffSetsVisitor<Long> createdRelationshipsVisitor( ReadableTxState tx, final TxStateVisitor visitor )
+    private static DiffSetsVisitor<Long> createdRelationshipsVisitor( ReadableTransactionState tx, final TxStateVisitor visitor )
     {
         return new RelationshipChangeVisitorAdapter( tx )
         {
@@ -519,19 +504,11 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             }
 
             @Override
-            public void visitPropertyChanges( long entityId, Iterator<DefinedProperty> added,
-
-                    Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+            public void visitPropertyChanges( long entityId, Iterator<StorageProperty> added,
+                    Iterator<StorageProperty> changed, Iterator<Integer> removed )
                     throws ConstraintValidationKernelException
             {
                 visitor.visitNodePropertyChanges( entityId, added, changed, removed );
-            }
-
-            @Override
-            public void visitRelationshipChanges( long nodeId, RelationshipChangesForNode added,
-                    RelationshipChangesForNode removed )
-            {
-                visitor.visitNodeRelationshipChanges( nodeId, added, removed );
             }
         };
     }
@@ -575,7 +552,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public Iterator<DefinedProperty> augmentGraphProperties( Iterator<DefinedProperty> original )
+    public Iterator<StorageProperty> augmentGraphProperties( Iterator<StorageProperty> original )
     {
         if ( graphState != null )
         {
@@ -624,7 +601,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( nodeStatesMap != null )
         {
-            NodeState.Mutable nodeState = nodeStatesMap.remove( nodeId );
+            NodeStateImpl nodeState = nodeStatesMap.remove( nodeId );
             if ( nodeState != null )
             {
                 ReadableDiffSets<Integer> diff = nodeState.labelDiffSets();
@@ -691,7 +668,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( relationshipStatesMap != null )
         {
-            RelationshipState.Mutable removed = relationshipStatesMap.remove( id );
+            RelationshipStateImpl removed = relationshipStatesMap.remove( id );
             if ( removed != null )
             {
                 removed.clear();
@@ -731,7 +708,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
         else
         {
-            NodeState.Mutable nodeState = getOrCreateNodeState( nodeId );
+            NodeStateImpl nodeState = getOrCreateNodeState( nodeId );
             nodeState.addProperty( newProperty );
             nodePropertyChanges().addProperty( nodeId, newProperty.propertyKeyId(), newProperty.value() );
         }
@@ -852,23 +829,29 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return RELATIONSHIP_STATE.get( this, id );
     }
 
+    @Override
     public Cursor<NodeItem> augmentSingleNodeCursor( Cursor<NodeItem> cursor, long nodeId )
     {
         return hasChanges ? singleNodeCursor.get().init( cursor, nodeId ) : cursor;
     }
 
+    @Override
     public Cursor<PropertyItem> augmentPropertyCursor( Cursor<PropertyItem> cursor,
             PropertyContainerState propertyContainerState )
     {
-        return propertyContainerState.augmentPropertyCursor( propertyCursor, cursor );
+        return propertyContainerState.hasChanges() ?
+                propertyCursor.get().init( cursor, propertyContainerState ) : cursor;
     }
 
+    @Override
     public Cursor<PropertyItem> augmentSinglePropertyCursor( Cursor<PropertyItem> cursor,
             PropertyContainerState propertyContainerState, int propertyKeyId )
     {
-        return propertyContainerState.augmentSinglePropertyCursor( singlePropertyCursor, cursor, propertyKeyId );
+        return propertyContainerState.hasChanges() ?
+                singlePropertyCursor.get().init( cursor, propertyContainerState, propertyKeyId ) : cursor;
     }
 
+    @Override
     public Cursor<LabelItem> augmentLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState )
     {
         ReadableDiffSets<Integer> labelDiffSets = nodeState.labelDiffSets();
@@ -883,6 +866,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
     }
 
+    @Override
     public Cursor<LabelItem> augmentSingleLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState, int labelId )
     {
         ReadableDiffSets<Integer> labelDiffSets = nodeState.labelDiffSets();
@@ -897,6 +881,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
     }
 
+    @Override
     public Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor,
             long relationshipId )
     {
@@ -910,12 +895,22 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return hasChanges ? iteratorRelationshipCursor.get().init( cursor, iterator ) : cursor;
     }
 
+    @Override
     public Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
             NodeState nodeState,
             Direction direction,
             int[] relTypes )
     {
-        return nodeState.augmentNodeRelationshipCursor( iteratorRelationshipCursor, cursor, direction, relTypes );
+        if ( nodeState.hasChanges() )
+        {
+            if ( relTypes == null )
+            {
+                return iteratorRelationshipCursor.get().init( cursor, nodeState.getAddedRelationships( direction ) );
+            }
+            return iteratorRelationshipCursor.get().init( cursor,
+                    nodeState.getAddedRelationships( direction, relTypes ) );
+        }
+        return cursor;
     }
 
     @Override
@@ -1123,12 +1118,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return LABEL_STATE.getOrCreate( this, labelId );
     }
 
-    private NodeState.Mutable getOrCreateNodeState( long nodeId )
+    private NodeStateImpl getOrCreateNodeState( long nodeId )
     {
         return NODE_STATE.getOrCreate( this, nodeId );
     }
 
-    private RelationshipState.Mutable getOrCreateRelationshipState( long relationshipId )
+    private RelationshipStateImpl getOrCreateRelationshipState( long relationshipId )
     {
         return RELATIONSHIP_STATE.getOrCreate( this, relationshipId );
     }
@@ -1614,34 +1609,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public <EX extends Exception> boolean relationshipVisit( long relId, RelationshipVisitor<EX> visitor ) throws EX
     {
         return RELATIONSHIP_STATE.get( this, relId ).accept( visitor );
-    }
-
-    @Override
-    public void nodeLegacyIndexDoCreate( String indexName, Map<String, String> customConfig )
-    {
-        assert customConfig != null;
-
-        if ( createdNodeLegacyIndexes == null )
-        {
-            createdNodeLegacyIndexes = new HashMap<>();
-        }
-
-        createdNodeLegacyIndexes.put( indexName, customConfig );
-        changed();
-    }
-
-    @Override
-    public void relationshipLegacyIndexDoCreate( String indexName, Map<String, String> customConfig )
-    {
-        assert customConfig != null;
-
-        if ( createdRelationshipLegacyIndexes == null )
-        {
-            createdRelationshipLegacyIndexes = new HashMap<>();
-        }
-
-        createdRelationshipLegacyIndexes.put( indexName, customConfig );
-        changed();
     }
 
     @Override

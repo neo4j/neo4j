@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.log.rotation;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.storageengine.api.StorageEngine;
 
 public class StoreFlusher
 {
@@ -36,9 +36,9 @@ public class StoreFlusher
             StorageEngine storageEngine,
             Iterable<IndexImplementation> indexProviders )
     {
-        this.neoStores = storageEngine.neoStores();
-        this.indexingService = storageEngine.indexingService();
-        this.labelScanStore = storageEngine.labelScanStore();
+        this.neoStores = (NeoStores) storageEngine.neoStores();
+        this.indexingService = (IndexingService) storageEngine.indexingService();
+        this.labelScanStore = (LabelScanStore) storageEngine.labelScanStore();
         this.indexProviders = indexProviders;
     }
 

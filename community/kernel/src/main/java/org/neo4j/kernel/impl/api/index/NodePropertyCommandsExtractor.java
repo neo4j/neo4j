@@ -27,11 +27,11 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
+import org.neo4j.storageengine.api.CommandsToApply;
 
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 
@@ -46,13 +46,13 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
     private final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = longObjectMap();
 
     @Override
-    public TransactionApplier startTx( TransactionToApply transaction )
+    public TransactionApplier startTx( CommandsToApply transaction )
     {
         return this;
     }
 
     @Override
-    public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup )
+    public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
     {
         return startTx( transaction );
     }

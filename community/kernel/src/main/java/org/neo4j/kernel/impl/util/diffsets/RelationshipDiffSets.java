@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor.Home;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.DiffApplyingRelationshipIterator;
+import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 

@@ -37,8 +37,8 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
 
 public class ValueNode
         extends ValuePropertyContainer

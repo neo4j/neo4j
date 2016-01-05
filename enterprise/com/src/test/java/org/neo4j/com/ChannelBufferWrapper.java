@@ -34,7 +34,7 @@ import org.jboss.netty.buffer.ChannelBufferFactory;
 import org.jboss.netty.buffer.ChannelBufferIndexFinder;
 
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadPastEndException;
+import org.neo4j.storageengine.api.ReadPastEndException;
 
 /**
  * Wraps an {@link InMemoryLogChannel}, making it look like one {@link ChannelBuffer}.

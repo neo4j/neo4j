@@ -42,9 +42,9 @@ import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.register.Register.DoubleLong;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 

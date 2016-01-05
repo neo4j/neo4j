@@ -24,6 +24,8 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.storageengine.api.CommandReader;
+import org.neo4j.storageengine.api.ReadableChannel;
 
 /**
  * Basic functionality for {@link CommandReader} for {@link RecordStorageEngine}.
@@ -34,7 +36,7 @@ public abstract class BaseCommandReader implements CommandReader
      * Handles format back to 1.9 where the command format didn't have a version.
      */
     @Override
-    public final Command read( ReadableLogChannel channel ) throws IOException
+    public final Command read( ReadableChannel channel ) throws IOException
     {
         byte commandType = 0;
         while ( commandType == 0 )
@@ -58,12 +60,18 @@ public abstract class BaseCommandReader implements CommandReader
      * @return {@link Command} or {@code null} if end reached.
      * @throws IOException if channel throws exception.
      */
-    protected abstract Command read( byte commandType, ReadableLogChannel channel ) throws IOException;
+    protected abstract Command read( byte commandType, ReadableChannel channel ) throws IOException;
 
-    protected IOException unknownCommandType( byte commandType, ReadableLogChannel channel ) throws IOException
+    protected IOException unknownCommandType( byte commandType, ReadableChannel channel ) throws IOException
     {
-        LogPositionMarker position = new LogPositionMarker();
-        channel.getCurrentPosition( position );
-        return new IOException( "Unknown command type[" + commandType + "] near " + position.newPosition() );
+        String message = "Unknown command type[" + commandType + "]";
+        if ( channel instanceof ReadableLogChannel )
+        {
+            ReadableLogChannel logChannel = (ReadableLogChannel) channel;
+            LogPositionMarker position = new LogPositionMarker();
+            logChannel.getCurrentPosition( position );
+            message += " near " + position.newPosition();
+        }
+        return new IOException( message );
     }
 }

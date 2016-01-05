@@ -22,15 +22,15 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.neo4j.helpers.collection.CloseableVisitor;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.storageengine.api.StorageEngine;
 
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 
 public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,Exception>
 {

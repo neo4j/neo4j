@@ -60,11 +60,11 @@ import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -85,7 +85,6 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.coreapi.schema.BaseNodeConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
@@ -130,7 +129,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
@@ -147,6 +145,8 @@ import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
+import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.Boolean.parseBoolean;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
@@ -533,27 +533,32 @@ public class BatchInserterImpl implements BatchInserter
             populators[i].create();
         }
 
-        Visitor<NodePropertyUpdate, IOException> propertyUpdateVisitor = update -> {
-            // Do a lookup from which property has changed to a list of indexes worried about that property.
-            int propertyKeyInQuestion = update.getPropertyKeyId();
-            for ( int i = 0; i < propertyKeyIds.length; i++ )
+        Visitor<NodePropertyUpdate, IOException> propertyUpdateVisitor = new Visitor<NodePropertyUpdate,IOException>()
+        {
+            @Override
+            public boolean visit( NodePropertyUpdate update ) throws IOException
             {
-                if ( propertyKeyIds[i] == propertyKeyInQuestion )
+                // Do a lookup from which property has changed to a list of indexes worried about that property.
+                int propertyKeyInQuestion = update.getPropertyKeyId();
+                for ( int i = 0; i < propertyKeyIds.length; i++ )
                 {
-                    if ( update.forLabel( labelIds[i] ) )
+                    if ( propertyKeyIds[i] == propertyKeyInQuestion )
                     {
-                        try
+                        if ( update.forLabel( labelIds[i] ) )
                         {
-                            populators[i].add( update.getNodeId(), update.getValueAfter() );
-                        }
-                        catch ( IndexEntryConflictException conflict )
-                        {
-                            throw conflict.notAllowed( rules[i].getLabel(), rules[i].getPropertyKey() );
+                            try
+                            {
+                                populators[i].add( update.getNodeId(), update.getValueAfter() );
+                            }
+                            catch ( IndexEntryConflictException conflict )
+                            {
+                                throw conflict.notAllowed( rules[i].getLabel(), rules[i].getPropertyKey() );
+                            }
                         }
                     }
                 }
+                return true;
             }
-            return true;
         };
 
         InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor();

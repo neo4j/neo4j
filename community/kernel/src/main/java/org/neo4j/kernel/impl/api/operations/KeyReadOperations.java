@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.storageengine.api.Token;
 
 public interface KeyReadOperations
 {

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplicati
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.TokenStore;
@@ -30,6 +29,7 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.storageengine.api.Token;
 
 public class PropertyDeduplicatorTestUtil
 {

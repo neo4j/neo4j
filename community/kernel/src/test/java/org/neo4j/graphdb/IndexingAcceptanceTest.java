@@ -635,7 +635,7 @@ public class IndexingAcceptanceTest
         int labelId = readOperations.labelGetForName( index.getLabel().name() );
         String propertyName = index.getPropertyKeys().iterator().next();
         int propertyId = readOperations.propertyKeyGetForName( propertyName );
-        return readOperations.indexesGetForLabelAndPropertyKey( labelId, propertyId );
+        return readOperations.indexGetForLabelAndPropertyKey( labelId, propertyId );
     }
 
     private Statement getStatement( GraphDatabaseAPI db )

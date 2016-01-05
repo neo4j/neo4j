@@ -30,13 +30,13 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 class IndexLookup implements AutoCloseable
 {

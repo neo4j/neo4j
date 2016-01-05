@@ -20,21 +20,8 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.Closeable;
-import java.io.IOException;
+import org.neo4j.storageengine.api.ReadableChannel;
 
-public interface ReadableLogChannel extends PositionAwareChannel, Closeable
+public interface ReadableLogChannel extends ReadableChannel, PositionAwareChannel, Closeable
 {
-    byte get() throws IOException, ReadPastEndException;
-
-    short getShort() throws IOException, ReadPastEndException;
-
-    int getInt() throws IOException, ReadPastEndException;
-
-    long getLong() throws IOException, ReadPastEndException;
-
-    float getFloat() throws IOException, ReadPastEndException;
-
-    double getDouble() throws IOException, ReadPastEndException;
-
-    void get( byte[] bytes, int length ) throws IOException, ReadPastEndException;
 }

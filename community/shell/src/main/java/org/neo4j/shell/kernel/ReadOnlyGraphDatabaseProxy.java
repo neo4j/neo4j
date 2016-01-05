@@ -59,10 +59,10 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.security.URLAccessValidationError;
+import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 
 public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDatabaseAPI, IndexManager
 {

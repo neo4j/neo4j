@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
+
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -34,6 +35,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
+
 import static org.neo4j.kernel.api.exceptions.Status.General.UnknownFailure;
 
 public class ExceptionRepresentationTest

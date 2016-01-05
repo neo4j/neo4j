@@ -21,12 +21,11 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.storageengine.CommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.storageengine.api.CommandReaderFactory;
+import org.neo4j.storageengine.api.ReadPastEndException;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.withMessage;
@@ -71,7 +70,6 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> imple
             {
                 LogEntryVersion version = null;
                 LogEntryParser<LogEntry> entryReader;
-                CommandReader commandReader;
                 try
                 {
                     /*
@@ -88,7 +86,6 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> imple
 
                     version = byVersion( versionCode, logHeaderFormatVersion );
                     entryReader = version.entryParser( typeCode );
-                    commandReader = commandReaderFactory.byVersion( version );
                 }
                 catch ( ReadPastEndException e )
                 {   // Make these exceptions slip by straight out to the outer handler
@@ -102,7 +99,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> imple
                     throw launderedException( IOException.class, e );
                 }
 
-                LogEntry entry = entryReader.parse( version, channel, positionMarker, commandReader );
+                LogEntry entry = entryReader.parse( version, channel, positionMarker, commandReaderFactory );
                 if ( !entryReader.skip() )
                 {
                     return entry;

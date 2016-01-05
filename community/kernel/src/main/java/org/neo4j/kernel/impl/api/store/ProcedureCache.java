@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
+import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature;
 
 /**
  * A temporary in-memory storage for procedures, until we build "real" storage for them in 3.0.

@@ -24,6 +24,8 @@ import org.junit.Test;
 
 import java.util.concurrent.Future;
 
+import org.neo4j.storageengine.api.lock.ResourceType;
+
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
@@ -203,7 +205,7 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
     }
 
     @Test
-    public void shouldUpgradeAndDowngradeSameSharedLock() throws InterruptedException
+    public void shouldUpgradeAndDowngradeSameSharedLock()
     {
         // when
         clientA.acquireShared( NODE, 1L );
@@ -236,18 +238,18 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
 
     private static class LockIdentityExplorer implements Locks.Visitor
     {
-        private Locks.ResourceType resourceType;
-        private long resourceId;
+        private final ResourceType resourceType;
+        private final long resourceId;
         private long lockIdentityHashCode;
 
-        public LockIdentityExplorer( Locks.ResourceType resourceType, long resourceId )
+        public LockIdentityExplorer( ResourceType resourceType, long resourceId )
         {
             this.resourceType = resourceType;
             this.resourceId = resourceId;
         }
 
         @Override
-        public void visit( Locks.ResourceType resourceType, long resourceId, String description,
+        public void visit( ResourceType resourceType, long resourceId, String description,
                 long estimatedWaitTime,
                 long lockIdentityHashCode )
         {

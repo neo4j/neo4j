@@ -22,11 +22,11 @@ package org.neo4j.coreedge.raft.replication.tx;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -35,8 +35,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
 public class ReplayableCommitProcessTest
 {

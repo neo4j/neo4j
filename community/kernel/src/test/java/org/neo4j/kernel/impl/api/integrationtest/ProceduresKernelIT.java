@@ -30,15 +30,15 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature;
 
 import static java.util.Arrays.asList;
 import static junit.framework.TestCase.assertNull;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.kernel.api.Neo4jTypes.NTText;
-import static org.neo4j.kernel.api.procedures.ProcedureSignature.procedureSignature;
+import static org.neo4j.storageengine.api.Neo4jTypes.NTText;
+import static org.neo4j.storageengine.api.procedure.ProcedureSignature.procedureSignature;
 
 public class ProceduresKernelIT extends KernelIntegrationTest
 {

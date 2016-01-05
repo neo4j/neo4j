@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,23 +28,19 @@ import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
-import org.neo4j.kernel.impl.api.CommandVisitor;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
-import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
@@ -55,9 +50,10 @@ import org.neo4j.kernel.impl.transaction.command.IndexUpdatesWork;
 import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -170,7 +166,7 @@ public class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( new CommandWriterBatchWrapper( buffer ), command );
+        command.serialize( buffer );
         Command readCommand = reader.read( buffer );
 
         // THEN
@@ -191,7 +187,7 @@ public class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( new CommandWriterBatchWrapper( buffer ), command );
+        command.serialize( buffer );
         Command readCommand = reader.read( buffer );
 
         // THEN
@@ -221,7 +217,7 @@ public class SchemaRuleCommandTest
     private final PhysicalLogCommandReaderV2_2 reader = new PhysicalLogCommandReaderV2_2();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 
-    private Collection<DynamicRecord> serialize( SchemaRule rule, long id, boolean inUse, boolean created )
+    private Collection<DynamicRecord> serialize( AbstractSchemaRule rule, long id, boolean inUse, boolean created )
     {
         RecordSerializer serializer = new RecordSerializer();
         serializer = serializer.append( rule );
@@ -248,38 +244,7 @@ public class SchemaRuleCommandTest
     private void visitSchemaRuleCommand( BatchTransactionApplier applier, SchemaRuleCommand command ) throws Exception
     {
         TransactionToApply tx = new TransactionToApply(
-                new PhysicalTransactionRepresentation( Arrays.<Command>asList( command ) ), txId );
+                new PhysicalTransactionRepresentation( Arrays.<StorageCommand>asList( command ) ), txId );
         CommandHandlerContract.apply( applier, tx );
-    }
-
-    private class CommandWriterBatchWrapper extends CommandVisitor.Delegator implements BatchTransactionApplier,
-            TransactionApplier {
-
-        public CommandWriterBatchWrapper(InMemoryLogChannel buffer) {
-            super(new CommandWriter( buffer ));
-        }
-        @Override
-        public TransactionApplier startTx( TransactionToApply transaction ) throws IOException
-        {
-            return this;
-        }
-
-        @Override
-        public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup ) throws IOException
-        {
-            return this;
-        }
-
-        @Override
-        public void close() throws Exception
-        {
-            // Nothing to do
-        }
-
-        @Override
-        public boolean visit( Command element ) throws IOException
-        {
-            return element.handle( this );
-        }
     }
 }

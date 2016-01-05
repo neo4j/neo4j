@@ -32,8 +32,8 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 /**
  * Can be used to mimic a store with use in a {@link RecordChangeSet}.

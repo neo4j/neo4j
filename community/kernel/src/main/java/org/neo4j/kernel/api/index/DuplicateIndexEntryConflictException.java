@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+
 public class DuplicateIndexEntryConflictException extends IndexEntryConflictException
 {
     private final Object propertyValue;

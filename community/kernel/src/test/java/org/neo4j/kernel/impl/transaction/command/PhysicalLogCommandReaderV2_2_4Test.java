@@ -26,7 +26,6 @@ import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
 import static org.junit.Assert.assertEquals;
@@ -40,16 +39,15 @@ public class PhysicalLogCommandReaderV2_2_4Test
     {
         // GIVEN
         InMemoryLogChannel channel = new InMemoryLogChannel();
-        CommandWriter writer = new CommandWriter( channel );
         IndexDefineCommand definitions = new IndexDefineCommand();
         int indexNameId = 10;
         definitions.init(
                 MapUtil.<String,Integer>genericMap( "myindex", indexNameId ),
                 MapUtil.<String,Integer>genericMap() );
-        writer.visitIndexDefineCommand( definitions );
+        definitions.serialize( channel );
         RemoveCommand removeCommand = new IndexCommand.RemoveCommand();
         removeCommand.init( indexNameId, IndexEntityType.Node.id(), 1234, -1, null );
-        writer.visitIndexRemoveCommand( removeCommand );
+        removeCommand.serialize( channel );
 
         // WHEN
         PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4();

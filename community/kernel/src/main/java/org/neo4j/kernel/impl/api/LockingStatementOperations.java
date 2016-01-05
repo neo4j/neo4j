@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
@@ -42,21 +43,21 @@ import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
-import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.store.SchemaStorage;
+import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
+import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.PROCEDURE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.SCHEMA;
@@ -179,11 +180,11 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey )
+    public IndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey )
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         state.assertOpen();
-        return schemaReadDelegate.indexesGetForLabelAndPropertyKey( state, labelId, propertyKey );
+        return schemaReadDelegate.indexGetForLabelAndPropertyKey( state, labelId, propertyKey );
     }
 
     @Override
@@ -239,12 +240,12 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
+    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
             throws SchemaRuleNotFoundException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         state.assertOpen();
-        return schemaReadDelegate.indexGetCommittedId( state, index, kind );
+        return schemaReadDelegate.indexGetCommittedId( state, index, filter );
     }
 
     @Override
@@ -509,28 +510,28 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void acquireExclusive( KernelStatement state, Locks.ResourceType resourceType, long resourceId )
+    public void acquireExclusive( KernelStatement state, ResourceType resourceType, long resourceId )
     {
         state.locks().acquireExclusive( resourceType, resourceId );
         state.assertOpen();
     }
 
     @Override
-    public void acquireShared( KernelStatement state, Locks.ResourceType resourceType, long resourceId )
+    public void acquireShared( KernelStatement state, ResourceType resourceType, long resourceId )
     {
         state.locks().acquireShared( resourceType, resourceId );
         state.assertOpen();
     }
 
     @Override
-    public void releaseExclusive( KernelStatement state, Locks.ResourceType type, long resourceId )
+    public void releaseExclusive( KernelStatement state, ResourceType type, long resourceId )
     {
         state.locks().releaseExclusive( type, resourceId );
         state.assertOpen();
     }
 
     @Override
-    public void releaseShared( KernelStatement state, Locks.ResourceType type, long resourceId )
+    public void releaseShared( KernelStatement state, ResourceType type, long resourceId )
     {
         state.locks().releaseShared( type, resourceId );
         state.assertOpen();

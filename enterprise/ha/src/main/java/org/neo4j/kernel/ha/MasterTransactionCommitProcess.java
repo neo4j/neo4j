@@ -21,11 +21,11 @@ package org.neo4j.kernel.ha;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 /**
  * Commit process on the master side in HA, where transactions either comes in from slaves committing,

@@ -28,8 +28,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;

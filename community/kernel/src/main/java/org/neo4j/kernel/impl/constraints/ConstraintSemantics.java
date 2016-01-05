@@ -21,15 +21,13 @@ package org.neo4j.kernel.impl.constraints;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.api.txstate.TxStateVisitor;
-import org.neo4j.kernel.impl.api.StatementOperationParts;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 /**
  * Implements semantics of constraint creation and enforcement.
@@ -52,6 +50,6 @@ public interface ConstraintSemantics
     PropertyConstraintRule writeRelationshipPropertyExistenceConstraint( long ruleId, int type, int propertyKey )
             throws CreateConstraintFailureException;
 
-    TxStateVisitor decorateTxStateVisitor( StatementOperationParts operations, StoreStatement storeStatement,
-            StoreReadLayer storeLayer, TxStateHolder holder, TxStateVisitor visitor );
+    TxStateVisitor decorateTxStateVisitor( StoreReadLayer storeLayer, ReadableTransactionState state,
+            TxStateVisitor visitor );
 }

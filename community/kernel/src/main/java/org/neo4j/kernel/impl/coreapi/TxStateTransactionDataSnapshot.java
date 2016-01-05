@@ -33,36 +33,35 @@ import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.kernel.api.cursor.LabelItem;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.PropertyItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.txstate.ReadableTxState;
-import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
-import org.neo4j.kernel.impl.api.state.NodeState;
-import org.neo4j.kernel.impl.api.state.RelationshipState;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
-import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
+import org.neo4j.storageengine.api.LabelItem;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.NodeState;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.RelationshipState;
 
 /**
- * Transform for {@link org.neo4j.kernel.api.txstate.ReadableTxState} to make it accessible as {@link TransactionData}.
+ * Transform for {@link org.neo4j.storageengine.api.txstate.ReadableTransactionState} to make it accessible as {@link TransactionData}.
  */
 public class TxStateTransactionDataSnapshot implements TransactionData
 {
-    private final ReadableTxState state;
+    private final ReadableTransactionState state;
     private final NodeProxy.NodeActions nodeActions;
-    private final StoreStatement storeStatement;
+    private final StorageStatement storeStatement;
     private final RelationshipActions relationshipActions;
     private final StoreReadLayer store;
-    private final RelationshipDataExtractor relationshipData = new RelationshipDataExtractor();
 
     private final Collection<PropertyEntry<Node>> assignedNodeProperties = new ArrayList<>();
     private final Collection<PropertyEntry<Relationship>> assignedRelationshipProperties = new ArrayList<>();
@@ -74,7 +73,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final PrimitiveLongObjectMap<RelationshipProxy> relationshipsReadFromStore = Primitive.longObjectMap( 16 );
 
     public TxStateTransactionDataSnapshot(
-            ReadableTxState state,
+            ReadableTransactionState state,
             NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions relationshipActions,
             StoreReadLayer storeReadLayer )
     {
@@ -216,10 +215,10 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             }
             for ( NodeState nodeState : state.modifiedNodes() )
             {
-                Iterator<DefinedProperty> added = nodeState.addedAndChangedProperties();
+                Iterator<StorageProperty> added = nodeState.addedAndChangedProperties();
                 while ( added.hasNext() )
                 {
-                    DefinedProperty property = added.next();
+                    DefinedProperty property = (DefinedProperty) added.next();
                     assignedNodeProperties.add( new NodePropertyEntryView( nodeState.getId(),
                             store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
                             committedValue( nodeState, property.propertyKeyId() ) ) );
@@ -245,10 +244,10 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             for ( RelationshipState relState : state.modifiedRelationships() )
             {
                 Relationship relationship = relationship( relState.getId() );
-                Iterator<DefinedProperty> added = relState.addedAndChangedProperties();
+                Iterator<StorageProperty> added = relState.addedAndChangedProperties();
                 while ( added.hasNext() )
                 {
-                    DefinedProperty property = added.next();
+                    DefinedProperty property = (DefinedProperty) added.next();
                     assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
                             store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
                             committedValue( store, relState, property.propertyKeyId() ) ) );

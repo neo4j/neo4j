@@ -24,16 +24,16 @@ import org.junit.Test;
 import java.util.Collections;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
@@ -43,7 +43,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
+
+import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 
 public class RecoveryVisitorTest
 {
@@ -70,7 +71,7 @@ public class RecoveryVisitorTest
         final RecoveryVisitor visitor = new RecoveryVisitor( store, storageEngine, monitor );
 
         final TransactionRepresentation representation =
-                new PhysicalTransactionRepresentation( Collections.<Command>emptySet() );
+                new PhysicalTransactionRepresentation( Collections.<StorageCommand>emptySet() );
 
         final CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation( startEntry, representation, commitEntry );

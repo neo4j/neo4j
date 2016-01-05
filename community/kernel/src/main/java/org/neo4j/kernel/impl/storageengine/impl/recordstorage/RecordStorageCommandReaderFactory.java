@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.neo4j.kernel.impl.storageengine.CommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV1_9;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_0;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_1;
@@ -28,23 +26,33 @@ import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
+import org.neo4j.storageengine.api.CommandReader;
+import org.neo4j.storageengine.api.CommandReaderFactory;
+
+import static java.lang.Math.abs;
 
 public class RecordStorageCommandReaderFactory implements CommandReaderFactory
 {
-    // All supported readers. Key/index is LogEntryVersion ordinal.
-    private final CommandReader[] readers;
+    // All supported readers. Key/index is LogEntryVersion byte code.
+    private final CommandReader[] readersNegative, readersNeutral;
 
     public RecordStorageCommandReaderFactory()
     {
+        // These versions have version=0, but are distinguished by the log header format version
+        readersNeutral = new CommandReader[10]; // pessimistic size
+        readersNeutral[LogEntryVersion.V1_9.logHeaderFormatVersion()] = new PhysicalLogCommandReaderV1_9();
+        readersNeutral[LogEntryVersion.V2_0.logHeaderFormatVersion()] = new PhysicalLogCommandReaderV2_0();
+
+        // These versions have each their own version and so are directly distinguishable
+        readersNegative = new CommandReader[10]; // pessimistic size
+        readersNegative[-LogEntryVersion.V2_1.byteCode()] = new PhysicalLogCommandReaderV2_1();
+        readersNegative[-LogEntryVersion.V2_2.byteCode()] = new PhysicalLogCommandReaderV2_2();
+        readersNegative[-LogEntryVersion.V2_2_4.byteCode()] = new PhysicalLogCommandReaderV2_2_4();
+        readersNegative[-LogEntryVersion.V2_3.byteCode()] = new PhysicalLogCommandReaderV2_2_4();
+        readersNegative[-LogEntryVersion.V3_0.byteCode()] = new PhysicalLogCommandReaderV3_0();
+
+        // A little extra safety check so that we got 'em all
         LogEntryVersion[] versions = LogEntryVersion.values();
-        readers = new CommandReader[versions.length];
-        readers[LogEntryVersion.V1_9.ordinal()] = new PhysicalLogCommandReaderV1_9();
-        readers[LogEntryVersion.V2_0.ordinal()] = new PhysicalLogCommandReaderV2_0();
-        readers[LogEntryVersion.V2_1.ordinal()] = new PhysicalLogCommandReaderV2_1();
-        readers[LogEntryVersion.V2_2.ordinal()] = new PhysicalLogCommandReaderV2_2();
-        readers[LogEntryVersion.V2_2_4.ordinal()] = new PhysicalLogCommandReaderV2_2_4();
-        readers[LogEntryVersion.V2_3.ordinal()] = new PhysicalLogCommandReaderV2_2_4();
-        readers[LogEntryVersion.V3_0.ordinal()] = new PhysicalLogCommandReaderV3_0();
         for ( int i = 0; i < versions.length; i++ )
         {
             if ( versions[i] == null )
@@ -55,12 +63,25 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory
     }
 
     @Override
-    public CommandReader byVersion( LogEntryVersion version )
+    public CommandReader byVersion( byte version, byte legacyHeaderVersion )
     {
-        int key = version.ordinal();
-        if ( key >= readers.length )
+        CommandReader[] readers = null;
+        byte key = 0;
+        if ( version == 0 )
         {
-            throw new IllegalArgumentException( "Unsupported entry version " + version );
+            readers = readersNeutral;
+            key = legacyHeaderVersion;
+        }
+        else if ( version < 0 )
+        {
+            readers = readersNegative;
+            key = (byte) abs( version );
+        }
+
+        if ( readers == null || key >= readers.length )
+        {
+            throw new IllegalArgumentException( "Unsupported version:" + version +
+                    " headerVersion:" + legacyHeaderVersion );
         }
         return readers[key];
     }

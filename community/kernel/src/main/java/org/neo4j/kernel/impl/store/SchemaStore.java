@@ -31,12 +31,11 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.logging.LogProvider;
-
-import static org.neo4j.kernel.impl.store.record.SchemaRule.Kind.deserialize;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public class SchemaStore extends AbstractDynamicStore implements Iterable<SchemaRule>
 {
@@ -71,7 +70,7 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
     public Collection<DynamicRecord> allocateFrom( SchemaRule rule )
     {
         RecordSerializer serializer = new RecordSerializer();
-        serializer = serializer.append( rule );
+        serializer = serializer.append( (AbstractSchemaRule)rule );
         Collection<DynamicRecord> records = new ArrayList<>();
         allocateRecordsFromBytes( records, serializer.serialize(),
                 IteratorUtil.iterator( forceGetRecord( rule.getId() ) ), this );
@@ -93,6 +92,6 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
             throws MalformedSchemaRuleException
     {
         ByteBuffer scratchBuffer = concatData( records, buffer );
-        return deserialize( id, scratchBuffer );
+        return AbstractSchemaRule.deserialize( id, scratchBuffer );
     }
 }

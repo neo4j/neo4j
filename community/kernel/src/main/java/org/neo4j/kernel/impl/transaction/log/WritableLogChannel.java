@@ -23,24 +23,33 @@ import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
 
-public interface WritableLogChannel extends PositionAwareChannel, Closeable
+import org.neo4j.storageengine.api.WritableChannel;
+
+public interface WritableLogChannel extends WritableChannel, PositionAwareChannel, Closeable
 {
     /**
     * Writes any changes not present in the channel yet and clears the buffer.
     */
     Flushable emptyBufferIntoChannelAndClearIt() throws IOException;
 
+    @Override
     WritableLogChannel put( byte value ) throws IOException;
 
+    @Override
     WritableLogChannel putShort( short value ) throws IOException;
 
+    @Override
     WritableLogChannel putInt( int value ) throws IOException;
 
+    @Override
     WritableLogChannel putLong( long value ) throws IOException;
 
+    @Override
     WritableLogChannel putFloat( float value ) throws IOException;
 
+    @Override
     WritableLogChannel putDouble( double value ) throws IOException;
 
+    @Override
     WritableLogChannel put( byte[] value, int length ) throws IOException;
 }

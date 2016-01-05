@@ -32,12 +32,12 @@ import org.neo4j.coreedge.raft.net.NetworkWritableLogChannelNetty4;
 import org.neo4j.coreedge.raft.replication.StringMarshal;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.storageengine.api.StorageCommand;
 
 public class ReplicatedTokenRequestSerializer
 {
@@ -69,7 +69,7 @@ public class ReplicatedTokenRequestSerializer
 
         try
         {
-            new LogEntryWriter( channel, new CommandWriter( channel ) ).serialize( commands );
+            new LogEntryWriter( channel ).serialize( commands );
         }
         catch ( IOException e )
         {
@@ -82,7 +82,7 @@ public class ReplicatedTokenRequestSerializer
         return commandsBytes;
     }
 
-    public static Collection<Command> extractCommands( byte[] commandBytes )
+    public static Collection<StorageCommand> extractCommands( byte[] commandBytes )
     {
         ByteBuf txBuffer = Unpooled.wrappedBuffer( commandBytes );
         NetworkReadableLogChannelNetty4 channel = new NetworkReadableLogChannelNetty4( txBuffer );
@@ -91,7 +91,7 @@ public class ReplicatedTokenRequestSerializer
                 new RecordStorageCommandReaderFactory() );
 
         LogEntryCommand entryRead;
-        List<Command> commands = new LinkedList<>();
+        List<StorageCommand> commands = new LinkedList<>();
 
         try
         {

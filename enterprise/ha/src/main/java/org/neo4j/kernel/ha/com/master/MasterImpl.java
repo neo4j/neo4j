@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
 import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -98,7 +99,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     private final Monitor monitor;
     private final long epoch;
 
-    private ConversationManager conversationManager;
+    private final ConversationManager conversationManager;
 
     public MasterImpl( SPI spi, ConversationManager conversationManager, Monitor monitor, Config config )
     {
@@ -300,7 +301,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     }
 
     @Override
-    public Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type,
+    public Response<LockResult> acquireExclusiveLock( RequestContext context, ResourceType type,
                                                       long... resourceIds )
     {
         assertCorrectEpoch( context );
@@ -336,7 +337,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     }
 
     @Override
-    public Response<LockResult> acquireSharedLock( RequestContext context, Locks.ResourceType type,
+    public Response<LockResult> acquireSharedLock( RequestContext context, ResourceType type,
                                                    long... resourceIds )
     {
         assertCorrectEpoch( context );

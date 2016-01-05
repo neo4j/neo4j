@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import org.neo4j.storageengine.api.StorageStatement;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -31,8 +33,8 @@ public class StatementLifecycleTest
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        KernelStatement statement = new KernelStatement( transaction, mock( IndexReaderFactory.class ), null,
-                null, null, null, null );
+        StorageStatement storageStatement = mock( StorageStatement.class );
+        KernelStatement statement = new KernelStatement( transaction, null, null, null, storageStatement );
         statement.acquire();
 
         // when
@@ -47,8 +49,8 @@ public class StatementLifecycleTest
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        KernelStatement statement = new KernelStatement( transaction, mock( IndexReaderFactory.class ), null,
-                null, null, null, null );
+        StorageStatement storageStatement = mock( StorageStatement.class );
+        KernelStatement statement = new KernelStatement( transaction, null, null, null, storageStatement );
         statement.acquire();
         statement.acquire();
 
@@ -59,5 +61,4 @@ public class StatementLifecycleTest
         // then
         verify( transaction ).releaseStatement( statement );
     }
-
 }

@@ -35,8 +35,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -49,7 +47,9 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
@@ -115,7 +115,7 @@ public class RelationshipCreatorTest
         }
 
         @Override
-        public void acquireExclusive( Locks.ResourceType resourceType, long resourceId )
+        public void acquireExclusive( ResourceType resourceType, long resourceId )
                 throws AcquireLockTimeoutException
         {
             assertEquals( ResourceTypes.RELATIONSHIP, resourceType );

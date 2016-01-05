@@ -22,13 +22,14 @@ package org.neo4j.kernel.impl.locking;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
-import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
+import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.storageengine.api.lock.WaitStrategy;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
 
-public enum ResourceTypes implements Locks.ResourceType
+public enum ResourceTypes implements ResourceType
 {
     NODE        (0, LockWaitStrategies.INCREMENTAL_BACKOFF),
     RELATIONSHIP(1, LockWaitStrategies.INCREMENTAL_BACKOFF),
@@ -48,7 +49,7 @@ public enum ResourceTypes implements Locks.ResourceType
     PROCEDURE   (6, LockWaitStrategies.INCREMENTAL_BACKOFF)
     ;
 
-    private final static Map<Integer, Locks.ResourceType> idToType = new HashMap<>();
+    private final static Map<Integer, ResourceType> idToType = new HashMap<>();
     static
     {
         for ( ResourceTypes resourceTypes : ResourceTypes.values() )
@@ -127,7 +128,7 @@ public enum ResourceTypes implements Locks.ResourceType
         return 0l;
     }
 
-    public static Locks.ResourceType fromId( int typeId )
+    public static ResourceType fromId( int typeId )
     {
         return idToType.get( typeId );
     }

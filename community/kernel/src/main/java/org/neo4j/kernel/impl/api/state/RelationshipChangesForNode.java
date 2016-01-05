@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,14 +30,17 @@ import java.util.function.Function;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.graphdb.Direction;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor.Home;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
+import org.neo4j.storageengine.api.Direction;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.iterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 
 /**
  * Maintains relationships that have been added for a specific node.
@@ -61,6 +66,13 @@ public class RelationshipChangesForNode
                     @Override
                     RelationshipIterator augmentPrimitiveIterator( RelationshipIterator original,
                             Iterator<Set<Long>> diff, RelationshipVisitor.Home txStateRelationshipHome )
+                    {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    PrimitiveLongIterator getPrimitiveIterator( Iterator<Set<Long>> diff,
+                            RelationshipVisitor.Home txStateRelationshipHome )
                     {
                         throw new UnsupportedOperationException();
                     }
@@ -118,6 +130,38 @@ public class RelationshipChangesForNode
                             }
                         };
                     }
+
+                    @Override
+                    PrimitiveLongIterator getPrimitiveIterator( final Iterator<Set<Long>> diff,
+                            RelationshipVisitor.Home txStateRelationshipHome )
+                    {
+                        if ( !diff.hasNext() )
+                        {
+                            return PrimitiveLongCollections.emptyIterator();
+                        }
+
+                        return new PrimitiveLongCollections.PrimitiveLongBaseIterator()
+                        {
+                            private Iterator<Long> currentSetOfAddedRels;
+
+                            @Override
+                            protected boolean fetchNext()
+                            {
+                                Iterator<Long> iterator = currentSetOfAddedRels();
+                                return iterator.hasNext() ? next( iterator.next() ) : false;
+                            }
+
+                            private Iterator<Long> currentSetOfAddedRels()
+                            {
+                                while ( diff.hasNext() && (currentSetOfAddedRels == null || !currentSetOfAddedRels
+                                        .hasNext()) )
+                                {
+                                    currentSetOfAddedRels = diff.next().iterator();
+                                }
+                                return currentSetOfAddedRels;
+                            }
+                        };
+                    }
                 };
 
         abstract int augmentDegree( int degree, int diff );
@@ -125,6 +169,8 @@ public class RelationshipChangesForNode
         abstract RelationshipIterator augmentPrimitiveIterator( RelationshipIterator original,
                 Iterator<Set<Long>> diff, RelationshipVisitor.Home txStateRelationshipHome );
 
+        abstract PrimitiveLongIterator getPrimitiveIterator(
+                Iterator<Set<Long>> diff, RelationshipVisitor.Home txStateRelationshipHome );
     }
 
     private final DiffStrategy diffStrategy;
@@ -403,6 +449,54 @@ public class RelationshipChangesForNode
         };
     }
 
-    private static final Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>> ALL_TYPES
-            = integerSetMap -> integerSetMap.values().iterator();
+    private static final Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>> ALL_TYPES =
+            integerSetMap -> integerSetMap.values().iterator();
+
+    private Iterator<Set<Long>> diffs( Function<Map<Integer,Set<Long>>,Iterator<Set<Long>>> filter,
+            Map<Integer,Set<Long>>... maps )
+    {
+        Collection<Set<Long>> result = new ArrayList<>();
+        for ( int i = 0; i < maps.length; i++ )
+        {
+            Map<Integer,Set<Long>> map = maps[i];
+            if ( map != null )
+            {
+                Iterator<Set<Long>> diffSet = filter.apply( map );
+                while ( diffSet.hasNext() )
+                {
+                    result.add( diffSet.next() );
+                }
+            }
+        }
+        return result.iterator();
+    }
+
+    public PrimitiveLongIterator getRelationships( Direction direction )
+    {
+        return getRelationships( direction, ALL_TYPES );
+    }
+
+    public PrimitiveLongIterator getRelationships( Direction direction, int[] types )
+    {
+        return getRelationships( direction, typeFilter( types ) );
+    }
+
+    private PrimitiveLongIterator getRelationships( Direction direction,
+            Function<Map<Integer,Set<Long>>,Iterator<Set<Long>>> types )
+    {
+        switch ( direction )
+        {
+        case INCOMING:
+            return incoming != null || loops != null ? diffStrategy.getPrimitiveIterator(
+                    diffs( types, incoming, loops ), relationshipHome ) : emptyIterator();
+        case OUTGOING:
+            return outgoing != null || loops != null ? diffStrategy.getPrimitiveIterator(
+                    diffs( types, outgoing, loops ), relationshipHome ) : emptyIterator();
+        case BOTH:
+            return outgoing != null || incoming != null || loops != null ? diffStrategy.getPrimitiveIterator(
+                    diffs( types, outgoing, incoming, loops ), relationshipHome ) : emptyIterator();
+        default:
+            throw new IllegalArgumentException( direction.name() );
+        }
+    }
 }

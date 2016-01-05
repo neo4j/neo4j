@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction;
 
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.storageengine.api.CommandStream;
 
 /**
  * Representation of a transaction that can be written to a {@link TransactionAppender} and read back later.

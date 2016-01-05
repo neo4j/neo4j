@@ -42,12 +42,9 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -60,8 +57,12 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
+import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
 
 import static java.lang.String.format;
+
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;

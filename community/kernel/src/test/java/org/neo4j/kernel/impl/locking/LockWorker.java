@@ -23,6 +23,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.logging.Logger;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.OtherThreadExecutor;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;

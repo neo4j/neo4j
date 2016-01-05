@@ -23,11 +23,11 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.storageengine.api.CommandsToApply;
 
 /**
  * Visits commands targeted towards the {@link NeoStores} and update corresponding stores. What happens in here is what
@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
  * state, a KernelTransaction and all that and is now committing. <p> For other modes of application, like recovery or
  * external there are other, added functionality, decorated outside this applier.
  */
-public class NeoStoreBatchTransactionApplier implements BatchTransactionApplier
+public class NeoStoreBatchTransactionApplier extends BatchTransactionApplier.Adapter
 {
     private final NeoStores neoStores;
     // Ideally we don't want any cache access in here, but it is how it is. At least we try to minimize use of it
@@ -50,21 +50,15 @@ public class NeoStoreBatchTransactionApplier implements BatchTransactionApplier
     }
 
     @Override
-    public TransactionApplier startTx( TransactionToApply transaction )
+    public TransactionApplier startTx( CommandsToApply transaction )
     {
         throw new RuntimeException( "NeoStoreTransactionApplier requires a LockGroup" );
     }
 
     @Override
-    public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup ) throws IOException
+    public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup ) throws IOException
     {
         return new NeoStoreTransactionApplier( neoStores, cacheAccess, lockService, transaction.transactionId(),
                 lockGroup );
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        // Nothing to close here
     }
 }

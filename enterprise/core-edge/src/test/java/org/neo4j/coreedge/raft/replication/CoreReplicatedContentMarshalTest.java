@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,7 +52,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class CoreReplicatedContentMarshalTest
 {
-    private ReplicatedContentMarshal<ByteBuf> marshal = new CoreReplicatedContentMarshal();
+    private final ReplicatedContentMarshal<ByteBuf> marshal = new CoreReplicatedContentMarshal();
 
     CoreMember coreMember = new CoreMember( address( "core:1" ), address( "raft:1" ) );
     GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), coreMember );
@@ -61,7 +62,7 @@ public class CoreReplicatedContentMarshalTest
     {
         ByteBuf buffer = Unpooled.buffer();
         PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( Collections
-                .<Command>emptyList() );
+                .<StorageCommand>emptyList() );
         representation.setHeader( new byte[]{0}, 1, 1, 1, 1, 1, 1 );
 
         ReplicatedContent replicatedTx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation, globalSession, new LocalOperationId( 0, 0 ) );
@@ -76,7 +77,7 @@ public class CoreReplicatedContentMarshalTest
     {
         ByteBuf buffer = Unpooled.buffer();
         PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( Collections
-                .<Command>emptyList() );
+                .<StorageCommand>emptyList() );
 
         ReplicatedContent replicatedTx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation, globalSession, new LocalOperationId( 0, 0 ) );
         marshal.serialize( replicatedTx, buffer );

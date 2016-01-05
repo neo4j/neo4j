@@ -29,6 +29,8 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
+import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
+import org.neo4j.storageengine.api.txstate.SuperReadableDiffSets;
 
 import static java.lang.String.format;
 import static java.util.Collections.newSetFromMap;

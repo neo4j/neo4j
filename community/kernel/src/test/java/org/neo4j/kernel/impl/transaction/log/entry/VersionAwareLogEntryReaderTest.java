@@ -27,7 +27,6 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageComma
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -96,7 +95,7 @@ public class VersionAwareLogEntryReaderTest
 
         channel.put( version.byteCode() );
         channel.put( LogEntryByteCodes.COMMAND );
-        new CommandWriter( channel ).visitNodeCommand( nodeCommand );
+        nodeCommand.serialize( channel );
 
         // when
         final LogEntry logEntry = logEntryReader.readLogEntry( channel );
@@ -328,7 +327,7 @@ public class VersionAwareLogEntryReaderTest
         // ignored data
         channel.putInt( 42 ); // identifier ignored
         // actual used data
-        new CommandWriter( channel ).visitNodeCommand( nodeCommand );
+        nodeCommand.serialize( channel );
 
         // when
         final LogEntry logEntry = logEntryReader.readLogEntry( channel );
@@ -370,5 +369,24 @@ public class VersionAwareLogEntryReaderTest
 
         // then
         assertNull( logEntry );
+    }
+
+    @Test
+    public void shouldParseStreamOfZerosAsEmptyLogEntries() throws Exception
+    {
+        // GIVEN
+        LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
+                new RecordStorageCommandReaderFactory() );
+        InMemoryLogChannel channel = new InMemoryLogChannel();
+        int count = 100;
+        channel.put( new byte[count], count );
+
+        // WHEN/THEN
+        for ( int i = 0; i < count; i++ )
+        {
+            LogEntry entry = reader.readLogEntry( channel );
+            assertNull( entry );
+            assertEquals( i+1, channel.readerPosition() );
+        }
     }
 }

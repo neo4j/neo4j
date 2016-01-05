@@ -29,11 +29,11 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 /*
  * This is superseded by PropertyAndNode2LabelIndex.java that is a superset of

@@ -28,46 +28,41 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.cursor.LabelItem;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.PropertyItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceConstraintViolationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceConstraintViolationKernelException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.api.txstate.TxStateVisitor;
-import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.storageengine.api.LabelItem;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.lang.String.format;
 
 class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 {
-    private final EntityReadOperations readOperations;
     private final StoreReadLayer storeLayer;
-    private final StoreStatement storeStatement;
-    private final TxStateHolder txStateHolder;
+    private final ReadableTransactionState txState;
     private final PrimitiveIntSet labelIds = Primitive.intSet();
     private final PrimitiveIntSet propertyKeyIds = Primitive.intSet();
+    private StorageStatement storageStatement;
 
-    public PropertyExistenceEnforcer( EntityReadOperations operations,
+    public PropertyExistenceEnforcer(
             TxStateVisitor next,
-            TxStateHolder txStateHolder,
-            StoreReadLayer storeLayer,
-            StoreStatement storeStatement )
+            ReadableTransactionState txState,
+            StoreReadLayer storeLayer )
     {
         super( next );
-        this.readOperations = operations;
-        this.txStateHolder = txStateHolder;
+        this.txState = txState;
         this.storeLayer = storeLayer;
-        this.storeStatement = storeStatement;
     }
 
     @Override
-    public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+    public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
             Iterator<Integer> removed ) throws ConstraintValidationKernelException
     {
         validateNode( id );
@@ -91,7 +86,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
     }
 
     @Override
-    public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+    public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
             Iterator<Integer> removed ) throws ConstraintValidationKernelException
     {
         validateRelationship( id );
@@ -100,7 +95,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 
     private void validateNode( long nodeId ) throws ConstraintValidationKernelException
     {
-        try ( Cursor<NodeItem> node = readOperations.nodeCursor( txStateHolder, storeStatement, nodeId ) )
+        try ( Cursor<NodeItem> node = nodeCursor( nodeId ) )
         {
             if ( node.next() )
             {
@@ -152,10 +147,30 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
         }
     }
 
+    private Cursor<NodeItem> nodeCursor( long id )
+    {
+        Cursor<NodeItem> cursor = storeStatement().acquireSingleNodeCursor( id );
+        return txState.augmentSingleNodeCursor( cursor, id );
+    }
+
+    private StorageStatement storeStatement()
+    {
+        return storageStatement == null ? storageStatement = storeLayer.acquireStatement() : storageStatement;
+    }
+
+    @Override
+    public void close()
+    {
+        super.close();
+        if ( storageStatement != null )
+        {
+            storageStatement.close();
+        }
+    }
+
     private void validateRelationship( long id ) throws ConstraintValidationKernelException
     {
-        try ( Cursor<RelationshipItem> relationship = readOperations.relationshipCursor( txStateHolder, storeStatement,
-                id ) )
+        try ( Cursor<RelationshipItem> relationship = relationshipCursor( id ) )
         {
             if ( relationship.next() )
             {
@@ -194,5 +209,11 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
                 throw new IllegalStateException( format( "Relationship %d with changes should exist.", id ) );
             }
         }
+    }
+
+    private Cursor<RelationshipItem> relationshipCursor( long id )
+    {
+        Cursor<RelationshipItem> cursor = storeStatement().acquireSingleRelationshipCursor( id );
+        return txState.augmentSingleRelationshipCursor( cursor, id );
     }
 }

@@ -28,13 +28,14 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.DelegatingIndexReader;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -63,7 +64,7 @@ public class IndexSamplingCancellationTest
                 @Override
                 public IndexReader newReader()
                 {
-                    return new IndexReader.Delegator( super.newReader() )
+                    return new DelegatingIndexReader( super.newReader() )
                     {
                         @Override
                         public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException

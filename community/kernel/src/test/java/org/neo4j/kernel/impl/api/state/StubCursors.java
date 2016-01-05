@@ -25,15 +25,17 @@ import java.util.function.Function;
 import java.util.function.IntSupplier;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.cursor.DegreeItem;
-import org.neo4j.kernel.api.cursor.LabelItem;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.PropertyItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
+import org.neo4j.kernel.api.cursor.NodeItemHelper;
+import org.neo4j.kernel.api.cursor.RelationshipItemHelper;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.util.Cursors;
+import org.neo4j.storageengine.api.DegreeItem;
+import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.LabelItem;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 
 /**
  * Stub cursors to be used for testing.
@@ -71,7 +73,7 @@ public class StubCursors
             final Cursor<PropertyItem> propertyCursor,
             final Cursor<LabelItem> labelCursor )
     {
-        return new NodeItem.NodeItemHelper()
+        return new NodeItemHelper()
         {
             @Override
             public long id()
@@ -208,7 +210,7 @@ public class StubCursors
     public static RelationshipItem asRelationship( final long relId, final int type,
             final long startNode, final long endNode, final Cursor<PropertyItem> propertyCursor )
     {
-        return new RelationshipItem.RelationshipItemHelper()
+        return new RelationshipItemHelper()
         {
             @Override
             public long id()
@@ -287,7 +289,7 @@ public class StubCursors
     public static Cursor<RelationshipItem> asRelationshipCursor( final long relId, final int type,
             final long startNode, final long endNode, final Cursor<PropertyItem> propertyCursor )
     {
-        return Cursors.<RelationshipItem>cursor( new RelationshipItem.RelationshipItemHelper()
+        return Cursors.<RelationshipItem>cursor( new RelationshipItemHelper()
         {
             @Override
             public long id()
