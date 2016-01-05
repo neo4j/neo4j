@@ -18,6 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 set -euo pipefail
+[[ "${TRACE:-}" ]] && set -x
 
 FRIENDLY_NAME="Neo4j Server"
 SHUTDOWN_TIMEOUT=120
