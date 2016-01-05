@@ -116,6 +116,31 @@ public class RaftContentSerializerTest
     }
 
     @Test
+    public void txSerializationShouldNotResultInExcessZeroes() throws Exception
+    {
+        /*
+         * This test ensures that the buffer used to serialize a transaction and then extract the byte array for
+         * sending over the wire is trimmed properly. Not doing so will result in sending too many trailing garbage
+         * (zeroes) that will be ignored from the other side, as zeros are interpreted as null entries from the
+         * LogEntryReader and stop the deserialization process.
+         * The test creates a single transaction which has just a header, no commands. That should amount to 40 bytes
+         * as ReplicatedTransactionFactory.TransactionSerializer.write() makes it out at the time of this writing. If
+         * that code changes, this test will break.
+         */
+        byte[] extraHeader = new byte[0];
+
+        PhysicalTransactionRepresentation txIn = new PhysicalTransactionRepresentation( new ArrayList<>() );
+        txIn.setHeader( extraHeader, -1, -1, 0, 0, 0, 0 );
+
+        // when
+        ReplicatedTransaction in = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( txIn,
+                globalSession, new LocalOperationId( 0, 0 ) );
+
+        // then
+        assertEquals( 40, in.getTxBytes().length );
+    }
+
+    @Test
     public void shouldSerializeIdRangeRequest() throws Exception
     {
         // given

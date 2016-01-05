@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -50,7 +51,11 @@ public class ReplicatedTransactionFactory
         NetworkWritableLogChannelNetty4 channel = new NetworkWritableLogChannelNetty4( transactionBuffer );
         ReplicatedTransactionFactory.TransactionSerializer.write( tx, channel );
 
-        byte[] txBytes = transactionBuffer.array().clone();
+        /*
+         * This trims down the array to send up to the actual index it was written. While sending additional zeroes
+         * is safe, since LogEntryReader stops reading once it sees a zero entry, it is wasteful.
+         */
+        byte[] txBytes = Arrays.copyOf( transactionBuffer.array(), transactionBuffer.writerIndex() );
         transactionBuffer.release();
 
         return new ReplicatedTransaction( txBytes, globalSession, localOperationId );
