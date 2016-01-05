@@ -57,12 +57,7 @@ find_java_cmd() {
   find_java_home
 
   if [[ "${JAVA_HOME:-}" ]] ; then
-    if [ -x "${JAVA_HOME}/jre/sh/java" ] ; then
-      # IBM's JDK on AIX uses strange locations for the executables
-      JAVACMD="${JAVA_HOME}/jre/sh/java"
-    else
-      JAVACMD="${JAVA_HOME}/bin/java"
-    fi
+    JAVACMD="${JAVA_HOME}/bin/java"
   else
     if [ "${DIST_OS}" != "macosx" ] ; then
       # Don't use default java on Darwin because it displays a misleading dialog box
