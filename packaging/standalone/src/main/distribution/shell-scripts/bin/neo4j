@@ -47,9 +47,7 @@ printextrainfo() {
   echo "NEO4J_SERVER_PORT: $(serverport)"
 }
 
-function findBaseDirAndCdThere {
-# This seems to not be safe to run at any time. If that
-# is the case, it should be fixed to be so, if possible.
+setup_neo4jhome_and_script() {
   SCRIPT=$0
 
   cd "$(dirname "${SCRIPT}")"
@@ -63,10 +61,9 @@ function findBaseDirAndCdThere {
   done
 
   NEO4J_HOME="$(cd "$(dirname "${SCRIPT}")/.." && dirs -l +0)"
-  cd "${NEO4J_HOME}"
 }
+setup_neo4jhome_and_script
 
-findBaseDirAndCdThere
-source bin/utils
+source "${NEO4J_HOME}/bin/neo4j-common.sh"
 
 main "$@"

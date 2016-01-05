@@ -1,4 +1,3 @@
-#!/bin/bash
 # Copyright (c) 2002-2015 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
@@ -17,36 +16,34 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-function show_java_requirements() {
+# This Bash library file is used for running neo4j and neo4j-arbiter.
+#
+# Callers must do the following:
+#  * set -e
+#  * define these variables and functions:
+#     - FRIENDLY_NAME
+#     - SHUTDOWN_TIMEOUT
+#     - CONFIG_FILES
+#     - MAIN_CLASS
+#     - MIN_ALLOWED_OPEN_FILES
+#     - CONSOLE_LOG_FILE
+#     - NEO4J_HOME
+#     - SCRIPT
+#     - printstartmessage()
+#     - printextrainfo()
+#  * source this file
+#  * run `main "$@"`
+#
+# This script defines the following variables which callers may use in their functions:
+#  * variables for all Neo4j configuration values
+#  * NEO4J_PID
+
+show_java_requirements() {
   echo "* Please use Oracle(R) Java(TM) 8 or OpenJDK(TM) to run Neo4j Server."
 }
 
-function show_installation_instructions() {
+show_installation_instructions() {
   echo "* Please see http://docs.neo4j.org/ for Neo4j Server installation instructions."
-}
-
-# getconfig <filename>
-#   - plain key-value pairs become environment variables
-#   - keys have '.' chars changed to '_'
-#   - keys of the form KEY.# (where # is a number) are concatenated
-#     into a single environment variable named KEY
-function getconfig {
-  if [ -e "$1" ]; then
-    while read line ; do
-      if [[ "${line}" =~ ^([^#\s][^=]+)=(.+)$ ]]; then
-        key="${BASH_REMATCH[1]//./_}"
-        value="${BASH_REMATCH[2]}"
-        if [[ "${key}" =~ ^(.*)_([0-9]+)$ ]]; then
-          key="${BASH_REMATCH[1]}"
-        fi
-        if [[ "${!key:-}" ]]; then
-          export ${key}="${!key} ${value}"
-        else
-          export ${key}="$value"
-        fi
-      fi
-    done <"$1"
-  fi
 }
 
 # Detect java and set JAVACMD on successful find.
@@ -87,26 +84,6 @@ findjava() {
   fi
 }
 
-checkstatus() {
-  if [ -e "${NEO4J_PIDFILE}" ] ; then
-    NEO4J_PID=$( cat "${NEO4J_PIDFILE}" )
-    kill -0 "${NEO4J_PID}" 2>/dev/null || NEO4J_PID=""
-  fi
-}
-
-reportstatus() {
-  checkstatus
-  exitonnojava
-
-  if [[ ! "${NEO4J_PID:-}" ]] ; then
-    echo "${FRIENDLY_NAME} is not running"
-  	exit 3
-  else
-    echo "${FRIENDLY_NAME} is running at pid ${NEO4J_PID}"
-  fi
-}
-
-# Use findjava to set JAVACMD. If that fails (${JAVACMD} is not set) then exit with failure
 exitonnojava() {
   findjava
 
@@ -115,73 +92,6 @@ exitonnojava() {
     show_java_requirements
     show_installation_instructions
     exit 1
-  fi
-}
-
-# Resolve the os
-detectos() {
-  DIST="$(uname -s | tr 'A-Z' 'a-z' | tr -d ' ')"
-  case "${DIST}" in
-    'darwin')
-      DIST_OS="macosx"
-      ;;
-    *)
-      DIST_OS="other"
-      ;;
-  esac
-}
-
-stopit() {
-  checkstatus
-
-  if [[ ! "${NEO4J_PID:-}" ]] ; then
-    echo "ERROR: ${FRIENDLY_NAME} not running"
-    [ -e "${NEO4J_PIDFILE}" ] && rm "${NEO4J_PIDFILE}"
-  else
-    echo -n "Stopping ${FRIENDLY_NAME} [${NEO4J_PID}]..."
-    x=0
-    while [ "${NEO4J_PID}" != "" ]  ; do
-      kill ${NEO4J_PID} 2>/dev/null
-      if [ $x -le "$SHUTDOWN_TIMEOUT" ]; then
-        printf "."
-      fi
-      sleep 1
-      checkstatus
-
-      if [ $x -eq "$SHUTDOWN_TIMEOUT" ] ;then
-	    echo ""
-	    echo "${FRIENDLY_NAME} [${NEO4J_PID}] is taking more than ${SHUTDOWN_TIMEOUT}s to stop"
-	    echo "There might be some troubles with the shutdown of ${FRIENDLY_NAME}, please read log files for details"
-	    echo "This script will keep waiting for the server to shutdown, you could manually kill the process ${NEO4J_PID}"
-	    echo ""
-      fi
-
-      x=$((x+1))
-    done
-    echo " done"
-    [ -e "${NEO4J_PIDFILE}" ] && rm  "${NEO4J_PIDFILE}"
-  fi
-}
-
-# Runs before the server command, making sure that whatever should be in place is
-# in place.
-checkandrepairenv() {
-    # Create log directory if missing, change owner if created.
-    if [ ! -d "${NEO4J_LOG}" ]; then
-      echo "${NEO4J_LOG} was missing, recreating..."
-      mkdir -p "${NEO4J_LOG}"
-    fi
-}
-
-# Checks system limits, warns if not proper
-checklimits() {
-  detectos
-  if [ $DIST_OS != "macosx" ] ; then
-    ALLOWED_OPEN_FILES="$(ulimit -n)"
-
-    if [ "${ALLOWED_OPEN_FILES}" -lt "${MIN_ALLOWED_OPEN_FILES}" ]; then
-      echo "WARNING: Max ${ALLOWED_OPEN_FILES} open files allowed, minimum of ${MIN_ALLOWED_OPEN_FILES} recommended. See the Neo4j manual."
-    fi
   fi
 }
 
@@ -211,9 +121,75 @@ checkjvmcompatibility() {
   fi
 }
 
-function parseConfig {
+checkstatus() {
+  if [ -e "${NEO4J_PIDFILE}" ] ; then
+    NEO4J_PID=$( cat "${NEO4J_PIDFILE}" )
+    kill -0 "${NEO4J_PID}" 2>/dev/null || NEO4J_PID=""
+  fi
+}
+
+# Resolve the os
+detectos() {
+  DIST="$(uname -s | tr 'A-Z' 'a-z' | tr -d ' ')"
+  case "${DIST}" in
+    'darwin')
+      DIST_OS="macosx"
+      ;;
+    *)
+      DIST_OS="other"
+      ;;
+  esac
+}
+
+# Runs before the server command, making sure that whatever should be in place is
+# in place.
+checkandrepairenv() {
+    # Create log directory if missing, change owner if created.
+    if [ ! -d "${NEO4J_LOG}" ]; then
+      echo "${NEO4J_LOG} was missing, recreating..."
+      mkdir -p "${NEO4J_LOG}"
+    fi
+}
+
+# Checks system limits, warns if not proper
+checklimits() {
+  detectos
+  if [ "${DIST_OS}" != "macosx" ] ; then
+    ALLOWED_OPEN_FILES="$(ulimit -n)"
+
+    if [ "${ALLOWED_OPEN_FILES}" -lt "${MIN_ALLOWED_OPEN_FILES}" ]; then
+      echo "WARNING: Max ${ALLOWED_OPEN_FILES} open files allowed, minimum of ${MIN_ALLOWED_OPEN_FILES} recommended. See the Neo4j manual."
+    fi
+  fi
+}
+
+parseConfig() {
+  # - plain key-value pairs become environment variables
+  # - keys have '.' chars changed to '_'
+  # - keys of the form KEY.# (where # is a number) are concatenated into a single environment variable named KEY
+  parseline() {
+    line="$1"
+    if [[ "${line}" =~ ^([^#\s][^=]+)=(.+)$ ]]; then
+      key="${BASH_REMATCH[1]//./_}"
+      value="${BASH_REMATCH[2]}"
+      if [[ "${key}" =~ ^(.*)_([0-9]+)$ ]]; then
+        key="${BASH_REMATCH[1]}"
+      fi
+      if [[ "${!key:-}" ]]; then
+        export ${key}="${!key} ${value}"
+      else
+        export ${key}="${value}"
+      fi
+    fi
+  }
+
   for file in "${CONFIG_FILES[@]}"; do
-    getconfig "${NEO4J_CONFIG}/${file}"
+    path="${NEO4J_CONFIG}/${file}"
+    if [ -e "${path}" ]; then
+      while read line; do
+        parseline "${line}"
+      done <"${path}"
+    fi
   done
 }
 
@@ -236,7 +212,26 @@ buildclasspath() {
   CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/system/lib/*:${NEO4J_HOME}/plugins/*"
 }
 
-startit() {
+do_console() {
+  checkstatus
+  if [[ "${NEO4J_PID:-}" ]] ; then
+    echo "${FRIENDLY_NAME} is already running (pid ${NEO4J_PID})."
+    exit 1
+  fi
+
+  exitonnojava
+  checkjvmcompatibility
+
+  echo "Starting ${FRIENDLY_NAME}."
+
+  checklimits
+  buildclasspath
+  checkandrepairenv
+
+  exec "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "${MAIN_CLASS}"
+}
+
+do_start() {
   checkstatus
   if [[ "${NEO4J_PID:-}" ]] ; then
     echo "${FRIENDLY_NAME} is already running (pid ${NEO4J_PID})."
@@ -268,31 +263,54 @@ startit() {
   echo "See ${CONSOLE_LOG} for current status."
 }
 
-console() {
+do_stop() {
   checkstatus
-  if [[ "${NEO4J_PID:-}" ]] ; then
-    echo "${FRIENDLY_NAME} is already running (pid ${NEO4J_PID})."
-    exit 1
+
+  if [[ ! "${NEO4J_PID:-}" ]] ; then
+    echo "ERROR: ${FRIENDLY_NAME} not running"
+    [ -e "${NEO4J_PIDFILE}" ] && rm "${NEO4J_PIDFILE}"
+  else
+    echo -n "Stopping ${FRIENDLY_NAME} [${NEO4J_PID}]..."
+    elapsed=0
+    while [ "${NEO4J_PID}" != "" ]  ; do
+      kill ${NEO4J_PID} 2>/dev/null
+      if [ "${elapsed}" -le "$SHUTDOWN_TIMEOUT" ]; then
+        printf "."
+      fi
+      sleep 1
+      checkstatus
+
+      if [ "${elapsed}" -eq "$SHUTDOWN_TIMEOUT" ] ;then
+	    echo ""
+	    echo "${FRIENDLY_NAME} [${NEO4J_PID}] is taking more than ${SHUTDOWN_TIMEOUT}s to stop"
+	    echo "There might be some troubles with the shutdown of ${FRIENDLY_NAME}, please read log files for details"
+	    echo "This script will keep waiting for the server to shutdown, you could manually kill the process ${NEO4J_PID}"
+	    echo ""
+      fi
+
+      elapsed="$((elapsed+1))"
+    done
+    echo " done"
+    [ -e "${NEO4J_PIDFILE}" ] && rm  "${NEO4J_PIDFILE}"
   fi
-
-  exitonnojava
-  checkjvmcompatibility
-
-  echo "Starting ${FRIENDLY_NAME}."
-
-  checklimits
-  buildclasspath
-  checkandrepairenv
-
-  exec "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "${MAIN_CLASS}"
 }
 
-showinfo() {
-  reportstatus
+do_status() {
+  checkstatus
+  exitonnojava
 
+  if [[ ! "${NEO4J_PID:-}" ]] ; then
+    echo "${FRIENDLY_NAME} is not running"
+    exit 3
+  else
+    echo "${FRIENDLY_NAME} is running at pid ${NEO4J_PID}"
+  fi
+}
+
+do_info() {
+  do_status
   exitonnojava
   buildclasspath
-
   echo "NEO4J_HOME:        ${NEO4J_HOME}"
   echo "JAVA_HOME:         ${JAVA_HOME}"
   echo "JAVA_OPTS:         ${JAVA_OPTS}"
@@ -301,34 +319,35 @@ showinfo() {
 }
 
 main() {
+  cd "${NEO4J_HOME}"
   setuppaths
   parseConfig
   setupjavaopts
 
   case "$1" in
     console)
-      console
+      do_console
       ;;
 
     start)
-      startit
+      do_start
       ;;
 
     stop)
-      stopit
+      do_stop
       ;;
 
     restart)
-      stopit
-      startit
+      do_stop
+      do_start
       ;;
 
     status)
-      reportstatus
+      do_status
       ;;
 
     info)
-      showinfo
+      do_info
       ;;
 
     *)
