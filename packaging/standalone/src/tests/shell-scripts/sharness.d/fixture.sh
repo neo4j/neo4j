@@ -1,9 +1,9 @@
 fake_install() {
   mkdir -p neo4j-home/bin
   mkdir -p neo4j-home/conf
-  cp ../../../main/distribution/shell-scripts/bin/neo4j neo4j-home/bin
+  cp ../../../main/distribution/shell-scripts/bin/* neo4j-home/bin 2>/dev/null
   chmod +x neo4j-home/bin/neo4j
-  cp ../../../main/distribution/shell-scripts/bin/utils neo4j-home/bin
+  chmod +x neo4j-home/bin/neo4j-arbiter
 }
 
 set_config() {
