@@ -58,7 +58,7 @@ final class MuninnPage extends OptiLock implements Page
     public Object nextFree;
 
     private PageSwapper swapper;
-    private long filePageId = PageCursor.UNBOUND_PAGE_ID;
+    private volatile long filePageId = PageCursor.UNBOUND_PAGE_ID;
 
     public MuninnPage( int cachePageSize, MemoryManager memoryManager )
     {
@@ -106,7 +106,7 @@ final class MuninnPage extends OptiLock implements Page
     public void incrementUsage()
     {
         // This is intentionally left benignly racy for performance.
-        byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
+        byte usage = getUsageCounter();
         if ( usage < 4 ) // avoid cache sloshing by not doing a write if counter is already maxed out
         {
             usage <<= 1;
@@ -120,14 +120,19 @@ final class MuninnPage extends OptiLock implements Page
     public boolean decrementUsage()
     {
         // This is intentionally left benignly racy for performance.
-        byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
+        byte usage = getUsageCounter();
         usage >>>= 1;
         UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
         return usage == 0;
     }
 
+    private byte getUsageCounter()
+    {
+        return UnsafeUtil.getByteVolatile( this, usageStampOffset );
+    }
+
     /**
-     * NOTE: This method must be called while holding a pessimistic lock on the page.
+     * NOTE: This method must be called while holding an exclusive lock on the page.
      */
     public void flush( FlushEventOpportunity flushOpportunity ) throws IOException
     {
@@ -159,7 +164,7 @@ final class MuninnPage extends OptiLock implements Page
     }
 
     /**
-     * NOTE: This method MUST be called while holding the page write lock.
+     * NOTE: This method MUST be called while holding the exclusive page lock.
      */
     public void fault(
             PageSwapper swapper,
@@ -242,8 +247,8 @@ final class MuninnPage extends OptiLock implements Page
     @Override
     public String toString()
     {
-        return format( "MuninnPage@%x[%s -> %x, filePageId = %s%s, swapper = %s]%s",
+        return format( "MuninnPage@%x[%s -> %x, filePageId = %s%s, swapper = %s, usage counter = %s, %s]",
                 hashCode(), getCachePageId(), pointer, filePageId, (isDirty() ? ", dirty" : ""),
-                swapper, super.toString() );
+                swapper, getUsageCounter(), super.toString() );
     }
 }

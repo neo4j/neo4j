@@ -31,6 +31,9 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     {
         if ( page != null )
         {
+            // Mark the page as dirty *after* our write access, to make sure it's dirty even if it was concurrently
+            // flushed
+            page.markAsDirty();
             pinEvent.done();
             unlockPage( page );
         }
@@ -60,9 +63,9 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     }
 
     @Override
-    protected void lockPage( MuninnPage page )
+    protected boolean tryLockPage( MuninnPage page )
     {
-        page.writeLock();
+        return page.tryWriteLock();
     }
 
     @Override
@@ -82,14 +85,12 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         // to get flushed.
         assertPagedFileStillMappedAndGetIdOfLastPage();
         page.incrementUsage();
-        page.markAsDirty();
     }
 
     @Override
     protected void convertPageFaultLock( MuninnPage page )
     {
-        page.unlockExclusive(); // TODO page.unlockExclusiveAndTakeWriteLock
-        page.writeLock();
+        page.unlockExclusiveAndTakeWriteLock();
     }
 
     @Override

@@ -19,8 +19,6 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.neo4j.concurrent.BinaryLatch;
-import org.neo4j.concurrent.jsr166e.StampedLock;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
@@ -44,21 +42,6 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
  */
 public class OptiLock
 {
-    /**
-     * StampedLock methods used:
-     * - {@link StampedLock#writeLock()} - page faulting, write locking pages
-     * - {@link StampedLock#tryWriteLock()} - eviction
-     * - {@link StampedLock#readLock()} - flushing, pessimistic page read-locks
-     * - {@link StampedLock#tryReadLock()} - background flushing
-     * - {@link StampedLock#tryOptimisticRead()} - optimistic page read-locking
-     * - {@link StampedLock#validate(long stamp)} - optimistic page read-locking
-     * - {@link StampedLock#unlockRead(long stamp)} - flushing, pessimistic page read-locks
-     * - {@link StampedLock#unlockWrite(long stamp)} - eviction, page faulting, page write-locks
-     * - {@link StampedLock#tryConvertToReadLock(long stamp)} - page fault in page read cursor
-     * - {@link StampedLock#isWriteLocked()} - assertions
-     * - {@link StampedLock#isReadLocked()} - assertions
-     */
-
     private static final long CNT_BITS = 17; // Bits for counting concurrent write-locks
 
     private static final long SEQ_BITS = 64 - 1 - CNT_BITS;
@@ -72,7 +55,6 @@ public class OptiLock
 
     @SuppressWarnings( "unused" ) // accessed via unsafe
     private volatile long state;
-    private volatile BinaryLatch exclusiveLatch;
 
     private long getState()
     {
@@ -111,13 +93,14 @@ public class OptiLock
     }
 
     /**
-     * Take a concurrent write lock. Multiple write locks can be held at the same time. Write locks will invalidate any
-     * optimistic read lock that overlaps with them, and write locks will make any attempt at grabbing an exclusive
-     * lock fail. If an exclusive lock is currently held, then taking a write lock will block on the exclusive lock.
+     * Try taking a concurrent write lock. Multiple write locks can be held at the same time. Write locks will
+     * invalidate any optimistic read lock that overlaps with them, and write locks will make any attempt at grabbing
+     * an exclusive lock fail. If an exclusive lock is currently held, then the attempt to take a write lock will fail.
      * <p>
      * Write locks must be paired with a corresponding {@link #unlockWrite()}.
+     * @return {@code true} if the write lock was taken, {@code false} otherwise.
      */
-    public void writeLock()
+    public boolean tryWriteLock()
     {
         long s, n;
         for (; ; )
@@ -125,8 +108,7 @@ public class OptiLock
             s = getState();
             if ( (s & EXCL_MASK) == EXCL_MASK )
             {
-                blockOnExclusiveLock();
-                continue;
+                return false;
             }
             if ( (s & CNT_MASK) == CNT_MASK )
             {
@@ -135,17 +117,8 @@ public class OptiLock
             n = s + CNT_UNIT;
             if ( compareAndSetState( s, n ) )
             {
-                return;
+                return true;
             }
-        }
-    }
-
-    private void blockOnExclusiveLock()
-    {
-        BinaryLatch latch = exclusiveLatch;
-        if ( latch != null )
-        {
-            latch.await( this );
         }
     }
 
@@ -155,7 +128,7 @@ public class OptiLock
     }
 
     /**
-     * Release a write lock taking with {@link #writeLock()}.
+     * Release a write lock taking with {@link #tryWriteLock()}.
      */
     public void unlockWrite()
     {
@@ -194,12 +167,7 @@ public class OptiLock
     public boolean tryExclusiveLock()
     {
         long s = getState();
-        if ( ((s & CNT_MASK) == 0) & ((s & EXCL_MASK) == 0) && compareAndSetState( s, s + EXCL_MASK ) )
-        {
-            exclusiveLatch = new BinaryLatch();
-            return true;
-        }
-        return false;
+        return ((s & CNT_MASK) == 0) & ((s & EXCL_MASK) == 0) && compareAndSetState( s, s + EXCL_MASK );
     }
 
     /**
@@ -210,21 +178,30 @@ public class OptiLock
      */
     public long unlockExclusive()
     {
-        long s = getState();
-        if ( (s & EXCL_MASK) != EXCL_MASK )
-        {
-            throwUnmatchedUnlockExclusive( s );
-        }
-        exclusiveLatch.release();
-        exclusiveLatch = null;
+        long s = initiateExclusiveLockRelease();
         long n = nextSeq( s ) - EXCL_MASK;
         compareAndSetState( s, n );
         return n;
     }
 
+    /**
+     * Atomically unlock the currently held exclusive lock, and take a write lock.
+     */
     public void unlockExclusiveAndTakeWriteLock()
     {
-        // TODO
+        long s = initiateExclusiveLockRelease();
+        long n = nextSeq( s ) - EXCL_MASK + CNT_UNIT;
+        compareAndSetState( s, n );
+    }
+
+    private long initiateExclusiveLockRelease()
+    {
+        long s = getState();
+        if ( (s & EXCL_MASK) != EXCL_MASK )
+        {
+            throwUnmatchedUnlockExclusive( s );
+        }
+        return s;
     }
 
     private void throwUnmatchedUnlockExclusive( long s )

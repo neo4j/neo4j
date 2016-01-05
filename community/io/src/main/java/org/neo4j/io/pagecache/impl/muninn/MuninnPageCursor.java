@@ -139,12 +139,12 @@ abstract class MuninnPageCursor implements PageCursor
     /**
      * Pin the desired file page to this cursor, page faulting it into memory if it isn't there already.
      * @param filePageId The file page id we want to pin this cursor to.
-     * @param exclusive 'true' if we will be taking an exclusive lock on the page as part of the pin.
+     * @param writeLock 'true' if we will be taking a write lock on the page as part of the pin.
      * @throws IOException if anything goes wrong with the pin, most likely during a page fault.
      */
-    protected void pin( long filePageId, boolean exclusive ) throws IOException
+    protected void pin( long filePageId, boolean writeLock ) throws IOException
     {
-        pinEvent = tracer.beginPin( exclusive, filePageId, swapper );
+        pinEvent = tracer.beginPin( writeLock, filePageId, swapper );
         int chunkId = MuninnPagedFile.computeChunkId( filePageId );
         // The chunkOffset is the addressing offset into the chunk array object for the relevant array slot. Using
         // this, we can access the array slot with Unsafe.
@@ -173,10 +173,16 @@ abstract class MuninnPageCursor implements PageCursor
                 // been evicted, and possibly even page faulted into something else. In this case, we discard the
                 // item and try again, as the eviction thread would have set the chunk array slot to null.
                 MuninnPage page = (MuninnPage) item;
-                lockPage( page );
-                if ( !page.isBoundTo( swapper, filePageId ) )
+                if ( tryLockPage( page ) ) // TODO try simplifying this
                 {
-                    unlockPage( page );
+                    if ( !page.isBoundTo( swapper, filePageId ) )
+                    {
+                        unlockPage( page );
+                        item = null;
+                    }
+                }
+                else
+                {
                     item = null;
                 }
             }
@@ -201,8 +207,7 @@ abstract class MuninnPageCursor implements PageCursor
         return pagedFile.expandCapacity( chunkId );
     }
 
-    private Object initiatePageFault( long filePageId, long chunkOffset, Object[] chunk )
-            throws IOException
+    private Object initiatePageFault( long filePageId, long chunkOffset, Object[] chunk ) throws IOException
     {
         BinaryLatch latch = new BinaryLatch();
         Object item = null;
@@ -237,27 +242,18 @@ abstract class MuninnPageCursor implements PageCursor
         try
         {
             // The grabFreePage method might throw.
-            page = pagedFile.grabFreePage( faultEvent );
+            page = pagedFile.grabFreeAndExclusivelyLockedPage( faultEvent );
 
             // We got a free page, and we know that we have race-free access to it. Well, it's not entirely race
             // free, because other paged files might have it in their translation tables (or rather, their reads of
             // their translation tables might race with eviction) and try to pin it.
-            // However, they will all fail because when they try to pin, the page will either be 1) free, 2) bound to
-            // our file, or 3) the page is write locked.
-            if ( !page.tryExclusiveLock() )
-            {
-                throw new AssertionError( "Unable to take exclusive lock on free page" );
-            }
+            // However, they will all fail because when they try to pin, because the page will be exclusively locked
+            // and possibly bound to our page.
         }
         catch ( Throwable throwable )
         {
             // Make sure to unstuck the page fault latch.
-            UnsafeUtil.putObjectVolatile( chunk, chunkOffset, null );
-            latch.release();
-            faultEvent.done( throwable );
-            pinEvent.done();
-            // We don't need to worry about the 'stamp' here, because the writeLock call is uninterruptible, so it
-            // can't really fail.
+            abortPageFault( throwable, chunk, chunkOffset, latch, faultEvent );
             throw throwable;
         }
         try
@@ -275,17 +271,28 @@ abstract class MuninnPageCursor implements PageCursor
             // Make sure to unlock the page, so the eviction thread can pick up our trash.
             page.unlockExclusive();
             // Make sure to unstuck the page fault latch.
-            UnsafeUtil.putObjectVolatile( chunk, chunkOffset, null );
-            latch.release();
-            faultEvent.done( throwable );
-            pinEvent.done();
+            abortPageFault( throwable, chunk, chunkOffset, latch, faultEvent );
             throw throwable;
         }
-        convertPageFaultLock( page );
+        // Put the page in the translation table before we undo the exclusive lock, as we could otherwise race with
+        // eviction, and the onEvict callback expects to find a MuninnPage object in the table.
         UnsafeUtil.putObjectVolatile( chunk, chunkOffset, page );
+        // Once we page has been published to the translation table, we can convert our exclusive lock to whatever we
+        // need for the page cursor.
+        convertPageFaultLock( page );
         latch.release();
         faultEvent.done();
         return page;
+    }
+
+    private void abortPageFault( Throwable throwable, Object[] chunk, long chunkOffset,
+                                 BinaryLatch latch,
+                                 PageFaultEvent faultEvent ) throws IOException
+    {
+        UnsafeUtil.putObjectVolatile( chunk, chunkOffset, null );
+        latch.release();
+        faultEvent.done( throwable );
+        pinEvent.done();
     }
 
     protected long assertPagedFileStillMappedAndGetIdOfLastPage()
@@ -299,7 +306,7 @@ abstract class MuninnPageCursor implements PageCursor
 
     protected abstract void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper );
 
-    protected abstract void lockPage( MuninnPage page );
+    protected abstract boolean tryLockPage( MuninnPage page );
 
     protected abstract void unlockPage( MuninnPage page );
 

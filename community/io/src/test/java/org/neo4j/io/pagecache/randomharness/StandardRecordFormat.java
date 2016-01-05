@@ -76,9 +76,10 @@ public class StandardRecordFormat extends RecordFormat
     public void write( Record record, PageCursor cursor )
     {
         StandardRecord r = (StandardRecord) record;
-        cursor.putByte( r.type );
         byte[] pathBytes = r.file.getPath().getBytes( StandardCharsets.UTF_8 );
-        cursor.putByte( pathBytes[pathBytes.length - 1] );
+        byte fileByte = pathBytes[pathBytes.length - 1];
+        cursor.putByte( r.type );
+        cursor.putByte( fileByte );
         cursor.putShort( r.fill1 );
         cursor.putInt( r.recordId );
         cursor.putLong( r.fill2 );

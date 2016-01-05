@@ -36,7 +36,7 @@ public interface PagedFile extends AutoCloseable
      *
      * This cannot be combined with PF_EXCLUSIVE_LOCK.
      */
-    int PF_SHARED_LOCK = 1;
+    int PF_SHARED_LOCK = 1; // TODO rename PF_SHARED_READ_LOCK
     /**
      * Pin the pages with an exclusive lock.
      *
@@ -45,7 +45,7 @@ public interface PagedFile extends AutoCloseable
      *
      * This cannot be combined with PF_SHARED_LOCK.
      */
-    int PF_EXCLUSIVE_LOCK = 1 << 1;
+    int PF_EXCLUSIVE_LOCK = 1 << 1; // TODO rename to PF_SHARED_WRITE_LOCK
     /**
      * Disallow pinning and navigating to pages outside the range of the
      * underlying file.
@@ -159,6 +159,9 @@ public interface PagedFile extends AutoCloseable
      * Release a handle to a paged file.
      *
      * If this is the last handle to the file, it will be flushed and closed.
+     *
+     * Note that this operation assumes that there are no write page cursors open on the paged file. If there are, then
+     * their writes may be lost, as they might miss the last flush that can happen on their data.
      *
      * @see AutoCloseable#close()
      * @throws IOException instead of the Exception superclass as defined in AutoCloseable, if .

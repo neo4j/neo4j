@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -47,6 +48,10 @@ class CommandPrimer
     private final int filePageCount;
     private final int filePageSize;
     private final RecordFormat recordFormat;
+    private final int maxRecordCount;
+    private final int recordsPerPage;
+    // Entity-locks that protect the individual records, since page write locks are not exclusive.
+    private final ReentrantLock[] recordLocks;
 
     public CommandPrimer(
             Random rng,
@@ -69,9 +74,16 @@ class CommandPrimer
         filesTouched = new HashSet<>();
         filesTouched.addAll( mappedFiles );
         recordsWrittenTo = new HashMap<>();
+        recordsPerPage = cache.pageSize() / recordFormat.getRecordSize();
+        maxRecordCount = filePageCount * recordsPerPage;
+        recordLocks = new ReentrantLock[maxRecordCount];
+        for ( int i = 0; i < maxRecordCount; i++ )
+        {
+            recordLocks[i] = new ReentrantLock();
+        }
         for ( File file : files )
         {
-            recordsWrittenTo.put( file, new ArrayList<Integer>() );
+            recordsWrittenTo.put( file, new ArrayList<>() );
         }
     }
 
@@ -179,14 +191,12 @@ class CommandPrimer
         }
         final File file = mappedFiles.get( rng.nextInt( mappedFilesCount ) );
         List<Integer> recordsWritten = recordsWrittenTo.get( file );
-        int recordSize = recordFormat.getRecordSize();
-        int recordsPerPage = cache.pageSize() / recordSize;
         final int recordId =
                 recordsWritten.isEmpty()?
-                rng.nextInt( filePageCount * recordsPerPage )
+                rng.nextInt( maxRecordCount )
                 : recordsWritten.get( rng.nextInt( recordsWritten.size() ) );
         final int pageId = recordId / recordsPerPage;
-        final int pageOffset = (recordId % recordsPerPage) * recordSize;
+        final int pageOffset = (recordId % recordsPerPage) * recordFormat.getRecordSize();
         final Record expectedRecord = recordFormat.createRecord( file, recordId );
         return new Action( Command.ReadRecord,
                 "[file=%s, recordId=%s, pageId=%s, pageOffset=%s, expectedRecord=%s]",
@@ -221,12 +231,10 @@ class CommandPrimer
         }
         final File file = mappedFiles.get( rng.nextInt( mappedFilesCount ) );
         filesTouched.add( file );
-        int recordSize = 16;
-        int recordsPerPage = cache.pageSize() / recordSize;
         final int recordId = rng.nextInt( filePageCount * recordsPerPage );
         recordsWrittenTo.get( file ).add( recordId );
         final int pageId = recordId / recordsPerPage;
-        final int pageOffset = (recordId % recordsPerPage) * recordSize;
+        final int pageOffset = (recordId % recordsPerPage) * recordFormat.getRecordSize();
         final Record record = recordFormat.createRecord( file, recordId );
         return new Action(  Command.WriteRecord,
                 "[file=%s, recordId=%s, pageId=%s, pageOffset=%s, record=%s]",
@@ -238,13 +246,22 @@ class CommandPrimer
                 PagedFile pagedFile = fileMap.get( file );
                 if ( pagedFile != null )
                 {
-                    try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_EXCLUSIVE_LOCK ) )
+                    ReentrantLock recordLock = recordLocks[recordId];
+                    recordLock.lock();
+                    try
                     {
-                        if ( cursor.next() )
+                        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_EXCLUSIVE_LOCK ) )
                         {
-                            cursor.setOffset( pageOffset );
-                            recordFormat.write( record, cursor );
+                            if ( cursor.next() )
+                            {
+                                cursor.setOffset( pageOffset );
+                                recordFormat.write( record, cursor );
+                            }
                         }
+                    }
+                    finally
+                    {
+                        recordLock.unlock();
                     }
                 }
             }

@@ -22,22 +22,18 @@ package org.neo4j.io.pagecache.impl.muninn;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.concurrent.BinaryLatch;
-
-import static java.lang.Thread.State.BLOCKED;
-import static java.lang.Thread.State.TIMED_WAITING;
-import static java.lang.Thread.State.WAITING;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
 
 public class OptiLockTest
 {
@@ -50,7 +46,7 @@ public class OptiLockTest
         executor.shutdown();
     }
 
-    private OptiLock lock = new OptiLock();
+    OptiLock lock = new OptiLock();
 
     @Test
     public void uncontendedOptimisticLockMustValidate() throws Exception
@@ -69,7 +65,7 @@ public class OptiLockTest
     public void writeLockMustInvalidateOptimisticLock() throws Exception
     {
         long r = lock.tryOptimisticReadLock();
-        lock.writeLock();
+        lock.tryWriteLock();
         lock.unlockWrite();
         assertFalse( lock.validateReadLock( r ) );
     }
@@ -78,14 +74,14 @@ public class OptiLockTest
     public void takingWriteLockMustInvalidateOptimisticLock() throws Exception
     {
         long r = lock.tryOptimisticReadLock();
-        lock.writeLock();
+        lock.tryWriteLock();
         assertFalse( lock.validateReadLock( r ) );
     }
 
     @Test
     public void optimisticReadLockMustNotValidateUnderWriteLock() throws Exception
     {
-        lock.writeLock();
+        lock.tryWriteLock();
         long r = lock.tryOptimisticReadLock();
         assertFalse( lock.validateReadLock( r ) );
     }
@@ -93,16 +89,22 @@ public class OptiLockTest
     @Test
     public void writeLockReleaseMustInvalidateOptimisticReadLock() throws Exception
     {
-        lock.writeLock();
+        lock.tryWriteLock();
         long r = lock.tryOptimisticReadLock();
         lock.unlockWrite();
         assertFalse( lock.validateReadLock( r ) );
     }
 
     @Test
+    public void uncontendedWriteLockMustBeAvailable() throws Exception
+    {
+        assertTrue( lock.tryWriteLock() );
+    }
+
+    @Test
     public void uncontendedOptimisticReadLockMustValidateAfterWriteLockRelease() throws Exception
     {
-        lock.writeLock();
+        lock.tryWriteLock();
         lock.unlockWrite();
         long r = lock.tryOptimisticReadLock();
         assertTrue( lock.validateReadLock( r ) );
@@ -111,8 +113,8 @@ public class OptiLockTest
     @Test( timeout = TIMEOUT )
     public void writeLocksMustNotBlockOtherWriteLocks() throws Exception
     {
-        lock.writeLock();
-        lock.writeLock();
+        assertTrue( lock.tryWriteLock() );
+        assertTrue( lock.tryWriteLock() );
     }
 
     @Test( timeout = TIMEOUT )
@@ -121,14 +123,19 @@ public class OptiLockTest
         int threads = 10;
         CountDownLatch end = new CountDownLatch( threads );
         Runnable runnable = () -> {
-            lock.writeLock();
+            assertTrue( lock.tryWriteLock() );
             end.countDown();
         };
+        List<Future<?>> futures = new ArrayList<>();
         for ( int i = 0; i < threads; i++ )
         {
-            executor.submit( runnable );
+            futures.add( executor.submit( runnable ) );
         }
         end.await();
+        for ( Future<?> future : futures )
+        {
+            future.get();
+        }
     }
 
     @Test( expected = IllegalMonitorStateException.class )
@@ -140,10 +147,10 @@ public class OptiLockTest
     @Test( expected = IllegalMonitorStateException.class, timeout = TIMEOUT )
     public void writeLockCountOverflowMustThrow() throws Exception
     {
-        // TODO its possible we might want to spin-yield instead of throwing, hoping someone will give us a lock
+        // TODO its possible we might want to spin-yield or fail instead of throwing, hoping someone will give us a lock
         for ( ;; )
         {
-            lock.writeLock();
+            assertTrue( lock.tryWriteLock() );
         }
     }
 
@@ -199,14 +206,14 @@ public class OptiLockTest
     @Test
     public void writeLocksMustFailExclusiveLocks() throws Exception
     {
-        lock.writeLock();
+        lock.tryWriteLock();
         assertFalse( lock.tryExclusiveLock() );
     }
 
     @Test
     public void exclusiveLockMustBeAvailableAfterWriteLock() throws Exception
     {
-        lock.writeLock();
+        lock.tryWriteLock();
         lock.unlockWrite();
         assertTrue( lock.tryExclusiveLock() );
     }
@@ -227,24 +234,10 @@ public class OptiLockTest
     }
 
     @Test( timeout = TIMEOUT )
-    public void exclusiveLockMustBlockWriteLocks() throws Exception
+    public void exclusiveLockMustFailWriteLocks() throws Exception
     {
-        BinaryLatch start = new BinaryLatch();
-        AtomicReference<Thread> threadRef = new AtomicReference<>();
-        AtomicInteger counter = new AtomicInteger();
         lock.tryExclusiveLock();
-        executor.submit( () -> {
-            threadRef.set( Thread.currentThread() );
-            start.release();
-            lock.writeLock();
-            counter.incrementAndGet();
-        } );
-
-        start.await();
-        Thread thread = threadRef.get();
-        awaitThreadState( thread, 2 * TIMEOUT, BLOCKED, WAITING, TIMED_WAITING );
-        assertThat( counter.get(), is( 0 ) );
-        lock.unlockExclusive();
+        assertFalse( lock.tryWriteLock() );
     }
 
     @Test( expected = IllegalMonitorStateException.class )
@@ -265,7 +258,7 @@ public class OptiLockTest
     {
         lock.tryExclusiveLock();
         lock.unlockExclusive();
-        lock.writeLock();
+        assertTrue( lock.tryWriteLock() );
         lock.unlockWrite();
     }
 
@@ -278,11 +271,70 @@ public class OptiLockTest
     }
 
     @Test
+    public void unlockExclusiveAndTakeWriteLockMustInvalidateOptimisticReadLocks() throws Exception
+    {
+        lock.tryExclusiveLock();
+        lock.unlockExclusiveAndTakeWriteLock();
+        long r = lock.tryOptimisticReadLock();
+        assertFalse( lock.validateReadLock( r ) );
+    }
+
+    @Test
+    public void unlockExclusiveAndTakeWriteLockMustPreventExclusiveLocks() throws Exception
+    {
+        lock.tryExclusiveLock();
+        lock.unlockExclusiveAndTakeWriteLock();
+        assertFalse( lock.tryExclusiveLock() );
+    }
+
+    @Test( timeout = TIMEOUT )
+    public void unlockExclusiveAndTakeWriteLockMustAllowConcurrentWriteLocks() throws Exception
+    {
+        lock.tryExclusiveLock();
+        lock.unlockExclusiveAndTakeWriteLock();
+        assertTrue( lock.tryWriteLock() );
+    }
+
+    @Test( timeout = TIMEOUT )
+    public void unlockExclusiveAndTakeWriteLockMustBeAtomic() throws Exception
+    {
+        int threads = 12;
+        CountDownLatch start = new CountDownLatch( threads );
+        AtomicBoolean stop = new AtomicBoolean();
+        lock.tryExclusiveLock();
+        Runnable runnable = () -> {
+            while ( !stop.get() )
+            {
+                if ( lock.tryExclusiveLock() )
+                {
+                    lock.unlockExclusive();
+                    throw new RuntimeException( "I should not have gotten that lock" );
+                }
+                start.countDown();
+            }
+        };
+
+        List<Future<?>> futures = new ArrayList<>();
+        for ( int i = 0; i < threads; i++ )
+        {
+            futures.add( executor.submit( runnable ) );
+        }
+
+        start.await();
+        lock.unlockExclusiveAndTakeWriteLock();
+        stop.set( true );
+        for ( Future<?> future : futures )
+        {
+            future.get(); // Assert that this does not throw
+        }
+    }
+
+    @Test
     public void stampFromUnlockExclusiveMustNotBeValidIfThereAreWriteLocks() throws Exception
     {
         lock.tryExclusiveLock();
         long r = lock.unlockExclusive();
-        lock.writeLock();
+        assertTrue( lock.tryWriteLock() );
         assertFalse( lock.validateReadLock( r ) );
     }
 
@@ -290,7 +342,7 @@ public class OptiLockTest
     public void toStringMustDescribeState() throws Exception
     {
         assertThat( lock.toString(), is( "OptiLock[E:0, W:0:0, S:0:0]" ) );
-        lock.writeLock();
+        lock.tryWriteLock();
         assertThat( lock.toString(), is( "OptiLock[E:0, W:1:1, S:0:0]" ) );
         lock.unlockWrite();
         assertThat( lock.toString(), is( "OptiLock[E:0, W:0:0, S:1:1]" ) );

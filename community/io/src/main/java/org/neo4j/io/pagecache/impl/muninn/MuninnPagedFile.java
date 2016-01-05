@@ -203,26 +203,38 @@ final class MuninnPagedFile implements PagedFile
                 // TODO The clean pages in question must still be loaded, though. Otherwise we'll end up writing
                 // TODO garbage to the file.
                 int pagesGrabbed = 0;
-                for ( Object element : chunk )
+                chunkLoop:for ( int i = 0; i < chunk.length; i++ )
                 {
                     filePageId++;
-                    if ( element instanceof MuninnPage )
+
+                    long offset = computeChunkOffset( filePageId );
+                    // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
+                    // in getting a lock on all available pages.
+                    for (;;)
                     {
-                        MuninnPage page = (MuninnPage) element;
-                        page.writeLock();
-                        if ( page.isBoundTo( swapper, filePageId ) && page.isDirty() )
+                        Object element = UnsafeUtil.getObjectVolatile( chunk, offset );
+                        if ( element instanceof MuninnPage )
                         {
-                            // The page is still bound to the expected file and file page id after we locked it,
-                            // so we didn't race with eviction and faulting, and the page is dirty.
-                            // So we add it to our IO vector.
-                            pages[pagesGrabbed] = page;
-                            pagesGrabbed++;
-                            continue;
+                            MuninnPage page = (MuninnPage) element;
+                            if ( !page.tryWriteLock() )
+                            {
+                                continue;
+                            }
+                            if ( page.isBoundTo( swapper, filePageId ) && page.isDirty() )
+                            {
+                                // The page is still bound to the expected file and file page id after we locked it,
+                                // so we didn't race with eviction and faulting, and the page is dirty.
+                                // So we add it to our IO vector.
+                                pages[pagesGrabbed] = page;
+                                pagesGrabbed++;
+                                continue chunkLoop;
+                            }
+                            else
+                            {
+                                page.unlockWrite();
+                            }
                         }
-                        else
-                        {
-                            page.unlockWrite();
-                        }
+                        break;
                     }
                     if ( pagesGrabbed > 0 )
                     {
@@ -252,6 +264,15 @@ final class MuninnPagedFile implements PagedFile
             // Write the pages vector
             MuninnPage firstPage = pages[0];
             long startFilePageId = firstPage.getFilePageId();
+
+            // Mark the flushed pages as clean before our flush, so concurrent page writes can mark it as dirty and
+            // we'll be able to write those changes out on the next flush.
+            for ( int j = 0; j < pagesGrabbed; j++ )
+            {
+                // If the flush fails, we'll undo this
+                pages[j].markAsClean();
+            }
+
             flush = flushOpportunity.beginFlush( startFilePageId, firstPage.getCachePageId(), swapper );
             long bytesWritten = swapper.write( startFilePageId, pages, 0, pagesGrabbed );
 
@@ -260,17 +281,16 @@ final class MuninnPagedFile implements PagedFile
             flush.addPagesFlushed( pagesGrabbed );
             flush.done();
 
-            // Mark the flushed pages as clean
-            for ( int j = 0; j < pagesGrabbed; j++ )
-            {
-                pages[j].markAsClean();
-            }
-
             // There are now 0 'grabbed' pages
             return 0;
         }
         catch ( IOException ioe )
         {
+            // Undo marking the pages as clean
+            for ( int j = 0; j < pagesGrabbed; j++ )
+            {
+                pages[j].markAsDirty();
+            }
             if ( flush != null )
             {
                 flush.done( ioe );
@@ -399,9 +419,9 @@ final class MuninnPagedFile implements PagedFile
      * none are immediately available.
      * @param faultEvent The trace event for the current page fault.
      */
-    MuninnPage grabFreePage( PageFaultEvent faultEvent ) throws IOException
+    MuninnPage grabFreeAndExclusivelyLockedPage( PageFaultEvent faultEvent ) throws IOException
     {
-        return pageCache.grabFreePage( faultEvent );
+        return pageCache.grabFreeAndExclusivelyLockedPage( faultEvent );
     }
 
     /**

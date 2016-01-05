@@ -56,9 +56,10 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     }
 
     @Override
-    protected void lockPage( MuninnPage page )
+    protected boolean tryLockPage( MuninnPage page )
     {
         lockStamp = page.tryOptimisticReadLock();
+        return true;
     }
 
     @Override

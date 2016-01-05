@@ -49,7 +49,7 @@ public class OptiLockStressTest
 
     private OptiLock lock = new OptiLock();
 
-    @RepeatRule.Repeat( times = 300 )
+    @RepeatRule.Repeat( times = 20 )
     @Test
     public void stressTest() throws Exception
     {
@@ -114,17 +114,19 @@ public class OptiLockStressTest
 
                 while ( !stop.get() )
                 {
-                    lock.writeLock();
-                    int[] record = data[id];
-                    for ( int i = 0; i < record.length; i++ )
+                    if ( lock.tryWriteLock() )
                     {
-                        record[i] = counter;
-                        for ( int j = 0; j < smallSpin; j++ )
+                        int[] record = data[id];
+                        for ( int i = 0; i < record.length; i++ )
                         {
-                            unused = rng.nextLong();
+                            record[i] = counter;
+                            for ( int j = 0; j < smallSpin; j++ )
+                            {
+                                unused = rng.nextLong();
+                            }
                         }
+                        lock.unlockWrite();
                     }
-                    lock.unlockWrite();
 
                     for ( int j = 0; j < bigSpin; j++ )
                     {
@@ -203,5 +205,17 @@ public class OptiLockStressTest
         {
             future.get();
         }
+    }
+
+    @Test
+    public void thoroughlyEnsureAtomicityOfUnlockExclusiveAndTakeWriteLock() throws Exception
+    {
+        OptiLockTest test = new OptiLockTest();
+        for ( int i = 0; i < 30000; i++ )
+        {
+            test.unlockExclusiveAndTakeWriteLockMustBeAtomic();
+            test.lock = new OptiLock();
+        }
+
     }
 }

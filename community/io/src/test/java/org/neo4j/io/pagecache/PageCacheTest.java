@@ -35,7 +35,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -43,6 +42,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -86,7 +86,6 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.test.ByteArrayMatcher.byteArray;
-import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
 import static org.neo4j.test.ThreadTestUtils.fork;
 
 public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSupport<T>
@@ -531,6 +530,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         verifyRecordsInFile( file, recordCount );
     }
 
+    @RepeatRule.Repeat( times = 100 )
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void flushingDuringPagedFileCloseMustRetryUntilItSucceeds() throws IOException
     {
@@ -1452,136 +1452,18 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void readsAndWritesMustBeMutuallyConsistent() throws Exception
     {
-        // The idea is this: have a range of pages and we set off a bunch of threads to
-        // do writes within a small region of the page set. The writes they'll perform
-        // is to fill a random page within the region, with the same random byte value.
-        // We then have our main thread scan through all the pages over and over, and
-        // check that all pages can be read consistently, such that all the bytes in a
-        // given page have the same value. We do this check many times, because the
-        // test is inherently about catching data races in the act.
-
-        final int pageCount = 100;
-        int writerThreads = 8;
-        final CountDownLatch startLatch = new CountDownLatch( writerThreads );
-        final CountDownLatch writersDoneLatch = new CountDownLatch( writerThreads );
-        List<Future<?>> writers = new ArrayList<>();
-
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-        final PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
-
-        // zero-fill the file
-        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
-        {
-            for ( int i = 0; i < pageCount; i++ )
-            {
-                assertTrue( cursor.next() );
-            }
-        }
-
-        Runnable writer = () -> {
-            try
-            {
-                int pageRangeMin = pageCount / 2;
-                int pageRangeMax = pageRangeMin + 5;
-                ThreadLocalRandom rng = ThreadLocalRandom.current();
-                int[] offsets = new int[filePageSize];
-                for ( int i = 0; i < offsets.length; i++ )
-                {
-                    offsets[i] = i;
-                }
-
-                startLatch.countDown();
-
-                while ( !Thread.interrupted() )
-                {
-                    byte value = (byte) rng.nextInt();
-                    int pageId = rng.nextInt( pageRangeMin, pageRangeMax );
-                    // shuffle offsets
-                    for ( int i = 0; i < offsets.length; i++ )
-                    {
-                        int j = rng.nextInt( i, offsets.length );
-                        int s = offsets[i];
-                        offsets[i] = offsets[j];
-                        offsets[j] = s;
-                    }
-                    // fill page
-                    try ( PageCursor cursor = pagedFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
-                    {
-                        if ( cursor.next() )
-                        {
-                            do
-                            {
-                                for ( int offset : offsets )
-                                {
-                                    cursor.setOffset( offset );
-                                    cursor.putByte( value );
-                                }
-                            } while ( cursor.shouldRetry() );
-                        }
-                    }
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-            finally
-            {
-                writersDoneLatch.countDown();
-            }
-        };
-
-        for ( int i = 0; i < writerThreads; i++ )
-        {
-            writers.add( executor.submit( writer ) );
-        }
-
-        startLatch.await();
-
-        try
-        {
-            for ( int i = 0; i < 2000; i++ )
-            {
-                int countedConsistentPageReads = 0;
-                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
-                {
-                    while ( cursor.next() )
-                    {
-                        boolean consistent;
-                        do
-                        {
-                            consistent = true;
-                            byte first = cursor.getByte();
-                            for ( int j = 1; j < filePageSize; j++ )
-                            {
-                                byte b = cursor.getByte();
-                                consistent = consistent && b == first;
-                            }
-                        } while ( cursor.shouldRetry() );
-                        assertTrue( "checked consistency at itr " + i, consistent );
-                        countedConsistentPageReads++;
-                    }
-                }
-                assertThat( countedConsistentPageReads, is( pageCount ) );
-            }
-
-            for ( Future<?> future : writers )
-            {
-                if ( future.isDone() )
-                {
-                    future.get();
-                }
-                else
-                {
-                    future.cancel( true );
-                }
-            }
-            writersDoneLatch.await();
-        }
-        finally
-        {
-            pagedFile.close();
-        }
+        int filePageCount = 100;
+        RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
+        harness.disableCommands( Command.FlushCache, Command.FlushFile, Command.MapFile, Command.UnmapFile );
+        harness.setCommandProbabilityFactor( Command.ReadRecord, 0.5 );
+        harness.setCommandProbabilityFactor( Command.WriteRecord, 0.5 );
+        harness.setConcurrencyLevel( 8 );
+        harness.setFilePageCount( filePageCount );
+        harness.setInitialMappedFiles( 1 );
+        harness.setCachePageSize( pageCachePageSize );
+        harness.setFilePageSize( pageCachePageSize );
+        harness.setVerification( filesAreCorrectlyWrittenVerification( new StandardRecordFormat(), filePageCount ) );
+        harness.run( SEMI_LONG_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
@@ -2386,7 +2268,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void writeLockedPageMustBlockFileUnmapping() throws Exception
+    public void writeLockedPageMustNotBlockFileUnmapping() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
@@ -2394,18 +2276,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK );
         assertTrue( cursor.next() );
 
-        Thread unmapper = fork( $close( pagedFile ) );
-        awaitThreadState( unmapper, 1000,
-                Thread.State.BLOCKED, Thread.State.WAITING, Thread.State.TIMED_WAITING );
+        fork( $close( pagedFile ) ).join();
 
-        assertFalse( cursor.shouldRetry() );
         cursor.close();
-
-        unmapper.join();
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void pessimisticReadLockedPageMustNotBlockFileUnmapping() throws Exception
+    public void optimisticReadLockedPageMustNotBlockFileUnmapping() throws Exception
     {
         generateFileWithRecords( file( "a" ), 1, recordSize );
 
@@ -2413,11 +2290,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
         PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK );
-        assertTrue( cursor.next() ); // Got a pessimistic read lock
+        assertTrue( cursor.next() ); // Got a read lock
 
         fork( $close( pagedFile ) ).join();
 
-        assertFalse( cursor.shouldRetry() );
         cursor.close();
     }
 
@@ -2452,7 +2328,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         fork( $close( pagedFile ) ).join();
 
-        assertFalse( cursor.shouldRetry() );
         try {
             cursor.next();
             fail( "Advancing the cursor should have thrown" );
@@ -2481,7 +2356,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         pageCache = null;
 
         cursor.getByte();
-        assertFalse( cursor.shouldRetry() );
+        cursor.shouldRetry();
         try {
             cursor.next();
             fail( "Advancing the cursor should have thrown" );

@@ -246,6 +246,7 @@ public class MuninnPageCache implements PageCache
         while ( pageIndex --> 0 )
         {
             MuninnPage page = new MuninnPage( cachePageSize, memoryManager );
+            page.tryExclusiveLock(); // All pages in the free-list are exclusively locked, and unlocked by page fault.
             pages[pageIndex] = page;
 
             if ( pageList == null )
@@ -584,7 +585,7 @@ public class MuninnPageCache implements PageCache
         return pageCacheId;
     }
 
-    MuninnPage grabFreePage( PageFaultEvent faultEvent ) throws IOException
+    MuninnPage grabFreeAndExclusivelyLockedPage( PageFaultEvent faultEvent ) throws IOException
     {
         // Review the comment on the freelist field before making changes to
         // this part of the code.
@@ -672,7 +673,10 @@ public class MuninnPageCache implements PageCache
                     }
                     finally
                     {
-                        page.unlockExclusive();
+                        if ( !evicted )
+                        {
+                            page.unlockExclusive();
+                        }
                     }
                 }
             }
@@ -774,7 +778,8 @@ public class MuninnPageCache implements PageCache
 
     int evictPages( int pageCountToEvict, int clockArm, EvictionRunEvent evictionRunEvent )
     {
-        while ( pageCountToEvict > 0 && !closed ) {
+        while ( pageCountToEvict > 0 && !closed )
+        {
             if ( clockArm == pages.length )
             {
                 clockArm = 0;
@@ -808,10 +813,6 @@ public class MuninnPageCache implements PageCache
                     {
                         pageEvicted = page.isLoaded() && evictPage( page, evictionEvent );
                     }
-                    finally
-                    {
-                        page.unlockExclusive();
-                    }
 
                     if ( pageEvicted )
                     {
@@ -826,8 +827,14 @@ public class MuninnPageCache implements PageCache
                             freePage.setNext( (FreePage) current );
                             nextListHead = freePage;
                         }
-                        while ( !compareAndSetFreelistHead(
-                                current, nextListHead ) );
+                        while ( !compareAndSetFreelistHead( current, nextListHead ) );
+                    }
+                    else
+                    {
+                        // Pages we put into the free-list remain exclusively locked until a page fault unlocks them
+                        // If we somehow failed to evict the page, then we need to make sure that we release the
+                        // exclusive lock.
+                        page.unlockExclusive();
                     }
                 }
             }
