@@ -38,87 +38,64 @@
 #  * variables for all Neo4j configuration values
 #  * NEO4J_PID
 
-show_java_requirements() {
-  echo "* Please use Oracle(R) Java(TM) 8 or OpenJDK(TM) to run Neo4j Server."
-}
+find_java_home() {
+  [[ "${JAVA_HOME:-}" ]] && return
 
-show_installation_instructions() {
-  echo "* Please see http://docs.neo4j.org/ for Neo4j Server installation instructions."
-}
-
-# Detect java and set JAVACMD on successful find.
-findjava() {
-  detectos
-  if [ "${DIST_OS}" == "macosx" ] ; then
-     if [[ ! "${JAVA_VERSION:-}" ]] ; then
-       JAVA_VERSION="CurrentJDK"
-     else
-       echo "Using Java version: ${JAVA_VERSION}"
-     fi
-     if [[ ! "${JAVA_HOME:-}" ]] ; then
-       JAVA_HOME="$(/usr/libexec/java_home -v 1.8)"
-     fi
-  fi
-
-  if [[ ! "${JAVA_HOME:-}" ]] ; then
-    if [ -r /etc/gentoo-release ] ; then
+  case "${DIST_OS}" in
+    "macosx")
+      JAVA_HOME="$(/usr/libexec/java_home -v 1.8)"
+      ;;
+    "gentoo")
       JAVA_HOME="$(java-config --jre-home)"
-    fi
-  fi
-
-  # If a specific java binary isn't specified search for the standard 'java' binary
-  if [[ ! "${JAVACMD:-}" ]] ; then
-    if [[ "${JAVA_HOME:-}" ]] ; then
-      if [ -x "${JAVA_HOME}/jre/sh/java" ] ; then
-        # IBM's JDK on AIX uses strange locations for the executables
-        JAVACMD="${JAVA_HOME}/jre/sh/java"
-      else
-        JAVACMD="${JAVA_HOME}/bin/java"
-      fi
-    else
-      if [ "${DIST_OS}" != "macosx" ] ; then
-        # Don't use default java on Darwin because it displays a misleading dialog box
-        JAVACMD="$(which java)"
-      fi
-    fi
-  fi
+      ;;
+  esac
 }
 
-exitonnojava() {
-  findjava
+find_java_cmd() {
+  [[ "${JAVACMD:-}" ]] && return
+  detectos
+  find_java_home
 
-  if [ ! -x "${JAVACMD}" ] ; then
-    echo "ERROR: Unable to find java. (Cannot execute ${JAVACMD})"
-    show_java_requirements
-    show_installation_instructions
+  if [[ "${JAVA_HOME:-}" ]] ; then
+    if [ -x "${JAVA_HOME}/jre/sh/java" ] ; then
+      # IBM's JDK on AIX uses strange locations for the executables
+      JAVACMD="${JAVA_HOME}/jre/sh/java"
+    else
+      JAVACMD="${JAVA_HOME}/bin/java"
+    fi
+  else
+    if [ "${DIST_OS}" != "macosx" ] ; then
+      # Don't use default java on Darwin because it displays a misleading dialog box
+      JAVACMD="$(which java)"
+    fi
+  fi
+
+  if [[ ! "${JAVACMD:-}" ]]; then
+    echo "ERROR: Unable to find Java executable."
+    show_java_help
     exit 1
   fi
 }
 
-warn_about_java_runtime() {
-  echo "WARNING! You are using an unsupported Java runtime. "
-  show_java_requirements
-  show_installation_instructions
-}
+check_java() {
+  find_java_cmd
 
-complain_about_java_version() {
-  echo "ERROR! Neo4j cannot be started using java version ${JAVAVERSION}. "
-  show_java_requirements
-  show_installation_instructions
-}
-
-# check if running Oracle JDK 8 or OpenJDK 8, warn if not
-checkjvmcompatibility() {
-  # Shut down if java version < 1.8
   JAVAVERSION=$("${JAVACMD}" -version 2>&1 | awk -F '"' '/version/ {print $2}')
   if [[ "${JAVAVERSION}" < "1.8" ]]; then
-    complain_about_java_version
+    echo "ERROR! Neo4j cannot be started using java version ${JAVAVERSION}. "
+    show_java_help
     exit 1
   fi
 
   if ! ("${JAVACMD}" -version 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM"); then
-    warn_about_java_runtime
+    echo "WARNING! You are using an unsupported Java runtime. "
+    show_java_help
   fi
+}
+
+show_java_help() {
+  echo "* Please use Oracle(R) Java(TM) 8 or OpenJDK(TM) to run Neo4j Server."
+  echo "* Please see http://docs.neo4j.org/ for Neo4j Server installation instructions."
 }
 
 checkstatus() {
@@ -128,17 +105,14 @@ checkstatus() {
   fi
 }
 
-# Resolve the os
 detectos() {
-  DIST="$(uname -s | tr 'A-Z' 'a-z' | tr -d ' ')"
-  case "${DIST}" in
-    'darwin')
-      DIST_OS="macosx"
-      ;;
-    *)
-      DIST_OS="other"
-      ;;
-  esac
+  if uname -s | grep -q Darwin; then
+    DIST_OS="macosx"
+  elif [[ -e /etc/gentoo-release ]]; then
+    DIST_OS="gentoo"
+  else
+    DIST_OS="other"
+  fi
 }
 
 # Runs before the server command, making sure that whatever should be in place is
@@ -219,9 +193,6 @@ do_console() {
     exit 1
   fi
 
-  exitonnojava
-  checkjvmcompatibility
-
   echo "Starting ${FRIENDLY_NAME}."
 
   checklimits
@@ -237,9 +208,6 @@ do_start() {
     echo "${FRIENDLY_NAME} is already running (pid ${NEO4J_PID})."
     exit 0
   fi
-
-  exitonnojava
-  checkjvmcompatibility
 
   echo "Starting ${FRIENDLY_NAME}."
 
@@ -297,8 +265,6 @@ do_stop() {
 
 do_status() {
   checkstatus
-  exitonnojava
-
   if [[ ! "${NEO4J_PID:-}" ]] ; then
     echo "${FRIENDLY_NAME} is not running"
     exit 3
@@ -309,7 +275,6 @@ do_status() {
 
 do_info() {
   do_status
-  exitonnojava
   buildclasspath
   echo "NEO4J_HOME:        ${NEO4J_HOME}"
   echo "JAVA_HOME:         ${JAVA_HOME}"
@@ -323,6 +288,7 @@ main() {
   setuppaths
   parseConfig
   setupjavaopts
+  check_java
 
   case "$1" in
     console)
