@@ -96,8 +96,7 @@ public class SimpleLuceneLabelScanWriter implements LabelScanWriter
             try
             {
                 partitionSearcher.close();
-                // todo: why do we need maybeRefresh here? maybe use maybeRefreshBlocking
-                partition.maybeRefresh();
+                partition.maybeRefreshBlocking();
             }
             finally
             {

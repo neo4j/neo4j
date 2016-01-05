@@ -124,7 +124,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                         format.labelField( 7, 0x1 ),
                         format.labelSearchField( 7 ) ) ) );
 
-        verify( partition ).maybeRefresh();
+        verify( partition ).maybeRefreshBlocking();
         verifyNoMoreInteractions( partition );
     }
 

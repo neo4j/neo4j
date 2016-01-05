@@ -232,23 +232,6 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
     }
 
-    // todo: remove and always use maybeRefreshBlocking?
-    public void maybeRefresh() throws IOException
-    {
-        readWriteLock.lock();
-        try
-        {
-            for ( IndexPartition partition : getPartitions() )
-            {
-                partition.maybeRefresh();
-            }
-        }
-        finally
-        {
-            readWriteLock.unlock();
-        }
-    }
-
     public void maybeRefreshBlocking() throws IOException
     {
         readWriteLock.lock();

@@ -63,11 +63,6 @@ public class IndexPartition implements Closeable
         return new PartitionSearcher( searcherManager );
     }
 
-    public void maybeRefresh() throws IOException
-    {
-        searcherManager.maybeRefresh();
-    }
-
     public void maybeRefreshBlocking() throws IOException
     {
         searcherManager.maybeRefreshBlocking();

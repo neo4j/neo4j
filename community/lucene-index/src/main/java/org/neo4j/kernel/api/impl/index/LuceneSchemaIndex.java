@@ -108,7 +108,7 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
     private UniquenessVerifier createUniquenessVerifier() throws IOException
     {
         ensureOpen();
-        maybeRefresh();
+        maybeRefreshBlocking();
         List<IndexPartition> partitions = getPartitions();
         return hasSinglePartition( partitions ) ? createSimpleUniquenessVerifier( partitions )
                                                 : createPartitionedUniquenessVerifier( partitions );
