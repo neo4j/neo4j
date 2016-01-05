@@ -37,6 +37,14 @@
 # This script defines the following variables which callers may use in their functions:
 #  * variables for all Neo4j configuration values
 #  * NEO4J_PID
+#
+# Callers may also provide the following variables to customize the scripts:
+#  * JAVA_HOME
+#  * JAVA_CMD
+#  * NEO4J_CONFIG
+#  * NEO4J_LOG
+#  * NEO4J_PIDFILE
+#  * NEO4J_START_WAIT
 
 find_java_home() {
   [[ "${JAVA_HOME:-}" ]] && return
