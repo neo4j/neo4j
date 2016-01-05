@@ -19,12 +19,25 @@
  */
 package org.neo4j.codegen;
 
+@SuppressWarnings( "unused" )
 public class NamedBase
 {
     final String name;
+    private boolean defaultConstructorCalled = false;
+
+    public NamedBase()
+    {
+        this.defaultConstructorCalled = true;
+        this.name = null;
+    }
 
     public NamedBase( String name )
     {
         this.name = name;
+    }
+
+    public boolean defaultConstructorCalled()
+    {
+        return defaultConstructorCalled;
     }
 }

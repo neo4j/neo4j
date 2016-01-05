@@ -39,9 +39,11 @@ import org.neo4j.codegen.source.SourceCode;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -132,6 +134,68 @@ public class CodeGenerationTest
         assertSame( classOne.getPackage(), classTwo.getPackage() );
         assertEquals( "One", classOne.getSimpleName() );
         assertEquals( "Two", classTwo.getSimpleName() );
+    }
+
+    @Test
+    public void shouldGenerateDefaultConstructor() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( NamedBase.class, "SimpleClass"  ) )
+        {
+            handle = simple.handle();
+        }
+
+        // when
+        Object instance = constructor( handle.loadClass()).invoke( );
+        Object constructorCalled = instanceMethod( instance, "defaultConstructorCalled" ).invoke();
+
+        // then
+        assertTrue( (Boolean) constructorCalled );
+    }
+
+    @Test
+    public void shouldGenerateCallToDefaultSuperConstructor() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+
+        try ( ClassGenerator simple = generateClass( NamedBase.class, "SimpleClass" ) )
+        {
+            simple.field( String.class, "foo" );
+            simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( String.class, "foo" ) )
+                    .build() );
+            handle = simple.handle();
+        }
+
+        // when
+        Object instance = constructor( handle.loadClass(), String.class, String.class ).invoke( "Pontus", "Tobias" );
+        Object constructorCalled = instanceMethod( instance, "defaultConstructorCalled" ).invoke();
+
+        // then
+        assertTrue( (Boolean) constructorCalled );
+    }
+
+    @Test
+    public void shouldNotGenerateCallToDefaultSuperConstructorIfSuperIsCalled() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( NamedBase.class, "SimpleClass" ) )
+        {
+            simple.field( String.class, "foo" );
+            simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( String.class, "foo" ) )
+                    .invokeSuper( new ExpressionTemplate[]{load( "name" )}, new TypeReference[]{typeReference(String.class)} )
+                    .build() );
+            handle = simple.handle();
+        }
+
+        // when
+        Object instance = constructor( handle.loadClass(), String.class, String.class ).invoke( "Pontus", "Tobias" );
+        Object constructorCalled = instanceMethod( instance, "defaultConstructorCalled" ).invoke();
+
+        // then
+        assertFalse( (Boolean) constructorCalled );
     }
 
     @Test
@@ -433,14 +497,7 @@ public class CodeGenerationTest
         public AutoCloseable resource()
         {
             open++;
-            return new AutoCloseable()
-            {
-                @Override
-                public void close() throws Exception
-                {
-                    close++;
-                }
-            };
+            return () -> close++;
         }
 
         public void inside()

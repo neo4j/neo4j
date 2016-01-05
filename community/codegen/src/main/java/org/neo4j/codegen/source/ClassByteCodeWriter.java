@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.codegen.BaseExpressionVisitor;
 import org.neo4j.codegen.ByteCodes;
 import org.neo4j.codegen.ClassEmitter;
 import org.neo4j.codegen.Expression;
@@ -50,11 +51,11 @@ import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ALOAD;
-import static org.objectweb.asm.Opcodes.ILOAD;
 import static org.objectweb.asm.Opcodes.DLOAD;
 import static org.objectweb.asm.Opcodes.FLOAD;
-import static org.objectweb.asm.Opcodes.LLOAD;
+import static org.objectweb.asm.Opcodes.ILOAD;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
+import static org.objectweb.asm.Opcodes.LLOAD;
 import static org.objectweb.asm.Opcodes.PUTFIELD;
 import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
@@ -65,6 +66,7 @@ class ClassByteCodeWriter implements ClassEmitter
     private final ClassWriter classWriter;
     private final TypeReference type;
     private final Map<FieldReference,Expression> staticFields = new HashMap<>();
+    private final TypeReference base;
 
     ClassByteCodeWriter(TypeReference type, TypeReference base, TypeReference[] interfaces)
     {
@@ -77,12 +79,13 @@ class ClassByteCodeWriter implements ClassEmitter
         classWriter.visit( V1_8, ACC_PUBLIC + ACC_SUPER, byteCodeName( type.name() ), signature( type ),
                 byteCodeName( base.name() ), iNames.length != 0 ? iNames : null );
         this.type = type;
+        this.base = base;
     }
 
     @Override
     public MethodEmitter method( MethodDeclaration signature )
     {
-        return new MethodByteCodeEmitter( classWriter, signature);
+        return new MethodByteCodeEmitter( classWriter, signature, base );
     }
 
     @Override
@@ -143,10 +146,13 @@ class ClassByteCodeWriter implements ClassEmitter
         private final MethodVisitor methodVisitor;
         private final MethodDeclaration declaration;
         private final ByteCodeExpressionVisitor expressionVisitor;
+        private boolean calledSuper = false;
+        private final TypeReference base;
 
-        public MethodByteCodeEmitter( ClassWriter classWriter, MethodDeclaration declaration)
+        public MethodByteCodeEmitter( ClassWriter classWriter, MethodDeclaration declaration, TypeReference base )
         {
             this.declaration = declaration;
+            this.base = base;
             this.methodVisitor = classWriter.visitMethod( ACC_PUBLIC, declaration.name(), desc( declaration ),
                     signature( declaration ), exceptions( declaration ) );
             this.methodVisitor.visitCode();
@@ -156,6 +162,8 @@ class ClassByteCodeWriter implements ClassEmitter
         @Override
         public void done()
         {
+            callSuperIfNecessary( );
+
             if ( declaration.returnType().isVoid() )
             {
                 methodVisitor.visitInsn( RETURN );
@@ -168,12 +176,15 @@ class ClassByteCodeWriter implements ClassEmitter
         @Override
         public void expression( Expression expression )
         {
+            callSuperIfNecessary( expression );
             expression.accept( expressionVisitor );
         }
 
         @Override
         public void put( Expression target, FieldReference field, Expression value )
         {
+            callSuperIfNecessary( );
+
             target.accept( expressionVisitor );
             value.accept( expressionVisitor );
             methodVisitor.visitFieldInsn(PUTFIELD, byteCodeName(field.owner().name()) , field.name(), typeName( field.type() ));
@@ -183,78 +194,144 @@ class ClassByteCodeWriter implements ClassEmitter
         @Override
         public void returns()
         {
+            callSuperIfNecessary( );
+
             methodVisitor.visitInsn( RETURN );
         }
 
         @Override
         public void returns( Expression value )
         {
+            callSuperIfNecessary( );
         }
 
         @Override
         public void assign( TypeReference type, String name, Expression value )
         {
-
+            callSuperIfNecessary( );
         }
 
         @Override
         public void beginWhile( Expression test )
         {
-
+            callSuperIfNecessary( );
         }
 
         @Override
         public void beginIf( Expression test )
         {
-
+            callSuperIfNecessary( );
         }
 
         @Override
         public void beginFinally()
         {
-
+            callSuperIfNecessary( );
         }
 
         @Override
         public void endBlock()
         {
-
+            callSuperIfNecessary( );
         }
 
         @Override
         public void beginTry( Resource... resources )
         {
-
+            callSuperIfNecessary( );
         }
 
         @Override
         public void throwException( Expression exception )
         {
-
+            callSuperIfNecessary( );
         }
 
         @Override
         public void beginCatch( Parameter exception )
         {
-
+            callSuperIfNecessary( );
         }
 
         @Override
         public void declare( LocalVariable local )
         {
-
+            callSuperIfNecessary( );
         }
 
         @Override
         public void assign( LocalVariable local, Expression value )
         {
-
+            callSuperIfNecessary( );
         }
 
         @Override
         public void beginForEach( Parameter local, Expression iterable )
         {
+            callSuperIfNecessary( );
+        }
 
+        /*
+         * Make sure we call default super constructor
+         */
+        private void callSuperIfNecessary()
+        {
+            if ( needsToCallSuperConstructor() )
+            {
+                callSuper();
+            }
+        }
+
+        /*
+         * Checks if expression contains call to super constructor
+         * otherwise generates call to default super constructor.
+         *
+         */
+        private void callSuperIfNecessary( Expression expression )
+        {
+            if ( !needsToCallSuperConstructor() )
+            {
+                return;
+            }
+
+            expression.accept( new BaseExpressionVisitor()
+            {
+                @Override
+                public void invoke( Expression target, MethodReference method, Expression[] arguments )
+                {
+                    calledSuper = method.isConstructor() && loadsSuper( target );
+                }
+            } );
+
+            callSuperIfNecessary();
+        }
+
+        private void callSuper()
+        {
+            methodVisitor.visitVarInsn( ALOAD, 0 );
+            methodVisitor.visitMethodInsn( INVOKESPECIAL, byteCodeName( base.name() ), "<init>", "()V", false );
+            calledSuper = true;
+        }
+
+        private boolean needsToCallSuperConstructor()
+        {
+            return declaration.isConstructor() && !calledSuper;
+        }
+
+
+        private boolean loadsSuper( Expression expression )
+        {
+            final boolean[] loadsSuper = new boolean[]{false};
+            expression.accept( new BaseExpressionVisitor()
+            {
+                @Override
+                public void loadThis( String sourceName )
+                {
+                    loadsSuper[0] = "super".equals( sourceName );
+                }
+            } );
+
+            return loadsSuper[0];
         }
 
     }
@@ -277,8 +354,6 @@ class ClassByteCodeWriter implements ClassEmitter
                 argument.accept( this );
             }
             methodVisitor.visitMethodInsn(INVOKESPECIAL, byteCodeName( method.owner().name() ), method.name(), desc(method), false);
-            System.out.println("methodVisitor.visitMethodInsn(INVOKESPECIAL, byteCodeName( method.owner().name() ), method.name(), desc(method), false);");
-
         }
 
         @Override
@@ -309,7 +384,6 @@ class ClassByteCodeWriter implements ClassEmitter
                 break;
             default:
                 methodVisitor.visitVarInsn( ALOAD, variable.index() );
-
             }
         }
 
@@ -335,7 +409,6 @@ class ClassByteCodeWriter implements ClassEmitter
         public void loadThis( String sourceName )
         {
             methodVisitor.visitVarInsn( ALOAD, 0 );
-            System.out.println("methodVisitor.visitVarInsn( ALOAD, 0 );");
         }
 
         @Override

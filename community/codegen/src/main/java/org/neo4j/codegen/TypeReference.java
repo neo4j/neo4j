@@ -146,7 +146,7 @@ public class TypeReference
         return isTypeParameter;
     }
 
-    static final TypeReference VOID = new TypeReference( "", "void", true, false, false ),
+    public static final TypeReference VOID = new TypeReference( "", "void", true, false, false ),
             OBJECT = new TypeReference( "java.lang", "Object", false, false, false );
     static final TypeReference[] NO_TYPES = new TypeReference[0];
 
