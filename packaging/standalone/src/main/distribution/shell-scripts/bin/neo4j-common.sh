@@ -29,8 +29,8 @@
 #     - CONSOLE_LOG_FILE
 #     - NEO4J_HOME
 #     - SCRIPT
-#     - printstartmessage()
-#     - printextrainfo()
+#     - print_start_message()
+#     - print_extra_info()
 #  * source this file
 #  * run `main "$@"`
 #
@@ -52,20 +52,20 @@ find_java_home() {
 }
 
 find_java_cmd() {
-  [[ "${JAVACMD:-}" ]] && return
-  detectos
+  [[ "${JAVA_CMD:-}" ]] && return
+  detect_os
   find_java_home
 
   if [[ "${JAVA_HOME:-}" ]] ; then
-    JAVACMD="${JAVA_HOME}/bin/java"
+    JAVA_CMD="${JAVA_HOME}/bin/java"
   else
     if [ "${DIST_OS}" != "macosx" ] ; then
       # Don't use default java on Darwin because it displays a misleading dialog box
-      JAVACMD="$(which java)"
+      JAVA_CMD="$(which java)"
     fi
   fi
 
-  if [[ ! "${JAVACMD:-}" ]]; then
+  if [[ ! "${JAVA_CMD:-}" ]]; then
     echo "ERROR: Unable to find Java executable."
     show_java_help
     exit 1
@@ -75,14 +75,14 @@ find_java_cmd() {
 check_java() {
   find_java_cmd
 
-  JAVAVERSION=$("${JAVACMD}" -version 2>&1 | awk -F '"' '/version/ {print $2}')
-  if [[ "${JAVAVERSION}" < "1.8" ]]; then
-    echo "ERROR! Neo4j cannot be started using java version ${JAVAVERSION}. "
+  JAVA_VERSION=$("${JAVA_CMD}" -version 2>&1 | awk -F '"' '/version/ {print $2}')
+  if [[ "${JAVA_VERSION}" < "1.8" ]]; then
+    echo "ERROR! Neo4j cannot be started using java version ${JAVA_VERSION}. "
     show_java_help
     exit 1
   fi
 
-  if ! ("${JAVACMD}" -version 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM"); then
+  if ! ("${JAVA_CMD}" -version 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM"); then
     echo "WARNING! You are using an unsupported Java runtime. "
     show_java_help
   fi
@@ -93,14 +93,14 @@ show_java_help() {
   echo "* Please see http://docs.neo4j.org/ for Neo4j Server installation instructions."
 }
 
-checkstatus() {
+check_status() {
   if [ -e "${NEO4J_PIDFILE}" ] ; then
     NEO4J_PID=$( cat "${NEO4J_PIDFILE}" )
     kill -0 "${NEO4J_PID}" 2>/dev/null || NEO4J_PID=""
   fi
 }
 
-detectos() {
+detect_os() {
   if uname -s | grep -q Darwin; then
     DIST_OS="macosx"
   elif [[ -e /etc/gentoo-release ]]; then
@@ -112,17 +112,15 @@ detectos() {
 
 # Runs before the server command, making sure that whatever should be in place is
 # in place.
-checkandrepairenv() {
-    # Create log directory if missing, change owner if created.
+check_and_repair_env() {
     if [ ! -d "${NEO4J_LOG}" ]; then
       echo "${NEO4J_LOG} was missing, recreating..."
       mkdir -p "${NEO4J_LOG}"
     fi
 }
 
-# Checks system limits, warns if not proper
-checklimits() {
-  detectos
+check_limits() {
+  detect_os
   if [ "${DIST_OS}" != "macosx" ] ; then
     ALLOWED_OPEN_FILES="$(ulimit -n)"
 
@@ -132,11 +130,11 @@ checklimits() {
   fi
 }
 
-parseConfig() {
+parse_config() {
   # - plain key-value pairs become environment variables
   # - keys have '.' chars changed to '_'
   # - keys of the form KEY.# (where # is a number) are concatenated into a single environment variable named KEY
-  parseline() {
+  parse_line() {
     line="$1"
     if [[ "${line}" =~ ^([^#\s][^=]+)=(.+)$ ]]; then
       key="${BASH_REMATCH[1]//./_}"
@@ -156,20 +154,20 @@ parseConfig() {
     path="${NEO4J_CONFIG}/${file}"
     if [ -e "${path}" ]; then
       while read line; do
-        parseline "${line}"
+        parse_line "${line}"
       done <"${path}"
     fi
   done
 }
 
-setuppaths() {
+setup_paths() {
   [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
   [[ "${NEO4J_LOG:-}" ]] || NEO4J_LOG="${NEO4J_HOME}/data/log"
   [[ "${NEO4J_PIDFILE:-}" ]] || NEO4J_PIDFILE="${NEO4J_HOME}/data/neo4j-service.pid"
   CONSOLE_LOG="${NEO4J_LOG}/${CONSOLE_LOG_FILE}"
 }
 
-setupjavaopts() {
+setup_java_opts() {
   JAVA_OPTS="-server"
   [[ "${wrapper_java_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${wrapper_java_additional}"
   [[ "${wrapper_java_initmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xms${wrapper_java_initmemory}m"
@@ -177,12 +175,12 @@ setupjavaopts() {
   return 0
 }
 
-buildclasspath() {
+build_classpath() {
   CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/system/lib/*:${NEO4J_HOME}/plugins/*"
 }
 
 do_console() {
-  checkstatus
+  check_status
   if [[ "${NEO4J_PID:-}" ]] ; then
     echo "${FRIENDLY_NAME} is already running (pid ${NEO4J_PID})."
     exit 1
@@ -190,15 +188,15 @@ do_console() {
 
   echo "Starting ${FRIENDLY_NAME}."
 
-  checklimits
-  buildclasspath
-  checkandrepairenv
+  check_limits
+  build_classpath
+  check_and_repair_env
 
-  exec "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "${MAIN_CLASS}"
+  exec "${JAVA_CMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "${MAIN_CLASS}"
 }
 
 do_start() {
-  checkstatus
+  check_status
   if [[ "${NEO4J_PID:-}" ]] ; then
     echo "${FRIENDLY_NAME} is already running (pid ${NEO4J_PID})."
     exit 0
@@ -206,28 +204,28 @@ do_start() {
 
   echo "Starting ${FRIENDLY_NAME}."
 
-  checklimits
-  buildclasspath
-  checkandrepairenv
+  check_limits
+  build_classpath
+  check_and_repair_env
 
-  nohup "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "${MAIN_CLASS}" \
+  nohup "${JAVA_CMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "${MAIN_CLASS}" \
     >>"${CONSOLE_LOG}" 2>&1 &
   echo "$!" >"${NEO4J_PIDFILE}"
 
   sleep "${NEO4J_START_WAIT:-5}"
-  checkstatus
+  check_status
   if [[ ! "${NEO4J_PID:-}" ]] ; then
     echo "Unable to start. See ${CONSOLE_LOG} for details."
     rm "${NEO4J_PIDFILE}"
     exit 1
   fi
 
-  printstartmessage
+  print_start_message
   echo "See ${CONSOLE_LOG} for current status."
 }
 
 do_stop() {
-  checkstatus
+  check_status
 
   if [[ ! "${NEO4J_PID:-}" ]] ; then
     echo "ERROR: ${FRIENDLY_NAME} not running"
@@ -241,7 +239,7 @@ do_stop() {
         printf "."
       fi
       sleep 1
-      checkstatus
+      check_status
 
       if [ "${elapsed}" -eq "$SHUTDOWN_TIMEOUT" ] ;then
 	    echo ""
@@ -259,7 +257,7 @@ do_stop() {
 }
 
 do_status() {
-  checkstatus
+  check_status
   if [[ ! "${NEO4J_PID:-}" ]] ; then
     echo "${FRIENDLY_NAME} is not running"
     exit 3
@@ -270,19 +268,19 @@ do_status() {
 
 do_info() {
   do_status
-  buildclasspath
+  build_classpath
   echo "NEO4J_HOME:        ${NEO4J_HOME}"
   echo "JAVA_HOME:         ${JAVA_HOME}"
   echo "JAVA_OPTS:         ${JAVA_OPTS}"
   echo "CLASSPATH:         ${CLASSPATH}"
-  printextrainfo
+  print_extra_info
 }
 
 main() {
   cd "${NEO4J_HOME}"
-  setuppaths
-  parseConfig
-  setupjavaopts
+  setup_paths
+  parse_config
+  setup_java_opts
   check_java
 
   case "$1" in

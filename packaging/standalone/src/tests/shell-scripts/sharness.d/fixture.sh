@@ -22,5 +22,5 @@ neo4j_home() {
   echo "$(pwd)/neo4j-home"
 }
 
-export JAVACMD="$(pwd)/sharness.d/fake-java"
+export JAVA_CMD="$(pwd)/sharness.d/fake-java"
 export NEO4J_START_WAIT=0

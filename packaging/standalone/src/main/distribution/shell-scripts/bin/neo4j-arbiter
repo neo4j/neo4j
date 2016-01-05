@@ -27,12 +27,12 @@ MAIN_CLASS="org.neo4j.server.enterprise.StandaloneClusterClient"
 MIN_ALLOWED_OPEN_FILES=1
 CONSOLE_LOG_FILE="arbiter-console.log"
 
-printstartmessage() {
+print_start_message() {
   echo "Started."
   echo "This instance is now joining the cluster."
 }
 
-printextrainfo() {
+print_extra_info() {
   :
 }
 

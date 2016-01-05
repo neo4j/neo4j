@@ -27,14 +27,14 @@ MAIN_CLASS="#{neo4j.mainClass}"
 MIN_ALLOWED_OPEN_FILES=40000
 CONSOLE_LOG_FILE="console.log"
 
-serverport() {
+server_port() {
   echo "${org_neo4j_server_webserver_port:-7474}"
 }
 
-printstartmessage() {
+print_start_message() {
   NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:-localhost}"
 
-  echo "Started at http://${NEO4J_SERVER_ADDRESS}:$(serverport) (pid ${NEO4J_PID})."
+  echo "Started at http://${NEO4J_SERVER_ADDRESS}:$(server_port) (pid ${NEO4J_PID})."
 
   if [ "${org_neo4j_server_database_mode:-}" = "HA" ] ; then
     echo "This HA instance will be operational once it has joined the cluster."
@@ -43,8 +43,8 @@ printstartmessage() {
   fi
 }
 
-printextrainfo() {
-  echo "NEO4J_SERVER_PORT: $(serverport)"
+print_extra_info() {
+  echo "NEO4J_SERVER_PORT: $(server_port)"
 }
 
 setup_neo4jhome_and_script() {
