@@ -50,8 +50,6 @@ public interface NodeState extends PropertyContainerState
 
     RelationshipIterator augmentRelationships( Direction direction, int[] types, RelationshipIterator rels );
 
-    PrimitiveLongIterator addedRelationships( Direction direction, int[] types );
-
     int augmentDegree( Direction direction, int degree );
 
     int augmentDegree( Direction direction, int degree, int typeId );

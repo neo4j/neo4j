@@ -34,9 +34,8 @@ import org.neo4j.storageengine.api.txstate.RelationshipState;
 /**
  * Overlays transaction state on a {@link RelationshipItem} cursor.
  */
-public abstract class TxAbstractRelationshipCursor
-        extends EntityItemHelper implements Cursor<RelationshipItem>, RelationshipItem,
-        RelationshipVisitor<RuntimeException>
+public abstract class TxAbstractRelationshipCursor extends EntityItemHelper
+        implements Cursor<RelationshipItem>, RelationshipItem, RelationshipVisitor<RuntimeException>
 {
     protected final TransactionState state;
     private final Consumer<TxAbstractRelationshipCursor> instanceCache;
@@ -51,8 +50,7 @@ public abstract class TxAbstractRelationshipCursor
     protected RelationshipState relationshipState;
     protected boolean relationshipIsAddedInThisTx;
 
-    public TxAbstractRelationshipCursor( TransactionState state,
-            Consumer<TxAbstractRelationshipCursor> instanceCache )
+    public TxAbstractRelationshipCursor( TransactionState state, Consumer<TxAbstractRelationshipCursor> instanceCache )
     {
         this.state = state;
         this.instanceCache = instanceCache;
@@ -136,7 +134,6 @@ public abstract class TxAbstractRelationshipCursor
     {
         return state.augmentSinglePropertyCursor(
                 relationshipIsAddedInThisTx ? Cursors.<PropertyItem>empty() : cursor.get().property( propertyKeyId ),
-                relationshipState,
-                propertyKeyId );
+                relationshipState, propertyKeyId );
     }
 }

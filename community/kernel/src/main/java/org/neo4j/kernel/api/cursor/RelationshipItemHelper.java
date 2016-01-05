@@ -21,9 +21,15 @@ package org.neo4j.kernel.api.cursor;
 
 import org.neo4j.storageengine.api.RelationshipItem;
 
-public abstract class RelationshipItemHelper
-        extends EntityItemHelper
-        implements RelationshipItem
+public abstract class RelationshipItemHelper extends EntityItemHelper implements RelationshipItem
 {
-
+    @Override
+    public String toString()
+    {
+        return "Relationship[" +
+                "id:" + id() + ", " +
+                "type:" + type() + ", " +
+                "startNode:" + startNode() + ", " +
+                "endNode:" + endNode() + "]";
+    }
 }

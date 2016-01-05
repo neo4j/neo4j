@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Set;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -137,16 +138,6 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             return relationshipsAdded.augmentRelationships( direction, types, rels );
         }
         return rels;
-    }
-
-    @Override
-    public RelationshipIterator addedRelationships( Direction direction, int[] types )
-    {
-        if ( hasAddedRelationships() )
-        {
-            return relationshipsAdded.augmentRelationships( direction, types, RelationshipIterator.EMPTY );
-        }
-        return null;
     }
 
     @Override
@@ -347,11 +338,6 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
                 return rels;
             }
 
-            @Override
-            public PrimitiveLongIterator addedRelationships( Direction direction, int[] types )
-            {
-                return Primitive.iterator();
-            }
 
             @Override
             public int augmentDegree( Direction direction, int degree )
