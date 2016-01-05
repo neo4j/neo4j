@@ -51,11 +51,17 @@ import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ALOAD;
+import static org.objectweb.asm.Opcodes.ARETURN;
 import static org.objectweb.asm.Opcodes.DLOAD;
+import static org.objectweb.asm.Opcodes.DRETURN;
 import static org.objectweb.asm.Opcodes.FLOAD;
+import static org.objectweb.asm.Opcodes.FRETURN;
+import static org.objectweb.asm.Opcodes.GETFIELD;
 import static org.objectweb.asm.Opcodes.ILOAD;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
+import static org.objectweb.asm.Opcodes.IRETURN;
 import static org.objectweb.asm.Opcodes.LLOAD;
+import static org.objectweb.asm.Opcodes.LRETURN;
 import static org.objectweb.asm.Opcodes.PUTFIELD;
 import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
@@ -68,7 +74,7 @@ class ClassByteCodeWriter implements ClassEmitter
     private final Map<FieldReference,Expression> staticFields = new HashMap<>();
     private final TypeReference base;
 
-    ClassByteCodeWriter(TypeReference type, TypeReference base, TypeReference[] interfaces)
+    ClassByteCodeWriter( TypeReference type, TypeReference base, TypeReference[] interfaces )
     {
         this.classWriter = new ClassWriter( ClassWriter.COMPUTE_MAXS );
         String[] iNames = new String[interfaces.length];
@@ -76,8 +82,8 @@ class ClassByteCodeWriter implements ClassEmitter
         {
             iNames[i] = byteCodeName( interfaces[i].name() );
         }
-        classWriter.visit( V1_8, ACC_PUBLIC + ACC_SUPER, byteCodeName( type.name() ), signature( type ),
-                byteCodeName( base.name() ), iNames.length != 0 ? iNames : null );
+        classWriter.visit( V1_8, ACC_PUBLIC + ACC_SUPER, byteCodeName( type ), signature( type ),
+                byteCodeName( base ), iNames.length != 0 ? iNames : null );
         this.type = type;
         this.base = base;
     }
@@ -97,7 +103,8 @@ class ClassByteCodeWriter implements ClassEmitter
             staticFields.put( field, value );
         }
         FieldVisitor fieldVisitor = classWriter
-                .visitField( field.modifiers(), field.name(), typeName( field.type() ), signature( field.type() ), null );
+                .visitField( field.modifiers(), field.name(), typeName( field.type() ), signature( field.type() ),
+                        null );
         fieldVisitor.visitEnd();
     }
 
@@ -113,8 +120,8 @@ class ClassByteCodeWriter implements ClassEmitter
             {
                 FieldReference field = entry.getKey();
                 entry.getValue().accept( expressionVisitor );
-                methodVisitor.visitFieldInsn(PUTSTATIC, byteCodeName( field.owner().name() ),
-                        field.name(), signature( field.type() ));
+                methodVisitor.visitFieldInsn( PUTSTATIC, byteCodeName( field.owner() ),
+                        field.name(), signature( field.type() ) );
             }
             methodVisitor.visitInsn( RETURN );
             methodVisitor.visitMaxs( 0, 0 );
@@ -187,7 +194,8 @@ class ClassByteCodeWriter implements ClassEmitter
 
             target.accept( expressionVisitor );
             value.accept( expressionVisitor );
-            methodVisitor.visitFieldInsn(PUTFIELD, byteCodeName(field.owner().name()) , field.name(), typeName( field.type() ));
+            methodVisitor
+                    .visitFieldInsn( PUTFIELD, byteCodeName( field.owner() ), field.name(), typeName( field.type() ) );
 
         }
 
@@ -203,6 +211,28 @@ class ClassByteCodeWriter implements ClassEmitter
         public void returns( Expression value )
         {
             callSuperIfNecessary( );
+
+            value.accept( expressionVisitor );
+            switch ( declaration.returnType().simpleName() )
+            {
+            case "int":
+            case "byte":
+            case "short":
+            case "char":
+                methodVisitor.visitInsn( IRETURN );
+                break;
+            case "long":
+                methodVisitor.visitInsn( LRETURN );
+                break;
+            case "float":
+                methodVisitor.visitInsn( FRETURN );
+                break;
+            case "double":
+                methodVisitor.visitInsn( DRETURN );
+                break;
+            default:
+                methodVisitor.visitInsn( ARETURN );
+            }
         }
 
         @Override
@@ -309,7 +339,7 @@ class ClassByteCodeWriter implements ClassEmitter
         private void callSuper()
         {
             methodVisitor.visitVarInsn( ALOAD, 0 );
-            methodVisitor.visitMethodInsn( INVOKESPECIAL, byteCodeName( base.name() ), "<init>", "()V", false );
+            methodVisitor.visitMethodInsn( INVOKESPECIAL, byteCodeName( base ), "<init>", "()V", false );
             calledSuper = true;
         }
 
@@ -353,7 +383,8 @@ class ClassByteCodeWriter implements ClassEmitter
             {
                 argument.accept( this );
             }
-            methodVisitor.visitMethodInsn(INVOKESPECIAL, byteCodeName( method.owner().name() ), method.name(), desc(method), false);
+            methodVisitor.visitMethodInsn( INVOKESPECIAL, byteCodeName( method.owner() ), method.name(), desc( method ),
+                    false );
         }
 
         @Override
@@ -390,6 +421,9 @@ class ClassByteCodeWriter implements ClassEmitter
         @Override
         public void getField( Expression target, FieldReference field )
         {
+            target.accept( this );
+            methodVisitor
+                    .visitFieldInsn( GETFIELD, byteCodeName( field.owner() ), field.name(), typeName( field.type() ) );
 
         }
 

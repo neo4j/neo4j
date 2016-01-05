@@ -28,6 +28,10 @@ public final class ByteCodeUtils
         throw new UnsupportedOperationException();
     }
 
+    public static String byteCodeName( TypeReference reference )
+    {
+        return byteCodeName( reference.name() );
+    }
 
     public static String byteCodeName( String javaName )
     {

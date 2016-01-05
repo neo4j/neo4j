@@ -218,53 +218,17 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateConstructorFromTemplate() throws Throwable
-    {
-        // given
-        ClassHandle handle;
-        try ( ClassGenerator simple = generateClass( NamedBase.class, "SimpleClass" ) )
-        {
-            simple.field( String.class, "foo" );
-            simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( String.class, "foo" ) )
-                    .invokeSuper( new ExpressionTemplate[]{load( "name" )}, new TypeReference[]{typeReference(String.class)} )
-                    .put( self(), String.class, "foo", load( "foo" ) )
-                    .build() );
-            handle = simple.handle();
-        }
-
-        // when
-        Object instance = constructor( handle.loadClass(), String.class, String.class ).invoke( "Pontus", "Tobias" );
-
-        // then
-        assertEquals( "SimpleClass", instance.getClass().getSimpleName() );
-        assertThat( instance, instanceOf( NamedBase.class ) );
-        assertEquals( "Pontus", ((NamedBase) instance).name );
-        assertEquals( "Tobias", getField( instance, "foo" ) );
-    }
-
-    @Test
     public void shouldGenerateMethodReturningFieldValue() throws Throwable
     {
-        // given
-        ClassHandle handle;
-        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
-        {
-            FieldReference value = simple.field( String.class, "value" );
-            try ( CodeBlock ctor = simple.generateConstructor( param( String.class, "value" ) ) )
-            {
-                ctor.put( ctor.self(), value, ctor.load( "value" ) );
-            }
-            simple.generate( MethodTemplate.method( String.class, "value" )
-                    .returns( ExpressionTemplate.get( self(), String.class, "value" ) )
-                    .build() );
-            handle = simple.handle();
-        }
-
-        // when
-        Object instance = constructor( handle.loadClass(), String.class ).invoke( "Hello World" );
-
-        // then
-        assertEquals( "Hello World", instanceMethod( instance, "value" ).invoke() );
+        assertMethodReturningField( byte.class, (byte) 42 );
+        assertMethodReturningField( short.class, (short) 42 );
+        assertMethodReturningField( char.class, (char) 42 );
+        assertMethodReturningField( int.class, 42 );
+        assertMethodReturningField( long.class, 42L );
+        assertMethodReturningField( float.class, 42F );
+        assertMethodReturningField( double.class, 42D );
+        assertMethodReturningField( String.class, "42" );
+        assertMethodReturningField( int[].class, new int[]{42} );
     }
 
     @Test
@@ -675,5 +639,30 @@ public class CodeGenerationTest
     ClassGenerator generateClass( TypeReference base, String name, TypeReference... interfaces )
     {
         return generator.generateClass( base, PACKAGE, name, interfaces );
+    }
+
+    private <T> void assertMethodReturningField( Class<T> clazz, T argument ) throws Throwable
+    {
+        // given
+        createGenerator();
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            FieldReference value = simple.field( clazz, "value" );
+            try ( CodeBlock ctor = simple.generateConstructor( param( clazz, "value" ) ) )
+            {
+                ctor.put( ctor.self(), value, ctor.load( "value" ) );
+            }
+            simple.generate( MethodTemplate.method( clazz, "value" )
+                    .returns( ExpressionTemplate.get( self(), clazz, "value" ) )
+                    .build() );
+            handle = simple.handle();
+        }
+
+        // when
+        Object instance = constructor( handle.loadClass(), clazz ).invoke( argument );
+
+        // then
+        assertEquals( argument, instanceMethod( instance, "value" ).invoke() );
     }
 }
