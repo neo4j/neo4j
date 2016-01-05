@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.FreshIdNameGenerator
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Ascending, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.expandSolverStep
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{QueryGraph, Predicate}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{ExpandInto, IdName, LogicalPlan, ShortestPathPattern}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{Predicate, QueryGraph}
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Length
-import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
 
 case object planShortestPaths {
 
@@ -51,8 +52,7 @@ case object planShortestPaths {
       case _ => false
     }
 
-    // Only support fallback for shortestPath (not allShortestPaths, yet)
-    if (needFallbackPredicates.nonEmpty && shortestPaths.single) {
+    if (needFallbackPredicates.nonEmpty) {
       planShortestPathsWithFallback(inner, shortestPaths, predicates, safePredicates, needFallbackPredicates, queryGraph)
     }
     else {
@@ -78,9 +78,9 @@ case object planShortestPaths {
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
     val lhsArgument = lpp.planArgumentRowFrom(inner)
-    val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates)  //FindShortestPaths(lhsArgument, shortestPaths, predicates)(solved)
-    val lhsOption = lpp.planOptional(lhsSp, Set.empty) //Optional(lhsSp)(solved)
-    val lhs = lpp.planApply(inner, lhsOption) //Apply(inner, lhsOption)(solved)
+    val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates)
+    val lhsOption = lpp.planOptional(lhsSp, Set.empty)
+    val lhs = lpp.planApply(inner, lhsOption)
 
     val pattern = shortestPath.rel
 
@@ -103,16 +103,19 @@ case object planShortestPaths {
     // Filter using predicates
     val rhsFiltered = context.logicalPlanProducer.planSelection(predicates, rhsProjection)
 
-    // Plan SortedLimit
-    // TODO: Make it work for allShortestPaths (i.e. group by the shortest length)
-    // TODO: Don't use null for InputPositions. (Can we get hold of the input positions of the original shortestPath expression AST?)
-    val pathVariable = Variable(pathName.name)(null)
-    val lengthOfPath = FunctionInvocation(FunctionName(Length.name)(null), pathVariable)(null)
-    val limitLiteral1 = SignedDecimalIntegerLiteral("1")(null)
+    // Plan Sort and Limit
+    val pos = shortestPath.expr.position
+    val pathVariable = Variable(pathName.name)(pos)
+    val lengthOfPath = FunctionInvocation(FunctionName(Length.name)(pos), pathVariable)(pos)
+    val columnName = FreshIdNameGenerator.name(pos)
+    val limitLiteral1 = SignedDecimalIntegerLiteral("1")(pos)
 
-    val rhsSortedLimit = lpp.planSortedLimit(rhsFiltered, limitLiteral1, Seq(AscSortItem(lengthOfPath)(null)))
 
-    val rhs = rhsSortedLimit
+    val rhsProjected = lpp.planRegularProjection(rhsFiltered, Map(columnName -> lengthOfPath))
+    val sortDescription = Seq(Ascending(IdName(columnName)))
+    val sorted = lpp.planSort(rhsProjected, sortDescription, Seq.empty)
+    val ties = if (shortestPath.single) DoNotIncludeTies else IncludeTies
+    val rhs = lpp.planLimit(sorted, limitLiteral1, ties)
 
     // We have to force the plan to solve what we actually solve
     val solved = lpp.estimatePlannerQuery(inner.solved.amendQueryGraph(_.addShortestPath(shortestPath)

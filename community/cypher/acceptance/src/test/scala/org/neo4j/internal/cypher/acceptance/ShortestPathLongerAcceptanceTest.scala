@@ -19,22 +19,71 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.util
+
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.Rows
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
-import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.DataMonitor
-import org.neo4j.graphdb.{Path, Node}
+import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.kernel.monitoring.Monitors
 import org.scalatest.matchers.{MatchResult, Matcher}
-import scala.collection.mutable
-import scala.collection.JavaConverters._
-import java.util
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+
+/*
+ * This test class builds a complex but very regular model that can be easily debugged and visualized.
+ * It is an n*n square latice with nodes in every cell position with both labels and properties that
+ * identify the cell, row and column. If the latice is 10x10 then the nodeid is also a direction function
+ * of the position in the latice, with node[54] meaning node in row 5 and column 4 (zero indexed).
+ *
+ * A 5x5 matrix will allow exhaustive cypher searches to complete in 30s, and so that is the current
+ * default.
+ *
+ *   (00)-[:RIGHT]->(01)-[:RIGHT]->(02)-[:RIGHT]->(03)-[:RIGHT]->(04)
+ *    |              |              |              |              |
+ * [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]
+ *    |              |              |              |              |
+ *    V              V              V              V              V
+ *   (05)-[:RIGHT]->(06)-[:RIGHT]->(07)-[:RIGHT]->(08)-[:RIGHT]->(09)
+ *    |              |              |              |              |
+ * [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]
+ *    |              |              |              |              |
+ *    V              V              V              V              V
+ *   (10)-[:RIGHT]->(11)-[:RIGHT]->(12)-[:RIGHT]->(13)-[:RIGHT]->(14)
+ *    |              |              |              |              |
+ * [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]
+ *    |              |              |              |              |
+ *    V              V              V              V              V
+ *   (15)-[:RIGHT]->(16)-[:RIGHT]->(17)-[:RIGHT]->(18)-[:RIGHT]->(19)
+ *    |              |              |              |              |
+ * [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]
+ *    |              |              |              |              |
+ *    V              V              V              V              V
+ *   (20)-[:RIGHT]->(21)-[:RIGHT]->(22)-[:RIGHT]->(23)-[:RIGHT]->(24)
+ *
+ * All tests are initialized with all horizontal and vertical relationships built. But some tests can
+ * also call the addDiagonal method to add a single diagonal for testing specific cases.
+ *
+ *   (00)--->(01)--->...
+ *    | \     | \
+ *    |[:DIAG]|  .
+ *    |   \   |
+ *    V    V  V
+ *   (05)--->(06)--->...
+ *    |       | \
+ *    |       |[:DIAG]
+ *    |       |   \
+ *    V       V    V
+ *    ..      ..    ..
+ *
+ */
 class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   val VERBOSE = false // Lots of debug prints
@@ -49,11 +98,11 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     dprintln(results.executionPlanDescription())
 
     val result = results.columnAs[List[Node]]("nodes").toList
-    debugResults(result(0).asJava.asScala.toList)
+    debugResults(result.head.asJava.asScala.toList)
 
     // Then
     result.length should equal(1)
-    result(0).toSet should equal(Set(node(0, 0)))
+    result.head.toSet should equal(Set(node(0, 0)))
     results shouldNot executeShortestPathFallbackWith(minRows = 1)
   }
 
@@ -68,11 +117,11 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     dprintln(results.executionPlanDescription())
 
     val result = results.columnAs[List[Node]]("nodes").toList
-    debugResults(result(0).asJava.asScala.toList)
+    debugResults(result.head.asJava.asScala.toList)
 
     // Then
     result.length should equal(1)
-    result(0).toSet should equal(row(0) ++ row(1))
+    result.head.toSet should equal(row(0) ++ row(1))
     results should executeShortestPathFallbackWith(minRows = 1)
   }
 
@@ -87,11 +136,11 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     dprintln(results.executionPlanDescription())
 
     val result = results.columnAs[List[Node]]("nodes").toList
-    debugResults(result(0).asJava.asScala.toList)
+    debugResults(result.head.asJava.asScala.toList)
 
     // Then
     result.length should equal(1)
-    result(0).toSet should equal(row(0) ++ row(1))
+    result.head.toSet should equal(row(0) ++ row(1))
     results should executeShortestPathFallbackWith(minRows = 1)
   }
 
@@ -123,11 +172,11 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     dprintln(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
 
     val result = results.columnAs[List[Node]]("nodes").toList
-    debugResults(result(0))
+    debugResults(result.head)
 
     // Then
     result.length should equal(1)
-    result(0).toSet should equal(row(0) ++ col(dMax))
+    result.head.toSet should equal(row(0) ++ col(dMax))
     results should use("VarLengthExpand(Into)")
     results shouldNot executeShortestPathFallbackWith(minRows = 1)
   }
@@ -141,11 +190,11 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     val result = results.columnAs[List[Node]]("nodes").toList
 
     dprintln(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
-    debugResults(result(0))
+    debugResults(result.head)
 
     // Then
     result.length should equal(1)
-    result(0).toSet should equal(col(0) ++ row(dMax))
+    result.head.toSet should equal(col(0) ++ row(dMax))
     results should use("VarLengthExpand(Into)")
     results shouldNot executeShortestPathFallbackWith(minRows = 1)
   }
@@ -283,7 +332,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   test("All shortest paths from first to last node via middle") {
     val start = System.currentTimeMillis
     val result = executeUsingCostPlannerOnly(
-      s"""MATCH p = allShortestPaths((src:$topLeft)-[*]-(dst:$bottomRight))
+      s"""PROFILE MATCH p = allShortestPaths((src:$topLeft)-[*]-(dst:$bottomRight))
          | WHERE ANY(n in nodes(p) WHERE n:$middle)
          | RETURN p""".stripMargin)
 
@@ -294,18 +343,17 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     ))
   }
 
-  // TODO: Support TOP by group in fallback
-  ignore("All shortest paths from first to last node via top right and bottom left (needs to be with fallback)") {
+  test("All shortest paths from first to last node via top right and bottom left (needs to be with fallback)") {
     val start = System.currentTimeMillis
     val result = executeUsingCostPlannerOnly(
-      s"""MATCH p = allShortestPaths((src:$topLeft)-[*]-(dst:$bottomRight))
+      s"""PROFILE MATCH p = allShortestPaths((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight) AND ANY(n in nodes(p) WHERE n:$bottomLeft)
          |RETURN p""".stripMargin)
 
     val expectedPathCount = Map(3 -> 2, 4 -> 8, 5 -> 30)
     evaluateAllShortestPathResults(result, "p", start, expectedPathCount(dim), Set(
-      row(0, min = 0, max = dMax / 2) ++ col(dMax / 2) ++ row(dMax, min = dMax / 2, max = dMax),
-      col(0, min = 0, max = dMax / 2) ++ row(dMax / 2) ++ col(dMax, min = dMax / 2, max = dMax)
+      row(0) ++ row(1) ++ col(0) ++ row(dMax),
+      col(0) ++ col(1) ++ row(0) ++ col(dMax)
     ))
     result should executeShortestPathFallbackWith(minRows = 1)
   }
@@ -393,7 +441,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
     val result = results.columnAs[List[Node]]("nodes").toList
     result.length should equal(1)
-    result(0).length should equal (2 * dim - 1)
+    result.head.length should equal (2 * dim - 1)
     results shouldNot use("ShortestPathVarLengthExpand")
   }
 
@@ -407,7 +455,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
     val result = results.columnAs[List[Node]]("nodes").toList
     result.length should equal(1)
-    result(0).toSet should equal (diag())
+    result.head.toSet should equal (diag())
     results shouldNot use("ShortestPathVarLengthExpand")
   }
 
@@ -420,7 +468,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
     val result = results.columnAs[List[Node]]("nodes").toList
     result.length should equal(1)
-    result(0).length should equal (2 * dim - 1)
+    result.head.length should equal (2 * dim - 1)
     results shouldNot use("ShortestPathVarLengthExpand")
   }
 
@@ -433,7 +481,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
     val result = results.columnAs[List[Node]]("nodes").toList
     result.length should equal(1)
-    result(0).length should equal (2 * dim - 1)
+    result.head.length should equal (2 * dim - 1)
     results shouldNot use("VarLengthExpand(Into)")
   }
 
@@ -448,7 +496,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
     val result = results.columnAs[List[Node]]("nodes").toList
     result.length should equal(1)
-    result(0).length should equal (dim + 1)
+    result.head.length should equal (dim + 1)
     results should use("VarLengthExpand(Into)")
   }
 
@@ -462,7 +510,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
     val result = results.columnAs[List[Node]]("nodes").toList
     result.length should equal(1)
-    result(0).toSet should equal (row(0) ++ col(dMax))
+    result.head.toSet should equal (row(0) ++ col(dMax))
     // TODO: Stop using fallback once node predicates are supported in expander
     results should use("VarLengthExpand(Into)")
   }
@@ -477,7 +525,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
     val result = results.columnAs[List[Node]]("nodes").toList
     result.length should equal(1)
-    result(0).toSet should equal (row(0) ++ col(dMax))
+    result.head.toSet should equal (row(0) ++ col(dMax))
     // TODO: Stop using fallback once node predicates are supported in expander
     results should use("VarLengthExpand(Into)")
   }
@@ -559,6 +607,10 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     results.toList should equal(List(Map("nodes" -> List(1,2,3,4,14,13,26))))
   }
 
+  test("don't forget to turn off verbose!") {
+    assert(!VERBOSE, "Verbose should be turned off")
+  }
+
   def executeShortestPathFallbackWith(minRows: Int = 0, maxRows: Long = Long.MaxValue): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
     override def apply(result: InternalExecutionResult): MatchResult = {
       val plan: InternalPlanDescription = result.executionPlanDescription()
@@ -581,54 +633,6 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     }
   }
 
-
-  /*
-   * This test class builds a complex but very regular model that can be easily debugged and visualized.
-   * It is an n*n square latice with nodes in every cell position with both labels and properties that
-   * identify the cell, row and column. If the latice is 10x10 then the nodeid is also a direction function
-   * of the position in the latice, with node[54] meaning node in row 5 and column 4 (zero indexed).
-   *
-   * A 5x5 matrix will allow exhaustive cypher searches to complete in 30s, and so that is the current
-   * default.
-   *
-   *   (00)-[:RIGHT]->(01)-[:RIGHT]->(02)-[:RIGHT]->(03)-[:RIGHT]->(04)
-   *    |              |              |              |              |
-   * [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]
-   *    |              |              |              |              |
-   *    V              V              V              V              V
-   *   (05)-[:RIGHT]->(06)-[:RIGHT]->(07)-[:RIGHT]->(08)-[:RIGHT]->(09)
-   *    |              |              |              |              |
-   * [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]
-   *    |              |              |              |              |
-   *    V              V              V              V              V
-   *   (10)-[:RIGHT]->(11)-[:RIGHT]->(12)-[:RIGHT]->(13)-[:RIGHT]->(14)
-   *    |              |              |              |              |
-   * [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]
-   *    |              |              |              |              |
-   *    V              V              V              V              V
-   *   (15)-[:RIGHT]->(16)-[:RIGHT]->(17)-[:RIGHT]->(18)-[:RIGHT]->(19)
-   *    |              |              |              |              |
-   * [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]        [:DOWN]
-   *    |              |              |              |              |
-   *    V              V              V              V              V
-   *   (20)-[:RIGHT]->(21)-[:RIGHT]->(22)-[:RIGHT]->(23)-[:RIGHT]->(24)
-   *
-   * All tests are initialized with all horizontal and vertical relationships built. But some tests can
-   * also call the addDiagonal method to add a single diagonal for testing specific cases.
-   *
-   *   (00)--->(01)--->...
-   *    | \     | \
-   *    |[:DIAG]|  .
-   *    |   \   |
-   *    V    V  V
-   *   (05)--->(06)--->...
-   *    |       | \
-   *    |       |[:DIAG]
-   *    |       |   \
-   *    V       V    V
-   *    ..      ..    ..
-   *
-   */
   val dim = 4
   val dMax = dim - 1
   val topLeft = "CELL00"
@@ -719,15 +723,15 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
     dprintln(s"Query took ${duration/1000.0}s")
 
-    debugResults(result(0).toList)
+    debugResults(result.head.toList)
 
-    result(0).toList.length should equal(pathLength)
+    result.head.toList.length should equal(pathLength)
 
-    dprintln("Got results: " + result(0).toList.sortWith( (a:Node, b:Node) => a.getId < b.getId))
+    dprintln("Got results: " + result.head.toList.sortWith((a:Node, b:Node) => a.getId < b.getId))
     dprintln("Expect results: " + expectedNodes.toList.sortWith( (a:Node, b:Node) => a.getId < b.getId))
 
     assert(expectedNodes.forall { cell =>
-      result(0).toSet.contains(cell)
+      result.head.toSet.contains(cell)
     })
   }
 
@@ -740,7 +744,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     val duration = System.currentTimeMillis() - startMs
     dprintln(results.executionPlanDescription())
     dprintln(s"Query took ${duration / 1000.0}s")
-    resultList.length should be(expectedPathCount)
+    withClue("expected row count"){ resultList.length should be(expectedPathCount) }
     val matches = resultList.foldLeft(Map[Set[Node],Int]()) { (acc, row) =>
       if (row.isDefinedAt(identifier)) {
         val path: Path = row(identifier).asInstanceOf[Path]
@@ -748,7 +752,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
           dprintln(path)
           path.nodes().asScala.toList
         }
-        nodes.length should be(expectedNodes.head.size)
+        withClue("expected path length"){ nodes.length should be(expectedNodes.head.size) }
         debugResults(nodes)
         val nodeSet = nodes.toSet
         if (acc.isDefinedAt(nodeSet))
@@ -806,7 +810,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
       val key: String = row.toString + col.toString
       val value = if (matrix.isDefinedAt(key)) matrix(key) + text else text
       matrix += (key -> value)
-      return Math.max(cellSize, value.length)
+      Math.max(cellSize, value.length)
     }
 
     // For each cell, print the id, and visited-depth within []

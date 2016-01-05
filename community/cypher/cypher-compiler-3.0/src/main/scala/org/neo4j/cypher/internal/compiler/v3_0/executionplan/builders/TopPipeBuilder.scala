@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.Slice
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Add, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{CachedExpression, Add, Literal, Variable}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.{Slice, SortItem}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{PipeMonitor, Top1Pipe, TopNPipe}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 
@@ -45,9 +46,10 @@ class TopPipeBuilder extends PlanBuilder with SortingPreparations {
       case _                          => throw new AssertionError("This builder should not be called for this query")
     }
 
+    val sortDescriptions = sortItems.map(translateSortDescription).toList
     val resultPipe = limitExpression match {
-      case Literal(1) =>  new Top1Pipe(newPlan.pipe, sortItems.toList)()
-      case e =>  new TopNPipe(newPlan.pipe, sortItems.toList, e)()
+      case Literal(1) =>  new Top1Pipe(newPlan.pipe, sortDescriptions)()
+      case e =>  new TopNPipe(newPlan.pipe, sortDescriptions, e)()
     }
 
     val solvedSort = q.sort.map(_.solve)
@@ -60,7 +62,7 @@ class TopPipeBuilder extends PlanBuilder with SortingPreparations {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     val extracted = q.extracted
-    val unsolvedOrdering = plan.query.sort.filter(x => x.unsolved && !x.token.expression.containsAggregate).nonEmpty
+    val unsolvedOrdering = plan.query.sort.exists(x => x.unsolved && !x.token.expression.containsAggregate)
     val limited = q.slice.exists(_.token.limit.nonEmpty)
 
     extracted && unsolvedOrdering && limited
@@ -78,6 +80,13 @@ class TopPipeBuilder extends PlanBuilder with SortingPreparations {
     } else {
       Seq()
     }
+  }
+
+  private def translateSortDescription(s: SortItem): pipes.SortDescription = s match {
+    case SortItem(Variable(name), true) => pipes.Ascending(name)
+    case SortItem(Variable(name), false) => pipes.Descending(name)
+    case SortItem(CachedExpression(name, _), true) => pipes.Ascending(name)
+    case SortItem(CachedExpression(name, _), false) => pipes.Descending(name)
   }
 }
 

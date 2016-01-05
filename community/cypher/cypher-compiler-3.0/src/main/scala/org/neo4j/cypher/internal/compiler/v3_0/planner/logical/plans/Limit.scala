@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 
-case class Limit(left: LogicalPlan, count: Expression)
+case class Limit(left: LogicalPlan, count: Expression, ties: Ties)
                 (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = None
@@ -32,3 +32,8 @@ case class Limit(left: LogicalPlan, count: Expression)
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
     copy(count = f(left.availableSymbols, count))(solved)
 }
+
+// Using a trait instead of a bool to make the code more readable
+sealed trait Ties
+case object IncludeTies extends Ties
+case object DoNotIncludeTies extends Ties

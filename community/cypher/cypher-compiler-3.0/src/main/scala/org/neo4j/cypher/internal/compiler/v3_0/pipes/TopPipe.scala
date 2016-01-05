@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 import java.util.Comparator
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.SortItem
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Literal, Expression}
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{KeyExpressions, LegacyExpression}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{KeyNames, LegacyExpression}
 
 import scala.math._
 
@@ -32,13 +31,13 @@ import scala.math._
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
-abstract class TopPipe(source: Pipe, sortDescription: List[SortItem], estimatedCardinality: Option[Double])(implicit pipeMonitor: PipeMonitor)
+abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription], estimatedCardinality: Option[Double])(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with Comparer with RonjaPipe with NoEffectsPipe {
 
-  val sortItems = sortDescription.toArray
-  val sortItemsCount = sortItems.length
+  val sortItems: Array[SortDescription] = sortDescription.toArray
+  private val sortItemsCount: Int = sortItems.length
 
-  type SortDataWithContext = (Array[Any],ExecutionContext)
+  type SortDataWithContext = (Array[Any], ExecutionContext)
 
   class LessThanComparator(comparer: Comparer)(implicit qtx : QueryState) extends Ordering[SortDataWithContext] {
     override def compare(a: SortDataWithContext, b: SortDataWithContext): Int = {
@@ -46,11 +45,10 @@ abstract class TopPipe(source: Pipe, sortDescription: List[SortItem], estimatedC
       val v2 = b._1
       var i = 0
       while (i < sortItemsCount) {
-        val res = signum(comparer.compare(v1(i), v2(i)))
-        if (res != 0) {
-          val sortItem = sortItems(i)
-          return if (sortItem.ascending) res else -res
-        }
+        val res = sortItems(i).compareAny(v1(i), v2(i))
+
+        if (res != 0)
+          return res
         i += 1
       }
       0
@@ -61,17 +59,16 @@ abstract class TopPipe(source: Pipe, sortDescription: List[SortItem], estimatedC
     java.util.Arrays.binarySearch(array.asInstanceOf[Array[SortDataWithContext]], key, comparator)
   }
 
-  def arrayEntry(ctx : ExecutionContext)(implicit qtx : QueryState) : SortDataWithContext = (sortItems.map(_(ctx)),ctx)
-
+  def arrayEntry(ctx : ExecutionContext)(implicit qtx : QueryState) : SortDataWithContext =
+    (sortItems.map(column => ctx(column.id)), ctx)
 
   def symbols = source.symbols
 }
 
-
-case class TopNPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Expression)
+case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countExpression: Expression)
 (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor) extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
 
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected override def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
@@ -123,27 +120,27 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortItem], countExpressi
     }
   }
 
-  def dup(sources: List[Pipe]): Pipe = {
+  override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
     copy(source = head)(estimatedCardinality)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
-  def planDescriptionWithoutCardinality =
+  override def planDescriptionWithoutCardinality =
     source.planDescription
-      .andThen(this.id, "Top", variables, LegacyExpression(countExpression), KeyExpressions(sortDescription.map(_.expression)))
-
+      .andThen(this.id, "Top", variables, LegacyExpression(countExpression), KeyNames(sortItems.map(_.id)))
 }
 
 /*
  * Special case for when we only have one element, in this case it is no idea to store
  * an array, instead just store a single value.
  */
-case class Top1Pipe(source: Pipe, sortDescription: List[SortItem])
-                   (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor) extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
+case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
+                   (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+  extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],
+  protected override def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
@@ -171,18 +168,74 @@ case class Top1Pipe(source: Pipe, sortDescription: List[SortItem])
     }
   }
 
-  def planDescriptionWithoutCardinality =
+  override def planDescriptionWithoutCardinality =
     source.planDescription
-      .andThen(this.id, "Top", variables, LegacyExpression(Literal(1)),
-        KeyExpressions(sortDescription.map(_.expression)))
+      .andThen(this.id, "Top1", variables, KeyNames(sortItems.map(_.id)))
 
 
-  def dup(sources: List[Pipe]): Pipe = {
+  override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
     copy(source = head)(estimatedCardinality)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }
 
+/*
+ * Special case for when we only want one element, and all others that have the same value (tied for first place)
+ */
+case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription])
+                           (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+  extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
 
+  protected override def internalCreateResults(input: Iterator[ExecutionContext],
+                                               state: QueryState): Iterator[ExecutionContext] = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
+    implicit val s = state
+    if (input.isEmpty)
+      Iterator.empty
+    else {
+      val lessThan = new LessThanComparator(this)
+
+      val first = input.next()
+      var best = arrayEntry(first)
+      var matchingRows = init(best)
+
+      input.foreach {
+        ctx =>
+          val next = arrayEntry(ctx)
+          val comparison = lessThan.compare(next, best)
+          if (comparison < 0) { // Found a new best
+            best = next
+            matchingRows = init(next)
+          }
+
+          if (comparison == 0) {  // Found a tie
+            matchingRows += next._2
+          }
+      }
+      matchingRows.result().iterator
+    }
+  }
+
+  @inline
+  private def init(first: SortDataWithContext) = {
+    val builder = Vector.newBuilder[ExecutionContext]
+    builder += first._2
+    builder
+  }
+
+  override def planDescriptionWithoutCardinality =
+    source.planDescription
+      .andThen(this.id, "Top1(Ties)", variables, KeyNames(sortItems.map(_.id)))
+
+
+  override def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)(estimatedCardinality)
+  }
+
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+}

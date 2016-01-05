@@ -59,7 +59,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result should equal(Limit(startPlan, x)(solved))
+    result should equal(Limit(startPlan, x, DoNotIncludeTies)(solved))
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x))))
   }
 
@@ -74,7 +74,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result should equal(Limit(Skip(startPlan, y)(solved), x)(solved))
+    result should equal(Limit(Skip(startPlan, y)(solved), x, DoNotIncludeTies)(solved))
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x), skip = Some(y))))
   }
 
@@ -93,26 +93,9 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(variableSortItem))))
   }
 
-  test("should add SortedLimit when query uses both ORDER BY and LIMIT") {
-    val sortItems: Seq[AscSortItem] = Seq(variableSortItem)
+  test("should add the correct plans when query uses both ORDER BY, SKIP and LIMIT") {
     // given
-    implicit val (query, context, startPlan) = queryGraphWith(
-      sortItems = sortItems,
-      limit = Some(x)
-    )
-
-    // when
-    val result = sortSkipAndLimit(startPlan, query)
-
-    // then
-    result should equal(
-      SortedLimit(startPlan, x, sortItems)(solved)
-    )
-  }
-
-  test("should add SortedLimit when query uses both ORDER BY and LIMIT, and add the SKIP value to the SortedLimit") {
-    // given
-    implicit val (query, context, startPlan) = queryGraphWith(
+    implicit val (query, context, startPlan: LogicalPlan) = queryGraphWith(
       sortItems = Seq(variableSortItem),
       limit = Some(x),
       skip = Some(y)
@@ -122,9 +105,11 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result should equal(
-      Skip(SortedLimit(startPlan, ast.Add(x, y)(pos), Seq(variableSortItem))(solved), y)(solved)
-    )
+    val sorted = Sort(startPlan, Seq(sortDescription))(solved)
+    val skipped = Skip(sorted, y)(solved)
+    val limited = Limit(skipped, x, DoNotIncludeTies)(solved)
+
+    result should equal(limited)
   }
 
   private def queryGraphWith(skip: Option[ast.Expression] = None,

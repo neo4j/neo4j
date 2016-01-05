@@ -381,35 +381,15 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     UnwindCollection(inner, name, expression)(solved)
   }
 
-  def planLimit(inner: LogicalPlan, count: Expression)(implicit context: LogicalPlanningContext) = {
+  def planLimit(inner: LogicalPlan, count: Expression, ties: Ties = DoNotIncludeTies)(implicit context: LogicalPlanningContext) = {
     val solved = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withLimitExpression(count))))
-    LimitPlan(inner, count)(solved)
+    LimitPlan(inner, count, ties)(solved)
   }
 
   def planSort(inner: LogicalPlan, descriptions: Seq[SortDescription], items: Seq[ast.SortItem])
               (implicit context: LogicalPlanningContext) = {
     val solved = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(items))))
     Sort(inner, descriptions)(solved)
-  }
-
-  def planSortedLimit(inner: LogicalPlan, limit: Expression, items: Seq[ast.SortItem])
-                     (implicit context: LogicalPlanningContext) = {
-    val solved = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(
-      _.withLimitExpression(limit)
-        .withSortItems(items))))
-    SortedLimit(inner, limit, items)(solved)
-  }
-
-  def planSortedSkipAndLimit(inner: LogicalPlan, skip: Expression, limit: Expression, items: Seq[ast.SortItem])
-                            (implicit context: LogicalPlanningContext) = {
-    val solvedBySortedLimit = inner.solved.updateTailOrSelf(
-      _.updateQueryProjection(_.updateShuffle(_.withSkipExpression(skip)
-                                               .withLimitExpression(limit)
-                                               .withSortItems(items))
-      ))
-    val sortedLimit = SortedLimit(inner, ast.Add(limit, skip)(limit.position), items)(solvedBySortedLimit)
-
-    planSkip(sortedLimit, skip)
   }
 
   def planShortestPath(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression])

@@ -22,27 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_0.{Comparer, ExecutionContext}
 
-import scala.math.Ordering
-
-sealed trait SortDescription {
-  def id: String
-  def compareAny(a: Any, b: Any)(implicit qtx: QueryState): Int
-}
-
-case class Ascending(id:String) extends SortDescription with Comparer {
-  override def compareAny(a: Any, b: Any)(implicit qtx: QueryState) = compare(a, b)
-}
-
-case class Descending(id:String) extends SortDescription with Comparer {
-  override def compareAny(a: Any, b: Any)(implicit qtx: QueryState) = compare(b, a)
-}
-
 case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
                    (val estimatedCardinality: Option[Double] = None)(implicit monitor: PipeMonitor)
   extends PipeWithSource(source, monitor) with RonjaPipe with NoEffectsPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val array = input.toArray
-    java.util.Arrays.sort(array, ordering(orderBy)(state))
+    java.util.Arrays.sort(array, new InnerOrdering(orderBy)(state))
     array.toIterator
   }
 
@@ -50,21 +35,12 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
 
   def symbols = source.symbols
 
-  private def ordering(order: Seq[SortDescription])
-                      (implicit qtx: QueryState): Ordering[ExecutionContext] = if (order.isEmpty) emptyOrdering
-                      else new InnerOrdering(order)
-
-
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
     copy(source = head)(estimatedCardinality)
   }
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-}
-
-private object emptyOrdering extends scala.Ordering[ExecutionContext] {
-  override def compare(x: ExecutionContext, y: ExecutionContext): Int = -1
 }
 
 private class InnerOrdering(order: Seq[SortDescription])(implicit qtx: QueryState) extends scala.Ordering[ExecutionContext] {
@@ -86,4 +62,17 @@ private class InnerOrdering(order: Seq[SortDescription])(implicit qtx: QueryStat
     val bVal = b(column)
     cmp = sort.compareAny(aVal, bVal)
   }
+}
+
+sealed trait SortDescription {
+  def id: String
+  def compareAny(a: Any, b: Any)(implicit qtx: QueryState): Int
+}
+
+case class Ascending(id: String) extends SortDescription with Comparer {
+  override def compareAny(a: Any, b: Any)(implicit qtx: QueryState) = compare(a, b)
+}
+
+case class Descending(id: String) extends SortDescription with Comparer {
+  override def compareAny(a: Any, b: Any)(implicit qtx: QueryState) = compare(b, a)
 }

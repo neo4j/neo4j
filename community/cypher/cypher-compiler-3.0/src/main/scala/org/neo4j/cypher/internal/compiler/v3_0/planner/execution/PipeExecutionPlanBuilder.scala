@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.execution
 
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.StatementConverters
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
@@ -30,14 +29,12 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, PipeInfo, PlanFingerprint, ReadsAllNodes}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
-import org.neo4j.cypher.internal.compiler.v3_0.pipes
-import org.neo4j.cypher.internal.compiler.v3_0.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantHandleQueryException, logical}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast => compilerAst}
+import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast => compilerAst, pipes}
 import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
@@ -263,14 +260,25 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case plans.Skip(_, count) =>
       SkipPipe(source, buildExpression(count))()
 
-    case plans.Limit(_, count) =>
-      LimitPipe(source, buildExpression(count))()
+    case plans.Limit(_, count, DoNotIncludeTies) =>
+      (source, count) match {
+        case (SortPipe(inner, sortDescription), SignedDecimalIntegerLiteral("1")) =>
+          Top1Pipe(inner, sortDescription.toList)()
 
-    case SortedLimit(_, SignedDecimalIntegerLiteral("1"), sortItems) =>
-      Top1Pipe(source, sortItems.map(_.asCommandSortItem).toList)()
+        case (SortPipe(inner, sortDescription), _) =>
+          TopNPipe(inner, sortDescription.toList, buildExpression(count))()
 
-    case SortedLimit(_, exp, sortItems) =>
-      TopNPipe(source, sortItems.map(_.asCommandSortItem).toList, toCommandExpression(exp))()
+        case _ =>
+          LimitPipe(source, buildExpression(count))()
+      }
+
+    case plans.Limit(_, count, IncludeTies) =>
+      (source, count) match {
+        case (SortPipe(inner, sortDescription), SignedDecimalIntegerLiteral("1")) =>
+          Top1WithTiesPipe(inner, sortDescription.toList)()
+
+        case _ => throw new InternalException("Including ties is only supported for very specific plans")
+      }
 
     case Aggregation(_, groupingExpressions, aggregatingExpressions) if aggregatingExpressions.isEmpty =>
       val commandExpressions = Eagerly.immutableMapValues(groupingExpressions, buildExpression)

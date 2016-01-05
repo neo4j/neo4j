@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{AllNodesScan, Limit, Projection}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{DoNotIncludeTies, AllNodesScan, Limit, Projection}
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.WindowsStringSafe
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -34,7 +34,8 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Projection(
         Limit(
           AllNodesScan("a", Set.empty)(solved),
-          SignedDecimalIntegerLiteral("1")(pos)
+          SignedDecimalIntegerLiteral("1")(pos),
+          DoNotIncludeTies
         )(solved),
         Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1") _)
       )(solved)
@@ -46,9 +47,9 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b, r1 LIMIT 1 RETURN b as `b`").plan
 
     result.toString should equal(
-      """Limit(SignedDecimalIntegerLiteral(1)) {
+      """Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |  LHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
-        |    LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |    LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |      LHS -> AllNodesScan(IdName(a), Set()) {}
         |    }
         |  }
@@ -61,7 +62,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     result.toString should equal(
       """Selection(Vector(In(Property(Variable(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42)))))) {
         |  LHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
-        |    LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |    LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |      LHS -> AllNodesScan(IdName(a), Set()) {}
         |    }
         |  }
@@ -73,7 +74,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result.toString should equal(
       """Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r), ExpandAll) {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |    LHS -> AllNodesScan(IdName(a), Set()) {}
         |  }
         |}""".stripMargin)
@@ -84,7 +85,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.toString should equal(
       """Apply() {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
         |      LHS -> AllNodesScan(IdName(b), Set()) {}
         |    }
@@ -100,7 +101,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.toString should equal(
       """Apply() {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
         |      LHS -> AllNodesScan(IdName(b), Set()) {}
         |    }
@@ -116,7 +117,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.toString should equal(
       """Apply() {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
         |      LHS -> AllNodesScan(IdName(b), Set()) {}
         |    }
@@ -132,7 +133,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.toString should equal(
       """Apply() {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
         |      LHS -> AllNodesScan(IdName(b), Set()) {}
         |    }
@@ -148,7 +149,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.toString should equal(
       """Apply() {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
         |      LHS -> AllNodesScan(IdName(b), Set()) {}
         |    }
@@ -164,7 +165,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.toString should equal(
       """Apply() {
-        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |    LHS -> VarExpand(IdName(b), INCOMING, OUTGOING, List(), IdName(a), IdName(r), VarPatternLength(1,None), ExpandAll, Vector()) {
         |      LHS -> AllNodesScan(IdName(b), Set()) {}
         |    }
