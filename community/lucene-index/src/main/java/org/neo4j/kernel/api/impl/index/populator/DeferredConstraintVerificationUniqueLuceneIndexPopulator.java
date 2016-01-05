@@ -49,12 +49,6 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
     }
 
     @Override
-    public void create() throws IOException
-    {
-        super.create();
-    }
-
-    @Override
     protected void flush() throws IOException
     {
         // no need to do anything yet.

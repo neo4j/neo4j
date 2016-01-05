@@ -55,6 +55,13 @@ public interface LabelScanStore extends Lifecycle
      */
     void force() throws UnderlyingStorageException;
 
+    /**
+     * Acquire a reader for all {@link NodeLabelRange node label} ranges.
+     *
+     * @return the {@link AllEntriesLabelScanReader reader}.
+     */
+    AllEntriesLabelScanReader allNodeLabelRanges();
+
     ResourceIterator<File> snapshotStoreFiles() throws IOException;
 
     /**

@@ -42,20 +42,20 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.schema.BoundedIterable;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.storageengine.api.schema.NodeLabelRange;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
@@ -198,7 +198,7 @@ public class LuceneLabelScanStoreTest
         ) );
 
         // WHEN
-        BoundedIterable<NodeLabelRange> reader = store.newReader().allNodeLabelRanges();
+        BoundedIterable<NodeLabelRange> reader = store.allNodeLabelRanges();
         NodeLabelRange range = single( reader.iterator() );
 
         // THEN
@@ -220,7 +220,7 @@ public class LuceneLabelScanStoreTest
         ) );
 
         // WHEN
-        BoundedIterable<NodeLabelRange> reader = store.newReader().allNodeLabelRanges();
+        BoundedIterable<NodeLabelRange> reader = store.allNodeLabelRanges();
         Iterator<NodeLabelRange> iterator = reader.iterator();
         NodeLabelRange range1 = iterator.next();
         NodeLabelRange range2 = iterator.next();

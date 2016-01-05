@@ -30,8 +30,8 @@ import org.apache.lucene.util.Bits;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 
 public class LucenePartitionAllDocumentsReader implements BoundedIterable<Document>
@@ -58,7 +58,7 @@ public class LucenePartitionAllDocumentsReader implements BoundedIterable<Docume
     {
         return new PrefetchingIterator<Document>()
         {
-            final DocIdSetIterator idIterator = iterateAllDocs();
+            DocIdSetIterator idIterator = iterateAllDocs();
 
             @Override
             protected Document fetchNextOrNull()

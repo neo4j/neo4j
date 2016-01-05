@@ -297,6 +297,11 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
     }
 
+    protected boolean hasSinglePartition( List<IndexPartition> partitions )
+    {
+        return partitions.size() == 1;
+    }
+
     private boolean luceneDirectoryExists( File folder ) throws IOException
     {
         try ( Directory directory = indexStorage.openDirectory( folder ) )

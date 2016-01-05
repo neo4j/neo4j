@@ -22,7 +22,7 @@ package org.neo4j.consistency.checking.full;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RecordStore.Scanner;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;

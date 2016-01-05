@@ -27,7 +27,9 @@ import java.util.concurrent.locks.Lock;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class LuceneLabelScanIndex extends AbstractLuceneIndex
@@ -54,11 +56,11 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
         try
         {
             List<IndexPartition> partitions = getPartitions();
-            if ( partitions.size() == 1 )
+            if ( hasSinglePartition( partitions ) )
             {
                 IndexPartition partition = partitions.get( 0 );
                 PartitionSearcher searcher = partition.acquireSearcher();
-                return new SimpleLuceneLabelScanStoreReader( this, searcher, storageStrategy );
+                return new SimpleLuceneLabelScanStoreReader( searcher, storageStrategy );
             }
             throw new UnsupportedOperationException();
         }
@@ -79,7 +81,7 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
         try
         {
             List<IndexPartition> partitions = getPartitions();
-            if ( partitions.size() == 1 )
+            if ( hasSinglePartition( partitions ) )
             {
                 return new SimpleLuceneLabelScanWriter( partitions.get( 0 ), format, heldLock );
             }
@@ -91,8 +93,17 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
         }
     }
 
-    private boolean hasSinglePartition( List<IndexPartition> partitions )
+    /**
+     * Retrieves a {@link AllEntriesLabelScanReader reader} over all {@link NodeLabelRange node label} ranges.
+     * <p>
+     * <b>NOTE:</b>
+     * There are no guarantees that reader returned from this method will see consistent documents with respect to
+     * {@link #getLabelScanReader() regular reader} and {@link #getLabelScanWriter(Lock) regular writer}.
+     *
+     * @return the {@link AllEntriesLabelScanReader reader}.
+     */
+    public AllEntriesLabelScanReader allNodeLabelRanges()
     {
-        return partitions.size() == 1;
+        return storageStrategy.newNodeLabelReader( allDocumentsReader() );
     }
 }

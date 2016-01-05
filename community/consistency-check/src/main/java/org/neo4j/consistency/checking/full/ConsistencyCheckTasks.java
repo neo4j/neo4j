@@ -35,8 +35,8 @@ import org.neo4j.consistency.checking.labelscan.LabelScanCheck;
 import org.neo4j.consistency.checking.labelscan.LabelScanDocumentProcessor;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.statistics.Statistics;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RecordStore.Scanner;
@@ -178,7 +178,7 @@ public class ConsistencyCheckTasks
         if ( checkLabelScanStore )
         {
             tasks.add( recordScanner( "LabelScanStore",
-                    labelScanStore.newReader().allNodeLabelRanges(), new LabelScanDocumentProcessor(
+                    labelScanStore.allNodeLabelRanges(), new LabelScanDocumentProcessor(
                             filteredReporter, new LabelScanCheck() ), Stage.SEQUENTIAL_FORWARD ) );
         }
         if ( checkIndexes )

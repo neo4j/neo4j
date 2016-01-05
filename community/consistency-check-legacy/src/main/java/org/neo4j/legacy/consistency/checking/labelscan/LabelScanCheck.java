@@ -19,7 +19,7 @@
  */
 package org.neo4j.legacy.consistency.checking.labelscan;
 
-import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 import org.neo4j.legacy.consistency.checking.CheckerEngine;
 import org.neo4j.legacy.consistency.checking.RecordCheck;
 import org.neo4j.legacy.consistency.checking.full.NodeInUseWithCorrectLabelsCheck;

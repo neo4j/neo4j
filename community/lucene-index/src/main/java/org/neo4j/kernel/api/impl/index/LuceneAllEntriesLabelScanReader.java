@@ -26,10 +26,10 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.direct.BoundedIterable;
-import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
+import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
+import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 
 public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReader
 {

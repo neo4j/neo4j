@@ -27,6 +27,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
@@ -115,6 +116,12 @@ public class LuceneLabelScanStore implements LabelScanStore
         {
             throw new UnderlyingStorageException( e );
         }
+    }
+
+    @Override
+    public AllEntriesLabelScanReader allNodeLabelRanges()
+    {
+        return luceneIndex.allNodeLabelRanges();
     }
 
     @Override

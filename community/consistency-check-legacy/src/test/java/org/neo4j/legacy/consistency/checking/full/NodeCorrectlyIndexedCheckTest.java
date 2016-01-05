@@ -32,6 +32,7 @@ import java.util.Map;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -44,7 +45,6 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.legacy.consistency.checking.CheckerEngine;
 import org.neo4j.legacy.consistency.checking.index.IndexAccessors;
 import org.neo4j.legacy.consistency.report.ConsistencyReport;
-import org.neo4j.storageengine.api.schema.BoundedIterable;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 

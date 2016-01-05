@@ -25,9 +25,9 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.direct.BoundedIterable;
 
 import static java.util.stream.Collectors.toList;
 

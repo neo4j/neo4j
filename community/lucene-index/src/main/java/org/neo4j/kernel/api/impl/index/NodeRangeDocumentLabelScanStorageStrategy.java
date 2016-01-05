@@ -29,16 +29,12 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
-<<<<<<< b169a7e93e2e6863cdd95e5dd138f05f30892e02
-import org.neo4j.storageengine.api.schema.LabelScanReader;
-=======
-import org.neo4j.storageengine.api.schema.AllEntriesLabelScanReader;
->>>>>>> Reading all documents moved inside lucene index
+import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.concat;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+
 
 /**
  * {@link org.neo4j.kernel.api.labelscan.LabelScanStore} implemented using Lucene. There's only one big index for all

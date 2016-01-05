@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;

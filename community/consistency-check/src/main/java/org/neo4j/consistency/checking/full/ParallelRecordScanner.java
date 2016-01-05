@@ -21,8 +21,8 @@ package org.neo4j.consistency.checking.full;
 
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.statistics.Statistics;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.progress.ProgressMonitorFactory.MultiPartBuilder;
-import org.neo4j.kernel.api.direct.BoundedIterable;
 
 import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.DEFAULT_QUEUE_SIZE;
 import static org.neo4j.consistency.checking.full.RecordDistributor.distributeRecords;

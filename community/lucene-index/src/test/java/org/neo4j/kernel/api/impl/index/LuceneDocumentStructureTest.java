@@ -44,7 +44,7 @@ public class LuceneDocumentStructureTest
     public void tooLongStringShouldBeSkipped()
     {
         String string = RandomStringUtils.randomAscii( 358749 );
-        Document document = documentStructure.documentRepresentingProperty( 123, string );
+        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, string );
         assertNull( document.getField( String.key() ) );
     }
 
@@ -52,7 +52,7 @@ public class LuceneDocumentStructureTest
     public void tooLongArrayShouldBeSkipped()
     {
         byte[] bytes = RandomStringUtils.randomAscii( IndexWriter.MAX_TERM_LENGTH  + 10).getBytes();
-        Document document = documentStructure.documentRepresentingProperty( 123, bytes );
+        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, bytes );
         assertNull( document.getField( Array.key() ) );
     }
 
@@ -60,7 +60,7 @@ public class LuceneDocumentStructureTest
     public void stringWithMaximumLengthShouldBeAllowed()
     {
         String longestString = RandomStringUtils.randomAscii( IndexWriter.MAX_TERM_LENGTH );
-        Document document = documentStructure.documentRepresentingProperty( 123, longestString );
+        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, longestString );
         assertEquals( longestString, document.getField( String.key() ).stringValue() );
     }
 

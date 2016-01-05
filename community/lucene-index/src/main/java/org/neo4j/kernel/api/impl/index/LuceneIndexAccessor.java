@@ -24,7 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -102,15 +102,7 @@ public class LuceneIndexAccessor implements IndexAccessor
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        try
-        {
-            return new LuceneAllEntriesIndexAccessorReader( luceneIndex.allDocumentsReader() );
-        }
-        catch ( Exception e )
-        {
-            // TODO:
-            throw new RuntimeException( e );
-        }
+        return new LuceneAllEntriesIndexAccessorReader( luceneIndex.allDocumentsReader() );
     }
 
     @Override

@@ -63,6 +63,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -1616,6 +1617,12 @@ public class BatchInsertTest
         @Override
         public void force() throws UnderlyingStorageException
         {
+        }
+
+        @Override
+        public AllEntriesLabelScanReader allNodeLabelRanges()
+        {
+            return null;
         }
 
         @Override

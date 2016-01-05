@@ -135,7 +135,7 @@ public class ConsistencyCheckTasks
         {
             if ( checkLabelScanStore )
             {
-                tasks.add( new RecordScanner<>( labelScanStore.newReader().allNodeLabelRanges(),
+                tasks.add( new RecordScanner<>( labelScanStore.allNodeLabelRanges(),
                         format( "LabelScanStore_%d", iPass ), progress, new LabelScanDocumentProcessor(
                         filteredReporter,
                         new LabelScanCheck() ) ) );

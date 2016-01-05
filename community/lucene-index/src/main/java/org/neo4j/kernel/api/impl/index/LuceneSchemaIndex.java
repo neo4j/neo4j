@@ -114,11 +114,6 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
                                                 : createPartitionedUniquenessVerifier( partitions );
     }
 
-    private boolean hasSinglePartition( List<IndexPartition> partitions )
-    {
-        return partitions.size() == 1;
-    }
-
     private SimpleIndexReader createSimpleReader( List<IndexPartition> partitions ) throws IOException
     {
         IndexPartition singlePartition = partitions.get( 0 );

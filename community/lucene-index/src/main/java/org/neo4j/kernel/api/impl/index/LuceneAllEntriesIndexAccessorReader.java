@@ -23,8 +23,7 @@ import org.apache.lucene.document.Document;
 
 import java.util.Iterator;
 
-
-import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.helpers.collection.BoundedIterable;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.getNodeId;
 

@@ -43,12 +43,12 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.ArrayIterator;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.storageengine.api.schema.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -83,6 +83,9 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.DoubleLatch;
 
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.equalTo;
@@ -106,11 +109,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;

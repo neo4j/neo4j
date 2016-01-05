@@ -25,39 +25,29 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.reader.IndexReaderCloseException;
-import org.neo4j.storageengine.api.schema.AllEntriesLabelScanReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class SimpleLuceneLabelScanStoreReader implements LabelScanReader
 {
-    private final LuceneLabelScanIndex index;
     private final PartitionSearcher partitionSearcher;
-    private final LabelScanStorageStrategy storageStrategy;
+    private final LabelScanStorageStrategy strategy;
 
-    public SimpleLuceneLabelScanStoreReader( LuceneLabelScanIndex index, PartitionSearcher partitionSearcher,
-            LabelScanStorageStrategy storageStrategy )
+    public SimpleLuceneLabelScanStoreReader( PartitionSearcher partitionSearcher, LabelScanStorageStrategy strategy )
     {
-        this.index = index;
         this.partitionSearcher = partitionSearcher;
-        this.storageStrategy = storageStrategy;
+        this.strategy = strategy;
     }
 
     @Override
     public PrimitiveLongIterator nodesWithLabel( int labelId )
     {
-        return storageStrategy.nodesWithLabel( partitionSearcher.getIndexSearcher(), labelId );
+        return strategy.nodesWithLabel( partitionSearcher.getIndexSearcher(), labelId );
     }
 
     @Override
     public Iterator<Long> labelsForNode( long nodeId )
     {
-        return storageStrategy.labelsForNode( partitionSearcher.getIndexSearcher(), nodeId );
-    }
-
-    @Override
-    public AllEntriesLabelScanReader allNodeLabelRanges()
-    {
-        return storageStrategy.newNodeLabelReader( index.allDocumentsReader() );
+        return strategy.labelsForNode( partitionSearcher.getIndexSearcher(), nodeId );
     }
 
     @Override

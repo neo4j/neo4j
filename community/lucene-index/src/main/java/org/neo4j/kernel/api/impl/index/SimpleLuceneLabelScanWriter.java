@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 
 import static java.lang.String.format;
 
+// todo: should use the index itself and create partitions on demand based on given node ids
 public class SimpleLuceneLabelScanWriter implements LabelScanWriter
 {
     private final IndexPartition partition;
