@@ -26,13 +26,13 @@ import java.util.function.Function;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 
-import static org.neo4j.helpers.Settings.BOOLEAN;
-import static org.neo4j.helpers.Settings.DURATION;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Settings.MANDATORY;
-import static org.neo4j.helpers.Settings.TRUE;
-import static org.neo4j.helpers.Settings.list;
-import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.Settings.list;
+import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.Settings.MANDATORY;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 @Description("Settings for Core-Edge Clusters")
 public class CoreEdgeClusterSettings

@@ -36,7 +36,7 @@ import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.index.Index
-import org.neo4j.helpers.Settings
+import org.neo4j.kernel.configuration.Settings
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.api.index.IndexingService

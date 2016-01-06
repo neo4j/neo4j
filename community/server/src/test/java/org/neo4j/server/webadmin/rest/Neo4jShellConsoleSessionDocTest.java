@@ -19,18 +19,18 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.helpers.Settings;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
@@ -47,6 +47,7 @@ import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.lineSeparator;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
