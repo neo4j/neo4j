@@ -33,9 +33,9 @@ import static org.neo4j.helpers.Format.bytes;
  */
 public class MemoryUsageStatsProvider extends GenericStatsProvider implements Stat
 {
-    private final MemoryStatsVisitor.Home[] users;
+    private final MemoryStatsVisitor.Visitable[] users;
 
-    public MemoryUsageStatsProvider( MemoryStatsVisitor.Home... users )
+    public MemoryUsageStatsProvider( MemoryStatsVisitor.Visitable... users )
     {
         this.users = users;
         add( Keys.memory_usage, this );
@@ -51,7 +51,7 @@ public class MemoryUsageStatsProvider extends GenericStatsProvider implements St
     public long asLong()
     {
         GatheringMemoryStatsVisitor visitor = new GatheringMemoryStatsVisitor();
-        for ( MemoryStatsVisitor.Home user : users )
+        for ( MemoryStatsVisitor.Visitable user : users )
         {
             user.acceptMemoryStatsVisitor( visitor );
         }

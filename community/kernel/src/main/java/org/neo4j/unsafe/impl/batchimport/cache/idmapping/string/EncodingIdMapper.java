@@ -797,7 +797,7 @@ public class EncodingIdMapper implements IdMapper
         // TODO mention anything about the collisionValues data structure?
     }
 
-    private void nullSafeAcceptMemoryStatsVisitor( MemoryStatsVisitor visitor, MemoryStatsVisitor.Home mem )
+    private void nullSafeAcceptMemoryStatsVisitor( MemoryStatsVisitor visitor, MemoryStatsVisitor.Visitable mem )
     {
         if ( mem != null )
         {

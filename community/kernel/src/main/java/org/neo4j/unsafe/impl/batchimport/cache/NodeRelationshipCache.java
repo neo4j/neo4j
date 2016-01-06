@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Direction;
  * Caches of parts of node store and relationship group store. A crucial part of batch import where
  * any random access must be covered by this cache. All I/O, both read and write must be sequential.
  */
-public class NodeRelationshipCache implements MemoryStatsVisitor.Home
+public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 {
     private static final long EMPTY = -1;
 
@@ -181,7 +181,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Home
         }
     };
 
-    private static class RelGroupCache implements AutoCloseable, MemoryStatsVisitor.Home
+    private static class RelGroupCache implements AutoCloseable, MemoryStatsVisitor.Visitable
     {
         private static final int ENTRY_SIZE = 4;
 
