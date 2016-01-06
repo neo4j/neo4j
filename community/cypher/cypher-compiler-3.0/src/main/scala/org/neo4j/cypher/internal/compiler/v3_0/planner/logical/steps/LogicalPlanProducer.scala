@@ -358,9 +358,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   }
 
   def planRollup(lhs: LogicalPlan, rhs: LogicalPlan,
-                 collectionName: IdName, identifierToCollect: IdName,
+                 collectionName: IdName, variableToCollect: IdName,
                  nullable: Set[IdName]): LogicalPlan = {
-    RollUpApply(lhs, rhs, collectionName, identifierToCollect, nullable)(lhs.solved)
+    RollUpApply(lhs, rhs, collectionName, variableToCollect, nullable)(lhs.solved)
   }
 
   def planCountStoreNodeAggregation(query: PlannerQuery, idName: IdName, label: Option[LabelName], argumentIds: Set[IdName])

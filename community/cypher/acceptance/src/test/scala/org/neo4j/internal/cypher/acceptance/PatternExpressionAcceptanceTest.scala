@@ -451,6 +451,31 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
       Map("n" -> n2, "b" -> false)))
   }
 
+  test("pattern expression inside list comprehension") {
+    val n1 = createLabeledNode("X")
+    val m1 = createLabeledNode("Y")
+    val i1 = createLabeledNode("Y")
+    val i2 = createLabeledNode("Y")
+    relate(n1, m1)
+    relate(m1, i1)
+    relate(m1, i2)
+
+    val n2 = createLabeledNode("X")
+    val m2 = createNode()
+    val i3 = createLabeledNode()
+    val i4 = createLabeledNode("Y")
+
+    relate(n2, m2)
+    relate(m2, i3)
+    relate(m2, i4)
+
+    val result = executeWithAllPlanners("match p = (n:X)-->(b) return n, [x in nodes(p) | length( (x)-->(:Y) ) ] as coll")
+
+    result.toList should equal(List(
+      Map("n" -> n1, "coll" -> Seq(1, 2)),
+      Map("n" -> n2, "coll" -> Seq(0, 1))))
+  }
+
   private def setup(): (Node, Node) = {
     val n1 = createLabeledNode("X")
     val n2 = createLabeledNode("X")

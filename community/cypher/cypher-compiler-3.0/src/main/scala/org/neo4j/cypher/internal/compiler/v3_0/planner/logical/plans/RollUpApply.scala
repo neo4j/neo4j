@@ -30,8 +30,8 @@ pattern comprehension.
 
 Note about nullableIdentifiers: when any of these identifiers is null, the collection should be null.
  */
-case class RollUpApply(source: LogicalPlan, inner:LogicalPlan, collectionName: IdName, identifierToCollect: IdName, nullableIdentifiers: Set[IdName])
-                      (val solved: PlannerQuery with CardinalityEstimation)
+case class RollUpApply(source: LogicalPlan, inner: LogicalPlan, collectionName: IdName, variableToCollect: IdName,
+                       nullableVariables: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
 
   override def lhs = Some(source)

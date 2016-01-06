@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, ASTNode}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{ScopeExpression, Expression, ASTNode}
 
 object SemanticCheckResult {
   val success: SemanticCheck = SemanticCheckResult(_, Vector())
@@ -39,7 +39,7 @@ trait SemanticChecking {
   private val pushStateScope: SemanticCheck = state => SemanticCheckResult.success(state.newChildScope)
   private val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
   protected def withScopedState(check: => SemanticCheck): SemanticCheck = {
-    assert(!this.isInstanceOf[Expression] || this.isInstanceOf[ExpressionWithInnerScope],
+    assert(!this.isInstanceOf[Expression] || this.isInstanceOf[ScopeExpression],
       s"Expressions need to be marked with ExpressionWithInnerScope if they introduce inner scope: $this")
 
     pushStateScope chain check chain popStateScope
@@ -91,5 +91,3 @@ class SemanticCheckableOption[A <: SemanticCheckable](val option: Option[A]) ext
 class SemanticCheckableTraversableOnce[A <: SemanticCheckable](val traversable: TraversableOnce[A]) extends AnyVal {
   def semanticCheck: SemanticCheck = traversable.foldSemanticCheck { _.semanticCheck }
 }
-
-trait ExpressionWithInnerScope
