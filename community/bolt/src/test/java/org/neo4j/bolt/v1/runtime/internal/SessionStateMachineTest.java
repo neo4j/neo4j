@@ -19,14 +19,15 @@
  */
 package org.neo4j.bolt.v1.runtime.internal;
 
+import java.util.Collections;
+
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
 
-import java.util.Collections;
-
 import org.neo4j.bolt.v1.runtime.Session;
+import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -40,6 +41,9 @@ import org.neo4j.udc.UsageDataKeys;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -67,7 +71,7 @@ public class SessionStateMachineTest
         // Given
         final TopLevelTransaction tx = mock( TopLevelTransaction.class );
         when( db.beginTx() ).thenReturn( tx );
-        when( runner.run( Matchers.any( SessionState.class ), Matchers.anyString(), Matchers.anyMap() ) )
+        when( runner.run( any( SessionState.class ), anyString(), Matchers.anyMap() ) )
                 .thenThrow( new RollbackInducingKernelException() );
 
         machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
@@ -94,7 +98,7 @@ public class SessionStateMachineTest
         // Given
         final TopLevelTransaction tx = mock( TopLevelTransaction.class );
         when( db.beginTx() ).thenReturn( tx );
-        when( runner.run( Matchers.any( SessionState.class ), Matchers.anyString(), Matchers.anyMap() ) )
+        when( runner.run( any( SessionState.class ), anyString(), Matchers.anyMap() ) )
                 .thenThrow( new NoTransactionEffectException() );
 
         machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
@@ -112,7 +116,7 @@ public class SessionStateMachineTest
         machine.acknowledgeFailure( null, Session.Callback.NO_OP );
 
         // Then the machine goes back to an idle (no open transaction) state
-        assertThat(machine.state(), equalTo( SessionStateMachine.State.IDLE ));
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
     }
 
     @Test
@@ -136,13 +140,126 @@ public class SessionStateMachineTest
         machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
 
         // Then
-        assertTrue( usageData.get( UsageDataKeys.clientNames ).recentItems().contains( "FunClient/1.2" ) );
+        assertTrue( usageData.get( UsageDataKeys.clientNames ).recentItems().contains(
+                "FunClient/1.2" ) );
+    }
+
+    @Test
+    public void shouldResetToIdleOnIdle() throws Throwable
+    {
+        // Given
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
+
+        // When
+        TestCallback callback = new TestCallback();
+        machine.reset( null, callback );
+
+        // Then
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
+        assertThat( callback.completedCount, equalTo( 1 ) );
+    }
+
+    @Test
+    public void shouldResetToIdleOnInTransaction() throws Throwable
+    {
+        // Given
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.beginTransaction();
+
+        // When
+        TestCallback callback = new TestCallback();
+        machine.reset( null, callback );
+
+        // Then
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
+        assertThat( callback.completedCount, equalTo( 1 ) );
+    }
+
+    @Test
+    public void shouldResetToIdleOnStreamOpenWithExplicitTransaction() throws Throwable
+    {
+        // Given
+        when( runner.run( any( SessionState.class ), anyString(), anyMap() ) )
+                .thenReturn( mock( RecordStream.class ) );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.beginTransaction();
+        machine.run( "RETURN 1", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
+
+        // When
+        TestCallback callback = new TestCallback();
+        machine.reset( null, callback );
+
+        // Then
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
+        assertThat( callback.completedCount, equalTo( 1 ) );
+    }
+
+    @Test
+    public void shouldResetToIdleOnStreamOpenWithImplicitTransaction() throws Throwable
+    {
+        // Given
+        when( runner.run( any( SessionState.class ), anyString(), anyMap() ) )
+                .thenReturn( mock( RecordStream.class ) );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.run( "RETURN 1", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
+
+        // When
+        TestCallback callback = new TestCallback();
+        machine.reset( null, callback );
+
+        // Then
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
+        assertThat( callback.completedCount, equalTo( 1 ) );
+    }
+
+    @Test
+    public void shouldIgnoreResetToIdleOnError() throws Throwable
+    {
+        // Given
+        final TopLevelTransaction tx = mock( TopLevelTransaction.class );
+        when( db.beginTx() ).thenReturn( tx );
+        when( runner.run( any( SessionState.class ), anyString(), Matchers.anyMap() ) )
+                .thenThrow( new NoTransactionEffectException() );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.run( "RETURN 1", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
+
+        // When
+        TestCallback callback = new TestCallback();
+        machine.reset( null, callback );
+
+        // Then
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( callback.ignoredCount, equalTo( 1 ) );
     }
 
     @Before
     public void setup()
     {
         when( db.beginTx() ).thenReturn( tx );
+    }
+
+    static class TestCallback<V> extends Session.Callback.Adapter<V, Object>
+    {
+        public int completedCount;
+        public int ignoredCount;
+
+        @Override
+        public void completed( Object attachment )
+        {
+            completedCount += 1;
+        }
+
+        @Override
+        public void ignored( Object attachment )
+        {
+            ignoredCount += 1;
+        }
+
+        @Override
+        public void failure( Neo4jError err, Object attachment )
+        {
+            err.cause().printStackTrace( System.err );
+        }
     }
 
     public static class RollbackInducingKernelException extends RuntimeException implements Status.HasStatus

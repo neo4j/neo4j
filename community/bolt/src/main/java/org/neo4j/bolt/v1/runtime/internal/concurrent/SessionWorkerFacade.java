@@ -78,6 +78,12 @@ public class SessionWorkerFacade implements Session
     }
 
     @Override
+    public <A> void reset( final A attachment, final Callback<Void,A> callback )
+    {
+        queue( session -> session.reset( attachment, callback ) );
+    }
+
+    @Override
     public void close()
     {
         queue( SessionWorker.SHUTDOWN );

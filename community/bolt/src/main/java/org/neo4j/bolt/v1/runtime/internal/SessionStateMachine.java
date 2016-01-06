@@ -65,7 +65,7 @@ public class SessionStateMachine implements Session, SessionState
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
                         ctx.error( new Neo4jError( Status.Request.Invalid, "No operations allowed until you send an " +
-                                                                           "INIT message." ));
+                                "INIT message." ));
                         return halt( ctx );
                     }
                 },
@@ -106,6 +106,12 @@ public class SessionStateMachine implements Session, SessionState
                         ctx.implicitTransaction = true;
                         ctx.currentTransaction = ctx.db.beginTx();
                         return IN_TRANSACTION;
+                    }
+
+                    @Override
+                    public State reset( SessionStateMachine ctx )
+                    {
+                        return IDLE;
                     }
 
                 },
@@ -159,6 +165,13 @@ public class SessionStateMachine implements Session, SessionState
                             return error( ctx, e );
                         }
                     }
+
+                    @Override
+                    public State reset( SessionStateMachine ctx )
+                    {
+                        return rollbackTransaction( ctx );
+                    }
+
                 },
 
         /**
@@ -208,6 +221,14 @@ public class SessionStateMachine implements Session, SessionState
                         {
                             ctx.currentResult = null;
                         }
+                    }
+
+                    @Override
+                    public State reset( SessionStateMachine ctx )
+                    {
+                        // Do an extra reset, since discardAll may put us
+                        // in the IN_TRANSACTION state
+                        return discardAll( ctx ).reset( ctx );
                     }
 
                 },
@@ -314,6 +335,11 @@ public class SessionStateMachine implements Session, SessionState
             return onNoImplementation( ctx, "acknowledging an error" );
         }
 
+        public State reset( SessionStateMachine ctx )
+        {
+            return onNoImplementation( ctx, "resetting the current session" );
+        }
+
         protected State onNoImplementation( SessionStateMachine ctx, String command )
         {
             String msg = "'" + command + "' cannot be done when a session is in the '" + ctx.state.name() + "' state.";
@@ -359,7 +385,7 @@ public class SessionStateMachine implements Session, SessionState
                     catch ( Throwable t )
                     {
                         ctx.log.error( "While handling '" + err.status() + "', a second failure occurred when " +
-                                       "rolling back transaction: " + t.getMessage(), t );
+                                "rolling back transaction: " + t.getMessage(), t );
                     }
                     finally
                     {
@@ -379,6 +405,7 @@ public class SessionStateMachine implements Session, SessionState
             ctx.error( err );
             return outcome;
         }
+
     }
 
     private final UsageData usageData;
@@ -426,7 +453,7 @@ public class SessionStateMachine implements Session, SessionState
     // Note: We shouldn't depend on GDB like this, I think. Better to define an SPI that we can shape into a spec
     // for exactly the kind of underlying support the state machine needs.
     public SessionStateMachine( UsageData usageData, GraphDatabaseService db, ThreadToStatementContextBridge txBridge,
-            StatementRunner engine, LogService logging )
+                                StatementRunner engine, LogService logging )
     {
         this.usageData = usageData;
         this.db = db;
@@ -456,7 +483,7 @@ public class SessionStateMachine implements Session, SessionState
 
     @Override
     public <A> void run( String statement, Map<String,Object> params, A attachment,
-            Callback<StatementMetadata,A> callback )
+                         Callback<StatementMetadata,A> callback )
     {
         before( attachment, callback );
         try
@@ -495,6 +522,17 @@ public class SessionStateMachine implements Session, SessionState
         try
         {
             state = state.acknowledgeError( this );
+        }
+        finally { after(); }
+    }
+
+    @Override
+    public <A> void reset( A attachment, Callback<Void, A> callback )
+    {
+        before( attachment, callback );
+        try
+        {
+            state = state.reset( this );
         }
         finally { after(); }
     }

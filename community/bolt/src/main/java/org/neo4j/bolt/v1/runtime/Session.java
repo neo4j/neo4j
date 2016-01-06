@@ -148,6 +148,11 @@ public interface Session extends AutoCloseable
      */
     <A> void acknowledgeFailure( A attachment, Callback<Void,A> callback );
 
+    /**
+     * Reset the session to an IDLE state.
+     */
+    <A> void reset( A attachment, Callback<Void,A> callback );
+
     @Override
     void close();
 }
