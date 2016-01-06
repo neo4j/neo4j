@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_0.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{FreshIdNameGenerator, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
@@ -28,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningC
 import org.neo4j.cypher.internal.frontend.v3_0.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Exists
-import org.neo4j.cypher.internal.frontend.v3_0.{ExpressionWithInnerScope, SemanticDirection, ast, replace}
+import org.neo4j.cypher.internal.frontend.v3_0.{ExpressionWithInnerScope, ast, replace}
 
 import scala.collection.mutable
 
@@ -127,39 +126,6 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
     })
 
   private def solveUsingGetDegree(exp: Expression): Expression = exp.endoRewrite(getDegreeRewriter)
-
-  private val getDegreeRewriter = replace(replacer => {
-    // Top-Down:
-    // Do not traverse into NestedPlanExpressions as they have been optimized already by an earlier call to plan
-    case that: NestedPlanExpression =>
-      replacer.stop(that)
-
-    case that =>
-      // Bottom-up:
-      // Replace function invocations with more efficient expressions
-      replacer.expand(that) match {
-
-        // LENGTH( (a)-[]->() )
-        case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None))))))
-          if func.function.contains(functions.Length) || func.function.contains(functions.Size) =>
-          calculateUsingGetDegree(func, node, types, dir)
-
-        // LENGTH( ()-[]->(a) )
-        case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None))))))
-          if func.function.contains(functions.Length) || func.function.contains(functions.Size) =>
-          calculateUsingGetDegree(func, node, types, dir.reversed)
-
-        case rewritten =>
-          rewritten
-      }
-  })
-
-  private def calculateUsingGetDegree(func: FunctionInvocation, node: Variable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
-    types
-      .map(typ => GetDegree(node.copyId, Some(typ), dir)(typ.position))
-      .reduceOption[Expression](Add(_, _)(func.position))
-      .getOrElse(GetDegree(node, None, dir)(func.position))
-  }
 
   private def solveUsingRollUpApply(source: LogicalPlan, expr: PatternExpression, maybeKey: Option[String])
                                    (implicit context: LogicalPlanningContext): (LogicalPlan, Expression) = {
