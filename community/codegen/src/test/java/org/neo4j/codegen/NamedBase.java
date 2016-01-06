@@ -19,11 +19,13 @@
  */
 package org.neo4j.codegen;
 
-@SuppressWarnings( "unused" )
+@SuppressWarnings( "ALL" )
 public class NamedBase
 {
     final String name;
     private boolean defaultConstructorCalled = false;
+    private String foo;
+    private String bar;
 
     public NamedBase()
     {
@@ -39,5 +41,25 @@ public class NamedBase
     public boolean defaultConstructorCalled()
     {
         return defaultConstructorCalled;
+    }
+
+    public String getFoo()
+    {
+        return foo;
+    }
+
+    public String getBar()
+    {
+        return bar;
+    }
+
+    public void setFoo( String foo )
+    {
+        this.foo = foo;
+    }
+
+    public void setBar( String bar )
+    {
+        this.bar = bar;
     }
 }

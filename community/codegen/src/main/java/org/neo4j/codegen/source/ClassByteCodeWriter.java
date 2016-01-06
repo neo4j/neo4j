@@ -47,24 +47,48 @@ import static org.neo4j.codegen.ByteCodeUtils.desc;
 import static org.neo4j.codegen.ByteCodeUtils.exceptions;
 import static org.neo4j.codegen.ByteCodeUtils.signature;
 import static org.neo4j.codegen.ByteCodeUtils.typeName;
+import static org.objectweb.asm.Opcodes.AASTORE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ALOAD;
+import static org.objectweb.asm.Opcodes.ANEWARRAY;
 import static org.objectweb.asm.Opcodes.ARETURN;
+import static org.objectweb.asm.Opcodes.BASTORE;
+import static org.objectweb.asm.Opcodes.BIPUSH;
+import static org.objectweb.asm.Opcodes.CASTORE;
+import static org.objectweb.asm.Opcodes.DASTORE;
 import static org.objectweb.asm.Opcodes.DLOAD;
 import static org.objectweb.asm.Opcodes.DRETURN;
+import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.FASTORE;
 import static org.objectweb.asm.Opcodes.FLOAD;
 import static org.objectweb.asm.Opcodes.FRETURN;
 import static org.objectweb.asm.Opcodes.GETFIELD;
+import static org.objectweb.asm.Opcodes.GETSTATIC;
+import static org.objectweb.asm.Opcodes.IASTORE;
+import static org.objectweb.asm.Opcodes.ICONST_0;
 import static org.objectweb.asm.Opcodes.ILOAD;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
+import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.IRETURN;
+import static org.objectweb.asm.Opcodes.LASTORE;
 import static org.objectweb.asm.Opcodes.LLOAD;
 import static org.objectweb.asm.Opcodes.LRETURN;
+import static org.objectweb.asm.Opcodes.NEWARRAY;
 import static org.objectweb.asm.Opcodes.PUTFIELD;
 import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
+import static org.objectweb.asm.Opcodes.SASTORE;
+import static org.objectweb.asm.Opcodes.SIPUSH;
+import static org.objectweb.asm.Opcodes.T_BOOLEAN;
+import static org.objectweb.asm.Opcodes.T_BYTE;
+import static org.objectweb.asm.Opcodes.T_CHAR;
+import static org.objectweb.asm.Opcodes.T_DOUBLE;
+import static org.objectweb.asm.Opcodes.T_FLOAT;
+import static org.objectweb.asm.Opcodes.T_INT;
+import static org.objectweb.asm.Opcodes.T_LONG;
+import static org.objectweb.asm.Opcodes.T_SHORT;
 import static org.objectweb.asm.Opcodes.V1_8;
 
 class ClassByteCodeWriter implements ClassEmitter
@@ -121,7 +145,7 @@ class ClassByteCodeWriter implements ClassEmitter
                 FieldReference field = entry.getKey();
                 entry.getValue().accept( expressionVisitor );
                 methodVisitor.visitFieldInsn( PUTSTATIC, byteCodeName( field.owner() ),
-                        field.name(), signature( field.type() ) );
+                        field.name(), typeName( field.type() ) );
             }
             methodVisitor.visitInsn( RETURN );
             methodVisitor.visitMaxs( 0, 0 );
@@ -390,7 +414,12 @@ class ClassByteCodeWriter implements ClassEmitter
         @Override
         public void invoke( MethodReference method, Expression[] arguments )
         {
-
+            for ( Expression argument : arguments )
+            {
+                argument.accept( this );
+            }
+            methodVisitor.visitMethodInsn( INVOKESTATIC, byteCodeName( method.owner() ), method.name(), desc( method ),
+                    false );
         }
 
         @Override
@@ -430,13 +459,15 @@ class ClassByteCodeWriter implements ClassEmitter
         @Override
         public void constant( Object value )
         {
-
+            //TODO do type checking here
+            methodVisitor.visitLdcInsn( value );
         }
 
         @Override
         public void getStatic( FieldReference field )
         {
-
+            methodVisitor
+                    .visitFieldInsn( GETSTATIC, byteCodeName( field.owner() ), field.name(), typeName( field.type() ) );
         }
 
         @Override
@@ -497,6 +528,108 @@ class ClassByteCodeWriter implements ClassEmitter
         public void cast( TypeReference type, Expression expression )
         {
 
+        }
+
+        @Override
+        public void newArray( TypeReference type, Expression...exprs )
+        {
+            pushInteger( exprs.length );
+            createArray( type );
+            for ( int i = 0; i < exprs.length; i++ )
+            {
+                methodVisitor.visitInsn( DUP );
+                pushInteger( i );
+                exprs[i].accept( this );
+                arrayStore( type );
+            }
+        }
+
+        private void pushInteger( int integer )
+        {
+            if ( integer < 6 && integer >= 0 )
+            {
+                methodVisitor.visitInsn( ICONST_0 + integer );
+            }
+            else if ( integer < Byte.MAX_VALUE && integer > Byte.MIN_VALUE )
+            {
+                methodVisitor.visitIntInsn( BIPUSH, integer );
+            }
+            else if ( integer < Short.MAX_VALUE && integer > Short.MIN_VALUE )
+            {
+                methodVisitor.visitIntInsn( SIPUSH, integer );
+            }
+            else
+            {
+                methodVisitor.visitLdcInsn( integer );
+            }
+        }
+
+        private void createArray( TypeReference reference )
+        {
+            switch ( reference.name() )
+            {
+            case "int":
+                methodVisitor.visitIntInsn( NEWARRAY, T_INT );
+                break;
+            case "long":
+                methodVisitor.visitIntInsn( NEWARRAY, T_LONG );
+                break;
+            case "byte":
+                methodVisitor.visitIntInsn( NEWARRAY, T_BYTE );
+                break;
+            case "short":
+                methodVisitor.visitIntInsn( NEWARRAY, T_SHORT );
+                break;
+            case "char":
+                methodVisitor.visitIntInsn( NEWARRAY, T_CHAR );
+                break;
+            case "float":
+                methodVisitor.visitIntInsn( NEWARRAY, T_FLOAT );
+                break;
+            case "double":
+                methodVisitor.visitIntInsn( NEWARRAY, T_DOUBLE );
+                break;
+            case "boolean":
+                methodVisitor.visitIntInsn( NEWARRAY, T_BOOLEAN );
+                break;
+            default:
+                methodVisitor.visitTypeInsn( ANEWARRAY, byteCodeName( reference ) );
+
+            }
+        }
+
+        private void arrayStore( TypeReference reference )
+        {
+            switch ( reference.name() )
+            {
+            case "int":
+                methodVisitor.visitInsn( IASTORE );
+                break;
+            case "long":
+                methodVisitor.visitInsn( LASTORE );
+                break;
+            case "byte":
+                methodVisitor.visitInsn( BASTORE );
+                break;
+            case "short":
+                methodVisitor.visitInsn( SASTORE );
+                break;
+            case "char":
+                methodVisitor.visitInsn( CASTORE );
+                break;
+            case "float":
+                methodVisitor.visitInsn( FASTORE );
+                break;
+            case "double":
+                methodVisitor.visitInsn( DASTORE );
+                break;
+            case "boolean":
+                methodVisitor.visitInsn( BASTORE );
+                break;
+            default:
+                methodVisitor.visitInsn( AASTORE );
+
+            }
         }
     }
 

@@ -405,4 +405,18 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         expression.accept( this );
 
     }
+
+    @Override
+    public void newArray( TypeReference type, Expression... constants )
+    {
+        append("new ").append( type.name() ).append( "[]{" );
+        String sep = "";
+        for ( Expression constant : constants )
+        {
+            append( sep );
+            constant.accept( this );
+            sep = ", ";
+        }
+        append( "}" );
+    }
 }

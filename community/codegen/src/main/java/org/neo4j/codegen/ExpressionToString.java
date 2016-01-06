@@ -191,4 +191,20 @@ class ExpressionToString implements ExpressionVisitor
         expression.accept( this );
         result.append( "}" );
     }
+
+    @Override
+    public void newArray( TypeReference type, Expression... constants )
+    {
+        result.append( "newArray{type=" );
+        type.writeTo( result );
+        result.append( ", constants=" );
+        String sep = "";
+        for ( Expression constant : constants )
+        {
+            result.append( sep );
+            constant.accept( this );
+            sep = ", ";
+        }
+        result.append( "}" );
+    }
 }

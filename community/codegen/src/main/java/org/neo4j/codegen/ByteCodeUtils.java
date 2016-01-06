@@ -42,6 +42,7 @@ public final class ByteCodeUtils
     {
         StringBuilder builder = new StringBuilder();
         internalType( builder, reference, false );
+
         return builder.toString();
     }
 
@@ -93,7 +94,6 @@ public final class ByteCodeUtils
         }
         return throwsList.stream().map( e -> byteCodeName( e.name() ) ).toArray( String[]::new );
     }
-
 
     private static String internalDesc( MethodDeclaration declaration, boolean showErasure )
     {
@@ -177,15 +177,17 @@ public final class ByteCodeUtils
         default:
             if ( reference.isTypeParameter() )
             {
-                builder.append( "T" ).append( reference.simpleName() );
+                builder.append( "T" ).append( name );
             }
             else
             {
-                builder
-                        .append( "L" )
-                        .append( reference.packageName().replaceAll( "\\.", "\\/" ) )
-                        .append( "/" )
-                        .append( reference.simpleName() );
+                builder.append( "L" );
+                String packageName = reference.packageName().replaceAll( "\\.", "\\/" );
+                if ( !packageName.isEmpty() )
+                {
+                    builder.append( packageName ).append( "/" );
+                }
+                builder.append( byteCodeName( name ) );
             }
 
             List<TypeReference> parameters = reference.parameters();

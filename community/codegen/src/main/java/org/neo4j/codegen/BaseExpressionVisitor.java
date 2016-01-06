@@ -100,4 +100,10 @@ public abstract class BaseExpressionVisitor implements ExpressionVisitor
     {
 
     }
+
+    @Override
+    public void newArray( TypeReference type, Expression... constants )
+    {
+
+    }
 }

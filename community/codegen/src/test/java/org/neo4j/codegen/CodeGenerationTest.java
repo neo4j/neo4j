@@ -38,6 +38,7 @@ import org.neo4j.codegen.source.Configuration;
 import org.neo4j.codegen.source.SourceCode;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -53,6 +54,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.invoke;
+import static org.neo4j.codegen.Expression.newArray;
 import static org.neo4j.codegen.Expression.newInstance;
 import static org.neo4j.codegen.ExpressionTemplate.cast;
 import static org.neo4j.codegen.ExpressionTemplate.load;
@@ -61,6 +63,7 @@ import static org.neo4j.codegen.MethodReference.constructorReference;
 import static org.neo4j.codegen.MethodReference.methodReference;
 import static org.neo4j.codegen.Parameter.param;
 import static org.neo4j.codegen.TypeReference.extending;
+import static org.neo4j.codegen.TypeReference.parameterizedType;
 import static org.neo4j.codegen.TypeReference.typeParameter;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
@@ -218,6 +221,26 @@ public class CodeGenerationTest
     }
 
     @Test
+    public void shouldGenerateParameterizedTypeField() throws Exception
+    {
+        // given
+        ClassHandle handle;
+        TypeReference stringList = TypeReference.parameterizedType( List.class, String.class );
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            simple.field( stringList, "theField" );
+            handle = simple.handle();
+        }
+
+        // when
+        Class<?> clazz = handle.loadClass();
+
+        // then
+        Field theField = clazz.getDeclaredField( "theField" );
+        assertSame( List.class, theField.getType() );
+    }
+
+    @Test
     public void shouldGenerateMethodReturningFieldValue() throws Throwable
     {
         assertMethodReturningField( byte.class, (byte) 42 );
@@ -232,7 +255,98 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateStaticField() throws Throwable
+    public void shouldGenerateMethodReturningArrayValue() throws Throwable
+    {
+        // given
+        createGenerator();
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+
+            simple.generate( MethodTemplate.method( int[].class, "value" )
+                    .returns( newArray( typeReference( int.class ), constant( 1 ), constant( 2 ), constant( 3 ) ) )
+                    .build() );
+            handle = simple.handle();
+        }
+
+        // when
+        Object instance = constructor( handle.loadClass() ).invoke();
+
+        // then
+        assertArrayEquals( new int[]{1, 2, 3}, (int[]) instanceMethod( instance, "value" ).invoke() );
+    }
+
+    @Test
+    public void shouldGenerateMethodReturningParameterizedTypeValue() throws Throwable
+    {
+        // given
+        createGenerator();
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            TypeReference stringList = parameterizedType( List.class, String.class );
+            simple.generate( MethodTemplate.method( stringList, "value" )
+                    .returns(
+                            Expression.invoke(
+                                    methodReference( Arrays.class, stringList, "asList", Object[].class ),
+                                    newArray( typeReference( String.class ), constant( "a" ), constant( "b" )) ) )
+                    .build() );
+            handle = simple.handle();
+        }
+
+        // when
+        Object instance = constructor( handle.loadClass() ).invoke();
+
+        // then
+        assertEquals( Arrays.asList( "a", "b" ), instanceMethod( instance, "value" ).invoke() );
+    }
+
+    @Test
+    public void shouldGenerateStaticPrimitiveField() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            FieldReference foo = simple.staticField( int.class, "FOO", constant( 42 ) );
+            try ( CodeBlock get = simple.generateMethod( int.class, "get" ) )
+            {
+                get.returns( Expression.get( foo ) );
+            }
+            handle = simple.handle();
+        }
+
+        // when
+        Object foo = instanceMethod( handle.newInstance(), "get" ).invoke();
+
+        // then
+        assertEquals( 42, foo );
+    }
+
+    @Test
+    public void shouldGenerateStaticReferenceTypeField() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            FieldReference foo = simple.staticField( String.class, "FOO", constant( "42" ) );
+            try ( CodeBlock get = simple.generateMethod( String.class, "get" ) )
+            {
+                get.returns( Expression.get( foo ) );
+            }
+            handle = simple.handle();
+        }
+
+        // when
+        Object foo = instanceMethod( handle.newInstance(), "get" ).invoke();
+
+        // then
+        assertEquals( "42", foo );
+    }
+
+    @Test
+    public void shouldGenerateStaticParameterizedTypeField() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -240,10 +354,9 @@ public class CodeGenerationTest
         {
             TypeReference stringList = TypeReference.parameterizedType( List.class, String.class );
             FieldReference foo = simple.staticField( stringList, "FOO", Expression.invoke(
-                    methodReference( Arrays.class, stringList, "asList", String[].class ),
-                    constant( "FOO" ),
-                    constant( "BAR" ),
-                    constant( "BAZ" ) ) );
+                    methodReference( Arrays.class, stringList, "asList", Object[].class ),
+                    newArray( typeReference( String.class ),
+                            constant( "FOO" ), constant( "BAR" ), constant( "BAZ" ) ) ) );
             try ( CodeBlock get = simple.generateMethod( stringList, "get" ) )
             {
                 get.returns( Expression.get( foo ) );
@@ -257,6 +370,7 @@ public class CodeGenerationTest
         // then
         assertEquals( Arrays.asList( "FOO", "BAR", "BAZ" ), foo );
     }
+
 
     public interface Thrower<E extends Exception>
     {
@@ -320,27 +434,29 @@ public class CodeGenerationTest
         ClassHandle handle;
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
-            try ( CodeBlock create = simple.generateMethod( SomeBean.class, "createSomeBean",
+            try ( CodeBlock create = simple.generateMethod( NamedBase.class, "createNamedBase",
                     param( String.class, "foo" ), param( String.class, "bar" ) ) )
             {
-                create.assign( SomeBean.class, "bean",
-                        invoke( newInstance( SomeBean.class ), constructorReference( SomeBean.class ) ) );
+                create.assign( NamedBase.class, "bean",
+                        invoke( newInstance( NamedBase.class ), constructorReference( SomeBean.class ) ) );
                 create.expression( invoke( create.load( "bean" ),
-                        methodReference( SomeBean.class, void.class, "setFoo", String.class ), create.load( "foo" ) ) );
+                        methodReference( NamedBase.class, void.class, "setFoo", String.class ),
+                        create.load( "foo" ) ) );
                 create.expression( invoke( create.load( "bean" ),
-                        methodReference( SomeBean.class, void.class, "setBar", String.class ), create.load( "bar" ) ) );
+                        methodReference( NamedBase.class, void.class, "setBar", String.class ),
+                        create.load( "bar" ) ) );
                 create.returns( create.load( "bean" ) );
             }
             handle = simple.handle();
         }
 
         // when
-        MethodHandle method = instanceMethod( handle.newInstance(), "createSomeBean", String.class, String.class );
-        SomeBean bean = (SomeBean) method.invoke( "hello", "world" );
+        MethodHandle method = instanceMethod( handle.newInstance(), "createNamedBase", String.class, String.class );
+        NamedBase bean = (NamedBase) method.invoke( "hello", "world" );
 
         // then
-        assertEquals( "hello", bean.foo );
-        assertEquals( "world", bean.bar );
+        assertEquals( "hello", bean.getFoo() );
+        assertEquals( "world", bean.getBar() );
     }
 
     @Test

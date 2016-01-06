@@ -127,6 +127,18 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
+    public static Expression newArray( TypeReference type, Expression...constants )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.newArray( type, constants );
+            }
+        };
+    }
+
     /** get instance field */
     public static Expression get( final Expression target, final FieldReference field )
     {

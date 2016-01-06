@@ -39,133 +39,32 @@ import static org.neo4j.codegen.TypeReference.typeReference;
 public class ByteCodeUtilsTest
 {
     @Test
-    public void shouldTranslateIntToByteCode()
+    public void shouldTranslateTypeNames()
     {
-        // GIVEN
-        TypeReference reference = typeReference( int.class );
+        //primitive types
+        assertTypeName( int.class, "I" );
+        assertTypeName( byte.class, "B" );
+        assertTypeName( short.class, "S" );
+        assertTypeName( char.class, "C" );
+        assertTypeName( float.class, "F" );
+        assertTypeName( double.class, "D" );
+        assertTypeName( boolean.class, "Z" );
+        assertTypeName( void.class, "V" );
 
-        // WHEN
-        String byteCodeName = typeName( reference );
+        //primitive array types
+        assertTypeName( int[].class, "[I" );
+        assertTypeName( byte[].class, "[B" );
+        assertTypeName( short[].class, "[S" );
+        assertTypeName( char[].class, "[C" );
+        assertTypeName( float[].class, "[F" );
+        assertTypeName( double[].class, "[D" );
+        assertTypeName( boolean[].class, "[Z" );
 
-        // THEN
-        assertThat( byteCodeName, equalTo( "I" ) );
-    }
+        //reference type
+        assertTypeName( String.class, "Ljava/lang/String;" );
 
-    @Test
-    public void shouldTranslateShortToByteCode()
-    {
-        // GIVEN
-        TypeReference reference = typeReference( short.class );
-
-        // WHEN
-        String byteCodeName = typeName( reference );
-
-        // THEN
-        assertThat( byteCodeName, equalTo( "S" ) );
-    }
-
-    @Test
-    public void shouldTranslateCharToByteCode()
-    {
-        // GIVEN
-        TypeReference reference = typeReference( char.class );
-
-        // WHEN
-        String byteCodeName = typeName( reference );
-
-        // THEN
-        assertThat( byteCodeName, equalTo( "C" ) );
-    }
-
-    @Test
-    public void shouldTranslateLongToByteCode()
-    {
-        // GIVEN
-        TypeReference reference = typeReference( long.class );
-
-        // WHEN
-        String byteCodeName = typeName( reference );
-
-        // THEN
-        assertThat( byteCodeName, equalTo( "J" ) );
-    }
-
-    @Test
-    public void shouldTranslateFloatToByteCode()
-    {
-        // GIVEN
-        TypeReference reference = typeReference( float.class );
-
-        // WHEN
-        String byteCodeName = typeName( reference );
-
-        // THEN
-        assertThat( byteCodeName, equalTo( "F" ) );
-    }
-
-    @Test
-    public void shouldTranslateDoubleToByteCode()
-    {
-        // GIVEN
-        TypeReference reference = typeReference( double.class );
-
-        // WHEN
-        String byteCodeName = typeName( reference );
-
-        // THEN
-        assertThat( byteCodeName, equalTo( "D" ) );
-    }
-
-    @Test
-    public void shouldTranslateBooleanToByteCode()
-    {
-        // GIVEN
-        TypeReference reference = typeReference( boolean.class );
-
-        // WHEN
-        String byteCodeName = typeName( reference );
-
-        // THEN
-        assertThat( byteCodeName, equalTo( "Z" ) );
-    }
-
-    @Test
-    public void shouldTranslateVoidToByteCode()
-    {
-        // GIVEN
-        TypeReference reference = typeReference( void.class );
-
-        // WHEN
-        String byteCodeName = typeName( reference );
-
-        // THEN
-        assertThat( byteCodeName, equalTo( "V" ) );
-    }
-
-    @Test
-    public void shouldTranslateReferenceTypeToByteCode()
-    {
-        // GIVEN
-        TypeReference reference = typeReference( String.class );
-
-        // WHEN
-        String byteCodeName = typeName( reference );
-
-        // THEN
-        assertThat( byteCodeName, equalTo( "Ljava/lang/String;" ) );
-    }
-
-    @Test
-    public void shouldTranslateArrayTypeToByteCode()
-    {
-        // GIVEN
-        TypeReference reference = typeReference( boolean[].class );
-
-        // WHEN
-        String byteCodeName = typeName( reference );
-
-        // THEN
-        assertThat( byteCodeName, equalTo( "[Z" ) );
+        //reference array type
+        assertTypeName( String[].class, "[Ljava/lang/String;" );
     }
 
     @Test
@@ -290,10 +189,19 @@ public class ByteCodeUtilsTest
         String[] exceptions = exceptions( declaration );
         // THEN
         assertThat(description,
-                equalTo( "<E:Ljava/lang/Exception;>(Lorg/neo4j/codegen/CodeGenerationTest.Thrower<TE;>;)V^TE;" ));
+                equalTo( "<E:Ljava/lang/Exception;>(Lorg/neo4j/codegen/CodeGenerationTest/Thrower<TE;>;)V^TE;" ));
         assertThat( exceptions, equalTo(new String[]{"java/lang/Exception"} ));
     }
 
+    private void assertTypeName(Class<?> type, String expected)
+    {
+        // GIVEN
+        TypeReference reference = typeReference( type );
 
+        // WHEN
+        String byteCodeName = typeName( reference );
 
+        // THEN
+        assertThat( byteCodeName, equalTo( expected ) );
+    }
 }
