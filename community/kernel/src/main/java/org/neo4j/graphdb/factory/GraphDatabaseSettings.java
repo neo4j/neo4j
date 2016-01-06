@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.apache.commons.lang3.SystemUtils;
-
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -33,7 +31,6 @@ import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
-import org.neo4j.kernel.configuration.Obsoleted;
 import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.logging.Level;
@@ -51,7 +48,6 @@ import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.basePath;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.matches;
@@ -65,6 +61,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
  */
 public abstract class GraphDatabaseSettings
 {
+    @SuppressWarnings("unused") // accessed by reflection
     @Migrator
     private static final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
 
@@ -72,12 +69,6 @@ public abstract class GraphDatabaseSettings
     @Description("Only allow read operations from this Neo4j instance. " +
                  "This mode still requires write access to the directory for lock purposes.")
     public static final Setting<Boolean> read_only = setting( "read_only", BOOLEAN, FALSE );
-
-    @Deprecated
-    @Description( "The type of cache to use for nodes and relationships. " +
-                  "This configuration setting is no longer applicable from Neo4j 2.3. " +
-                  "Configuration has been simplified to only require tuning of the page cache." )
-    public static final Setting<String> cache_type = setting( "cache_type", STRING, "deprecated" );
 
     @Description("Print out the effective Neo4j configuration after startup.")
     public static final Setting<Boolean> dump_configuration = setting("dump_configuration", BOOLEAN, FALSE );
@@ -87,13 +78,6 @@ public abstract class GraphDatabaseSettings
             "Setting this to `true` does not guarantee successful upgrade, it just " +
             "allows an upgrade to be performed.")
     public static final Setting<Boolean> allow_store_upgrade = setting("allow_store_upgrade", BOOLEAN, FALSE );
-
-    @Description("Determines whether any TransactionInterceptors loaded will intercept " +
-            "externally received transactions (for example in HA) before they reach the " +
-            "logical log and are applied to the store.")
-    @Internal
-    // used in commented-out code in TestKernelPanic
-    public static final Setting<Boolean> intercept_deserialized_transactions = setting("intercept_deserialized_transactions", BOOLEAN, FALSE);
 
     // Cypher settings
     // TODO: These should live with cypher
@@ -148,11 +132,6 @@ public abstract class GraphDatabaseSettings
     @Description( "Sets the root directory for file URLs used with the Cypher `LOAD CSV` clause. This must be set to a single "
                   + "directory, restricting access to only those files within that directory and its subdirectories." )
     public static Setting<File> load_csv_file_url_root = setting( "dbms.security.load_csv_file_url_root", PATH, NO_DEFAULT );
-
-    @Deprecated
-    @Obsoleted( "This is no longer used" )
-    @Description("The directory where the database files are located.")
-    public static final Setting<File> store_dir = setting("store_dir", PATH, NO_DEFAULT );
 
     @Description( "The maximum amount of time to wait for the database to become available, when " +
                   "starting a new transaction." )
@@ -274,14 +253,6 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> rebuild_idgenerators_fast = setting("rebuild_idgenerators_fast", BOOLEAN, TRUE );
 
     // Store memory settings
-    /**
-     * @deprecated This configuration has been obsoleted. Neo4j no longer relies on the memory-mapping capabilities of the operating system.
-     */
-    @Deprecated
-    @Obsoleted( "This setting has been obsoleted. Neo4j no longer relies on the memory-mapping capabilities of the operating system." )
-    @Description( "Use memory mapped buffers for accessing the native storage layer." )
-    public static final Setting<Boolean> use_memory_mapped_buffers = setting( "use_memory_mapped_buffers", BOOLEAN, Boolean.toString(!SystemUtils.IS_OS_WINDOWS));
-
     @Description("Target size for pages of mapped memory. If set to 0, then a reasonable default is chosen, " +
                  "depending on the storage device used.")
     @Internal
@@ -345,80 +316,6 @@ public abstract class GraphDatabaseSettings
     public static final Setting<String> pagecache_swapper =
             setting( "dbms.pagecache.swapper", STRING, (String) null );
 
-    @Deprecated
-    @Obsoleted( "This is no longer used" )
-    @Description( "Log memory mapping statistics regularly." )
-    public static final Setting<Boolean> log_mapped_memory_stats = setting( "log_mapped_memory_stats", BOOLEAN, FALSE );
-
-    @Deprecated
-    @Obsoleted( "This is no longer used" )
-    @Description( "The file where memory mapping statistics will be recorded." )
-    public static final Setting<File> log_mapped_memory_stats_filename = setting( "log_mapped_memory_stats_filename",
-            PATH, "mapped_memory_stats.log", basePath(store_dir) );
-
-    @Deprecated
-    @Obsoleted( "This is no longer used" )
-    @Description( "The number of records to be loaded between regular logging of memory mapping statistics." )
-    public static final Setting<Integer> log_mapped_memory_stats_interval = setting("log_mapped_memory_stats_interval", INTEGER, "1000000");
-
-    /**
-     * @deprecated Replaced by the pagecache_memory setting.
-     */
-    @Deprecated
-    @Obsoleted( "Replaced by the dbms.pagecache.memory setting." )
-    @Description( "The size to allocate for memory mapping the node store.")
-    public static final Setting<Long> nodestore_mapped_memory_size = setting( "neostore.nodestore.db.mapped_memory",
-            BYTES, NO_DEFAULT );
-
-    /**
-     * @deprecated Replaced by the pagecache_memory setting.
-     */
-    @Deprecated
-    @Obsoleted( "Replaced by the dbms.pagecache.memory setting." )
-    @Description("The size to allocate for memory mapping the property value store.")
-    public static final Setting<Long> nodestore_propertystore_mapped_memory_size = setting("neostore.propertystore.db.mapped_memory", BYTES, NO_DEFAULT );
-
-    /**
-     * @deprecated Replaced by the pagecache_memory setting.
-     */
-    @Deprecated
-    @Obsoleted( "Replaced by the dbms.pagecache.memory setting." )
-    @Description("The size to allocate for memory mapping the store for property key indexes.")
-    public static final Setting<Long> nodestore_propertystore_index_mapped_memory_size = setting("neostore.propertystore.db.index.mapped_memory", BYTES, NO_DEFAULT );
-
-    /**
-     * @deprecated Replaced by the pagecache_memory setting.
-     */
-    @Obsoleted( "Replaced by the dbms.pagecache.memory setting." )
-    @Deprecated
-    @Description("The size to allocate for memory mapping the store for property key strings.")
-    public static final Setting<Long> nodestore_propertystore_index_keys_mapped_memory_size = setting("neostore.propertystore.db.index.keys.mapped_memory", BYTES, NO_DEFAULT );
-
-    /**
-     * @deprecated Replaced by the pagecache_memory setting.
-     */
-    @Deprecated
-    @Obsoleted( "Replaced by the dbms.pagecache.memory setting." )
-    @Description("The size to allocate for memory mapping the string property store.")
-    public static final Setting<Long> strings_mapped_memory_size = setting("neostore.propertystore.db.strings.mapped_memory", BYTES, NO_DEFAULT );
-
-    /**
-     * @deprecated Replaced by the pagecache_memory setting.
-     */
-    @Deprecated
-    @Obsoleted( "Replaced by the dbms.pagecache.memory setting." )
-    @Description("The size to allocate for memory mapping the array property store.")
-    public static final Setting<Long> arrays_mapped_memory_size = setting("neostore.propertystore.db.arrays.mapped_memory", BYTES, NO_DEFAULT );
-
-    /**
-     * @deprecated Replaced by the pagecache_memory setting.
-     */
-    @Deprecated
-    @Obsoleted( "Replaced by the dbms.pagecache.memory setting." )
-    @Description("The size to allocate for memory mapping the relationship store.")
-    public static final Setting<Long> relationshipstore_mapped_memory_size = setting("neostore.relationshipstore.db.mapped_memory", BYTES, NO_DEFAULT );
-
-
     @Description("How many relationships to read at a time during iteration")
     public static final Setting<Integer> relationship_grab_size = setting("relationship_grab_size", INTEGER, "100", min( 1 ));
 
@@ -465,11 +362,6 @@ public abstract class GraphDatabaseSettings
 
     @Description( "Relationship count threshold for considering a node to be dense" )
     public static final Setting<Integer> dense_node_threshold = setting( "dense_node_threshold", INTEGER, "50", min(1) );
-
-    @Deprecated
-    @Description("Whether or not transactions are appended to the log in batches")
-    @Obsoleted( "Write batching can no longer be turned off" )
-    public static final Setting<Boolean> batched_writes = setting( "batched_writes", BOOLEAN, Boolean.TRUE.toString() );
 
     @Description( "Log executed queries that takes longer than the configured threshold. "
             + "_NOTE: This feature is only available in the Neo4j Enterprise Edition_." )
