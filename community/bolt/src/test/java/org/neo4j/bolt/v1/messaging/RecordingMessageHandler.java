@@ -32,6 +32,7 @@ import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.messaging.message.Message;
 import org.neo4j.bolt.v1.messaging.message.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
+import org.neo4j.bolt.v1.messaging.message.ResetMessage;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.runtime.spi.Record;
@@ -93,6 +94,12 @@ public class RecordingMessageHandler implements MessageHandler<RuntimeException>
     public void handleInitMessage( String clientName ) throws RuntimeException
     {
         messages.add( new InitMessage( clientName ) );
+    }
+
+    @Override
+    public void handleResetMessage() throws RuntimeException
+    {
+        messages.add( new ResetMessage() );
     }
 
     public List<Message> asList()

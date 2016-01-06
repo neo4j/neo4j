@@ -43,6 +43,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     public interface MessageTypes
     {
         byte MSG_INIT = 0x01;
+        byte MSG_RESET = 0x02;
         byte MSG_ACK_FAILURE = 0x0F;
         byte MSG_RUN = 0x10;
         byte MSG_DISCARD_ALL = 0x2F;
@@ -66,6 +67,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         case MessageTypes.MSG_SUCCESS:     return "MSG_SUCCESS";
         case MessageTypes.MSG_IGNORED:     return "MSG_IGNORED";
         case MessageTypes.MSG_FAILURE:     return "MSG_FAILURE";
+        case MessageTypes.MSG_RESET:       return "MSG_RESET";
         default: return "0x" + Integer.toHexString(type);
         }
     }
@@ -189,6 +191,13 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
+        public void handleResetMessage() throws IOException
+        {
+            packer.packStructHeader( 0, MessageTypes.MSG_RESET );
+            onMessageComplete.onMessageComplete();
+        }
+
+        @Override
         public void flush() throws IOException
         {
             packer.flush();
@@ -252,6 +261,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                         break;
                     case MessageTypes.MSG_INIT:
                         unpackInitMessage( output );
+                        break;
+                    case MessageTypes.MSG_RESET:
+                        unpackResetMessage( output );
                         break;
                     default:
                         throw new BoltIOException( Status.Request.Invalid,
@@ -343,6 +355,11 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             String clientName = unpacker.unpackString();
             output.handleInitMessage( clientName );
+        }
+
+        private <E extends Exception> void unpackResetMessage( MessageHandler<E> output ) throws IOException, E
+        {
+            output.handleResetMessage();
         }
 
     }

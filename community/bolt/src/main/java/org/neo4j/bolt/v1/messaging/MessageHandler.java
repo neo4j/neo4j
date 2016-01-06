@@ -44,6 +44,8 @@ public interface MessageHandler<E extends Exception>
 
     void handleInitMessage( String clientName ) throws E;
 
+    void handleResetMessage() throws E;
+
     class Adapter<E extends Exception> implements MessageHandler<E>
     {
         @Override
@@ -96,6 +98,12 @@ public interface MessageHandler<E extends Exception>
 
         @Override
         public void handleInitMessage( String clientName ) throws E
+        {
+
+        }
+
+        @Override
+        public void handleResetMessage() throws E
         {
 
         }
