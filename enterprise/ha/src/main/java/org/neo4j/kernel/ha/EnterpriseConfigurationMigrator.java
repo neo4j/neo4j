@@ -19,21 +19,14 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
+import org.neo4j.kernel.configuration.BaseConfigurationMigrator;
 
 import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
 import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_descending;
 
-// TODO: This shouldn't extend GraphDatabaseConfigurationMigrator,
-// the migrations there will be applied when we load config from GraphDatabaseSettings.
-// We need to move the migration of online backup settings out before this can be done.
-public class EnterpriseConfigurationMigrator extends GraphDatabaseConfigurationMigrator
+public class EnterpriseConfigurationMigrator extends BaseConfigurationMigrator
 {
     {
-        add( propertyRenamed(
-                "ha.machine_id",
-                "ha.server_id",
-                "ha.machine_id has been replaced with ha.server_id" ) );
         add( valueChanged(
                 "ha.tx_push_strategy",
                 "fixed",
