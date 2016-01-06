@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.enterprise.functional;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Properties;
+
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
@@ -26,26 +31,22 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Properties;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
+import org.neo4j.server.web.ServerInternalSettings;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_WEBSERVER_PORT;
+
 import static org.neo4j.server.enterprise.EnterpriseServerSettings.mode;
 
 public class EnterpriseServerIT
@@ -64,7 +65,7 @@ public class EnterpriseServerIT
         NeoServer server = EnterpriseServerBuilder.server()
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
-                .withProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, tuningFile.getAbsolutePath() )
+                .withProperty( ServerInternalSettings.legacy_db_config.name(), tuningFile.getAbsolutePath() )
                 .persistent()
                 .build();
 
@@ -76,7 +77,7 @@ public class EnterpriseServerIT
             assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
 
             Client client = Client.create();
-            ClientResponse r = client.resource( "http://localhost:" + DEFAULT_WEBSERVER_PORT +
+            ClientResponse r = client.resource( "http://localhost:" + ServerSettings.webserver_port.getDefaultValue() +
                     "/db/manage/server/ha" ).accept( APPLICATION_JSON ).get( ClientResponse.class );
             assertEquals( 200, r.getStatus() );
             assertThat( r.getEntity( String.class ), containsString( "master" ) );
@@ -97,7 +98,7 @@ public class EnterpriseServerIT
                 .withProperty( ServerSettings.auth_enabled.name(), "true" )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
-                .withProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, tuningFile.getAbsolutePath() )
+                .withProperty( ServerInternalSettings.legacy_db_config.name(), tuningFile.getAbsolutePath() )
                 .persistent()
                 .build();
 
@@ -109,7 +110,7 @@ public class EnterpriseServerIT
             assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
 
             Client client = Client.create();
-            ClientResponse r = client.resource( "http://localhost:" + DEFAULT_WEBSERVER_PORT +
+            ClientResponse r = client.resource( "http://localhost:" + ServerSettings.webserver_port.getDefaultValue() +
                                                 "/db/manage/server/ha" ).accept( APPLICATION_JSON ).get( ClientResponse.class );
             assertEquals( 401, r.getStatus() );
         }
@@ -130,7 +131,7 @@ public class EnterpriseServerIT
                 .withProperty( HaSettings.ha_status_auth_enabled.name(), "false" )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
-                .withProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, tuningFile.getAbsolutePath() )
+                .withProperty( ServerInternalSettings.legacy_db_config.name(), tuningFile.getAbsolutePath() )
                 .persistent()
                 .build();
 
@@ -142,7 +143,7 @@ public class EnterpriseServerIT
             assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
 
             Client client = Client.create();
-            ClientResponse r = client.resource( "http://localhost:" + DEFAULT_WEBSERVER_PORT +
+            ClientResponse r = client.resource( "http://localhost:" + ServerSettings.webserver_port.getDefaultValue() +
                                                 "/db/manage/server/ha" ).accept( APPLICATION_JSON ).get( ClientResponse.class );
             assertEquals( 200, r.getStatus() );
             assertThat( r.getEntity( String.class ), containsString( "master" ) );

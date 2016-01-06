@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.configuration;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,24 +31,16 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.parboiled.common.FileUtils;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
-
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.AssertableLogProvider;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.server.configuration.ServerSettings.http_log_config_file;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
-import static org.neo4j.server.configuration.ServerSettings.webserver_https_cert_path;
-import static org.neo4j.server.configuration.ServerSettings.webserver_https_key_path;
 
 public class ServerSettingsTest
 {
@@ -52,29 +49,6 @@ public class ServerSettingsTest
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
-
-    @Test
-    public void shouldConvertWebserverTLSToDBMSTLS() throws Throwable
-    {
-        // Given
-        final AssertableLogProvider logging = new AssertableLogProvider();
-
-        // When
-        final Config config = new Config( stringMap(
-                webserver_https_cert_path.name(), "cert",
-                webserver_https_key_path.name(), "key" ), ServerSettings.class );
-        config.setLogger( logging.getLog( "config" ) );
-
-        // Then
-        assertEquals( "cert", config.get( ServerSettings.tls_certificate_file ).getPath() );
-        assertEquals( "key", config.get( ServerSettings.tls_key_file ).getPath() );
-        logging.assertContainsMessageContaining(
-                "The TLS certificate configuration you are using, 'org.neo4j.server.webserver.https.cert.location' " +
-                "is deprecated. Please use 'dbms.security.tls_certificate_file' instead." );
-        logging.assertContainsMessageContaining(
-                "The TLS key configuration you are using, 'org.neo4j.server.webserver.https.key.location' " +
-                "is deprecated, please use 'dbms.security.tls_key_file' instead." );
-    }
 
     @Test
     public void shouldAllowWritableLogFileTarget() throws Throwable

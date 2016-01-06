@@ -19,11 +19,6 @@
  */
 package org.neo4j.harness;
 
-import org.apache.commons.io.FileUtils;
-import org.codehaus.jackson.JsonNode;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,6 +35,11 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.apache.commons.io.FileUtils;
+import org.codehaus.jackson.JsonNode;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
@@ -49,7 +49,6 @@ import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.SuppressOutput;
@@ -64,6 +63,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 
 public class InProcessBuilderTest
@@ -110,9 +110,8 @@ public class InProcessBuilderTest
 
         // When
         try ( ServerControls server = getTestServerBuilder( testDir.directory() )
-                .withConfig( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, "true")
+                .withConfig( ServerSettings.webserver_https_enabled.name(), "true")
                 .withConfig( ServerSettings.tls_certificate_file.name(), testDir.file( "cert" ).getAbsolutePath() )
-                .withConfig( Configurator.WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY, testDir.file( "keystore" ).getAbsolutePath() )
                 .withConfig( ServerSettings.tls_key_file.name(), testDir.file( "key" ).getAbsolutePath() )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
                 .newServer() )
@@ -230,7 +229,7 @@ public class InProcessBuilderTest
         File notADirectory = File.createTempFile( "prefix", "suffix" );
         assertFalse( notADirectory.isDirectory() );
 
-        try ( ServerControls server = newInProcessBuilder( ).copyFrom( notADirectory )
+        try ( ServerControls ignored = newInProcessBuilder( ).copyFrom( notADirectory )
                 .newServer() )
         {
             fail("server should not start");

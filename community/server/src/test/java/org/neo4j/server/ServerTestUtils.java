@@ -89,8 +89,6 @@ public class ServerTestUtils
         addRelativeProperty( temporaryFolder, properties, ServerInternalSettings.auth_store );
         addRelativeProperty( temporaryFolder, properties, ServerSettings.tls_certificate_file );
         addRelativeProperty( temporaryFolder, properties, ServerSettings.tls_key_file );
-        addRelativeProperty( temporaryFolder, properties, ServerSettings.webserver_https_cert_path );
-        addRelativeProperty( temporaryFolder, properties, ServerSettings.webserver_https_key_path );
     }
 
     private static void addRelativeProperty( File temporaryFolder, Map<String,String> properties,

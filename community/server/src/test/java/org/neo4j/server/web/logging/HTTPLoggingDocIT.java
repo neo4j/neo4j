@@ -19,24 +19,24 @@
  */
 package org.neo4j.server.web.logging;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
@@ -51,6 +51,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
+
 import static org.neo4j.io.fs.FileUtils.readTextFile;
 import static org.neo4j.test.Assert.assertEventually;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
@@ -74,8 +75,8 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
                 HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( logDirectory ), confDir );
 
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
-                .withProperty( Configurator.HTTP_LOGGING, "false" )
-                .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
+                .withProperty( ServerSettings.http_logging_enabled.name(), "false" )
+                .withProperty( ServerSettings.http_log_config_file.name(), configFile.getPath() )
                 .usingDatabaseDir( testDirectory.directory(
                         "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-dbdir"
                 ).getAbsolutePath() )
@@ -118,8 +119,8 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         final String query = "?explicitlyEnabled=" + randomString();
 
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
-                .withProperty( Configurator.HTTP_LOGGING, "true" )
-                .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
+                .withProperty( ServerSettings.http_logging_enabled.name(), "true" )
+                .withProperty( ServerSettings.http_log_config_file.name(), configFile.getPath() )
                 .usingDatabaseDir( testDirectory.directory(
                         "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-dbdir"
                 ).getAbsolutePath() )
@@ -158,9 +159,9 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
                 HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( logDirectory, "$requestContent\n%responseContent" ), confDir );
 
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
-                .withProperty( Configurator.HTTP_LOGGING, "true" )
-                .withProperty( Configurator.HTTP_CONTENT_LOGGING, "true" )
-                .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
+                .withProperty( ServerSettings.http_logging_enabled.name(), "true" )
+                .withProperty( ServerSettings.http_content_logging_enabled.name(), "true" )
+                .withProperty( ServerSettings.http_log_config_file.name(), configFile.getPath() )
                 .usingDatabaseDir( testDirectory.directory( "givenDebugContentLoggingEnabledShouldLogContent-dbdir" )
                         .getAbsolutePath() )
                 .build();
@@ -195,8 +196,8 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
                 HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( unwritableLogDir ), confDir );
 
         Config config = new Config( MapUtil.stringMap(
-                Configurator.HTTP_LOGGING, "true",
-                Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() ) );
+                ServerSettings.http_logging_enabled.name(), "true",
+                ServerSettings.http_log_config_file.name(), configFile.getPath() ) );
 
         // expect
         exception.expect( InvalidSettingException.class );
@@ -204,8 +205,8 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         // when
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withPreflightTasks( new EnsurePreparedForHttpLogging( config ) )
-                .withProperty( Configurator.HTTP_LOGGING, "true" )
-                .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
+                .withProperty( ServerSettings.http_logging_enabled.name(), "true" )
+                .withProperty( ServerSettings.http_log_config_file.name(), configFile.getPath() )
                 .usingDatabaseDir( confDir.getAbsolutePath() )
                 .build();
     }

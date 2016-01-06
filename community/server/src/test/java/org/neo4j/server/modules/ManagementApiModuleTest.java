@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 
 import static org.mockito.Matchers.any;
@@ -51,7 +51,7 @@ public class ManagementApiModuleTest
 
         Map<String, String> params = new HashMap();
         String managementPath = "/db/manage";
-        params.put( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, managementPath );
+        params.put( ServerInternalSettings.management_api_path.name(), managementPath );
         Config config = new Config( params );
 
         when( neoServer.getConfig() ).thenReturn( config );

@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -56,14 +55,9 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 @Deprecated
 public class CommunityNeoServer extends AbstractNeoServer
 {
-    public static final GraphFactory COMMUNITY_FACTORY = new GraphFactory()
-    {
-        @Override
-        public GraphDatabaseAPI newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
-        {
-            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
-            return new CommunityFacadeFactory().newFacade( storeDir, config.getParams(), dependencies );
-        }
+    public static final GraphFactory COMMUNITY_FACTORY = ( config, dependencies ) -> {
+        File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+        return new CommunityFacadeFactory().newFacade( storeDir, config.getParams(), dependencies );
     };
 
     public CommunityNeoServer( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies,

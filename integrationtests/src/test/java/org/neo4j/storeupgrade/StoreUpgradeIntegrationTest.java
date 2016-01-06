@@ -55,7 +55,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -69,8 +68,8 @@ import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -200,8 +199,8 @@ public class StoreUpgradeIntegrationTest
             File configFile = new File( dir, "neo4j.properties" );
             Properties props = new Properties();
             props.putAll( ServerTestUtils.getDefaultRelativeProperties() );
-            props.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dir.getAbsolutePath() );
-            props.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, configFile.getAbsolutePath() );
+            props.setProperty( ServerInternalSettings.legacy_db_location.name(), dir.getAbsolutePath() );
+            props.setProperty( ServerInternalSettings.legacy_db_config.name(), configFile.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
             props.store( new FileWriter( configFile ), "" );
@@ -224,7 +223,7 @@ public class StoreUpgradeIntegrationTest
             }
             finally
             {
-                System.clearProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY );
+                System.clearProperty( ServerInternalSettings.SERVER_CONFIG_FILE_KEY );
             }
 
             assertConsistentStore( dir );

@@ -24,7 +24,6 @@ import java.io.File;
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLog;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigFactory;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.web.ServerInternalSettings;
@@ -67,7 +66,7 @@ public class DesktopConfigurator
                 pair( tls_certificate_file.name(), new File( dbDir, "./dbms/ssl/snakeoil.cert" ).getAbsolutePath() ),
                 pair( tls_key_file.name(), new File( dbDir, "./dbms/ssl/snakeoil.key" ).getAbsolutePath() ),
 
-                pair( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir.getAbsolutePath() ) );
+                pair( ServerInternalSettings.legacy_db_location.name(), dbDir.getAbsolutePath() ) );
     }
 
     public Config configuration()

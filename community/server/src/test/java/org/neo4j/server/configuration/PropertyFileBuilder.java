@@ -26,14 +26,12 @@ import java.util.Map;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.web.ServerInternalSettings;
 
 public class PropertyFileBuilder
 {
-    private final String portNo = "7474";
-    private final String webAdminUri = "http://localhost:7474/db/manage/";
-    private final String webAdminDataUri = "http://localhost:7474/db/data/";
     private String dbTuningPropertyFile = null;
-    private final ArrayList<Tuple> nameValuePairs = new ArrayList<Tuple>();
+    private final ArrayList<Tuple> nameValuePairs = new ArrayList<>();
     private final File directory;
 
     private static class Tuple
@@ -62,14 +60,12 @@ public class PropertyFileBuilder
     {
         File file = new File( directory, "config" );
         Map<String, String> properties = MapUtil.stringMap(
-                Configurator.DATABASE_LOCATION_PROPERTY_KEY, directory.getAbsolutePath(),
-                Configurator.RRDB_LOCATION_PROPERTY_KEY, directory.getAbsolutePath(),
-                Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
-                Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri );
-        if ( portNo != null )
-            properties.put( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo );
+                ServerInternalSettings.legacy_db_location.name(), directory.getAbsolutePath(),
+                ServerInternalSettings.management_api_path.name(), "http://localhost:7474/db/manage/",
+                ServerInternalSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
+        properties.put( ServerSettings.webserver_port.name(), "7474" );
         if ( dbTuningPropertyFile != null )
-            properties.put( Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningPropertyFile );
+            properties.put( ServerInternalSettings.legacy_db_config.name(), dbTuningPropertyFile );
         for ( Tuple t : nameValuePairs )
             properties.put( t.name, t.value );
         ServerTestUtils.writePropertiesToFile( properties, file );
@@ -85,12 +81,6 @@ public class PropertyFileBuilder
     public PropertyFileBuilder withNameValue( String name, String value )
     {
         nameValuePairs.add( new Tuple( name, value ) );
-        return this;
-    }
-
-    public PropertyFileBuilder withDbTuningPropertyFile( String propertyFileLocation )
-    {
-        dbTuningPropertyFile = propertyFileLocation;
         return this;
     }
 }

@@ -19,31 +19,21 @@
  */
 package org.neo4j.server.web;
 
-import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.util.Map;
-import java.util.Set;
-
-import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.WrappingNeoServerBootstrapper;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class TestJetty9WebServer extends ExclusiveServerTestBase
@@ -87,37 +77,6 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldBeAbleToSetExecutionLimit() throws Throwable
-    {
-        Map<String,String> properties = ServerTestUtils.getDefaultRelativeProperties();
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( new File( "path" ), properties,
-                GraphDatabaseDependencies.newDependencies() );
-
-        ServerConfigurator config = buildConfig( properties, db );
-
-        WrappingNeoServerBootstrapper testBootstrapper = new WrappingNeoServerBootstrapper( db, config );
-
-        // When
-        testBootstrapper.start();
-        testBootstrapper.stop();
-
-        // Then it should not have crashed
-    }
-
-    private ServerConfigurator buildConfig( Map<String,String> properties, ImpermanentGraphDatabase db )
-    {
-        ServerConfigurator config = new ServerConfigurator( db );
-        Configuration configuration = config.configuration();
-        Set<Map.Entry<String,String>> testSettings = properties.entrySet();
-        for ( Map.Entry<String,String> testSetting : testSettings )
-        {
-            configuration.setProperty( testSetting.getKey(), testSetting.getValue() );
-        }
-        configuration.setProperty( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, "1000s" );
-        return config;
-    }
-
-    @Test
     public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
     {
         new Jetty9WebServer( NullLogProvider.getInstance(), null ).stop();
@@ -150,12 +109,12 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
     @After
     public void cleanup()
     {
-        if( webServer != null )
+        if ( webServer != null )
         {
             webServer.stop();
         }
 
-        if( server != null )
+        if ( server != null )
         {
             server.stop();
         }

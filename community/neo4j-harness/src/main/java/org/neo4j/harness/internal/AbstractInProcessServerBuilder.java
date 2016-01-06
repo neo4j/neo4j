@@ -19,15 +19,16 @@
  */
 package org.neo4j.harness.internal;
 
-import org.apache.commons.io.FileUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
+
+import org.apache.commons.io.FileUtils;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -37,15 +38,15 @@ import org.neo4j.harness.TestServerBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
+import org.neo4j.server.web.ServerInternalSettings;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
-import static org.neo4j.server.configuration.ConfigurationBuilder.ConfiguratorWrappingConfigurationBuilder.toStringForThirdPartyPackageProperty;
-import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
-import static org.neo4j.server.configuration.Configurator.WEBSERVER_PORT_PROPERTY_KEY;
 import static org.neo4j.test.Digests.md5Hex;
 
 public abstract class AbstractInProcessServerBuilder implements TestServerBuilder
@@ -71,7 +72,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         setDirectory( workingDir );
         withConfig( ServerSettings.auth_enabled, "false" );
         withConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-        withConfig( WEBSERVER_PORT_PROPERTY_KEY, Integer.toString( freePort() ) );
+        withConfig( ServerSettings.webserver_port.name(), Integer.toString( freePort() ) );
     }
 
 
@@ -177,7 +178,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     private TestServerBuilder setDirectory( File dir )
     {
         this.serverFolder = dir;
-        config.put( DATABASE_LOCATION_PROPERTY_KEY, serverFolder.getAbsolutePath() );
+        config.put( ServerInternalSettings.legacy_db_location.name(), serverFolder.getAbsolutePath() );
         return this;
     }
 
@@ -195,6 +196,27 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         catch ( IOException e )
         {
             throw new RuntimeException( "Unable to find an available port: " + e.getMessage(), e );
+        }
+    }
+
+    private static String toStringForThirdPartyPackageProperty( List<ThirdPartyJaxRsPackage> extensions )
+    {
+        String propertyString = "";
+        int packageCount = extensions.size();
+
+        if( packageCount == 0 )
+            return propertyString;
+        else
+        {
+            ThirdPartyJaxRsPackage jaxRsPackage;
+            for( int i = 0; i < packageCount - 1; i ++ )
+            {
+                jaxRsPackage = extensions.get( i );
+                propertyString += jaxRsPackage.getPackageName() + "=" + jaxRsPackage.getMountPoint() + Settings.SEPARATOR;
+            }
+            jaxRsPackage = extensions.get( packageCount - 1 );
+            propertyString += jaxRsPackage.getPackageName() + "=" + jaxRsPackage.getMountPoint();
+            return propertyString;
         }
     }
 }

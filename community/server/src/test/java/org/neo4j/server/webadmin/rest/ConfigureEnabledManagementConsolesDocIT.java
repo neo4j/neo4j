@@ -23,7 +23,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -34,7 +34,6 @@ import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 
 public class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTestBase
 {
-
     private NeoServer server;
 
     @After
@@ -46,7 +45,7 @@ public class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTest
     @Test
     public void shouldBeAbleToExplicitlySetConsolesToEnabled() throws Exception
     {
-        server = server().withProperty( Configurator.MANAGEMENT_CONSOLE_ENGINES, "" )
+        server = server().withProperty( ServerSettings.management_console_engines.name(), "" )
                 .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();

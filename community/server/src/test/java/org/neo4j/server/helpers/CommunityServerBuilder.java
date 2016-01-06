@@ -44,7 +44,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigFactory;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
@@ -155,32 +154,32 @@ public class CommunityServerBuilder
     private void createPropertiesFile( File temporaryFolder, File temporaryConfigFile )
     {
         Map<String, String> properties = MapUtil.stringMap(
-                Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
-                Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri );
+                ServerInternalSettings.management_api_path.name(), webAdminUri,
+                ServerInternalSettings.rest_api_path.name(), webAdminDataUri );
 
         ServerTestUtils.addDefaultRelativeProperties( properties, temporaryFolder );
 
         if ( dbDir != null )
         {
-            properties.put( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir );
+            properties.put( ServerInternalSettings.legacy_db_location.name(), dbDir );
         }
 
         if ( portNo != null )
         {
-            properties.put( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo );
+            properties.put( ServerSettings.webserver_port.name(), portNo );
         }
         if ( host != null )
         {
-            properties.put( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, host );
+            properties.put( ServerSettings.webserver_address.name(), host );
         }
         if ( maxThreads != null )
         {
-            properties.put( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY, maxThreads );
+            properties.put( ServerSettings.webserver_max_threads.name(), maxThreads );
         }
 
         if ( thirdPartyPackages.keySet().size() > 0 )
         {
-            properties.put( Configurator.THIRD_PARTY_PACKAGES_KEY, asOneLine( thirdPartyPackages ) );
+            properties.put( ServerSettings.third_party_packages.name(), asOneLine( thirdPartyPackages ) );
         }
 
         if ( autoIndexedNodeKeys != null && autoIndexedNodeKeys.length > 0 )
@@ -200,18 +199,18 @@ public class CommunityServerBuilder
         if ( securityRuleClassNames != null && securityRuleClassNames.length > 0 )
         {
             String propertyKeys = org.apache.commons.lang.StringUtils.join( securityRuleClassNames, "," );
-            properties.put( Configurator.SECURITY_RULES_KEY, propertyKeys );
+            properties.put( ServerSettings.security_rules.name(), propertyKeys );
         }
 
         if ( httpsEnabled != null )
         {
             if ( httpsEnabled )
             {
-                properties.put( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, "true" );
+                properties.put( ServerSettings.webserver_https_enabled.name(), "true" );
             }
             else
             {
-                properties.put( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, "false" );
+                properties.put( ServerSettings.webserver_https_enabled.name(), "false" );
             }
         }
 
@@ -234,18 +233,18 @@ public class CommunityServerBuilder
         {
             File databaseTuningPropertyFile = createTempPropertyFile();
             writePropertiesToFile( good_tuning_file_properties, databaseTuningPropertyFile );
-            writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY,
+            writePropertyToFile( ServerInternalSettings.legacy_db_config.name(),
                     databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile );
         }
         else if ( action == WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY )
         {
-            writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY, createTempPropertyFile().getAbsolutePath(),
+            writePropertyToFile( ServerInternalSettings.legacy_db_config.name(), createTempPropertyFile().getAbsolutePath(),
                     temporaryConfigFile );
         }
         else if ( action == WhatToDo.CREATE_CORRUPT_TUNING_FILE )
         {
             File corruptTuningFile = trashFile();
-            writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY, corruptTuningFile.getAbsolutePath(),
+            writePropertyToFile( ServerInternalSettings.legacy_db_config.name(), corruptTuningFile.getAbsolutePath(),
                     temporaryConfigFile );
         }
     }
