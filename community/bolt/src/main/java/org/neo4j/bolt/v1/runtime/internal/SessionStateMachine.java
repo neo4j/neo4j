@@ -243,6 +243,12 @@ public class SessionStateMachine implements Session, SessionState
                     }
 
                     @Override
+                    public State reset( SessionStateMachine ctx )
+                    {
+                        return acknowledgeError( ctx );
+                    }
+
+                    @Override
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
                         ctx.ignored();

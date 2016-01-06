@@ -213,7 +213,7 @@ public class SessionStateMachineTest
     }
 
     @Test
-    public void shouldIgnoreResetToIdleOnError() throws Throwable
+    public void shouldResetToIdleOnError() throws Throwable
     {
         // Given
         final TopLevelTransaction tx = mock( TopLevelTransaction.class );
@@ -228,8 +228,8 @@ public class SessionStateMachineTest
         machine.reset( null, callback );
 
         // Then
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
-        assertThat( callback.ignoredCount, equalTo( 1 ) );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
+        assertThat( callback.completedCount, equalTo( 1 ) );
     }
 
     @Before
