@@ -31,6 +31,11 @@ public class Messages
     private static final AcknowledgeFailureMessage ACK_FAILURE = new AcknowledgeFailureMessage();
     private static final SuccessMessage SUCCESS = new SuccessMessage( Collections.EMPTY_MAP );
 
+    public static Message reset()
+    {
+        return new ResetMessage();
+    }
+
     public static Message run( String statement )
     {
         return new RunMessage( statement );

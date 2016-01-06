@@ -89,4 +89,10 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
     {
         session.acknowledgeFailure( null, simpleCallback );
     }
+
+    @Override
+    public void handleResetMessage() throws RuntimeException
+    {
+        session.reset( null, simpleCallback );
+    }
 }

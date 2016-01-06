@@ -174,6 +174,10 @@ public class DocSerialization
                 {
                     writer.handleInitMessage( (String) args.get( 0 ) );
                 }
+                else if( type.equals( "RESET" ))
+                {
+                    writer.handleResetMessage();
+                }
                 else
                 {
                     throw new RuntimeException( "Unknown value: " + type );

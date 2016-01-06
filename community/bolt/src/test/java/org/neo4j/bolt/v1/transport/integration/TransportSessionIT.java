@@ -41,6 +41,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.message.Messages.init;
 import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
+import static org.neo4j.bolt.v1.messaging.message.Messages.reset;
 import static org.neo4j.bolt.v1.messaging.message.Messages.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
@@ -120,6 +121,32 @@ public class TransportSessionIT
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves(
+                msgSuccess(),
+                msgSuccess( map( "fields", asList( "a", "a_squared" ) ) ),
+                msgRecord( eqRecord( equalTo( 1l ), equalTo( 1l ) ) ),
+                msgRecord( eqRecord( equalTo( 2l ), equalTo( 4l ) ) ),
+                msgRecord( eqRecord( equalTo( 3l ), equalTo( 9l ) ) ),
+                msgSuccess() ) );
+    }
+
+    @Test
+    public void shouldResetWhileRecordsOutstanding() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1" ),
+                        run( "RETURN 1 AS n" ),
+                        reset(),
+                        run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
+                        pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves(
+                msgSuccess(),
+                msgSuccess( map( "fields", asList( "n" ) ) ),
                 msgSuccess(),
                 msgSuccess( map( "fields", asList( "a", "a_squared" ) ) ),
                 msgRecord( eqRecord( equalTo( 1l ), equalTo( 1l ) ) ),
