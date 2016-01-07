@@ -35,7 +35,7 @@ import static org.neo4j.helpers.Pair.pair;
  * <strong>-C=path/to/config.properties</strong></li>
  * <li>Specific overridden configuration options, directly specified as arguments can be specified with
  * <strong>-c key=value</strong>, for example <strong>-c org.neo4j.server.database.location=my/own/path</strong>
- * or enabled boolean properties with <strong>-c key</strong>, f.ex <strong>-c org.neo4j.server.webserver.statistics</strong>
+ * or enabled boolean properties with <strong>-c key</strong>, f.ex <strong>-c org.neo4j.server.webserver.port</strong>
  * </ul>
  */
 public class ServerCommandLineArgs

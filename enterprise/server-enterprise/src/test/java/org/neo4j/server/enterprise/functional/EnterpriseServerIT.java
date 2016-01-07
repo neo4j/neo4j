@@ -37,7 +37,6 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
-import org.neo4j.server.web.ServerInternalSettings;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -65,7 +64,7 @@ public class EnterpriseServerIT
         NeoServer server = EnterpriseServerBuilder.server()
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
-                .withProperty( ServerInternalSettings.legacy_db_config.name(), tuningFile.getAbsolutePath() )
+                .withProperty( ServerSettings.legacy_db_config.name(), tuningFile.getAbsolutePath() )
                 .persistent()
                 .build();
 
@@ -98,7 +97,7 @@ public class EnterpriseServerIT
                 .withProperty( ServerSettings.auth_enabled.name(), "true" )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
-                .withProperty( ServerInternalSettings.legacy_db_config.name(), tuningFile.getAbsolutePath() )
+                .withProperty( ServerSettings.legacy_db_config.name(), tuningFile.getAbsolutePath() )
                 .persistent()
                 .build();
 
@@ -131,7 +130,7 @@ public class EnterpriseServerIT
                 .withProperty( HaSettings.ha_status_auth_enabled.name(), "false" )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
-                .withProperty( ServerInternalSettings.legacy_db_config.name(), tuningFile.getAbsolutePath() )
+                .withProperty( ServerSettings.legacy_db_config.name(), tuningFile.getAbsolutePath() )
                 .persistent()
                 .build();
 

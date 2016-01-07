@@ -40,8 +40,8 @@ import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.server.logging.Netty4LogBridge;
 import static java.lang.String.format;
 import static org.neo4j.server.configuration.ServerConfigFactory.loadConfig;
-import static org.neo4j.server.web.ServerInternalSettings.SERVER_CONFIG_FILE;
-import static org.neo4j.server.web.ServerInternalSettings.SERVER_CONFIG_FILE_KEY;
+import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE;
+import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE_KEY;
 
 /**
  * @deprecated This class is for internal use only and will be moved to an internal package in a future release.

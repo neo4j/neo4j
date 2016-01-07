@@ -44,7 +44,6 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
-import org.neo4j.server.web.ServerInternalSettings;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.test.Digests.md5Hex;
@@ -178,7 +177,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     private TestServerBuilder setDirectory( File dir )
     {
         this.serverFolder = dir;
-        config.put( ServerInternalSettings.legacy_db_location.name(), serverFolder.getAbsolutePath() );
+        config.put( ServerSettings.legacy_db_location.name(), serverFolder.getAbsolutePath() );
         return this;
     }
 

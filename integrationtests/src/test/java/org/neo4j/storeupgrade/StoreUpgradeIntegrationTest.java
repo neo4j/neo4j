@@ -68,8 +68,8 @@ import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -199,8 +199,8 @@ public class StoreUpgradeIntegrationTest
             File configFile = new File( dir, "neo4j.properties" );
             Properties props = new Properties();
             props.putAll( ServerTestUtils.getDefaultRelativeProperties() );
-            props.setProperty( ServerInternalSettings.legacy_db_location.name(), dir.getAbsolutePath() );
-            props.setProperty( ServerInternalSettings.legacy_db_config.name(), configFile.getAbsolutePath() );
+            props.setProperty( ServerSettings.legacy_db_location.name(), dir.getAbsolutePath() );
+            props.setProperty( ServerSettings.legacy_db_config.name(), configFile.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
             props.store( new FileWriter( configFile ), "" );
@@ -223,7 +223,7 @@ public class StoreUpgradeIntegrationTest
             }
             finally
             {
-                System.clearProperty( ServerInternalSettings.SERVER_CONFIG_FILE_KEY );
+                System.clearProperty( ServerSettings.SERVER_CONFIG_FILE_KEY );
             }
 
             assertConsistentStore( dir );

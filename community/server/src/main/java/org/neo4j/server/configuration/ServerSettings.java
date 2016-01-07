@@ -20,6 +20,7 @@
 package org.neo4j.server.configuration;
 
 import java.io.File;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -29,14 +30,18 @@ import org.neo4j.bolt.BoltKernelExtension.EncryptionLevel;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Obsoleted;
 import org.neo4j.kernel.configuration.Settings;
+
+import static java.io.File.separator;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.EMPTY;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
@@ -48,6 +53,21 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description("Settings used by the server configuration")
 public interface ServerSettings
 {
+    /**
+     * Key for the server configuration file. The file path should always be get/set using System.property.
+     */
+    String SERVER_CONFIG_FILE_KEY = "org.neo4j.server.properties";
+
+    /**
+     * Path to the server configuration file. The file path should always be get/set using System.property.
+     */
+    String SERVER_CONFIG_FILE = "config/neo4j-server.properties";
+
+    /**
+     *  Default name for the db configuration file.
+     */
+    String DB_TUNING_CONFIG_FILE_NAME = "neo4j.properties";
+
     @Description("Maximum request header size")
     Setting<Integer> maximum_request_header_size =
             setting( "org.neo4j.server.webserver.max.request.header", INTEGER, "20480" );
@@ -73,6 +93,7 @@ public interface ServerSettings
     Setting<Long> webserver_limit_execution_time =
             setting( "org.neo4j.server.webserver.limit.executiontime", DURATION, NO_DEFAULT );
 
+    @SuppressWarnings("unused") // unused but needs documenting as deprecated until 4.0
     @Deprecated
     @Obsoleted( "RRDB was removed in 3.0" )
     @Description( "Path to the statistics database file. RRDB has been deprecate, please use the Metrics plugin instead." )
@@ -160,4 +181,36 @@ public interface ServerSettings
 
     @Description("Host and port for Bolt protocol")
     Setting<HostnamePort> bolt_socket_address = BoltKernelExtension.Settings.socket_address;
+
+    @Internal
+    Setting<File> legacy_db_config = setting( "org.neo4j.server.db.tuning.properties", PATH,
+            separator + "etc" + separator + "neo" + separator + DB_TUNING_CONFIG_FILE_NAME );
+
+    @Internal
+    Setting<URI> rest_api_path = setting( "org.neo4j.server.webadmin.data.uri",
+            NORMALIZED_RELATIVE_URI, "/db/data" );
+
+    @Internal
+    Setting<URI> management_api_path = setting( "org.neo4j.server.webadmin.management.uri",
+            NORMALIZED_RELATIVE_URI, "/db/manage" );
+
+    @Internal
+    Setting<URI> browser_path = setting( "org.neo4j.server.webadmin.browser.uri", Settings.URI, "/browser/" );
+
+    @Internal
+    Setting<Boolean> script_sandboxing_enabled = setting("org.neo4j.server.script.sandboxing.enabled",
+            BOOLEAN, TRUE );
+
+    @Internal
+    Setting<Boolean> wadl_enabled = setting( "unsupported_wadl_generation_enabled", BOOLEAN,
+            FALSE );
+
+    @Internal
+    Setting<File> auth_store = setting("dbms.security.auth_store.location", PATH, "data/dbms/auth");
+
+    @Internal
+    Setting<File> legacy_db_location = setting( "org.neo4j.server.database.location", PATH, "data/graph.db" );
+
+    @Internal
+    Setting<Boolean> webadmin_enabled = setting( "dbms.webadmin.enabled", BOOLEAN, TRUE );
 }

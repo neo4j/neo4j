@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.web.ServerInternalSettings;
 
 public class PropertyFileBuilder
 {
@@ -60,12 +59,12 @@ public class PropertyFileBuilder
     {
         File file = new File( directory, "config" );
         Map<String, String> properties = MapUtil.stringMap(
-                ServerInternalSettings.legacy_db_location.name(), directory.getAbsolutePath(),
-                ServerInternalSettings.management_api_path.name(), "http://localhost:7474/db/manage/",
-                ServerInternalSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
+                ServerSettings.legacy_db_location.name(), directory.getAbsolutePath(),
+                ServerSettings.management_api_path.name(), "http://localhost:7474/db/manage/",
+                ServerSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
         properties.put( ServerSettings.webserver_port.name(), "7474" );
         if ( dbTuningPropertyFile != null )
-            properties.put( ServerInternalSettings.legacy_db_config.name(), dbTuningPropertyFile );
+            properties.put( ServerSettings.legacy_db_config.name(), dbTuningPropertyFile );
         for ( Tuple t : nameValuePairs )
             properties.put( t.name, t.value );
         ServerTestUtils.writePropertiesToFile( properties, file );

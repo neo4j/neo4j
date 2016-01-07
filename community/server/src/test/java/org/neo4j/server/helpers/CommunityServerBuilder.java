@@ -52,7 +52,6 @@ import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightTask;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static java.lang.Boolean.FALSE;
@@ -81,7 +80,7 @@ public class CommunityServerBuilder
         @Override
         public GraphDatabaseAPI newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
-            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+            File storeDir = config.get( ServerSettings.legacy_db_location );
             Map<String, String> params = config.getParams();
             params.put( CommunityFacadeFactory.Configuration.ephemeral.name(), "true" );
             return new ImpermanentGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(dependencies) );
@@ -154,14 +153,14 @@ public class CommunityServerBuilder
     private void createPropertiesFile( File temporaryFolder, File temporaryConfigFile )
     {
         Map<String, String> properties = MapUtil.stringMap(
-                ServerInternalSettings.management_api_path.name(), webAdminUri,
-                ServerInternalSettings.rest_api_path.name(), webAdminDataUri );
+                ServerSettings.management_api_path.name(), webAdminUri,
+                ServerSettings.rest_api_path.name(), webAdminDataUri );
 
         ServerTestUtils.addDefaultRelativeProperties( properties, temporaryFolder );
 
         if ( dbDir != null )
         {
-            properties.put( ServerInternalSettings.legacy_db_location.name(), dbDir );
+            properties.put( ServerSettings.legacy_db_location.name(), dbDir );
         }
 
         if ( portNo != null )
@@ -233,18 +232,18 @@ public class CommunityServerBuilder
         {
             File databaseTuningPropertyFile = createTempPropertyFile();
             writePropertiesToFile( good_tuning_file_properties, databaseTuningPropertyFile );
-            writePropertyToFile( ServerInternalSettings.legacy_db_config.name(),
+            writePropertyToFile( ServerSettings.legacy_db_config.name(),
                     databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile );
         }
         else if ( action == WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY )
         {
-            writePropertyToFile( ServerInternalSettings.legacy_db_config.name(), createTempPropertyFile().getAbsolutePath(),
+            writePropertyToFile( ServerSettings.legacy_db_config.name(), createTempPropertyFile().getAbsolutePath(),
                     temporaryConfigFile );
         }
         else if ( action == WhatToDo.CREATE_CORRUPT_TUNING_FILE )
         {
             File corruptTuningFile = trashFile();
-            writePropertyToFile( ServerInternalSettings.legacy_db_config.name(), corruptTuningFile.getAbsolutePath(),
+            writePropertyToFile( ServerSettings.legacy_db_config.name(), corruptTuningFile.getAbsolutePath(),
                     temporaryConfigFile );
         }
     }
@@ -446,7 +445,7 @@ public class CommunityServerBuilder
 
         return new DatabaseActions(
                 new LeaseManager( clockToUse ),
-                config.get( ServerInternalSettings.script_sandboxing_enabled ), database.getGraph() );
+                config.get( ServerSettings.script_sandboxing_enabled ), database.getGraph() );
     }
 
     protected File buildBefore() throws IOException

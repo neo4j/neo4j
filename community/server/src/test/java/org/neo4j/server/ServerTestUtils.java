@@ -35,7 +35,6 @@ import java.util.Random;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.web.ServerInternalSettings;
 
 public class ServerTestUtils
 {
@@ -85,8 +84,8 @@ public class ServerTestUtils
 
     public static void addDefaultRelativeProperties( Map<String,String> properties, File temporaryFolder )
     {
-        addRelativeProperty( temporaryFolder, properties, ServerInternalSettings.legacy_db_location );
-        addRelativeProperty( temporaryFolder, properties, ServerInternalSettings.auth_store );
+        addRelativeProperty( temporaryFolder, properties, ServerSettings.legacy_db_location );
+        addRelativeProperty( temporaryFolder, properties, ServerSettings.auth_store );
         addRelativeProperty( temporaryFolder, properties, ServerSettings.tls_certificate_file );
         addRelativeProperty( temporaryFolder, properties, ServerSettings.tls_key_file );
     }

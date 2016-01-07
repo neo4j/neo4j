@@ -21,7 +21,7 @@ package org.neo4j.server.rest.security;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.neo4j.server.web.ServerInternalSettings;
+import org.neo4j.server.configuration.ServerSettings;
 
 public class PermanentlyPassingSecurityRule implements SecurityRule {
     
@@ -36,7 +36,7 @@ public class PermanentlyPassingSecurityRule implements SecurityRule {
     @Override
     public String forUriPath()
     {
-        return ServerInternalSettings.rest_api_path.getDefaultValue();
+        return ServerSettings.rest_api_path.getDefaultValue();
     }
 
     @Override

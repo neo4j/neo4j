@@ -26,7 +26,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.Log;
-import org.neo4j.server.web.ServerInternalSettings;
+import org.neo4j.server.configuration.ServerSettings;
 
 /**
  * Wraps a neo4j database in lifecycle management. This is intermediate, and will go away once we have an internal
@@ -74,7 +74,7 @@ public class LifecycleManagingDatabase implements Database
     @Override
     public String getLocation()
     {
-        File file = config.get( ServerInternalSettings.legacy_db_location );
+        File file = config.get( ServerSettings.legacy_db_location );
         return file.getAbsolutePath();
     }
 

@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
@@ -33,10 +28,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -65,9 +64,11 @@ import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollection;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
+
+import static java.lang.Long.parseLong;
+import static java.util.Arrays.asList;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -81,9 +82,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import static java.lang.Long.parseLong;
-import static java.util.Arrays.asList;
 
 import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
 
@@ -110,8 +108,7 @@ public class RestfulGraphDatabaseTest
         leaseManager = new LeaseManager( new FakeClock() );
 
         Config config = new Config();
-        config.registerSettingsClasses( asList( ServerSettings.class, ServerInternalSettings.class,
-                GraphDatabaseSettings.class ));
+        config.registerSettingsClasses( asList( ServerSettings.class, GraphDatabaseSettings.class ));
 
         service = new RestfulGraphDatabase( new JsonFormat(), output,
                 new DatabaseActions( leaseManager, true, database.getGraph() ), new ConfigWrappingConfiguration(

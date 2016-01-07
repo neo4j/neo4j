@@ -37,7 +37,7 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.web.ServerInternalSettings;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
@@ -52,7 +52,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
     @Before
     public void setUp() throws IOException
     {
-        FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( ServerInternalSettings.legacy_db_location ) );
+        FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( ServerSettings.legacy_db_location ) );
     }
 
     @Test

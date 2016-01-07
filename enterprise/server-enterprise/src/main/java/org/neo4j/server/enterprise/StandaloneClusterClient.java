@@ -45,7 +45,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.server.web.ServerInternalSettings;
+import org.neo4j.server.configuration.ServerSettings;
 
 import static org.neo4j.helpers.Exceptions.peel;
 import static org.neo4j.helpers.collection.MapUtil.loadStrictly;
@@ -91,7 +91,7 @@ public class StandaloneClusterClient
 
     public static void main( String[] args ) throws IOException
     {
-        String propertiesFile = System.getProperty( ServerInternalSettings.SERVER_CONFIG_FILE_KEY );
+        String propertiesFile = System.getProperty( ServerSettings.SERVER_CONFIG_FILE_KEY );
         File dbProperties = extractDbTuningProperties( propertiesFile );
         Map<String, String> config = stringMap();
         if ( dbProperties != null )
@@ -198,7 +198,7 @@ public class StandaloneClusterClient
         }
 
         Map<String, String> serverConfig = loadStrictly( serverConfigFile );
-        String dbTuningFile = serverConfig.get( ServerInternalSettings.legacy_db_config.name() );
+        String dbTuningFile = serverConfig.get( ServerSettings.legacy_db_config.name() );
         if ( dbTuningFile == null )
         {
             return null;

@@ -77,7 +77,6 @@ import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessCont
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
@@ -163,7 +162,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( config, dependencies)) );
 
-        FileUserRepository users = life.add( new FileUserRepository( config.get( ServerInternalSettings.auth_store ).toPath(), logProvider ) );
+        FileUserRepository users = life.add( new FileUserRepository( config.get( ServerSettings.auth_store ).toPath(), logProvider ) );
 
         this.authManager = life.add(new AuthManager( users, Clock.SYSTEM_CLOCK, config.get( ServerSettings.auth_enabled ) ));
         this.webServer = createWebServer();
@@ -225,7 +224,7 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         return new DatabaseActions(
                 new LeaseManager( SYSTEM_CLOCK ),
-                config.get( ServerInternalSettings.script_sandboxing_enabled ), database.getGraph() );
+                config.get( ServerSettings.script_sandboxing_enabled ), database.getGraph() );
     }
 
     private TransactionFacade createTransactionalActions()
@@ -310,7 +309,7 @@ public abstract class AbstractNeoServer implements NeoServer
         webServer.setEnableHttps( sslEnabled );
         webServer.setHttpsPort( sslPort );
 
-        webServer.setWadlEnabled( config.get( ServerInternalSettings.wadl_enabled ) );
+        webServer.setWadlEnabled( config.get( ServerSettings.wadl_enabled ) );
         webServer.setDefaultInjectables( createDefaultInjectables() );
 
         if ( sslEnabled )

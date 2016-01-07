@@ -25,7 +25,6 @@ import java.net.URI;
 import java.util.HashMap;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.web.ServerInternalSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -42,10 +41,10 @@ public class ConfigWrappingConfigurationTest
         ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
 
         // WHEN
-        final Object propertyValue = wrappingConfiguration.getProperty( ServerInternalSettings.rest_api_path.name() );
+        final Object propertyValue = wrappingConfiguration.getProperty( ServerSettings.rest_api_path.name() );
 
         // THEN
-        assertEquals( new URI( ServerInternalSettings.rest_api_path.getDefaultValue() ), propertyValue );
+        assertEquals( new URI( ServerSettings.rest_api_path.getDefaultValue() ), propertyValue );
     }
 
     @Test
@@ -57,11 +56,11 @@ public class ConfigWrappingConfigurationTest
 
         // WHEN
         wrappingConfiguration
-                .setProperty( ServerInternalSettings.rest_api_path.name(), "http://localhost:7474///db///data///" );
-        final Object dataPath = wrappingConfiguration.getProperty( ServerInternalSettings.rest_api_path.name() );
+                .setProperty( ServerSettings.rest_api_path.name(), "http://localhost:7474///db///data///" );
+        final Object dataPath = wrappingConfiguration.getProperty( ServerSettings.rest_api_path.name() );
 
         // THEN
-        assertEquals( new URI( ServerInternalSettings.rest_api_path.getDefaultValue() ), dataPath );
+        assertEquals( new URI( ServerSettings.rest_api_path.getDefaultValue() ), dataPath );
     }
 
     @Test

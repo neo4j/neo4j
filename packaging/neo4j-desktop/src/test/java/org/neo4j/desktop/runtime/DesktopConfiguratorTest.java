@@ -26,7 +26,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.desktop.config.Installation;
-import org.neo4j.server.web.ServerInternalSettings;
+import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -63,7 +63,7 @@ public class DesktopConfiguratorTest
         // Then
         assertEquals( storeDir.getAbsolutePath(), config.getDatabaseDirectory() );
 
-        File pathToStoreDir = config.configuration().get( ServerInternalSettings.legacy_db_location );
+        File pathToStoreDir = config.configuration().get( ServerSettings.legacy_db_location );
         assertEquals( storeDir, pathToStoreDir );
     }
 }
