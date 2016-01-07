@@ -40,9 +40,11 @@ class PrintingInconsistenciesHandler implements InconsistenciesHandler
     }
 
     @Override
-    public void handle( LogRecord<?> committed, LogRecord<?> current )
+    public void reportInconsistentCommand( RecordInfo<?> committed, RecordInfo<?> current )
     {
-        System.out.println( "Before state: " + committed + " is inconsistent with after state: " + current );
+        System.out.println( "+" + committed );
+        System.out.println( "-" + current );
+
         seenInconsistencies++;
         if ( seenInconsistencies >= inconsistenciesToPrint )
         {

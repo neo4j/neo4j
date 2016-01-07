@@ -38,7 +38,7 @@ import org.neo4j.tools.txlog.checktypes.CheckType;
 class CommittedRecords<R extends Abstract64BitRecord>
 {
     private final CheckType<?,R> checkType;
-    private final Map<Long,LogRecord<R>> recordsById;
+    private final Map<Long,RecordInfo<R>> recordsById;
 
     CommittedRecords( CheckType<?,R> check )
     {
@@ -46,18 +46,12 @@ class CommittedRecords<R extends Abstract64BitRecord>
         this.recordsById = new HashMap<>();
     }
 
-    public boolean isValid( R record )
+    public void put( R record, long logVersion, long txId )
     {
-        LogRecord<R> current = recordsById.get( record.getId() );
-        return current == null || checkType.equal( record, current.record() );
+        recordsById.put( record.getId(), new RecordInfo<>( record, logVersion, txId ) );
     }
 
-    public void put( R record, long logVersion )
-    {
-        recordsById.put( record.getId(), new LogRecord<>( record, logVersion ) );
-    }
-
-    public LogRecord<R> get( long id )
+    public RecordInfo<R> get( long id )
     {
         return recordsById.get( id );
     }
