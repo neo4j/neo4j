@@ -90,7 +90,7 @@ Function Get-Neo4jServer
       'ServerVersion' = '';
       'ServerType' = 'Community';
     }
-    Get-ChildItem (Join-Path -Path $Neo4jHome -ChildPath 'system\lib') | Where-Object { $_.Name -like 'neo4j-server-*.jar' } | ForEach-Object -Process `
+    Get-ChildItem (Join-Path -Path $Neo4jHome -ChildPath 'lib') | Where-Object { $_.Name -like 'neo4j-server-*.jar' } | ForEach-Object -Process `
     {
       # if neo4j-server-enterprise-<version>.jar exists then this is the enterprise version
       if ($_.Name -like 'neo4j-server-enterprise-*.jar') { $serverProperties.ServerType = 'Enterprise' }
