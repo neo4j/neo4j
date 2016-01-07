@@ -30,8 +30,6 @@ import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
 import org.neo4j.coreedge.catchup.StoreIdSupplier;
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.coreedge.discovery.CoreDiscoveryService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
@@ -81,7 +79,6 @@ import org.neo4j.coreedge.server.logging.MessageLogger;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
@@ -201,7 +198,7 @@ public class EnterpriseCoreEditionModule
         ReplicatedLockStateMachine<CoreMember> replicatedLockStateMachine = new ReplicatedLockStateMachine<>( myself, replicator );
 
         commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, replicatedLockStateMachine,
-                dependencies, SYSTEM_CLOCK );
+                dependencies, logging );
 
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = null;
         try
@@ -310,11 +307,10 @@ public class EnterpriseCoreEditionModule
     }
 
     public static CommitProcessFactory createCommitProcessFactory( final Replicator replicator,
-                                                                   final LocalSessionPool localSessionPool,
-                                                                   CurrentReplicatedLockState
-                                                                           currentReplicatedLockState,
-                                                                   final Dependencies dependencies,
-                                                                   final Clock clock )
+            final LocalSessionPool localSessionPool,
+            final CurrentReplicatedLockState currentReplicatedLockState,
+            final Dependencies dependencies,
+            final LogService logging )
     {
         return ( appender, applier, config ) -> {
             TransactionRepresentationCommitProcess localCommit =
@@ -329,9 +325,10 @@ public class EnterpriseCoreEditionModule
             replicator.subscribe( replicatedTxStateMachine );
 
             return new ReplicatedTransactionCommitProcess( replicator, localSessionPool,
-                    replicatedTxStateMachine, clock,
+                    replicatedTxStateMachine,
                     config.get( CoreEdgeClusterSettings.tx_replication_retry_interval ),
-                    config.get( CoreEdgeClusterSettings.tx_replication_timeout ) );
+                    currentReplicatedLockState, logging
+            );
         };
     }
 

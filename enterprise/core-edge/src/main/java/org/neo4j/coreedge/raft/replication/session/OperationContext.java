@@ -48,4 +48,14 @@ public class OperationContext
     {
         return localSession;
     }
+
+
+    @Override
+    public String toString()
+    {
+        return "OperationContext{" +
+               "globalSession=" + globalSession +
+               ", localOperationId=" + localOperationId +
+               '}';
+    }
 }

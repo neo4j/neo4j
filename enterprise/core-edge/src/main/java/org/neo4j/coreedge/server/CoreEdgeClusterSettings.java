@@ -95,11 +95,6 @@ public class CoreEdgeClusterSettings
     public static final Setting<Long> tx_replication_retry_interval =
             setting( "core_edge.tx_replication_retry_interval", DURATION, "1s" );
 
-    @Description("The maximum time for trying to replicate a transaction and receive a successful response. " +
-            "Note that the transaction might still have been committed in the cluster.")
-    public static final Setting<Long> tx_replication_timeout =
-            setting( "core_edge.tx_replication_timeout", DURATION, "30s" );
-
     @Description("Expected size of core cluster")
     public static final Setting<Integer> expected_core_cluster_size =
             setting( "core_edge.expected_core_cluster_size", INTEGER, "3" );

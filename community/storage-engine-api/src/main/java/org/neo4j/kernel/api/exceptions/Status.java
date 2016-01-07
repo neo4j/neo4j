@@ -109,6 +109,8 @@ public interface Status
         ReleaseLocksFailed( DatabaseError, "The transaction was unable to release one or more of its locks." ),
         AcquireLockTimeout( TransientError, "The transaction was unable to acquire a lock, for instance due to a " +
                 "timeout or the transaction thread being interrupted." ),
+        LockSessionInvalid( TransientError, "The lock session under which this transaction was started is no longer valid." ),
+
         DeadlockDetected( TransientError, "This transaction, and at least one more transaction, has acquired locks " +
         "in a way that it will wait indefinitely, and the database has aborted it. Retrying this transaction " +
         "will most likely be successful."),

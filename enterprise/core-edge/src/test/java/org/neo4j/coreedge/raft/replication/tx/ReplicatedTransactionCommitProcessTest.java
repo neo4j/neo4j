@@ -29,10 +29,13 @@ import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.core.CurrentReplicatedLockState;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.helpers.Clock;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
+import static junit.framework.TestCase.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -56,12 +59,18 @@ public class ReplicatedTransactionCommitProcessTest
         Replicator replicator = mock( Replicator.class );
         ReplicatedTransactionStateMachine transactionStateMachine = mock( ReplicatedTransactionStateMachine.class );
         Future future = mock( Future.class );
+
+        CurrentReplicatedLockState.LockSession lockSession = mock( CurrentReplicatedLockState.LockSession.class );
+        when( lockSession.id() ).thenReturn( 0 );
+        CurrentReplicatedLockState currentReplicatedLockState = mock( CurrentReplicatedLockState.class );
+        when( currentReplicatedLockState.currentLockSession() ).thenReturn( lockSession );
+
         when( future.get( anyInt(), any( TimeUnit.class ) ) ).thenReturn( 23l );
         when( transactionStateMachine.getFutureTxId( any( LocalOperationId.class ) ) ).thenReturn( future );
 
         // when
         new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ),
-                transactionStateMachine, Clock.SYSTEM_CLOCK, 1, 30 )
+                transactionStateMachine, 1, currentReplicatedLockState, NullLogService.getInstance() )
                 .commit( tx(), NULL, INTERNAL );
 
         // then
@@ -75,16 +84,55 @@ public class ReplicatedTransactionCommitProcessTest
         Replicator replicator = mock( Replicator.class );
         ReplicatedTransactionStateMachine transactionStateMachine = mock( ReplicatedTransactionStateMachine.class );
         Future future = mock( Future.class );
+
+        CurrentReplicatedLockState.LockSession lockSession = mock( CurrentReplicatedLockState.LockSession.class );
+        when( lockSession.id() ).thenReturn( 0 );
+        CurrentReplicatedLockState currentReplicatedLockState = mock( CurrentReplicatedLockState.class );
+        when( currentReplicatedLockState.currentLockSession() ).thenReturn( lockSession );
+
         when( transactionStateMachine.getFutureTxId( any( LocalOperationId.class ) ) ).thenReturn( future );
         when( future.get( anyInt(), any( TimeUnit.class ) ) ).thenThrow( TimeoutException.class ).thenReturn( 23l );
 
         // when
         new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ),
-                transactionStateMachine, Clock.SYSTEM_CLOCK, 1, 30 )
+                transactionStateMachine, 1, currentReplicatedLockState, NullLogService.getInstance() )
                 .commit( tx(), NULL, INTERNAL );
 
         // then
         verify( replicator, times( 2 ) ).replicate( any( ReplicatedTransaction.class ) );
+    }
+
+    @Test
+    public void shouldNotRetryReplicationIfLockSessionChanges() throws Exception
+    {
+        // given
+        Replicator replicator = mock( Replicator.class );
+        ReplicatedTransactionStateMachine transactionStateMachine = mock( ReplicatedTransactionStateMachine.class );
+        Future future = mock( Future.class );
+
+        CurrentReplicatedLockState.LockSession lockSession = mock( CurrentReplicatedLockState.LockSession.class );
+        when( lockSession.id() ).thenReturn( 0, 1 ); // Lock session id change.
+        CurrentReplicatedLockState currentReplicatedLockState = mock( CurrentReplicatedLockState.class );
+        when( currentReplicatedLockState.currentLockSession() ).thenReturn( lockSession );
+
+        when( transactionStateMachine.getFutureTxId( any( LocalOperationId.class ) ) ).thenReturn( future );
+        when( future.get( anyInt(), any( TimeUnit.class ) ) ).thenThrow( TimeoutException.class );
+
+        // when
+        try
+        {
+            new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ),
+                    transactionStateMachine, 1, currentReplicatedLockState, NullLogService.getInstance() )
+                    .commit( tx(), NULL, INTERNAL );
+            fail( "Should have thrown ");
+        }
+        catch( TransactionFailureException e )
+        {
+            // expected
+        }
+
+        // then
+        verify( replicator, times( 1 ) ).replicate( any( ReplicatedTransaction.class ) );
     }
 
     private TransactionToApply tx()

@@ -29,35 +29,38 @@ import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.Replicator.ReplicationFailedException;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.raft.replication.session.OperationContext;
-import org.neo4j.helpers.Clock;
+import org.neo4j.coreedge.server.core.CurrentReplicatedLockState;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory.createImmutableReplicatedTransaction;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionInvalid;
 
 public class ReplicatedTransactionCommitProcess extends LifecycleAdapter implements TransactionCommitProcess
 {
     private final Replicator replicator;
     private final ReplicatedTransactionStateMachine replicatedTxListener;
-    private final Clock clock;
     private final long retryIntervalMillis;
-    private final long maxRetryTimeMillis;
+    private final CurrentReplicatedLockState currentReplicatedLockState;
     private final LocalSessionPool sessionPool;
+    private final Log log;
 
     public ReplicatedTransactionCommitProcess( Replicator replicator, LocalSessionPool sessionPool,
-            ReplicatedTransactionStateMachine replicatedTxListener, Clock clock,
-            long retryIntervalMillis, long maxRetryTimeMillis )
+            ReplicatedTransactionStateMachine replicatedTxListener,
+            long retryIntervalMillis, CurrentReplicatedLockState currentReplicatedLockState, LogService logging )
     {
         this.sessionPool = sessionPool;
         this.replicatedTxListener = replicatedTxListener;
         this.replicator = replicator;
-        this.clock = clock;
         this.retryIntervalMillis = retryIntervalMillis;
-        this.maxRetryTimeMillis = maxRetryTimeMillis;
+        this.currentReplicatedLockState = currentReplicatedLockState;
+        this.log = logging.getInternalLog( getClass() );
         replicator.subscribe( this.replicatedTxListener );
     }
 
@@ -79,20 +82,29 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
             throw new TransactionFailureException( "Could not create immutable object for replication", e );
         }
 
-        boolean lastRound = false;
-        long startTime = clock.currentTimeMillis();
         while ( true )
         {
             final Future<Long> futureTxId = replicatedTxListener.getFutureTxId( operationContext.localOperationId() );
             try
             {
+                int currentLockSessionId = currentReplicatedLockState.currentLockSession().id();
+                int txLockSessionId = tx.transactionRepresentation().getLockSessionId();
+                if ( currentLockSessionId != txLockSessionId )
+                {
+                    /* It is safe and necessary to give up at this point, since the currently valid lock
+                       session of the cluster has changed, and even if a previous replication of the
+                       transaction content does eventually get replicated (e.g. delayed on the network),
+                       then it will be ignored by the RTSM. So giving up and subsequently releasing
+                       locks (in KTI) is safe. */
+
+                    throw new TransactionFailureException( LockSessionInvalid,
+                            "The lock session in the cluster has changed: " +
+                            "[current lock session id:%d, tx lock session id:%d]",
+                            currentLockSessionId, txLockSessionId );
+                }
+
                 replicator.replicate( transaction );
-
-                /* The last round should wait for a longer time to keep issues arising from false negatives very rare
-                *  (e.g. local actor thinks commit failed, while it was committed in the cluster). */
-                long responseWaitTime = lastRound ? retryIntervalMillis : maxRetryTimeMillis/2;
-                Long txId = futureTxId.get( responseWaitTime, TimeUnit.MILLISECONDS );
-
+                Long txId = futureTxId.get( retryIntervalMillis, TimeUnit.MILLISECONDS );
                 sessionPool.releaseSession( operationContext );
 
                 return txId;
@@ -100,21 +112,14 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
             catch ( InterruptedException | TimeoutException  e )
             {
                 futureTxId.cancel( false );
-
-                if ( lastRound )
-                {
-                    throw new TransactionFailureException( "Failed to commit transaction within time bound", e );
-                }
-                else if ( (clock.currentTimeMillis() - startTime) >= maxRetryTimeMillis/2 )
-                {
-                    lastRound = true;
-                }
             }
             catch ( ReplicationFailedException | ExecutionException e )
             {
+                futureTxId.cancel( false );
                 throw new TransactionFailureException( "Failed to replicate transaction", e );
             }
-            System.out.println( "Retrying replication" );
+
+            log.info( "Retrying replication: " + operationContext );
         }
     }
 
