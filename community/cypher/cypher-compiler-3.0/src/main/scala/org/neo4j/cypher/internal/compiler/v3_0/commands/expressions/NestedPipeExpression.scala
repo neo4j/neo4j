@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
-case class NestedPipeExpression(pipe: Pipe, path: ProjectedPath) extends Expression {
+case class NestedPipeExpression(pipe: Pipe, path: Expression) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val innerState = state.withInitialContext(ctx).withDecorator(state.decorator.innerDecorator )
     pipe.createResults(innerState).map(ctx => path(ctx)).toSeq
