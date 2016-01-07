@@ -105,6 +105,34 @@ B1 01 8C 4D  79 43 6C 69  65 6E 74 2F  31 2E 30
 |clientName  |A name and version for the client, if the user has allowed usage data collection, this is used to track popular clients. Example: "MyClient/1.0"
 |=======================
 
+[[bolt-message-structs-reset]]
+==== RESET
+
+The `RESET` message is a client message used to return the current session to a "clean" state.
+The following actions are performed by `RESET`:
+
+- clear any outstanding `FAILURE` state
+- dispose of any outstanding result records
+- rollback the current transaction (if any)
+
+[source,bolt_message_struct]
+----
+ResetMessage (signature=0x0F) {
+}
+----
+
+.Response
+- `SUCCESS {}` if the session was successfully reset
+- `FAILURE {"code": ..., "message": ...}` if a reset is not currently possible
+
+.Example
+[source,bolt_packstream_type]
+----
+Value: RESET
+
+B0 0F
+----
+
 [[bolt-message-structs-run]]
 ==== RUN
 
@@ -199,33 +227,6 @@ If an unacknowledged failure is pending from a previous exchange, the server wil
 Value: PULL_ALL
 
 B0 3F
-----
-
-==== RESET
-
-The `RESET` message is a client message used to return the current session to a "clean" state.
-The following actions are performed by `RESET`:
-
-- clear any outstanding `FAILURE` state
-- dispose of any outstanding result records
-- rollback the current transaction (if any)
-
-[source,bolt_message_struct]
-----
-ResetMessage (signature=0x02) {
-}
-----
-
-.Response
-- `SUCCESS {}` if the session was successfully reset
-- `FAILURE {"code": ..., "message": ...}` if a reset is not currently possible
-
-.Example
-[source,bolt_packstream_type]
-----
-Value: RESET
-
-B0 02
 ----
 
 ==== RECORD

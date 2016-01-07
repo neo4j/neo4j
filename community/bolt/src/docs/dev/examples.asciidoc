@@ -181,7 +181,7 @@ Server: IGNORED
 # Until the error is acknowledged
 Client: RESET
 
-  00 02 b0 02 00 00
+  00 02 b0 0f 00 00
 
 Server: SUCCESS {}
 
@@ -622,7 +622,7 @@ Server: SUCCESS { "fields": ["num"] }
 
 Client: RESET {}
 
-  00 02 b0 02  00 00
+  00 02 b0 0f  00 00
 
 Server: SUCCESS {}
 

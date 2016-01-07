@@ -43,8 +43,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     public interface MessageTypes
     {
         byte MSG_INIT = 0x01;
-        byte MSG_RESET = 0x02;
-        byte MSG_ACK_FAILURE = 0x0F;
+        byte MSG_RESET = 0x0F;
         byte MSG_RUN = 0x10;
         byte MSG_DISCARD_ALL = 0x2F;
         byte MSG_PULL_ALL = 0x3F;
@@ -59,7 +58,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     {
         switch( type )
         {
-        case MessageTypes.MSG_ACK_FAILURE: return "MSG_ACK_FAILURE";
+        case MessageTypes.MSG_INIT:        return "MSG_INIT";
+        case MessageTypes.MSG_RESET:       return "MSG_RESET";
         case MessageTypes.MSG_RUN:         return "MSG_RUN";
         case MessageTypes.MSG_DISCARD_ALL: return "MSG_DISCARD_ALL";
         case MessageTypes.MSG_PULL_ALL:    return "MSG_PULL_ALL";
@@ -67,7 +67,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         case MessageTypes.MSG_SUCCESS:     return "MSG_SUCCESS";
         case MessageTypes.MSG_IGNORED:     return "MSG_IGNORED";
         case MessageTypes.MSG_FAILURE:     return "MSG_FAILURE";
-        case MessageTypes.MSG_RESET:       return "MSG_RESET";
         default: return "0x" + Integer.toHexString(type);
         }
     }
