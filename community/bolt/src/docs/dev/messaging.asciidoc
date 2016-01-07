@@ -52,7 +52,7 @@ The `RESET` clears the pending failure state, disposes of any outstanding record
 
 The diagram below illustrates a typical flow involving `RESET` messages:
 
-image:failure-ack.png[]
+image:failure-reset.png[]
 
 Here, the original failure is acknowledged immediately by the client, allowing the subsequent RUN to be actioned as expected.
 
