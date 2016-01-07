@@ -44,7 +44,7 @@ To perform an automatic store upgrade:
 
 . Cleanly shut down the older version of Neo4j, if it is running.
 
-. Install Neo4j {neo4j-version}, and set it up to use the same database store directory (typically _data/graph.db_).
+. Install Neo4j {neo4j-version}, and set it up to use the same database store directory (typically _data/databases/graph.db_).
 
 . Make a copy of the database.
 +
@@ -64,7 +64,7 @@ available with Neo4j Enterprise.
 
 To perform an explicit store upgrade:
 
-. Install Neo4j {neo4j-version}, and set it up to use the same database store directory (typically _data/graph.db_).
+. Install Neo4j {neo4j-version}, and set it up to use the same database store directory (typically _data/databases/graph.db_).
 . Cleanly shut down the older version of Neo4j, if it is running.
 . Set the Neo4j configuration parameter `allow_store_upgrade=true` in your _conf/neo4j.properties_ file.
   Neo4j will fail to start without this configuration set.
