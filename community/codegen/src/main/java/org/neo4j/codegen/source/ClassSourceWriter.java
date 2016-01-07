@@ -93,19 +93,14 @@ class ClassSourceWriter implements ClassEmitter
             }
             else
             {
-                target.append( "    public " );
+                target.append( "    " ).append( Modifier.toString( signature.modifiers() ) ).append( " " );
                 typeParameters( target, signature );
                 target.append( signature.declaringClass().simpleName() );
             }
         }
         else
         {
-            target.append( "    " );
-            if ( signature.isStatic() )
-            {
-                target.append( "static " );
-            }
-            target.append( "public " );
+            target.append( "    " ).append( Modifier.toString( signature.modifiers() ) ).append( " " );
             typeParameters( target, signature );
             target.append( signature.returnType().name() ).append( " " ).append( signature.name() );
         }

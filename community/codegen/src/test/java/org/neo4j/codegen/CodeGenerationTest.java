@@ -70,7 +70,7 @@ import static org.neo4j.codegen.TypeReference.typeReference;
 @RunWith(Parameterized.class)
 public class CodeGenerationTest
 {
-    public static final MethodReference RUN = methodReference( Runnable.class, void.class, "run" );
+    public static final MethodReference RUN = createMethod( Runnable.class, void.class, "run" );
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> generators()
@@ -411,22 +411,6 @@ public class CodeGenerationTest
         }
     }
 
-    public static class SomeBean
-    {
-        private String foo;
-        private String bar;
-
-        public void setFoo( String foo )
-        {
-            this.foo = foo;
-        }
-
-        public void setBar( String bar )
-        {
-            this.bar = bar;
-        }
-    }
-
     @Test
     public void shouldAssignLocalVariable() throws Throwable
     {
@@ -434,16 +418,16 @@ public class CodeGenerationTest
         ClassHandle handle;
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
-            try ( CodeBlock create = simple.generateMethod( NamedBase.class, "createNamedBase",
+            try ( CodeBlock create = simple.generateMethod( SomeBean.class, "createBean",
                     param( String.class, "foo" ), param( String.class, "bar" ) ) )
             {
-                create.assign( NamedBase.class, "bean",
-                        invoke( newInstance( NamedBase.class ), constructorReference( SomeBean.class ) ) );
+                create.assign( SomeBean.class, "bean",
+                        invoke( newInstance( SomeBean.class ), constructorReference( SomeBean.class ) ) );
                 create.expression( invoke( create.load( "bean" ),
-                        methodReference( NamedBase.class, void.class, "setFoo", String.class ),
+                        methodReference( SomeBean.class, void.class, "setFoo", String.class ),
                         create.load( "foo" ) ) );
                 create.expression( invoke( create.load( "bean" ),
-                        methodReference( NamedBase.class, void.class, "setBar", String.class ),
+                        methodReference( SomeBean.class, void.class, "setBar", String.class ),
                         create.load( "bar" ) ) );
                 create.returns( create.load( "bean" ) );
             }
@@ -451,12 +435,12 @@ public class CodeGenerationTest
         }
 
         // when
-        MethodHandle method = instanceMethod( handle.newInstance(), "createNamedBase", String.class, String.class );
-        NamedBase bean = (NamedBase) method.invoke( "hello", "world" );
+        MethodHandle method = instanceMethod( handle.newInstance(), "createBean", String.class, String.class );
+        SomeBean bean = (SomeBean) method.invoke( "hello", "world" );
 
         // then
-        assertEquals( "hello", bean.getFoo() );
-        assertEquals( "world", bean.getBar() );
+        assertEquals( "hello", bean.foo );
+        assertEquals( "world", bean.bar );
     }
 
     @Test
@@ -761,8 +745,6 @@ public class CodeGenerationTest
     {
         final String name;
         private boolean defaultConstructorCalled = false;
-        private String foo;
-        private String bar;
 
         public NamedBase()
         {
@@ -779,16 +761,12 @@ public class CodeGenerationTest
         {
             return defaultConstructorCalled;
         }
+    }
 
-        public String getFoo()
-        {
-            return foo;
-        }
-
-        public String getBar()
-        {
-            return bar;
-        }
+    public static class SomeBean
+    {
+        private String foo;
+        private String bar;
 
         public void setFoo( String foo )
         {
@@ -824,5 +802,17 @@ public class CodeGenerationTest
 
         // then
         assertEquals( argument, instanceMethod( instance, "value" ).invoke() );
+    }
+
+    private static MethodReference createMethod(Class<?> owner, Class<?> returnType, String name)
+    {
+        try
+        {
+            return methodReference( Runnable.class, void.class, "run" );
+        }
+        catch ( NoSuchMethodException e )
+        {
+            throw new AssertionError( "Cannot create method", e );
+        }
     }
 }

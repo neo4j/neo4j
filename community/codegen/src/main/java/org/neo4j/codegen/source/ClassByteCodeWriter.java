@@ -233,9 +233,31 @@ class ClassByteCodeWriter implements ClassEmitter, Opcodes
         }
 
         @Override
-        public void assign( TypeReference type, String name, Expression value )
+        public void assign( LocalVariable variable, Expression value )
         {
             callSuperIfNecessary( );
+            value.accept( expressionVisitor );
+            switch ( variable.type().simpleName() )
+            {
+            case "int":
+            case "byte":
+            case "short":
+            case "char":
+                methodVisitor.visitVarInsn( ISTORE, variable.index() );
+                break;
+            case "long":
+                methodVisitor.visitVarInsn( LSTORE, variable.index() );
+                break;
+            case "float":
+                methodVisitor.visitVarInsn( FSTORE, variable.index() );
+                break;
+            case "double":
+                methodVisitor.visitVarInsn( DSTORE, variable.index() );
+                break;
+            default:
+                methodVisitor.visitVarInsn( ASTORE, variable.index() );
+            }
+
         }
 
         @Override
@@ -287,7 +309,7 @@ class ClassByteCodeWriter implements ClassEmitter, Opcodes
         }
 
         @Override
-        public void assign( LocalVariable local, Expression value )
+        public void assignVariableInScope( LocalVariable local, Expression value )
         {
             callSuperIfNecessary( );
         }
@@ -380,16 +402,22 @@ class ClassByteCodeWriter implements ClassEmitter, Opcodes
             {
                 argument.accept( this );
             }
-            if ( Modifier.isInterface( method.owner().modifiers() ))
+            if ( Modifier.isInterface( method.owner().modifiers()) )
             {
                 methodVisitor
                         .visitMethodInsn( INVOKEINTERFACE, byteCodeName( method.owner() ), method.name(), desc( method ),
                                 true );
             }
-            else
+            else if (method.isConstructor())
             {
                 methodVisitor
                         .visitMethodInsn( INVOKESPECIAL, byteCodeName( method.owner() ), method.name(), desc( method ),
+                                false );
+            }
+            else
+            {
+                methodVisitor
+                        .visitMethodInsn( INVOKEVIRTUAL, byteCodeName( method.owner() ), method.name(), desc( method ),
                                 false );
             }
         }
@@ -462,7 +490,10 @@ class ClassByteCodeWriter implements ClassEmitter, Opcodes
         @Override
         public void newInstance( TypeReference type )
         {
-
+            methodVisitor.visitTypeInsn( NEW, byteCodeName( type ));
+            // TODO: is this always true? typical use case is that you call the constructor directly
+            // which pops the item of the stack so you need DUP in order to do stuff with it
+            methodVisitor.visitInsn( DUP );
         }
 
         @Override

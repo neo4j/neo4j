@@ -104,7 +104,7 @@ public class CodeBlock implements AutoCloseable
 
     public void assign( LocalVariable local, Expression value )
     {
-        emitter.assign( local, value );
+        emitter.assignVariableInScope( local, value );
     }
 
     public void assign( Class<?> type, String name, Expression value )
@@ -114,8 +114,9 @@ public class CodeBlock implements AutoCloseable
 
     public void assign( TypeReference type, String name, Expression value )
     {
-        localVariables.put(name, localVariable( type, name ) );
-        emitter.assign( type, name, value );
+        LocalVariable variable = localVariable( type, name );
+        localVariables.put(name, variable );
+        emitter.assign( variable, value );
     }
 
     public void put( Expression target, FieldReference field, Expression value )

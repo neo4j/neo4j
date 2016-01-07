@@ -81,7 +81,7 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
-    public void assign( TypeReference type, String name, Expression value )
+    public void assign( LocalVariable variable, Expression value )
     {
         throw new IllegalStateException( reason );
     }
@@ -135,7 +135,7 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
-    public void assign( LocalVariable local, Expression value )
+    public void assignVariableInScope( LocalVariable local, Expression value )
     {
         throw new IllegalStateException( reason );
     }

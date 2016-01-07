@@ -19,6 +19,7 @@
  */
 package org.neo4j.codegen;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -120,6 +121,7 @@ public class MethodTemplate
         final Parameter[] parameters;
         private final Map<String,TypeReference> locals = new HashMap<>();
         private final List<Statement> statements = new ArrayList<>();
+        private int modifiers = Modifier.PUBLIC;
 
         Builder( Parameter[] parameters )
         {
@@ -162,6 +164,12 @@ public class MethodTemplate
             return this;
         }
 
+        public Builder modiferes(int modifiers)
+        {
+            this.modifiers = modifiers;
+            return this;
+        }
+
         public Builder returns( ExpressionTemplate value )
         {
             statements.add( Statement.returns( value ) );
@@ -179,6 +187,11 @@ public class MethodTemplate
     public String name()
     {
         return name;
+    }
+
+    public int modifiers()
+    {
+        return modifiers;
     }
 
     public TypeReference[] parameterTypes()
@@ -223,6 +236,7 @@ public class MethodTemplate
     private final Statement[] statements;
     private final TypeReference returnType;
     private final String name;
+    private final int modifiers;
 
     private MethodTemplate( Builder builder, TypeReference returnType, String name )
     {
@@ -231,5 +245,6 @@ public class MethodTemplate
         this.declaration = builder.declaration();
         this.parameters = builder.parameters;
         this.statements = builder.statements.toArray( new Statement[builder.statements.size()] );
+        this.modifiers = builder.modifiers;
     }
 }

@@ -118,7 +118,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void assign( LocalVariable local, Expression value )
+    public void assignVariableInScope( LocalVariable local, Expression value )
     {
         indent().append( local.name() ).append( " = " );
         value.accept( this );
@@ -136,9 +136,9 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void assign( TypeReference type, String name, Expression value )
+    public void assign( LocalVariable variable, Expression value )
     {
-        indent().append( type.name() ).append( ' ' ).append( name ).append( " = " );
+        indent().append( variable.type().name() ).append( ' ' ).append( variable.name() ).append( " = " );
         value.accept( this );
         append( ";\n" );
     }

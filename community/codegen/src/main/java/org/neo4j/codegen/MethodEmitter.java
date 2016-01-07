@@ -31,7 +31,7 @@ public interface MethodEmitter
 
     void returns( Expression value );
 
-    void assign( TypeReference type, String name, Expression value );
+    void assign( LocalVariable local, Expression value );
 
     void beginWhile( Expression test );
 
@@ -49,7 +49,7 @@ public interface MethodEmitter
 
     void declare( LocalVariable local );
 
-    void assign( LocalVariable local, Expression value );
+    void assignVariableInScope( LocalVariable local, Expression value );
 
     void beginForEach( Parameter local, Expression iterable );
 }

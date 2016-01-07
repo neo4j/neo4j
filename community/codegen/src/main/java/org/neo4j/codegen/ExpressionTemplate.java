@@ -19,6 +19,8 @@
  */
 package org.neo4j.codegen;
 
+import java.lang.reflect.Modifier;
+
 import static org.neo4j.codegen.TypeReference.VOID;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
@@ -230,7 +232,7 @@ public abstract class ExpressionTemplate
             void templateAccept( CodeBlock method, ExpressionVisitor visitor )
             {
                 visitor.invoke( Expression.SUPER,
-                        new MethodReference( method.clazz.handle().parent(), "<init>", VOID, parameterTypes),
+                        new MethodReference( method.clazz.handle().parent(), "<init>", VOID, Modifier.PUBLIC, parameterTypes),
                         materialize( method, parameters ) );
             }
         };

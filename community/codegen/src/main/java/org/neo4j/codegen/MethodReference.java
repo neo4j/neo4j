@@ -19,33 +19,37 @@
  */
 package org.neo4j.codegen;
 
+import java.lang.reflect.Modifier;
+
 import static org.neo4j.codegen.TypeReference.typeReference;
 import static org.neo4j.codegen.TypeReference.typeReferences;
 
 public class MethodReference
 {
     public static MethodReference methodReference( Class<?> owner, Class<?> returns, String name,
-            Class<?>... parameters )
+            Class<?>... parameters ) throws NoSuchMethodException
     {
-        return methodReference( typeReference( owner ), typeReference( returns ), name, typeReferences( parameters ) );
+        int modifiers = owner.getMethod( name, parameters ).getModifiers();
+        return methodReference( typeReference( owner ), typeReference( returns ), name, modifiers, typeReferences( parameters ) );
     }
 
     public static MethodReference methodReference( Class<?> owner, TypeReference returns, String name,
-            Class<?>... parameters )
+            Class<?>... parameters ) throws NoSuchMethodException
     {
-        return methodReference( owner, returns, name, typeReferences( parameters ) );
+        int modifiers = owner.getMethod( name, parameters ).getModifiers();
+        return methodReference( owner, returns, name, modifiers, typeReferences( parameters ) );
     }
 
-    public static MethodReference methodReference( Class<?> owner, TypeReference returns, String name,
+    private static MethodReference methodReference( Class<?> owner, TypeReference returns, String name, int modifiers,
             TypeReference... parameters )
     {
-        return methodReference( typeReference( owner ), returns, name, parameters );
+        return methodReference( typeReference( owner ), returns, name, modifiers, parameters );
     }
 
     public static MethodReference methodReference( TypeReference owner, TypeReference returns, String name,
-            TypeReference... parameters )
+            int modifiers, TypeReference... parameters )
     {
-        return new MethodReference( owner, name, returns, parameters );
+        return new MethodReference( owner, name, returns, modifiers, parameters );
     }
 
     public static MethodReference constructorReference( Class<?> owner, Class<?> firstParameter, Class<?>... parameters )
@@ -60,20 +64,22 @@ public class MethodReference
 
     public static MethodReference constructorReference( TypeReference owner, TypeReference... parameters )
     {
-        return new MethodReference( owner, "<init>", TypeReference.VOID, parameters );
+        return new MethodReference( owner, "<init>", TypeReference.VOID,  Modifier.PUBLIC, parameters );
     }
 
     private final TypeReference owner;
     private final String name;
     private final TypeReference returns;
     private final TypeReference[] parameters;
+    private final int modifiers;
 
-    MethodReference( TypeReference owner, String name, TypeReference returns, TypeReference[] parameters )
+    MethodReference( TypeReference owner, String name, TypeReference returns, int modifiers, TypeReference[] parameters)
     {
         this.owner = owner;
 
         this.name = name;
         this.returns = returns;
+        this.modifiers = modifiers;
         this.parameters = parameters;
     }
 
@@ -100,6 +106,11 @@ public class MethodReference
     public boolean isConstructor()
     {
         return "<init>".equals( name );
+    }
+
+    public int modifiers()
+    {
+        return modifiers;
     }
 
     @Override

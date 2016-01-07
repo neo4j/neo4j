@@ -108,22 +108,37 @@ public class ClassGenerator implements AutoCloseable
         {
             template.generate( generator );
         }
-        return methodReference( handle, template.returnType(), template.name(), template.parameterTypes() );
+        return methodReference( handle, template.returnType(), template.name(), template.modifiers(),  template.parameterTypes() );
     }
 
     public CodeBlock generateConstructor( Parameter... parameters )
     {
-        return generate( constructor( handle, parameters,/*throws:*/NO_TYPES, NO_PARAMETERS ) );
+        return generate( constructor( handle, parameters,/*throws:*/NO_TYPES, Modifier.PUBLIC, NO_PARAMETERS ) );
+    }
+
+    public CodeBlock generateConstructor( int modifiers, Parameter... parameters )
+    {
+        return generate( constructor( handle, parameters,/*throws:*/NO_TYPES, modifiers, NO_PARAMETERS ) );
     }
 
     public CodeBlock generateMethod( Class<?> returnType, String name, Parameter... parameters )
     {
-        return generateMethod( typeReference( returnType ), name, parameters );
+        return generateMethod( typeReference( returnType ), name, Modifier.PUBLIC, parameters );
+    }
+
+    public CodeBlock generateMethod( Class<?> returnType, String name, int modifiers, Parameter... parameters )
+    {
+        return generateMethod( typeReference( returnType ), name, modifiers, parameters );
     }
 
     public CodeBlock generateMethod( TypeReference returnType, String name, Parameter... parameters )
     {
-        return generate( method( handle, returnType, name, parameters,/*throws:*/NO_TYPES, NO_PARAMETERS ) );
+        return generate( method( handle, returnType, name, parameters,/*throws:*/NO_TYPES, Modifier.PUBLIC, NO_PARAMETERS ) );
+    }
+
+    public CodeBlock generateMethod( TypeReference returnType, String name, int modifiers, Parameter... parameters )
+    {
+        return generate( method( handle, returnType, name, parameters,/*throws:*/NO_TYPES, modifiers, NO_PARAMETERS ) );
     }
 
     public CodeBlock generate( MethodDeclaration.Builder builder )

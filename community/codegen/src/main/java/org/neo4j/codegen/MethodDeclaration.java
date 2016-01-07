@@ -19,6 +19,7 @@
  */
 package org.neo4j.codegen;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -45,7 +46,7 @@ public abstract class MethodDeclaration
             @Override
             MethodDeclaration build( TypeReference owner )
             {
-                return method( owner, returnType, name, parameters, exceptions(), typeParameters() );
+                return method( owner, returnType, name, parameters, exceptions(), modifiers(), typeParameters() );
             }
         };
     }
@@ -57,7 +58,7 @@ public abstract class MethodDeclaration
             @Override
             MethodDeclaration build( TypeReference owner )
             {
-                return constructor( owner, parameters, exceptions(), typeParameters() );
+                return constructor( owner, parameters, exceptions(), modifiers(), typeParameters() );
             }
         };
     }
@@ -105,10 +106,22 @@ public abstract class MethodDeclaration
             return this;
         }
 
+        public Builder modifiers(int modifiers)
+        {
+            this.modifiers = modifiers;
+            return this;
+        }
+
+        public int modifiers()
+        {
+            return modifiers;
+        }
+
         abstract MethodDeclaration build( TypeReference owner );
 
         final Parameter[] parameters;
         private List<TypeReference> exceptions;
+        private int modifiers = Modifier.PUBLIC;
 
         private Builder( Parameter[] parameters )
         {
@@ -143,13 +156,15 @@ public abstract class MethodDeclaration
     private final Parameter[] parameters;
     private final TypeReference[] exceptions;
     private final TypeParameter[] typeParameters;
+    private final int modifiers;
 
     MethodDeclaration( TypeReference owner, Parameter[] parameters, TypeReference[] exceptions,
-            TypeParameter[] typeParameters )
+            int modifiers, TypeParameter[] typeParameters )
     {
         this.owner = owner;
         this.parameters = parameters;
         this.exceptions = exceptions;
+        this.modifiers = modifiers;
         this.typeParameters = typeParameters;
     }
 
@@ -157,7 +172,7 @@ public abstract class MethodDeclaration
 
     public boolean isStatic()
     {
-        return false;
+        return Modifier.isStatic( modifiers );
     }
 
     public boolean isGeneric()
@@ -180,6 +195,11 @@ public abstract class MethodDeclaration
     public TypeReference declaringClass()
     {
         return owner;
+    }
+
+    public int modifiers()
+    {
+        return modifiers;
     }
 
     public abstract TypeReference returnType();
@@ -215,7 +235,7 @@ public abstract class MethodDeclaration
         String newName = name();
         boolean newIsConstrucor = isConstructor();
 
-        return new MethodDeclaration( owner, newParameters, newExceptions, typeParameters )
+        return new MethodDeclaration( owner, newParameters, newExceptions, modifiers, typeParameters )
         {
             @Override
             public boolean isConstructor()
@@ -245,9 +265,9 @@ public abstract class MethodDeclaration
     }
 
     static MethodDeclaration method( TypeReference owner, final TypeReference returnType, final String name,
-            Parameter[] parameters, TypeReference[] exceptions, TypeParameter[] typeParameters )
+            Parameter[] parameters, TypeReference[] exceptions, int modifiers, TypeParameter[] typeParameters )
     {
-        return new MethodDeclaration( owner, parameters, exceptions, typeParameters )
+        return new MethodDeclaration( owner, parameters, exceptions, modifiers, typeParameters )
         {
             @Override
             public boolean isConstructor()
@@ -270,9 +290,9 @@ public abstract class MethodDeclaration
     }
 
     static MethodDeclaration constructor( TypeReference owner, Parameter[] parameters, TypeReference[] exceptions,
-            TypeParameter[] typeParameters )
+            int modifiers, TypeParameter[] typeParameters )
     {
-        return new MethodDeclaration( owner, parameters, exceptions, typeParameters )
+        return new MethodDeclaration( owner, parameters, exceptions ,modifiers, typeParameters )
         {
             @Override
             public boolean isConstructor()
