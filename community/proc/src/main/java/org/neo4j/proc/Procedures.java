@@ -55,14 +55,14 @@ public class Procedures
         return proc.signature();
     }
 
-    public Stream<Object[]> call( ProcedureSignature.ProcedureName name, Object[] input ) throws ProcedureException
+    public Stream<Object[]> call( Procedure.Context ctx, ProcedureSignature.ProcedureName name, Object[] input ) throws ProcedureException
     {
         Procedure proc = procedures.get( name );
         if( proc == null )
         {
             throw noSuchProcedure( name );
         }
-        return proc.apply( input );
+        return proc.apply( ctx, input );
     }
 
     private ProcedureException noSuchProcedure( ProcedureSignature.ProcedureName name )

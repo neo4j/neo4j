@@ -22,10 +22,14 @@ package org.neo4j.kernel.api;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.proc.Procedure;
 import org.neo4j.proc.ProcedureSignature;
 
 public interface ProcedureRead
 {
+    /** For read procedures, this key will be available in the invocation context as a means to access the current read statement. */
+    Procedure.Key<ReadOperations> readStatement = Procedure.Key.key("statementContext.read", ReadOperations.class );
+
     /** Fetch a procedure given its signature. */
     ProcedureSignature procedureGet( ProcedureSignature.ProcedureName name ) throws ProcedureException;
 
