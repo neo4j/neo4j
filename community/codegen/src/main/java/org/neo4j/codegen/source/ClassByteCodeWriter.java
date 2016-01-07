@@ -45,6 +45,7 @@ import org.neo4j.codegen.TypeReference;
 import static org.neo4j.codegen.ByteCodeUtils.byteCodeName;
 import static org.neo4j.codegen.ByteCodeUtils.desc;
 import static org.neo4j.codegen.ByteCodeUtils.exceptions;
+import static org.neo4j.codegen.ByteCodeUtils.outerName;
 import static org.neo4j.codegen.ByteCodeUtils.signature;
 import static org.neo4j.codegen.ByteCodeUtils.typeName;
 import static org.objectweb.asm.Opcodes.AASTORE;
@@ -104,10 +105,15 @@ class ClassByteCodeWriter implements ClassEmitter
         String[] iNames = new String[interfaces.length];
         for ( int i = 0; i < interfaces.length; i++ )
         {
-            iNames[i] = byteCodeName( interfaces[i].name() );
+            iNames[i] = byteCodeName( interfaces[i] );
         }
         classWriter.visit( V1_8, ACC_PUBLIC + ACC_SUPER, byteCodeName( type ), signature( type ),
                 byteCodeName( base ), iNames.length != 0 ? iNames : null );
+        if ( base.isInnerClass() )
+        {
+            classWriter.visitInnerClass( byteCodeName( base ), outerName(base),
+                    base.simpleName() , ACC_PUBLIC + ACC_STATIC );
+        }
         this.type = type;
         this.base = base;
     }

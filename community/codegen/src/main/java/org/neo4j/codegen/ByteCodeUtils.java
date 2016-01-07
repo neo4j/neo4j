@@ -30,12 +30,34 @@ public final class ByteCodeUtils
 
     public static String byteCodeName( TypeReference reference )
     {
-        return byteCodeName( reference.name() );
+        StringBuilder builder = new StringBuilder();
+        if ( !reference.packageName().isEmpty() )
+        {
+            builder.append( reference.packageName().replaceAll( "\\.", "/" ) ).append( '/' );
+        }
+        if ( reference.isInnerClass() )
+        {
+            builder.append( reference.declaringClassName() ).append( '$' );
+        }
+        builder.append( reference.simpleName() );
+        return builder.toString();
     }
 
-    public static String byteCodeName( String javaName )
+    public static String outerName( TypeReference reference )
     {
-        return javaName.replaceAll( "\\.", "\\/" );
+        if (!reference.isInnerClass())
+        {
+            return null;
+        }
+
+        StringBuilder builder = new StringBuilder();
+        if ( !reference.packageName().isEmpty() )
+        {
+            builder.append( reference.packageName().replaceAll( "\\.", "/" ) ).append( '/' );
+        }
+        builder.append( reference.simpleName() );
+
+        return builder.toString();
     }
 
     public static String typeName( TypeReference reference )
@@ -92,7 +114,7 @@ public final class ByteCodeUtils
         {
             return null;
         }
-        return throwsList.stream().map( e -> byteCodeName( e.name() ) ).toArray( String[]::new );
+        return throwsList.stream().map( ByteCodeUtils::byteCodeName ).toArray( String[]::new );
     }
 
     private static String internalDesc( MethodDeclaration declaration, boolean showErasure )
@@ -187,7 +209,11 @@ public final class ByteCodeUtils
                 {
                     builder.append( packageName ).append( "/" );
                 }
-                builder.append( byteCodeName( name ) );
+                if ( reference.isInnerClass() )
+                {
+                    builder.append( reference.declaringClassName() ).append( '$' );
+                }
+                builder.append( name.replaceAll( "\\.", "\\/" ) );
             }
 
             List<TypeReference> parameters = reference.parameters();

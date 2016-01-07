@@ -185,11 +185,11 @@ public class ByteCodeUtilsTest
                 .throwsException( typeParameter( "E" ) ).build( owner );
 
         // WHEN
-        String description = signature( declaration );
+        String signature = signature( declaration );
         String[] exceptions = exceptions( declaration );
         // THEN
-        assertThat(description,
-                equalTo( "<E:Ljava/lang/Exception;>(Lorg/neo4j/codegen/CodeGenerationTest/Thrower<TE;>;)V^TE;" ));
+        assertThat(signature,
+                equalTo( "<E:Ljava/lang/Exception;>(Lorg/neo4j/codegen/CodeGenerationTest$Thrower<TE;>;)V^TE;" ));
         assertThat( exceptions, equalTo(new String[]{"java/lang/Exception"} ));
     }
 

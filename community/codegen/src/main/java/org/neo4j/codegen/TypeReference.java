@@ -60,7 +60,7 @@ public class TypeReference
         {
             return OBJECT;
         }
-        String packageName = "", simpleName;
+        String packageName = "", simpleName, declaringClassName = "";
         if ( type.isArray() )
         {
             simpleName = type.getComponentType().getCanonicalName() + "[]";
@@ -73,14 +73,24 @@ public class TypeReference
         {
             packageName = type.getPackage().getName();
             String canonicalName = type.getCanonicalName();
-            simpleName = canonicalName.substring( packageName.length() + 1 );
+            Class<?> declaringClass = type.getDeclaringClass();
+            if ( declaringClass != null)
+            {
+                declaringClassName = declaringClass.getSimpleName();
+                simpleName = canonicalName.substring( packageName.length() + declaringClassName.length() + 2 );
+            }
+            else
+            {
+                simpleName = canonicalName.substring( packageName.length() + 1 );
+            }
         }
-        return new TypeReference( packageName, simpleName, type.isPrimitive(), type.isArray(), false );
+        return new TypeReference( packageName, simpleName, type.isPrimitive(), type.isArray(), false,
+                declaringClassName );
     }
 
     public static TypeReference typeParameter( String name )
     {
-        return new TypeReference( "", name, false, false, true );
+        return new TypeReference( "", name, false, false, true, "" );
     }
 
     public static TypeReference parameterizedType( Class<?> base, Class<?>... parameters )
@@ -95,7 +105,9 @@ public class TypeReference
 
     public static TypeReference parameterizedType( TypeReference base, TypeReference... parameters )
     {
-        return new TypeReference( base.packageName, base.simpleName, false, base.isArray(), false, parameters );
+        return new TypeReference( base.packageName, base.simpleName, false, base.isArray(), false,
+                base.declaringClassName,
+                parameters );
     }
 
     public static TypeReference[] typeReferences( Class<?> first, Class<?>[] more )
@@ -125,6 +137,7 @@ public class TypeReference
     private final boolean isPrimitive;
     private final boolean isArray;
     private final boolean isTypeParameter;
+    private final String declaringClassName;
 
     public String packageName()
     {
@@ -146,18 +159,20 @@ public class TypeReference
         return isTypeParameter;
     }
 
-    public static final TypeReference VOID = new TypeReference( "", "void", true, false, false ),
-            OBJECT = new TypeReference( "java.lang", "Object", false, false, false );
+
+    public static final TypeReference VOID = new TypeReference( "", "void", true, false, false, "" ),
+            OBJECT = new TypeReference( "java.lang", "Object", false, false, false, "" );
     static final TypeReference[] NO_TYPES = new TypeReference[0];
 
     TypeReference( String packageName, String simpleName, boolean isPrimitive, boolean isArray,
-            boolean isTypeParameter, TypeReference... parameters )
+            boolean isTypeParameter, String declaringClassName, TypeReference... parameters )
     {
         this.packageName = packageName;
         this.simpleName = simpleName;
         this.isPrimitive = isPrimitive;
         this.isArray = isArray;
         this.isTypeParameter = isTypeParameter;
+        this.declaringClassName = declaringClassName;
         this.parameters = parameters;
     }
 
@@ -169,6 +184,31 @@ public class TypeReference
     public List<TypeReference> parameters()
     {
         return unmodifiableList( asList( parameters ) );
+    }
+
+    public String name()
+    {
+        return writeTo( new StringBuilder() ).toString();
+    }
+
+    public boolean isArray()
+    {
+        return isArray;
+    }
+
+    public boolean isVoid()
+    {
+        return this == VOID;
+    }
+
+    public boolean isInnerClass()
+    {
+        return !declaringClassName.isEmpty();
+    }
+
+    public String declaringClassName()
+    {
+        return declaringClassName;
     }
 
     @Override
@@ -209,6 +249,10 @@ public class TypeReference
         {
             result.append( packageName ).append( '.' );
         }
+        if ( !declaringClassName.isEmpty() )
+        {
+            result.append( declaringClassName ).append( '.' );
+        }
         result.append( simpleName );
         if ( !(parameters == null || parameters.length == 0) )
         {
@@ -222,21 +266,6 @@ public class TypeReference
             result.append( '>' );
         }
         return result;
-    }
-
-    public String name()
-    {
-        return writeTo( new StringBuilder() ).toString();
-    }
-
-    public boolean isArray()
-    {
-        return isArray;
-    }
-
-    public boolean isVoid()
-    {
-        return this == VOID;
     }
 
     public abstract static class Bound

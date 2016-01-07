@@ -757,6 +757,50 @@ public class CodeGenerationTest
         return generator.generateClass( base, PACKAGE, name, interfaces );
     }
 
+    public static class NamedBase
+    {
+        final String name;
+        private boolean defaultConstructorCalled = false;
+        private String foo;
+        private String bar;
+
+        public NamedBase()
+        {
+            this.defaultConstructorCalled = true;
+            this.name = null;
+        }
+
+        public NamedBase( String name )
+        {
+            this.name = name;
+        }
+
+        public boolean defaultConstructorCalled()
+        {
+            return defaultConstructorCalled;
+        }
+
+        public String getFoo()
+        {
+            return foo;
+        }
+
+        public String getBar()
+        {
+            return bar;
+        }
+
+        public void setFoo( String foo )
+        {
+            this.foo = foo;
+        }
+
+        public void setBar( String bar )
+        {
+            this.bar = bar;
+        }
+    }
+
     private <T> void assertMethodReturningField( Class<T> clazz, T argument ) throws Throwable
     {
         // given
