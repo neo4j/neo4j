@@ -117,6 +117,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         private final PropertyLoader propertyLoader;
         private final TransactionApplicationMode mode;
         private final NodePropertyCommandsExtractor indexUpdatesExtractor = new NodePropertyCommandsExtractor();
+        private List<IndexRule> createdIndexes;
 
         public SingleTransactionApplier( NodeStore nodeStore, PropertyStore propertyStore,
                 PropertyLoader propertyLoader, TransactionApplicationMode mode )
@@ -137,6 +138,13 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 indexUpdates().feed( indexUpdatesExtractor.propertyCommandsByNodeIds(),
                         indexUpdatesExtractor.nodeCommandsById() );
                 indexUpdatesExtractor.close();
+            }
+
+            // Created pending indexes
+            if ( createdIndexes != null )
+            {
+                indexingService.createIndexes( createdIndexes.toArray( new IndexRule[createdIndexes.size()] ) );
+                createdIndexes = null;
             }
         }
 
@@ -223,7 +231,9 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                     }
                     break;
                 case CREATE:
-                    indexingService.createIndex( (IndexRule) command.getSchemaRule() );
+                    // Add to list so that all these indexes will be created in one call later
+                    createdIndexes = createdIndexes == null ? new ArrayList<>() : createdIndexes;
+                    createdIndexes.add( (IndexRule) command.getSchemaRule() );
                     break;
                 case DELETE:
                     indexingService.dropIndex( (IndexRule) command.getSchemaRule() );

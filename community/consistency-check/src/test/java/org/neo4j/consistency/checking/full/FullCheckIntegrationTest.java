@@ -491,7 +491,7 @@ public class FullCheckIntegrationTest
         {
             IndexRule rule = rules.next();
             IndexDescriptor descriptor = new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
-            IndexConfiguration indexConfig = new IndexConfiguration( false );
+            IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
             IndexPopulator populator =
                 storeAccess.indexes().getPopulator( rule.getId(), descriptor, indexConfig, samplingConfig );
@@ -603,7 +603,7 @@ public class FullCheckIntegrationTest
         for ( IndexRule indexRule : loadAllIndexRules( fixture.directStoreAccess().nativeStores().getSchemaStore() ) )
         {
             IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor(
-                    indexRule.getId(), new IndexConfiguration( indexRule.isConstraintIndex() ), samplingConfig );
+                    indexRule.getId(), IndexConfiguration.of( indexRule ), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.remove( asPrimitiveLongSet( indexedNodes ) );
             updater.close();
@@ -622,7 +622,7 @@ public class FullCheckIntegrationTest
     public void shouldReportNodesWithDuplicatePropertyValueInUniqueIndex() throws Exception
     {
         // given
-        IndexConfiguration indexConfig = new IndexConfiguration( false );
+        IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         for ( IndexRule indexRule : loadAllIndexRules( fixture.directStoreAccess().nativeStores().getSchemaStore() ) )
         {

@@ -60,20 +60,13 @@ public class NodeStoreScanTest
             private int read = 0;
 
             @Override
-            protected Object read( NodeRecord node )
+            protected void process( NodeRecord node )
             {
                 // then
                 read++;
                 float expected = ( (float) read * 100 ) / total;
                 float actual = percentageSupplier.get();
                 assertEquals( String.format( "%f==%f",  expected, actual ), expected, actual, 0.0 );
-                return null;
-            }
-
-            @Override
-            protected void process( Object o ) throws Exception
-            {
-
             }
         };
         percentageSupplier.setStoreScan( scan );

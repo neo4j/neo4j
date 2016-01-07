@@ -40,7 +40,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
@@ -126,8 +125,10 @@ public class NeoStoreIndexStoreViewTest
         // given
         @SuppressWarnings("unchecked")
         Visitor<NodePropertyUpdate, Exception> visitor = mock( Visitor.class );
-        StoreScan<Exception> storeScan = storeView
-                .visitNodesWithPropertyAndLabel( new IndexDescriptor( labelId, propertyKeyId ), visitor );
+        StoreScan<Exception> storeScan = storeView.visitNodes(
+                new int[] {labelId},
+                new int[] {propertyKeyId},
+                visitor );
 
         // when
         storeScan.run();

@@ -19,23 +19,28 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.Collection;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.register.Register.DoubleLongRegister;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView extends PropertyAccessor
 {
     /**
-     * Retrieve all nodes in the database with a given label and property, as pairs of node id and property value.
+     * Retrieve all nodes in the database which has got one or more of the given labels AND
+     * one or more of the given property key ids. This scan additionally accepts a visitor
+     * for label updates for a joint scan.
      *
      * @return a {@link StoreScan} to start and to stop the scan.
      */
-    <FAILURE extends Exception> StoreScan<FAILURE> visitNodesWithPropertyAndLabel(
-            IndexDescriptor descriptor, Visitor<NodePropertyUpdate, FAILURE> visitor );
+    <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, int[] propertyKeyIds,
+            Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor,
+            Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor );
 
     /**
      * Retrieve all nodes in the database which has got one or more of the given labels AND
@@ -44,10 +49,17 @@ public interface IndexStoreView extends PropertyAccessor
      * @return a {@link StoreScan} to start and to stop the scan.
      */
     <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, int[] propertyKeyIds,
-            Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor,
-            Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor );
+            Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor );
 
-    Iterable<NodePropertyUpdate> nodeAsUpdates( long nodeId );
+    /**
+     * Produces {@link NodePropertyUpdate} objects from reading node {@code nodeId}, its labels and properties
+     * and puts those updates into {@code target}.
+     *
+     * @param nodeId id of node to load.
+     * @param reusableRecord {@link NodeRecord} to load node record into.
+     * @param target {@link Collection} to add updates into.
+     */
+    void nodeAsUpdates( long nodeId, NodeRecord reusableRecord, Collection<NodePropertyUpdate> target );
 
     DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister output );
 

@@ -222,28 +222,6 @@ public class SchemaTransactionStateTest
         assertEquals( desc.procedureBody(), "emit(1);" );
     }
 
-    private interface ExceptionExpectingFunction<E extends Exception>
-    {
-        void call() throws E;
-    }
-
-    private <E extends Exception> void assertException( ExceptionExpectingFunction<E> function,
-                                                        Class<? extends E> exception )
-    {
-        try
-        {
-            function.call();
-            fail( "Should have thrown " + exception.getName() + " exception" );
-        }
-        catch ( Exception e )
-        {
-            if ( !exception.isAssignableFrom( e.getClass() ) )
-            {
-                throw launderedException( e );
-            }
-        }
-    }
-
     // exists
 
     private final int labelId1 = 10, labelId2 = 12, key1 = 45, key2 = 46;

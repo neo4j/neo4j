@@ -58,7 +58,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     @Before
     public void before() throws Exception
     {
-        IndexConfiguration indexConfig = new IndexConfiguration( isUnique );
+        IndexConfiguration indexConfig = IndexConfiguration.of( isUnique );
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexConfig, indexSamplingConfig );
         populator.create();

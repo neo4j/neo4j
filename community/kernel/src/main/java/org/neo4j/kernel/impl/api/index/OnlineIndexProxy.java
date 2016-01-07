@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.kernel.impl.api.index.updater.UpdateCountingIndexUpdater;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 
@@ -53,7 +54,7 @@ public class OnlineIndexProxy implements IndexProxy
         this.providerDescriptor = providerDescriptor;
         this.accessor = accessor;
         this.configuration = configuration;
-        this.indexCountsRemover = IndexCountsRemover.Factory.create( storeView, descriptor );
+        this.indexCountsRemover = new IndexCountsRemover( storeView, descriptor );
     }
 
     @Override

@@ -156,7 +156,8 @@ public class Randoms
     @SuppressWarnings( "unchecked" )
     public <T> T[] selection( T[] among, int min, int max, boolean allowDuplicates )
     {
-        int length = min + random.nextInt( max-min );
+        int diff = min == max ? 0 : random.nextInt( max-min );
+        int length = min + diff;
         T[] result = (T[]) Array.newInstance( among.getClass().getComponentType(), length );
         for ( int i = 0; i < length; i++ )
         {

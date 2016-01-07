@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplierFacade;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -184,7 +185,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
 
             providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
-            indexingService = IndexingService.create(
+            indexingService = IndexingServiceFactory.createIndexingService(
                     new IndexSamplingConfig( config ), scheduler, providerMap,
                     new NeoStoreIndexStoreView( lockService, neoStores ), tokenNameLookup,
                     toList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() ), logProvider,

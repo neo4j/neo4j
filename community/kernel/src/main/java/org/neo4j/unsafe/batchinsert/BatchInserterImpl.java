@@ -524,11 +524,10 @@ public class BatchInserterImpl implements BatchInserter
             propertyKeyIds[i] = propertyKeyId;
 
             IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
-            boolean isConstraint = rule.isConstraintIndex();
             populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() )
                                                 .getPopulator( rule.getId(),
                                                         descriptor,
-                                                        new IndexConfiguration( isConstraint ),
+                                                        IndexConfiguration.of( rule ),
                                                         new IndexSamplingConfig( config ) );
             populators[i].create();
         }

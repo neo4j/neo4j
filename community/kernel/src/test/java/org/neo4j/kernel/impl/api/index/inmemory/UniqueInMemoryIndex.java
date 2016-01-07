@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
+import org.neo4j.kernel.impl.api.index.updater.UniquePropertyIndexUpdater;
 
 class UniqueInMemoryIndex extends InMemoryIndex
 {

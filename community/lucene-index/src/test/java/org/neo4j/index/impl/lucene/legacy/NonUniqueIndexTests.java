@@ -153,7 +153,7 @@ public class NonUniqueIndexTests
         Config config = new Config();
         SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
                 DirectoryFactory.PERSISTENT, directory.graphDbDir() );
-        IndexConfiguration indexConfig = new IndexConfiguration( false );
+        IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, indexConfig, samplingConfig );
               IndexReader reader = accessor.newReader() )

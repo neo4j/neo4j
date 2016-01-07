@@ -17,38 +17,49 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.api.index.updater;
 
 import java.io.IOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
 
-public final class SwallowingIndexUpdater implements IndexUpdater
+public class UpdateCountingIndexUpdater implements IndexUpdater
 {
-    public static final IndexUpdater INSTANCE = new org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater();
+    private final IndexStoreView storeView;
+    private final IndexDescriptor descriptor;
+    private final IndexUpdater delegate;
+    private long updates;
 
-    public SwallowingIndexUpdater()
+    public UpdateCountingIndexUpdater( IndexStoreView storeView, IndexDescriptor descriptor, IndexUpdater delegate )
     {
+        this.storeView = storeView;
+        this.descriptor = descriptor;
+        this.delegate = delegate;
     }
 
     @Override
-    public void process( NodePropertyUpdate update )
+    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
     {
-        // intentionally swallow this update
+        delegate.process( update );
+        updates++;
     }
 
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        // nothing to close
+        delegate.close();
+        storeView.incrementIndexUpdates( descriptor, updates );
     }
 
     @Override
-    public void remove( PrimitiveLongSet nodeIds )
+    public void remove( PrimitiveLongSet nodeIds ) throws IOException
     {
-        // intentionally swallow these removals
+        delegate.remove( nodeIds );
+        updates += nodeIds.size();
     }
 }

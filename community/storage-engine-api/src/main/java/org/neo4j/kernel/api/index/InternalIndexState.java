@@ -41,5 +41,5 @@ public enum InternalIndexState
      *
      * Dropping a failed index should be possible, as long as the failure is not caused by eg. out of memory.
      */
-    FAILED;
+    FAILED
 }

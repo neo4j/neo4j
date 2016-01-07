@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
@@ -55,6 +52,7 @@ import org.neo4j.register.Registers;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
@@ -108,41 +106,13 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public <FAILURE extends Exception> StoreScan<FAILURE> visitNodesWithPropertyAndLabel(
-            IndexDescriptor descriptor, final Visitor<NodePropertyUpdate, FAILURE> visitor )
+    public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
+            final int[] labelIds, final int[] propertyKeyIds,
+            final Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor )
     {
-        final int soughtLabelId = descriptor.getLabelId();
-        final int soughtPropertyKeyId = descriptor.getPropertyKeyId();
-        final long labelledNodes =
-                counts.nodeCount( soughtLabelId, Registers.newDoubleLongRegister() ).readSecond();
-
-        return new NodeStoreScan<NodePropertyUpdate, FAILURE>( nodeStore, locks, labelledNodes )
-        {
-            @Override
-            protected NodePropertyUpdate read( NodeRecord node )
-            {
-                long[] labels = parseLabelsField( node ).get( this.nodeStore );
-                if ( !containsLabel( soughtLabelId, labels ) )
-                {
-                    return null;
-                }
-                for ( PropertyBlock property : properties( node ) )
-                {
-                    int propertyKeyId = property.getKeyIndexId();
-                    if ( soughtPropertyKeyId == propertyKeyId )
-                    {
-                        return NodePropertyUpdate.add( node.getId(), propertyKeyId, valueOf( property ), labels );
-                    }
-                }
-                return null;
-            }
-
-            @Override
-            protected void process( NodePropertyUpdate update ) throws FAILURE
-            {
-                visitor.visit( update );
-            }
-        };
+        return visitNodes( labelIds, propertyKeyIds, propertyUpdateVisitor,
+                // null here is fine
+                null );
     }
 
     @Override
@@ -154,16 +124,29 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         final long allNodes =
                 counts.nodeCount( ANY_LABEL, Registers.newDoubleLongRegister() ).readSecond();
 
-        return new NodeStoreScan<Update, FAILURE>( nodeStore, locks, allNodes )
+        return new NodeStoreScan<FAILURE>( nodeStore, locks, allNodes )
         {
             @Override
-            protected Update read( NodeRecord node )
+            protected void process( NodeRecord node ) throws FAILURE
             {
                 long[] labels = parseLabelsField( node ).get( this.nodeStore );
-                Update update = new Update( node.getId(), labels );
+                if ( labels.length == 0 )
+                {
+                    // This node has no labels at all
+                    return;
+                }
+
+                if ( labelUpdateVisitor != null )
+                {
+                    // Notify the label update visitor
+                    labelUpdateVisitor.visit( labelChanges( node.getId(), EMPTY_LONG_ARRAY, labels ) );
+                }
+
                 if ( !containsAnyLabel( labelIds, labels ) )
                 {
-                    return update;
+                    // This node has no labels of interest to us
+                    return;
+
                 }
                 properties: for ( PropertyBlock property : properties( node ) )
                 {
@@ -172,55 +155,43 @@ public class NeoStoreIndexStoreView implements IndexStoreView
                     {
                         if ( propertyKeyId == sought )
                         {
-                            update.add( NodePropertyUpdate
-                                                .add( node.getId(), propertyKeyId, valueOf( property ), labels ) );
+                            // This node has a property of interest to us
+                            NodePropertyUpdate update = add( node.getId(), propertyKeyId, valueOf( property ), labels );
+                            propertyUpdateVisitor.visit( update );
                             continue properties;
                         }
                     }
-                }
-                return update;
-            }
-
-            @Override
-            protected void process( Update update ) throws FAILURE
-            {
-                labelUpdateVisitor.visit( update.labels );
-                for ( NodePropertyUpdate propertyUpdate : update )
-                {
-                    propertyUpdateVisitor.visit( propertyUpdate );
                 }
             }
         };
     }
 
     @Override
-    public Iterable<NodePropertyUpdate> nodeAsUpdates( long nodeId )
+    public void nodeAsUpdates( long nodeId, NodeRecord record, Collection<NodePropertyUpdate> target )
     {
-        NodeRecord node = nodeStore.forceGetRecord( nodeId );
-        if ( !node.inUse() )
+        NodeRecord node = nodeStore.loadRecord( nodeId, record );
+        if ( node == null || !node.inUse() )
         {
-            return Iterables.empty(); // node not in use => no updates
+            return;
         }
         long firstPropertyId = node.getNextProp();
         if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
         {
-            return Iterables.empty(); // no properties => no updates (it's not going to be in any index)
+            return; // no properties => no updates (it's not going to be in any index)
         }
         long[] labels = parseLabelsField( node ).get( nodeStore );
         if ( labels.length == 0 )
         {
-            return Iterables.empty(); // no labels => no updates (it's not going to be in any index)
+            return; // no labels => no updates (it's not going to be in any index)
         }
-        ArrayList<NodePropertyUpdate> updates = new ArrayList<>();
         for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
         {
             for ( PropertyBlock property : propertyRecord )
             {
                 Object value = property.getType().getValue( property, propertyStore );
-                updates.add( NodePropertyUpdate.add( node.getId(), property.getKeyIndexId(), value, labels ) );
+                target.add( add( node.getId(), property.getKeyIndexId(), value, labels ) );
             }
         }
-        return updates;
     }
 
     @Override
@@ -290,28 +261,6 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         return false;
     }
 
-    private static class Update implements Iterable<NodePropertyUpdate>
-    {
-        private final NodeLabelUpdate labels;
-        private final List<NodePropertyUpdate> propertyUpdates = new ArrayList<>();
-
-        Update( long nodeId, long[] labels )
-        {
-            this.labels = labelChanges( nodeId, EMPTY_LONG_ARRAY, labels );
-        }
-
-        void add( NodePropertyUpdate update )
-        {
-            propertyUpdates.add( update );
-        }
-
-        @Override
-        public Iterator<NodePropertyUpdate> iterator()
-        {
-            return propertyUpdates.iterator();
-        }
-    }
-
     private class PropertyBlockIterator extends PrefetchingIterator<PropertyBlock>
     {
         private final Iterator<PropertyRecord> records;
@@ -348,7 +297,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         }
     }
 
-    abstract static class NodeStoreScan<RESULT, FAILURE extends Exception> implements StoreScan<FAILURE>
+    abstract static class NodeStoreScan<FAILURE extends Exception> implements StoreScan<FAILURE>
     {
         private volatile boolean continueScanning;
 
@@ -358,9 +307,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
 
         private long count = 0;
 
-        protected abstract RESULT read( NodeRecord node );
-
-        protected abstract void process( RESULT result ) throws FAILURE;
+        protected abstract void process( NodeRecord loaded ) throws FAILURE;
 
         public NodeStoreScan( NodeStore nodeStore, LockService locks, long totalCount )
         {
@@ -374,22 +321,18 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         {
             PrimitiveLongIterator nodeIds = new StoreIdIterator( nodeStore );
             continueScanning = true;
+            NodeRecord record = new NodeRecord( -1 );
             while ( continueScanning && nodeIds.hasNext() )
             {
                 long id = nodeIds.next();
-                RESULT result = null;
                 try ( Lock ignored = locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) )
                 {
-                    NodeRecord record = nodeStore.forceGetRecord( id );
-                    if ( record.inUse() )
+                    NodeRecord loaded = nodeStore.loadRecord( id, record );
+                    if ( loaded != null )
                     {
-                        count++;
-                        result = read( record );
+                        process( loaded );
                     }
-                }
-                if ( result != null )
-                {
-                    process( result );
+                    count++;
                 }
             }
         }
@@ -403,15 +346,13 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         @Override
         public IndexPopulationProgress getProgress()
         {
-            if ( totalCount > 0)
+            if ( totalCount > 0 )
             {
                 return new IndexPopulationProgress( count, totalCount );
             }
-            else
-            {
-                // nothing to do 100% completed
-                return IndexPopulationProgress.DONE;
-            }
+
+            // nothing to do 100% completed
+            return IndexPopulationProgress.DONE;
         }
     }
 }

@@ -22,8 +22,8 @@ package org.neo4j.kernel.api.index;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
+import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.register.Register.DoubleLong;
 
 /**

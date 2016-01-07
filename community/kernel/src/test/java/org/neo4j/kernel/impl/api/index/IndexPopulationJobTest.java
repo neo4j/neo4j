@@ -98,6 +98,7 @@ import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
@@ -248,23 +249,19 @@ public class IndexPopulationJobTest
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
         IndexStoreView storeView = mock( IndexStoreView.class );
         ControlledStoreScan storeScan = new ControlledStoreScan();
-        when( storeView.visitNodesWithPropertyAndLabel( any( IndexDescriptor.class ),
-                Matchers.<Visitor<NodePropertyUpdate, RuntimeException>>any() ) ).thenReturn( storeScan );
+        when( storeView.visitNodes( any( int[].class ), any( int[].class ), Matchers.<Visitor<NodePropertyUpdate,RuntimeException>>any() ) )
+                .thenReturn(storeScan );
 
         final IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, storeView,
                 NullLogProvider.getInstance(), false );
 
         OtherThreadExecutor<Void> populationJobRunner = cleanup.add( new OtherThreadExecutor<Void>(
                 "Population job test runner", null ) );
-        Future<Void> runFuture = populationJobRunner.executeDontWait( new WorkerCommand<Void, Void>()
-        {
-            @Override
-            public Void doWork( Void state )
-            {
-                job.run();
-                return null;
-            }
-        } );
+        Future<Void> runFuture = populationJobRunner
+                .executeDontWait( (WorkerCommand<Void,Void>) state -> {
+                    job.run();
+                    return null;
+                } );
 
         storeScan.latch.awaitStart();
         job.cancel().get();
@@ -569,7 +566,7 @@ public class IndexPopulationJobTest
 
     private IndexPopulator inMemoryPopulator( boolean constraint )
     {
-        IndexConfiguration indexConfig = new IndexConfiguration( constraint );
+        IndexConfiguration indexConfig = IndexConfiguration.of( constraint );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         IndexDescriptor descriptor = indexDescriptor( FIRST, name );
         return new InMemoryIndexProvider().getPopulator( 21, descriptor, indexConfig, samplingConfig );
@@ -641,12 +638,11 @@ public class IndexPopulationJobTest
     {
         IndexDescriptor descriptor = indexDescriptor( label, propertyKey );
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
-        return new IndexPopulationJob(
-                descriptor, new IndexConfiguration( constraint ), PROVIDER_DESCRIPTOR,
-                format( ":%s(%s)", label.name(), propertyKey ),
-                failureDelegateFactory,
-                populator, flipper, storeView,
-                logProvider, IndexingService.NO_MONITOR, stateHolder::clear );
+
+        IndexPopulationJob job = new IndexPopulationJob( storeView, logProvider, NO_MONITOR, stateHolder::clear );
+        job.addPopulator( populator, descriptor, IndexConfiguration.of( constraint ), PROVIDER_DESCRIPTOR,
+                format( ":%s(%s)", label.name(), propertyKey ), flipper, failureDelegateFactory );
+        return job;
     }
 
     private IndexDescriptor indexDescriptor( Label label, String propertyKey )

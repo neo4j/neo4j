@@ -98,7 +98,7 @@ public class SchemaRuleCommandTest
         visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
-        verify( indexes ).createIndex( rule );
+        verify( indexes ).createIndexes( rule );
     }
 
     @Test

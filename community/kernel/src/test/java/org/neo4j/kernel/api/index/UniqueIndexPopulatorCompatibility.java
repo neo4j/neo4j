@@ -54,7 +54,7 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
         int nodeId1 = 1;
         int nodeId2 = 2;
 
-        IndexConfiguration indexConfig = new IndexConfiguration( true );
+        IndexConfiguration indexConfig = IndexConfiguration.UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexConfig, indexSamplingConfig );
         populator.create();
