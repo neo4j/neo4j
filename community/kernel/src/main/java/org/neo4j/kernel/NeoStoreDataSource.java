@@ -490,7 +490,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             dependencies.satisfyDependency( storageEngine.labelScanStore() );
             dependencies.satisfyDependency( storageEngine.metaDataStore() );
             dependencies.satisfyDependency( storageEngine.neoStores() );
-            dependencies.satisfyDependency( storageEngine.procedureCache() );
             dependencies.satisfyDependency( storageEngine.schemaIndexProviderMap() );
             dependencies.satisfyDependency( storageEngine.legacyIndexApplierLookup() );
             dependencies.satisfyDependency( storageEngine.storeReadLayer() );

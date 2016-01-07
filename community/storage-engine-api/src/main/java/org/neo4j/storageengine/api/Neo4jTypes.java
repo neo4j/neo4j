@@ -29,7 +29,7 @@ package org.neo4j.storageengine.api;
 public class Neo4jTypes
 {
     public static final AnyType NTAny = new AnyType();
-    public static final TextType NTText = new TextType();
+    public static final TextType NTString = new TextType();
     public static final NumberType NTNumber = new NumberType();
     public static final IntegerType NTInteger = new IntegerType();
     public static final FloatType NTFloat = new FloatType();
@@ -40,42 +40,17 @@ public class Neo4jTypes
     public static final PathType NTPath = new PathType();
     public static ListType NTList( AnyType innerType ) { return new ListType( innerType ); }
 
-    public static final int ORD_ANY = 0;
-    public static final int ORD_TEXT = 1;
-    public static final int ORD_NUMBER = 2;
-    public static final int ORD_INTEGER = 3;
-    public static final int ORD_FLOAT = 4;
-    public static final int ORD_BOOLEAN = 5;
-    public static final int ORD_LIST = 6;
-    public static final int ORD_MAP = 7;
-    public static final int ORD_NODE = 8;
-    public static final int ORD_RELATIONSHIP = 9;
-    public static final int ORD_PATH = 10;
-
     public static class AnyType
     {
-        /**
-         * A unique simple number assigned to each type, used when representing types in
-         * various forms. This is expected to be durably stored and potentially public,
-         * don't change ordinals.
-         */
-        private final int ordinal;
-
         private final String name;
-
-        public int ordinal()
-        {
-            return ordinal;
-        }
 
         public AnyType()
         {
-            this( ORD_ANY, "Any" );
+            this( "Any" );
         }
 
-        protected AnyType( int ordinal, String name )
+        protected AnyType( String name )
         {
-            this.ordinal = ordinal;
             this.name = name;
         }
 
@@ -90,7 +65,7 @@ public class Neo4jTypes
     {
         public TextType()
         {
-            super( ORD_TEXT, "Text" );
+            super( "String" );
         }
     }
 
@@ -98,12 +73,12 @@ public class Neo4jTypes
     {
         public NumberType()
         {
-            super( ORD_NUMBER, "Number" );
+            super( "Number" );
         }
 
-        protected NumberType( int ordinal, String name )
+        protected NumberType( String name )
         {
-            super( ordinal, name );
+            super( name );
         }
     }
 
@@ -111,7 +86,7 @@ public class Neo4jTypes
     {
         public IntegerType()
         {
-            super( ORD_INTEGER, "Integer" );
+            super( "Integer" );
         }
     }
 
@@ -119,7 +94,7 @@ public class Neo4jTypes
     {
         public FloatType()
         {
-            super( ORD_FLOAT, "Float");
+            super( "Float");
         }
     }
 
@@ -127,7 +102,7 @@ public class Neo4jTypes
     {
         public BooleanType()
         {
-            super( ORD_BOOLEAN, "Boolean" );
+            super( "Boolean" );
         }
     }
 
@@ -138,7 +113,7 @@ public class Neo4jTypes
 
         public ListType( AnyType innerType )
         {
-            super( ORD_LIST, "Collection[" + innerType.toString() + "]" );
+            super( "Collection[" + innerType.toString() + "]" );
             this.innerType = innerType;
         }
 
@@ -152,12 +127,12 @@ public class Neo4jTypes
     {
         public MapType()
         {
-            super( ORD_MAP, "Map" );
+            super( "Map" );
         }
 
-        protected MapType(int ordinal, String name)
+        protected MapType( String name )
         {
-            super( ordinal, name );
+            super( name );
         }
     }
 
@@ -165,7 +140,7 @@ public class Neo4jTypes
     {
         public NodeType()
         {
-            super( ORD_NODE, "Node" );
+            super( "Node" );
         }
     }
 
@@ -173,7 +148,7 @@ public class Neo4jTypes
     {
         public RelationshipType()
         {
-            super( ORD_RELATIONSHIP, "Relationship" );
+            super( "Relationship" );
         }
     }
 
@@ -181,7 +156,7 @@ public class Neo4jTypes
     {
         public PathType()
         {
-            super( ORD_PATH, "Path" );
+            super( "Path" );
         }
     }
 }

@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.api.store.DiskLayer;
-import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
@@ -134,7 +133,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final CacheAccessBackDoor cacheAccess;
     private final LabelScanStore labelScanStore;
     private final DefaultSchemaIndexProviderMap providerMap;
-    private final ProcedureCache procedureCache;
     private final LegacyIndexApplierLookup legacyIndexApplierLookup;
     private final Runnable schemaStateChangeCallback;
     private final SchemaStorage schemaStorage;
@@ -200,8 +198,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                     schemaStorage, neoStores, indexingService,
                     storeStatementSupplier( neoStores, config, lockService ) );
-            procedureCache = new ProcedureCache();
-            storeLayer = new CacheLayer( diskLayer, schemaCache, procedureCache );
+            storeLayer = new CacheLayer( diskLayer, schemaCache );
             legacyIndexApplierLookup = new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup );
             legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
 
@@ -259,7 +256,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState,
-                    schemaStateChangeCallback, schemaStorage, constraintSemantics, providerMap, procedureCache );
+                    schemaStateChangeCallback, schemaStorage, constraintSemantics, providerMap );
             CountsRecordState countsRecordState = new CountsRecordState();
             txStateVisitor = constraintSemantics.decorateTxStateVisitor(
                     storeLayer,
@@ -352,12 +349,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public LogVersionRepository logVersionRepository()
     {
         return neoStores.getMetaDataStore();
-    }
-
-    @Override
-    public ProcedureCache procedureCache()
-    {
-        return procedureCache;
     }
 
     @Override

@@ -27,8 +27,6 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
@@ -103,8 +101,4 @@ public interface TransactionState extends ReadableTransactionState
     boolean constraintIndexDoUnRemove( IndexDescriptor index );
 
     void indexDoUpdateProperty( IndexDescriptor descriptor, long nodeId, DefinedProperty before, DefinedProperty after );
-
-    void procedureDoCreate( ProcedureSignature signature, String language, String code );
-
-    void procedureDoDrop( ProcedureDescriptor name );
 }

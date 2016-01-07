@@ -31,7 +31,6 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -39,7 +38,6 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -53,15 +51,9 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
 import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.kernel.impl.locking.ResourceTypes.PROCEDURE;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.SCHEMA;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.procedureResourceId;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class LockingStatementOperations implements
@@ -408,38 +400,6 @@ public class LockingStatementOperations implements
         state.locks().acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
         state.assertOpen();
         schemaWriteDelegate.constraintDrop( state, constraint );
-    }
-
-    @Override
-    public void procedureCreate( KernelStatement state, ProcedureSignature signature, String language, String code )
-            throws ProcedureException, ProcedureConstraintViolation
-    {
-        // TODO: Document locking logic
-        // In order to keep other processes from creating procedures with conflicting names, we lock the procedure
-        // name. We don't exclusively lock the schema, since creating a new procedure will not influence any running
-        // operation.
-        state.locks().acquireExclusive( PROCEDURE, procedureResourceId( signature.name() ) );
-        schemaWriteDelegate.procedureCreate( state, signature, language, code );
-    }
-
-    @Override
-    public void procedureDrop( KernelStatement state, ProcedureName name ) throws ProcedureConstraintViolation, ProcedureException
-    {
-        state.locks().acquireExclusive( SCHEMA, schemaResource() );
-        state.locks().acquireExclusive( PROCEDURE, procedureResourceId( name ) );
-        schemaWriteDelegate.procedureDrop( state, name );
-    }
-
-    @Override
-    public Iterator<ProcedureDescriptor> proceduresGetAll( KernelStatement statement )
-    {
-        return schemaReadDelegate.proceduresGetAll( statement );
-    }
-
-    @Override
-    public ProcedureDescriptor procedureGet( KernelStatement statement, ProcedureName signature ) throws ProcedureException
-    {
-        return schemaReadDelegate.procedureGet( statement, signature );
     }
 
     @Override

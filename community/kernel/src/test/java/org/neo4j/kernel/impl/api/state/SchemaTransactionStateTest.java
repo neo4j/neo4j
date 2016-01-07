@@ -42,24 +42,18 @@ import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.Cursors;
-import org.neo4j.storageengine.api.Neo4jTypes;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
-import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.storageengine.api.procedure.ProcedureSignature.procedureSignature;
 
 public class SchemaTransactionStateTest
 {
@@ -205,21 +199,6 @@ public class SchemaTransactionStateTest
 
         // THEN
         assertEquals( emptySetOf( IndexDescriptor.class ), asSet( rulesByLabel ) );
-    }
-
-    @Test
-    public void shouldGetProcedureInCurrentTx() throws Throwable
-    {
-        // Given
-        ProcedureSignature signature = procedureSignature( "myproc" ).out( "field1", Neo4jTypes.NTInteger ).build();
-        txContext.procedureCreate( state, signature, "javascript", "emit(1);" );
-
-        // When
-        ProcedureDescriptor desc = txContext.procedureGet( state, signature.name() );
-
-        // Then
-        assertEquals( desc.language(), "javascript" );
-        assertEquals( desc.procedureBody(), "emit(1);" );
     }
 
     // exists

@@ -30,7 +30,6 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
 import org.neo4j.storageengine.api.procedure.ProcedureSignature;
 import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
 import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
@@ -107,9 +106,6 @@ interface SchemaRead
      */
     Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException;
 
-    /** Get all procedures defined in the system */
-    Iterator<ProcedureSignature> proceduresGetAll();
-
     /** Fetch a procedure given its signature. */
-    ProcedureDescriptor procedureGet( ProcedureName name ) throws ProcedureException;
+    ProcedureSignature procedureGet( ProcedureName name ) throws ProcedureException;
 }

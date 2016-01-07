@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -44,7 +43,6 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -62,7 +60,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
@@ -568,16 +565,4 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         schemaWriteOperations.constraintDrop( state, constraint );
     }
 
-    @Override
-    public void procedureCreate( KernelStatement state, ProcedureSignature signature, String language, String code )
-            throws ProcedureException, ProcedureConstraintViolation
-    {
-        schemaWriteOperations.procedureCreate( state, signature, language, code );
-    }
-
-    @Override
-    public void procedureDrop( KernelStatement statement, ProcedureSignature.ProcedureName name ) throws ProcedureConstraintViolation, ProcedureException
-    {
-        schemaWriteOperations.procedureDrop( statement, name );
-    }
 }

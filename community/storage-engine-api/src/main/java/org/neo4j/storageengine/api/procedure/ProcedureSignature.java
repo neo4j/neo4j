@@ -104,13 +104,13 @@ public class ProcedureSignature
         }
     }
 
-    /** Represents a type and a name for an input or output argument in a procedure. */
-    public static class ArgumentSignature
+    /** Represents a type and a name for a field in a record, used to define input and output record signatures. */
+    public static class FieldSignature
     {
         private final String name;
         private final AnyType type;
 
-        public ArgumentSignature( String name, AnyType type )
+        public FieldSignature( String name, AnyType type )
         {
             this.name = name;
             this.type = type;
@@ -128,10 +128,10 @@ public class ProcedureSignature
     }
 
     private final ProcedureName name;
-    private final List<ArgumentSignature> inputSignature;
-    private final List<ArgumentSignature> outputSignature;
+    private final List<FieldSignature> inputSignature;
+    private final List<FieldSignature> outputSignature;
 
-    public ProcedureSignature( ProcedureName name, List<ArgumentSignature> inputSignature, List<ArgumentSignature> outputSignature )
+    public ProcedureSignature( ProcedureName name, List<FieldSignature> inputSignature, List<FieldSignature> outputSignature )
     {
         this.name = name;
         this.inputSignature = inputSignature;
@@ -148,12 +148,12 @@ public class ProcedureSignature
         return name;
     }
 
-    public List<ArgumentSignature> inputSignature()
+    public List<FieldSignature> inputSignature()
     {
         return inputSignature;
     }
 
-    public List<ArgumentSignature> outputSignature()
+    public List<FieldSignature> outputSignature()
     {
         return outputSignature;
     }
@@ -189,8 +189,8 @@ public class ProcedureSignature
     public static class Builder
     {
         private final ProcedureName name;
-        private final List<ArgumentSignature> inputSignature = new LinkedList<>();
-        private final List<ArgumentSignature> outputSignature = new LinkedList<>();
+        private final List<FieldSignature> inputSignature = new LinkedList<>();
+        private final List<FieldSignature> outputSignature = new LinkedList<>();
 
         public Builder( String[] namespace, String name )
         {
@@ -200,14 +200,14 @@ public class ProcedureSignature
         /** Define an input field */
         public Builder in( String name, AnyType type )
         {
-            inputSignature.add( new ArgumentSignature( name, type ) );
+            inputSignature.add( new FieldSignature( name, type ) );
             return this;
         }
 
         /** Define an output field */
         public Builder out( String name, AnyType type )
         {
-            outputSignature.add( new ArgumentSignature( name, type ) );
+            outputSignature.add( new FieldSignature( name, type ) );
             return this;
         }
 
@@ -229,7 +229,7 @@ public class ProcedureSignature
         return new Builder(namespace, name);
     }
 
-    private static List<AnyType> typesOf( List<ArgumentSignature> namedSig )
+    private static List<AnyType> typesOf( List<FieldSignature> namedSig )
     {
         List<AnyType> out = new LinkedList<>();
         for ( int i = 0; i < namedSig.size(); i++ )

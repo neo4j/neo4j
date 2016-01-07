@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -456,8 +455,6 @@ public class KernelTransactionImplementationTest
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.neoStores() ).thenReturn( neoStores );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
-        ProcedureCache procedureCache = new ProcedureCache();
-        when( storageEngine.procedureCache() ).thenReturn( procedureCache );
     }
 
     private KernelTransactionImplementation newTransaction()

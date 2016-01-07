@@ -33,14 +33,11 @@ import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
-import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
-import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -52,7 +49,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.storageengine.api.procedure.ProcedureSignature.procedureSignature;
 
 public class DataIntegrityValidatingStatementOperationsTest
 {
@@ -301,25 +297,6 @@ public class DataIntegrityValidatingStatementOperationsTest
 
         // When
         ctx.labelGetOrCreateForName( state, null );
-    }
-
-    @Test
-    public void shouldNotAllowCreatingProcedureWithConflictingName() throws Throwable
-    {
-        // given
-        ProcedureSignature signature = procedureSignature( "my.procedure" ).build();
-
-        SchemaReadOperations readOps = mock( SchemaReadOperations.class );
-        when(readOps.procedureGet( state, signature.name() )).thenReturn( mock( ProcedureDescriptor.class ) );
-
-        DataIntegrityValidatingStatementOperations ops =
-                new DataIntegrityValidatingStatementOperations( null, readOps, null );
-
-        // expect
-        exception.expect( ProcedureConstraintViolation.class );
-
-        // when I create a conflicting procedure
-        ops.procedureCreate( state, signature, "jakescript", "woo" );
     }
 
     @SafeVarargs

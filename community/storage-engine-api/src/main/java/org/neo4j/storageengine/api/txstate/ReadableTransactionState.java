@@ -39,8 +39,6 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
 
 /**
  * This interface contains the methods for reading transaction state from the transaction state.
@@ -177,10 +175,6 @@ public interface ReadableTransactionState
     Cursor<NodeItem> augmentNodesGetAllCursor( Cursor<NodeItem> cursor );
 
     Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor );
-
-    Iterator<ProcedureDescriptor> augmentProcedures( Iterator<ProcedureDescriptor> procs );
-
-    ProcedureDescriptor getProcedure( ProcedureName name );
 
     /**
      * The way tokens are created is that the first time a token is needed it gets created in its own little

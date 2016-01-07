@@ -25,7 +25,6 @@ import java.util.Map;
 import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
 
@@ -40,13 +39,6 @@ public enum ResourceTypes implements ResourceType
     INDEX_ENTRY (4, LockWaitStrategies.INCREMENTAL_BACKOFF),
 
     LEGACY_INDEX(5, LockWaitStrategies.INCREMENTAL_BACKOFF),
-
-    /**
-     * Procedure lock is used to keep multiple actors from creating procedures with conflicting names.
-     * Dropping procedures is done with the protection of an exclusive schema lock, meaning procedure creation
-     * is expected to be done holding both this lock and a shared schema lock.
-     */
-    PROCEDURE   (6, LockWaitStrategies.INCREMENTAL_BACKOFF)
     ;
 
     private final static Map<Integer, ResourceType> idToType = new HashMap<>();
@@ -62,7 +54,7 @@ public enum ResourceTypes implements ResourceType
 
     private final WaitStrategy waitStrategy;
 
-    private ResourceTypes( int typeId, WaitStrategy waitStrategy )
+    ResourceTypes( int typeId, WaitStrategy waitStrategy )
     {
         this.typeId = typeId;
         this.waitStrategy = waitStrategy;
@@ -106,11 +98,6 @@ public enum ResourceTypes implements ResourceType
         // this comment in case we need it for supporting rolling upgrades.
         // This comment can be deleted once RU from 2.1 to 2.2 is no longer a
         // concern.
-    }
-
-    public static long procedureResourceId( ProcedureName procedureName )
-    {
-        return procedureName.name().hashCode();
     }
 
     private static int hash( long value )
