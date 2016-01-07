@@ -103,6 +103,7 @@ public enum Uniqueness implements UniquenessFactory
      */
     RELATIONSHIP_GLOBAL
     {
+        @Override
         public UniquenessFilter create( Object optionalParameter )
         {
             acceptNull( optionalParameter );
@@ -120,6 +121,7 @@ public enum Uniqueness implements UniquenessFactory
      */
     RELATIONSHIP_PATH
     {
+        @Override
         public UniquenessFilter create( Object optionalParameter )
         {
             acceptNull( optionalParameter );
@@ -136,6 +138,7 @@ public enum Uniqueness implements UniquenessFactory
      */
     RELATIONSHIP_RECENT
     {
+        @Override
         public UniquenessFilter create( Object optionalParameter )
         {
             acceptIntegerOrNull( optionalParameter );
@@ -170,6 +173,7 @@ public enum Uniqueness implements UniquenessFactory
      */
     NONE
     {
+        @Override
         public UniquenessFilter create( Object optionalParameter )
         {
             acceptNull( optionalParameter );

@@ -23,7 +23,6 @@ package org.neo4j.graphdb.event;
  * An object that describes a state from which a Neo4j Graph Database cannot
  * continue.
  *
- * @author Tobias Ivarsson
  */
 public enum ErrorState
 {

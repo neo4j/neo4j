@@ -105,7 +105,7 @@ public interface Transaction extends AutoCloseable
      * the owning thread of the transaction. When this method is called from a different thread,
      * it signals the owning thread to terminate the transaction and returns immediately.
      *
-     * Calling {@link #terminate()} on an already closed transaction has no effect.
+     * Calling this method on an already closed transaction has no effect.
      */
     void terminate();
 

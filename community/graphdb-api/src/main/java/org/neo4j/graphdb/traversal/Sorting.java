@@ -107,6 +107,9 @@ public abstract class Sorting
         };
     }
 
+    /**
+     * Comparator for {@link Path#endNode() end nodes} of two {@link Path paths}
+     */
     private static abstract class EndNodeComparator implements Comparator<Path>
     {
         @Override

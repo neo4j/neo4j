@@ -54,10 +54,7 @@ class PreorderDepthFirstSelector implements BranchSelector
                 continue;
             }
             current = next;
-            if ( current != null )
-            {
-                result = current;
-            }
+            result = current;
         }
         return result;
     }

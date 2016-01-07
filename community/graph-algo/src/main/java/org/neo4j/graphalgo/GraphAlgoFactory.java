@@ -271,7 +271,7 @@ public abstract class GraphAlgoFactory
 
     /**
      * @deprecated Dijkstra should not be used with state on {@link PathExpander}
-     * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
+     * See {@link #dijkstra(PathExpander, CostEvaluator)}.
      *
      * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation.
      *

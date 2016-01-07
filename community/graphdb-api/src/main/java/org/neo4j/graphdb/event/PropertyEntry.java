@@ -33,8 +33,6 @@ import org.neo4j.graphdb.Relationship;
  * interface represent the property as it was before the transaction as well as
  * how it will be after the transaction has been committed.
  *
- * @author Tobias Ivarsson
- *
  * @param <T> The type of the entity the property belongs to, either
  *            {@link Node} or {@link Relationship}.
  */

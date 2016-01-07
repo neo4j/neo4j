@@ -199,7 +199,13 @@ public class ExtendedPath implements Path
             }
         };
     }
-    
+
+    /**
+     * Appends a {@link Relationship relationship}, {@code withRelationship}, to the specified {@link Path path}
+     * @param path
+     * @param withRelationship
+     * @return The path with the relationship and its end node appended.
+     */
     public static Path extend( Path path, Relationship withRelationship )
     {
         return new ExtendedPath( path, withRelationship );

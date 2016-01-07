@@ -24,7 +24,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 /**
  * Event handler interface for Neo4j Kernel life cycle events.
  * 
- * @author Tobias Ivarsson
  */
 public interface KernelEventHandler
 {

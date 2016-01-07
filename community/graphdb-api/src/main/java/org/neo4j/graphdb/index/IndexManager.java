@@ -58,7 +58,7 @@ public interface IndexManager
      * for consecutive accesses.
      *
      * This is the prefered way of accessing indexes, whether they were created with
-     * {@link #forNodes(String)} or {@link #forNodes(String, Map)}.
+     * {#forNodes(String)} or {@link #forNodes(String, Map)}.
      *
      * @param indexName the name of the node index.
      * @return the {@link Index} corresponding to the {@code indexName}.

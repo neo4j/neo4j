@@ -64,6 +64,5 @@ public interface TraversalContext extends TraversalMetadata
      * @param state the {@link BranchState} for the branch.
      * @return an {@link Evaluation} of the branch in this traversal.
      */
-    @SuppressWarnings( "rawtypes" )
-    Evaluation evaluate( TraversalBranch branch, BranchState state );
+    <STATE> Evaluation evaluate( TraversalBranch branch, BranchState<STATE> state );
 }

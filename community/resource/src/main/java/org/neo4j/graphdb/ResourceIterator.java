@@ -32,7 +32,6 @@ import java.util.function.Function;
  * @param <T> type of values returned by this Iterator
  *
  * @see ResourceIterable
- * @see Transaction
  */
 public interface ResourceIterator<T> extends Iterator<T>, Resource
 {

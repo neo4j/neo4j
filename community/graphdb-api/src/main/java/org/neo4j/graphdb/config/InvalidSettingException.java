@@ -38,6 +38,11 @@ public class InvalidSettingException extends RuntimeException
         this.name = name;
     }
 
+    /**
+     * Get the name of the setting causing this exception.
+     *
+     * @return the setting associated with this exception.
+     */
     public String settingName()
     {
         return name;

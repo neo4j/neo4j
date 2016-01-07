@@ -26,6 +26,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
+/**
+ * Used with uniqueness filters for simplifying node and relationship uniqueness evaluation.
+ */
 enum PrimitiveTypeFetcher
 {
     NODE

@@ -35,7 +35,8 @@ class PostorderDepthFirstSelector implements BranchSelector
         this.current = startSource;
         this.expander = expander;
     }
-    
+
+    @Override
     public TraversalBranch next( TraversalContext metadata )
     {
         TraversalBranch result = null;
