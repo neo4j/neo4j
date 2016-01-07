@@ -155,7 +155,7 @@ public class DocExchangeExample implements Iterable<DocExchangeExample.Event>
                 type = Type.SEND;
             }
 
-            if ( line.matches( "^[(RUN)|(PULL_ALL)|(DISCARD_ALL)|(RECORD)|(SUCCESS)|(FAILURE)|(ACK_FAILURE)].+$" ) )
+            if ( line.matches( "^[(INIT)|(RESET)|(RUN)|(PULL_ALL)|(DISCARD_ALL)|(RECORD)|(SUCCESS)|(FAILURE)|(IGNORED)].+$" ) )
             {
                 currentMessage = line;
             }

@@ -85,8 +85,8 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
     }
 
     @Override
-    public void handleAckFailureMessage() throws RuntimeException
+    public void handleResetMessage() throws RuntimeException
     {
-        session.acknowledgeFailure( null, simpleCallback );
+        session.reset( null, simpleCallback );
     }
 }

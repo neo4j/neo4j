@@ -377,7 +377,7 @@ public class SessionIT
         // And given I've started a transaction that failed
         runAndPull( session, "BEGIN" );
         session.run( "invalid", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
-        session.acknowledgeFailure( null, Session.Callbacks.<Void,Object>noop() );
+        session.reset( null, Session.Callbacks.<Void,Object>noop() );
 
         // When
         runAndPull( session, "BEGIN" );

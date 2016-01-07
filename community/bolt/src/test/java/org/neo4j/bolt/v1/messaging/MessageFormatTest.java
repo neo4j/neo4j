@@ -26,13 +26,13 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import org.neo4j.bolt.v1.messaging.message.ResetMessage;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
-import org.neo4j.bolt.v1.messaging.message.AcknowledgeFailureMessage;
 import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
@@ -65,10 +65,10 @@ public class MessageFormatTest
         assertSerializes( new DiscardAllMessage() );
         assertSerializes( new PullAllMessage() );
         assertSerializes( new RecordMessage( record( 1l, "b", 2l ) ) );
-        assertSerializes( new SuccessMessage( new HashMap<String,Object>() ) );
+        assertSerializes( new SuccessMessage( new HashMap<>() ) );
         assertSerializes( new FailureMessage( Status.General.UnknownFailure, "Err" ) );
         assertSerializes( new IgnoredMessage() );
-        assertSerializes( new AcknowledgeFailureMessage() );
+        assertSerializes( new ResetMessage() );
         assertSerializes( new InitMessage( "MyClient/1.0" ) );
     }
 

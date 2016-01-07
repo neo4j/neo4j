@@ -21,23 +21,22 @@ package org.neo4j.bolt.v1.messaging.message;
 
 import org.neo4j.bolt.v1.messaging.MessageHandler;
 
-public class AcknowledgeFailureMessage implements Message
+public class ResetMessage implements Message
 {
+    public ResetMessage()
+    {
+    }
+
     @Override
     public <E extends Exception> void dispatch( MessageHandler<E> consumer ) throws E
     {
-        consumer.handleAckFailureMessage();
+        consumer.handleResetMessage();
     }
 
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o )
-        {
-            return true;
-        }
-        return !(o == null || getClass() != o.getClass());
-
+        return this == o || !(o == null || getClass() != o.getClass());
     }
 
     @Override
@@ -49,6 +48,6 @@ public class AcknowledgeFailureMessage implements Message
     @Override
     public String toString()
     {
-        return "AcknowledgeFailureMessage{}";
+        return "ResetMessage{}";
     }
 }

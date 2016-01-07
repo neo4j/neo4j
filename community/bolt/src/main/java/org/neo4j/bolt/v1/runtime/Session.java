@@ -137,16 +137,10 @@ public interface Session extends AutoCloseable
     <A> void discardAll( A attachment, Callback<Void,A> callback );
 
     /**
-     * Whenever an error has occurred, all incoming requests will be ignored until the error is acknowledged through
-     * this method. The point of this is that we can do pipelining, sending multiple requests in one go and
-     * optimistically assuming they will succeed. If any of them fail all subsequent requests are declined until the
-     * client has acknowledged it has seen the error and has taken it into account for upcoming requests.
-     * <p/>
-     * Whenever an error has been acknowledged, the session will revert back to its intial state. Any ongoing
-     * statements
-     * or transactions will have been rolled back and/or disposed of.
+     * Reset the session to an IDLE state. This clears any outstanding failure condition, disposes
+     * of any outstanding result records and rolls back the current transaction (if any).
      */
-    <A> void acknowledgeFailure( A attachment, Callback<Void,A> callback );
+    <A> void reset( A attachment, Callback<Void,A> callback );
 
     @Override
     void close();

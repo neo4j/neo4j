@@ -72,9 +72,9 @@ public class SessionWorkerFacade implements Session
     }
 
     @Override
-    public <A> void acknowledgeFailure( final A attachment, final Callback<Void,A> callback )
+    public <A> void reset( final A attachment, final Callback<Void,A> callback )
     {
-        queue( session -> session.acknowledgeFailure( attachment, callback ) );
+        queue( session -> session.reset( attachment, callback ) );
     }
 
     @Override

@@ -43,7 +43,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     public interface MessageTypes
     {
         byte MSG_INIT = 0x01;
-        byte MSG_ACK_FAILURE = 0x0F;
+        byte MSG_RESET = 0x0F;
         byte MSG_RUN = 0x10;
         byte MSG_DISCARD_ALL = 0x2F;
         byte MSG_PULL_ALL = 0x3F;
@@ -58,7 +58,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     {
         switch( type )
         {
-        case MessageTypes.MSG_ACK_FAILURE: return "MSG_ACK_FAILURE";
+        case MessageTypes.MSG_INIT:        return "MSG_INIT";
+        case MessageTypes.MSG_RESET:       return "MSG_RESET";
         case MessageTypes.MSG_RUN:         return "MSG_RUN";
         case MessageTypes.MSG_DISCARD_ALL: return "MSG_DISCARD_ALL";
         case MessageTypes.MSG_PULL_ALL:    return "MSG_PULL_ALL";
@@ -128,13 +129,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleAckFailureMessage() throws IOException
-        {
-            packer.packStructHeader( 0, MessageTypes.MSG_ACK_FAILURE );
-            onMessageComplete.onMessageComplete();
-        }
-
-        @Override
         public void handleRecordMessage( Record item )
                 throws IOException
         {
@@ -185,6 +179,13 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             packer.packStructHeader( 1, MessageTypes.MSG_INIT );
             packer.pack( clientName );
+            onMessageComplete.onMessageComplete();
+        }
+
+        @Override
+        public void handleResetMessage() throws IOException
+        {
+            packer.packStructHeader( 0, MessageTypes.MSG_RESET );
             onMessageComplete.onMessageComplete();
         }
 
@@ -244,14 +245,14 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     case MessageTypes.MSG_FAILURE:
                         unpackFailureMessage( output );
                         break;
-                    case MessageTypes.MSG_ACK_FAILURE:
-                        unpackAckFailureMessage( output );
-                        break;
                     case MessageTypes.MSG_IGNORED:
                         unpackIgnoredMessage( output );
                         break;
                     case MessageTypes.MSG_INIT:
                         unpackInitMessage( output );
+                        break;
+                    case MessageTypes.MSG_RESET:
+                        unpackResetMessage( output );
                         break;
                     default:
                         throw new BoltIOException( Status.Request.Invalid,
@@ -270,12 +271,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throw new BoltIOException( Status.Request.InvalidFormat, "Unable to read message type. " +
                         "Error was: " + e.getMessage(), e );
             }
-        }
-
-        private <E extends Exception> void unpackAckFailureMessage( MessageHandler<E> output )
-                throws E
-        {
-            output.handleAckFailureMessage();
         }
 
         private <E extends Exception> void unpackSuccessMessage( MessageHandler<E> output )
@@ -343,6 +338,11 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             String clientName = unpacker.unpackString();
             output.handleInitMessage( clientName );
+        }
+
+        private <E extends Exception> void unpackResetMessage( MessageHandler<E> output ) throws IOException, E
+        {
+            output.handleResetMessage();
         }
 
     }

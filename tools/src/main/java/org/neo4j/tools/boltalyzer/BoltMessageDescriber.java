@@ -51,9 +51,9 @@ public class BoltMessageDescriber implements MessageHandler<RuntimeException>
     }
 
     @Override
-    public void handleAckFailureMessage() throws RuntimeException
+    public void handleResetMessage() throws RuntimeException
     {
-        messages.add( "ACK_FAILURE" );
+        messages.add( "RESET" );
     }
 
     @Override

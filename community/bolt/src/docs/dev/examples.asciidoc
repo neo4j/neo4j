@@ -122,8 +122,7 @@ Server: SUCCESS { "type": "r" }
 
 === Error handling
 
-This illustrates how the server behaves when a request fails, and the server ignores incoming messages until an
-`ACK_FAILURE` message is received.
+This illustrates how the server behaves when a request fails, and shows how the server ignores incoming messages until a `RESET` message is received.
 
 .Error handling
 [source,bolt_exchange]
@@ -180,7 +179,7 @@ Server: IGNORED
 
 
 # Until the error is acknowledged
-Client: ACK_FAILURE
+Client: RESET
 
   00 02 b0 0f 00 00
 
@@ -586,4 +585,46 @@ Server: SUCCESS {
   69 73 3A 20  28 6D 29 29  88 70 6F 73  69 74 69 6F
   6E A3 86 6F  66 66 73 65  74 00 86 63  6F 6C 75 6D
   6E 01 84 6C  69 6E 65 01  00 00
+----
+
+=== Resetting the session
+
+This illustrates how to reset the session to a "clean" state.
+
+.Resetting
+[source,bolt_exchange]
+----
+# Handshake
+Client: <connect>
+Client: 60 60 B0 17
+Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
+Server: 00 00 00 01
+
+Client: INIT "MyClient/1.0"
+
+  00 0F B1 01 8C 4D 79 43    6C 69 65 6E 74 2F 31 2E    30 00 00
+
+Server: SUCCESS {}
+
+  00 03 b1 70  a0 00 00
+
+# Batch of messages
+Client: RUN "RETURN 1 AS num" {}
+
+  00 13 b2 10  8f 52 45 54  55 52 4e 20  31 20 41 53
+  20 6e 75 6d  a0 00 00
+
+# Server responses
+Server: SUCCESS { "fields": ["num"] }
+
+  00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
+  6d 00 00
+
+Client: RESET {}
+
+  00 02 b0 0f  00 00
+
+Server: SUCCESS {}
+
+  00 03 b1 70  a0 00 00
 ----
