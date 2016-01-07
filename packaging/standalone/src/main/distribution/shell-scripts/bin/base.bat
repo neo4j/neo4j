@@ -47,7 +47,6 @@ goto:eof
   )
 
   rem Check classpath
-  echo "%classpath%" | findstr "SNAPSHOT" > NUL && echo "WARNING! Latest Development Build. Not intended for general-purpose use. May be unstable."
 
   rem Unescape javaPath
   for /f "tokens=* delims=" %%P in (%javaPath%) do (
@@ -56,7 +55,6 @@ goto:eof
 
   set wrapperJarFilename=#{windows-wrapper.filename}
   set command=""
-  call:parseConfig "%~dps0..\%configFile%"
 
   for /F %%v in ('echo %1^|findstr "^help$ ^console$"') do set command=%%v
 
@@ -97,17 +95,6 @@ goto:eof
   goto:eof
 
 :checkSettings
-  if "%serviceName%" == "" (
-    set settingError=serviceName
-    goto:eof
-  )
-  if "%serviceDisplayName%" == "" (
-    set settingError=serviceDisplayName
-    goto:eof
-  )
-  if %serviceStartType% == "" (
-    serviceStartType=auto
-  )
   if %classpath% == "" (
     set settingError=classpath
     goto:eof
@@ -134,21 +121,6 @@ goto:eof
 
 :help
   echo Proper arguments for this command are: help console
-  goto :eof
-
-:parseConfig
-  set confFileName=%1
-  for /F "tokens=1,2 delims== eol=#" %%a in (%confFileName%) do call:setOption %%a %%b
-  goto :eof
-
-:setOption
-	if "%1"=="wrapper.name" (
-	set serviceName=%2
-	) else if "%1"=="serviceDisplayName" (
-	set serviceDisplayName=%2
-	) else if "%1"=="serviceStartType" (
-	set serviceStartType=%2
-	)
   goto :eof
 
 :instructions

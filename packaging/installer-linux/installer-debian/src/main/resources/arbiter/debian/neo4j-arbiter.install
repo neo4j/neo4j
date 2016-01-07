@@ -5,7 +5,7 @@ server/UPGRADE.txt      var/lib/neo4j-arbiter
 server/data/README.txt  var/lib/neo4j-arbiter/data
 
 server/bin/neo4j-arbiter            var/lib/neo4j-arbiter/bin
-server/bin/utils                    var/lib/neo4j-arbiter/bin
+server/bin/neo4j-common.sh          var/lib/neo4j-arbiter/bin
 
 server/lib                          usr/share/neo4j-arbiter
 server/system                       usr/share/neo4j-arbiter

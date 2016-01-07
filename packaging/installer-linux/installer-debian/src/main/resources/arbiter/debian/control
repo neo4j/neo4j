@@ -8,7 +8,7 @@ Homepage: http://neo4j.org/
 
 Package: neo4j-arbiter
 Architecture: all
-Depends: ${misc:Depends}, daemon, adduser, psmisc, lsof, java8-runtime | j2re1.8
+Depends: ${misc:Depends}, daemon, adduser, psmisc, java8-runtime | j2re1.8
 Conflicts: 
 Replaces: 
 Description: Arbiter service for Neo4j clusters.

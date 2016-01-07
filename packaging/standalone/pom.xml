@@ -264,6 +264,24 @@ terms of the relevant Commercial Agreement.
         </dependencies>
       </plugin>
 
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>shell-script-tests</id>
+            <phase>test</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <inherited>false</inherited>
+            <configuration>
+              <executable>./run-tests.sh</executable>
+              <workingDirectory>src/tests/shell-scripts</workingDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -355,7 +373,28 @@ terms of the relevant Commercial Agreement.
         </plugins>
       </build>
     </profile>
+
+    <profile>
+      <id>disable-shell-script-tests</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>shell-script-tests</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
-
 </project>
-
