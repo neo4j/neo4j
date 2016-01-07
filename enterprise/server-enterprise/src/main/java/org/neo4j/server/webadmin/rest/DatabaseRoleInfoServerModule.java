@@ -25,8 +25,8 @@ import java.util.List;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 
 import static java.util.Arrays.asList;
@@ -67,6 +67,6 @@ public class DatabaseRoleInfoServerModule implements ServerModule
 
     private URI managementApiUri()
     {
-        return config.get( ServerInternalSettings.management_api_path );
+        return config.get( ServerSettings.management_api_path );
     }
 }

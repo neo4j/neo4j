@@ -30,13 +30,13 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.shell.ShellSettings;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.web.ServerInternalSettings.legacy_db_config;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.server.configuration.ServerSettings.legacy_db_config;
 
 /**
  * This is responsible for loading Server Configuration from disk, maintaining backwards-compatibility with several
@@ -51,7 +51,7 @@ public class ServerConfigFactory
     public static Config loadConfig( File configFile, File legacyConfigFile, Log log, Pair<String, String> ... configOverrides )
     {
         return loadConfig( configFile, legacyConfigFile,
-                new File( legacyConfigFile.getParentFile(), ServerInternalSettings.DB_TUNING_CONFIG_FILE_NAME ),
+                new File( legacyConfigFile.getParentFile(), ServerSettings.DB_TUNING_CONFIG_FILE_NAME ),
                 log, configOverrides );
     }
 
@@ -123,7 +123,7 @@ public class ServerConfigFactory
 
     public static Iterable<Class<?>> getDefaultSettingsClasses()
     {
-        return asList( ServerSettings.class, ServerInternalSettings.class, GraphDatabaseSettings.class );
+        return asList( ServerSettings.class, GraphDatabaseSettings.class );
     }
 
     private static Map<String, String> loadServerConfig( File legacyServerConfigFile, Log log )

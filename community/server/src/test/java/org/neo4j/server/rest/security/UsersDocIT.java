@@ -41,7 +41,6 @@ import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
@@ -155,7 +154,7 @@ public class UsersDocIT extends ExclusiveServerTestBase
 
     public void startServer(boolean authEnabled) throws IOException
     {
-        File file = ServerTestUtils.getRelativeFile( ServerInternalSettings.auth_store );
+        File file = ServerTestUtils.getRelativeFile( ServerSettings.auth_store );
         FileUtils.deleteFile( file );
         server = CommunityServerBuilder.server().withProperty( ServerSettings.auth_enabled.name(),
                 Boolean.toString( authEnabled ) ).build();

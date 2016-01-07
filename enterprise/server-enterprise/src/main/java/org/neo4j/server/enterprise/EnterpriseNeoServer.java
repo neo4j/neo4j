@@ -36,11 +36,11 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.advanced.AdvancedNeoServer;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.management.AdvertisableService;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.webadmin.rest.DatabaseRoleInfoServerModule;
 import org.neo4j.server.webadmin.rest.MasterInfoService;
 
@@ -78,7 +78,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
         public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
         {
 
-            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+            File storeDir = config.get( ServerSettings.legacy_db_location );
             return new HighlyAvailableGraphDatabase( storeDir, config.getParams(), dependencies );
         }
     };
@@ -87,7 +87,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
         @Override
         public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
         {
-            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+            File storeDir = config.get( ServerSettings.legacy_db_location );
             return new EnterpriseGraphDatabase( storeDir, config.getParams(), dependencies );
         }
     };
@@ -97,7 +97,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
         @Override
         public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
         {
-            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+            File storeDir = config.get( ServerSettings.legacy_db_location );
             return new CoreGraphDatabase( storeDir, config.getParams(), dependencies );
         }
     };
@@ -107,7 +107,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
         @Override
         public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
         {
-            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+            File storeDir = config.get( ServerSettings.legacy_db_location );
             return new EdgeGraphDatabase( storeDir, config.getParams(), dependencies );
         }
     };

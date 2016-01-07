@@ -28,7 +28,7 @@ import java.util.Map;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.udc.UsageData;
@@ -49,7 +49,7 @@ public class RESTApiModuleTest
 
         Map<String, String> params = new HashMap();
         String path = "/db/data";
-        params.put( Configurator.REST_API_PATH_PROPERTY_KEY, path );
+        params.put( ServerSettings.rest_api_path.name(), path );
         Config config = new Config( params );
 
         Dependencies deps = new Dependencies();

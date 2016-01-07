@@ -29,8 +29,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.advanced.helpers.AdvancedServerBuilder;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigFactory;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
 
@@ -67,7 +67,7 @@ public class ServerManagementTest
         assertEquals( dbDirectory1, server.getDatabase().getLocation() );
 
         // Change the database location
-        config.augment( stringMap( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDirectory2 ) );
+        config.augment( stringMap( ServerSettings.legacy_db_location.name(), dbDirectory2 ) );
         ServerManagement bean = new ServerManagement( server );
         bean.restartServer();
 

@@ -38,12 +38,6 @@ org.neo4j.server.webserver.address=0.0.0.0
 
 For securing the Neo4j Server, see also <<operations-security>>
 
-Set the location of the round-robin database directory which gathers metrics on the running server instance:
-[source,properties]
-----
-org.neo4j.server.webadmin.rrdb.location=data/graph.db/../rrd
-----
-
 Set the URI path for the REST data API through which the database is accessed. This should be a relative path.
 [source,properties]
 ----

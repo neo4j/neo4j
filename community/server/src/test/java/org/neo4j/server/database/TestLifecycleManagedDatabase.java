@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.server.web.ServerInternalSettings;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.SuppressOutput;
 
@@ -77,7 +77,7 @@ public class TestLifecycleManagedDatabase
 
     private LifecycleManagingDatabase newDatabase()
     {
-        Config dbConfig = new Config(stringMap( ServerInternalSettings.legacy_db_location.name(), databaseDirectory.getAbsolutePath() ));
+        Config dbConfig = new Config(stringMap( ServerSettings.legacy_db_location.name(), databaseDirectory.getAbsolutePath() ));
         return new LifecycleManagingDatabase( dbConfig, dbFactory, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider ) );
     }
 

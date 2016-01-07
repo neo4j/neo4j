@@ -93,7 +93,7 @@ public class ServerConfigFactoryTest
     {
         // given
         File propertyFile = PropertyFileBuilder.builder( folder.getRoot() )
-                .withNameValue( Configurator.THIRD_PARTY_PACKAGES_KEY,
+                .withNameValue( ServerSettings.third_party_packages.name(),
                         "org.neo4j.extension.extension1=/extension1,org.neo4j.extension.extension2=/extension2," +
                         "org.neo4j.extension.extension3=/extension3" )
                 .build();

@@ -24,11 +24,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.modules.AuthorizationModule;
@@ -44,7 +44,6 @@ import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.JmxService;
 import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.web.Jetty9WebServer;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
@@ -56,14 +55,9 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 @Deprecated
 public class CommunityNeoServer extends AbstractNeoServer
 {
-    public static final GraphFactory COMMUNITY_FACTORY = new GraphFactory()
-    {
-        @Override
-        public GraphDatabaseAPI newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
-        {
-            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
-            return new CommunityFacadeFactory().newFacade( storeDir, config.getParams(), dependencies );
-        }
+    public static final GraphFactory COMMUNITY_FACTORY = ( config, dependencies ) -> {
+        File storeDir = config.get( ServerSettings.legacy_db_location );
+        return new CommunityFacadeFactory().newFacade( storeDir, config.getParams(), dependencies );
     };
 
     public CommunityNeoServer( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies,

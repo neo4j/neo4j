@@ -121,7 +121,7 @@ public class ServerConfigTest
 
         try(BufferedWriter out = new BufferedWriter( new FileWriter( file, true ) ))
         {
-            out.write( Configurator.THIRD_PARTY_PACKAGES_KEY );
+            out.write( ServerSettings.third_party_packages.name() );
             out.write( "=" );
             out.write( "com.foo.bar=\"mount/point/foo\"," );
             out.write( "com.foo.baz=\"/bar\"," );

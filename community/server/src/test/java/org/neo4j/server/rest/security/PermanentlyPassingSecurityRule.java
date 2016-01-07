@@ -21,6 +21,8 @@ package org.neo4j.server.rest.security;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.neo4j.server.configuration.ServerSettings;
+
 public class PermanentlyPassingSecurityRule implements SecurityRule {
     
     public static final String REALM = "WallyWorld"; // as per RFC2617 :-);
@@ -34,7 +36,7 @@ public class PermanentlyPassingSecurityRule implements SecurityRule {
     @Override
     public String forUriPath()
     {
-        return SecurityRule.DEFAULT_DATABASE_PATH;
+        return ServerSettings.rest_api_path.getDefaultValue();
     }
 
     @Override

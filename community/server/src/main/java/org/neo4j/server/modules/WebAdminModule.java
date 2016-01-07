@@ -24,8 +24,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.management.console.ConsoleService;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 
 public class WebAdminModule implements ServerModule
@@ -45,7 +45,7 @@ public class WebAdminModule implements ServerModule
     @Override
     public void start()
     {
-        if ( config.get( ServerInternalSettings.webadmin_enabled ) )
+        if ( config.get( ServerSettings.webadmin_enabled ) )
         {
             String serverMountPoint = managementApiUri().toString();
             webServer.addStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
@@ -60,13 +60,13 @@ public class WebAdminModule implements ServerModule
 
     private URI managementApiUri()
     {
-        return config.get( ServerInternalSettings.management_api_path );
+        return config.get( ServerSettings.management_api_path );
     }
 
     @Override
     public void stop()
     {
-        if ( config.get( ServerInternalSettings.webadmin_enabled ) )
+        if ( config.get( ServerSettings.webadmin_enabled ) )
         {
             webServer.removeStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
         }
