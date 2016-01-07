@@ -61,6 +61,7 @@ public class LegacyIndexIT extends ExclusiveServerTestBase
         server = server().withHttpsEnabled()
                 .withProperty( "remote_shell_enabled", "false" )
                 .withProperty( "dbms.security.auth_enabled", "false" )
+                .withProperty( ServerSettings.maximum_response_header_size.name(), "5000" )
                 .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
     }
@@ -69,7 +70,6 @@ public class LegacyIndexIT extends ExclusiveServerTestBase
     public void shouldRejectIndexValueLargerThanConfiguredSize(String uniqueness) throws Exception
     {
         //Given
-        server.getConfig().setProperty( ServerSettings.maximum_response_header_size.name(), "5000" );
         server.start();
 
         // When
@@ -93,7 +93,6 @@ public class LegacyIndexIT extends ExclusiveServerTestBase
     public void shouldNotRejectIndexValueThatIsJustSmallerThanConfiguredSize(String uniqueness) throws Exception
     {
         //Given
-        server.getConfig().setProperty( ServerSettings.maximum_response_header_size.name(), "5000" );
         server.start();
 
         // When
