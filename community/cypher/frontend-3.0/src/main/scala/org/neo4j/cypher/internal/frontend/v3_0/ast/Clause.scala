@@ -403,3 +403,19 @@ case class PragmaWithout(excluded: Seq[Variable])(val position: InputPosition) e
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = s =>
     SemanticCheckResult.success(s.importScope(previousScope, excludedNames))
 }
+
+case class CallProcedure(namespace: List[String], procName: ProcedureName,
+                         args: IndexedSeq[Expression])(val position: InputPosition) extends Clause {
+
+  override def semanticCheck: SemanticCheck = SemanticCheckResult.success
+
+  override def name = "CALL"
+}
+
+case class ProcedureName(name: String)(val position: InputPosition) extends SymbolicName {
+  override def equals(x: Any): Boolean = x match {
+    case ProcedureName(other) => other.toLowerCase == name.toLowerCase
+    case _ => false
+  }
+  override def hashCode = name.toLowerCase.hashCode
+}

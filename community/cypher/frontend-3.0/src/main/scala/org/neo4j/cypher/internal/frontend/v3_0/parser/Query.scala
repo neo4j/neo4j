@@ -61,6 +61,7 @@ trait Query extends Parser
     | With
     | Return
     | Pragma
+    | CallProcedure
   )
 
   def Union: ReductionRule1[ast.QueryPart, ast.QueryPart] = rule("UNION") (

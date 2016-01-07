@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.frontend.v3_0.parser
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 import org.parboiled.scala._
+
+import scala.collection.immutable.IndexedSeq
 
 trait Clauses extends Parser
   with StartPoints
@@ -167,4 +170,15 @@ trait Clauses extends Parser
   private def Limit: Rule1[ast.Limit] = rule("LIMIT") {
     group(keyword("LIMIT") ~~ Expression) ~~>> (ast.Limit(_))
   }
+
+  def CallProcedure = rule {
+    group(keyword("CALL") ~~ zeroOrMore( SymbolicNameString ~ "." ) ~ ProcedureName ~ ProcedureArguments ) ~~>> (ast.CallProcedure(_, _, _))
+  }
+
+  private def ProcedureArguments: Rule1[IndexedSeq[Expression]] = rule("arguments to a procedure") {
+    optional(group("(" ~~
+      zeroOrMore(Expression, separator = CommaSep) ~~ ")"
+    ) ~~> (_.toIndexedSeq)) ~~> (_.getOrElse(IndexedSeq.empty))
+  }
+
 }
