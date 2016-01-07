@@ -32,7 +32,6 @@ import org.neo4j.graphalgo.impl.util.WeightedPathIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -44,15 +43,11 @@ import org.neo4j.kernel.Uniqueness;
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
 import static org.neo4j.graphdb.traversal.InitialBranchState.NO_STATE;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
 import static org.neo4j.kernel.Traversal.traversal;
 
 /**
  * Implementation of A* algorithm, see {@link AStar}, but using the traversal
  * framework. It's still in an experimental state.
- *
- * @author Mattias Persson
- *
  */
 public class TraversalAStar implements PathFinder<WeightedPath>
 {
@@ -77,13 +72,6 @@ public class TraversalAStar implements PathFinder<WeightedPath>
     }
 
     @SuppressWarnings( "unchecked" )
-    public TraversalAStar( RelationshipExpander expander, CostEvaluator<Double> costEvaluator,
-            EstimateEvaluator<Double> estimateEvaluator )
-    {
-        this( toPathExpander( expander ), costEvaluator, estimateEvaluator, true );
-    }
-
-    @SuppressWarnings( "unchecked" )
     public <T> TraversalAStar( PathExpander<T> expander,
             CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator,
             boolean stopAfterLowestWeight )
@@ -99,13 +87,6 @@ public class TraversalAStar implements PathFinder<WeightedPath>
         this.estimateEvaluator = estimateEvaluator;
         this.stopAfterLowestWeight = stopAfterLowestWeight;
         this.traversalDescription = traversal().uniqueness( Uniqueness.NONE ).expand( expander, initialState );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public TraversalAStar( RelationshipExpander expander, CostEvaluator<Double> costEvaluator,
-            EstimateEvaluator<Double> estimateEvaluator, boolean stopAfterLowestWeight )
-    {
-        this( toPathExpander( expander ), costEvaluator, estimateEvaluator, stopAfterLowestWeight );
     }
 
     @Override

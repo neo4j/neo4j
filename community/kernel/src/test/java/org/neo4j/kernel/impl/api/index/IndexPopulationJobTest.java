@@ -37,8 +37,8 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
@@ -67,8 +67,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
@@ -420,9 +420,9 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public IndexPopulationProgress getProgress()
+        public PopulationProgress getProgress()
         {
-            return new IndexPopulationProgress( 42, 100 );
+            return new PopulationProgress( 42, 100 );
         }
     }
 

@@ -22,10 +22,10 @@ package org.neo4j.index.impl.lucene.legacy;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.index.IndexCommandFactory;
-import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.impl.index.IndexEntityType;
+import org.neo4j.kernel.spi.legacyindex.IndexCommandFactory;
+import org.neo4j.kernel.spi.legacyindex.LegacyIndexProviderTransaction;
 
 public class LuceneLegacyIndexTransaction implements LegacyIndexProviderTransaction
 {

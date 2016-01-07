@@ -31,6 +31,7 @@ import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.index.IndexPopulationProgress;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
@@ -62,7 +63,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -244,7 +245,6 @@ public class SchemaImpl implements Schema
     @Override
     public IndexPopulationProgress getIndexPopulationProgress( IndexDefinition index )
     {
-
         assertInUnterminatedTransaction();
 
         String propertyKey = single( index.getPropertyKeys() );
@@ -265,7 +265,8 @@ public class SchemaImpl implements Schema
 
             IndexDescriptor descriptor = statement.readOperations().indexGetForLabelAndPropertyKey( labelId,
                     propertyKeyId );
-            return statement.readOperations().indexGetPopulationProgress( descriptor );
+            PopulationProgress progress = statement.readOperations().indexGetPopulationProgress( descriptor );
+            return new IndexPopulationProgress( progress.getCompleted(), progress.getTotal() );
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {

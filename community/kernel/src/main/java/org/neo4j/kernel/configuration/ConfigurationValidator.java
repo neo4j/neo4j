@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 
 /**
  * Given a set of annotated config classes,

@@ -88,8 +88,8 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
@@ -688,7 +688,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public IndexPopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor ) throws
+    public PopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor ) throws
             IndexNotFoundKernelException
     {
         // If index is in our state, then return 0%
@@ -696,13 +696,13 @@ public class StateHandlingStatementOperations implements
         {
             if ( checkIndexState( descriptor, state.txState().indexDiffSetsByLabel( descriptor.getLabelId() ) ) )
             {
-                return IndexPopulationProgress.NONE;
+                return PopulationProgress.NONE;
             }
             ReadableDiffSets<IndexDescriptor> changes =
                     state.txState().constraintIndexDiffSetsByLabel( descriptor.getLabelId() );
             if ( checkIndexState( descriptor, changes ) )
             {
-                return IndexPopulationProgress.NONE;
+                return PopulationProgress.NONE;
             }
         }
 

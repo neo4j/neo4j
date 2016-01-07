@@ -33,12 +33,13 @@ import java.util.Map;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TraversalPosition;
-import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.graphdb.traversal.BranchState;
+import org.neo4j.graphdb.traversal.Evaluation;
+import org.neo4j.graphdb.traversal.PathEvaluator;
 import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
@@ -51,6 +52,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
 
 public class TestMatchingOfCircularPattern
 {
@@ -143,7 +145,7 @@ public class TestMatchingOfCircularPattern
     @Test
     public void messageNodesAreOnlyReturnedOnce()
     {
-        Map<Node,Integer> counts = new HashMap<Node,Integer>();
+        Map<Node,Integer> counts = new HashMap<>();
         for ( Node message : new VisibleMessagesByFollowedUsers( user ) )
         {
             Integer seen = counts.get( message );
@@ -224,48 +226,49 @@ public class TestMatchingOfCircularPattern
 
     private static Iterable<Node> traverse( final Node startNode )
     {
-        return startNode.traverse( Order.BREADTH_FIRST, stopAtDepth( 2 ),
-                new ReturnableEvaluator()
-                {
-                    @Override
-                    public boolean isReturnableNode( TraversalPosition pos )
-                    {
-                        Node node = pos.currentNode();
-                        return isMessage( node )
-                               && isVisibleTo( node, startNode );
-                    }
-                }, withName( "FOLLOWS" ), Direction.OUTGOING,
-                withName( "CREATED" ), Direction.OUTGOING );
+        return graphdb.traversalDescription()
+                .relationships( withName( "FOLLOWS" ), Direction.OUTGOING )
+                .relationships( withName( "CREATED" ), Direction.OUTGOING )
+                .breadthFirst()
+                .evaluator( toDepth( 2 ) )
+                .evaluator( hasProperty( "text" ) )
+                .evaluator( isVisibleTo( startNode ) )
+                .traverse( startNode )
+                .nodes();
     }
 
-    public static StopEvaluator stopAtDepth( final int depth )
+    private static PathEvaluator hasProperty( String propertyKey )
     {
-        return new StopEvaluator()
+        return new PathEvaluator.Adapter()
         {
             @Override
-            public boolean isStopNode( TraversalPosition currentPos )
+            public Evaluation evaluate( Path path, BranchState state )
             {
-                return currentPos.depth() >= depth;
+                return Evaluation.ofIncludes( path.endNode().hasProperty( propertyKey ) );
             }
         };
     }
 
-    static boolean isMessage( Node node )
+    static PathEvaluator isVisibleTo( Node startNode )
     {
-        return node.hasProperty( "text" );
-    }
-
-    static boolean isVisibleTo( Node message, Node user )
-    {
-        for ( Relationship visibility : message.getRelationships(
-                withName( "IS_VISIBLE_BY" ), Direction.OUTGOING ) )
+        return new PathEvaluator.Adapter()
         {
-            if ( visibility.getEndNode().equals( user ) )
+            private final RelationshipType type = RelationshipType.withName( "IS_VISIBLE_TO" );
+
+            @Override
+            public Evaluation evaluate( Path path, BranchState state )
             {
-                return true;
+                for ( Relationship visibility : path.endNode().getRelationships(
+                        withName( "IS_VISIBLE_BY" ), Direction.OUTGOING ) )
+                {
+                    if ( visibility.getEndNode().equals( user ) )
+                    {
+                        return Evaluation.ofIncludes( true );
+                    }
+                }
+                return Evaluation.ofIncludes( false );
             }
-        }
-        return false;
+        };
     }
 
     private static GraphDatabaseService graphdb;

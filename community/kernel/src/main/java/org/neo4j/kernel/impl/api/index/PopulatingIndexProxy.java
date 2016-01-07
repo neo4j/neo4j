@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.index.IndexPopulationProgress;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -35,8 +36,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
@@ -170,7 +171,7 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexPopulationProgress getIndexPopulationProgress()
+    public PopulationProgress getIndexPopulationProgress()
     {
         return job.getPopulationProgress();
     }

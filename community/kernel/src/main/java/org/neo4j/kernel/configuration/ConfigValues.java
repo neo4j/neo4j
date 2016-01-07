@@ -23,10 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.helpers.Pair.pair;
+
+import static org.neo4j.helpers.collection.Pair.pair;
 
 public class ConfigValues implements Function<String, String>
 {

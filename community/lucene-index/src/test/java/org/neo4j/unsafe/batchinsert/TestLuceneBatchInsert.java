@@ -44,6 +44,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.LruCache;
 import org.neo4j.index.impl.lucene.legacy.LuceneBatchInserterIndexProviderNewImpl;
 import org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation;
 import org.neo4j.index.impl.lucene.legacy.MyStandardAnalyzer;
@@ -52,7 +53,6 @@ import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvide
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
-import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 

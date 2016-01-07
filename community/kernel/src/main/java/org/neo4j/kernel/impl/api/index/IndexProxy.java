@@ -35,8 +35,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 /**
  * Controls access to {@link IndexPopulator}, {@link IndexAccessor} during different stages
@@ -86,7 +86,7 @@ public interface IndexProxy
      */
     IndexPopulationFailure getPopulationFailure() throws IllegalStateException;
 
-    IndexPopulationProgress getIndexPopulationProgress();
+    PopulationProgress getIndexPopulationProgress();
 
     void force() throws IOException;
 

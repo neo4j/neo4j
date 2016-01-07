@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 
 public class DummyIndexExtensionFactory extends
         KernelExtensionFactory<DummyIndexExtensionFactory.Dependencies>

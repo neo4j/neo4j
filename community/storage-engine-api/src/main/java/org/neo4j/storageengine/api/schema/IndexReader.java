@@ -22,9 +22,9 @@ package org.neo4j.storageengine.api.schema;
 import java.util.Collections;
 import java.util.Set;
 
-import org.neo4j.Resource;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.register.Register.DoubleLong;
 

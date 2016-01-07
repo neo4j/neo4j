@@ -22,7 +22,6 @@ package org.neo4j.graphalgo.impl.path;
 import org.neo4j.graphalgo.impl.util.LiteDepthFirstSelector;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
@@ -32,7 +31,6 @@ import org.neo4j.graphdb.traversal.Uniqueness;
 
 import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
 import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
 import static org.neo4j.kernel.Traversal.traversal;
 
@@ -54,11 +52,6 @@ public class ExactDepthPathFinder extends TraversalPathFinder
     private final int onDepth;
     private final int startThreshold;
     private final Uniqueness uniqueness;
-
-    public ExactDepthPathFinder( RelationshipExpander expander, int onDepth, int startThreshold, boolean allowLoops )
-    {
-        this( toPathExpander( expander ), onDepth, startThreshold, allowLoops );
-    }
 
     public ExactDepthPathFinder( PathExpander expander, int onDepth, int startThreshold, boolean allowLoops )
     {

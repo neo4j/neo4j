@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -50,7 +51,6 @@ import static org.junit.Assert.assertEquals;
 
 public class IndexingServiceIntegrationTest
 {
-
     private static final String FOOD_LABEL = "food";
     private static final String CLOTHES_LABEL = "clothes";
     private static final String WEATHER_LABEL = "weather";
@@ -90,7 +90,8 @@ public class IndexingServiceIntegrationTest
 
         waitIndexOnline( indexProxy );
         assertEquals( InternalIndexState.ONLINE, indexProxy.getState() );
-        assertEquals( 100, indexProxy.getIndexPopulationProgress().getCompletedPercentage(), 0.01 );
+        PopulationProgress progress = indexProxy.getIndexPopulationProgress();
+        assertEquals( progress.getCompleted(), progress.getTotal() );
     }
 
     @Test

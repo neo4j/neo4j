@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
-import org.neo4j.storageengine.api.Visitor;
 
 /**
  * A chain of transactions to apply. Transactions form a linked list, each pointing to the {@link #next()}

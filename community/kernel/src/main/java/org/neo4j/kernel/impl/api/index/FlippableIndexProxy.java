@@ -41,8 +41,8 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 
 public class FlippableIndexProxy implements IndexProxy
@@ -351,7 +351,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexPopulationProgress getIndexPopulationProgress()
+    public PopulationProgress getIndexPopulationProgress()
     {
         lock.readLock().lock();
         try

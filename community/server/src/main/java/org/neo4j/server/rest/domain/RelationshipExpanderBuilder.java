@@ -23,23 +23,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
-import org.neo4j.graphdb.Expander;
-import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanderBuilder;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.Traversal;
-
-// import org.neo4j.graphdb.Traverser.Order;
-// import org.neo4j.graphdb.traversal.TraversalDescription;
-// import org.neo4j.graphdb.traversal.Uniqueness;
-// import org.neo4j.kernel.Traversal;
 
 public class RelationshipExpanderBuilder
 {
-
     @SuppressWarnings( "unchecked" )
-    public static RelationshipExpander describeRelationships( Map<String, Object> description )
+    public static PathExpander describeRelationships( Map<String, Object> description )
     {
-        Expander expander = Traversal.emptyExpander();
+        PathExpanderBuilder expander = PathExpanderBuilder.empty();
 
         Object relationshipsDescription = description.get( "relationships" );
         if ( relationshipsDescription != null )
@@ -64,7 +57,7 @@ public class RelationshipExpanderBuilder
                         stringToEnum( directionName, RelationshipDirection.class, true ).internal );
             }
         }
-        return expander;
+        return expander.build();
     }
 
     // TODO Refactor - same method exists in TraversalDescriptionBuilder
@@ -97,5 +90,4 @@ public class RelationshipExpanderBuilder
         }
         throw new RuntimeException( "Unregognized " + enumClass.getSimpleName() + " '" + name + "'" );
     }
-
 }

@@ -26,7 +26,6 @@ import org.neo4j.proc.Neo4jTypes;
 import org.neo4j.proc.Procedure;
 import org.neo4j.proc.ProcedureSignature.ProcedureName;
 
-import static org.neo4j.helpers.collection.IteratorUtil.stream;
 import static org.neo4j.kernel.api.ProcedureRead.readStatement;
 import static org.neo4j.proc.ProcedureSignature.procedureSignature;
 

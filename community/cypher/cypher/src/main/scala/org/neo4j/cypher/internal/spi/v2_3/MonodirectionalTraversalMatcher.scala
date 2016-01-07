@@ -25,19 +25,20 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.graphdb.traversal._
 import org.neo4j.graphdb.{Node, Path}
-import org.neo4j.kernel.{Traversal, Uniqueness}
+import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription
 
 import scala.collection.JavaConverters._
 
 class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node])
   extends TraversalMatcher {
 
-  val initialStartStep = new InitialStateFactory[Option[ExpanderStep]] {
+  val initialStartStep = new InitialBranchState[Option[ExpanderStep]] {
     def initialState(path: Path): Option[ExpanderStep] = Some(steps)
+    def reverse() = this
   }
 
-  def baseTraversal(params: ExecutionContext, state:QueryState): TraversalDescription = Traversal.
-    traversal(Uniqueness.RELATIONSHIP_PATH).
+  def baseTraversal(params: ExecutionContext, state:QueryState): TraversalDescription =
+    new MonoDirectionalTraversalDescription().
     evaluator(new MyEvaluator).
     expand(new TraversalPathExpander(params, state), initialStartStep)
 

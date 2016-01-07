@@ -23,8 +23,8 @@ import java.net.URL;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.security.URLAccessValidationError;
 
 /**
  * This API can be used to get access to services.

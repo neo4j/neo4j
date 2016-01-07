@@ -22,12 +22,12 @@ package org.neo4j.index.lucene;
 import java.io.File;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 
 public class LuceneKernelExtension extends LifecycleAdapter
 {

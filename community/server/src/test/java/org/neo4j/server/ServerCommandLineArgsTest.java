@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 
 import static org.junit.Assert.assertEquals;
 

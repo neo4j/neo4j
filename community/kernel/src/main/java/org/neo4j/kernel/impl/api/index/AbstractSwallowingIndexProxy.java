@@ -25,8 +25,8 @@ import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
@@ -54,9 +54,9 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexPopulationProgress getIndexPopulationProgress()
+    public PopulationProgress getIndexPopulationProgress()
     {
-        return IndexPopulationProgress.NONE;
+        return PopulationProgress.NONE;
     }
 
     @Override

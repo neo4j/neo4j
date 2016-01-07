@@ -39,14 +39,15 @@ import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanderBuilder;
+import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.index.AutoIndexer;
@@ -61,13 +62,14 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.traversal.BranchState;
+import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.Traversal;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.PropertySettingStrategy;
@@ -569,22 +571,23 @@ public class DatabaseActions
             throws NodeNotFoundException
     {
         Node node = node( nodeId );
-        Expander expander;
+        PathExpander expander;
         if ( types.isEmpty() )
         {
-            expander = Traversal.expanderForAllTypes( direction.internal );
+            expander = PathExpanders.forDirection( direction.internal );
         }
         else
         {
-            expander = Traversal.emptyExpander();
+            PathExpanderBuilder builder = PathExpanderBuilder.empty();
             for ( String type : types )
             {
-                expander = expander.add(
+                builder = builder.add(
                         RelationshipType.withName( type ),
                         direction.internal );
             }
+            expander = builder.build();
         }
-        return RelationshipRepresentation.list( expander.expand( node ) );
+        return RelationshipRepresentation.list( expander.expand( Paths.singleNodePath( node ), BranchState.NO_STATE ) );
     }
 
     // Node degrees
@@ -1256,7 +1259,7 @@ public class DatabaseActions
             Integer maxDepthObj = (Integer) map.get( "max_depth" );
             int maxDepth = (maxDepthObj != null) ? maxDepthObj : 1;
 
-            RelationshipExpander expander = RelationshipExpanderBuilder.describeRelationships( map );
+            PathExpander expander = RelationshipExpanderBuilder.describeRelationships( map );
 
             String algorithm = (String) map.get( "algorithm" );
             algorithm = (algorithm != null) ? algorithm : "shortestPath";
@@ -1266,7 +1269,7 @@ public class DatabaseActions
         }
 
         private PathFinder<? extends Path> getAlgorithm( String algorithm,
-                RelationshipExpander expander, int maxDepth )
+                PathExpander expander, int maxDepth )
         {
             if ( algorithm.equals( "shortestPath" ) )
             {

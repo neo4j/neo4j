@@ -79,8 +79,8 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.DoubleLatch;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -952,9 +952,9 @@ public class IndexingServiceTest
                 }
 
                 @Override
-                public IndexPopulationProgress getProgress()
+                public PopulationProgress getProgress()
                 {
-                    return new IndexPopulationProgress( 42, 100 );
+                    return new PopulationProgress( 42, 100 );
                 }
             };
         }

@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 
@@ -49,7 +50,6 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class ConfigTest
 {
-
     public static class MyMigratingSettings
     {
         @Migrator
@@ -213,16 +213,16 @@ public class ConfigTest
         Setting<Integer> age = setting( "user.age", INTEGER, NO_DEFAULT );
 
         // When
-        List<ConfigView> views = config.view( Config.groups( "my.users" ) );
+        List<Configuration> views = config.view( Config.groups( "my.users" ) );
 
         // Then
         assertThat( views.size(), equalTo( 2 ) );
 
-        ConfigView bob = views.get( 0 );
+        Configuration bob = views.get( 0 );
         assertThat( bob.get( name ), equalTo( "Bob" ) );
         assertThat( bob.get( age ), equalTo( 81 ) );
 
-        ConfigView greta = views.get( 1 );
+        Configuration greta = views.get( 1 );
         assertThat( greta.get( name ), equalTo( "Greta" ) );
         assertThat( greta.get( age ), equalTo( 82 ) );
 
@@ -246,8 +246,8 @@ public class ConfigTest
         Setting<Integer> age = setting( "user.age", INTEGER, NO_DEFAULT );
 
         // When
-        List<ConfigView> emptyStrViews = config.view( Config.groups( "" ) );
-        List<ConfigView> numViews = config.view( Config.groups( "0" ) );
+        List<Configuration> emptyStrViews = config.view( Config.groups( "" ) );
+        List<Configuration> numViews = config.view( Config.groups( "0" ) );
 
         // Then
         assertThat( emptyStrViews.size(), equalTo( 0 ) );
@@ -266,7 +266,7 @@ public class ConfigTest
                 "my.users.1.age", "82" ) );
 
         // When
-        List<ConfigView> views = config.view( Config.groups( "my" ) );
+        List<Configuration> views = config.view( Config.groups( "my" ) );
 
         // Then
         assertThat( views.size(), equalTo( 0 ) );
@@ -287,21 +287,20 @@ public class ConfigTest
         Setting<Integer> age = setting( "age", INTEGER, NO_DEFAULT );
 
         // When
-        List<ConfigView> views = config.view( Config.groups( "my.users" ) );
+        List<Configuration> views = config.view( Config.groups( "my.users" ) );
 
         // Then
         assertThat( views.size(), equalTo( 2 ) );
 
-        ConfigView bob = views.get( 0 );
+        Configuration bob = views.get( 0 );
         assertThat( bob.get( name ), equalTo( "No name given to this poor user" ) );
         assertNull( bob.get( age ) );
 
-        ConfigView greta = views.get( 1 );
+        Configuration greta = views.get( 1 );
         assertThat( greta.get( name ), equalTo( "No name given to this poor user" ) );
         assertNull( greta.get( age ) );
 
         assertThat( config.get( name ), equalTo( "lemon" ) );
         assertNull( config.get( age ) );
-
     }
 }

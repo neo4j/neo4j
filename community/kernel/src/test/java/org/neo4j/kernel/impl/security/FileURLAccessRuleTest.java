@@ -24,20 +24,15 @@ import org.junit.Test;
 import java.io.File;
 import java.net.URL;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.security.URLAccessValidationError;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class FileURLAccessRuleTest
 {
@@ -46,12 +41,13 @@ public class FileURLAccessRuleTest
     {
         try
         {
-            URLAccessRules.fileAccess().validate( mock( GraphDatabaseAPI.class ), new URL( "file://foo/bar/baz" ) );
+            URLAccessRules.fileAccess().validate( new Config(), new URL( "file://foo/bar/baz" ) );
             fail( "expected exception not thrown " );
         }
         catch ( URLAccessValidationError error )
         {
-            assertThat( error.getMessage(), equalTo( "file URL may not contain an authority section (i.e. it should be 'file:///')" ) );
+            assertThat( error.getMessage(),
+                    equalTo( "file URL may not contain an authority section (i.e. it should be 'file:///')" ) );
         }
     }
 
@@ -60,7 +56,7 @@ public class FileURLAccessRuleTest
     {
         try
         {
-            URLAccessRules.fileAccess().validate( mock( GraphDatabaseAPI.class ), new URL( "file:///bar/baz?q=foo" ) );
+            URLAccessRules.fileAccess().validate( new Config(), new URL( "file:///bar/baz?q=foo" ) );
             fail( "expected exception not thrown " );
         }
         catch ( URLAccessValidationError error )
@@ -73,15 +69,10 @@ public class FileURLAccessRuleTest
     public void shouldThrowWhenFileAccessIsDisabled() throws Exception
     {
         final URL url = new URL( "file:///bar/baz.csv" );
-        final GraphDatabaseAPI gdb = mock( GraphDatabaseAPI.class );
-        final DependencyResolver mockResolver = mock( DependencyResolver.class );
-        when( gdb.getDependencyResolver() ).thenReturn( mockResolver );
         final Config config = new Config( MapUtil.stringMap( GraphDatabaseSettings.allow_file_urls.name(), "false" ) );
-        when( mockResolver.resolveDependency( eq( Config.class ) ) ).thenReturn( config );
-
         try
         {
-            URLAccessRules.fileAccess().validate( gdb, url );
+            URLAccessRules.fileAccess().validate( config, url );
             fail( "expected exception not thrown " );
         }
         catch ( URLAccessValidationError error )
@@ -94,13 +85,9 @@ public class FileURLAccessRuleTest
     public void shouldAdjustURLToWithinImportDirectory() throws Exception
     {
         final URL url = new File( "/bar/baz.csv" ).toURI().toURL();
-        final GraphDatabaseAPI gdb = mock( GraphDatabaseAPI.class );
-        final DependencyResolver mockResolver = mock( DependencyResolver.class );
-        when( gdb.getDependencyResolver() ).thenReturn( mockResolver );
-        final Config config = new Config( MapUtil.stringMap( GraphDatabaseSettings.load_csv_file_url_root.name(), "/var/lib/neo4j/import" ) );
-        when( mockResolver.resolveDependency( eq( Config.class ) ) ).thenReturn( config );
-
-        URL accessURL = URLAccessRules.fileAccess().validate( gdb, url );
+        final Config config = new Config(
+                MapUtil.stringMap( GraphDatabaseSettings.load_csv_file_url_root.name(), "/var/lib/neo4j/import" ) );
+        URL accessURL = URLAccessRules.fileAccess().validate( config, url );
         URL expected = new File( "/var/lib/neo4j/import/bar/baz.csv" ).toURI().toURL();
         assertEquals( expected, accessURL );
     }

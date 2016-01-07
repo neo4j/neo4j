@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 
 /**
  * Represents a node from an input source, for example a .csv file.

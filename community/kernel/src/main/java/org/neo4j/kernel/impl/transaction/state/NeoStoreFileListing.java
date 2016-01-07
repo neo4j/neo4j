@@ -27,13 +27,13 @@ import java.util.Objects;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;

@@ -40,9 +40,8 @@ import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.impl.StandardExpander;
 import org.neo4j.graphdb.traversal.BranchState;
-import org.neo4j.kernel.StandardExpander;
-import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.impl.util.MutableInteger;
 
 import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
@@ -281,7 +280,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         final Node b = graph.getNode( "b" );
         final Node c = graph.getNode( "c" );
         final Set<Node> allowedNodes = new HashSet<>( Arrays.asList( a, b, c ) );
-        final PathFinder<Path> finder = new ShortestPath( 100, Traversal.expanderForAllTypes( Direction.OUTGOING ) )
+        final PathFinder<Path> finder = new ShortestPath( 100, PathExpanders.forDirection( OUTGOING ) )
         {
             @Override
             protected Node filterNextLevelNodes( Node nextNode )

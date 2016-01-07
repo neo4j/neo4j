@@ -31,12 +31,12 @@ import org.neo4j.register.Register;
 
 public class ExpandTestUtils
 {
-    public static List<Row> rows( Cursor cursor, NeoRegister.RelationshipRegister relId, NeoRegister.RelTypeRegister
+    public static List<Row> rows( Cursor<?> cursor, NeoRegister.RelationshipRegister relId, NeoRegister.RelTypeRegister
             relType, Register.ObjectRegister<Direction> direction, NeoRegister.NodeRegister startId,
                                   NeoRegister.NodeRegister neighborId )
     {
         List<Row> result = new ArrayList<>();
-        while(cursor.next())
+        while ( cursor.next() )
         {
             result.add( row( relId.read(), relType.read(), direction.read(), startId.read(), neighborId.read() ) );
         }
@@ -49,10 +49,7 @@ public class ExpandTestUtils
                 {
                     return (int) (o1.neighborId - o2.neighborId);
                 }
-                else
-                {
-                    return (int) (o1.relId - o2.relId);
-                }
+                return (int) (o1.relId - o2.relId);
             }
         } );
         return result;
@@ -136,5 +133,4 @@ public class ExpandTestUtils
             return "row( " + relId + ", " + type + ", " + direction + ", " + startId + ", " + neighborId + ')';
         }
     }
-
 }

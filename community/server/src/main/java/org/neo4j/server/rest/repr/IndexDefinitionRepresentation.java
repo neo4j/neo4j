@@ -21,9 +21,9 @@ package org.neo4j.server.rest.repr;
 
 import java.util.function.Function;
 
+import org.neo4j.graphdb.index.IndexPopulationProgress;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 
@@ -57,7 +57,7 @@ public class IndexDefinitionRepresentation extends MappingRepresentation
         serializer.putList( "property_keys", new ListRepresentation( RepresentationType.STRING,
                 propertyKeyRepresentations ) );
         // Only print state and progress if progress is a valid value and not yet online
-        if ( indexState == Schema.IndexState.POPULATING && indexPopulationProgress.getTotalCount() > 0 )
+        if ( indexState == Schema.IndexState.POPULATING )
         {
             serializer.putString( "state", indexState.name() );
             serializer.putString( "population_progress", String.format( "%1.0f%%",

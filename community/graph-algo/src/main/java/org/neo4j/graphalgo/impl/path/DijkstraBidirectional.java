@@ -34,7 +34,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.BranchCollisionDetector;
 import org.neo4j.graphdb.traversal.BranchCollisionPolicy;
@@ -53,7 +52,6 @@ import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
 import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
 import static org.neo4j.kernel.Traversal.traversal;
 
@@ -75,14 +73,6 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
     private final CostEvaluator<Double> costEvaluator;
     private final double epsilon;
     private Traverser lastTraverser;
-
-    /**
-     * @deprecated in favor of {@link #DijkstraBidirectional(PathExpander, CostEvaluator)}
-     */
-    public DijkstraBidirectional( RelationshipExpander expander, CostEvaluator<Double> costEvaluator )
-    {
-        this( toPathExpander( expander ), costEvaluator );
-    }
 
     /**
      * See {@link #DijkstraBidirectional(PathExpander, CostEvaluator, double)}
@@ -137,7 +127,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
                 .startSide( startSide )
                 .endSide( endSide )
                 .collisionEvaluator( Evaluators.all() )
-                .collisionPolicy( new BranchCollisionPolicy.CollisionPolicyAdapter()
+                .collisionPolicy( new BranchCollisionPolicy()
                 {
                     @Override
                     public BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate )

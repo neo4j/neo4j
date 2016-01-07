@@ -23,7 +23,7 @@ import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.frontend.v3_0.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
-import org.neo4j.helpers.Pair
+import org.neo4j.helpers.collection.Pair
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructureLookup, DbStructureVisitor}
 

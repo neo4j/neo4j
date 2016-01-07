@@ -24,7 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.Result;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CypherExecutor;

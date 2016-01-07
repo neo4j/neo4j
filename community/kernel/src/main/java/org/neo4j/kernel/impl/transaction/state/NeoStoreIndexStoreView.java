@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.register.Registers;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -344,15 +344,15 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         }
 
         @Override
-        public IndexPopulationProgress getProgress()
+        public PopulationProgress getProgress()
         {
             if ( totalCount > 0 )
             {
-                return new IndexPopulationProgress( count, totalCount );
+                return new PopulationProgress( count, totalCount );
             }
 
             // nothing to do 100% completed
-            return IndexPopulationProgress.DONE;
+            return PopulationProgress.DONE;
         }
     }
 }

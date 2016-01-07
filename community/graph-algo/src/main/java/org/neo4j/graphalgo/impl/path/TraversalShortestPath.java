@@ -21,25 +21,21 @@ package org.neo4j.graphalgo.impl.path;
 
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
 import static org.neo4j.kernel.SideSelectorPolicies.LEVEL_STOP_DESCENT_ON_RESULT;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
 import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
 import static org.neo4j.kernel.Traversal.traversal;
 import static org.neo4j.kernel.Uniqueness.NODE_PATH;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 
 /**
  * Implements shortest path algorithm, see {@link ShortestPath}, but using
  * the traversal framework straight off with the bidirectional traversal feature.
- * 
+ *
  * It's still experimental and slightly slower than the highly optimized
  * {@link ShortestPath} implementation.
- * 
- * @author Mattias Persson
  */
 public class TraversalShortestPath extends TraversalPathFinder
 {
@@ -47,30 +43,20 @@ public class TraversalShortestPath extends TraversalPathFinder
     private final int maxDepth;
     private final Integer maxResultCount;
 
-    public TraversalShortestPath( RelationshipExpander expander, int maxDepth )
-    {
-        this( toPathExpander( expander ), maxDepth );
-    }
-    
     public TraversalShortestPath( PathExpander expander, int maxDepth )
     {
         this.expander = expander;
         this.maxDepth = maxDepth;
         this.maxResultCount = null;
     }
-    
-    public TraversalShortestPath( RelationshipExpander expander, int maxDepth, int maxResultCount )
-    {
-        this( toPathExpander( expander ), maxDepth, maxResultCount );
-    }
-    
+
     public TraversalShortestPath( PathExpander expander, int maxDepth, int maxResultCount )
     {
         this.expander = expander;
         this.maxDepth = maxDepth;
         this.maxResultCount = maxResultCount;
     }
-    
+
     @Override
     protected Traverser instantiateTraverser( Node start, Node end )
     {
@@ -81,7 +67,7 @@ public class TraversalShortestPath extends TraversalPathFinder
             .collisionEvaluator( toDepth( maxDepth ) )
             .traverse( start, end );
     }
-    
+
     @Override
     protected Integer maxResultCount()
     {

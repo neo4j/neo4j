@@ -45,7 +45,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexCommandFactory;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
@@ -53,6 +52,7 @@ import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.impl.index.DocValuesCollector;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
+import org.neo4j.kernel.spi.legacyindex.IndexCommandFactory;
 
 import static org.neo4j.collection.primitive.Primitive.longSet;
 

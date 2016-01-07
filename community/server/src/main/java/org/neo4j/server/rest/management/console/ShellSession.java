@@ -23,7 +23,7 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.logging.LogService;

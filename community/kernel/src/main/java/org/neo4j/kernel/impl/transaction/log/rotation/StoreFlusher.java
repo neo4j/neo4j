@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.rotation;
 
-import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.storageengine.api.StorageEngine;
 
 public class StoreFlusher

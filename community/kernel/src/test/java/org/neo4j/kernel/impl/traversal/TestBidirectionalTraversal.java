@@ -33,20 +33,23 @@ import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.impl.traversal.StandardBranchCollisionDetector;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.BranchCollisionDetector;
+import org.neo4j.graphdb.traversal.BranchCollisionPolicy;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.SideSelectorPolicies;
-import org.neo4j.kernel.StandardBranchCollisionDetector;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfContainsAll;
@@ -208,7 +211,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
         BranchCollisionPolicy collisionPolicy = new BranchCollisionPolicy()
         {
             @Override
-            public BranchCollisionDetector create( Evaluator evaluator )
+            public BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate )
             {
                 return new StandardBranchCollisionDetector( null, null )
                 {
@@ -220,12 +223,6 @@ public class TestBidirectionalTraversal extends TraversalTestBase
                         return true;
                     }
                 };
-            }
-
-            @Override
-            public BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate )
-            {
-                return create( evaluator );
             }
         };
 

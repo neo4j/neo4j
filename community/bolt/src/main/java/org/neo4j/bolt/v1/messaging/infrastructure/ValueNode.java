@@ -33,9 +33,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
-import org.neo4j.graphdb.Traverser;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
@@ -227,28 +224,6 @@ public class ValueNode
 
     @Override
     public int getDegree( RelationshipType relationshipType, Direction direction )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Traverser traverse( Traverser.Order order, StopEvaluator stopEvaluator,
-            ReturnableEvaluator returnableEvaluator, RelationshipType relationshipType, Direction direction )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Traverser traverse( Traverser.Order order, StopEvaluator stopEvaluator,
-            ReturnableEvaluator returnableEvaluator, RelationshipType relationshipType, Direction direction,
-            RelationshipType relationshipType2, Direction direction2 )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Traverser traverse( Traverser.Order order, StopEvaluator stopEvaluator,
-            ReturnableEvaluator returnableEvaluator, Object... objects )
     {
         throw new UnsupportedOperationException();
     }

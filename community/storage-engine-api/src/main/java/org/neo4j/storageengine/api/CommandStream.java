@@ -21,6 +21,8 @@ package org.neo4j.storageengine.api;
 
 import java.io.IOException;
 
+import org.neo4j.helpers.collection.Visitor;
+
 /**
  * A stream of commands from one or more transactions, that can be serialized to a transaction log or applied to a
  * store.

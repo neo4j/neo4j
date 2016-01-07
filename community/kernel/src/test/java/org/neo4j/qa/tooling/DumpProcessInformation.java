@@ -28,7 +28,7 @@ import java.util.Collection;
 
 import org.hamcrest.Matcher;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

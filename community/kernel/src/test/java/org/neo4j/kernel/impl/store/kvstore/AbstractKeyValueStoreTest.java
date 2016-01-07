@@ -34,7 +34,7 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;

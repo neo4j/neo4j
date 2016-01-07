@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.webadmin.console;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 
 public interface ScriptSession
 {

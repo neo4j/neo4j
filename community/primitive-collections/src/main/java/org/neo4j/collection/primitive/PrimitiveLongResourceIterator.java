@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.neo4j.Resource;
+import org.neo4j.graphdb.Resource;
 
 public interface PrimitiveLongResourceIterator extends PrimitiveLongIterator, Resource
 {

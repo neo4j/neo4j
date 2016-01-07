@@ -29,8 +29,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.AnnotatedFieldHarvester;
 import org.neo4j.kernel.configuration.Config;
 
