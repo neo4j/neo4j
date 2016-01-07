@@ -51,6 +51,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.RegexMatcher;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
@@ -573,7 +574,8 @@ public class UdcExtensionImplTest
 
     private GraphDatabaseService createDatabase( Map<String, String> config ) throws IOException
     {
-        GraphDatabaseBuilder graphDatabaseBuilder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder();
+        GraphDatabaseBuilder graphDatabaseBuilder =
+                new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabaseBuilder();
         graphDatabaseBuilder.loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) );
 
         if ( config != null )

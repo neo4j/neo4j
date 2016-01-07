@@ -27,9 +27,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.Version;
@@ -51,6 +49,8 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -58,7 +58,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.udc.UsageData;
-import org.neo4j.udc.UsageDataKeys;
 
 
 /**
@@ -106,46 +105,14 @@ public class CommunityEditionModule
 
         constraintSemantics = createSchemaRuleVerifier();
 
-        registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName), life, dependencies );
+        registerRecovery( platformModule.databaseInfo, life, dependencies );
 
-        publishEditionInfo( dependencies.resolveDependency( UsageData.class ) );
+        publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
     }
 
     protected ConstraintSemantics createSchemaRuleVerifier()
     {
         return new StandardConstraintSemantics();
-    }
-
-    private void publishEditionInfo( UsageData sysInfo )
-    {
-        sysInfo.set( UsageDataKeys.edition, determineEdition() );
-        sysInfo.set( UsageDataKeys.operationalMode, UsageDataKeys.OperationalMode.single );
-    }
-
-    private UsageDataKeys.Edition determineEdition()
-    {
-        // Currently, a user can be running enterprise or advanced edition and end up using this module to bootstrap
-        // So, until we've organized this differently, we use introspection to tell which edition is running
-        try
-        {
-            getClass().getClassLoader().loadClass( "org.neo4j.kernel.ha.HighlyAvailableGraphDatabase" );
-            return UsageDataKeys.Edition.enterprise;
-        }
-        catch ( ClassNotFoundException e )
-        {
-            // Not Enterprise
-        }
-        try
-        {
-            getClass().getClassLoader().loadClass( "org.neo4j.management.Neo4jManager" );
-            return UsageDataKeys.Edition.advanced;
-        }
-        catch ( ClassNotFoundException e )
-        {
-            // Not Advanced
-        }
-        return UsageDataKeys.Edition.community;
-
     }
 
     protected SchemaWriteGuard createSchemaWriteGuard()
@@ -158,7 +125,6 @@ public class CommunityEditionModule
             }
         };
     }
-
 
     protected TokenCreator createRelationshipTypeCreator( Config config, DataSourceManager dataSourceManager,
                                                           IdGeneratorFactory idGeneratorFactory )
@@ -247,7 +213,7 @@ public class CommunityEditionModule
         return TransactionHeaderInformationFactory.DEFAULT;
     }
 
-    protected void registerRecovery( final String editionName, LifeSupport life,
+    protected void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
                                      final DependencyResolver dependencyResolver )
     {
         life.addLifecycleListener( new LifecycleListener()
@@ -257,16 +223,16 @@ public class CommunityEditionModule
             {
                 if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
                 {
-                    doAfterRecoveryAndStartup( editionName, dependencyResolver );
+                    doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
                 }
             }
         } );
     }
 
     @Override
-    protected void doAfterRecoveryAndStartup( String editionName, DependencyResolver dependencyResolver )
+    protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver )
     {
-        super.doAfterRecoveryAndStartup( editionName, dependencyResolver );
+        super.doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
 
         new RemoveOrphanConstraintIndexesOnStartup( dependencyResolver.resolveDependency( NeoStoreDataSource.class )
                 .getKernel(), dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider() ).perform();

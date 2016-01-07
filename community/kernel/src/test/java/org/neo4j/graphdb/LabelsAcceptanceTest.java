@@ -646,7 +646,7 @@ public class LabelsAcceptanceTest
                                     @Override
                                     protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                                     {
-                                        return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
+                                        return new ImpermanentPlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade );
                                     }
                                 }.newFacade( storeDir, params, dependencies, this );
                             }

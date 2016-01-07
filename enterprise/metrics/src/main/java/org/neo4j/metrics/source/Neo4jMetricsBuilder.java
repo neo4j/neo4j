@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
@@ -135,8 +136,7 @@ public class Neo4jMetricsBuilder
 
         if ( config.get( MetricsSettings.neoClusterEnabled ) )
         {
-            boolean isHA = kernelContext.editionName().contains( "HA" );
-            if ( isHA )
+            if ( kernelContext.databaseInfo().operationalMode == OperationalMode.ha )
             {
                 life.add( new ClusterMetrics( dependencies.monitors(), registry, dependencies.clusterMembers() ) );
                 result = true;

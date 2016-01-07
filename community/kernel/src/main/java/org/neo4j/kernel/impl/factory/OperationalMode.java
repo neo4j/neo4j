@@ -17,18 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.spi;
+package org.neo4j.kernel.impl.factory;
 
-import java.io.File;
-
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
-
-public interface KernelContext
+public enum OperationalMode
 {
-    FileSystemAbstraction fileSystem();
-
-    File storeDir();
-
-    DatabaseInfo databaseInfo();
+    // Note, these are sent verbatim via UDC if UDC is enabled
+    unknown,
+    single,
+    ha,
+    core,
+    edge
 }

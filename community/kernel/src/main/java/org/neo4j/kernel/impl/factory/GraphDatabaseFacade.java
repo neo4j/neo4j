@@ -595,7 +595,7 @@ public class GraphDatabaseFacade
     @Override
     public String toString()
     {
-        return platformModule.config.get( GraphDatabaseFacadeFactory.Configuration.editionName)+" ["+storeDir+"]";
+        return platformModule.databaseInfo + " ["+storeDir+"]";
     }
 
     private static class PropertyValueFilteringNodeIdIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator

@@ -26,12 +26,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.ext.udc.UdcConstants;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.StartupStatistics;
+import org.neo4j.kernel.impl.factory.Edition;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -100,8 +102,8 @@ public class DefaultUdcInformationCollectorTest
     {
         // Given
         usageData.set( UsageDataKeys.version, "1.2.3" );
-        usageData.set( UsageDataKeys.edition, UsageDataKeys.Edition.advanced );
-        usageData.set( UsageDataKeys.operationalMode, UsageDataKeys.OperationalMode.ha );
+        usageData.set( UsageDataKeys.edition, Edition.advanced );
+        usageData.set( UsageDataKeys.operationalMode, OperationalMode.ha );
 
         // When & Then
         assertEquals( "1.2.3", collector.getUdcParams().get( UdcConstants.VERSION ) );

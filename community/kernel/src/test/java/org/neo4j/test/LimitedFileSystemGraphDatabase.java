@@ -44,9 +44,9 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
         new CommunityFacadeFactory()
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade facade )
             {
-                return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                return new ImpermanentPlatformModule( storeDir, params, databaseInfo(), dependencies, facade)
                 {
                     @Override
                     protected FileSystemAbstraction createFileSystemAbstraction()

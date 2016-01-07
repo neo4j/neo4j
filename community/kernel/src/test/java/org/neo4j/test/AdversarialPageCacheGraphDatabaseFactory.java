@@ -57,7 +57,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
                     protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
                             Dependencies dependencies, GraphDatabaseFacade facade )
                     {
-                        return new PlatformModule( storeDir, params, dependencies, facade )
+                        return new PlatformModule( storeDir, params, databaseInfo(), dependencies, facade )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()

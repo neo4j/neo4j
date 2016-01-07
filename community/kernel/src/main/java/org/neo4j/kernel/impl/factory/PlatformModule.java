@@ -63,8 +63,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.editionName;
-
 /**
  * Platform module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. This creates
  * all the services needed by {@link org.neo4j.kernel.impl.factory.EditionModule} implementations.
@@ -84,6 +82,8 @@ public class PlatformModule
     public final LifeSupport life;
 
     public final File storeDir;
+
+    public final DatabaseInfo databaseInfo;
 
     public final DiagnosticsManager diagnosticsManager;
 
@@ -105,9 +105,10 @@ public class PlatformModule
 
     public final TransactionStats transactionMonitor;
 
-    public PlatformModule( File storeDir, Map<String, String> params,
+    public PlatformModule( File storeDir, Map<String, String> params, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
     {
+        this.databaseInfo = databaseInfo;
         dependencies = new org.neo4j.kernel.impl.util.Dependencies( new Supplier<DependencyResolver>()
         {
             @Override
@@ -172,7 +173,7 @@ public class PlatformModule
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
 
         kernelExtensions = dependencies.satisfyDependency( new KernelExtensions(
-                new SimpleKernelContext( fileSystem, storeDir, config.get( editionName ) ),
+                new SimpleKernelContext( fileSystem, storeDir, databaseInfo ),
                 externalDependencies.kernelExtensions(),
                 dependencies,
                 UnsatisfiedDependencyStrategies.fail() ) );
@@ -186,7 +187,6 @@ public class PlatformModule
     {
         sysInfo.set( UsageDataKeys.version, Version.getKernel().getReleaseVersion() );
         sysInfo.set( UsageDataKeys.revision, Version.getKernel().getVersion() );
-        sysInfo.set( UsageDataKeys.operationalMode, UsageDataKeys.OperationalMode.ha );
     }
 
     public LifeSupport createLife()

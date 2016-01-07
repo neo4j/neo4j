@@ -37,6 +37,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -55,7 +56,6 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.editionName;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 /**
@@ -66,7 +66,6 @@ import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createP
 //: TODO introduce abstract tool class as soon as we will have several tools in tools module
 public class StoreMigration
 {
-
     private static final String HELP_FLAG = "help";
 
     public static void main( String[] args ) throws IOException
@@ -79,9 +78,7 @@ public class StoreMigration
         File storeDir = parseDir( arguments );
 
         FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out );
-        StoreMigration migration = new StoreMigration();
-        migration.run( new DefaultFileSystemAbstraction(), storeDir, getMigrationConfig(),
-                userLogProvider );
+        new StoreMigration().run( new DefaultFileSystemAbstraction(), storeDir, getMigrationConfig(), userLogProvider );
     }
 
     private static Config getMigrationConfig()
@@ -107,7 +104,7 @@ public class StoreMigration
         deps.satisfyDependencies( fs, config );
         deps.satisfyDependencies( legacyIndexProvider );
 
-        KernelContext kernelContext = new SimpleKernelContext( fs, storeDirectory, config.get( editionName ) );
+        KernelContext kernelContext = new SimpleKernelContext( fs, storeDirectory, DatabaseInfo.UNKNOWN );
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
                 kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                 deps, ignore() ) );

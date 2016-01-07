@@ -45,6 +45,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -182,7 +183,7 @@ public class BackupServiceStressTestingBuilder
                 LifeSupport life = new LifeSupport();
                 try
                 {
-                    SimpleKernelContext context = new SimpleKernelContext( fileSystem, storeDir, "Test" );
+                    SimpleKernelContext context = new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN );
                     OnlineBackupExtensionFactory.Dependencies extensionDeps = DependenciesProxy.dependencies(
                             dependencies, OnlineBackupExtensionFactory.Dependencies.class );
                     life.add( new OnlineBackupExtensionFactory().newInstance( context, extensionDeps ) );

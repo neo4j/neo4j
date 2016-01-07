@@ -19,11 +19,11 @@
  */
 package org.neo4j.coreedge.server.core;
 
-import java.io.File;
-import java.util.HashMap;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.HashMap;
 
 import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
@@ -31,6 +31,7 @@ import org.neo4j.coreedge.raft.state.id_allocation.OnDiskIdAllocationState;
 import org.neo4j.coreedge.raft.state.membership.OnDiskRaftMembershipState;
 import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
 import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -38,6 +39,8 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
+import static org.neo4j.kernel.impl.factory.DatabaseInfo.UNKNOWN;
 
 public class OnDiskFileLayoutTest
 {
@@ -48,24 +51,21 @@ public class OnDiskFileLayoutTest
     public void shouldHaveClusterStateDirectoryWithNoNakedFiles() throws Exception
     {
         // given
-        final PlatformModule platformModule = new PlatformModule( dir.graphDbDir(), new HashMap<>(),
+        final PlatformModule platformModule = new PlatformModule( dir.graphDbDir(), new HashMap<>(), UNKNOWN,
                 GraphDatabaseDependencies.newDependencies(), mock( GraphDatabaseFacade.class ) );
-        File baseClusterStateFile = new File( dir.graphDbDir(),
-                EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME );
-
+        File baseClusterStateFile = new File( dir.graphDbDir(), CLUSTER_STATE_DIRECTORY_NAME );
 
         // when
         new EnterpriseCoreEditionModule( platformModule, new TestOnlyDiscoveryServiceFactory() );
 
         // then
-        platformModule.fileSystem.fileExists( new File( baseClusterStateFile, OnDiskVoteState.DIRECTORY_NAME ) );
-        platformModule.fileSystem.fileExists( new File( baseClusterStateFile,
-                OnDiskIdAllocationState.DIRECTORY_NAME ) );
-        platformModule.fileSystem.fileExists( new File( baseClusterStateFile, OnDiskTermState.DIRECTORY_NAME ) );
-        platformModule.fileSystem.fileExists( new File( baseClusterStateFile, OnDiskRaftMembershipState
-                .DIRECTORY_NAME ) );
-        platformModule.fileSystem.fileExists( new File( baseClusterStateFile, NaiveDurableRaftLog.DIRECTORY_NAME ) );
+        FileSystemAbstraction fs = platformModule.fileSystem;
+        fs.fileExists( new File( baseClusterStateFile, OnDiskVoteState.DIRECTORY_NAME ) );
+        fs.fileExists( new File( baseClusterStateFile, OnDiskIdAllocationState.DIRECTORY_NAME ) );
+        fs.fileExists( new File( baseClusterStateFile, OnDiskTermState.DIRECTORY_NAME ) );
+        fs.fileExists( new File( baseClusterStateFile, OnDiskRaftMembershipState.DIRECTORY_NAME ) );
+        fs.fileExists( new File( baseClusterStateFile, NaiveDurableRaftLog.DIRECTORY_NAME ) );
 
-        assertEquals(5, platformModule.fileSystem.listFiles( baseClusterStateFile ).length);
+        assertEquals(5, fs.listFiles( baseClusterStateFile ).length);
     }
 }

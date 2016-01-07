@@ -74,7 +74,7 @@ public class BigJumpingStoreIT
             @Override
             protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
-                return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade )
                 {
                     protected FileSystemAbstraction createFileSystemAbstraction()
                     {

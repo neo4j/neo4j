@@ -31,6 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -142,7 +143,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
             @Override
             protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
-                return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
+                return new ImpermanentPlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade );
             }
         }.newFacade( storeDir, new HashMap<>( params ), dependencies, this );
     }
@@ -190,11 +191,11 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     protected static class ImpermanentPlatformModule extends PlatformModule
     {
-        public ImpermanentPlatformModule( File storeDir, Map<String, String> params,
+        public ImpermanentPlatformModule( File storeDir, Map<String, String> params, DatabaseInfo databaseInfo,
                                           GraphDatabaseFacadeFactory.Dependencies dependencies,
                                           GraphDatabaseFacade graphDatabaseFacade )
         {
-            super( storeDir, withForcedInMemoryConfiguration(params), dependencies, graphDatabaseFacade );
+            super( storeDir, withForcedInMemoryConfiguration(params), databaseInfo, dependencies, graphDatabaseFacade );
         }
 
         @Override

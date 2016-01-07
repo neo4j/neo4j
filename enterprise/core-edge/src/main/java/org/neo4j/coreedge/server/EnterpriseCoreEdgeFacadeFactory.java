@@ -35,7 +35,6 @@ abstract class EnterpriseCoreEdgeFacadeFactory extends GraphDatabaseFacadeFactor
     public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, Dependencies dependencies,
                                           GraphDatabaseFacade graphDatabaseFacade )
     {
-        params.put( Configuration.editionName.name(), "Core-Edge Enterprise" );
         return super.newFacade( storeDir, params, dependencies, graphDatabaseFacade );
     }
 

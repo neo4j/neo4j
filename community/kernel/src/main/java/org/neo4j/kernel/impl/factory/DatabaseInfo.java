@@ -17,41 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.spi;
+package org.neo4j.kernel.impl.factory;
 
-import java.io.File;
-
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
-
-public class SimpleKernelContext implements KernelContext
+public class DatabaseInfo
 {
-    private final FileSystemAbstraction fileSystem;
-    private final File storeDir;
-    private final DatabaseInfo databaseInfo;
+    public static final DatabaseInfo UNKNOWN = new DatabaseInfo( Edition.unknown, OperationalMode.unknown );
 
-    public SimpleKernelContext( FileSystemAbstraction fileSystem, File storeDir, DatabaseInfo databaseInfo )
+    public final Edition edition;
+    public final OperationalMode operationalMode;
+
+    public DatabaseInfo( Edition edition, OperationalMode operationalMode )
     {
-        this.fileSystem = fileSystem;
-        this.storeDir = storeDir;
-        this.databaseInfo = databaseInfo;
+        this.edition = edition;
+        this.operationalMode = operationalMode;
     }
 
     @Override
-    public FileSystemAbstraction fileSystem()
+    public String toString()
     {
-        return fileSystem;
+        return edition + " " + operationalMode;
     }
 
-    @Override
-    public File storeDir()
-    {
-        return storeDir;
-    }
-
-    @Override
-    public DatabaseInfo databaseInfo()
-    {
-        return databaseInfo;
-    }
 }

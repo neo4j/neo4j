@@ -52,6 +52,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -605,8 +606,10 @@ public class BackupServiceIT
         dependencies.satisfyDependencies( defaultConfig, monitors, NullLogProvider.getInstance() );
 
         OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension)
-                new OnlineBackupExtensionFactory().newInstance( new SimpleKernelContext( fileSystem, storeDir, "Test" ),
-                DependenciesProxy.dependencies(dependencies, OnlineBackupExtensionFactory.Dependencies.class));
+                new OnlineBackupExtensionFactory().newInstance(
+                        new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN ),
+                        DependenciesProxy.dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies.class )
+                );
         backup.start();
 
         // when

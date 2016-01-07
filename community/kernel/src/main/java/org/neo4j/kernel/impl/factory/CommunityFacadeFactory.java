@@ -31,15 +31,12 @@ import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 /**
  * This facade creates instances of the Community edition of Neo4j.
  */
-public class CommunityFacadeFactory
-        extends GraphDatabaseFacadeFactory
+public class CommunityFacadeFactory extends GraphDatabaseFacadeFactory
 {
     @Override
-    public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade
-            graphDatabaseFacade )
+    public GraphDatabaseFacade newFacade( File storeDir, Map<String,String> params, Dependencies dependencies,
+            GraphDatabaseFacade graphDatabaseFacade )
     {
-        params.put( Configuration.editionName.name(), "Community" );
-
         return super.newFacade( storeDir, params, newDependencies( dependencies ).settingsClasses(
                 toList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) ),
                 graphDatabaseFacade );
@@ -49,4 +46,27 @@ public class CommunityFacadeFactory
     {
         return new CommunityEditionModule( platformModule );
     }
+
+    @Override
+    protected DatabaseInfo databaseInfo()
+    {
+        return new DatabaseInfo( determineEdition(), OperationalMode.single );
+    }
+
+    private Edition determineEdition()
+    {
+        // FIXME: to be removed when advanced is gone
+        try
+        {
+            getClass().getClassLoader().loadClass( "org.neo4j.management.Neo4jManager" );
+            return Edition.advanced;
+        }
+        catch ( ClassNotFoundException e )
+        {
+            // Not Advanced
+        }
+
+        return Edition.community;
+    }
+
 }

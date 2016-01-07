@@ -105,9 +105,9 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -122,7 +122,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
-import org.neo4j.udc.UsageDataKeys;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
@@ -303,9 +302,9 @@ public class EnterpriseCoreEditionModule
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
-        registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ), life, dependencies );
+        registerRecovery( platformModule.databaseInfo, life, dependencies );
 
-        publishEditionInfo( dependencies.resolveDependency( UsageData.class ) );
+        publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
         ExpiryScheduler expiryScheduler = new ExpiryScheduler( platformModule.jobScheduler );
         Expiration expiration = new Expiration( SYSTEM_CLOCK );
@@ -450,12 +449,6 @@ public class EnterpriseCoreEditionModule
         }
     }
 
-    private void publishEditionInfo( UsageData sysInfo )
-    {
-        sysInfo.set( UsageDataKeys.edition, UsageDataKeys.Edition.enterprise );
-        sysInfo.set( UsageDataKeys.operationalMode, UsageDataKeys.OperationalMode.core );
-    }
-
     protected SchemaWriteGuard createSchemaWriteGuard()
     {
         return () -> {
@@ -490,21 +483,21 @@ public class EnterpriseCoreEditionModule
         return () -> new TransactionHeaderInformation( -1, -1, new byte[0] );
     }
 
-    protected void registerRecovery( final String editionName, LifeSupport life,
+    protected void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
                                      final DependencyResolver dependencyResolver )
     {
         life.addLifecycleListener( ( instance, from, to ) -> {
             if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
             {
-                doAfterRecoveryAndStartup( editionName, dependencyResolver );
+                doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
             }
         } );
     }
 
     @Override
-    protected void doAfterRecoveryAndStartup( String editionName, DependencyResolver dependencyResolver )
+    protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver )
     {
-        super.doAfterRecoveryAndStartup( editionName, dependencyResolver );
+        super.doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
 
         new RemoveOrphanConstraintIndexesOnStartup( dependencyResolver.resolveDependency( NeoStoreDataSource.class )
                 .getKernel(), dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider() )
