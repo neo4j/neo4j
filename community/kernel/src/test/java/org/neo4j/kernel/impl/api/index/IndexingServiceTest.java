@@ -49,6 +49,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -106,7 +107,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
+import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
@@ -163,6 +166,7 @@ public class IndexingServiceTest
         indexingService.createIndexes( indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
         IndexProxy proxy = indexingService.getIndexProxy( 0 );
 
+        waitForIndexesToComeOnline( indexingService, 0 );
         verify( populator, timeout( 1000 ) ).close( true );
 
         try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
@@ -224,6 +228,7 @@ public class IndexingServiceTest
 
         latch.countDown();
 
+        waitForIndexesToComeOnline( indexingService, 0 );
         verify( populator, timeout( 1000 ) ).close( true );
 
         // then
@@ -262,7 +267,8 @@ public class IndexingServiceTest
         indexingService.createIndexes( constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR, null ) );
         IndexProxy proxy = indexingService.getIndexProxy( 0 );
 
-        verify( populator, timeout( 1000 ) ).close( true );
+        // don't wait for index to come ONLINE here since we're testing that it doesn't
+        verify( populator, timeout( 2000 ) ).close( true );
 
         try (IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
         {
@@ -463,6 +469,7 @@ public class IndexingServiceTest
         // WHEN
         ResourceIterator<File> files = indexing.snapshotStoreFiles();
         populatorLatch.countDown(); // only now, after the snapshot, is the population job allowed to finish
+        waitForIndexesToComeOnline( indexing, indexId, indexId2 );
 
         // THEN
         // We get a snapshot from the online index, but no snapshot from the populating one
@@ -552,6 +559,7 @@ public class IndexingServiceTest
         life.start();
 
         indexing.createIndexes( indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+        waitForIndexesToComeOnline( indexing, 0 );
         verify( populator, timeout( 1000 ) ).close( true );
 
         // When
@@ -595,6 +603,8 @@ public class IndexingServiceTest
         indexing.createIndexes( indexRule( indexId1, labelId1, propertyKeyId, PROVIDER_DESCRIPTOR ) );
         indexing.createIndexes( indexRule( indexId2, labelId2, propertyKeyId, PROVIDER_DESCRIPTOR ) );
 
+        waitForIndexesToComeOnline( indexing, indexId1, indexId2 );
+
         verify( populator, timeout( 1000 ).times( 2 ) ).close( true );
 
         // When
@@ -605,6 +615,31 @@ public class IndexingServiceTest
         // Then
         verify( updater1 ).close();
         verify( updater2 ).close();
+    }
+
+    private void waitForIndexesToComeOnline( IndexingService indexing, long... indexRuleIds )
+            throws IndexNotFoundKernelException
+    {
+        long end = currentTimeMillis() + SECONDS.toMillis( 30 );
+        while ( !allOnline( indexing, indexRuleIds ) )
+        {
+            if ( currentTimeMillis() > end )
+            {
+                fail( "Indexes couldn't come online" );
+            }
+        }
+    }
+
+    private boolean allOnline( IndexingService indexing, long[] indexRuleIds ) throws IndexNotFoundKernelException
+    {
+        for ( long indexRuleId : indexRuleIds )
+        {
+            if ( indexing.getIndexProxy( indexRuleId ).getState() != InternalIndexState.ONLINE )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Test
