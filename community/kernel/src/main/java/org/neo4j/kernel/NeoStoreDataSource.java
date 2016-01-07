@@ -43,6 +43,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
@@ -81,6 +82,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -768,7 +770,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                                       IndexingService indexingService,
                                       StoreReadLayer storeLayer,
                                       UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
-                                      StorageEngine storageEngine )
+                                      StorageEngine storageEngine ) throws ProcedureException
     {
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine,
                 config );
@@ -810,6 +812,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures );
 
         kernel.registerTransactionHook( transactionEventHandlers );
+
+        BuiltInProcedures.addTo( kernel );
 
         final NeoStoreFileListing fileListing = new NeoStoreFileListing( storeDir, labelScanStore, indexingService,
                 legacyIndexProviderLookup );

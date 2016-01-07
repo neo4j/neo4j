@@ -229,6 +229,11 @@ public class ProcedureSignature
         return new Builder(namespace, name);
     }
 
+    public static ProcedureName procedureName( String ... namespaceAndName)
+    {
+        return procedureSignature( namespaceAndName ).build().name();
+    }
+
     private static List<AnyType> typesOf( List<FieldSignature> namedSig )
     {
         List<AnyType> out = new LinkedList<>();

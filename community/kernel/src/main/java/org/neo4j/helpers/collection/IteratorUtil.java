@@ -32,8 +32,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.Resource;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -44,8 +47,11 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Pair;
+import org.neo4j.storageengine.api.Token;
 
 import static java.util.EnumSet.allOf;
+import static java.util.Spliterator.IMMUTABLE;
+import static java.util.Spliterator.ORDERED;
 import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
@@ -1087,5 +1093,10 @@ public abstract class IteratorUtil
     public static <T> T[] array( T... items )
     {
         return items;
+    }
+
+    public static Stream<Token> stream( Iterator<Token> iter )
+    {
+        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( iter, ORDERED | IMMUTABLE), false);
     }
 }
