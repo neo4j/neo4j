@@ -21,7 +21,6 @@ package org.neo4j.desktop.runtime;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -29,15 +28,11 @@ import org.junit.Test;
 
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.ui.DesktopModel;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
 
 public class DatabaseActionsTest
 {
@@ -45,8 +40,6 @@ public class DatabaseActionsTest
     public TargetDirectory.TestDirectory baseDir = TargetDirectory.testDirForTest( getClass() );
 
     private File storeDir;
-    private File serverConfigFile;
-    private File dbConfigFile;
 
     @Test
     public void shouldCreateMessagesLogInDbDirWithClassicLog() throws Exception
@@ -54,7 +47,6 @@ public class DatabaseActionsTest
         // Given
         Installation installation = mock( Installation.class );
         when( installation.getDatabaseDirectory() ).thenReturn( storeDir );
-        when( installation.getServerConfigurationsFile() ).thenReturn( serverConfigFile );
 
         DesktopModel model = new DesktopModel( installation );
         DatabaseActions databaseActions = new DatabaseActions( model );
@@ -79,14 +71,6 @@ public class DatabaseActionsTest
     public void createFiles() throws IOException
     {
         storeDir = new File( baseDir.directory(), "store_dir" );
-        serverConfigFile = new File( storeDir, "neo4j-server.properties" );
-        dbConfigFile = new File( storeDir, "neo4j.properties" );
         storeDir.mkdirs();
-
-        Map<String,String> properties = MapUtil.stringMap( GraphDatabaseSettings.store_dir.name(),
-                storeDir.getAbsolutePath());
-        writePropertiesToFile( properties, serverConfigFile );
-
-        dbConfigFile.createNewFile();
     }
 }

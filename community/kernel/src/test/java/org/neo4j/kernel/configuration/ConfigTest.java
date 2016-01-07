@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Test;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,22 +26,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Test;
+
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConfigTest
 {
@@ -166,19 +168,6 @@ public class ConfigTest
 
         // Then
         assertThat( listener.lastChangeSet, nullValue() );
-    }
-    
-    @Test
-    public void settingNewPropertyMustNotAlterExistingSettings()
-    {
-        // Given
-        Config config = new Config( stringMap( "a", "1" ) );
-
-        // When
-        config.setProperty( "b", "2" );
-
-        // Then
-        assertThat( config.getParams(), is( stringMap( "a", "1", "b", "2" ) ) );
     }
 
     @Test

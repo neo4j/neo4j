@@ -19,11 +19,6 @@
  */
 package org.neo4j.bolt;
 
-import io.netty.channel.Channel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import org.bouncycastle.operator.OperatorCreationException;
-
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -31,6 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import io.netty.channel.Channel;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import org.bouncycastle.operator.OperatorCreationException;
 
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
@@ -63,14 +63,14 @@ import org.neo4j.udc.UsageData;
 
 import static org.neo4j.bolt.BoltKernelExtension.EncryptionLevel.OPTIONAL;
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
-import static org.neo4j.helpers.Settings.BOOLEAN;
-import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
-import static org.neo4j.helpers.Settings.options;
-import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.kernel.configuration.Settings.ANY;
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
+import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 
 /**
@@ -97,17 +97,18 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 setting( "address", HOSTNAME_PORT, "localhost:7687" );
 
         @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
-        public static Setting<File> tls_certificate_file = org.neo4j.kernel.configuration.Settings.setting(
+        public static Setting<File> tls_certificate_file = setting(
                 "dbms.security.tls_certificate_file", PATH, "neo4j-home/ssl/snakeoil.cert" );
 
         @Description( "Path to the X.509 private key to be used by Neo4j for TLS connections" )
-        public static final Setting<File> tls_key_file = org.neo4j.kernel.configuration.Settings.setting(
+        public static final Setting<File> tls_key_file = setting(
                 "dbms.security.tls_key_file", PATH, "neo4j-home/ssl/snakeoil.key" );
 
         @Description( "Hostname for the Neo4j REST API" )
-        public static final Setting<String> webserver_address = org.neo4j.kernel.configuration.Settings
-                .setting( "org.neo4j.server.webserver.address", STRING,
-                        "localhost", illegalValueMessage( "Must be a valid hostname", org.neo4j.kernel.configuration.Settings.matches( ANY ) ) );
+        public static final Setting<String> webserver_address =
+                setting( "org.neo4j.server.webserver.address", STRING,
+                        "localhost", illegalValueMessage( "Must be a valid hostname", org.neo4j.kernel.configuration
+                                .Settings.matches( ANY ) ) );
 
 
         public static <T> Setting<T> connector( int i, Setting<T> setting )
