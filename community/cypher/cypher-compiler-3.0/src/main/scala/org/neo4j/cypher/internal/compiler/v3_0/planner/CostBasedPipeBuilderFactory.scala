@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{cartesianProductsOrValueJoins, SingleComponentPlanner, IDPQueryGraphSolver, IDPQueryGraphSolverMonitor}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 
 object CostBasedPipeBuilderFactory {
@@ -40,10 +40,14 @@ object CostBasedPipeBuilderFactory {
 
     def createQueryGraphSolver(n: CostBasedPlannerName): QueryGraphSolver = n match {
       case IDPPlannerName =>
-        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor]())
+        val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
+        val singleComponentPlanner = SingleComponentPlanner(monitor)
+        IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
 
       case DPPlannerName =>
-        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), maxTableSize = Int.MaxValue)
+        val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
+        val singleComponentPlanner = SingleComponentPlanner(monitor, maxTableSize = Int.MaxValue)
+        IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
     }
 
     val actualPlannerName = plannerName.getOrElse(CostBasedPlannerName.default)

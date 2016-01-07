@@ -39,22 +39,26 @@ object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateS
         if (sortedPlans.size > 1) {
           println("- Get best of:")
           for (plan <- sortedPlans) {
-            println(s"\t* Plan #${plan.debugId}")
-            println(s"\t\t${plan.toString}")
-            println(s"\t\t\t${costs(plan, context.input)}")
-            println(s"\t\t\t${plan.solved.estimatedCardinality}")
-            println(s"\t\t\tHints(${plan.solved.numHints})")
-            println(s"\t\t\tlhs: ${plan.lhs}")
+            val planText = plan.toString.replaceAll(System.lineSeparator(), System.lineSeparator() + "\t\t")
+            println("=-" * 10)
+            println(s"* Plan #${plan.debugId}")
+            println(s"\t$planText")
+            println(s"\t\t${costs(plan, context.input)}")
+            println(s"\t\t${plan.solved.estimatedCardinality}")
+            println(s"\t\tHints(${plan.solved.numHints})")
+            println(s"\t\tlhs: ${plan.lhs}")
           }
 
           val best = sortedPlans.head
+          println("!¡" * 10)
           println("- Best is:")
-          println(s"\tPlan #${best.debugId}")
-          println(s"\t\t${best.toString}")
-          println(s"\t\t\t${costs(best, context.input)}")
-          println(s"\t\t\t${best.solved.estimatedCardinality}")
-          println(s"\t\t\tHints(${best.solved.numHints})")
-          println(s"\t\t\tlhs: ${best.lhs}")
+          println(s"Plan #${best.debugId}")
+          println(s"\t${best.toString}")
+          println(s"\t\t${costs(best, context.input)}")
+          println(s"\t\t${best.solved.estimatedCardinality}")
+          println(s"\t\tHints(${best.solved.numHints})")
+          println(s"\t\tlhs: ${best.lhs}")
+          println("!¡" * 10)
           println()
         }
       }

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.{namePatternPredica
 import org.neo4j.cypher.internal.compiler.v3_0.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
@@ -113,7 +113,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedLogicalPlanningContext(planContext: PlanContext,
                                       metrics: Metrics = mockedMetrics,
                                       semanticTable: SemanticTable = newMockedSemanticTable,
-                                      strategy: QueryGraphSolver = new IDPQueryGraphSolver(mock[IDPQueryGraphSolverMonitor]),
+                                      strategy: QueryGraphSolver = new IDPQueryGraphSolver(
+                                        SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]),
+                                        cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor]),
                                       cardinality: Cardinality = Cardinality(1),
                                       strictness: Option[StrictnessMode] = None,
                                       notificationLogger: InternalNotificationLogger = devNullLogger,
@@ -185,7 +187,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryText, parsedStatement, semanticState)
     CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), rewriterSequencer, semanticChecker, postConditions, monitors.newMonitor[AstRewritingMonitor]()) match {
       case (ast: Query, newTable) =>
-        val semanticState = semanticChecker.check(queryText, ast, mkException)
+        semanticChecker.check(queryText, ast, mkException)
         tokenResolver.resolve(ast)(newTable, planContext)
         val (logicalPlan, _) = planner.produceLogicalPlan(ast, newTable)(planContext, devNullLogger)
         logicalPlan
