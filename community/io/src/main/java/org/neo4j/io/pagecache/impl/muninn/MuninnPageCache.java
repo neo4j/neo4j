@@ -442,7 +442,7 @@ public class MuninnPageCache implements PageCache
         {
             try
             {
-                file.flushAndForce();
+                file.flushAndForceForClose();
                 file.closeSwapper();
                 flushedAndClosed = true;
             }
@@ -485,7 +485,7 @@ public class MuninnPageCache implements PageCache
             FileMapping fileMapping = mappedFiles;
             while ( fileMapping != null )
             {
-                fileMapping.pagedFile.flushAndForceInternal( flushOpportunity );
+                fileMapping.pagedFile.flushAndForceInternal( flushOpportunity, false );
                 fileMapping = fileMapping.next;
             }
             syncDevice();

@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.test.RepeatRule;
 
-public class OptiLockStressTest
+public class OptiLockStressIT
 {
     private static final ExecutorService executor = Executors.newCachedThreadPool(new DaemonThreadFactory());
 

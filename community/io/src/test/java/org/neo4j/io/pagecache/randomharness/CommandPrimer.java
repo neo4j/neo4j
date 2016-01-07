@@ -27,10 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.TinyLockManager;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 import static org.hamcrest.Matchers.isOneOf;
@@ -51,7 +51,7 @@ class CommandPrimer
     private final int maxRecordCount;
     private final int recordsPerPage;
     // Entity-locks that protect the individual records, since page write locks are not exclusive.
-    private final ReentrantLock[] recordLocks;
+    private final TinyLockManager recordLocks;
 
     public CommandPrimer(
             Random rng,
@@ -76,11 +76,8 @@ class CommandPrimer
         recordsWrittenTo = new HashMap<>();
         recordsPerPage = cache.pageSize() / recordFormat.getRecordSize();
         maxRecordCount = filePageCount * recordsPerPage;
-        recordLocks = new ReentrantLock[maxRecordCount];
-        for ( int i = 0; i < maxRecordCount; i++ )
-        {
-            recordLocks[i] = new ReentrantLock();
-        }
+        recordLocks = new TinyLockManager();
+
         for ( File file : files )
         {
             recordsWrittenTo.put( file, new ArrayList<>() );
@@ -246,8 +243,7 @@ class CommandPrimer
                 PagedFile pagedFile = fileMap.get( file );
                 if ( pagedFile != null )
                 {
-                    ReentrantLock recordLock = recordLocks[recordId];
-                    recordLock.lock();
+                    recordLocks.lock( recordId );
                     try
                     {
                         try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_EXCLUSIVE_LOCK ) )
@@ -261,7 +257,7 @@ class CommandPrimer
                     }
                     finally
                     {
-                        recordLock.unlock();
+                        recordLocks.unlock( recordId );
                     }
                 }
             }

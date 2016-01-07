@@ -2268,7 +2268,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
-    public void writeLockedPageMustNotBlockFileUnmapping() throws Exception
+    public void writeLockedPageMustBlockFileUnmapping() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
@@ -2276,9 +2276,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK );
         assertTrue( cursor.next() );
 
-        fork( $close( pagedFile ) ).join();
+        Thread unmapper = fork( $close( pagedFile ) );
+        unmapper.join( 100 );
 
         cursor.close();
+        unmapper.join();
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )

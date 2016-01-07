@@ -185,12 +185,21 @@ final class MuninnPagedFile implements PagedFile
     {
         try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
         {
-            flushAndForceInternal( flushEvent.flushEventOpportunity() );
+            flushAndForceInternal( flushEvent.flushEventOpportunity(), false );
             syncDevice();
         }
     }
 
-    void flushAndForceInternal( FlushEventOpportunity flushOpportunity ) throws IOException
+    public void flushAndForceForClose() throws IOException
+    {
+        try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
+        {
+            flushAndForceInternal( flushEvent.flushEventOpportunity(), true );
+            syncDevice();
+        }
+    }
+
+    void flushAndForceInternal( FlushEventOpportunity flushOpportunity, boolean forClosing ) throws IOException
     {
         pageCache.pauseBackgroundFlushTask();
         MuninnPage[] pages = new MuninnPage[translationTableChunkSize];
@@ -216,7 +225,7 @@ final class MuninnPagedFile implements PagedFile
                         if ( element instanceof MuninnPage )
                         {
                             MuninnPage page = (MuninnPage) element;
-                            if ( !page.tryWriteLock() )
+                            if ( !(forClosing? page.tryExclusiveLock() : page.tryWriteLock()) )
                             {
                                 continue;
                             }
@@ -229,6 +238,10 @@ final class MuninnPagedFile implements PagedFile
                                 pagesGrabbed++;
                                 continue chunkLoop;
                             }
+                            else if ( forClosing )
+                            {
+                                page.unlockExclusive();
+                            }
                             else
                             {
                                 page.unlockWrite();
@@ -238,12 +251,12 @@ final class MuninnPagedFile implements PagedFile
                     }
                     if ( pagesGrabbed > 0 )
                     {
-                        pagesGrabbed = vectoredFlush( pages, pagesGrabbed, flushOpportunity );
+                        pagesGrabbed = vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
                     }
                 }
                 if ( pagesGrabbed > 0 )
                 {
-                    vectoredFlush( pages, pagesGrabbed, flushOpportunity );
+                    vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
                 }
             }
 
@@ -255,7 +268,8 @@ final class MuninnPagedFile implements PagedFile
         }
     }
 
-    private int vectoredFlush( MuninnPage[] pages, int pagesGrabbed, FlushEventOpportunity flushOpportunity )
+    private int vectoredFlush(
+            MuninnPage[] pages, int pagesGrabbed, FlushEventOpportunity flushOpportunity, boolean forClosing )
             throws IOException
     {
         FlushEvent flush = null;
@@ -302,7 +316,14 @@ final class MuninnPagedFile implements PagedFile
             // Always unlock all the pages in the vector
             for ( int j = 0; j < pagesGrabbed; j++ )
             {
-                pages[j].unlockWrite();
+                if ( forClosing )
+                {
+                    pages[j].unlockExclusive();
+                }
+                else
+                {
+                    pages[j].unlockWrite();
+                }
             }
         }
     }

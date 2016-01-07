@@ -20,92 +20,107 @@
 package org.neo4j.io.pagecache.stress;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.TinyLockManager;
 
-import static java.nio.file.Paths.get;
-import static org.neo4j.io.pagecache.stress.StressTestRecord.SizeOfCounter;
+import static org.junit.Assert.assertTrue;
 
+/**
+ * It works like this: We have N threads, and a number of records with N long fields plus a sum field. So each record
+ * can verify their consistency by summing up their N fields and comparing the result to their sum field. Further, each
+ * thread can also verify their consistency, by taking the sum of their respective N field across all records, and
+ * comparing it to the number of increments they've done. The records are protected by entity locks, since page write
+ * locks are not exclusive, so in the end we should see no lost updates. That is, both consistency checks should pass.
+ * We will also have many more file pages and cache pages, so we'll have lots of concurrent eviction and page faulting
+ * as well.
+ */
 public class PageCacheStresser
 {
     private final int maxPages;
-    private final int recordsPerPage;
     private final int numberOfThreads;
 
     private final String workingDirectory;
 
-    public PageCacheStresser( int maxPages, int recordsPerPage, int numberOfThreads, String workingDirectory )
+    public PageCacheStresser( int maxPages, int numberOfThreads, String workingDirectory )
     {
         this.maxPages = maxPages;
-        this.recordsPerPage = recordsPerPage;
         this.numberOfThreads = numberOfThreads;
         this.workingDirectory = workingDirectory;
     }
 
-    public void stress( PageCache pageCache, Condition condition, CountKeeperFactory countKeeperFactory ) throws Exception
+    public void stress( PageCache pageCache, Condition condition ) throws Exception
     {
-        File file = Files.createTempFile( get( workingDirectory ), "pagecacheundertest", ".bin" ).toFile();
+        File file = Files.createTempFile( Paths.get( workingDirectory ), "pagecacheundertest", ".bin" ).toFile();
         file.deleteOnExit();
-        PagedFile pagedFile = pageCache.map( file, recordsPerPage * (numberOfThreads + 1) * SizeOfCounter );
 
-        ChecksumVerifier checksumVerifier = new ChecksumVerifier( recordsPerPage, numberOfThreads );
+        int cachePageSize = pageCache.pageSize();
+        RecordFormat format = new RecordFormat( numberOfThreads, cachePageSize );
+        int filePageSize = format.getFilePageSize();
 
-        List<RecordStresser> recordStressers = prepare( condition, countKeeperFactory, pagedFile, checksumVerifier );
-
-        execute( recordStressers );
-
-        countKeeperFactory.createVerifier().verifyCounts( pagedFile );
-        checksumVerifier.verifyChecksums( pagedFile );
-
-        pagedFile.close();
+        try ( PagedFile pagedFile = pageCache.map( file, filePageSize ) )
+        {
+            List<RecordStresser> recordStressers = prepare( condition, pagedFile, format );
+            verifyResults( format, pagedFile, recordStressers );
+            execute( recordStressers );
+            verifyResults( format, pagedFile, recordStressers );
+        }
     }
 
-    private List<RecordStresser> prepare( Condition condition, CountKeeperFactory countKeeperFactory, PagedFile pagedFile, ChecksumVerifier checksumVerifier )
+    private List<RecordStresser> prepare( Condition condition, PagedFile pagedFile, RecordFormat format )
     {
-        CountUpdater countUpdater = new CountUpdater( numberOfThreads );
+        int maxRecords = Math.multiplyExact( maxPages, format.getRecordsPerPage() );
+        TinyLockManager locks = new TinyLockManager();
 
         List<RecordStresser> recordStressers = new LinkedList<>();
-        for ( int threadNumber = 0; threadNumber < numberOfThreads; threadNumber++ )
+        for ( int threadId = 0; threadId < numberOfThreads; threadId++ )
         {
-            recordStressers.add(
-                    new RecordStresser(
-                            pagedFile,
-                            condition,
-                            checksumVerifier,
-                            countUpdater,
-                            countKeeperFactory.createRecordKeeper(),
-                            maxPages,
-                            recordsPerPage,
-                            threadNumber
-
-                    )
-            );
+            recordStressers.add( new RecordStresser( pagedFile, condition, maxRecords, format, threadId, locks ) );
         }
         return recordStressers;
     }
 
-    private void execute( List<RecordStresser> recordStressers ) throws InterruptedException,
-            java.util.concurrent.ExecutionException
+    private void execute( List<RecordStresser> recordStressers ) throws InterruptedException, ExecutionException
     {
-        ExecutorService executorService = Executors.newFixedThreadPool( numberOfThreads );
-
-        try
+        ExecutorService executorService = Executors.newFixedThreadPool( numberOfThreads, r -> {
+            Thread thread = Executors.defaultThreadFactory().newThread( r );
+            thread.setDaemon( true );
+            return thread;
+        } );
+        List<Future<Void>> futures = executorService.invokeAll( recordStressers );
+        for ( Future<Void> future : futures )
         {
-            for ( Future<Void> future : executorService.invokeAll( recordStressers ) )
-            {
-                future.get();
-            }
+            future.get();
         }
-        finally
+        executorService.shutdown();
+        assertTrue( executorService.awaitTermination( 10, TimeUnit.SECONDS ) );
+    }
+
+    private void verifyResults( RecordFormat format, PagedFile pagedFile, List<RecordStresser> recordStressers )
+            throws IOException
+    {
+        for ( RecordStresser stresser : recordStressers )
         {
-            executorService.shutdown();
+            stresser.verifyCounts();
+        }
+        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_LOCK ) )
+        {
+            while ( cursor.next() )
+            {
+                format.verifyCheckSums( cursor );
+            }
         }
     }
 }
