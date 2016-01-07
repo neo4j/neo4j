@@ -22,6 +22,7 @@ package org.neo4j.codegen.source;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
@@ -48,51 +49,8 @@ import static org.neo4j.codegen.ByteCodeUtils.exceptions;
 import static org.neo4j.codegen.ByteCodeUtils.outerName;
 import static org.neo4j.codegen.ByteCodeUtils.signature;
 import static org.neo4j.codegen.ByteCodeUtils.typeName;
-import static org.objectweb.asm.Opcodes.AASTORE;
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
-import static org.objectweb.asm.Opcodes.ACC_STATIC;
-import static org.objectweb.asm.Opcodes.ACC_SUPER;
-import static org.objectweb.asm.Opcodes.ALOAD;
-import static org.objectweb.asm.Opcodes.ANEWARRAY;
-import static org.objectweb.asm.Opcodes.ARETURN;
-import static org.objectweb.asm.Opcodes.BASTORE;
-import static org.objectweb.asm.Opcodes.BIPUSH;
-import static org.objectweb.asm.Opcodes.CASTORE;
-import static org.objectweb.asm.Opcodes.DASTORE;
-import static org.objectweb.asm.Opcodes.DLOAD;
-import static org.objectweb.asm.Opcodes.DRETURN;
-import static org.objectweb.asm.Opcodes.DUP;
-import static org.objectweb.asm.Opcodes.FASTORE;
-import static org.objectweb.asm.Opcodes.FLOAD;
-import static org.objectweb.asm.Opcodes.FRETURN;
-import static org.objectweb.asm.Opcodes.GETFIELD;
-import static org.objectweb.asm.Opcodes.GETSTATIC;
-import static org.objectweb.asm.Opcodes.IASTORE;
-import static org.objectweb.asm.Opcodes.ICONST_0;
-import static org.objectweb.asm.Opcodes.ILOAD;
-import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
-import static org.objectweb.asm.Opcodes.INVOKESTATIC;
-import static org.objectweb.asm.Opcodes.IRETURN;
-import static org.objectweb.asm.Opcodes.LASTORE;
-import static org.objectweb.asm.Opcodes.LLOAD;
-import static org.objectweb.asm.Opcodes.LRETURN;
-import static org.objectweb.asm.Opcodes.NEWARRAY;
-import static org.objectweb.asm.Opcodes.PUTFIELD;
-import static org.objectweb.asm.Opcodes.PUTSTATIC;
-import static org.objectweb.asm.Opcodes.RETURN;
-import static org.objectweb.asm.Opcodes.SASTORE;
-import static org.objectweb.asm.Opcodes.SIPUSH;
-import static org.objectweb.asm.Opcodes.T_BOOLEAN;
-import static org.objectweb.asm.Opcodes.T_BYTE;
-import static org.objectweb.asm.Opcodes.T_CHAR;
-import static org.objectweb.asm.Opcodes.T_DOUBLE;
-import static org.objectweb.asm.Opcodes.T_FLOAT;
-import static org.objectweb.asm.Opcodes.T_INT;
-import static org.objectweb.asm.Opcodes.T_LONG;
-import static org.objectweb.asm.Opcodes.T_SHORT;
-import static org.objectweb.asm.Opcodes.V1_8;
 
-class ClassByteCodeWriter implements ClassEmitter
+class ClassByteCodeWriter implements ClassEmitter, Opcodes
 {
     private final ClassWriter classWriter;
     private final TypeReference type;
@@ -112,7 +70,7 @@ class ClassByteCodeWriter implements ClassEmitter
         if ( base.isInnerClass() )
         {
             classWriter.visitInnerClass( byteCodeName( base ), outerName(base),
-                    base.simpleName() , ACC_PUBLIC + ACC_STATIC );
+                    base.simpleName(), ACC_PUBLIC + ACC_STATIC );
         }
         this.type = type;
         this.base = base;
@@ -190,6 +148,15 @@ class ClassByteCodeWriter implements ClassEmitter
         {
             this.declaration = declaration;
             this.base = base;
+            for ( Parameter parameter : declaration.parameters() )
+            {
+                TypeReference type = parameter.type();
+                if ( type.isInnerClass() )
+                {
+                    classWriter.visitInnerClass( byteCodeName( type ), outerName( type ),
+                            type.simpleName(), type.modifiers() );
+                }
+            }
             this.methodVisitor = classWriter.visitMethod( ACC_PUBLIC, declaration.name(), desc( declaration ),
                     signature( declaration ), exceptions( declaration ) );
             this.methodVisitor.visitCode();
@@ -413,8 +380,18 @@ class ClassByteCodeWriter implements ClassEmitter
             {
                 argument.accept( this );
             }
-            methodVisitor.visitMethodInsn( INVOKESPECIAL, byteCodeName( method.owner() ), method.name(), desc( method ),
-                    false );
+            if ( Modifier.isInterface( method.owner().modifiers() ))
+            {
+                methodVisitor
+                        .visitMethodInsn( INVOKEINTERFACE, byteCodeName( method.owner() ), method.name(), desc( method ),
+                                true );
+            }
+            else
+            {
+                methodVisitor
+                        .visitMethodInsn( INVOKESPECIAL, byteCodeName( method.owner() ), method.name(), desc( method ),
+                                false );
+            }
         }
 
         @Override

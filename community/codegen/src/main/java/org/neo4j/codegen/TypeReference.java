@@ -19,6 +19,7 @@
  */
 package org.neo4j.codegen;
 
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 
@@ -85,12 +86,12 @@ public class TypeReference
             }
         }
         return new TypeReference( packageName, simpleName, type.isPrimitive(), type.isArray(), false,
-                declaringClassName );
+                declaringClassName, type.getModifiers() );
     }
 
     public static TypeReference typeParameter( String name )
     {
-        return new TypeReference( "", name, false, false, true, "" );
+        return new TypeReference( "", name, false, false, true, "", Modifier.PUBLIC );
     }
 
     public static TypeReference parameterizedType( Class<?> base, Class<?>... parameters )
@@ -107,7 +108,7 @@ public class TypeReference
     {
         return new TypeReference( base.packageName, base.simpleName, false, base.isArray(), false,
                 base.declaringClassName,
-                parameters );
+                base.modifiers, parameters );
     }
 
     public static TypeReference[] typeReferences( Class<?> first, Class<?>[] more )
@@ -138,6 +139,24 @@ public class TypeReference
     private final boolean isArray;
     private final boolean isTypeParameter;
     private final String declaringClassName;
+    private final int modifiers;
+
+    public static final TypeReference VOID = new TypeReference( "", "void", true, false, false, "", void.class.getModifiers() ),
+            OBJECT = new TypeReference( "java.lang", "Object", false, false, false, "", Object.class.getModifiers() );
+    static final TypeReference[] NO_TYPES = new TypeReference[0];
+
+    TypeReference( String packageName, String simpleName, boolean isPrimitive, boolean isArray,
+            boolean isTypeParameter, String declaringClassName, int modifiers, TypeReference... parameters )
+    {
+        this.packageName = packageName;
+        this.simpleName = simpleName;
+        this.isPrimitive = isPrimitive;
+        this.isArray = isArray;
+        this.isTypeParameter = isTypeParameter;
+        this.declaringClassName = declaringClassName;
+        this.modifiers = modifiers;
+        this.parameters = parameters;
+    }
 
     public String packageName()
     {
@@ -157,23 +176,6 @@ public class TypeReference
     public boolean isTypeParameter()
     {
         return isTypeParameter;
-    }
-
-
-    public static final TypeReference VOID = new TypeReference( "", "void", true, false, false, "" ),
-            OBJECT = new TypeReference( "java.lang", "Object", false, false, false, "" );
-    static final TypeReference[] NO_TYPES = new TypeReference[0];
-
-    TypeReference( String packageName, String simpleName, boolean isPrimitive, boolean isArray,
-            boolean isTypeParameter, String declaringClassName, TypeReference... parameters )
-    {
-        this.packageName = packageName;
-        this.simpleName = simpleName;
-        this.isPrimitive = isPrimitive;
-        this.isArray = isArray;
-        this.isTypeParameter = isTypeParameter;
-        this.declaringClassName = declaringClassName;
-        this.parameters = parameters;
     }
 
     public boolean isGeneric()
@@ -209,6 +211,11 @@ public class TypeReference
     public String declaringClassName()
     {
         return declaringClassName;
+    }
+
+    public int modifiers()
+    {
+        return modifiers;
     }
 
     @Override
