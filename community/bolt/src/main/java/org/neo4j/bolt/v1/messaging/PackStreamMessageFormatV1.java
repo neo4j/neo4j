@@ -130,13 +130,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleAckFailureMessage() throws IOException
-        {
-            packer.packStructHeader( 0, MessageTypes.MSG_ACK_FAILURE );
-            onMessageComplete.onMessageComplete();
-        }
-
-        @Override
         public void handleRecordMessage( Record item )
                 throws IOException
         {
@@ -253,9 +246,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     case MessageTypes.MSG_FAILURE:
                         unpackFailureMessage( output );
                         break;
-                    case MessageTypes.MSG_ACK_FAILURE:
-                        unpackAckFailureMessage( output );
-                        break;
                     case MessageTypes.MSG_IGNORED:
                         unpackIgnoredMessage( output );
                         break;
@@ -282,12 +272,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throw new BoltIOException( Status.Request.InvalidFormat, "Unable to read message type. " +
                         "Error was: " + e.getMessage(), e );
             }
-        }
-
-        private <E extends Exception> void unpackAckFailureMessage( MessageHandler<E> output )
-                throws E
-        {
-            output.handleAckFailureMessage();
         }
 
         private <E extends Exception> void unpackSuccessMessage( MessageHandler<E> output )

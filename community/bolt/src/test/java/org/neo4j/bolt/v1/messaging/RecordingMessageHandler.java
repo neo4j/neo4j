@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.messaging.MessageHandler;
-import org.neo4j.bolt.v1.messaging.message.AcknowledgeFailureMessage;
 import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
@@ -58,12 +56,6 @@ public class RecordingMessageHandler implements MessageHandler<RuntimeException>
     public void handleDiscardAllMessage()
     {
         messages.add( new DiscardAllMessage() );
-    }
-
-    @Override
-    public void handleAckFailureMessage() throws RuntimeException
-    {
-        messages.add( new AcknowledgeFailureMessage() );
     }
 
     @Override

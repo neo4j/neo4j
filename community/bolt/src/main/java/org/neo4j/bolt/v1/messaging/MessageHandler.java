@@ -32,8 +32,6 @@ public interface MessageHandler<E extends Exception>
 
     void handleDiscardAllMessage() throws E;
 
-    void handleAckFailureMessage() throws E;
-
     void handleRecordMessage( Record item ) throws E;
 
     void handleSuccessMessage( Map<String,Object> metadata ) throws E;
@@ -62,12 +60,6 @@ public interface MessageHandler<E extends Exception>
 
         @Override
         public void handleDiscardAllMessage() throws E
-        {
-
-        }
-
-        @Override
-        public void handleAckFailureMessage() throws E
         {
 
         }

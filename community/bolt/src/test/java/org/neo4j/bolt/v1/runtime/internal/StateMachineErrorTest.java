@@ -185,7 +185,7 @@ public class StateMachineErrorTest
     }
 
     @Test
-    public void testAcknowledgingError() throws Throwable
+    public void testUsingResetToAcknowledgeError() throws Throwable
     {
         // Given
         RecordingCallback<StatementMetadata, Object> messages = new RecordingCallback<>();
@@ -197,7 +197,7 @@ public class StateMachineErrorTest
         machine.commitTransaction(); // No tx to be committed!
 
         // When
-        machine.acknowledgeFailure( null, failures );
+        machine.reset( null, failures );
 
         // Then
         assertThat( failures.next(), SessionMatchers.success() );

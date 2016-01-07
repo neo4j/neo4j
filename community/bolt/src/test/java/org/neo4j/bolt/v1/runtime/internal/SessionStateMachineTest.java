@@ -86,7 +86,7 @@ public class SessionStateMachineTest
         verify( tx ).close();
 
         // And when
-        machine.acknowledgeFailure( null, Session.Callback.NO_OP );
+        machine.reset( null, Session.Callback.NO_OP );
 
         // Then the machine goes back to an idle (no open transaction) state
         assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.IDLE ) );
@@ -113,7 +113,7 @@ public class SessionStateMachineTest
         verify(tx).close();
 
         // And when
-        machine.acknowledgeFailure( null, Session.Callback.NO_OP );
+        machine.reset( null, Session.Callback.NO_OP );
 
         // Then the machine goes back to an idle (no open transaction) state
         assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );

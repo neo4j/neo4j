@@ -77,12 +77,6 @@ public class ErrorReportingSession implements Session
     }
 
     @Override
-    public <A> void acknowledgeFailure( A attachment, Callback<Void,A> callback )
-    {
-        reportError( attachment, callback );
-    }
-
-    @Override
     public <A> void reset( A attachment, Callback<Void,A> callback )
     {
         reportError( attachment, callback );

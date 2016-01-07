@@ -237,15 +237,9 @@ public class SessionStateMachine implements Session, SessionState
         ERROR
                 {
                     @Override
-                    public State acknowledgeError( SessionStateMachine ctx )
-                    {
-                        return IDLE;
-                    }
-
-                    @Override
                     public State reset( SessionStateMachine ctx )
                     {
-                        return acknowledgeError( ctx );
+                        return IDLE;
                     }
 
                     @Override
@@ -263,7 +257,7 @@ public class SessionStateMachine implements Session, SessionState
         RECOVERABLE_ERROR
                 {
                     @Override
-                    public State acknowledgeError (SessionStateMachine ctx)
+                    public State reset (SessionStateMachine ctx)
                     {
                         return IN_TRANSACTION;
                     }
@@ -334,11 +328,6 @@ public class SessionStateMachine implements Session, SessionState
         public State beginTransaction( SessionStateMachine ctx )
         {
             return onNoImplementation( ctx, "beginning implicit transaction" );
-        }
-
-        public State acknowledgeError( SessionStateMachine ctx )
-        {
-            return onNoImplementation( ctx, "acknowledging an error" );
         }
 
         public State reset( SessionStateMachine ctx )
@@ -517,17 +506,6 @@ public class SessionStateMachine implements Session, SessionState
         try
         {
             state = state.discardAll( this );
-        }
-        finally { after(); }
-    }
-
-    @Override
-    public <A> void acknowledgeFailure( A attachment, Callback<Void,A> callback )
-    {
-        before( attachment, callback );
-        try
-        {
-            state = state.acknowledgeError( this );
         }
         finally { after(); }
     }

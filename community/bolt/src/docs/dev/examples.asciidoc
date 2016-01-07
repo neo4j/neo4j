@@ -122,8 +122,7 @@ Server: SUCCESS { "type": "r" }
 
 === Error handling
 
-This illustrates how the server behaves when a request fails, and the server ignores incoming messages until an
-`ACK_FAILURE` message is received.
+This illustrates how the server behaves when a request fails, and shows how the server ignores incoming messages until a `RESET` message is received.
 
 .Error handling
 [source,bolt_exchange]
@@ -180,9 +179,9 @@ Server: IGNORED
 
 
 # Until the error is acknowledged
-Client: ACK_FAILURE
+Client: RESET
 
-  00 02 b0 0f 00 00
+  00 02 b0 02 00 00
 
 Server: SUCCESS {}
 

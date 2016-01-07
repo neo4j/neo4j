@@ -28,7 +28,6 @@ public class Messages
 {
     private static final PullAllMessage PULL_ALL = new PullAllMessage();
     private static final DiscardAllMessage DISCARD_ALL = new DiscardAllMessage();
-    private static final AcknowledgeFailureMessage ACK_FAILURE = new AcknowledgeFailureMessage();
     private static final SuccessMessage SUCCESS = new SuccessMessage( Collections.EMPTY_MAP );
 
     public static Message reset()
@@ -59,11 +58,6 @@ public class Messages
     public static Message discardAll()
     {
         return DISCARD_ALL;
-    }
-
-    public static Message ackFailure()
-    {
-        return ACK_FAILURE;
     }
 
     public static Message record( Record value )

@@ -46,10 +46,11 @@ Because the protocol leverages pipelining, the client and the server need to agr
 occurs, otherwise messages that were sent assuming no failure would occur might have unintended effects.
 
 When requests fail on the server, the server will send the client a `FAILURE` message.
-The client must acknowledge the `FAILURE` message by sending an `ACK_FAILURE` message to the server.
-Until the server receives the `ACK_FAILURE` message, it will send an `IGNORED` message in response to any other message from by the client, including messages that were sent in a pipeline.
+The client must acknowledge the `FAILURE` message by sending an `RESET` message to the server.
+Until the server receives the `RESET` message, it will send an `IGNORED` message in response to any other message from by the client, including messages that were sent in a pipeline.
+The `RESET` clears the pending failure state, disposes of any outstanding records and rolls back the current transaction (if any).
 
-The diagram below illustrates a typical flow involving `ACK_FAILURE` messages:
+The diagram below illustrates a typical flow involving `RESET` messages:
 
 image:failure-ack.png[]
 
@@ -200,38 +201,14 @@ Value: PULL_ALL
 B0 3F
 ----
 
-==== ACK_FAILURE
-
-The `ACK_FAILURE` message is a client message used to signal that a client has acknowledged a previous `FAILURE`
-. It has the following structure:
-
-[source,bolt_message_struct]
-----
-AcknowledgeFailureMessage (signature=0x0F) {
-}
-----
-
-On receipt of an `ACK_FAILURE` message, the server will clear any pending failure state and respond with a single `SUCCESS` message.
-If no such failure state is pending, a FAILURE message will be sent instead.
-
-An `ACK_FAILURE` will never be ignored by the server.
-
-.Response
-- `SUCCESS {}` if a failure has been successfully acknowledged
-- `FAILURE {"code": ..., "message": ...}` if there is no outstanding failure that requires acknowledgement
-
-.Example
-[source,bolt_packstream_type]
-----
-Value: ACK_FAILURE
-
-B0 0F
-----
-
 ==== RESET
 
-The `RESET` message is a client message used to return the current session to a "clean" state by discarding any outstanding records and rolling back the current transaction, if one exists.
-`RESET` will also override any outstanding `FAILURE` and can therefore be used in place of an `ACK_FAILURE` (albeit with extra power).
+The `RESET` message is a client message used to return the current session to a "clean" state.
+The following actions are performed by `RESET`:
+
+- clear any outstanding `FAILURE` state
+- dispose of any outstanding result records
+- rollback the current transaction (if any)
 
 [source,bolt_message_struct]
 ----
@@ -339,7 +316,7 @@ IgnoredMessage (signature=0x7E) {
 }
 ----
 
-A client message will be ignored if an earlier failure has not yet been acknowledged by the client via an `ACK_FAILURE` message.
+A client message will be ignored if an earlier failure has not yet been acknowledged by the client via a `RESET` message.
 For example, this will occur if the client optimistically sends a group of messages, one of which fails during execution: all subsequent messages in that group will then be ignored.
 Note that the original `PULL_ALL` message was never processed by the server.
 
