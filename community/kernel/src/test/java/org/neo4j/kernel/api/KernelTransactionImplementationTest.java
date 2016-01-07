@@ -464,7 +464,7 @@ public class KernelTransactionImplementationTest
 
     private KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted )
     {
-        return new KernelTransactionImplementation( null, null, new NoOpClient(), hooks, null, headerInformationFactory,
+        return new KernelTransactionImplementation( null, null, new NoOpClient(), hooks, null, null, headerInformationFactory,
                 commitProcess, transactionMonitor, legacyIndexState, kernelTransactions, clock, TransactionTracer.NULL,
                 storageEngine, lastTransactionIdWhenStarted );
     }

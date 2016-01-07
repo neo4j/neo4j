@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.proc.Procedures;
 
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.inOrder;
@@ -58,7 +59,7 @@ public class LockingStatementOperationsTest
     private final Locks.Client locks = mock( Locks.Client.class );
     private final InOrder order;
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-    private final KernelStatement state = new KernelStatement( transaction, null, locks, null, null );
+    private final KernelStatement state = new KernelStatement( transaction, null, locks, null, null, new Procedures() );
     private final SchemaStateOperations schemaStateOps;
 
     public LockingStatementOperationsTest()

@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.proc.Procedures;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -67,6 +68,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     private final LifeSupport dataSourceLife;
     private final Tracers tracers;
     private final StorageEngine storageEngine;
+    private final Procedures procedures;
 
     private final Set<KernelTransaction> allTransactions = newSetFromMap( new ConcurrentHashMap<>() );
 
@@ -82,7 +84,8 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                                TransactionMonitor transactionMonitor,
                                LifeSupport dataSourceLife,
                                Tracers tracers,
-                               StorageEngine storageEngine )
+                               StorageEngine storageEngine,
+                               Procedures procedures )
     {
         this.locks = locks;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -97,6 +100,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         this.dataSourceLife = dataSourceLife;
         this.tracers = tracers;
         this.storageEngine = storageEngine;
+        this.procedures = procedures;
     }
 
     @Override
@@ -111,7 +115,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         long lastTransactionIdWhenStarted = ((MetaDataStore)storageEngine.metaDataStore()).getLastCommittedTransactionId();
 
         KernelTransactionImplementation tx = new KernelTransactionImplementation( statementOperations, schemaWriteGuard,
-                locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
+                locksClient, hooks, constraintIndexCreator, procedures, transactionHeaderInformationFactory,
                 transactionCommitProcess, transactionMonitor, legacyIndexTransactionState,
                 this, Clock.SYSTEM_CLOCK, tracers.transactionTracer, storageEngine, lastTransactionIdWhenStarted );
 

@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.proc.Procedure;
 
 /**
  * The main API through which access to the Neo4j kernel is made, both read
@@ -51,4 +53,12 @@ public interface KernelAPI
      * @param hook {@link TransactionHook} to unregister.
      */
     void unregisterTransactionHook( TransactionHook hook );
+
+    /**
+     * Register a procedure that should be available from this kernel. This is not a transactional method, the procedure is not
+     * durably stored, and is not propagated in a cluster.
+     *
+     * @param signature signature of the procedure
+     */
+    void registerProcedure( Procedure signature ) throws ProcedureException;
 }

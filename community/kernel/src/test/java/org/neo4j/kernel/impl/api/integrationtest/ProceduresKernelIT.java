@@ -19,17 +19,21 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
+import java.util.stream.Stream;
 
+import org.neo4j.proc.Procedure;
+import org.neo4j.proc.ProcedureSignature;
+
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.storageengine.api.Neo4jTypes.NTString;
-import static org.neo4j.storageengine.api.procedure.ProcedureSignature.procedureSignature;
+import static org.hamcrest.Matchers.contains;
+import static org.neo4j.proc.Neo4jTypes.NTString;
+import static org.neo4j.proc.ProcedureSignature.procedureSignature;
 
 public class ProceduresKernelIT extends KernelIntegrationTest
 {
@@ -40,15 +44,40 @@ public class ProceduresKernelIT extends KernelIntegrationTest
             .in( "name", NTString )
             .out( "name", NTString ).build();
 
+    private final Procedure.BasicProcedure procedure = new Procedure.BasicProcedure( signature )
+    {
+        @Override
+        public Stream<Object[]> apply( Object[] input )
+        {
+            return Stream.<Object[]>of( input );
+        }
+    };
+
     @Test
-    @Ignore("Pending implementation")
     public void shouldGetProcedureByName() throws Throwable
     {
+        // Given
+        kernel.registerProcedure( procedure );
+
         // When
         ProcedureSignature found = readOperationsInNewTransaction()
                 .procedureGet( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ) );
 
         // Then
-        assertThat( found, equalTo( found ) );
+        assertThat( found, equalTo( signature ) );
+    }
+
+    @Test
+    public void shouldCallReadOnlyProcedure() throws Throwable
+    {
+        // Given
+        kernel.registerProcedure( procedure );
+
+        // When
+        Stream<Object[]> found = readOperationsInNewTransaction()
+                .procedureCallRead( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ), new Object[]{ 1337 } );
+
+        // Then
+        assertThat( found.collect( toList() ), contains( equalTo( new Object[]{1337} ) ) );
     }
 }

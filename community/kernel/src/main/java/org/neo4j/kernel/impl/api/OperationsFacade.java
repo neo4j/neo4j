@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -73,23 +74,26 @@ import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.proc.Procedures;
+import org.neo4j.proc.ProcedureSignature;
+import org.neo4j.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
 import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 
 public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations
 {
     final KernelStatement statement;
     private final StatementOperationParts operations;
+    private final Procedures procedures;
 
-    OperationsFacade( KernelStatement statement, StatementOperationParts operations )
+    OperationsFacade( KernelStatement statement, StatementOperationParts operations, Procedures procedures )
     {
         this.statement = statement;
         this.operations = operations;
+        this.procedures = procedures;
     }
 
     final KeyReadOperations tokenRead()
@@ -632,9 +636,17 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public ProcedureSignature procedureGet( ProcedureName signature ) throws ProcedureException
+    public ProcedureSignature procedureGet( ProcedureName name ) throws ProcedureException
     {
-        throw new UnsupportedOperationException();
+        statement.assertOpen();
+        return procedures.get( name );
+    }
+
+    @Override
+    public Stream<Object[]> procedureCallRead( ProcedureName name, Object[] input ) throws ProcedureException
+    {
+        statement.assertOpen();
+        return procedures.call( name, input );
     }
 
     @Override

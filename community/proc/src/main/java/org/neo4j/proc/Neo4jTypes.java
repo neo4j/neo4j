@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.proc;
 
 /**
  * See also type_system.txt in the cypher code base, this is a mapping of that type system definition

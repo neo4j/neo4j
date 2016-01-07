@@ -17,11 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.proc;
 
-import org.neo4j.kernel.api.cursor.DataReadCursors;
+import java.util.stream.Stream;
 
-public interface ReadOperations extends TokenRead, DataRead, DataReadCursors, SchemaRead, SchemaState,
-        Locking, LegacyIndexRead, CountsRead, ProcedureRead
+public interface Procedure
 {
+    ProcedureSignature signature();
+    Stream<Object[]> apply( Object[] input );
+
+    abstract class BasicProcedure implements Procedure
+    {
+        private final ProcedureSignature signature;
+
+        protected BasicProcedure( ProcedureSignature signature )
+        {
+            this.signature = signature;
+        }
+
+        @Override
+        public ProcedureSignature signature()
+        {
+            return signature;
+        }
+
+        @Override
+        public abstract Stream<Object[]> apply( Object[] input );
+    }
 }

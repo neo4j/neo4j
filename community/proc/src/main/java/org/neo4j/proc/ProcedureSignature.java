@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api.procedure;
+package org.neo4j.proc;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.storageengine.api.Neo4jTypes.AnyType;
+import org.neo4j.proc.Neo4jTypes.AnyType;
 
 import static java.util.Arrays.asList;
 
