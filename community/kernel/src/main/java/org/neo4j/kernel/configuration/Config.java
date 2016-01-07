@@ -134,21 +134,6 @@ public class Config implements DiagnosticsProvider, ConfigView
     }
 
     /**
-     * Use {@link Config#applyChanges(java.util.Map)} instead, so changes are applied in
-     * bulk and the ConfigurationChangeListeners can process the changes in one go.
-     */
-    @Deprecated
-    public Config setProperty( String key, Object value )
-    {
-        // This method here is for supporting legacy server configurator api.
-        // None should call this except external users,
-        // as "ideally" properties should not be changed once they are loaded.
-        this.params.put( key, value.toString() );
-        this.applyChanges( new HashMap<>( params ) );
-        return this;
-    }
-
-    /**
      * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
      * non-overlapping ones.
      * @param changes settings to add and override
