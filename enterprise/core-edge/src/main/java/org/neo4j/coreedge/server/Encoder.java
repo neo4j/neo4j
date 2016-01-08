@@ -19,13 +19,9 @@
  */
 package org.neo4j.coreedge.server;
 
-import java.nio.ByteBuffer;
-
 public interface Encoder<T>
 {
     /**
-     *
-     * @param buffer A buffer to hold the encoded bytes for the object's representation.
      * @return true if the encoding is complete, false if further calls to encode are required to completed the encoding.
      */
     boolean encode( T target );
