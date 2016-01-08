@@ -27,7 +27,7 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.raft.state.FollowerStates;
+import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 
 /**

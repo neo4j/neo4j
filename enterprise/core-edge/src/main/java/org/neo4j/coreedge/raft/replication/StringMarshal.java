@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.replication;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 
 import io.netty.buffer.ByteBuf;
 
@@ -50,6 +51,28 @@ public class StringMarshal
         }
     }
 
+    public static void serialize( ByteBuffer buffer, String string )
+    {
+        try
+        {
+            if ( string == null )
+            {
+                buffer.putInt( NULL_STRING_LENGTH );
+            }
+            else
+            {
+                byte[] bytes = string.getBytes( DEFAULT_CHARSET );
+                buffer.putInt( bytes.length );
+                buffer.put( bytes );
+            }
+
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new RuntimeException( "UTF-8 should be supported by all java platforms." );
+        }
+    }
+
     public static String deserialize( ByteBuf buffer )
     {
         try
@@ -62,6 +85,27 @@ public class StringMarshal
             ByteBuf stringBytes = buffer.readBytes( len );
 
             return new String( stringBytes.array(), DEFAULT_CHARSET );
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new RuntimeException( "UTF-8 should be supported by all java platforms." );
+        }
+    }
+
+    public static String deserialize( ByteBuffer buffer )
+    {
+        try
+        {
+            int len = buffer.getInt();
+            if ( len == NULL_STRING_LENGTH )
+            {
+                return null;
+            }
+
+            byte[] stringBytes = new byte[len];
+            buffer.get( stringBytes );
+
+            return new String( stringBytes, DEFAULT_CHARSET );
         }
         catch ( UnsupportedEncodingException e )
         {

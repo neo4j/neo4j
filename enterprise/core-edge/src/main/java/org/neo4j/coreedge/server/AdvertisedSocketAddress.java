@@ -20,21 +20,16 @@
 package org.neo4j.coreedge.server;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class AdvertisedSocketAddress
 {
-    private final InetSocketAddress address;
+    private final String address;
 
-    public AdvertisedSocketAddress( InetSocketAddress address )
+    public AdvertisedSocketAddress( String address )
     {
         this.address = address;
-    }
-
-    public static AdvertisedSocketAddress address( String address )
-    {
-        String[] split = address.split( ":" );
-        return new AdvertisedSocketAddress( new InetSocketAddress( split[0], Integer.valueOf( split[1] ) ) );
     }
 
     @Override
@@ -60,11 +55,12 @@ public class AdvertisedSocketAddress
 
     public String toString()
     {
-        return address.getHostName() + ":" + address.getPort();
+        return address;
     }
 
     public InetSocketAddress socketAddress()
     {
-        return address;
+        String[] split = address.split( ":" );
+        return new InetSocketAddress( split[0], Integer.valueOf( split[1] ) );
     }
 }

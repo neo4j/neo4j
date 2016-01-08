@@ -17,25 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state;
+package org.neo4j.coreedge.raft.membership;
 
-public class InMemoryTermStore implements TermStore
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.neo4j.test.TargetDirectory;
+
+public class RaftMembershipStateRecoveryManagerTest
 {
-    private long term = 0;
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
-    @Override
-    public long currentTerm()
+    @Test
+    public void shouldReturnCorrectLogIndex() throws Exception
     {
-        return term;
-    }
-
-    @Override
-    public void update( long newTerm )
-    {
-        if ( newTerm < term )
-        {
-            throw new IllegalArgumentException( "Cannot move to a lower term" );
-        }
-        term = newTerm;
     }
 }

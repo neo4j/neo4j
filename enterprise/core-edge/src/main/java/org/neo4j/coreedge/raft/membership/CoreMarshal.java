@@ -19,8 +19,11 @@
  */
 package org.neo4j.coreedge.raft.membership;
 
+import java.nio.ByteBuffer;
+
 import io.netty.buffer.ByteBuf;
 
+import org.neo4j.coreedge.raft.state.membership.Marshal;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.AdvertisedSocketAddressDecoder;
@@ -41,16 +44,31 @@ import org.neo4j.coreedge.server.AdvertisedSocketAddressEncoder;
  * │             └─────────────────────────────┘│
  * └────────────────────────────────────────────┘
  */
-public class CoreMemberMarshal
+public class CoreMarshal implements Marshal<CoreMember>
 {
-    static public void serialize( CoreMember member, ByteBuf buffer )
+    public void marshal( CoreMember member, ByteBuffer buffer )
     {
         AdvertisedSocketAddressEncoder encoder = new AdvertisedSocketAddressEncoder();
         encoder.encode( member.getCoreAddress(), buffer );
         encoder.encode( member.getRaftAddress(), buffer );
     }
 
-    static public CoreMember deserialize( ByteBuf buffer )
+    public void marshal( CoreMember member, ByteBuf buffer )
+    {
+        AdvertisedSocketAddressEncoder encoder = new AdvertisedSocketAddressEncoder();
+        encoder.encode( member.getCoreAddress(), buffer );
+        encoder.encode( member.getRaftAddress(), buffer );
+    }
+
+    public CoreMember unmarshal( ByteBuffer buffer )
+    {
+        AdvertisedSocketAddressDecoder decoder = new AdvertisedSocketAddressDecoder();
+        AdvertisedSocketAddress coreAddress = decoder.decode( buffer );
+        AdvertisedSocketAddress raftAddress = decoder.decode( buffer );
+        return new CoreMember( coreAddress, raftAddress );
+    }
+
+    public CoreMember unmarshal( ByteBuf buffer )
     {
         AdvertisedSocketAddressDecoder decoder = new AdvertisedSocketAddressDecoder();
         AdvertisedSocketAddress coreAddress = decoder.decode( buffer );

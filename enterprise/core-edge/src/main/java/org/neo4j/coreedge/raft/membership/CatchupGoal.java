@@ -20,7 +20,7 @@
 package org.neo4j.coreedge.raft.membership;
 
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
-import org.neo4j.coreedge.raft.state.FollowerState;
+import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.helpers.Clock;
 
 public class CatchupGoal

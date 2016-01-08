@@ -32,10 +32,11 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.junit.Test;
+
+import org.neo4j.coreedge.raft.state.vote.DurableVoteStore;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -52,8 +53,7 @@ public class DurableVoteStoreTest
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
 
         // This has to be real because it will be serialized
-        AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( InetSocketAddress.createUnresolved(
-                "localhost", 1234 ) );
+        AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "localhost:" + 1234 );
         CoreMember member = new CoreMember( localhost, localhost );
 
         DurableVoteStore store = new DurableVoteStore( fsa, new File("") );
@@ -79,8 +79,7 @@ public class DurableVoteStoreTest
         DurableVoteStore store = new DurableVoteStore( fsa, new File("") );
 
         // This has to be real because it will be serialized
-        AdvertisedSocketAddress firstLocalhost = new AdvertisedSocketAddress( InetSocketAddress.createUnresolved(
-                "localhost", 1234 ) );
+        AdvertisedSocketAddress firstLocalhost = new AdvertisedSocketAddress( "localhost:" + 1234 );
         CoreMember firstMember = new CoreMember( firstLocalhost, firstLocalhost );
 
         // When
@@ -91,8 +90,7 @@ public class DurableVoteStoreTest
         assertEquals( firstMember, store.votedFor() );
 
         // This should not be stored
-        AdvertisedSocketAddress secondLocalhost = new AdvertisedSocketAddress( InetSocketAddress.createUnresolved(
-                "localhost", 1235 ) );
+        AdvertisedSocketAddress secondLocalhost = new AdvertisedSocketAddress( "localhost:" + 1235 );
         CoreMember secondMember = new CoreMember( secondLocalhost, secondLocalhost );
 
         // When

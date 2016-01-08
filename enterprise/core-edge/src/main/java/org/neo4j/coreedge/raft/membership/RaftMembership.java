@@ -21,17 +21,24 @@ package org.neo4j.coreedge.raft.membership;
 
 import java.util.Set;
 
+/**
+ * Exposes a view of the members of a Raft cluster. Essentially it gives access to two sets - the set of voting
+ * members and the set of replication members.
+ * This class also allows for listeners to be notified of membership changes.
+ */
 public interface RaftMembership<MEMBER>
 {
     /**
-     * @return members whose votes count towards consensus.
+     * @return members whose votes count towards consensus. The returned set should be considered immutable.
      */
     Set<MEMBER> votingMembers();
 
     /**
-     * @return members to which replication should be attempted.
+     * @return members to which replication should be attempted. The returned set should be considered immutable.
      */
     Set<MEMBER> replicationMembers();
+
+    long logIndex();
 
     /**
      * Register a membership listener.
@@ -42,8 +49,16 @@ public interface RaftMembership<MEMBER>
 
     void deregisterListener( RaftMembership.Listener listener );
 
+    /**
+     * This interface must be implemented from whoever wants to be notified of membership changes. Membership changes
+     * are additions to and removals from the voting and replication members set.
+     */
     interface Listener
     {
+        /**
+         * This method is called on additions to and removals from either the voting or replication members sets.
+         * The implementation has the responsibility of figuring out what the actual change is.
+         */
         void onMembershipChanged();
     }
 }

@@ -35,6 +35,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.junit.Test;
+
+import org.neo4j.coreedge.raft.state.term.DurableTermStore;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreFileChannel;
 

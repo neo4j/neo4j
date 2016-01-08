@@ -19,9 +19,10 @@
  */
 package org.neo4j.coreedge.server;
 
+import java.nio.ByteBuffer;
+
 import io.netty.buffer.ByteBuf;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.raft.replication.StringMarshal;
 
 public class AdvertisedSocketAddressDecoder
@@ -31,6 +32,14 @@ public class AdvertisedSocketAddressDecoder
         String host = StringMarshal.deserialize( buffer );
         int port = buffer.readInt();
 
-        return AdvertisedSocketAddress.address( host + ":" + port );
+        return new AdvertisedSocketAddress( host + ":" + port );
+    }
+
+    public AdvertisedSocketAddress decode( ByteBuffer buffer )
+    {
+        String host = StringMarshal.deserialize( buffer );
+        int port = buffer.getInt();
+
+        return new AdvertisedSocketAddress( host + ":" + port );
     }
 }

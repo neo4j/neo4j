@@ -28,7 +28,6 @@ import com.hazelcast.core.Member;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.TRANSACTION_SERVER;
 import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.RAFT_SERVER;
 
@@ -68,8 +67,8 @@ public class HazelcastClusterTopology implements ClusterTopology
         for ( Member member : members )
         {
             coreMembers.add( new CoreMember(
-                    address( member.getStringAttribute( TRANSACTION_SERVER ) ),
-                    address( member.getStringAttribute( RAFT_SERVER ) )
+                    new AdvertisedSocketAddress( member.getStringAttribute( TRANSACTION_SERVER ) ),
+                    new AdvertisedSocketAddress( member.getStringAttribute( RAFT_SERVER ) )
             ));
         }
 
@@ -86,6 +85,6 @@ public class HazelcastClusterTopology implements ClusterTopology
     public AdvertisedSocketAddress firstTransactionServer()
     {
         Member member = hazelcast.getCluster().getMembers().iterator().next();
-        return address( member.getStringAttribute( TRANSACTION_SERVER ) );
+        return new AdvertisedSocketAddress( member.getStringAttribute( TRANSACTION_SERVER ) );
     }
 }

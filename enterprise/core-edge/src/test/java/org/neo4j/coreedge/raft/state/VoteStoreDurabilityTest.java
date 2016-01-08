@@ -24,15 +24,14 @@ import java.io.File;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.log.RaftStorageException;
+import org.neo4j.coreedge.raft.state.vote.DurableVoteStore;
+import org.neo4j.coreedge.raft.state.vote.VoteStore;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.raft.state.DurableVoteStore;
-import org.neo4j.coreedge.raft.state.VoteStore;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 public class VoteStoreDurabilityTest
 {
@@ -49,7 +48,8 @@ public class VoteStoreDurabilityTest
         EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
         VoteStore<CoreMember> voteStore = createVoteStore( fileSystem );
 
-        final CoreMember member = new CoreMember( address( "host1:1001" ), address( "host1:2001" ) );
+        final CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
+                new AdvertisedSocketAddress( "host1:2001" ) );
         voteStore.update( member );
 
         verifyCurrentLogAndNewLogLoadedFromFileSystem( voteStore, fileSystem,

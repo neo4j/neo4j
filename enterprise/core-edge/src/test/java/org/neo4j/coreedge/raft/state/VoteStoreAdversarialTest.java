@@ -19,14 +19,17 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import org.junit.Test;
-
 import java.io.File;
+
+import org.junit.Test;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
+import org.neo4j.coreedge.raft.state.vote.DurableVoteStore;
+import org.neo4j.coreedge.raft.state.vote.VoteStore;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
@@ -34,7 +37,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 public class VoteStoreAdversarialTest
 {
@@ -57,8 +59,10 @@ public class VoteStoreAdversarialTest
                 new File( "raft-log/vote.state" ), new AdversarialFileSystemAbstraction( adversary, fs ), fs );
         VoteStore<CoreMember> store = createVoteStore( fileSystem );
 
-        final CoreMember member1 = new CoreMember( address( "host1:1001" ), address( "host1:2001" ) );
-        final CoreMember member2 = new CoreMember( address( "host2:1001" ), address( "host2:2001" ) );
+        final CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
+                new AdvertisedSocketAddress( "host1:2001" ) );
+        final CoreMember member2 = new CoreMember( new AdvertisedSocketAddress( "host2:1001" ),
+                new AdvertisedSocketAddress( "host2:2001" ) );
 
         store.update( member1 );
         adversary.enable();
@@ -78,7 +82,7 @@ public class VoteStoreAdversarialTest
     }
 
     private void verifyCurrentLogAndNewLogLoadedFromFileSystem(
-            VoteStore<CoreMember> store,FileSystemAbstraction fileSystem, VoteVerifier voteVerifier )
+            VoteStore<CoreMember> store, FileSystemAbstraction fileSystem, VoteVerifier voteVerifier )
             throws RaftStorageException
     {
         voteVerifier.verifyVote( store );

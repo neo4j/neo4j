@@ -24,7 +24,8 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.raft.state.FollowerStates;
+import org.neo4j.coreedge.raft.state.follower.FollowerStates;
+import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -68,13 +69,13 @@ public class RaftMembershipStateMachine<MEMBER>
 
     private final MembershipDriver<MEMBER> membershipDriver;
     private long catchupTimeout;
-    private final RaftMembershipImpl<MEMBER> membershipState;
+    private final RaftMembershipState<MEMBER> membershipState;
 
     private MEMBER catchingUpMember;
 
     public RaftMembershipStateMachine( ReadableRaftLog raftLog, Clock clock, long electionTimeout,
                                        MembershipDriver<MEMBER> membershipDriver, LogProvider logProvider,
-                                       long catchupTimeout, RaftMembershipImpl<MEMBER> membershipState )
+                                       long catchupTimeout, RaftMembershipState<MEMBER> membershipState )
     {
         this.raftLog = raftLog;
         this.clock = clock;

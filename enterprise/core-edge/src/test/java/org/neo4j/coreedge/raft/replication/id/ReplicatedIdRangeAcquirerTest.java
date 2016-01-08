@@ -25,18 +25,20 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.replication.StubReplicator;
+import org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.IdType;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
-
 public class ReplicatedIdRangeAcquirerTest
 {
-    private final CoreMember one = new CoreMember( address( "a:1" ), address( "a:2" ) );
-    private final CoreMember two = new CoreMember( address( "b:1" ), address( "b:2" ) );
+    private final CoreMember one = new CoreMember( new AdvertisedSocketAddress( "a:1" ),
+            new AdvertisedSocketAddress( "a:2" ) );
+    private final CoreMember two = new CoreMember( new AdvertisedSocketAddress( "b:1" ),
+            new AdvertisedSocketAddress( "b:2" ) );
     private final StubReplicator replicator = new StubReplicator();
 
     @Test

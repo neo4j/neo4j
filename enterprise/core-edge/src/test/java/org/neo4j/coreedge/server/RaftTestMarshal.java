@@ -17,13 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state;
+package org.neo4j.coreedge.server;
 
-import org.neo4j.coreedge.raft.log.RaftStorageException;
+import java.nio.ByteBuffer;
 
-public interface TermStore
+import org.neo4j.coreedge.raft.state.membership.Marshal;
+
+public class RaftTestMarshal implements Marshal<RaftTestMember>
 {
-    long currentTerm();
+    @Override
+    public void marshal( RaftTestMember raftTestMember, ByteBuffer target )
+    {
+        target.putLong( raftTestMember.getId() );
+    }
 
-    void update( long newTerm ) throws RaftStorageException;
+    @Override
+    public RaftTestMember unmarshal( ByteBuffer source )
+    {
+        return RaftTestMember.member( source.getLong() );
+    }
 }

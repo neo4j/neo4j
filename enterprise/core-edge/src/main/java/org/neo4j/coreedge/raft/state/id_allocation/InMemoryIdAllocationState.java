@@ -17,20 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.replication.id;
+package org.neo4j.coreedge.raft.state.id_allocation;
 
 import java.io.Serializable;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.coreedge.raft.replication.id.IdAllocationState;
+import org.neo4j.coreedge.raft.state.membership.Marshal;
 import org.neo4j.kernel.IdType;
 
 /**
  * An in-memory representation of the IDs allocated to this core instance.
  * Instances of this class are serialized to disk by
- * @link{org.neo4j.coreedge.raft.replication.id.InMemoryIdAllocationState.Serializer}.
  *
- * The serialized form:
- *
+ * @link{org.neo4j.coreedge.raft.replication.id.InMemoryIdAllocationState.Serializer}. The serialized form:
+ * <p>
  * +----------------------------------+
  * |  8-byte length marker            |
  * +----------------------------------+
@@ -47,8 +49,6 @@ import org.neo4j.kernel.IdType;
  * |  previous id range length        |
  * |  15x 8-byte                      |
  * +----------------------------------+
- *
- *
  */
 public class InMemoryIdAllocationState implements IdAllocationState, Serializable
 {
@@ -124,59 +124,71 @@ public class InMemoryIdAllocationState implements IdAllocationState, Serializabl
         lastIdRangeStartForMe[idType.ordinal()] = idRangeStart;
     }
 
-    public static class Serializer
+
+    static class InMemoryIdAllocationStateMarshal implements Marshal<InMemoryIdAllocationState>
     {
         public static final int NUMBER_OF_BYTES_PER_WRITE =
                 3 * IdType.values().length * 8 // 3 arrays of IdType enum value length storing longs
-                + 8 * 3 // the length (as long) for each array
-                + 8; // the raft log index
+                        + 8 * 3 // the length (as long) for each array
+                        + 8; // the raft log index
 
-        public void serialize( InMemoryIdAllocationState store, ByteBuffer buffer )
+        @Override
+        public void marshal( InMemoryIdAllocationState state, ByteBuffer buffer )
         {
-            buffer.putLong( (long) store.firstUnallocated.length );
-            for ( long l : store.firstUnallocated )
+            buffer.putLong( (long) state.firstUnallocated.length );
+            for ( long l : state.firstUnallocated )
             {
                 buffer.putLong( l );
             }
 
-            buffer.putLong( (long) store.lastIdRangeStartForMe.length );
-            for ( long l : store.lastIdRangeStartForMe )
+            buffer.putLong( (long) state.lastIdRangeStartForMe.length );
+            for ( long l : state.lastIdRangeStartForMe )
             {
                 buffer.putLong( l );
             }
 
-            buffer.putLong( store.lastIdRangeLengthForMe.length );
-            for ( int i : store.lastIdRangeLengthForMe )
+            buffer.putLong( state.lastIdRangeLengthForMe.length );
+            for ( int i : state.lastIdRangeLengthForMe )
             {
                 buffer.putLong( i );
             }
-            buffer.putLong( store.logIndex );
+            buffer.putLong( state.logIndex );
         }
 
-        public InMemoryIdAllocationState deserialize( ByteBuffer buffer )
+        @Override
+        public InMemoryIdAllocationState unmarshal( ByteBuffer buffer )
         {
-            long[] firstNotAllocated = new long[(int) buffer.getLong()];
-
-            for ( int i = 0; i < firstNotAllocated.length; i++ )
+            try
             {
-                firstNotAllocated[i] = buffer.getLong();
-            }
+                long[] firstNotAllocated = new long[(int) buffer.getLong()];
 
-            long[] lastIdRangeStartForMe = new long[(int) buffer.getLong()];
-            for ( int i = 0; i < lastIdRangeStartForMe.length; i++ )
+                for ( int i = 0; i < firstNotAllocated.length; i++ )
+                {
+                    firstNotAllocated[i] = buffer.getLong();
+                }
+
+                long[] lastIdRangeStartForMe = new long[(int) buffer.getLong()];
+                for ( int i = 0; i < lastIdRangeStartForMe.length; i++ )
+                {
+                    lastIdRangeStartForMe[i] = buffer.getLong();
+                }
+
+                int[] lastIdRangeLengthForMe = new int[(int) buffer.getLong()];
+                for ( int i = 0; i < lastIdRangeLengthForMe.length; i++ )
+                {
+                    lastIdRangeLengthForMe[i] = (int) buffer.getLong();
+                }
+
+                long logIndex = buffer.getLong();
+
+                return new InMemoryIdAllocationState( firstNotAllocated, lastIdRangeStartForMe,
+                        lastIdRangeLengthForMe, logIndex );
+
+            }
+            catch ( BufferUnderflowException ex )
             {
-                lastIdRangeStartForMe[i] = buffer.getLong();
+                return null;
             }
-
-            int[] lastIdRangeLengthForMe = new int[(int) buffer.getLong()];
-            for ( int i = 0; i < lastIdRangeLengthForMe.length; i++ )
-            {
-                lastIdRangeLengthForMe[i] = (int) buffer.getLong();
-            }
-
-            long logIndex = buffer.getLong();
-
-            return new InMemoryIdAllocationState( firstNotAllocated, lastIdRangeStartForMe, lastIdRangeLengthForMe, logIndex );
         }
     }
 }

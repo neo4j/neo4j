@@ -17,24 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.core;
+package org.neo4j.coreedge.server;
 
-import java.util.function.Supplier;
+import java.nio.ByteBuffer;
 
-import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.kernel.internal.DatabaseHealth;
-
-public class RaftStorageExceptionHandler
+public interface Decoder<T>
 {
-    private final Supplier<DatabaseHealth> databaseHealthSupplier;
-
-    public RaftStorageExceptionHandler( Supplier<DatabaseHealth> databaseHealthSupplier )
-    {
-        this.databaseHealthSupplier = databaseHealthSupplier;
-    }
-
-    public void panic( RaftStorageException ex )
-    {
-        databaseHealthSupplier.get().panic( ex );
-    }
+    T decode(ByteBuffer buffer);
 }

@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.membership;
+package org.neo4j.coreedge.raft.state.membership;
 
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-
-public class RaftMembershipImpl<MEMBER> implements RaftMembership<MEMBER>
+public class InMemoryRaftMembershipState<MEMBER> implements RaftMembershipState<MEMBER>
 {
     private Set<MEMBER> additionalReplicationMembers = new HashSet<>();
 
@@ -34,11 +33,17 @@ public class RaftMembershipImpl<MEMBER> implements RaftMembership<MEMBER>
 
     private final Set<Listener> listeners = new HashSet<>();
 
-    private final Log log;
+    private long logIndex = -1; // First log index is 0, so -1 is used here as "unknown" value
 
-    public RaftMembershipImpl( LogProvider logProvider )
+    private InMemoryRaftMembershipState( Set<MEMBER> members, long logIndex )
     {
-        this.log = logProvider.getLog( getClass() );
+        this.votingMembers = members;
+        this.logIndex = logIndex;
+        updateReplicationMembers();
+    }
+
+    public InMemoryRaftMembershipState()
+    {
     }
 
     public synchronized void setVotingMembers( Set<MEMBER> newVotingMembers )
@@ -47,8 +52,6 @@ public class RaftMembershipImpl<MEMBER> implements RaftMembership<MEMBER>
 
         updateReplicationMembers();
         notifyListeners();
-
-        log.info( "Voting members: " + votingMembers );
     }
 
     public synchronized void addAdditionalReplicationMember( MEMBER member )
@@ -67,26 +70,36 @@ public class RaftMembershipImpl<MEMBER> implements RaftMembership<MEMBER>
         notifyListeners();
     }
 
+    @Override
+    public void logIndex( long logIndex )
+    {
+        this.logIndex = logIndex;
+    }
+
     private void updateReplicationMembers()
     {
         HashSet<MEMBER> newReplicationMembers = new HashSet<>( votingMembers );
 
         newReplicationMembers.addAll( additionalReplicationMembers );
         this.replicationMembers = newReplicationMembers;
-
-        log.info( "Replication members: " + newReplicationMembers );
     }
 
     @Override
     public Set<MEMBER> votingMembers()
     {
-        return votingMembers;
+        return new HashSet<>( votingMembers );
     }
 
     @Override
     public Set<MEMBER> replicationMembers()
     {
-        return replicationMembers;
+        return new HashSet<>( replicationMembers );
+    }
+
+    @Override
+    public long logIndex()
+    {
+        return logIndex;
     }
 
     @Override
@@ -104,5 +117,48 @@ public class RaftMembershipImpl<MEMBER> implements RaftMembership<MEMBER>
     private void notifyListeners()
     {
         listeners.forEach( Listener::onMembershipChanged );
+    }
+
+    public static class InMemoryRaftMembershipStateMarshal<MEMBER>
+            implements Marshal<InMemoryRaftMembershipState<MEMBER>>
+    {
+        public static final long ENTRY_MIN_SIZE = 8 + 4; // the log index plus the number of members in the set
+        private final org.neo4j.coreedge.raft.state.membership.Marshal<MEMBER> marshal;
+
+        public InMemoryRaftMembershipStateMarshal( org.neo4j.coreedge.raft.state.membership.Marshal<MEMBER> marshal )
+        {
+            this.marshal = marshal;
+        }
+
+        @Override
+        public void marshal( InMemoryRaftMembershipState<MEMBER> state, ByteBuffer buffer )
+        {
+            buffer.putLong( state.logIndex );
+            buffer.putInt( state.votingMembers.size() );
+            for ( MEMBER votingMember : state.votingMembers )
+            {
+                marshal.marshal( votingMember, buffer );
+            }
+        }
+
+        @Override
+        public InMemoryRaftMembershipState<MEMBER> unmarshal( ByteBuffer buffer )
+        {
+            try
+            {
+                long logIndex = buffer.getLong();
+                int memberCount = buffer.getInt();
+                Set<MEMBER> members = new HashSet<>();
+                for ( int i = 0; i < memberCount; i++ )
+                {
+                    members.add( marshal.unmarshal( buffer ) );
+                }
+                return new InMemoryRaftMembershipState<>( members, logIndex );
+            }
+            catch ( BufferUnderflowException endOfFile )
+            {
+                return null;
+            }
+        }
     }
 }

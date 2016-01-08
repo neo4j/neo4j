@@ -21,6 +21,8 @@ package org.neo4j.coreedge.raft.replication.id;
 
 import org.junit.Test;
 
+import org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.store.id.IdRange;
@@ -30,12 +32,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
-
 public class ReplicatedIdAllocationStateMachineTest
 {
-    CoreMember me = new CoreMember( address( "a:1" ), address( "a:2" ) );
-    CoreMember someoneElse = new CoreMember( address( "b:1" ), address( "b:2" ) );
+    CoreMember me = new CoreMember( new AdvertisedSocketAddress( "a:1" ), new AdvertisedSocketAddress( "a:2" ) );
+    CoreMember someoneElse = new CoreMember( new AdvertisedSocketAddress( "b:1" ),
+            new AdvertisedSocketAddress( "b:2" ) );
 
     IdType someType = IdType.NODE;
     IdType someOtherType = IdType.RELATIONSHIP;

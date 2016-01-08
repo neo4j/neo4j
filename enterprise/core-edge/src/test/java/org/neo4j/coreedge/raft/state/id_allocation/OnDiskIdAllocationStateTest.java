@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.replication.id;
+package org.neo4j.coreedge.raft.state.id_allocation;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,16 +32,16 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.test.TargetDirectory;
 
-import static java.io.File.separator;
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import static org.neo4j.coreedge.raft.replication.id.InMemoryIdAllocationState.Serializer.NUMBER_OF_BYTES_PER_WRITE;
+import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal.NUMBER_OF_BYTES_PER_WRITE;
+
+
+import static org.neo4j.coreedge.raft.state.id_allocation.OnDiskIdAllocationState.FILENAME;
 
 public class OnDiskIdAllocationStateTest
 {
@@ -51,7 +51,7 @@ public class OnDiskIdAllocationStateTest
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     @Test
-    public void shouldMaintainStateGivenAnEmptyInitialStore() throws Exception
+    public void shouldAppendEntriesToStoreFile() throws Exception
     {
         // given
         EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
@@ -60,14 +60,18 @@ public class OnDiskIdAllocationStateTest
         OnDiskIdAllocationState store = new OnDiskIdAllocationState( fsa, testDir.directory(), 100,
                 mock( Supplier.class ) );
 
+        final int numberOfAllocationsToAppend = 3;
+
         // when
-        store.firstUnallocated( someType, 1024 );
-        store.logIndex( 0 );
+        for ( int i = 1; i <= numberOfAllocationsToAppend; i++ )
+        {
+            store.firstUnallocated( someType, 1024 * i );
+            store.logIndex( i );
+        }
 
         // then
-        assertEquals( 1024, store.firstUnallocated( someType ) );
-        assertTrue( fsa.fileExists( store.currentStoreFile() ) );
-        assertEquals( NUMBER_OF_BYTES_PER_WRITE, fsa.getFileSize( store.currentStoreFile() ) );
+        assertEquals( numberOfAllocationsToAppend * NUMBER_OF_BYTES_PER_WRITE,
+                fsa.getFileSize( stateFileA() ) );
     }
 
     @Test
@@ -92,86 +96,6 @@ public class OnDiskIdAllocationStateTest
     }
 
     @Test
-    public void shouldAppendEntriesToStoreFile() throws Exception
-    {
-        // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-        fsa.mkdir( testDir.directory() );
-
-        OnDiskIdAllocationState store = new OnDiskIdAllocationState( fsa, testDir.directory(), 100,
-                mock( Supplier.class ) );
-
-        final int numberOfAllocationsToAppend = 3;
-
-        // when
-        for ( int i = 1; i <= numberOfAllocationsToAppend; i++ )
-        {
-            store.firstUnallocated( someType, 1024 * i );
-            store.logIndex( i );
-        }
-
-        // then
-        assertEquals( numberOfAllocationsToAppend * NUMBER_OF_BYTES_PER_WRITE,
-                fsa.getFileSize( store.currentStoreFile() ) );
-    }
-
-    @Test
-    public void shouldSwitchToOtherStoreFileAfterSufficientEntries() throws Exception
-    {
-        // given
-        final int numberOfEntiesBeforeSwitchingFiles = 10;
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-        fsa.mkdir( testDir.directory() );
-
-        OnDiskIdAllocationState store =
-                new OnDiskIdAllocationState( fsa, testDir.directory(), numberOfEntiesBeforeSwitchingFiles,
-                        mock( Supplier.class ) );
-
-        // when
-        for ( int i = 1; i <= numberOfEntiesBeforeSwitchingFiles + 1; i++ )
-        {
-            store.firstUnallocated( someType, 1024 * i );
-            store.logIndex( i );
-        }
-
-        // then
-        assertEquals( testDir.absolutePath() + separator + "id.allocation.B", store.currentStoreFile()
-                .getAbsolutePath() );
-        assertEquals( NUMBER_OF_BYTES_PER_WRITE, fsa.getFileSize( store.currentStoreFile() ) );
-        assertEquals( numberOfEntiesBeforeSwitchingFiles * NUMBER_OF_BYTES_PER_WRITE,
-                fsa.getFileSize( new File( testDir.directory(), "id.allocation.A" ) ) );
-    }
-
-    @Test
-    public void shouldSwitchToBackToFirstStoreFileAfterSufficientEntries() throws Exception
-    {
-        // given
-        final int numberOfEntiesBeforeSwitchingFiles = 10;
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-        fsa.mkdir( testDir.directory() );
-
-        OnDiskIdAllocationState store =
-                new OnDiskIdAllocationState( fsa, testDir.directory(), numberOfEntiesBeforeSwitchingFiles,
-                        mock( Supplier.class ) );
-
-        // when
-        for ( int i = 1; i <= numberOfEntiesBeforeSwitchingFiles * 2 + 1; i++ )
-        {
-            store.firstUnallocated( someType, 1024 * i );
-            store.logIndex( i );
-        }
-
-        // then
-        assertEquals( testDir.absolutePath() + separator + "id.allocation.A", store.currentStoreFile()
-                .getAbsolutePath() );
-        assertEquals( NUMBER_OF_BYTES_PER_WRITE, fsa.getFileSize( store.currentStoreFile() ) );
-        assertEquals( NUMBER_OF_BYTES_PER_WRITE,
-                fsa.getFileSize( new File( testDir.directory(), "id.allocation.A" ) ) );
-        assertEquals( numberOfEntiesBeforeSwitchingFiles * NUMBER_OF_BYTES_PER_WRITE,
-                fsa.getFileSize( new File( testDir.directory(), "id.allocation.B" ) ) );
-    }
-
-    @Test
     public void shouldRestoreLastStateOutOfManyWrittenOnSingleFile() throws Exception
     {
         // given
@@ -179,9 +103,8 @@ public class OnDiskIdAllocationStateTest
         EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
         fsa.mkdir( testDir.directory() );
 
-        OnDiskIdAllocationState store =
-                new OnDiskIdAllocationState( fsa, testDir.directory(), numberOfEntiesBeforeSwitchingFiles,
-                        mock( Supplier.class ) );
+        OnDiskIdAllocationState store = new OnDiskIdAllocationState( fsa, testDir.directory(),
+                numberOfEntiesBeforeSwitchingFiles, mock( Supplier.class ) );
 
         // and a store that has two entries in the store file
         for ( int i = 1; i < 3; i++ )
@@ -200,7 +123,7 @@ public class OnDiskIdAllocationStateTest
     }
 
     @Test
-    public void shouldRecoverFromExistingStoreFiles() throws Exception
+    public void shouldSwitchToWritingToPreviouslyInactiveFileOnRecovery() throws Exception
     {
         // given
         EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
@@ -221,8 +144,12 @@ public class OnDiskIdAllocationStateTest
         store.logIndex( 4 );
 
         // then
-        assertEquals( 4 * NUMBER_OF_BYTES_PER_WRITE,
+        assertEquals( 3 * NUMBER_OF_BYTES_PER_WRITE,
                 fsa.getFileSize( new File( testDir.directory(), "id.allocation.A" ) ) );
+
+
+        assertEquals( NUMBER_OF_BYTES_PER_WRITE,
+                fsa.getFileSize( new File( testDir.directory(), "id.allocation.B" ) ) );
     }
 
     @Test
@@ -253,5 +180,10 @@ public class OnDiskIdAllocationStateTest
             doThrow( new IOException( "boom!" ) ).when( mock ).force( false );
             return mock;
         }
+    }
+
+    private File stateFileA()
+    {
+        return new File( testDir.directory(), FILENAME + "A" );
     }
 }

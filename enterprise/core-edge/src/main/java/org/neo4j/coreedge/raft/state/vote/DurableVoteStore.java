@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state;
+package org.neo4j.coreedge.raft.state.vote;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,7 +28,7 @@ import io.netty.buffer.Unpooled;
 
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
+import org.neo4j.coreedge.raft.membership.CoreMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -36,6 +36,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class DurableVoteStore extends LifecycleAdapter implements VoteStore<CoreMember>
 {
     private final StoreChannel channel;
+    private final CoreMarshal coreMemberMarshal = new CoreMarshal();
     private CoreMember votedFor;
 
     public DurableVoteStore( FileSystemAbstraction fileSystem, File directory )
@@ -76,7 +77,7 @@ public class DurableVoteStore extends LifecycleAdapter implements VoteStore<Core
             else
             {
                 ByteBuf byteBuf = Unpooled.buffer();
-                CoreMemberMarshal.serialize( votedFor, byteBuf );
+                coreMemberMarshal.marshal( votedFor, byteBuf );
                 ByteBuffer buffer = byteBuf.nioBuffer();
 
                 channel.writeAll( buffer, 0 );
@@ -101,6 +102,6 @@ public class DurableVoteStore extends LifecycleAdapter implements VoteStore<Core
         channel.read( buffer, 0 );
         buffer.flip();
 
-        return CoreMemberMarshal.deserialize( Unpooled.wrappedBuffer( buffer ) );
+        return coreMemberMarshal.unmarshal( Unpooled.wrappedBuffer( buffer ) );
     }
 }

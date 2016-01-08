@@ -19,6 +19,9 @@
  */
 package org.neo4j.coreedge.raft.state;
 
+import org.neo4j.coreedge.raft.state.term.InMemoryTermStore;
+import org.neo4j.coreedge.raft.state.term.TermStore;
+
 public class InMemoryTermStoreContractTest extends TermStoreContractTest
 {
     @Override

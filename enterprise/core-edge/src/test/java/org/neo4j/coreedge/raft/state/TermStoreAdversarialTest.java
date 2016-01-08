@@ -27,6 +27,8 @@ import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
+import org.neo4j.coreedge.raft.state.term.DurableTermStore;
+import org.neo4j.coreedge.raft.state.term.TermStore;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;

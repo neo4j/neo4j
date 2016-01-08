@@ -37,20 +37,20 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
-
 public class RaftMessageEncodingDecodingTest
 {
     @Test
     public void shouldSerializeAppendRequestWithMultipleEntries() throws Exception
     {
-        CoreMember sender = new CoreMember( address( "127.0.0.1:5001" ), address( "127.0.0.2:5001" ) );
+        CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.AppendEntries.Request<CoreMember> request = new AppendEntriesRequestBuilder<CoreMember>()
                 .from( sender )
                 .leader( sender )
@@ -65,7 +65,8 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeAppendRequestWithNoEntries() throws Exception
     {
-        CoreMember sender = new CoreMember( address( "127.0.0.1:5001" ), address( "127.0.0.2:5001" ) );
+        CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.AppendEntries.Request<CoreMember> request = new AppendEntriesRequestBuilder<CoreMember>()
                 .from( sender )
                 .leader( sender )
@@ -78,7 +79,8 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeAppendResponse() throws Exception
     {
-        CoreMember sender = new CoreMember( address( "127.0.0.1:5001" ), address( "127.0.0.2:5001" ) );
+        CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.AppendEntries.Response<CoreMember> request = new AppendEntriesResponseBuilder<CoreMember>()
                 .from( sender )
                 .success()
@@ -100,7 +102,8 @@ public class RaftMessageEncodingDecodingTest
         ArrayList<Object> thingsRead = new ArrayList<>( 1 );
 
         // When
-        CoreMember sender = new CoreMember( address( "127.0.0.1:5001" ), address( "127.0.0.2:5001" ) );
+        CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.Heartbeat<CoreMember> message = new RaftMessages.Heartbeat<>( sender, 1, 2, 3 );
         encoder.encode( setupContext(), message, resultingBuffers );
 
@@ -118,7 +121,8 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeVoteRequest() throws Exception
     {
-        CoreMember sender = new CoreMember( address( "127.0.0.1:5001" ), address( "127.0.0.2:5001" ) );
+        CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.Vote.Request<Object> request = new VoteRequestBuilder<>()
                 .candidate( sender )
                 .from( sender )
@@ -132,7 +136,8 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeVoteResponse() throws Exception
     {
-        CoreMember sender = new CoreMember( address( "127.0.0.1:5001" ), address( "127.0.0.2:5001" ) );
+        CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.Vote.Response<Object> request = new VoteResponseBuilder<>()
                 .from( sender )
                 .grant()

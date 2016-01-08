@@ -21,16 +21,15 @@ package org.neo4j.coreedge.raft.replication;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.Replicator;
 
-public class LocalReplicator<MEMBER,SOCKET> implements Replicator
+
+public class LeaderOnlyReplicator<MEMBER,SOCKET> implements Replicator
 {
     private final MEMBER source;
     private final SOCKET target;
     private final Outbound<SOCKET> outbound;
 
-    public LocalReplicator( MEMBER source, SOCKET target, Outbound<SOCKET> outbound )
+    public LeaderOnlyReplicator( MEMBER source, SOCKET target, Outbound<SOCKET> outbound )
     {
         this.source = source;
         this.target = target;

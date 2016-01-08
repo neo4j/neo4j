@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.server;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 
 import io.netty.buffer.ByteBuf;
 
@@ -28,10 +29,17 @@ import org.neo4j.coreedge.raft.replication.StringMarshal;
 
 public class AdvertisedSocketAddressEncoder
 {
-    public void encode( AdvertisedSocketAddress socketAddress, ByteBuf buffer )
+    public static void encode( AdvertisedSocketAddress socketAddress, ByteBuf buffer )
     {
         InetSocketAddress inetSocketAddress = socketAddress.socketAddress();
         StringMarshal.serialize( buffer, inetSocketAddress.getHostString() );
         buffer.writeInt( inetSocketAddress.getPort() );
+    }
+
+    public static void encode( AdvertisedSocketAddress socketAddress, ByteBuffer buffer )
+    {
+        InetSocketAddress inetSocketAddress = socketAddress.socketAddress();
+        StringMarshal.serialize( buffer, inetSocketAddress.getHostString() );
+        buffer.putInt( inetSocketAddress.getPort() );
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.discovery;
 
 import java.io.File;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -35,12 +34,12 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
-import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.coreedge.raft.NoLeaderTimeoutException;
 import org.neo4j.coreedge.raft.roles.Role;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.server.core.CoreGraphDatabase;
+import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -122,7 +121,7 @@ public class Cluster
         for ( int i = 0; i < noOfCoreServers; i++ )
         {
             int port = 5000 + i;
-            addresses.add( new AdvertisedSocketAddress( new InetSocketAddress( "localhost", port ) ) );
+            addresses.add( new AdvertisedSocketAddress( "localhost:" + port ) );
         }
         return addresses;
     }
@@ -248,7 +247,7 @@ public class Cluster
     {
         CoreGraphDatabase serverToRemove = getCoreServerById( serverId );
 
-        if (serverToRemove != null )
+        if ( serverToRemove != null )
         {
             removeCoreServer( serverToRemove );
         }

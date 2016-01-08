@@ -52,12 +52,12 @@ import static org.neo4j.coreedge.PortsForIntegrationTesting.findFreeAddress;
 public class ChannelKeepAliveTest
 {
     /** Server that sends "Hello, World!" on connect. */
-    private Channel bootstrapHelloServer( InetSocketAddress serverAddress ) throws IOException
+    private Channel bootstrapHelloServer( String serverAddress ) throws IOException
     {
         ServerBootstrap bootstrap = new ServerBootstrap()
                 .group( new NioEventLoopGroup() )
                 .channel( NioServerSocketChannel.class )
-                .localAddress( new InetSocketAddress( serverAddress.getPort() ) )
+                .localAddress( new AdvertisedSocketAddress( serverAddress ).socketAddress().getPort() )
                 .childHandler( new ChannelInitializer<SocketChannel>()
                 {
                     @Override
@@ -110,7 +110,7 @@ public class ChannelKeepAliveTest
     public void shouldReapChannelOnlyAfterItHasExpired() throws Throwable
     {
         // given
-        InetSocketAddress serverAddress = findFreeAddress();
+        String serverAddress = findFreeAddress().toString();
         Channel serverChannel = bootstrapHelloServer( serverAddress );
 
         final FakeClock fakeClock = new FakeClock();

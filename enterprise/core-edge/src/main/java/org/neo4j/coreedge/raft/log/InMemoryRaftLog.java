@@ -40,21 +40,21 @@ public class InMemoryRaftLog implements RaftLog
     public void replay() throws Throwable
     {
         int index = 0;
-        for ( ; index <= commitIndex; index++ )
+        for (; index <= commitIndex; index++ )
         {
             ReplicatedContent content = readEntryContent( index );
             for ( Listener listener : listeners )
             {
-                listener.onAppended( content );
+                listener.onAppended( content, index );
                 listener.onCommitted( content, index );
             }
         }
-        for ( ; index <= appendIndex; index++ )
+        for (; index <= appendIndex; index++ )
         {
             ReplicatedContent content = readEntryContent( index );
             for ( Listener listener : listeners )
             {
-                listener.onAppended( content );
+                listener.onAppended( content, index );
             }
         }
     }
@@ -79,11 +79,12 @@ public class InMemoryRaftLog implements RaftLog
                     logEntry.term(), logEntry.toString(), term ) );
         }
 
+        appendIndex++;
         for ( Listener listener : listeners )
         {
-            listener.onAppended( logEntry.content() );
+            listener.onAppended( logEntry.content(), appendIndex );
         }
-        raftLog.put( ++appendIndex, logEntry );
+        raftLog.put( appendIndex, logEntry );
         return appendIndex;
     }
 

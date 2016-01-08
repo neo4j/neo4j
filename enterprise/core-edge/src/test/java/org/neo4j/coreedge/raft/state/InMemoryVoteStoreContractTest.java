@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.raft.state;
 
+import org.neo4j.coreedge.raft.state.vote.InMemoryVoteStore;
+import org.neo4j.coreedge.raft.state.vote.VoteStore;
 import org.neo4j.coreedge.server.CoreMember;
 
 public class InMemoryVoteStoreContractTest extends VoteStoreContractTest

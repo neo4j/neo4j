@@ -24,6 +24,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.coreedge.raft.state.follower.FollowerStates;
+import org.neo4j.coreedge.raft.state.term.InMemoryTermStore;
+import org.neo4j.coreedge.raft.state.vote.InMemoryVoteStore;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -147,6 +150,12 @@ public class RaftStateBuilder
         public Set<RaftTestMember> replicationMembers()
         {
             return votingMembers;
+        }
+
+        @Override
+        public long logIndex()
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override

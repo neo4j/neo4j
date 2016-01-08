@@ -68,9 +68,11 @@ public class CoreMemberSetSerializer
         Set<CoreMember> members = memberSet.getMembers();
         buffer.writeInt( members.size() );
 
+        CoreMarshal coreMemberMarshal = new CoreMarshal();
+
         for ( CoreMember member : members )
         {
-            CoreMemberMarshal.serialize( member, buffer );
+            coreMemberMarshal.marshal( member, buffer );
         }
     }
 
@@ -79,9 +81,11 @@ public class CoreMemberSetSerializer
         HashSet<CoreMember> members = new HashSet<>();
         int memberCount = buffer.readInt();
 
+        CoreMarshal coreMemberMarshal = new CoreMarshal();
+
         for ( int i = 0; i < memberCount; i++ )
         {
-            members.add( CoreMemberMarshal.deserialize( buffer ) );
+            members.add( coreMemberMarshal.unmarshal( buffer ) );
         }
 
         return new CoreMemberSet( members );

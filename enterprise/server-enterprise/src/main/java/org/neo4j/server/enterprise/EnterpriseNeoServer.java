@@ -69,7 +69,6 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
                 return SINGLE;
             }
         }
-
     }
 
     private static final GraphFactory HA_FACTORY = new GraphFactory()

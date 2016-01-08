@@ -21,9 +21,9 @@ package org.neo4j.coreedge.raft.log;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -60,18 +60,18 @@ public abstract class RaftLogContractTest
     {
         // given
         RaftLog log = createRaftLog();
-        log.append( new RaftLogEntry( 45, ReplicatedInteger.valueOf(99) ) );
-        log.append( new RaftLogEntry( 46, ReplicatedInteger.valueOf(99) ) );
-        log.append( new RaftLogEntry( 47, ReplicatedInteger.valueOf(99) ) );
+        log.append( new RaftLogEntry( 45, ReplicatedInteger.valueOf( 99 ) ) );
+        log.append( new RaftLogEntry( 46, ReplicatedInteger.valueOf( 99 ) ) );
+        log.append( new RaftLogEntry( 47, ReplicatedInteger.valueOf( 99 ) ) );
 
         // truncate the last 2
         log.truncate( 1 );
 
         // then
-        log.append( new RaftLogEntry( 46, ReplicatedInteger.valueOf(9999) ) );
+        log.append( new RaftLogEntry( 46, ReplicatedInteger.valueOf( 9999 ) ) );
 
-        assertThat(log.readEntryTerm( 1 ), is(46L));
-        assertThat(log.appendIndex(), is(1L));
+        assertThat( log.readEntryTerm( 1 ), is( 46L ) );
+        assertThat( log.appendIndex(), is( 1L ) );
     }
 
     @Test
@@ -224,7 +224,7 @@ public abstract class RaftLogContractTest
         RaftLogEntry logEntry = new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) );
         log.append( logEntry );
 
-        verify( listener, times( 1 ) ).onAppended( eq( logEntry.content() ) );
+        verify( listener, times( 1 ) ).onAppended( eq( logEntry.content() ), eq( 0L ) );
     }
 
     @Test

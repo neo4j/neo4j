@@ -27,24 +27,26 @@ import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
-import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.raft.state.FollowerStates;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
+import org.neo4j.coreedge.raft.roles.Role;
+import org.neo4j.coreedge.raft.state.follower.FollowerStates;
+import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.emptySet;
+
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 /**
  * This class drives raft membership changes by glueing together various components:
- *  - target membership from hazelcast
- *  - raft membership state machine
- *  - raft log events
+ * - target membership from hazelcast
+ * - raft membership state machine
+ * - raft log events
  */
-public class RaftMembershipManager<MEMBER> extends RaftMembershipImpl<MEMBER> implements RaftLog.Listener, MembershipDriver<MEMBER>
+public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, RaftLog.Listener, MembershipDriver<MEMBER>
 {
     private RaftMembershipStateMachine<MEMBER> membershipStateMachine;
 
@@ -57,42 +59,43 @@ public class RaftMembershipManager<MEMBER> extends RaftMembershipImpl<MEMBER> im
     private final ReadableRaftLog entryLog;
     private final Log log;
     private final int expectedClusterSize;
+    private final RaftMembershipState<MEMBER> raftMembershipState;
 
     public RaftMembershipManager( Replicator replicator, RaftGroup.Builder<MEMBER> memberSetBuilder, RaftLog entryLog,
-            LogProvider logProvider, int expectedClusterSize, long electionTimeout,
-            Clock clock, long catchupTimeout )
+                                  LogProvider logProvider, int expectedClusterSize, long electionTimeout,
+                                  Clock clock, long catchupTimeout, RaftMembershipState<MEMBER> raftMembershipState )
     {
-        super( logProvider );
         this.replicator = replicator;
         this.memberSetBuilder = memberSetBuilder;
         this.entryLog = entryLog;
         this.expectedClusterSize = expectedClusterSize;
+        this.raftMembershipState = raftMembershipState;
         this.log = logProvider.getLog( getClass() );
 
         this.membershipStateMachine = new RaftMembershipStateMachine<>( entryLog, clock, electionTimeout, this,
-                logProvider, catchupTimeout, this );
+                logProvider, catchupTimeout, raftMembershipState );
 
         entryLog.registerListener( this );
     }
 
     @Override
-    public void onAppended( ReplicatedContent content )
+    public void onAppended( ReplicatedContent content, long index )
     {
-        if ( content instanceof RaftGroup )
+        if ( content instanceof RaftGroup && index > raftMembershipState.logIndex() )
         {
             assert uncommittedMemberChanges >= 0;
 
             uncommittedMemberChanges++;
 
             RaftGroup<MEMBER> raftGroup = (RaftGroup) content;
-            setVotingMembers( raftGroup.getMembers() );
+            raftMembershipState.setVotingMembers( raftGroup.getMembers() );
         }
     }
 
     @Override
     public void onCommitted( ReplicatedContent content, long index )
     {
-        if ( content instanceof RaftGroup )
+        if ( content instanceof RaftGroup && index > raftMembershipState.logIndex() )
         {
             assert uncommittedMemberChanges > 0;
 
@@ -102,6 +105,7 @@ public class RaftMembershipManager<MEMBER> extends RaftMembershipImpl<MEMBER> im
             {
                 membershipStateMachine.onRaftGroupCommitted();
             }
+            raftMembershipState.logIndex( index );
         }
     }
 
@@ -115,11 +119,12 @@ public class RaftMembershipManager<MEMBER> extends RaftMembershipImpl<MEMBER> im
             if ( logIndex != null )
             {
                 RaftGroup<MEMBER> lastMembershipEntry = (RaftGroup<MEMBER>) entryLog.readEntryContent( logIndex );
-                setVotingMembers( lastMembershipEntry.getMembers() );
+                raftMembershipState.setVotingMembers( lastMembershipEntry.getMembers() );
+                raftMembershipState.logIndex( logIndex );
             }
             else
             {
-                setVotingMembers( Collections.<MEMBER>emptySet() );
+                raftMembershipState.setVotingMembers( Collections.<MEMBER>emptySet() );
             }
 
             uncommittedMemberChanges = 0;
@@ -228,8 +233,6 @@ public class RaftMembershipManager<MEMBER> extends RaftMembershipImpl<MEMBER> im
     public void stateChanged()
     {
         checkForStartCondition();
-
-        // JW + CG: potentially persist core member state here.
     }
 
     public void onFollowerStateChange( FollowerStates<MEMBER> followerStates )
@@ -240,5 +243,35 @@ public class RaftMembershipManager<MEMBER> extends RaftMembershipImpl<MEMBER> im
     public void onRole( Role role )
     {
         membershipStateMachine.onRole( role );
+    }
+
+    @Override
+    public Set<MEMBER> votingMembers()
+    {
+        return raftMembershipState.votingMembers();
+    }
+
+    @Override
+    public Set<MEMBER> replicationMembers()
+    {
+        return raftMembershipState.replicationMembers();
+    }
+
+    @Override
+    public long logIndex()
+    {
+        return raftMembershipState.logIndex();
+    }
+
+    @Override
+    public void registerListener( Listener listener )
+    {
+        raftMembershipState.registerListener( listener );
+    }
+
+    @Override
+    public void deregisterListener( Listener listener )
+    {
+        raftMembershipState.deregisterListener( listener );
     }
 }

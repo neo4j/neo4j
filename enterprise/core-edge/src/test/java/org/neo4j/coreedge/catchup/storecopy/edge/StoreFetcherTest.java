@@ -24,15 +24,11 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFailedException;
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreFileStreams;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpWriter;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseListener;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyClient;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.NullLogProvider;
@@ -44,8 +40,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 public class StoreFetcherTest
 {
@@ -62,7 +56,7 @@ public class StoreFetcherTest
                 storeCopyClient, txPullClient, factory( writer ) );
 
         // when
-        AdvertisedSocketAddress localhost = address( "localhost:1980" );
+        AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "localhost:1980" );
         fetcher.copyStore( localhost, new File( "destination" ) );
 
         // then
@@ -77,7 +71,7 @@ public class StoreFetcherTest
         long lastFlushedTxId = 12;
         long lastPulledTxId = 34;
 
-        AdvertisedSocketAddress localhost = address( "localhost:2001" );
+        AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "localhost:2001" );
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         when( storeCopyClient.copyStoreFiles( eq( localhost ), any( StoreFileStreams.class ) ) )
