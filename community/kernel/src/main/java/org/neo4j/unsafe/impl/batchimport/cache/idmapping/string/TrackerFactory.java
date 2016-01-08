@@ -17,19 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.cache;
+package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
+
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 /**
- * Visits objects able to provide stats about amount of used memory.
+ * Factory for {@link Tracker} instances.
  */
-public interface MemoryStatsVisitor
+public interface TrackerFactory
 {
-    interface Visitable
-    {
-        void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor );
-    }
-
-    void heapUsage( long bytes );
-
-    void offHeapUsage( long bytes );
+    /**
+     * @param arrayFactory {@link NumberArrayFactory} to use as backing data structure for the {@link Tracker}.
+     * @param size size of the tracker.
+     * @return {@link Tracker} capable of keeping track of {@code size} items.
+     */
+    Tracker create( NumberArrayFactory arrayFactory, long size );
 }

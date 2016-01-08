@@ -17,19 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.cache;
+package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
+
+import org.neo4j.unsafe.impl.batchimport.Utils;
+import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 
 /**
- * Visits objects able to provide stats about amount of used memory.
+ * {@link Tracker} capable of keeping {@code int} range values, using {@link IntArray}.
+ * Will fail in {@link #set(long, long)} with {@link ArithmeticException} if trying to put a too big value.
  */
-public interface MemoryStatsVisitor
+public class IntTracker extends AbstractTracker<IntArray>
 {
-    interface Visitable
+    public IntTracker( IntArray array )
     {
-        void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor );
+        super( array );
     }
 
-    void heapUsage( long bytes );
+    @Override
+    public long get( long index )
+    {
+        return array.get( index );
+    }
 
-    void offHeapUsage( long bytes );
+    /**
+     * @throws ArithmeticException if value is bigger than {@link Integer#MAX_VALUE}.
+     */
+    @Override
+    public void set( long index, long value )
+    {
+        array.set( index, Utils.safeCastLongToInt( value ) );
+    }
 }
