@@ -38,7 +38,7 @@ import org.neo4j.io.pagecache.PageCursor;
  * while loop with {@link PageCursor#shouldRetry()} as a condition.
  * <p>
  * Write operations will always throw an {@link IllegalStateException} because this is a read cursor.
- * See {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_LOCK} flag.
+ * See {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_READ_LOCK} flag.
  */
 @SuppressWarnings( "unchecked" )
 class AdversarialReadPageCursor implements PageCursor

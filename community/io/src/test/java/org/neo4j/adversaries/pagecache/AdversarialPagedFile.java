@@ -51,7 +51,7 @@ class AdversarialPagedFile implements PagedFile
     {
         adversary.injectFailure( IllegalStateException.class );
         PageCursor pageCursor = delegate.io( pageId, pf_flags );
-        if ( (pf_flags & PF_SHARED_LOCK) == PF_SHARED_LOCK )
+        if ( (pf_flags & PF_SHARED_READ_LOCK) == PF_SHARED_READ_LOCK )
         {
             return new AdversarialReadPageCursor( pageCursor, adversary );
         }

@@ -39,8 +39,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.TokenFactory;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.kernel.impl.store.PropertyStore.decodeString;
 
 public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token> extends AbstractRecordStore<RECORD>
@@ -119,7 +119,7 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
         RECORD record = newRecord( id );
         byte inUseByte = Record.NOT_IN_USE.byteValue();
 
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_READ_LOCK ) )
         {
             if ( cursor.next() )
             {
@@ -155,7 +155,7 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
     @Override
     public RECORD forceGetRecord( long id )
     {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_READ_LOCK ) )
         {
             if ( cursor.next() )
             {
@@ -211,7 +211,7 @@ public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token
     @Override
     public void forceUpdateRecord( RECORD record )
     {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_SHARED_WRITE_LOCK ) )
         {
             if ( cursor.next() )
             {

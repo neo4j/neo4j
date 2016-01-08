@@ -45,8 +45,8 @@ import org.neo4j.logging.Logger;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
 public class MetaDataStore extends AbstractStore implements TransactionIdStore, LogVersionRepository
 {
@@ -233,7 +233,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         try ( PagedFile pagedFile = pageCache.map( neoStore, getPageSize( pageCache ) ) )
         {
             int recordOffset = RECORD_SIZE * position.id;
-            try ( PageCursor pageCursor = pagedFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
+            try ( PageCursor pageCursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
             {
                 if ( pageCursor.next() )
                 {
@@ -277,7 +277,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         {
             if ( pagedFile.getLastPageId() >= 0 )
             {
-                try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_LOCK ) )
+                try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
                 {
                     if ( cursor.next() )
                     {
@@ -379,7 +379,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         // and be effectively single-threaded.
         // The call to getVersion() will most likely optimise to a volatile-read.
         long pageId = pageIdForRecord( Position.LOG_VERSION.id );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
         {
             if ( cursor.next() )
             {
@@ -498,7 +498,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
     private void refreshFields()
     {
-        scanAllFields( PF_SHARED_LOCK, new Visitor<PageCursor,IOException>()
+        scanAllFields( PF_SHARED_READ_LOCK, new Visitor<PageCursor,IOException>()
         {
             @Override
             public boolean visit( PageCursor element ) throws IOException
@@ -536,7 +536,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         // unclear from the outside which record id that refers to, so here we need to manage high id ourselves.
         setHighestPossibleIdInUse( id );
 
-        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
         {
             if ( cursor.next() )
             {
@@ -637,9 +637,10 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         if ( highestCommittedTransaction.offer( transactionId, checksum ) )
         {
             // We need to synchronize here in order to guarantee that the two field are written consistently
-            // together. Note that having the exclusive lock on tha page is not enough for 2 reasons:
-            // 1. the records might be in different pages
-            // 2. some other thread might kick in while we have been written only one record
+            // together. Note that having a write lock on tha page is not enough for 3 reasons:
+            // 1. page write locks are not exclusive
+            // 2. the records might be in different pages
+            // 3. some other thread might kick in while we have been written only one record
             synchronized ( this )
             {
                 // Double-check with highest tx id under the lock, so that there haven't been
@@ -752,7 +753,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
     public void logRecords( final Logger msgLog )
     {
-        scanAllFields( PF_SHARED_LOCK, new Visitor<PageCursor,IOException>()
+        scanAllFields( PF_SHARED_READ_LOCK, new Visitor<PageCursor,IOException>()
         {
             @Override
             public boolean visit( PageCursor element ) throws IOException

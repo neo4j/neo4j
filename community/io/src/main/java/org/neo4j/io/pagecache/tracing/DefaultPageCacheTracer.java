@@ -281,7 +281,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public PinEvent beginPin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+    public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
         try
         {

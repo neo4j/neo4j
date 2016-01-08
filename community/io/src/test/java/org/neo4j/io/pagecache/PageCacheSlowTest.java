@@ -49,8 +49,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.test.ByteArrayMatcher.byteArray;
 
 public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTestSupport<T>
@@ -90,7 +90,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         final PagedFile pagedFile = pageCache.map( file( "a" ), pageSize );
 
         // Ensure all the pages exist
-        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             for ( int i = 0; i < filePages; i++ )
             {
@@ -135,7 +135,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                     int pageId = rng.nextInt( 0, filePages );
                     int offset = threadId * 4;
                     boolean updateCounter = rng.nextBoolean();
-                    int pf_flags = updateCounter? PF_EXCLUSIVE_LOCK : PF_SHARED_LOCK;
+                    int pf_flags = updateCounter ? PF_SHARED_WRITE_LOCK : PF_SHARED_READ_LOCK;
                     try ( PageCursor cursor = pagedFile.io( pageId, pf_flags ) )
                     {
                         int counter;
@@ -148,7 +148,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                                 counter = cursor.getInt();
                             }
                             while ( cursor.shouldRetry() );
-                            String lockName = updateCounter ? "PF_EXCLUSIVE_LOCK" : "PF_SHARED_LOCK";
+                            String lockName = updateCounter ? "PF_SHARED_WRITE_LOCK" : "PF_SHARED_READ_LOCK";
                             assertThat( "inconsistent page read from filePageId = " + pageId + ", with " + lockName +
                                         ", workerId = " + threadId + " [t:" + Thread.currentThread().getId() + "]",
                                     counter, is( pageCounts[pageId] ) );
@@ -184,7 +184,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         for ( Future<Result> future : futures )
         {
             Result result = future.get();
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
             {
                 for ( int i = 0; i < filePages; i++ )
                 {
@@ -232,7 +232,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         final CountDownLatch secondThreadGotLockLatch = new CountDownLatch( 1 );
 
         executor.submit( () -> {
-            try ( PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 cursor.next();
                 hasLockLatch.countDown();
@@ -241,10 +241,10 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             return null;
         } );
 
-        hasLockLatch.await(); // An exclusive lock is now held on page 0.
+        hasLockLatch.await(); // A write lock is now held on page 0.
 
         Future<Object> takeLockFuture = executor.submit( () -> {
-            try ( PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 cursor.next();
                 secondThreadGotLockLatch.await();
@@ -264,11 +264,11 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
         catch ( TimeoutException e )
         {
-            // As expected, the close cannot not complete while an exclusive
+            // As expected, the close cannot not complete while an write
             // lock is held
         }
 
-        // Now, both the close action and a grab for an exclusive page lock is
+        // Now, both the close action and a grab for an write page lock is
         // waiting for our first thread.
         // When we release that lock, we should see that either close completes
         // and our second thread, the one blocked on the write lock, gets an
@@ -331,7 +331,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             long maxPageId = pagedFile.getLastPageId();
             boolean performingRead = rng.nextBoolean() && maxPageId != -1;
             long startingPage = maxPageId < 0? 0 : rng.nextLong( maxPageId + 1 );
-            int pf_flags = performingRead ? PF_SHARED_LOCK : PF_EXCLUSIVE_LOCK;
+            int pf_flags = performingRead ? PF_SHARED_READ_LOCK : PF_SHARED_WRITE_LOCK;
             int pageSize = pagedFile.pageSize();
 
             try ( PageCursor cursor = pagedFile.io( startingPage, pf_flags ) )
@@ -349,7 +349,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             {
                 // Capture any exception that might have hit the eviction thread.
                 adversary.setProbabilityFactor( 0.0 );
-                try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
                 {
                     for ( int j = 0; j < 100; j++ )
                     {
@@ -438,7 +438,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
     private void verifyAdversarialPagedContent( PagedFile pagedFile ) throws IOException
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             while ( cursor.next() )
             {

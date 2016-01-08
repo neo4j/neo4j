@@ -42,8 +42,8 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
 /**
  * An abstract representation of a dynamic store. The difference between a
@@ -114,7 +114,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
 
         blockSize += BLOCK_HEADER_SIZE;
 
-        try ( PageCursor pageCursor = file.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor pageCursor = file.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             if ( pageCursor.next() )
             {
@@ -303,7 +303,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     {
         long blockId = record.getId();
         long pageId = pageIdForRecord( blockId );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
         {
             if ( cursor.next() )
             {
@@ -386,7 +386,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         long blockId = startBlockId;
         int noNextBlock = Record.NO_NEXT_BLOCK.intValue();
 
-        try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             while ( blockId != noNextBlock && cursor.next( pageIdForRecord( blockId ) ) )
             {
@@ -432,7 +432,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     {
         try
         {
-            final PageCursor cursor = storeFile.io( 0, PF_SHARED_LOCK );
+            final PageCursor cursor = storeFile.io( 0, PF_SHARED_READ_LOCK );
 
             dynamicRecordCursor.init( startBlockId, cursor, readBothHeaderAndData );
             return dynamicRecordCursor;
@@ -537,7 +537,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
 
         long pageId = pageIdForRecord( record.getId() );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
             if ( cursor.next() )
             {
@@ -562,7 +562,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     {
         DynamicRecord record = new DynamicRecord( id );
         long pageId = pageIdForRecord( id );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
             int headerReadResult = notInUseSignal;
             if ( cursor.next() )
@@ -595,7 +595,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     {
         DynamicRecord record = new DynamicRecord( id );
         long pageId = pageIdForRecord( id );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
             if ( cursor.next() )
             {

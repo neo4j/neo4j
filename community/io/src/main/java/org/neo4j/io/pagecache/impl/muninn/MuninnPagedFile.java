@@ -133,19 +133,19 @@ final class MuninnPagedFile implements PagedFile
     @Override
     public PageCursor io( long pageId, int pf_flags )
     {
-        int lockMask = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;
+        int lockMask = PF_SHARED_WRITE_LOCK | PF_SHARED_READ_LOCK;
         if ( (pf_flags & lockMask) == 0 )
         {
             throw new IllegalArgumentException(
-                    "Must specify either PF_EXCLUSIVE_LOCK or PF_SHARED_LOCK" );
+                    "Must specify either PF_SHARED_WRITE_LOCK or PF_SHARED_READ_LOCK" );
         }
         if ( (pf_flags & lockMask) == lockMask )
         {
             throw new IllegalArgumentException(
-                    "Cannot specify both PF_EXCLUSIVE_LOCK and PF_SHARED_LOCK" );
+                    "Cannot specify both PF_SHARED_WRITE_LOCK and PF_SHARED_READ_LOCK" );
         }
         MuninnPageCursor cursor;
-        if ( (pf_flags & PF_SHARED_LOCK) == 0 )
+        if ( (pf_flags & PF_SHARED_READ_LOCK) == 0 )
         {
             cursor = cursorPool.takeWriteCursor();
         }

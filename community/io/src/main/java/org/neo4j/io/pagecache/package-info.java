@@ -89,7 +89,7 @@
  * cursor will scan linearly through the file.
  * <p>
  * The {@code next} method returns {@code true} if it successfully bound to the next page in its sequence. This is
- * usually the case, but when {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_LOCK} or
+ * usually the case, but when {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_READ_LOCK} or
  * {@link org.neo4j.io.pagecache.PagedFile#PF_NO_GROW} is specified, the {@code next} method will return {@code false}
  * if the cursor would otherwise move beyond the end of the file.
  * <p>

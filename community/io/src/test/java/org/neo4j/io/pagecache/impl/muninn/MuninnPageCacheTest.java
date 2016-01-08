@@ -46,9 +46,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Evict;
 import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Fault;
 
@@ -93,7 +93,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ) );
         PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             assertTrue( cursor.next() );
         }
@@ -124,7 +124,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ) );
         PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
             cursor.putLong( 0L );
@@ -152,7 +152,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ) );
         PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
 
-        try ( PageCursor cursor = pagedFile.io( 1, PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
             cursor.putLong( 0L );
@@ -180,7 +180,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         MuninnPageCache pageCache = createPageCache( fs, 4, 8, blockCacheFlush( tracer ) );
         PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
         {
             assertTrue( cursor.next() );
             cursor.putLong( 0L );
@@ -213,7 +213,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         final PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
 
         Future<?> task = executor.submit( () -> {
-            try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 assertTrue( cursor.next() );
                 cursor.putLong( 41 );
@@ -225,7 +225,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         } );
         task.get();
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             assertTrue( cursor.next() );
             long value = cursor.getLong();
@@ -271,7 +271,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         // The basic idea is that this loop, which will encounter a lot of page faults, must not block forever even
         // though the eviction thread is unable to flush any dirty pages because the file system throws exceptions on
         // all writes.
-        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             for ( int i = 0; i < 1000; i++ )
             {

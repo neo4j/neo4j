@@ -33,9 +33,9 @@ public interface PagedFile extends AutoCloseable
      * pages under read locks cannot be safely written to anyway, so there's
      * no point in trying to go beyond the end of the file.
      * <p>
-     * This cannot be combined with {@link #PF_EXCLUSIVE_LOCK}.
+     * This cannot be combined with {@link #PF_SHARED_WRITE_LOCK}.
      */
-    int PF_SHARED_LOCK = 1; // TODO rename PF_SHARED_READ_LOCK
+    int PF_SHARED_READ_LOCK = 1;
     /**
      * Pin the pages with a shared write lock.
      * <p>
@@ -44,9 +44,9 @@ public interface PagedFile extends AutoCloseable
      * Note that write locks are <em>not</em> exclusive. You must use other means to coordinate access to the data on
      * the pages. The write lock only means that the page will not be concurrently evicted.
      * <p>
-     * This cannot be combined with {@link #PF_SHARED_LOCK}.
+     * This cannot be combined with {@link #PF_SHARED_READ_LOCK}.
      */
-    int PF_EXCLUSIVE_LOCK = 1 << 1; // TODO rename to PF_SHARED_WRITE_LOCK
+    int PF_SHARED_WRITE_LOCK = 1 << 1;
     /**
      * Disallow pinning and navigating to pages outside the range of the
      * underlying file.
@@ -101,12 +101,12 @@ public interface PagedFile extends AutoCloseable
      * <p>
      * The {@code pf_flags} argument expresses the intent of the IO operation. It is a bitmap that combines various
      * {@code PF_*} constants. You must always specify your desired locking behaviour, with either
-     * {@link org.neo4j.io.pagecache.PagedFile#PF_EXCLUSIVE_LOCK} or
-     * {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_LOCK}.
+     * {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_WRITE_LOCK} or
+     * {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_READ_LOCK}.
      * <p>
      * The two locking modes cannot be combined, but other intents can be combined with them. For instance, if you want
      * to write to a page, but also make sure that you don't write beyond the end of the file, then you can express your
-     * intent with {@code PF_EXCLUSIVE_LOCK | PF_NO_GROW} – note how the flags are combined with a bitwise-OR operator.
+     * intent with {@code PF_SHARED_WRITE_LOCK | PF_NO_GROW} – note how the flags are combined with a bitwise-OR operator.
      * Arithmetic addition can also be used, but might not make it as clear that we are dealing with a bit-set.
      *
      * @param pageId The initial file-page-id, that the cursor will be bound to

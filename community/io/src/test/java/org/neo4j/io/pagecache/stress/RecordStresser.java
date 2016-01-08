@@ -32,8 +32,8 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
 public class RecordStresser implements Callable<Void>
 {
@@ -66,7 +66,7 @@ public class RecordStresser implements Callable<Void>
         Random random = new Random();
         int recordsPerPage = format.getRecordsPerPage();
         int recordSize = format.getRecordSize();
-        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
             while ( !condition.fulfilled() )
             {
@@ -98,7 +98,7 @@ public class RecordStresser implements Callable<Void>
     public void verifyCounts() throws IOException
     {
         long actualSum = 0;
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             while ( cursor.next() )
             {

@@ -34,8 +34,8 @@ import org.neo4j.io.pagecache.PageCursor;
  * Depending on the adversary each read and write operation can throw either {@link RuntimeException} like
  * {@link SecurityException} or {@link IOException} like {@link FileNotFoundException}.
  * <p>
- * Read operations will always return a consistent value because the underlying page is exclusively write locked.
- * See {@link org.neo4j.io.pagecache.PagedFile#PF_EXCLUSIVE_LOCK} flag.
+ * Read operations will always return a consistent value because the underlying page is write locked.
+ * See {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_WRITE_LOCK} flag.
  */
 @SuppressWarnings( "unchecked" )
 class AdversarialWritePageCursor implements PageCursor

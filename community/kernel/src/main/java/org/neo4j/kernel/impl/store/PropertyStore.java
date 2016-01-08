@@ -47,8 +47,8 @@ import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 
 /**
@@ -139,7 +139,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
     {
         long pageId = pageIdForRecord( record.getId() );
         updatePropertyBlocks( record );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
         {
             if ( cursor.next() ) // should always be true
             {
@@ -151,8 +151,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
             else
             {
                 throw new UnderlyingStorageException(
-                        "Could not pin page[" + pageId +
-                                " exclusively for updateRecord: " + record );
+                        "Could not pin page[" + pageId + "] for updateRecord: " + record );
             }
         }
         catch ( IOException e )
@@ -309,7 +308,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
 
     public PropertyRecord getRecord( PropertyRecord record )
     {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_SHARED_READ_LOCK ) )
         {
             PropertyRecord tmpRecord = null;
             if ( cursor.next() )
@@ -335,7 +334,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
 
     public PageCursor newReadCursor( long recordId ) throws IOException
     {
-        PageCursor cursor = storeFile.io( pageIdForRecord( recordId ), PF_SHARED_LOCK );
+        PageCursor cursor = storeFile.io( pageIdForRecord( recordId ), PF_SHARED_READ_LOCK );
         try
         {
             if ( !cursor.next() )
@@ -381,7 +380,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
     @Override
     public PropertyRecord forceGetRecord( long id )
     {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_READ_LOCK ) )
         {
             PropertyRecord record = new PropertyRecord( id );
             if ( cursor.next() )

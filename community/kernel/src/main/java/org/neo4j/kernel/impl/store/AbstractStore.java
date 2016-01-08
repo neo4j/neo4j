@@ -81,7 +81,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         ByteBuffer headerRecord = createHeaderRecord();
         if ( headerRecord != null )
         {
-            try ( PageCursor pageCursor = file.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
+            try ( PageCursor pageCursor = file.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
             {
                 if ( pageCursor.next() )
                 {

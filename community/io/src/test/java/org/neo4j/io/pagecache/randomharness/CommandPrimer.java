@@ -205,7 +205,7 @@ class CommandPrimer
                 PagedFile pagedFile = fileMap.get( file );
                 if ( pagedFile != null )
                 {
-                    try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_LOCK ) )
+                    try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK ) )
                     {
                         if ( cursor.next() )
                         {
@@ -246,7 +246,7 @@ class CommandPrimer
                     recordLocks.lock( recordId );
                     try
                     {
-                        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_EXCLUSIVE_LOCK ) )
+                        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_WRITE_LOCK ) )
                         {
                             if ( cursor.next() )
                             {

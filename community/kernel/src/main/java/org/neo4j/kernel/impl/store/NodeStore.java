@@ -40,9 +40,9 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 
 /**
@@ -173,7 +173,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord>
     {
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
             boolean isInUse = false;
             if ( cursor.next() )
@@ -227,7 +227,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord>
     {
         long recordId = record.getId();
         long pageId = pageIdForRecord( recordId );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
         {
             if ( cursor.next() )
             {
@@ -285,7 +285,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord>
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
 
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
             boolean recordIsInUse = false;
             if ( cursor.next() )
@@ -340,7 +340,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord>
         NodeRecord record = new NodeRecord( -1 );
         int recordsPerPage = storeFile.pageSize() / getRecordSize();
 
-        try ( PageCursor cursor = storeFile.io( startPageId, PF_SHARED_LOCK | PF_READ_AHEAD ) )
+        try ( PageCursor cursor = storeFile.io( startPageId, PF_SHARED_READ_LOCK | PF_READ_AHEAD ) )
         {
             while ( currentPageId <= endPageId && cursor.next() )
             {
