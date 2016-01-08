@@ -199,6 +199,7 @@ public class IndexingServiceTest
         indexingService.createIndexes( IndexRule.indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
 
         // We are asserting that the second call to createIndex does not throw an exception.
+        waitForIndexesToComeOnline( indexingService, 0 );
     }
 
     @Test
@@ -824,6 +825,8 @@ public class IndexingServiceTest
                 eq( IndexConfiguration.NON_UNIQUE ), any( IndexSamplingConfig.class ) );
         verify( indexProvider ).getPopulator( eq( 2l ), eq( new IndexDescriptor( 1, 0 ) ),
                 eq( IndexConfiguration.NON_UNIQUE ), any( IndexSamplingConfig.class ) );
+
+        waitForIndexesToComeOnline( indexing, 0, 1, 2 );
     }
 
     private static class ControlledIndexPopulator extends IndexPopulator.Adapter
