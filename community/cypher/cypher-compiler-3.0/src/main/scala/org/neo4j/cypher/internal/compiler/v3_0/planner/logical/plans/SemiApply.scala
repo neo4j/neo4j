@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 
 case class SemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
-  extends AbstractSemiApply(left, right, solved) with LogicalPlanWithoutExpressions
+  extends AbstractSemiApply(left, right, solved)
 
 case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
-  extends AbstractSemiApply(left, right, solved) with LogicalPlanWithoutExpressions
+  extends AbstractSemiApply(left, right, solved)
 
 abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan, solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {

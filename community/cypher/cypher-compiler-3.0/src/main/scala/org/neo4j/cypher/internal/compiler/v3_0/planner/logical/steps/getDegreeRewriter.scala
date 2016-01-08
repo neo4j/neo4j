@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
+package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_0.ast.NestedPlanExpression
+import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, SemanticDirection, replace}
 
-// Rewrites queries to allow using the much faster getDegree method on the nodes
-case object getDegreeOptimizer extends Rewriter {
+case object getDegreeRewriter extends Rewriter {
+
   def apply(that: AnyRef): AnyRef = instance(that)
 
-  val instance = replace(replacer => {
+  private val instance = replace(replacer => {
     // Top-Down:
     // Do not traverse into NestedPlanExpressions as they have been optimized already by an earlier call to plan
     case that: NestedPlanExpression =>
@@ -40,12 +40,12 @@ case object getDegreeOptimizer extends Rewriter {
 
         // LENGTH( (a)-[]->() )
         case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None))))))
-          if func.function == Some(functions.Length) || func.function == Some(functions.Size) =>
+          if func.function.contains(functions.Length) || func.function.contains(functions.Size) =>
           calculateUsingGetDegree(func, node, types, dir)
 
         // LENGTH( ()-[]->(a) )
         case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None))))))
-          if func.function == Some(functions.Length) || func.function == Some(functions.Size) =>
+          if func.function.contains(functions.Length) || func.function.contains(functions.Size) =>
           calculateUsingGetDegree(func, node, types, dir.reversed)
 
         case rewritten =>
@@ -53,7 +53,7 @@ case object getDegreeOptimizer extends Rewriter {
       }
   })
 
-  def calculateUsingGetDegree(func: FunctionInvocation, node: Variable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
+  private def calculateUsingGetDegree(func: FunctionInvocation, node: Variable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
     types
       .map(typ => GetDegree(node.copyId, Some(typ), dir)(typ.position))
       .reduceOption[Expression](Add(_, _)(func.position))

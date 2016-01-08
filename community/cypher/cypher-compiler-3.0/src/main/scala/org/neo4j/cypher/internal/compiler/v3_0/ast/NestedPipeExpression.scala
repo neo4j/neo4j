@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast
 
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, PathExpression, PatternExpression}
 import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticCheck, SemanticCheckResult}
 
-case class NestedPlanExpression(plan: LogicalPlan, pattern: PatternExpression)(val position: InputPosition) extends Expression {
+case class NestedPlanExpression(plan: LogicalPlan, expr: Expression)(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }
 
-case class NestedPipeExpression(pipe: Pipe, path: PathExpression)(val position: InputPosition) extends Expression {
+case class NestedPipeExpression(pipe: Pipe, expr: Expression)(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }

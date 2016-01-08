@@ -63,7 +63,7 @@ case class TriadicSelection(positivePredicate: Boolean /*false means NOT(pattern
                             sourceId: IdName, seenId: IdName, targetId: IdName,
                             right: LogicalPlan /*given rows with 'source' and 'seen', produces rows with 'target'*/)
                            (val solved: PlannerQuery with CardinalityEstimation)
-extends LogicalPlan with LazyLogicalPlan with LogicalPlanWithoutExpressions {
+extends LogicalPlan with LazyLogicalPlan {
   override def lhs: Option[LogicalPlan] = Some(left)
 
   override def rhs: Option[LogicalPlan] = Some(right)

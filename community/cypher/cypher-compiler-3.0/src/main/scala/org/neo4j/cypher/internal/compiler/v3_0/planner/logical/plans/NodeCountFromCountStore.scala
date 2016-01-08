@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.LabelName
 
 case class NodeCountFromCountStore(idName: IdName, labelName: Option[LabelName], argumentIds: Set[IdName])
                                     (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
+  extends LogicalLeafPlan {
 
   def availableSymbols = Set(idName)
 }

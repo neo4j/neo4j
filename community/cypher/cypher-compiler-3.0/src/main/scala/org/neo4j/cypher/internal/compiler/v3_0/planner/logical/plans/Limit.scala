@@ -28,9 +28,6 @@ case class Limit(left: LogicalPlan, count: Expression, ties: Ties)
   val rhs = None
 
   def availableSymbols = left.availableSymbols
-
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(count = f(left.availableSymbols, count))(solved)
 }
 
 // Using a trait instead of a bool to make the code more readable

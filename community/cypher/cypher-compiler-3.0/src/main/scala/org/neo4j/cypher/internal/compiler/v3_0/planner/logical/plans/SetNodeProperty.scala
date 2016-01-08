@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, PropertyKeyName}
 case class SetNodeProperty(source: LogicalPlan, idName: IdName, propertyKey: PropertyKeyName,
                            value: Expression)
                           (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

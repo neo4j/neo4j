@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
 case class DetachDeleteNode(source: LogicalPlan, expression: Expression)
                            (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

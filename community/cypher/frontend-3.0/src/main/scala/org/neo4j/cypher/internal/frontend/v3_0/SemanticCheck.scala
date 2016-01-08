@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.ASTNode
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{ScopeExpression, Expression, ASTNode}
 
 object SemanticCheckResult {
   val success: SemanticCheck = SemanticCheckResult(_, Vector())
@@ -38,7 +38,12 @@ trait SemanticChecking {
 
   private val pushStateScope: SemanticCheck = state => SemanticCheckResult.success(state.newChildScope)
   private val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
-  protected def withScopedState(check: => SemanticCheck): SemanticCheck = pushStateScope chain check chain popStateScope
+  protected def withScopedState(check: => SemanticCheck): SemanticCheck = {
+    assert(!this.isInstanceOf[Expression] || this.isInstanceOf[ScopeExpression],
+      s"Expressions need to be marked with ExpressionWithInnerScope if they introduce inner scope: $this")
+
+    pushStateScope chain check chain popStateScope
+  }
 
   protected def noteScope(astNode: ASTNode): SemanticCheck =
     state => SemanticCheckResult.success(state.noteCurrentScope(astNode))

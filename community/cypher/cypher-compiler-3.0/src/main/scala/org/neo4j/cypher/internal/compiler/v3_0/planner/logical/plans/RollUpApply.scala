@@ -20,17 +20,23 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
-case class SetRelationshipPropertiesFromMap(source: LogicalPlan, idName: IdName, expression: Expression, removeOtherProps: Boolean)
-                    (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan {
+/*
+RollUp is the inverse of the Unwind operator. For each row passed in from the LHS, the whole RHS is executed.
+For each row produced by the RHS, a single column value is extracted and inserted into a collection.
 
-  override def lhs: Option[LogicalPlan] = Some(source)
+It is used for sub queries that return collections, such as pattern expressions (returns a collection of paths) and
+pattern comprehension.
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols + idName
+Note about nullableIdentifiers: when any of these identifiers is null, the collection should be null.
+ */
+case class RollUpApply(source: LogicalPlan, inner: LogicalPlan, collectionName: IdName, variableToCollect: IdName,
+                       nullableVariables: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
+  extends LogicalPlan with LazyLogicalPlan {
 
-  override def rhs: Option[LogicalPlan] = None
+  override def lhs = Some(source)
 
-  override def strictness: StrictnessMode = source.strictness
+  override def availableSymbols = source.availableSymbols + collectionName
+
+  override def rhs = Some(inner)
 }

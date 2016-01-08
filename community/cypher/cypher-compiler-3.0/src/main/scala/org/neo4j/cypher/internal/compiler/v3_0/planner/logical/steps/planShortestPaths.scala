@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Ascending, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.expandSolverStep
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, ShortestPathPattern, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{Predicate, QueryGraph}
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
@@ -98,10 +98,10 @@ case object planShortestPaths {
 
     // Projection with path
     val map = Map(pathName.name -> createPathExpression(shortestPath.expr.element))
-    val rhsProjection = lpp.planRegularProjection(rhsVarExpand, map)
+    val rhsProjection = lpp.planRegularProjection(rhsVarExpand, map, map)
 
     // Filter using predicates
-    val rhsFiltered = context.logicalPlanProducer.planSelection(predicates, rhsProjection)
+    val rhsFiltered = context.logicalPlanProducer.planSelection(rhsProjection, predicates, predicates)
 
     // Plan Sort and Limit
     val pos = shortestPath.expr.position
@@ -111,7 +111,8 @@ case object planShortestPaths {
     val limitLiteral1 = SignedDecimalIntegerLiteral("1")(pos)
 
 
-    val rhsProjected = lpp.planRegularProjection(rhsFiltered, Map(columnName -> lengthOfPath))
+    val rhsProjMap = Map(columnName -> lengthOfPath)
+    val rhsProjected = lpp.planRegularProjection(rhsFiltered, rhsProjMap, rhsProjMap)
     val sortDescription = Seq(Ascending(IdName(columnName)))
     val sorted = lpp.planSort(rhsProjected, sortDescription, Seq.empty)
     val ties = if (shortestPath.single) DoNotIncludeTies else IncludeTies
