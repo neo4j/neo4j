@@ -17,23 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state;
+package org.neo4j.coreedge.raft.state.term;
 
-import java.io.File;
-
-import org.neo4j.coreedge.raft.state.term.DurableTermStore;
-import org.neo4j.coreedge.raft.state.term.TermStore;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-
-public class DurableTermStoreContractTest extends TermStoreContractTest
+public class InMemoryTermState implements TermState
 {
+    private long term = 0;
+
     @Override
-    public TermStore createTermStore()
+    public long currentTerm()
     {
-        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        File directory = new File( "raft-log" );
-        fileSystem.mkdir( directory );
-        return new DurableTermStore( fileSystem, directory );
+        return term;
+    }
+
+    @Override
+    public void update( long newTerm )
+    {
+        if ( newTerm < term )
+        {
+            throw new IllegalArgumentException( "Cannot move to a lower term" );
+        }
+        term = newTerm;
     }
 }

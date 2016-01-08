@@ -67,10 +67,10 @@ import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.id_allocation.OnDiskIdAllocationState;
 import org.neo4j.coreedge.raft.state.membership.OnDiskRaftMembershipState;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
-import org.neo4j.coreedge.raft.state.term.DurableTermStore;
-import org.neo4j.coreedge.raft.state.term.TermStore;
-import org.neo4j.coreedge.raft.state.vote.DurableVoteStore;
-import org.neo4j.coreedge.raft.state.vote.VoteStore;
+import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
+import org.neo4j.coreedge.raft.state.term.TermState;
+import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
+import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.CoreMember;
@@ -175,8 +175,8 @@ public class EnterpriseCoreEditionModule
         NaiveDurableRaftLog raftLog = new NaiveDurableRaftLog( fileSystem, raftLogsDirectory,
                 new RaftContentSerializer(), platformModule.monitors );
 
-        DurableTermStore termStore = new DurableTermStore( fileSystem, raftLogsDirectory );
-        DurableVoteStore voteStore = new DurableVoteStore( fileSystem, raftLogsDirectory );
+        OnDiskTermState termStore = new OnDiskTermState( fileSystem, raftLogsDirectory );
+        OnDiskVoteState voteStore = new OnDiskVoteState( fileSystem, raftLogsDirectory );
 
         life.add( raftLog );
         life.add( termStore );
@@ -354,8 +354,8 @@ public class EnterpriseCoreEditionModule
                                                         Config config,
                                                         MessageLogger<AdvertisedSocketAddress> messageLogger,
                                                         RaftLog raftLog,
-                                                        TermStore termStore,
-                                                        VoteStore<CoreMember> voteStore,
+                                                        TermState termState,
+                                                        VoteState<CoreMember> voteState,
                                                         CoreMember myself,
                                                         LogProvider logProvider,
                                                         RaftServer<CoreMember> raftServer,
@@ -388,7 +388,7 @@ public class EnterpriseCoreEditionModule
                 config.get( CoreEdgeClusterSettings.log_shipping_max_lag ) );
 
         RaftInstance<CoreMember> raftInstance = new RaftInstance<>(
-                myself, termStore, voteStore, raftLog, electionTimeout, heartbeatInterval,
+                myself, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
                 raftTimeoutService, loggingRaftInbound,
                 new RaftOutbound( outbound ), leaderWaitTimeout, logProvider,
                 raftMembershipManager, logShipping, databaseHealthSupplier, Clock.SYSTEM_CLOCK );

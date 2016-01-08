@@ -21,7 +21,7 @@ package org.neo4j.coreedge.raft.state.term;
 
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 
-public interface TermStore
+public interface TermState
 {
     long currentTerm();
 

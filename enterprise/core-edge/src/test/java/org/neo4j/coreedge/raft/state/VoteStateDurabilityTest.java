@@ -24,8 +24,8 @@ import java.io.File;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.coreedge.raft.state.vote.DurableVoteStore;
-import org.neo4j.coreedge.raft.state.vote.VoteStore;
+import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
+import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -33,26 +33,26 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public class VoteStoreDurabilityTest
+public class VoteStateDurabilityTest
 {
-    public VoteStore<CoreMember> createVoteStore( EphemeralFileSystemAbstraction fileSystem )
+    public VoteState<CoreMember> createVoteStore( EphemeralFileSystemAbstraction fileSystem )
     {
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
-        return new DurableVoteStore( fileSystem, directory );
+        return new OnDiskVoteState( fileSystem, directory );
     }
 
     @Test
     public void shouldStoreVote() throws Exception
     {
         EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        VoteStore<CoreMember> voteStore = createVoteStore( fileSystem );
+        VoteState<CoreMember> voteState = createVoteStore( fileSystem );
 
         final CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                 new AdvertisedSocketAddress( "host1:2001" ) );
-        voteStore.update( member );
+        voteState.update( member );
 
-        verifyCurrentLogAndNewLogLoadedFromFileSystem( voteStore, fileSystem,
+        verifyCurrentLogAndNewLogLoadedFromFileSystem( voteState, fileSystem,
                 voteStore1 -> assertEquals( member, voteStore1.votedFor() ) );
     }
 
@@ -60,17 +60,17 @@ public class VoteStoreDurabilityTest
     public void emptyFileShouldImplyNoVoteCast() throws Exception
     {
         EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        VoteStore<CoreMember> voteStore = createVoteStore( fileSystem );
+        VoteState<CoreMember> voteState = createVoteStore( fileSystem );
 
-        verifyCurrentLogAndNewLogLoadedFromFileSystem( voteStore, fileSystem,
+        verifyCurrentLogAndNewLogLoadedFromFileSystem( voteState, fileSystem,
                 voteStore1 -> assertNull( voteStore1.votedFor() ) );
     }
 
-    private void verifyCurrentLogAndNewLogLoadedFromFileSystem( VoteStore<CoreMember> voteStore,
+    private void verifyCurrentLogAndNewLogLoadedFromFileSystem( VoteState<CoreMember> voteState,
                                                                 EphemeralFileSystemAbstraction fileSystem,
                                                                 VoteVerifier voteVerifier ) throws RaftStorageException
     {
-        voteVerifier.verifyVote( voteStore );
+        voteVerifier.verifyVote( voteState );
         voteVerifier.verifyVote( createVoteStore( fileSystem ) );
         fileSystem.crash();
         voteVerifier.verifyVote( createVoteStore( fileSystem ) );
@@ -78,6 +78,6 @@ public class VoteStoreDurabilityTest
 
     private interface VoteVerifier
     {
-        void verifyVote( VoteStore<CoreMember> voteStore ) throws RaftStorageException;
+        void verifyVote( VoteState<CoreMember> voteState ) throws RaftStorageException;
     }
 }

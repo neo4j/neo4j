@@ -17,27 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state.term;
+package org.neo4j.coreedge.raft.state;
 
-import org.neo4j.coreedge.raft.state.term.TermStore;
+import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState;
+import org.neo4j.coreedge.raft.state.vote.VoteState;
+import org.neo4j.coreedge.server.CoreMember;
 
-public class InMemoryTermStore implements TermStore
+public class InMemoryVoteStateContractTest extends VoteStoreContractTest
 {
-    private long term = 0;
-
-    @Override
-    public long currentTerm()
+    @Override public VoteState<CoreMember> createVoteStore()
     {
-        return term;
-    }
-
-    @Override
-    public void update( long newTerm )
-    {
-        if ( newTerm < term )
-        {
-            throw new IllegalArgumentException( "Cannot move to a lower term" );
-        }
-        term = newTerm;
+        return new InMemoryVoteState<>();
     }
 }

@@ -19,18 +19,16 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import java.io.File;
-
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.coreedge.raft.state.vote.DurableVoteStore;
-import org.neo4j.coreedge.raft.state.vote.VoteStore;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
+import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -38,38 +36,33 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class VoteStoreAdversarialTest
+public class TermStateAdversarialTest
 {
-    public VoteStore<CoreMember> createVoteStore( FileSystemAbstraction fileSystem )
+    public TermState createTermStore( FileSystemAbstraction fileSystem )
     {
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
-        return new DurableVoteStore( fileSystem, directory );
+        return new OnDiskTermState( fileSystem, directory );
     }
 
     @Test
-    public void shouldDiscardVoteIfChannelFails() throws Exception
+    public void shouldDiscardTermIfChannelFails() throws Exception
     {
         ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, false ),
-                DurableVoteStore.class );
+                OnDiskTermState.class );
         adversary.disable();
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         FileSystemAbstraction fileSystem = new SelectiveFileSystemAbstraction(
-                new File( "raft-log/vote.state" ), new AdversarialFileSystemAbstraction( adversary, fs ), fs );
-        VoteStore<CoreMember> store = createVoteStore( fileSystem );
+                new File( "raft-log/term.state" ), new AdversarialFileSystemAbstraction( adversary, fs ), fs );
+        TermState log = createTermStore( fileSystem );
 
-        final CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" ) );
-        final CoreMember member2 = new CoreMember( new AdvertisedSocketAddress( "host2:1001" ),
-                new AdvertisedSocketAddress( "host2:2001" ) );
-
-        store.update( member1 );
+        log.update( 21 );
         adversary.enable();
 
         try
         {
-            store.update( member2 );
+            log.update( 23 );
             fail( "Should have thrown exception" );
         }
         catch ( RaftStorageException e )
@@ -77,20 +70,24 @@ public class VoteStoreAdversarialTest
             // expected
         }
 
-        verifyCurrentLogAndNewLogLoadedFromFileSystem( store, fileSystem,
-                store1 -> assertEquals( member1, store1.votedFor() ) );
+        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, new TermVerifier()
+        {
+            public void verifyTerm( TermState termState ) throws RaftStorageException
+            {
+                assertEquals( 21, termState.currentTerm() );
+            }
+        } );
     }
 
     private void verifyCurrentLogAndNewLogLoadedFromFileSystem(
-            VoteStore<CoreMember> store, FileSystemAbstraction fileSystem, VoteVerifier voteVerifier )
-            throws RaftStorageException
+            TermState log, FileSystemAbstraction fileSystem, TermVerifier termVerifier ) throws RaftStorageException
     {
-        voteVerifier.verifyVote( store );
-        voteVerifier.verifyVote( createVoteStore( fileSystem ) );
+        termVerifier.verifyTerm( log );
+        termVerifier.verifyTerm( createTermStore( fileSystem ) );
     }
 
-    private interface VoteVerifier
+    private interface TermVerifier
     {
-        void verifyVote( VoteStore<CoreMember> store ) throws RaftStorageException;
+        void verifyTerm( TermState termState ) throws RaftStorageException;
     }
 }

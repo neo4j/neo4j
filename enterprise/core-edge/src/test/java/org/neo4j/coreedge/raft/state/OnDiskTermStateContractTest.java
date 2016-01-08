@@ -19,14 +19,21 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import org.neo4j.coreedge.raft.state.term.InMemoryTermStore;
-import org.neo4j.coreedge.raft.state.term.TermStore;
+import java.io.File;
 
-public class InMemoryTermStoreContractTest extends TermStoreContractTest
+import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
+import org.neo4j.coreedge.raft.state.term.TermState;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+
+public class OnDiskTermStateContractTest extends TermStoreContractTest
 {
     @Override
-    public TermStore createTermStore()
+    public TermState createTermStore()
     {
-        return new InMemoryTermStore();
+        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        File directory = new File( "raft-log" );
+        fileSystem.mkdir( directory );
+        return new OnDiskTermState( fileSystem, directory );
     }
 }

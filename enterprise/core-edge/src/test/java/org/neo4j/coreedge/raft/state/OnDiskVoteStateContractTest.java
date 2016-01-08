@@ -17,23 +17,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state.vote;
+package org.neo4j.coreedge.raft.state;
 
-import org.neo4j.coreedge.raft.state.vote.VoteStore;
+import java.io.File;
 
-public class InMemoryVoteStore<MEMBER> implements VoteStore<MEMBER>
+import org.junit.Rule;
+
+import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
+import org.neo4j.coreedge.raft.state.vote.VoteState;
+import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.TargetDirectory;
+
+public class OnDiskVoteStateContractTest extends VoteStoreContractTest
 {
-    MEMBER votedFor;
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Override
-    public MEMBER votedFor()
+    public VoteState<CoreMember> createVoteStore()
     {
-        return votedFor;
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        File directory = testDirectory.directory( "raft-log" );
+        return new OnDiskVoteState( fileSystem, directory );
     }
 
-    @Override
-    public void update( MEMBER votedFor )
-    {
-        this.votedFor = votedFor;
-    }
+
 }

@@ -29,28 +29,28 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.raft.state.term.TermStore;
-import org.neo4j.coreedge.raft.state.vote.VoteStore;
+import org.neo4j.coreedge.raft.state.term.TermState;
+import org.neo4j.coreedge.raft.state.vote.VoteState;
 
 public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
 {
     private final MEMBER myself;
     private final RaftMembership<MEMBER> membership;
-    private final TermStore termStore;
+    private final TermState termState;
     private MEMBER leader;
     private long leaderCommit = -1;
-    private final VoteStore<MEMBER> voteStore;
+    private final VoteState<MEMBER> voteState;
     private Set<MEMBER> votesForMe = new HashSet<>();
     private long lastLogIndexBeforeWeBecameLeader = -1;
     private FollowerStates<MEMBER> followerStates = new FollowerStates<>();
     private final RaftLog entryLog;
 
-    public RaftState( MEMBER myself, TermStore termStore, RaftMembership<MEMBER> membership,
-                      RaftLog entryLog, VoteStore<MEMBER> voteStore )
+    public RaftState( MEMBER myself, TermState termState, RaftMembership<MEMBER> membership,
+                      RaftLog entryLog, VoteState<MEMBER> voteState )
     {
         this.myself = myself;
-        this.termStore = termStore;
-        this.voteStore = voteStore;
+        this.termState = termState;
+        this.voteState = voteState;
         this.membership = membership;
         this.entryLog = entryLog;
     }
@@ -76,7 +76,7 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
     @Override
     public long term()
     {
-        return termStore.currentTerm();
+        return termState.currentTerm();
     }
 
     @Override
@@ -94,7 +94,7 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
     @Override
     public MEMBER votedFor()
     {
-        return voteStore.votedFor();
+        return voteState.votedFor();
     }
 
     @Override
@@ -123,8 +123,8 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
 
     public void update( Outcome<MEMBER> outcome ) throws RaftStorageException
     {
-        termStore.update( outcome.getTerm() );
-        voteStore.update( outcome.getVotedFor() );
+        termState.update( outcome.getTerm() );
+        voteState.update( outcome.getVotedFor() );
         leader = outcome.getLeader();
         leaderCommit = outcome.getLeaderCommit();
         votesForMe = outcome.getVotesForMe();
