@@ -21,11 +21,11 @@ package org.neo4j.io;
 
 /**
  * A ByteUnit is a unit for a quantity of bytes.
- * <p/>
+ * <p>
  * The unit knows how to convert between other units in its class, so you for instance can turn a number of KiBs into
  * an accurate quantity of bytes. Precision can be lost when converting smaller units into larger units, because of
  * integer division.
- *
+ * <p>
  * These units all follow the EIC (International Electrotechnical Commission) standard, which uses a multiplier of
  * 1.024. This system is also known as the binary system, and has been accepted as part of the International System of
  * Quantities. It is therefor the recommended choice when communicating quantities of information, and the only one
@@ -58,7 +58,7 @@ public enum ByteUnit
 
     /**
      * Compute the increment factor from the given power.
-     * <p/>
+     * <p>
      * Giving zero always produces 1. Giving 1 will produce 1000 or 1024, for SI and EIC respectively, and so on.
      */
     private long factorFromPower( long power )

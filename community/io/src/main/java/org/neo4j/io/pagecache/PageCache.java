@@ -26,7 +26,7 @@ import java.nio.file.OpenOption;
 /**
  * A page caching mechanism that allows caching multiple files and accessing their data
  * in pages via a re-usable cursor.
- *
+ * <p>
  * This interface does not specify the cache eviction and allocation behavior, it may be
  * backed by implementations that map entire files into RAM, or implementations with smart
  * eviction strategies, trying to keep "hot" pages in RAM.
@@ -35,7 +35,7 @@ public interface PageCache extends AutoCloseable
 {
     /**
      * Ask for a handle to a paged file, backed by this page cache.
-     *
+     * <p>
      * Note that this currently asks for the pageSize to use, which is an artifact or records being
      * of varying size in the stores. This should be consolidated to use a standard page size for the
      * whole cache, with records aligning on those page boundaries.

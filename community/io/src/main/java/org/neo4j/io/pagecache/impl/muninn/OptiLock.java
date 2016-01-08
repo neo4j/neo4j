@@ -24,20 +24,20 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 /**
  * OptiLock is a sequence-based lock like StampedLock, but with the ability to take optimistic write-locks.
  * <p>
- * The OptiLock supports non-blocking optimistic concurrent read-locks, and blocking concurrent write-locks,
- * and a pessimistic exclusive-lock.
+ * The OptiLock supports non-blocking optimistic concurrent read locks, non-blocking concurrent write locks,
+ * and a pessimistic non-blocking exclusive lock.
  * <p>
- * The optimistic read-lock works through validation, so at the end of the critical section, the read-lock has to be
+ * The optimistic read lock works through validation, so at the end of the critical section, the read lock has to be
  * validated and, if the validation fails, the critical section has to be retried. The read-lock acquires a stamp
  * at the start of the critical section, which is then validated at the end of the critical section. The stamp is
  * invalidated if any write-lock or exclusive lock has been taking since the stamp was acquired.
  * <p>
- * The optimistic write-locks works by assuming that writes are always non-conflicting, so no validation is required.
- * However, the write-locks will check if a pessimistic exclusive lock is held at the start of the critical section,
- * and if so, block and wait for the exclusive lock to be released. The write-locks will invalidate all optimistic
- * read-locks.
+ * The optimistic write locks works by assuming that writes are always non-conflicting, so no validation is required.
+ * However, the write locks will check if a pessimistic exclusive lock is held at the start of the critical section,
+ * and if so, fail to be acquired. The write locks will invalidate all optimistic read locks. The write lock is
+ * try-lock only, and will never block.
  * <p>
- * The exclusive lock will also invalidate the optimistic read-locks, but not the write locks. The exclusive lock is
+ * The exclusive lock will also invalidate the optimistic read locks, but not the write locks. The exclusive lock is
  * try-lock only, and will never block.
  */
 public class OptiLock
@@ -80,8 +80,7 @@ public class OptiLock
     /**
      * Validate a stamp from {@link #tryOptimisticReadLock()} or {@link #unlockExclusive()}, and return {@code true}
      * if no write or exclusive lock overlapped with the critical section of the optimistic read lock represented by
-     * the
-     * stamp.
+     * the stamp.
      *
      * @param stamp The stamp of the optimistic read lock.
      * @return {@code true} if the optimistic read lock was valid, {@code false} otherwise.
@@ -98,6 +97,7 @@ public class OptiLock
      * an exclusive lock fail. If an exclusive lock is currently held, then the attempt to take a write lock will fail.
      * <p>
      * Write locks must be paired with a corresponding {@link #unlockWrite()}.
+     *
      * @return {@code true} if the write lock was taken, {@code false} otherwise.
      */
     public boolean tryWriteLock()
