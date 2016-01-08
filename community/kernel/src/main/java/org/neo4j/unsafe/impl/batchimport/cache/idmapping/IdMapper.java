@@ -31,7 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
  * Maps node ids as specified by {@link InputNode#id()}, {@link InputRelationship#startNode()} and
  * {@link InputRelationship#endNode()} from an id of some unknown sort, coming directly from input, to actual node ids.
  */
-public interface IdMapper extends MemoryStatsVisitor.Home
+public interface IdMapper extends MemoryStatsVisitor.Visitable
 {
     /**
      * Maps an {@code inputId} to an actual node id.

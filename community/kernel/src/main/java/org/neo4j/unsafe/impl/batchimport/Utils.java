@@ -33,7 +33,7 @@ public class Utils
     {
         if ( value > Integer.MAX_VALUE )
         {
-            throw new ArithmeticException( getOverflowMessage( value, Integer.class ) );
+            throw new ArithmeticException( getOverflowMessage( value, Integer.TYPE ) );
         }
         return (int) value;
     }
@@ -42,7 +42,7 @@ public class Utils
     {
         if ( value > Short.MAX_VALUE )
         {
-            throw new ArithmeticException( getOverflowMessage( value, Short.class ) );
+            throw new ArithmeticException( getOverflowMessage( value, Short.TYPE ) );
         }
         return (short) value;
     }
@@ -51,7 +51,7 @@ public class Utils
     {
         if ( value > Byte.MAX_VALUE )
         {
-            throw new ArithmeticException( getOverflowMessage( value, Byte.class ) );
+            throw new ArithmeticException( getOverflowMessage( value, Byte.TYPE ) );
         }
         return (byte) value;
     }
