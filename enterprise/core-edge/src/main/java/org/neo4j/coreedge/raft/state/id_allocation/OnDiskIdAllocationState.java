@@ -24,8 +24,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import org.neo4j.coreedge.raft.replication.id.IdAllocationState;
 import org.neo4j.coreedge.raft.state.StatePersister;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
@@ -34,8 +32,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.internal.DatabaseHealth;
 
-import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal
-        .NUMBER_OF_BYTES_PER_WRITE;
+import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal.NUMBER_OF_BYTES_PER_WRITE;
 
 /**
  * The OnDiskAllocationState is a decorator around InMemoryIdAllocationState providing on-disk persistence of
@@ -61,15 +58,15 @@ public class OnDiskIdAllocationState implements IdAllocationState
         File fileA = new File( storeDir, FILENAME + "A" );
         File fileB = new File( storeDir, FILENAME + "B" );
 
-        workingBuffer = ByteBuffer.allocate( NUMBER_OF_BYTES_PER_WRITE );
+        this.workingBuffer = ByteBuffer.allocate( NUMBER_OF_BYTES_PER_WRITE );
 
         IdAllocationStateRecoveryManager recoveryManager =
                 new IdAllocationStateRecoveryManager( fileSystemAbstraction );
 
         final StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
 
-        marshal = new InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal();
-        inMemoryIdAllocationState = readLastEntryFrom( fileSystemAbstraction, recoveryStatus.previouslyActive() );
+        this.marshal = new InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal();
+        this.inMemoryIdAllocationState = readLastEntryFrom( fileSystemAbstraction, recoveryStatus.previouslyActive() );
 
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
                 workingBuffer,
@@ -85,7 +82,7 @@ public class OnDiskIdAllocationState implements IdAllocationState
         workingBuffer.flip();
 
         InMemoryIdAllocationState result = new InMemoryIdAllocationState();
-        InMemoryIdAllocationState lastRead = null;
+        InMemoryIdAllocationState lastRead;
 
         while ( (lastRead = marshal.unmarshal( workingBuffer )) != null )
         {
@@ -151,10 +148,5 @@ public class OnDiskIdAllocationState implements IdAllocationState
     public void lastIdRangeStart( IdType idType, long idRangeStart )
     {
         inMemoryIdAllocationState.lastIdRangeStart( idType, idRangeStart );
-    }
-
-    public File currentStoreFile()
-    {
-        throw new NotImplementedException();
     }
 }

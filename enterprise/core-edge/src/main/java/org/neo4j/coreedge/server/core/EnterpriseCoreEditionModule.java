@@ -38,7 +38,7 @@ import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.membership.CoreMarshal;
+import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
@@ -145,6 +145,8 @@ public class EnterpriseCoreEditionModule
 
         LogProvider logProvider = logging.getInternalLogProvider();
 
+        final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
+
         CoreDiscoveryService discoveryService =
                 discoveryServiceFactory.coreDiscoveryService( config );
         life.add( dependencies.satisfyDependency( discoveryService ) );
@@ -176,20 +178,28 @@ public class EnterpriseCoreEditionModule
                 new RaftContentSerializer(), platformModule.monitors );
 
         OnDiskTermState termStore = new OnDiskTermState( fileSystem, raftLogsDirectory );
-        OnDiskVoteState voteStore = new OnDiskVoteState( fileSystem, raftLogsDirectory );
+        OnDiskVoteState voteStore;
+        try
+        {
+            voteStore = new OnDiskVoteState( fileSystem, raftLogsDirectory,
+                    config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
+                    new CoreMemberMarshal() );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
 
         life.add( raftLog );
         life.add( termStore );
         life.add( voteStore );
 
-        Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
-
-        RaftMembershipState<CoreMember> raftMembershipState = null;
+        RaftMembershipState<CoreMember> raftMembershipState;
         try
         {
             raftMembershipState = new OnDiskRaftMembershipState<>(
                     fileSystem, storeDir, config.get( CoreEdgeClusterSettings.raft_membership_state_size ),
-                    databaseHealthSupplier, new CoreMarshal() );
+                    databaseHealthSupplier, new CoreMemberMarshal() );
         }
         catch ( IOException e )
         {
@@ -323,10 +333,11 @@ public class EnterpriseCoreEditionModule
     }
 
     public static CommitProcessFactory createCommitProcessFactory( final Replicator replicator,
-            final LocalSessionPool localSessionPool,
-            final CurrentReplicatedLockState currentReplicatedLockState,
-            final Dependencies dependencies,
-            final LogService logging )
+                                                                   final LocalSessionPool localSessionPool,
+                                                                   final CurrentReplicatedLockState
+                                                                           currentReplicatedLockState,
+                                                                   final Dependencies dependencies,
+                                                                   final LogService logging )
     {
         return ( appender, applier, config ) -> {
             TransactionRepresentationCommitProcess localCommit =

@@ -25,5 +25,5 @@ public interface VoteState<MEMBER>
 {
     MEMBER votedFor();
 
-    void update( MEMBER votedFor ) throws RaftStorageException;
+    void votedFor( MEMBER votedFor ) throws RaftStorageException;
 }

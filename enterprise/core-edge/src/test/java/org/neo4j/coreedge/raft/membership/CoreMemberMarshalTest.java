@@ -17,31 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state;
+package org.neo4j.coreedge.raft.membership;
 
-import java.io.File;
+import java.nio.ByteBuffer;
 
-import org.junit.Rule;
+import org.junit.Test;
 
-import org.neo4j.coreedge.raft.state.vote.DurableVoteStore;
-import org.neo4j.coreedge.raft.state.vote.VoteStore;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.test.TargetDirectory;
 
-public class DurableVoteStoreContractTest extends VoteStoreContractTest
+import static org.junit.Assert.assertEquals;
+
+public class CoreMemberMarshalTest
 {
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-
-    @Override
-    public VoteStore<CoreMember> createVoteStore()
+    @Test
+    public void shouldSerializeAndDeserializeUsingByteBuffer() throws Exception
     {
-        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        File directory = testDirectory.directory( "raft-log" );
-        return new DurableVoteStore( fileSystem, directory );
+        // given
+        CoreMemberMarshal serializer = new CoreMemberMarshal();
+
+        final CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
+                new AdvertisedSocketAddress( "host1:2001" ) );
+
+        // when
+        final ByteBuffer buffer = ByteBuffer.allocate( 1_000 );
+        serializer.marshal( member, buffer );
+        buffer.flip();
+        final CoreMember recovered = serializer.unmarshal( buffer );
+
+        // then
+        assertEquals( member, recovered );
     }
-
-
 }

@@ -22,86 +22,91 @@ package org.neo4j.coreedge.raft.state.vote;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.Supplier;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.coreedge.raft.membership.CoreMarshal;
+import org.neo4j.coreedge.raft.state.StatePersister;
+import org.neo4j.coreedge.raft.state.StateRecoveryManager;
+import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationStateRecoveryManager;
+import org.neo4j.coreedge.raft.state.membership.Marshal;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class OnDiskVoteState extends LifecycleAdapter implements VoteState<CoreMember>
 {
-    private final StoreChannel channel;
-    private final CoreMarshal coreMemberMarshal = new CoreMarshal();
-    private CoreMember votedFor;
+    public static final String FILENAME = "vote.";
 
-    public OnDiskVoteState( FileSystemAbstraction fileSystem, File directory )
+    private final StatePersister<InMemoryVoteState<CoreMember>> statePersister;
+    private final ByteBuffer workingBuffer;
+
+
+    private InMemoryVoteState<CoreMember> inMemoryVoteState;
+    private final InMemoryVoteState.InMemoryVoteStateStateMarshal<CoreMember> marshal;
+
+    public OnDiskVoteState( FileSystemAbstraction fileSystemAbstraction, File storeDir,
+                            int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier,
+                            Marshal<CoreMember> memberMarshal ) throws IOException
     {
-        try
+        File fileA = new File( storeDir, FILENAME + "A" );
+        File fileB = new File( storeDir, FILENAME + "B" );
+
+        workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateStateMarshal
+                .NUMBER_OF_VOTES_PER_WRITE );
+
+        IdAllocationStateRecoveryManager recoveryManager =
+                new IdAllocationStateRecoveryManager( fileSystemAbstraction );
+
+        final StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
+
+
+        this.inMemoryVoteState = readLastEntryFrom( fileSystemAbstraction, recoveryStatus.previouslyActive() );
+
+        this.marshal = new InMemoryVoteState.InMemoryVoteStateStateMarshal<>(memberMarshal);
+
+        this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
+                workingBuffer, marshal, recoveryStatus.previouslyInactive(), databaseHealthSupplier );
+    }
+
+    private InMemoryVoteState<CoreMember> readLastEntryFrom( FileSystemAbstraction fileSystemAbstraction, File file )
+            throws IOException
+    {
+        final StoreChannel temporaryStoreChannel = fileSystemAbstraction.open( file, "rw" );
+        temporaryStoreChannel.read( workingBuffer );
+        workingBuffer.flip();
+
+        InMemoryVoteState<CoreMember> result = new InMemoryVoteState<>();
+        InMemoryVoteState<CoreMember> lastRead;
+
+        while ( (lastRead = marshal.unmarshal( workingBuffer )) != null )
         {
-            channel = fileSystem.open( new File( directory, "vote.state" ), "rw" );
-            votedFor = readVote();
+            result = lastRead;
+            workingBuffer.flip();
+            temporaryStoreChannel.read( workingBuffer );
+            workingBuffer.flip();
         }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+
+        return result;
     }
 
     @Override
     public void shutdown() throws Throwable
     {
-        channel.force( false );
-        channel.close();
+        // hey, we have a lifecycle, let's shut some stuff down.
     }
 
     @Override
     public CoreMember votedFor()
     {
-        return votedFor;
+        return inMemoryVoteState.votedFor();
     }
 
     @Override
-    public void update( CoreMember votedFor ) throws RaftStorageException
+    public void votedFor( CoreMember votedFor ) throws RaftStorageException
     {
-        try
-        {
-            if ( votedFor == null )
-            {
-                channel.truncate( 0 );
-            }
-            else
-            {
-                ByteBuf byteBuf = Unpooled.buffer();
-                coreMemberMarshal.marshal( votedFor, byteBuf );
-                ByteBuffer buffer = byteBuf.nioBuffer();
-
-                channel.writeAll( buffer, 0 );
-            }
-            channel.force( false );
-        }
-        catch ( IOException e )
-        {
-            throw new RaftStorageException( "Failed to update votedFor", e );
-        }
-        this.votedFor = votedFor;
-    }
-
-    private CoreMember readVote() throws IOException
-    {
-        if ( channel.size() == 0 )
-        {
-            return null;
-        }
-
-        ByteBuffer buffer = ByteBuffer.allocate( (int) channel.size() );
-        channel.read( buffer, 0 );
-        buffer.flip();
-
-        return coreMemberMarshal.unmarshal( Unpooled.wrappedBuffer( buffer ) );
+        inMemoryVoteState.votedFor( votedFor );
+        statePersister.persistStoreData( inMemoryVoteState );
     }
 }

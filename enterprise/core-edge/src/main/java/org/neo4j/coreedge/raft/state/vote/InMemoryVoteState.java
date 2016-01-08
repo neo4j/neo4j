@@ -19,6 +19,10 @@
  */
 package org.neo4j.coreedge.raft.state.vote;
 
+import java.nio.ByteBuffer;
+
+import org.neo4j.coreedge.raft.state.membership.Marshal;
+
 public class InMemoryVoteState<MEMBER> implements VoteState<MEMBER>
 {
     MEMBER votedFor;
@@ -30,8 +34,37 @@ public class InMemoryVoteState<MEMBER> implements VoteState<MEMBER>
     }
 
     @Override
-    public void update( MEMBER votedFor )
+    public void votedFor( MEMBER votedFor )
     {
         this.votedFor = votedFor;
+    }
+
+    public static class InMemoryVoteStateStateMarshal<CoreMember>
+            implements Marshal<InMemoryVoteState<CoreMember>>
+
+    {
+        public static final int NUMBER_OF_VOTES_PER_WRITE = 9999;
+        private final Marshal<CoreMember> marshal;
+
+        public InMemoryVoteStateStateMarshal( Marshal<CoreMember> marshal )
+        {
+
+            this.marshal = marshal;
+        }
+
+        @Override
+        public void marshal( InMemoryVoteState<CoreMember> state, ByteBuffer buffer )
+        {
+            marshal.marshal( state.votedFor(), buffer );
+        }
+
+        @Override
+        public InMemoryVoteState<CoreMember> unmarshal( ByteBuffer source )
+        {
+            final InMemoryVoteState<CoreMember> state = new InMemoryVoteState<>();
+            state.votedFor( marshal.unmarshal( source ) );
+            return state;
+        }
+
     }
 }

@@ -19,6 +19,20 @@
  */
 package org.neo4j.coreedge.raft.state;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.function.Supplier;
+
+import org.junit.Test;
+
+import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
+import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreFileChannel;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -29,18 +43,6 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import org.junit.Test;
-
-import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreFileChannel;
 
 public class OnDiskVoteStateTest
 {
@@ -56,10 +58,10 @@ public class OnDiskVoteStateTest
         AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "localhost:" + 1234 );
         CoreMember member = new CoreMember( localhost, localhost );
 
-        OnDiskVoteState store = new OnDiskVoteState( fsa, new File("") );
+        OnDiskVoteState store = new OnDiskVoteState( fsa, new File( "" ), 100, mock( Supplier.class ), new CoreMemberMarshal() );
 
         // When
-        store.update( member );
+        store.votedFor( member );
 
         // Then
         verify( channel ).writeAll( any( ByteBuffer.class ), anyInt() );
@@ -76,15 +78,16 @@ public class OnDiskVoteStateTest
         // Mock the first call to succeed, so we can first store a proper value
         doNothing().doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ), anyInt() );
 
-        OnDiskVoteState store = new OnDiskVoteState( fsa, new File("") );
+        OnDiskVoteState store = new OnDiskVoteState( fsa, new File( "" ), 100, mock( Supplier.class ), new CoreMemberMarshal() );
 
         // This has to be real because it will be serialized
         AdvertisedSocketAddress firstLocalhost = new AdvertisedSocketAddress( "localhost:" + 1234 );
         CoreMember firstMember = new CoreMember( firstLocalhost, firstLocalhost );
 
         // When
-        // We do the first store successfully, so we can meaningfully compare the stored value after the failed invocation
-        store.update( firstMember );
+        // We do the first store successfully, so we can meaningfully compare the stored value after the failed
+        // invocation
+        store.votedFor( firstMember );
 
         // Then
         assertEquals( firstMember, store.votedFor() );
@@ -96,11 +99,12 @@ public class OnDiskVoteStateTest
         // When
         try
         {
-            store.update( secondMember);
-            fail( "Test setup should have caused an exception here");
+            store.votedFor( secondMember );
+            fail( "Test setup should have caused an exception here" );
         }
-        catch( Exception e )
-        {}
+        catch ( Exception e )
+        {
+        }
 
         // Then
         // The stored member should not be updated
@@ -115,7 +119,7 @@ public class OnDiskVoteStateTest
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
 
-        OnDiskVoteState store = new OnDiskVoteState( fsa, new File("") );
+        OnDiskVoteState store = new OnDiskVoteState( fsa, new File( "" ), 100, mock( Supplier.class ), new CoreMemberMarshal() );
 
         // When
         // We shut it down

@@ -29,6 +29,8 @@ import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.AdvertisedSocketAddressDecoder;
 import org.neo4j.coreedge.server.AdvertisedSocketAddressEncoder;
 
+import static org.neo4j.coreedge.server.AdvertisedSocketAddressEncoder.encode;
+
 /**
  * Format:
  * ┌────────────────────────────────────────────┐
@@ -44,20 +46,20 @@ import org.neo4j.coreedge.server.AdvertisedSocketAddressEncoder;
  * │             └─────────────────────────────┘│
  * └────────────────────────────────────────────┘
  */
-public class CoreMarshal implements Marshal<CoreMember>
+public class CoreMemberMarshal implements Marshal<CoreMember>
 {
     public void marshal( CoreMember member, ByteBuffer buffer )
     {
         AdvertisedSocketAddressEncoder encoder = new AdvertisedSocketAddressEncoder();
-        encoder.encode( member.getCoreAddress(), buffer );
-        encoder.encode( member.getRaftAddress(), buffer );
+        encode( member.getCoreAddress(), buffer );
+        encode( member.getRaftAddress(), buffer );
     }
 
     public void marshal( CoreMember member, ByteBuf buffer )
     {
         AdvertisedSocketAddressEncoder encoder = new AdvertisedSocketAddressEncoder();
-        encoder.encode( member.getCoreAddress(), buffer );
-        encoder.encode( member.getRaftAddress(), buffer );
+        encode( member.getCoreAddress(), buffer );
+        encode( member.getRaftAddress(), buffer );
     }
 
     public CoreMember unmarshal( ByteBuffer buffer )
