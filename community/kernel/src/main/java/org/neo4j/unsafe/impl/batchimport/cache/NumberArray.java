@@ -24,7 +24,7 @@ package org.neo4j.unsafe.impl.batchimport.cache;
  *
  * @see NumberArrayFactory
  */
-public interface NumberArray extends MemoryStatsVisitor.Home, AutoCloseable
+public interface NumberArray extends MemoryStatsVisitor.Visitable, AutoCloseable
 {
     /**
      * @return length of the array, i.e. the capacity.

@@ -28,7 +28,7 @@ import java.util.Arrays;
 class SameGroupDetector
 {
     // Alternating data index, group id
-    private int[] seen = new int[100]; // grows on demand
+    private long[] seen = new long[100]; // grows on demand
     private int cursor;
 
     /**
@@ -36,7 +36,7 @@ class SameGroupDetector
      * supplied data index and group id. In the case of <strong>not</strong> {@code -1} both {@code dataIndexB}
      * and the returned data index should be marked as collisions.
      */
-    int collisionWithinSameGroup( int dataIndexA, int groupIdA, int dataIndexB, int groupIdB )
+    long collisionWithinSameGroup( long dataIndexA, int groupIdA, long dataIndexB, int groupIdB )
     {
         // The first call, add both the entries. For consecutive calls for this same collision stretch
         // only add and compare the second. The reason it's done in here instead of having a method signature
@@ -47,11 +47,11 @@ class SameGroupDetector
             add( dataIndexA, groupIdA );
         }
 
-        int collision = -1;
+        long collision = -1;
         for ( int i = 0; i < cursor; i++ )
         {
-            int dataIndexAtCursor = seen[i++];
-            int groupIdAtCursor = seen[i];
+            long dataIndexAtCursor = seen[i++];
+            long groupIdAtCursor = seen[i];
             if ( groupIdAtCursor == groupIdB )
             {
                 collision = dataIndexAtCursor;
@@ -64,7 +64,7 @@ class SameGroupDetector
         return collision;
     }
 
-    private void add( int dataIndex, int groupId )
+    private void add( long dataIndex, int groupId )
     {
         if ( cursor == seen.length )
         {

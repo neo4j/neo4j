@@ -582,11 +582,6 @@ public class EncodingIdMapperTest
                 any( Object.class ), anyLong(), anyString(), anyString(), anyString() );
     }
 
-    private List<Object> ids( Object... ids )
-    {
-        return Arrays.asList( ids );
-    }
-
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, Monitor monitor )
     {
         return mapper( encoder, radix, monitor, ParallelSort.DEFAULT );
@@ -594,8 +589,20 @@ public class EncodingIdMapperTest
 
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, Monitor monitor, Comparator comparator )
     {
-        return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, 1_000, processors, comparator );
+        return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY,
+                1_000, processors, comparator );
     }
+
+    private static final TrackerFactory RANDOM_TRACKER_FACTORY = new TrackerFactory()
+    {
+        @Override
+        public Tracker create( NumberArrayFactory arrayFactory, long size )
+        {
+            return System.currentTimeMillis() % 2 == 0
+                    ? new IntTracker( arrayFactory.newIntArray( size, AbstractTracker.DEFAULT_VALUE ) )
+                    : new LongTracker( arrayFactory.newLongArray( size, AbstractTracker.DEFAULT_VALUE ) );
+        }
+    };
 
     private class ValueGenerator implements InputIterable<Object>
     {
