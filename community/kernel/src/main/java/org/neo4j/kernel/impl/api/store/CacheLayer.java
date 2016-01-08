@@ -63,8 +63,6 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
 import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexSchemaRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -88,15 +86,13 @@ public class CacheLayer implements StoreReadLayer
                 return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
             };
 
-    private final ProcedureCache procedureCache;
     private final SchemaCache schemaCache;
     private final DiskLayer diskLayer;
 
-    public CacheLayer( DiskLayer diskLayer, SchemaCache schemaCache, ProcedureCache procedureCache )
+    public CacheLayer( DiskLayer diskLayer, SchemaCache schemaCache )
     {
         this.diskLayer = diskLayer;
         this.schemaCache = schemaCache;
-        this.procedureCache = procedureCache;
     }
 
     @Override
@@ -263,18 +259,6 @@ public class CacheLayer implements StoreReadLayer
     public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return diskLayer.indexUniqueValuesPercentage( descriptor );
-    }
-
-    @Override
-    public Iterator<ProcedureDescriptor> proceduresGetAll()
-    {
-        return procedureCache.getAll();
-    }
-
-    @Override
-    public ProcedureDescriptor procedureGet( ProcedureSignature.ProcedureName name )
-    {
-        return procedureCache.get( name );
     }
 
     @Override

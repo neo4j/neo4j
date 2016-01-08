@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -56,7 +57,6 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -74,26 +74,26 @@ import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.proc.Procedures;
+import org.neo4j.proc.ProcedureSignature;
+import org.neo4j.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
 import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
-
-import static org.neo4j.helpers.collection.Iterables.map;
 
 public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations
 {
     final KernelStatement statement;
     private final StatementOperationParts operations;
+    private final Procedures procedures;
 
-    OperationsFacade( KernelStatement statement, StatementOperationParts operations )
+    OperationsFacade( KernelStatement statement, StatementOperationParts operations, Procedures procedures )
     {
         this.statement = statement;
         this.operations = operations;
+        this.procedures = procedures;
     }
 
     final KeyReadOperations tokenRead()
@@ -636,26 +636,17 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Iterator<ProcedureSignature> proceduresGetAll()
+    public ProcedureSignature procedureGet( ProcedureName name ) throws ProcedureException
     {
         statement.assertOpen();
-        // There is a mapping layer here because "inside" the kernel we use the definition object, rather than the signature,
-        // but we prefer to avoid leaking that outside the kernel.
-        return map( new Function<ProcedureDescriptor,ProcedureSignature>()
-            {
-                @Override
-                public ProcedureSignature apply( ProcedureDescriptor o )
-                {
-                    return o.signature();
-                }
-            }, schemaRead().proceduresGetAll( statement ) );
+        return procedures.get( name );
     }
 
     @Override
-    public ProcedureDescriptor procedureGet( ProcedureName signature ) throws ProcedureException
+    public Stream<Object[]> procedureCallRead( ProcedureName name, Object[] input ) throws ProcedureException
     {
         statement.assertOpen();
-        return schemaRead().procedureGet( statement, signature );
+        return procedures.call( name, input );
     }
 
     @Override
@@ -1022,20 +1013,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         schemaWrite().uniqueIndexDrop( statement, descriptor );
     }
 
-    @Override
-    public void procedureCreate( ProcedureSignature signature, String language, String body )
-            throws ProcedureException, ProcedureConstraintViolation
-    {
-        statement.assertOpen();
-        schemaWrite().procedureCreate( statement, signature, language, body );
-    }
-
-    @Override
-    public void procedureDrop( ProcedureName name ) throws ProcedureConstraintViolation, ProcedureException
-    {
-        statement.assertOpen();
-        schemaWrite().procedureDrop( statement, name );
-    }
     // </SchemaWrite>
 
     // <Locking>

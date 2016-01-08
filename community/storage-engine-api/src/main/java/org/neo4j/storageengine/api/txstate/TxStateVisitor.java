@@ -29,7 +29,6 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
 
 /**
  * A visitor for visiting the changes that have been made in a transaction.
@@ -80,10 +79,6 @@ public interface TxStateVisitor extends AutoCloseable
     void visitCreatedPropertyKeyToken( String name, int id );
 
     void visitCreatedRelationshipTypeToken( String name, int id );
-
-    void visitCreatedProcedure( ProcedureDescriptor procedureDescriptor );
-
-    void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor );
 
     @Override
     void close();
@@ -192,16 +187,6 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitCreatedRelationshipTypeToken( String name, int id )
-        {
-        }
-
-        @Override
-        public void visitCreatedProcedure( ProcedureDescriptor procedureDescriptor )
-        {
-        }
-
-        @Override
-        public void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor )
         {
         }
 
@@ -345,18 +330,6 @@ public interface TxStateVisitor extends AutoCloseable
         public void visitCreatedRelationshipTypeToken( String name, int id )
         {
             actual.visitCreatedRelationshipTypeToken( name, id );
-        }
-
-        @Override
-        public void visitCreatedProcedure( ProcedureDescriptor procedureDescriptor )
-        {
-            actual.visitCreatedProcedure( procedureDescriptor );
-        }
-
-        @Override
-        public void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor )
-        {
-            actual.visitDroppedProcedure( procedureDescriptor );
         }
 
         @Override

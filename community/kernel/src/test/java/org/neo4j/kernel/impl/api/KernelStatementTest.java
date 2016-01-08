@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -36,7 +37,7 @@ public class KernelStatementTest
         when( transaction.shouldBeTerminated() ).thenReturn( true );
 
         KernelStatement statement = new KernelStatement(
-            transaction, null, null, null, null );
+            transaction, null, null, null, null, new Procedures() );
 
         statement.readOperations().nodeExists( 0 );
     }
@@ -47,7 +48,7 @@ public class KernelStatementTest
         // given
         StorageStatement storeStatement = mock( StorageStatement.class );
         KernelStatement statement = new KernelStatement( mock( KernelTransactionImplementation.class ),
-                null, null, null, storeStatement );
+                null, null, null, storeStatement, new Procedures() );
 
         // when
         statement.forceClose();

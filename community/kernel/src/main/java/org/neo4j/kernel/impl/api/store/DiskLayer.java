@@ -70,8 +70,6 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
 import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexSchemaRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -290,18 +288,6 @@ public class DiskLayer implements StoreReadLayer
     public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.indexUniqueValuesPercentage( descriptor );
-    }
-
-    @Override
-    public Iterator<ProcedureDescriptor> proceduresGetAll()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ProcedureDescriptor procedureGet( ProcedureSignature.ProcedureName name )
-    {
-        throw new UnsupportedOperationException();
     }
 
     @Override

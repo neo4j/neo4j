@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -56,7 +55,6 @@ import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -90,9 +88,6 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
 import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -645,41 +640,6 @@ public class StateHandlingStatementOperations implements
             throws DropConstraintFailureException
     {
         state.txState().constraintDoDrop( constraint );
-    }
-
-    @Override
-    public void procedureCreate( KernelStatement state, ProcedureSignature signature, String language, String code )
-    {
-        state.txState().procedureDoCreate( signature, language, code );
-    }
-
-    @Override
-    public void procedureDrop( KernelStatement statement, ProcedureName name ) throws ProcedureException, ProcedureConstraintViolation
-    {
-        statement.txState().procedureDoDrop( procedureGet( statement, name ) );
-    }
-
-    @Override
-    public Iterator<ProcedureDescriptor> proceduresGetAll( KernelStatement statement )
-    {
-        Iterator<ProcedureDescriptor> procs = storeLayer.proceduresGetAll();
-        return statement.hasTxStateWithChanges() ? statement.txState().augmentProcedures( procs ) : procs;
-    }
-
-    @Override
-    public ProcedureDescriptor procedureGet( KernelStatement statement, ProcedureName name )
-            throws ProcedureException
-    {
-        if(statement.hasTxStateWithChanges())
-        {
-            TransactionState state = statement.txState();
-            ProcedureDescriptor procedure = state.getProcedure( name );
-            if( procedure != null )
-            {
-                return procedure;
-            }
-        }
-        return storeLayer.procedureGet( name );
     }
 
     @Override

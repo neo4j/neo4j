@@ -32,14 +32,12 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
-import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
@@ -51,18 +49,16 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     private final SchemaStorage schemaStorage;
     private final ConstraintSemantics constraintSemantics;
     private final SchemaIndexProviderMap schemaIndexProviderMap;
-    private final ProcedureCache procedureCache;
 
     public TransactionToRecordStateVisitor( TransactionRecordState recordState, Runnable schemaStateChangeCallback,
-            SchemaStorage schemaStorage, ConstraintSemantics constraintSemantics,
-            SchemaIndexProviderMap schemaIndexProviderMap, ProcedureCache procedureCache )
+                                            SchemaStorage schemaStorage, ConstraintSemantics constraintSemantics,
+                                            SchemaIndexProviderMap schemaIndexProviderMap )
     {
         this.recordState = recordState;
         this.schemaStateChangeCallback = schemaStateChangeCallback;
         this.schemaStorage = schemaStorage;
         this.constraintSemantics = constraintSemantics;
         this.schemaIndexProviderMap = schemaIndexProviderMap;
-        this.procedureCache = procedureCache;
     }
 
     @Override
@@ -331,17 +327,4 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         recordState.createRelationshipTypeToken( name, id );
     }
 
-    @Override
-    public void visitCreatedProcedure( ProcedureDescriptor procedureDescriptor )
-    {
-        // TODO: This is a temporary measure to allow trialing procedures without changing the store format. Clearly, this is not safe or useful for
-        // production. This will need to be changed before we release a useful 3.x series release.
-        procedureCache.createProcedure( procedureDescriptor );
-    }
-
-    @Override
-    public void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor )
-    {
-        procedureCache.dropProcedure( procedureDescriptor );
-    }
 }

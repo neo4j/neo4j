@@ -39,7 +39,8 @@
     <module>logging</module>
     <module>neo4j-slf4j</module>
     <module>codegen</module>
-	<module>storage-engine-api</module>
+    <module>storage-engine-api</module>
+    <module>proc</module>
     <module>kernel</module>
     <module>jmx</module>
     <module>udc</module>

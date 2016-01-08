@@ -97,9 +97,6 @@ public interface StorageEngine
     Object logVersionRepository();
 
     @Deprecated
-    Object procedureCache();
-
-    @Deprecated
     Object neoStores();
 
     @Deprecated

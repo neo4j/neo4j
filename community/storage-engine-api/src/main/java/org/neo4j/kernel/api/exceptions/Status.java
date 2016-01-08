@@ -263,6 +263,27 @@ public interface Status
         }
     }
 
+    enum Procedure implements Status
+    {
+        FailedRegistration( ClientError, "The database failed to register a procedure, refer to the associated error message for details." ),
+        NoSuchProcedure( ClientError, "A request referred to a procedure that is not registered with this database instance. If you are deploying custom " +
+                                      "procedures in a cluster setup, ensure all instances in the cluster have the procedure jar file deployed." )
+        ;
+
+        private final Code code;
+
+        @Override
+        public Code code()
+        {
+            return code;
+        }
+
+        Procedure( Classification classification, String description )
+        {
+            this.code = new Code( classification, this, description );
+        }
+    }
+
     enum Security implements Status
     {
         // client

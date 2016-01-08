@@ -19,9 +19,16 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.api.cursor.DataReadCursors;
+import java.util.stream.Stream;
 
-public interface ReadOperations extends TokenRead, DataRead, DataReadCursors, SchemaRead, SchemaState,
-        Locking, LegacyIndexRead, CountsRead, ProcedureRead
+import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.proc.ProcedureSignature;
+
+public interface ProcedureRead
 {
+    /** Fetch a procedure given its signature. */
+    ProcedureSignature procedureGet( ProcedureSignature.ProcedureName name ) throws ProcedureException;
+
+    /** Invoke a read-only procedure by name */
+    Stream<Object[]> procedureCallRead( ProcedureSignature.ProcedureName name, Object[] input ) throws ProcedureException;
 }

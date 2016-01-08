@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
+import org.neo4j.proc.Procedures;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -239,7 +240,7 @@ public class KernelTransactionsTest
                 null, null, null, TransactionHeaderInformationFactory.DEFAULT,
                 commitProcess, null,
                 null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                tracers, storageEngine );
+                tracers, storageEngine, new Procedures() );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )

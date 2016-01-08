@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -101,6 +102,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final KernelTransactions kernelTransactions;
     private final StorageEngine storageEngine;
     private final Locks.Client locks;
+    private final Procedures procedures;
 
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
@@ -129,25 +131,26 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionEvent transactionEvent;
 
     public KernelTransactionImplementation( StatementOperationParts operations,
-            SchemaWriteGuard schemaWriteGuard,
-            Locks.Client locks,
-            TransactionHooks hooks,
-            ConstraintIndexCreator constraintIndexCreator,
-            TransactionHeaderInformationFactory headerInformationFactory,
-            TransactionCommitProcess commitProcess,
-            TransactionMonitor transactionMonitor,
-            LegacyIndexTransactionState legacyIndexTransactionState,
-            KernelTransactions kernelTransactions,
-            Clock clock,
-            TransactionTracer tracer,
-            StorageEngine storageEngine,
-            long lastTransactionIdWhenStarted )
+                                            SchemaWriteGuard schemaWriteGuard,
+                                            Locks.Client locks,
+                                            TransactionHooks hooks,
+                                            ConstraintIndexCreator constraintIndexCreator,
+                                            Procedures procedures, TransactionHeaderInformationFactory headerInformationFactory,
+                                            TransactionCommitProcess commitProcess,
+                                            TransactionMonitor transactionMonitor,
+                                            LegacyIndexTransactionState legacyIndexTransactionState,
+                                            KernelTransactions kernelTransactions,
+                                            Clock clock,
+                                            TransactionTracer tracer,
+                                            StorageEngine storageEngine,
+                                            long lastTransactionIdWhenStarted )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
         this.locks = locks;
         this.constraintIndexCreator = constraintIndexCreator;
+        this.procedures = procedures;
         this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
@@ -205,7 +208,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, this, locks, operations,
-                    storageEngine.storeReadLayer().acquireStatement() );
+                    storageEngine.storeReadLayer().acquireStatement(), procedures );
         }
         currentStatement.acquire();
         return currentStatement;

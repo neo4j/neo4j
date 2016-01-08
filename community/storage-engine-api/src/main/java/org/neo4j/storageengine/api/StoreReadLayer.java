@@ -38,8 +38,6 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
 import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexSchemaRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -445,17 +443,4 @@ public interface StoreReadLayer
      * @throws IndexNotFoundKernelException if no such index exists.
      */
     double indexUniqueValuesPercentage( IndexDescriptor index ) throws IndexNotFoundKernelException;
-
-    /**
-     * @return descriptors for all committed stored procedures.
-     */
-    Iterator<ProcedureDescriptor> proceduresGetAll();
-
-    /**
-     * Returns a description of a stored procedure with the given {@code name}.
-     *
-     * @param name name of the procedure to get description for.
-     * @return the description of the specified procedure.
-     */
-    ProcedureDescriptor procedureGet( ProcedureName name );
 }

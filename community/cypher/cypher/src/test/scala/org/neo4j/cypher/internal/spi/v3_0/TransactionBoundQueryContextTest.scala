@@ -33,6 +33,7 @@ import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.proc.Procedures
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
@@ -48,7 +49,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     super.beforeEach()
     graph = new TestGraphDatabaseFactory().newImpermanentDatabase().asInstanceOf[GraphDatabaseAPI]
     outerTx = mock[Transaction]
-    statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null)
+    statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, new Procedures())
   }
 
   override def afterEach() {

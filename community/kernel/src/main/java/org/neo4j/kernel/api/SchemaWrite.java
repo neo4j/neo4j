@@ -24,16 +24,12 @@ import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
 
 interface SchemaWrite
 {
@@ -65,17 +61,4 @@ interface SchemaWrite
      * That external job should become an internal job, at which point this operation should go away.
      */
     void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
-
-    /**
-     * @param signature the namespace, name, typed inputs and typed outputs
-     * @param language named procedure language, eg "js"
-     * @param body the procedure code, format is language-handler specific
-     */
-    void procedureCreate( ProcedureSignature signature, String language, String body ) throws ProcedureException, ProcedureConstraintViolation;
-
-    /**
-     * Drop a procedure from the database.
-     * @param name
-     */
-    void procedureDrop( ProcedureName name ) throws ProcedureConstraintViolation, ProcedureException;
 }

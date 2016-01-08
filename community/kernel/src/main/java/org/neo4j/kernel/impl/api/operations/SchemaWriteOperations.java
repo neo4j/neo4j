@@ -24,17 +24,13 @@ import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
 
 public interface SchemaWriteOperations
 {
@@ -68,9 +64,4 @@ public interface SchemaWriteOperations
     void constraintDrop( KernelStatement state, NodePropertyConstraint constraint ) throws DropConstraintFailureException;
 
     void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint ) throws DropConstraintFailureException;
-
-    void procedureCreate( KernelStatement state, ProcedureSignature signature, String language, String code )
-            throws ProcedureException, ProcedureConstraintViolation;
-
-    void procedureDrop( KernelStatement statement, ProcedureName name ) throws ProcedureException, ProcedureConstraintViolation;
 }

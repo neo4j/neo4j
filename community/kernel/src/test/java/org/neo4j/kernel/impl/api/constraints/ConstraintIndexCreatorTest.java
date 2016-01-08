@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.proc.Procedure;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -223,6 +224,12 @@ public class ConstraintIndexCreatorTest
         public void unregisterTransactionHook( TransactionHook hook )
         {
             throw new UnsupportedOperationException( "Please implement" );
+        }
+
+        @Override
+        public void registerProcedure( Procedure signature )
+        {
+            throw new UnsupportedOperationException();
         }
     }
 }

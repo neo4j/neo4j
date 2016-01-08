@@ -19,26 +19,21 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
-import org.neo4j.storageengine.api.procedure.ProcedureSignature;
+import org.neo4j.proc.Procedure;
+import org.neo4j.proc.ProcedureSignature;
 
-import static java.util.Arrays.asList;
-import static junit.framework.TestCase.assertNull;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.storageengine.api.Neo4jTypes.NTText;
-import static org.neo4j.storageengine.api.procedure.ProcedureSignature.procedureSignature;
+import static org.hamcrest.Matchers.contains;
+import static org.neo4j.proc.Neo4jTypes.NTString;
+import static org.neo4j.proc.ProcedureSignature.procedureSignature;
 
 public class ProceduresKernelIT extends KernelIntegrationTest
 {
@@ -46,110 +41,43 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     public ExpectedException exception = ExpectedException.none();
 
     private final ProcedureSignature signature = procedureSignature( "example", "exampleProc" )
-            .in( "name", NTText )
-            .out( "name", NTText ).build();
+            .in( "name", NTString )
+            .out( "name", NTString ).build();
 
-    @Test
-    public void shouldCreateProcedure() throws Throwable
+    private final Procedure.BasicProcedure procedure = new Procedure.BasicProcedure( signature )
     {
-        // Given
-        SchemaWriteOperations ops = schemaWriteOperationsInNewTransaction();
-
-        // When
-        ops.procedureCreate( signature, "javascript", "emit(1);" );
-
-        // Then
-        Iterator<ProcedureSignature> all = ops.proceduresGetAll();
-        assertThat( asCollection( all ),
-                Matchers.<Collection<ProcedureSignature>>equalTo( asList( signature ) ) );
-
-        // And when
-        commit();
-
-        // Then
-        assertThat( asCollection( readOperationsInNewTransaction().proceduresGetAll() ),
-                Matchers.<Collection<ProcedureSignature>>equalTo( asList( signature ) ) );
-    }
-
-    @Test
-    public void shouldDropProcedure() throws Throwable
-    {
-        // Given
-        SchemaWriteOperations ops = schemaWriteOperationsInNewTransaction();
-        ops.procedureCreate( signature, "javascript", "emit(1);" );
-        commit();
-
-        // When
-        ops = schemaWriteOperationsInNewTransaction();
-        ops.procedureDrop( signature.name() );
-
-        // Then
-        Iterator<ProcedureSignature> all = ops.proceduresGetAll();
-        assertThat( asCollection( all ),
-                Matchers.<Collection<ProcedureSignature>>equalTo( Collections.<ProcedureSignature>emptyList() ) );
-
-        // And when
-        commit();
-
-        // Then
-        assertThat( asCollection( readOperationsInNewTransaction().proceduresGetAll() ),
-                Matchers.<Collection<ProcedureSignature>>equalTo( Collections.<ProcedureSignature>emptyList() ) );
-    }
-
-    @Test
-    public void shouldDropProcedureInSameTransaction() throws Throwable
-    {
-        // Given
-        SchemaWriteOperations ops = schemaWriteOperationsInNewTransaction();
-        ops.procedureCreate( signature, "javascript", "emit(1);" );
-
-        // When
-        ops.procedureDrop( signature.name() );
-
-        // Then
-        Iterator<ProcedureSignature> all = ops.proceduresGetAll();
-        assertThat( asCollection( all ),
-                Matchers.<Collection<ProcedureSignature>>equalTo( Collections.<ProcedureSignature>emptyList() ) );
-
-        // And when
-        commit();
-
-        // Then
-        assertThat( asCollection( readOperationsInNewTransaction().proceduresGetAll() ),
-                Matchers.<Collection<ProcedureSignature>>equalTo( Collections.<ProcedureSignature>emptyList() ) );
-    }
+        @Override
+        public Stream<Object[]> apply( Object[] input )
+        {
+            return Stream.<Object[]>of( input );
+        }
+    };
 
     @Test
     public void shouldGetProcedureByName() throws Throwable
     {
         // Given
-        shouldCreateProcedure();
+        kernel.registerProcedure( procedure );
 
         // When
         ProcedureSignature found = readOperationsInNewTransaction()
-                .procedureGet( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ) )
-                .signature();
+                .procedureGet( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ) );
 
         // Then
-        assertThat( found, equalTo( found ) );
+        assertThat( found, equalTo( signature ) );
     }
 
     @Test
-    public void nonexistentProcedureShouldReturnNull() throws Throwable
+    public void shouldCallReadOnlyProcedure() throws Throwable
     {
-        // When & Then
-        assertNull( readOperationsInNewTransaction()
-                .procedureGet( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ) ) );
-    }
-
-    @Test
-    public void droppingNonExistentProcedureShouldThrow() throws Throwable
-    {
-        // Expect
-        exception.expect( ProcedureConstraintViolation.class );
+        // Given
+        kernel.registerProcedure( procedure );
 
         // When
-        schemaWriteOperationsInNewTransaction().procedureDrop( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ) );
-    }
+        Stream<Object[]> found = readOperationsInNewTransaction()
+                .procedureCallRead( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ), new Object[]{ 1337 } );
 
+        // Then
+        assertThat( found.collect( toList() ), contains( equalTo( new Object[]{1337} ) ) );
+    }
 }

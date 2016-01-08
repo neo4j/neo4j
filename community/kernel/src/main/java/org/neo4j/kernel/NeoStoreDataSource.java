@@ -81,6 +81,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -490,7 +491,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             dependencies.satisfyDependency( storageEngine.labelScanStore() );
             dependencies.satisfyDependency( storageEngine.metaDataStore() );
             dependencies.satisfyDependency( storageEngine.neoStores() );
-            dependencies.satisfyDependency( storageEngine.procedureCache() );
             dependencies.satisfyDependency( storageEngine.schemaIndexProviderMap() );
             dependencies.satisfyDependency( storageEngine.legacyIndexApplierLookup() );
             dependencies.satisfyDependency( storageEngine.storeReadLayer() );
@@ -799,13 +799,15 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 storeLayer, legacyPropertyTrackers, constraintIndexCreator, updateableSchemaState, guard,
                 legacyIndexStore ) );
 
+        Procedures procedures = dependencies.satisfyDependency(new Procedures());
+
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( locks, constraintIndexCreator,
                 statementOperations, schemaWriteGuard, transactionHeaderInformationFactory,
                 transactionCommitProcess, (IndexConfigStore) storageEngine.indexConfigStore(),
-                legacyIndexProviderLookup, hooks, transactionMonitor, life, tracers, storageEngine ) );
+                legacyIndexProviderLookup, hooks, transactionMonitor, life, tracers, storageEngine, procedures ) );
 
-        final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor );
+        final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures );
 
         kernel.registerTransactionHook( transactionEventHandlers );
 

@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.proc.Procedures;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -59,7 +60,7 @@ public class KernelTransactionFactory
         return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
                 mock( SchemaWriteGuard.class ),
                 null, new TransactionHooks(),
-                mock( ConstraintIndexCreator.class ), headerInformationFactory,
+                mock( ConstraintIndexCreator.class ), new Procedures(), headerInformationFactory,
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                 mock( LegacyIndexTransactionState.class ),
                 mock( KernelTransactions.class ),

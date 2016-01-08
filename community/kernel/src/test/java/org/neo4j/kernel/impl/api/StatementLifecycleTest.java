@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import org.neo4j.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
 import static org.mockito.Mockito.mock;
@@ -34,7 +35,7 @@ public class StatementLifecycleTest
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         StorageStatement storageStatement = mock( StorageStatement.class );
-        KernelStatement statement = new KernelStatement( transaction, null, null, null, storageStatement );
+        KernelStatement statement = new KernelStatement( transaction, null, null, null, storageStatement, new Procedures() );
         statement.acquire();
 
         // when
@@ -50,7 +51,7 @@ public class StatementLifecycleTest
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         StorageStatement storageStatement = mock( StorageStatement.class );
-        KernelStatement statement = new KernelStatement( transaction, null, null, null, storageStatement );
+        KernelStatement statement = new KernelStatement( transaction, null, null, null, storageStatement, new Procedures() );
         statement.acquire();
         statement.acquire();
 
