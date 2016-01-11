@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
 import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
@@ -43,7 +42,7 @@ public class VoteStateDurabilityTest
     {
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
-        return new OnDiskVoteState( fileSystem, directory, 100, mock(Supplier.class), new CoreMemberMarshal() );
+        return new OnDiskVoteState( fileSystem, directory, 100, mock(Supplier.class), new CoreMember.CoreMemberMarshal() );
     }
 
     @Test

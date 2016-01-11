@@ -25,7 +25,6 @@ import java.util.function.Supplier;
 
 import org.junit.Rule;
 
-import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
 import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.CoreMember;
@@ -47,7 +46,7 @@ public class OnDiskVoteStateContractTest extends VoteStateContractTest
         File directory = testDirectory.directory( "raft-log" );
         try
         {
-            return new OnDiskVoteState( fileSystem, directory, 100, mock( Supplier.class ), new CoreMemberMarshal() );
+            return new OnDiskVoteState( fileSystem, directory, 100, mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
         }
         catch ( IOException e )
         {

@@ -38,7 +38,6 @@ import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
@@ -193,7 +192,7 @@ public class EnterpriseCoreEditionModule
         {
             voteState = life.add( new OnDiskVoteState( fileSystem, raftLogsDirectory,
                     config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
-                    new CoreMemberMarshal() ) );
+                    new CoreMember.CoreMemberMarshal() ) );
         }
         catch ( IOException e )
         {
@@ -206,7 +205,7 @@ public class EnterpriseCoreEditionModule
         {
             raftMembershipState = life.add( new OnDiskRaftMembershipState<>(
                     fileSystem, storeDir, config.get( CoreEdgeClusterSettings.raft_membership_state_size ),
-                    databaseHealthSupplier, new CoreMemberMarshal() ) );
+                    databaseHealthSupplier, new CoreMember.CoreMemberMarshal() ) );
         }
         catch ( IOException e )
         {

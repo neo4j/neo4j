@@ -34,7 +34,7 @@ public class CoreMemberMarshalTest
     public void shouldSerializeAndDeserializeUsingByteBuffer() throws Exception
     {
         // given
-        CoreMemberMarshal marshal = new CoreMemberMarshal();
+        CoreMember.CoreMemberMarshal marshal = new CoreMember.CoreMemberMarshal();
 
         final CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                 new AdvertisedSocketAddress( "host1:2001" ) );
@@ -53,7 +53,7 @@ public class CoreMemberMarshalTest
     public void shouldManageNull() throws Exception
     {
         // given
-        CoreMemberMarshal marshal = new CoreMemberMarshal();
+        CoreMember.CoreMemberMarshal marshal = new CoreMember.CoreMemberMarshal();
 
         final CoreMember aRealMember = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                 new AdvertisedSocketAddress( "host1:2001" ) );

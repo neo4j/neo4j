@@ -30,7 +30,6 @@ import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
 import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
@@ -105,6 +104,6 @@ public class VoteStateAdversarialTest
         when( mock.get() ).thenReturn( mock( DatabaseHealth.class ) );
 
         return new OnDiskVoteState( fileSystem, testDir.directory(), 100, mock,
-                new CoreMemberMarshal() );
+                new CoreMember.CoreMemberMarshal() );
     }
 }

@@ -27,7 +27,6 @@ import java.util.function.Supplier;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
 import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
@@ -56,7 +55,7 @@ public class OnDiskVoteStateTest
     {
         // given
         OnDiskVoteState state = new OnDiskVoteState( new EphemeralFileSystemAbstraction(), testDir.directory(), 100,
-                mock( Supplier.class ), new CoreMemberMarshal() );
+                mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
 
         // when
         state.votedFor(  );
@@ -77,7 +76,7 @@ public class OnDiskVoteStateTest
         CoreMember member = new CoreMember( localhost, localhost );
 
         OnDiskVoteState store = new OnDiskVoteState( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
-                mock( Supplier.class ), new CoreMemberMarshal() );
+                mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
 
         // When
         store.votedFor( member, 0 );
@@ -98,7 +97,7 @@ public class OnDiskVoteStateTest
         doNothing().doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ) );
 
         OnDiskVoteState store = new OnDiskVoteState( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
-                mock( Supplier.class ), new CoreMemberMarshal() );
+                mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
 
         // This has to be real because it will be serialized
         AdvertisedSocketAddress firstLocalhost = new AdvertisedSocketAddress( "localhost:" + 1234 );
@@ -140,7 +139,7 @@ public class OnDiskVoteStateTest
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
 
         OnDiskVoteState store = new OnDiskVoteState( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
-                mock( Supplier.class ), new CoreMemberMarshal() );
+                mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
 
         // When
         store.shutdown();

@@ -19,7 +19,12 @@
  */
 package org.neo4j.coreedge.server;
 
+import java.nio.ByteBuffer;
 import java.util.Objects;
+
+import io.netty.buffer.ByteBuf;
+
+import org.neo4j.coreedge.raft.state.membership.Marshal;
 
 import static java.lang.String.format;
 
@@ -69,6 +74,77 @@ public class CoreMember
     public AdvertisedSocketAddress getRaftAddress()
     {
         return raftAddress;
+    }
+
+    /**
+     * Format:
+     * ┌────────────────────────────────────────────┐
+     * │core address ┌─────────────────────────────┐│
+     * │             │hostnameLength        4 bytes││
+     * │             │hostnameBytes        variable││
+     * │             │port                  4 bytes││
+     * │             └─────────────────────────────┘│
+     * │raft address ┌─────────────────────────────┐│
+     * │             │hostnameLength        4 bytes││
+     * │             │hostnameBytes        variable││
+     * │             │port                  4 bytes││
+     * │             └─────────────────────────────┘│
+     * └────────────────────────────────────────────┘
+     */
+    public static class CoreMemberMarshal implements Marshal<CoreMember>
+    {
+        private final static AdvertisedSocketAddress NULL_ADDRESS = new AdvertisedSocketAddress( "" );
+
+        final AdvertisedSocketAddress.AdvertisedSocketAddressMarshal marshal = new AdvertisedSocketAddress
+                .AdvertisedSocketAddressMarshal();
+
+        public void marshal( CoreMember member, ByteBuffer buffer )
+        {
+            if ( member == null )
+            {
+                marshal.marshal( NULL_ADDRESS, buffer );
+                marshal.marshal( NULL_ADDRESS, buffer );
+            }
+            else
+            {
+               marshal.marshal( member.getCoreAddress(), buffer );
+               marshal.marshal( member.getRaftAddress(), buffer );
+            }
+        }
+
+        public void marshal( CoreMember member, ByteBuf buffer )
+        {
+            marshal.marshal( member.getCoreAddress(), buffer );
+            marshal.marshal( member.getRaftAddress(), buffer );
+        }
+
+        public CoreMember unmarshal( ByteBuffer buffer )
+        {
+            AdvertisedSocketAddress coreAddress = marshal.unmarshal( buffer );
+            AdvertisedSocketAddress raftAddress = marshal.unmarshal( buffer );
+
+            return dealWithPossibleNullAddress( coreAddress, raftAddress );
+        }
+
+        public CoreMember unmarshal( ByteBuf buffer )
+        {
+            AdvertisedSocketAddress coreAddress = marshal.unmarshal( buffer );
+            AdvertisedSocketAddress raftAddress = marshal.unmarshal( buffer );
+            return dealWithPossibleNullAddress( coreAddress, raftAddress );
+        }
+
+        private CoreMember dealWithPossibleNullAddress( AdvertisedSocketAddress coreAddress, AdvertisedSocketAddress
+                raftAddress )
+        {
+            if ( coreAddress.equals( NULL_ADDRESS ) && raftAddress.equals( NULL_ADDRESS ) )
+            {
+                return null;
+            }
+            else
+            {
+                return new CoreMember( coreAddress, raftAddress );
+            }
+        }
     }
 }
 
