@@ -8,21 +8,21 @@
   </parent>
 
   <properties>
-    <short-name>graphdb-api</short-name>
-    <version-package>graphdb</version-package>
-    <bundle.namespace>org.neo4j.graphdb</bundle.namespace>
+    <short-name>concurrent</short-name>
+    <version-package>concurrent.impl</version-package>
+    <bundle.namespace>org.neo4j.concurrent</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-graphdb-api</artifactId>
+  <artifactId>neo4j-concurrent</artifactId>
   <groupId>org.neo4j</groupId>
   <version>3.0.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
-  <name>Neo4j - Graph Database API</name>
-  <description>Graph Database API for Neo4j.</description>
+  <name>Neo4j - Concurrency utilities</name>
+  <description>Concurrency utilities for Neo4j.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -54,22 +54,7 @@ the relevant Commercial Agreement.
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-function</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-resource</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-collections</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-primitive-collections</artifactId>
+      <artifactId>neo4j-unsafe</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -79,8 +64,8 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

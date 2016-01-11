@@ -31,6 +31,7 @@
   </scm>
 
   <modules>
+    <module>fs</module>
     <module>resource</module>
     <module>collections</module>
     <module>lifecycle</module>
@@ -38,6 +39,7 @@
     <module>primitive-collections</module>
     <module>graphdb-api</module>
     <module>unsafe</module>
+	<module>concurrent</module>
     <module>function</module>
     <module>io</module>
     <module>csv</module>

@@ -53,6 +53,11 @@ the relevant Commercial Agreement.
 
   <dependencies>
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-unsafe</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
