@@ -27,63 +27,40 @@ import org.neo4j.coreedge.raft.state.StateRecoveryManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 
-import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal
-        .NUMBER_OF_BYTES_PER_WRITE;
-
 public class IdAllocationStateRecoveryManager extends StateRecoveryManager
 {
-    public IdAllocationStateRecoveryManager( FileSystemAbstraction fileSystem )
+    private final InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal marshal;
+
+    public IdAllocationStateRecoveryManager( FileSystemAbstraction fileSystem,
+                                             InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal marshal )
     {
         super( fileSystem );
+        this.marshal = marshal;
     }
 
     @Override
     protected long getOrdinalOfLastRecord( File file ) throws IOException
     {
-        long newPosition = beginningOfLastCompleteEntry( file );
-
-        if ( newPosition < 0 )
-        {
-            return newPosition;
-        }
-
-        ByteBuffer buffer = ByteBuffer.allocate( (int) fileSystem.getFileSize( file ) );
-
-        StoreChannel channel = fileSystem.open( file, "r" );
-
-        channel.position( newPosition );
-
-        channel.read( buffer );
-
-        buffer.flip();
-
-        InMemoryIdAllocationState inMemoryIdAllocationState =
-                new InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal().unmarshal( buffer );
-
-        channel.close();
-
-        return inMemoryIdAllocationState.logIndex();
+        return readLastEntryFrom( fileSystem, file ).logIndex();
     }
 
-    /*
-       * This method sets the position of the current channel to point to the beginning of the last complete entry.
-       * It integer-divides the file size by the entry size (thus finding the number of complete entries), it then
-       * subtracts one (which is the index of the next-to-last entry) and then multiplies by the entry size, which
-       * finds the end of the next-to-last entry and therefore the beginning of the last complete entry.
-       * It is assumed that the currentChannel contains at least one complete entry.
-       */
-    private long beginningOfLastCompleteEntry( File storeFile ) throws IOException
+    public InMemoryIdAllocationState readLastEntryFrom( FileSystemAbstraction fileSystemAbstraction, File file )
+            throws IOException
     {
-        if ( storeFile == null )
+        final ByteBuffer workingBuffer = ByteBuffer.allocate( (int) fileSystemAbstraction.getFileSize( file ) );
+
+        final StoreChannel channel = fileSystemAbstraction.open( file, "r" );
+        channel.read( workingBuffer );
+        workingBuffer.flip();
+
+        InMemoryIdAllocationState result = new InMemoryIdAllocationState();
+        InMemoryIdAllocationState lastRead;
+
+        while ( (lastRead = marshal.unmarshal( workingBuffer )) != null )
         {
-            return -1;
-        }
-        if ( fileSystem.getFileSize( storeFile ) < NUMBER_OF_BYTES_PER_WRITE )
-        {
-            return -1;
+            result = lastRead;
         }
 
-        long fileSize = fileSystem.getFileSize( storeFile );
-        return ((fileSize / NUMBER_OF_BYTES_PER_WRITE) - 1) * NUMBER_OF_BYTES_PER_WRITE;
+        return result;
     }
 }
