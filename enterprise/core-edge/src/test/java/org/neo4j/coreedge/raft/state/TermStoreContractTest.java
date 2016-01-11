@@ -21,6 +21,8 @@ package org.neo4j.coreedge.raft.state;
 
 import org.junit.Test;
 
+import org.neo4j.coreedge.raft.state.term.TermStore;
+
 import static org.junit.Assert.*;
 
 public abstract class TermStoreContractTest

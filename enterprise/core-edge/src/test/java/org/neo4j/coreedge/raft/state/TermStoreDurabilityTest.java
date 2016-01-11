@@ -24,8 +24,8 @@ import java.io.File;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.coreedge.raft.state.DurableTermStore;
-import org.neo4j.coreedge.raft.state.TermStore;
+import org.neo4j.coreedge.raft.state.term.DurableTermStore;
+import org.neo4j.coreedge.raft.state.term.TermStore;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;

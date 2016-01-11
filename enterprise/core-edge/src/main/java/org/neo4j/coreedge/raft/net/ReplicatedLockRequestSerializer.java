@@ -21,7 +21,7 @@ package org.neo4j.coreedge.raft.net;
 
 import io.netty.buffer.ByteBuf;
 
-import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
+import org.neo4j.coreedge.raft.membership.CoreMarshal;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.ReplicatedLockRequest;
 
@@ -30,13 +30,13 @@ public class ReplicatedLockRequestSerializer
     public static void serialize( ReplicatedLockRequest<CoreMember> content, ByteBuf buffer )
     {
         buffer.writeInt( content.requestedLockSessionId() );
-        CoreMemberMarshal.serialize( content.owner(), buffer );
+        new CoreMarshal().marshal( content.owner(), buffer );
     }
 
     public static ReplicatedLockRequest<CoreMember> deserialize( ByteBuf buffer )
     {
         int requestedLockSessionId = buffer.readInt();
-        CoreMember owner = CoreMemberMarshal.deserialize( buffer );
+        CoreMember owner = new CoreMarshal().unmarshal( buffer );
 
         return new ReplicatedLockRequest<>( owner, requestedLockSessionId );
     }

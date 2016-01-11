@@ -21,16 +21,15 @@ package org.neo4j.coreedge.raft.replication.id;
 
 import io.netty.buffer.ByteBuf;
 
-import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
+import org.neo4j.coreedge.raft.membership.CoreMarshal;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.kernel.IdType;
 
 public class ReplicatedIdAllocationRequestSerializer
 {
     public static void serialize( ReplicatedIdAllocationRequest idRangeRequest, ByteBuf buffer )
     {
-        CoreMemberMarshal.serialize( idRangeRequest.owner(), buffer );
+        new CoreMarshal().marshal( idRangeRequest.owner(), buffer );
         buffer.writeInt( idRangeRequest.idType().ordinal() );
         buffer.writeLong( idRangeRequest.idRangeStart() );
         buffer.writeInt( idRangeRequest.idRangeLength() );
@@ -38,7 +37,7 @@ public class ReplicatedIdAllocationRequestSerializer
 
     public static ReplicatedIdAllocationRequest deserialize( ByteBuf buffer )
     {
-        CoreMember owner = CoreMemberMarshal.deserialize( buffer );
+        CoreMember owner = new CoreMarshal().unmarshal( buffer );
         IdType idType = IdType.values()[buffer.readInt()];
         long idRangeStart = buffer.readLong();
         int idRangeLength = buffer.readInt();

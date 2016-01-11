@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.state;
 import java.util.Set;
 
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
+import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 
 public interface ReadableRaftState<MEMBER>
 {

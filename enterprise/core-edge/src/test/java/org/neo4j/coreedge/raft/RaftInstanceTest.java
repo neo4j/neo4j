@@ -33,10 +33,12 @@ import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
-import org.neo4j.coreedge.server.core.RaftStorageExceptionHandler;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.TickingClock;
+import org.neo4j.kernel.KernelEventHandlers;
+import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -330,7 +332,7 @@ public class RaftInstanceTest
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
         int leaderWaitTimeout = 10000;
-        Clock clock = new TickingClock(0, leaderWaitTimeout + 1, TimeUnit.MILLISECONDS);
+        Clock clock = new TickingClock( 0, leaderWaitTimeout + 1, TimeUnit.MILLISECONDS );
 
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts ).clock( clock ).leaderWaitTimeout( leaderWaitTimeout ).build();
@@ -411,13 +413,13 @@ public class RaftInstanceTest
     public void shouldPanicWhenFailingToHandleMessageAtBootstrapTime() throws Throwable
     {
         // given
-        TestRaftStorageExceptionHandler raftStorageExceptionHandler = new TestRaftStorageExceptionHandler();
+        TestDatabaseHealth databaseHealth = new TestDatabaseHealth();
 
         ExplodingRaftLog explodingLog = new ExplodingRaftLog();
         explodingLog.startExploding();
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .raftLog( explodingLog )
-                .raftStorageExceptionHandler( raftStorageExceptionHandler )
+                .databaseHealth( databaseHealth )
                 .build();
         try
         {
@@ -428,7 +430,7 @@ public class RaftInstanceTest
         catch ( RaftInstance.BootstrapException e )
         {
             // then
-            assertTrue( raftStorageExceptionHandler.hasPanicked() );
+            assertTrue( databaseHealth.hasPanicked() );
         }
     }
 
@@ -436,13 +438,13 @@ public class RaftInstanceTest
     public void shouldPanicWhenFailingToHandleMessageUnderNormalConditions() throws Throwable
     {
         // given
-        TestRaftStorageExceptionHandler raftStorageExceptionHandler = new TestRaftStorageExceptionHandler();
+        TestDatabaseHealth databaseHealth = new TestDatabaseHealth();
 
         ExplodingRaftLog explodingLog = new ExplodingRaftLog();
 
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .raftLog( explodingLog )
-                .raftStorageExceptionHandler( raftStorageExceptionHandler )
+                .databaseHealth( databaseHealth )
                 .build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) );
@@ -453,7 +455,7 @@ public class RaftInstanceTest
                 new RaftLogEntry[]{new RaftLogEntry( 0, new ReplicatedString( "hello" ) )}, 0 ) );
 
         // then
-        assertTrue( raftStorageExceptionHandler.hasPanicked() );
+        assertTrue( databaseHealth.hasPanicked() );
     }
 
     private static class ExplodingRaftLog implements RaftLog
@@ -540,23 +542,26 @@ public class RaftInstanceTest
         }
     }
 
-    private class TestRaftStorageExceptionHandler extends RaftStorageExceptionHandler
+    private static class TestDatabaseHealth extends DatabaseHealth
     {
-        private boolean panicked;
 
-        public TestRaftStorageExceptionHandler()
+        private boolean hasPanicked = false;
+
+        public TestDatabaseHealth()
         {
-            super( null );
+            super( new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
+                    NullLog.getInstance() );
         }
 
-        public void panic( RaftStorageException ex )
+        @Override
+        public void panic( Throwable cause )
         {
-            panicked = true;
+            this.hasPanicked = true;
         }
 
         public boolean hasPanicked()
         {
-            return panicked;
+            return hasPanicked;
         }
     }
 }

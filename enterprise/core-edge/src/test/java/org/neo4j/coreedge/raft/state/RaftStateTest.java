@@ -27,6 +27,10 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.neo4j.coreedge.raft.state.follower.FollowerState;
+import org.neo4j.coreedge.raft.state.follower.FollowerStates;
+import org.neo4j.coreedge.raft.state.term.TermStore;
+import org.neo4j.coreedge.raft.state.vote.InMemoryVoteStore;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -88,6 +92,12 @@ public class RaftStateTest
         public Set<RaftTestMember> replicationMembers()
         {
             return emptySet();
+        }
+
+        @Override
+        public long logIndex()
+        {
+            return -1;
         }
 
         @Override

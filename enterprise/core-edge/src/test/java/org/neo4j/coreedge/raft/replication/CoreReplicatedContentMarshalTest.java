@@ -19,13 +19,13 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.UUID;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import org.junit.Test;
 
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
@@ -37,6 +37,7 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer;
 import org.neo4j.coreedge.raft.replication.token.TokenType;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -47,14 +48,15 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class CoreReplicatedContentMarshalTest
 {
     private final ReplicatedContentMarshal<ByteBuf> marshal = new CoreReplicatedContentMarshal();
 
-    CoreMember coreMember = new CoreMember( address( "core:1" ), address( "raft:1" ) );
+    CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
+            new AdvertisedSocketAddress( "raft:1" ) );
     GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), coreMember );
 
     @Test
@@ -86,13 +88,14 @@ public class CoreReplicatedContentMarshalTest
     }
 
     @Test
-    public void shouldMarshallMemberSet() throws Exception
+    public void shouldMarshalMemberSet() throws Exception
     {
         // given
         ByteBuf buffer = Unpooled.buffer();
         ReplicatedContent message = new CoreMemberSet( asSet(
-                new CoreMember( address( "host_a:1" ), address( "host_a:2" ) ),
-                new CoreMember( address( "host_b:101" ), address( "host_b:102" ) )
+                new CoreMember( new AdvertisedSocketAddress( "host_a:1" ), new AdvertisedSocketAddress( "host_a:2" ) ),
+                new CoreMember( new AdvertisedSocketAddress( "host_b:101" ),
+                        new AdvertisedSocketAddress( "host_b:102" ) )
         ) );
 
         // when
@@ -103,12 +106,13 @@ public class CoreReplicatedContentMarshalTest
     }
 
     @Test
-    public void shouldMarshallIdRangeRequest() throws Exception
+    public void shouldMarshalIdRangeRequest() throws Exception
     {
         // given
         ByteBuf buffer = Unpooled.buffer();
         ReplicatedContent message = new ReplicatedIdAllocationRequest(
-                new CoreMember( address( "host_a:1" ), address( "host_a:2" ) ), IdType.PROPERTY, 100, 200 );
+                new CoreMember( new AdvertisedSocketAddress( "host_a:1" ),
+                        new AdvertisedSocketAddress( "host_a:2" ) ), IdType.PROPERTY, 100, 200 );
 
         // when
         marshal.serialize( message, buffer );
@@ -118,7 +122,7 @@ public class CoreReplicatedContentMarshalTest
     }
 
     @Test
-    public void shouldMarshallSeedStoreId() throws Exception
+    public void shouldMarshalSeedStoreId() throws Exception
     {
         // given
         ByteBuf buffer = Unpooled.buffer();
@@ -132,7 +136,7 @@ public class CoreReplicatedContentMarshalTest
     }
 
     @Test
-    public void shouldMarshallTokenRequest() throws Exception
+    public void shouldMarshalTokenRequest() throws Exception
     {
         // given
         ByteBuf buffer = Unpooled.buffer();

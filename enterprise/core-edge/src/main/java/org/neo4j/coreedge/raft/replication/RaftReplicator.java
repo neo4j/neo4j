@@ -27,8 +27,6 @@ import org.neo4j.coreedge.raft.NoLeaderTimeoutException;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.Replicator;
 
 public class RaftReplicator<MEMBER> implements Replicator, RaftLog.Listener
 {
@@ -84,7 +82,7 @@ public class RaftReplicator<MEMBER> implements Replicator, RaftLog.Listener
     }
 
     @Override
-    public void onAppended( ReplicatedContent content )
+    public void onAppended( ReplicatedContent content, long index )
     {
     }
 

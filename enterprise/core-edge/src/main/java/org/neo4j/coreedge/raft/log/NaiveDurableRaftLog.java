@@ -27,8 +27,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogAppendIndexMonitor;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.MarshallingException;
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Serializer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -37,7 +37,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Writes a raft log to disk using 3 files:
- * <p/>
+ * <p>
  * 1. entries.log
  * ┌─────────────────────────────┐
  * │term                  8 bytes│
@@ -45,7 +45,7 @@ import org.neo4j.kernel.monitoring.Monitors;
  * ├─────────────────────────────┤
  * │record length        16 bytes│
  * └─────────────────────────────┘
- * <p/>
+ * <p>
  * 2. content.log
  * ┌─────────────────────────────┐
  * │contentLength         4 bytes│
@@ -55,7 +55,7 @@ import org.neo4j.kernel.monitoring.Monitors;
  * ├─────────────────────────────┤
  * │record length        variable│
  * └─────────────────────────────┘
- * <p/>
+ * <p>
  * 3. commit.log
  * ┌─────────────────────────────┐
  * │committedIndex        8 bytes│
@@ -88,8 +88,10 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
                                 Monitors monitors )
     {
         this.serializer = serializer;
-        this.appendIndexMonitor = monitors.newMonitor( RaftLogAppendIndexMonitor.class, getClass(), RaftLog.APPEND_INDEX_TAG );
-        this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass(), RaftLog.COMMIT_INDEX_TAG );
+        this.appendIndexMonitor = monitors.newMonitor( RaftLogAppendIndexMonitor.class, getClass(), RaftLog
+                .APPEND_INDEX_TAG );
+        this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass(), RaftLog
+                .COMMIT_INDEX_TAG );
 
         try
         {
@@ -109,9 +111,10 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public void shutdown() throws Throwable
     {
-        Exception container = new Exception("Exception happened during shutdown of RaftLog. See suppressed exceptions for details");
+        Exception container = new Exception( "Exception happened during shutdown of RaftLog. See suppressed " +
+                "exceptions for details" );
         boolean shouldThrow = false;
-        shouldThrow = forceAndCloseChannel( entriesChannel, container ) || shouldThrow;
+        shouldThrow = forceAndCloseChannel( entriesChannel, container );
         shouldThrow = forceAndCloseChannel( contentChannel, container ) || shouldThrow;
         shouldThrow = forceAndCloseChannel( commitChannel, container ) || shouldThrow;
         if ( shouldThrow )
@@ -123,7 +126,8 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     /**
      * This method will try to force and close a store channel. If any of these two operations fails, the exception
      * will be added as suppressed in the provided container. In such a case, true will be returned.
-     * @param channel The channel to close
+     *
+     * @param channel   The channel to close
      * @param container The container to add supressed exceptions in the case of failure
      * @return True iff an exception was thrown by either force() or close()
      */
@@ -135,7 +139,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             channel.force( false );
             channel.close();
         }
-        catch( Exception e )
+        catch ( Exception e )
         {
             exceptionHappened = true;
             container.addSuppressed( e );
@@ -147,21 +151,21 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     public void replay() throws Throwable
     {
         int index = 0;
-        for ( ; index <= commitIndex; index++ )
+        for (; index <= commitIndex; index++ )
         {
             ReplicatedContent content = readEntryContent( index );
             for ( Listener listener : listeners )
             {
-                listener.onAppended( content );
+                listener.onAppended( content, index );
                 listener.onCommitted( content, index );
             }
         }
-        for ( ; index <= appendIndex; index++ )
+        for (; index <= appendIndex; index++ )
         {
             ReplicatedContent content = readEntryContent( index );
             for ( Listener listener : listeners )
             {
-                listener.onAppended( content );
+                listener.onAppended( content, index );
             }
         }
     }
@@ -190,11 +194,12 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             int length = writeContent( logEntry );
             writeEntry( new Entry( logEntry.term(), contentOffset ) );
             contentOffset += length;
+            appendIndex++;
             for ( Listener listener : listeners )
             {
-                listener.onAppended( logEntry.content() );
+                listener.onAppended( logEntry.content(), appendIndex );
             }
-            return ++appendIndex;
+            return appendIndex;
         }
         catch ( MarshallingException | IOException e )
         {
@@ -229,7 +234,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
                     listener.onTruncated( fromIndex );
                 }
             }
-            term = readEntryTerm( appendIndex ) ;
+            term = readEntryTerm( appendIndex );
         }
         catch ( IOException e )
         {
@@ -273,14 +278,14 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public long appendIndex()
     {
-        appendIndexMonitor.appendIndex(appendIndex);
+        appendIndexMonitor.appendIndex( appendIndex );
         return appendIndex;
     }
 
     @Override
     public long commitIndex()
     {
-        commitIndexMonitor.commitIndex(commitIndex);
+        commitIndexMonitor.commitIndex( commitIndex );
         return commitIndex;
     }
 

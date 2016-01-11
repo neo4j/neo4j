@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.neo4j.coreedge.raft.state.FollowerStates;
+import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 
 public class Followers
 {

@@ -26,19 +26,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.replication.MarshallingException;
+import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageDecoder;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageEncoder;
+import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RaftMessageProcessingTest
@@ -98,7 +97,8 @@ public class RaftMessageProcessingTest
     public void shouldEncodeAndDecodeVoteRequest()
     {
         // given
-        CoreMember member = new CoreMember( address( "host1:9000" ), address( "host1:9001" ) );
+        CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
+                new AdvertisedSocketAddress( "host1:9001" ) );
         RaftMessages.Vote.Request request = new RaftMessages.Vote.Request<>( member, 1, member, 1, 1 );
 
         // when
@@ -113,7 +113,8 @@ public class RaftMessageProcessingTest
     public void shouldEncodeAndDecodeVoteResponse()
     {
         // given
-        CoreMember member = new CoreMember( address( "host1:9000" ), address( "host1:9001" ) );
+        CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
+                new AdvertisedSocketAddress( "host1:9001" ) );
         RaftMessages.Vote.Response response = new RaftMessages.Vote.Response<>( member, 1, true );
 
         // when
@@ -128,7 +129,8 @@ public class RaftMessageProcessingTest
     public void shouldEncodeAndDecodeAppendEntriesRequest()
     {
         // given
-        CoreMember member = new CoreMember( address( "host1:9000" ), address( "host1:9001" ) );
+        CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
+                new AdvertisedSocketAddress( "host1:9001" ) );
         RaftLogEntry logEntry = new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) );
         RaftMessages.AppendEntries.Request request =
                 new RaftMessages.AppendEntries.Request<>( member, 1, 1, 99, new RaftLogEntry[] { logEntry }, 1 );
@@ -145,7 +147,8 @@ public class RaftMessageProcessingTest
     public void shouldEncodeAndDecodeAppendEntriesResponse()
     {
         // given
-        CoreMember member = new CoreMember( address( "host1:9000" ), address( "host1:9001" ) );
+        CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
+                new AdvertisedSocketAddress( "host1:9001" ) );
         RaftMessages.AppendEntries.Response response =
                 new RaftMessages.AppendEntries.Response<>( member, 1, false, -1, 0 );
 
@@ -161,7 +164,8 @@ public class RaftMessageProcessingTest
     public void shouldEncodeAndDecodeNewEntryRequest()
     {
         // given
-        CoreMember member = new CoreMember( address( "host1:9000" ), address( "host1:9001" ) );
+        CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
+                new AdvertisedSocketAddress( "host1:9001" ) );
         RaftMessages.NewEntry.Request request =
                 new RaftMessages.NewEntry.Request<>( member, ReplicatedInteger.valueOf( 12 ) );
 

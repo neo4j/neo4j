@@ -130,7 +130,7 @@ public class ClusterFormationIT
         // when
         try
         {
-            cluster.startEdgeServer( 99, asList( AdvertisedSocketAddress.address( "localhost:5001" ) ) );
+            cluster.startEdgeServer( 99, asList( new AdvertisedSocketAddress( "localhost:5001" ) ) );
         }
         catch ( RuntimeException e )
         {

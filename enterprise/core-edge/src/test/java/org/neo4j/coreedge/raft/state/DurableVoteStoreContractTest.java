@@ -23,6 +23,8 @@ import java.io.File;
 
 import org.junit.Rule;
 
+import org.neo4j.coreedge.raft.state.vote.DurableVoteStore;
+import org.neo4j.coreedge.raft.state.vote.VoteStore;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;

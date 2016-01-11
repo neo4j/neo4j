@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
-import org.neo4j.coreedge.raft.state.FollowerState;
+import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.helpers.FakeClock;
 

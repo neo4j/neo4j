@@ -23,12 +23,11 @@ import java.util.UUID;
 
 import io.netty.buffer.ByteBuf;
 
-import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
+import org.neo4j.coreedge.raft.membership.CoreMarshal;
 import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
-import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 
 public class ReplicatedTransactionSerializer
 {
@@ -38,7 +37,7 @@ public class ReplicatedTransactionSerializer
         buffer.writeLong( globalSessionId.getMostSignificantBits() );
         buffer.writeLong( globalSessionId.getLeastSignificantBits() );
 
-        CoreMemberMarshal.serialize( transaction.globalSession().owner(), buffer );
+        new CoreMarshal().marshal( transaction.globalSession().owner(), buffer );
 
         buffer.writeLong( transaction.localOperationId().localSessionId() );
         buffer.writeLong( transaction.localOperationId().sequenceNumber() );
@@ -54,7 +53,7 @@ public class ReplicatedTransactionSerializer
         long uuidLSB = buffer.readLong();
         UUID globalSessionId = new UUID( uuidMSB, uuidLSB );
 
-        CoreMember owner = CoreMemberMarshal.deserialize( buffer );
+        CoreMember owner = new CoreMarshal().unmarshal( buffer );
 
         long localSessionId = buffer.readLong();
         long sequenceNumber = buffer.readLong();

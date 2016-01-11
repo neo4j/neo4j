@@ -53,8 +53,8 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
     private boolean running;
 
     public RaftLogShippingManager( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog,
-            Clock clock, MEMBER myself, RaftMembership<MEMBER> membership, long retryTimeMillis,
-            int catchupBatchSize, int maxAllowedShippingLag )
+                                   Clock clock, MEMBER myself, RaftMembership<MEMBER> membership, long retryTimeMillis,
+                                   int catchupBatchSize, int maxAllowedShippingLag )
     {
         this.outbound = outbound;
         this.logProvider = logProvider;

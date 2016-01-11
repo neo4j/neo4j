@@ -21,15 +21,16 @@ package org.neo4j.coreedge.raft.replication.session;
 
 import org.junit.Test;
 
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
-import static org.junit.Assert.*;
-
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class LocalSessionPoolTest
 {
-    CoreMember coreMember = new CoreMember( address( "core:1" ), address( "raft:1" ) );
+    CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
+            new AdvertisedSocketAddress( "raft:1" ) );
 
     @Test
     public void poolsHaveUniqueGlobalIDs()

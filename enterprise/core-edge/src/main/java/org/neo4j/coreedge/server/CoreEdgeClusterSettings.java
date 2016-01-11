@@ -60,8 +60,7 @@ public class CoreEdgeClusterSettings
         @Override
         public AdvertisedSocketAddress apply( String value )
         {
-            String[] split = value.split( ":" );
-            return new AdvertisedSocketAddress( new InetSocketAddress( split[0], Integer.valueOf( split[1] ) ) );
+            return new AdvertisedSocketAddress( value );
         }
 
         @Override
@@ -132,6 +131,10 @@ public class CoreEdgeClusterSettings
             setting( "core_edge.disable_middleware_logging", BOOLEAN, TRUE );
 
     @Description("The maximum file size before the id allocation store is rotated (in unit of entries)")
-    public static final Setting<Integer> id_alloc_store_size = setting( "core_edge.id_alloc_store_size", INTEGER,
+    public static final Setting<Integer> id_alloc_state_size = setting( "core_edge.id_alloc_state_size", INTEGER,
+            "1000" );
+
+    @Description("The maximum file size before the membership state store is rotated (in unit of entries)")
+    public static Setting<Integer> raft_membership_state_size = setting( "core_edge.raft_membership_state_size", INTEGER,
             "1000" );
 }

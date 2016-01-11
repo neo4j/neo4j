@@ -21,20 +21,18 @@ package org.neo4j.coreedge;
 
 import org.junit.Test;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
+import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
+import org.neo4j.coreedge.discovery.CoreDiscoveryService;
 import org.neo4j.coreedge.discovery.HazelcastClusterTopology;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.discovery.CoreDiscoveryService;
-import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 public class EdgeServerStartupProcessTest
 {
@@ -45,7 +43,7 @@ public class EdgeServerStartupProcessTest
         StoreFetcher storeFetcher = mock( StoreFetcher.class );
         LocalDatabase localDatabase = mock( LocalDatabase.class );
 
-        AdvertisedSocketAddress coreServerAddress = address( "localhost:1999" );
+        AdvertisedSocketAddress coreServerAddress = new AdvertisedSocketAddress( "localhost:1999" );
         CoreDiscoveryService hazelcastTopology = mock( CoreDiscoveryService.class );
         HazelcastClusterTopology clusterTopology = mock( HazelcastClusterTopology.class );
         when( clusterTopology.firstTransactionServer() ).thenReturn( coreServerAddress );
@@ -74,7 +72,7 @@ public class EdgeServerStartupProcessTest
         StoreFetcher storeFetcher = mock( StoreFetcher.class );
         LocalDatabase localDatabase = mock( LocalDatabase.class );
 
-        AdvertisedSocketAddress coreServerAddress = address( "localhost:1999" );
+        AdvertisedSocketAddress coreServerAddress = new AdvertisedSocketAddress( "localhost:1999" );
         CoreDiscoveryService hazelcastTopology = mock( CoreDiscoveryService.class );
         HazelcastClusterTopology clusterTopology = mock( HazelcastClusterTopology.class );
         when( clusterTopology.firstTransactionServer() ).thenReturn( coreServerAddress );

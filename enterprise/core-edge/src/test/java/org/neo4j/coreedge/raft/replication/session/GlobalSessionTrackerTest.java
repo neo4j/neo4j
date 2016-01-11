@@ -23,17 +23,18 @@ import java.util.UUID;
 
 import org.junit.Test;
 
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
-
 public class GlobalSessionTrackerTest
 {
-    CoreMember coreA = new CoreMember( address( "core:1" ), address( "raft:1" ) );
-    CoreMember coreB = new CoreMember( address( "core:2" ), address( "raft:2" ) );
+    CoreMember coreA = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
+            new AdvertisedSocketAddress( "raft:1" ) );
+    CoreMember coreB = new CoreMember( new AdvertisedSocketAddress( "core:2" ),
+            new AdvertisedSocketAddress( "raft:2" ) );
 
     GlobalSession sessionA = new GlobalSession( UUID.randomUUID(), coreA );
     GlobalSession sessionA2 = new GlobalSession( UUID.randomUUID(), coreA );

@@ -19,15 +19,16 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
-import org.junit.Test;
-
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.junit.Test;
+
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.CurrentReplicatedLockState;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -43,14 +44,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 @SuppressWarnings("unchecked")
 public class ReplicatedTransactionCommitProcessTest
 {
-    CoreMember coreMember = new CoreMember( address( "core:1" ), address( "raft:1" ) );
+    CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
+            new AdvertisedSocketAddress( "raft:1" ) );
 
     @Test
     public void shouldReplicateOnlyOnceIfFirstAttemptSuccessful() throws Exception

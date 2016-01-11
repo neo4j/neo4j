@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.CurrentReplicatedLockState;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -46,11 +47,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
-
 public class ReplicatedTransactionStateMachineTest
 {
-    CoreMember coreMember = new CoreMember( address( "core:1" ), address( "raft:1" ) );
+    CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
+            new AdvertisedSocketAddress( "raft:1" ) );
     GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), coreMember );
 
     @Test

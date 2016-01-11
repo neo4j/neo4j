@@ -17,21 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state;
+package org.neo4j.coreedge.server;
 
-public class InMemoryVoteStore<MEMBER> implements VoteStore<MEMBER>
+public interface Encodable
 {
-    MEMBER votedFor;
-
-    @Override
-    public MEMBER votedFor()
-    {
-        return votedFor;
-    }
-
-    @Override
-    public void update( MEMBER votedFor )
-    {
-        this.votedFor = votedFor;
-    }
+    Encoder encoder();
 }

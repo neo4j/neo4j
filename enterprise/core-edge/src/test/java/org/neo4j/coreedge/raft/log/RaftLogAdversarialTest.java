@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import org.junit.Test;
-
 import java.io.File;
+
+import org.junit.Test;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
@@ -54,7 +54,7 @@ public class RaftLogAdversarialTest
         log.registerListener( new RaftLog.Listener()
         {
             @Override
-            public void onAppended( ReplicatedContent content )
+            public void onAppended( ReplicatedContent content, long index )
             {
             }
 
@@ -82,14 +82,10 @@ public class RaftLogAdversarialTest
             // expected
         }
 
-        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, new LogVerifier()
-        {
-            public void verifyLog( ReadableRaftLog log )
-            {
-                assertThat( log.appendIndex(), is( 0L ) );
-                assertThat( log.commitIndex(), is( 0L ) );
-                assertThat( log.entryExists( 0 ), is( true ) );
-            }
+        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, l -> {
+            assertThat( l.appendIndex(), is( 0L ) );
+            assertThat( l.commitIndex(), is( 0L ) );
+            assertThat( l.entryExists( 0 ), is( true ) );
         } );
     }
 
@@ -117,14 +113,10 @@ public class RaftLogAdversarialTest
             // expected
         }
 
-        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, new LogVerifier()
-        {
-            public void verifyLog( ReadableRaftLog log )
-            {
-                assertThat( log.appendIndex(), is( -1L ) );
-                assertThat( log.commitIndex(), is( -1L ) );
-                assertThat( log.entryExists( 0 ), is( false ) );
-            }
+        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, l -> {
+            assertThat( l.appendIndex(), is( -1L ) );
+            assertThat( l.commitIndex(), is( -1L ) );
+            assertThat( l.entryExists( 0 ), is( false ) );
         } );
     }
 
@@ -152,14 +144,10 @@ public class RaftLogAdversarialTest
             // expected
         }
 
-        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, new LogVerifier()
-        {
-            public void verifyLog( ReadableRaftLog log )
-            {
-                assertThat( log.appendIndex(), is( -1L ) );
-                assertThat( log.commitIndex(), is( -1L ) );
-                assertThat( log.entryExists( 0 ), is( false ) );
-            }
+        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, l -> {
+            assertThat( l.appendIndex(), is( -1L ) );
+            assertThat( l.commitIndex(), is( -1L ) );
+            assertThat( l.entryExists( 0 ), is( false ) );
         } );
     }
 
