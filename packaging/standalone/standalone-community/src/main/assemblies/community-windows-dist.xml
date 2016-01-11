@@ -39,7 +39,6 @@
       <directory>src/main/distribution/binary</directory>
       <outputDirectory></outputDirectory>
       <includes>
-        <include>system/lib/*.jar</include>
         <include>lib/*.jar</include>
       </includes>
     </fileSet>
@@ -111,7 +110,7 @@
       </excludes>
     </dependencySet>
     <dependencySet>
-      <outputDirectory>system/lib</outputDirectory>
+      <outputDirectory>lib</outputDirectory>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <useStrictFiltering>true</useStrictFiltering>

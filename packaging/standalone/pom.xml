@@ -57,7 +57,7 @@
     <dbms.security.tls_certificate_file>conf/ssl/snakeoil.cert</dbms.security.tls_certificate_file>
     <dbms.security.tls_key_file>conf/ssl/snakeoil.key</dbms.security.tls_key_file>
     <org.neo4j.webservice.packages>org.neo4j.rest.web,org.neo4j.webadmin,org.neo4j.webadmin.backup,org.neo4j.webadmin.console,org.neo4j.webadmin.domain,org.neo4j.webadmin.parser,org.neo4j.webadmin.properties,org.neo4j.webadmin.resources,org.neo4j.webadmin.rest,org.neo4j.webadmin.rrd,org.neo4j.webadmin.task,org.neo4j.webadmin.utils</org.neo4j.webservice.packages>
-    <org.neo4j.server.bundledir>system/lib</org.neo4j.server.bundledir>
+    <org.neo4j.server.bundledir>lib</org.neo4j.server.bundledir>
     <dbms.security.require_auth>true</dbms.security.require_auth>
     <dbms.browser.remote_content_hostname_whitelist>http://guides.neo4j.com,https://guides.neo4j.com,http://localhost,https://localhost</dbms.browser.remote_content_hostname_whitelist>
     <dbms.security.allow_outgoing_browser_connections>true</dbms.security.allow_outgoing_browser_connections>
