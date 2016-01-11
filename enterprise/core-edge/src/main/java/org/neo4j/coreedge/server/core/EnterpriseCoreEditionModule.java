@@ -61,8 +61,10 @@ import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedLabelTokenHolder;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedPropertyKeyTokenHolder;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedRelationshipTypeTokenHolder;
+import org.neo4j.coreedge.raft.replication.tx.CommittingTransactions;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionCommitProcess;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
+import org.neo4j.coreedge.raft.replication.tx.CommittingTransactionsRegistry;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.id_allocation.OnDiskIdAllocationState;
 import org.neo4j.coreedge.raft.state.membership.OnDiskRaftMembershipState;
@@ -333,8 +335,9 @@ public class EnterpriseCoreEditionModule
                     new TransactionRepresentationCommitProcess( appender, applier );
             dependencies.satisfyDependencies( localCommit );
 
+            CommittingTransactions committingTransactions = new CommittingTransactionsRegistry();
             ReplicatedTransactionStateMachine replicatedTxStateMachine = new ReplicatedTransactionStateMachine(
-                    localCommit, localSessionPool.getGlobalSession(), currentReplicatedLockState );
+                    localCommit, localSessionPool.getGlobalSession(), currentReplicatedLockState, committingTransactions );
 
             dependencies.satisfyDependencies( replicatedTxStateMachine );
 
@@ -343,7 +346,7 @@ public class EnterpriseCoreEditionModule
             return new ReplicatedTransactionCommitProcess( replicator, localSessionPool,
                     replicatedTxStateMachine,
                     config.get( CoreEdgeClusterSettings.tx_replication_retry_interval ),
-                    currentReplicatedLockState, logging
+                    logging, committingTransactions
             );
         };
     }
