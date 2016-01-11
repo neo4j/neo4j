@@ -82,3 +82,4 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, args: Seq[E
 
   override def plannerUsed = ProcedurePlannerName
 }
+

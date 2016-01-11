@@ -160,7 +160,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
       "match (p) where id(p) = 2 match p[:likes]->dude return dude.name",
       "Invalid input '[': expected an identifier character, whitespace, '=', node labels, a property map, " +
         "a relationship pattern, ',', USING, WHERE, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, " +
-        "RETURN, CALL, UNION, ';' or end of input (line 1, column 34 (offset: 33))",
+        "RETURN, UNION, ';' or end of input (line 1, column 34 (offset: 33))",
       33
     )
   }

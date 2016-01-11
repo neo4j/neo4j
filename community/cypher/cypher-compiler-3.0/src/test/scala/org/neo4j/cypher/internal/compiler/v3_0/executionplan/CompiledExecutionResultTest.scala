@@ -125,9 +125,6 @@ class CompiledExecutionResultTest extends CypherFunSuite {
         false
       }
     })
-
-    // also then
-    intercept[IllegalStateException](result.javaIterator.hasNext)
   }
 
   test("close should work after result is consumed") {

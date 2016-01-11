@@ -110,7 +110,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
         """Creates a constraint on a (label,property) pair.
           |The following query will create a unique constraint on the `name` property of nodes with the `Country` label.""".stripMargin,
       queryText = """CREATE CONSTRAINT ON (c:Country) ASSERT c.name is UNIQUE""",
-      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("ConstraintOperation"))
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("CreateUniqueConstraint"))
     )
   }
 

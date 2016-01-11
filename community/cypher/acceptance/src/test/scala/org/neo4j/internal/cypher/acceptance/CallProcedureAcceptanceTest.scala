@@ -149,6 +149,18 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc", "in0" -> "42", "in42" -> 42))
   }
 
+  test("should be able to call a procedure with explain") {
+    // Given
+    register(Neo4jTypes.NTNumber)
+
+    // When
+    val result = execute("EXPLAIN CALL my.first.proc(42)")
+
+    // Then
+    result shouldBe empty
+    println(result.executionPlanDescription())
+  }
+
   private def register(types: Neo4jTypes.AnyType*) = {
 
     val builder = procedureSignature(Array("my", "first"), "proc")

@@ -49,7 +49,7 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
 
   private lazy val innerIterator: util.Iterator[util.Map[String, Any]] = {
     val list = new util.ArrayList[util.Map[String, Any]]()
-    doInAccept(populateResults(list))
+    if (!taskCloser.isClosed) doInAccept(populateResults(list))
     list.iterator()
   }
 
@@ -124,6 +124,8 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
       override def executionMode: ExecutionMode = self.executionMode
 
       override def queryStatistics(): InternalQueryStatistics = self.queryStatistics()
+
+      override protected def queryType: QueryType = self.queryType
     }
   }
 
@@ -152,9 +154,6 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
   override def hasNext = innerIterator.hasNext
 
   override def next() = Eagerly.immutableMapValues(innerIterator.next().asScala, materializeAsScala)
-
-  //TODO when allowing writes this should be moved to the generated class
-  protected def queryType: QueryType = QueryType.READ_ONLY
 
   private def populateResults(results: util.List[util.Map[String, Any]])(row: InternalResultRow) = {
     val map = new util.HashMap[String, Any]()
@@ -262,14 +261,13 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
     }
   }
 
-  // *** Delegate to compiled code
-
   def executionMode: ExecutionMode
 
   def javaColumns: util.List[String]
 
-  //todo this should not depend on external visitor
   def accept[EX <: Exception](visitor: InternalResultVisitor[EX]): Unit
+
+  protected def queryType: QueryType
 
   override def executionPlanDescription(): InternalPlanDescription
 }

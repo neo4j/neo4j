@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.AcceptingExecutionR
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics, NormalMode, TaskCloser}
+import org.neo4j.graphdb.QueryExecutionType.QueryType
 
 import scala.collection.JavaConverters._
 
@@ -63,4 +64,7 @@ case class ProcedureExecutionResult[E <: Exception](taskCloser: TaskCloser,
   //TODO so far we have only read-only procedures, but when we have updating procedures this
   //will probably not work since the updates will be done directly on GraphDatabaseService
   override def queryStatistics() = context.getOptStatistics.getOrElse(InternalQueryStatistics())
+
+  //TODO so far only read-only queries, change when we have updating procedures
+  override protected def queryType: QueryType = QueryType.READ_ONLY
 }

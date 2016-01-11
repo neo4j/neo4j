@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.frontend.v3_0.parser
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 import org.parboiled.scala._
+
+import scala.collection.immutable.IndexedSeq
 
 trait Command extends Parser
   with Expressions
@@ -36,6 +39,7 @@ trait Command extends Parser
       | DropNodePropertyExistenceConstraint
       | DropRelationshipPropertyExistenceConstraint
       | DropIndex
+      | Call
   )
 
   def CreateIndex: Rule1[ast.CreateIndex] = rule {
@@ -68,6 +72,17 @@ trait Command extends Parser
 
   def DropRelationshipPropertyExistenceConstraint: Rule1[ast.DropRelationshipPropertyExistenceConstraint] = rule {
     group(keyword("DROP") ~~ RelationshipPropertyExistenceConstraintSyntax) ~~>> (ast.DropRelationshipPropertyExistenceConstraint(_, _, _))
+  }
+
+  def Call = rule("CALL") {
+    group(keyword("CALL") ~~ zeroOrMore(SymbolicNameString ~ ".") ~ ProcedureName ~ ProcedureArguments) ~~>> (ast
+      .CallProcedure(_, _, _))
+  }
+
+  private def ProcedureArguments: Rule1[IndexedSeq[Expression]] = rule("arguments to a procedure") {
+    optional(group("(" ~~
+      zeroOrMore(Expression, separator = CommaSep) ~~ ")"
+    ) ~~> (_.toIndexedSeq)) ~~> (_.getOrElse(IndexedSeq.empty))
   }
 
   private def UniqueConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~

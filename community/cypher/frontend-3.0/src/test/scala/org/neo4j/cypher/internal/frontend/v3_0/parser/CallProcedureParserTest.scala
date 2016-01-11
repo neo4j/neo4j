@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.frontend.v3_0.parser
 
 import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, ast}
 
-class CallProcedureTest extends ParserAstTest[ast.Clause] with Query {
+class CallProcedureParserTest extends ParserAstTest[ast.Command] with Command {
 
-  implicit val parser = Clause
+  implicit val parser = Command
 
   test("CALL foo") {
     yields(ast.CallProcedure(List.empty, ast.ProcName("foo")(pos), IndexedSeq.empty))

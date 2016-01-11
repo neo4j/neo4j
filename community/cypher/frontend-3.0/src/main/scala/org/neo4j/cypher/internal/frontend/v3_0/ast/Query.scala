@@ -89,7 +89,6 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     val lastError = lastPair.last match {
       case _: UpdateClause => None
       case _: Return => None
-      case _: CallProcedure => None
       case clause =>
         Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)", clause.position))
     }
