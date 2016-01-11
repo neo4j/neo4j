@@ -164,9 +164,8 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 
     private boolean indexIsOnline( PartitionedIndexStorage indexStorage ) throws IOException
     {
-        IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
-        try ( LuceneSchemaIndex index = new LuceneSchemaIndex( indexStorage, indexConfig, samplingConfig ) )
+        try ( LuceneSchemaIndex index = new LuceneSchemaIndex( indexStorage, IndexConfiguration.NON_UNIQUE, samplingConfig ) )
         {
             if ( index.exists() )
             {

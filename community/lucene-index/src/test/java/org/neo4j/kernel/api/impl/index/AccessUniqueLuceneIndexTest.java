@@ -140,8 +140,7 @@ public class AccessUniqueLuceneIndexTest
     {
         IndexStorageFactory storageFactory =
                 new IndexStorageFactory( directoryFactory, new EphemeralFileSystemAbstraction(), indexDirectory );
-        PartitionedIndexStorage indexStorage = storageFactory.indexStorageOf( 1 );
-        return indexStorage;
+        return storageFactory.indexStorageOf( 1 );
     }
 
     private NodePropertyUpdate add( long nodeId, Object propertyValue )
