@@ -17,33 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.counts.keys;
+package org.neo4j.kernel.impl.store.countStore;
 
-public enum CountsKeyType
+import java.util.Map;
+
+import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+
+public class CountsSnapshot
 {
-    EMPTY ( 0 ), ENTITY_NODE( 2 ), ENTITY_RELATIONSHIP( 3 ), INDEX_STATISTICS( 4 ), INDEX_SAMPLE( 5 );
+    final private Map<CountsKey,long[]> map;
+    final private long txId;
 
-    public final byte code;
-
-    CountsKeyType( int code )
+    public CountsSnapshot( long txId, Map<CountsKey,long[]> map )
     {
-        this.code = (byte) code;
+        this.map = map;
+        this.txId = txId;
     }
 
-    public static CountsKeyType value(byte val)
+    public Map<CountsKey,long[]> getMap()
     {
-        switch (val){
+        return map;
+    }
 
-        case 2:
-            return CountsKeyType.ENTITY_NODE;
-        case 3:
-            return CountsKeyType.ENTITY_RELATIONSHIP;
-        case 4:
-            return CountsKeyType.INDEX_STATISTICS;
-        case 5:
-            return CountsKeyType.INDEX_SAMPLE;
-        default:
-            throw new IllegalArgumentException("Parsed key type from count store deserialization of unknown type.");
-        }
+    public long getTxId()
+    {
+        return txId;
     }
 }
