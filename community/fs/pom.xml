@@ -8,19 +8,21 @@
   </parent>
 
   <properties>
-    <short-name>io</short-name>
-    <bundle.namespace>org.neo4j.io</bundle.namespace>
+    <short-name>fs</short-name>
+    <version-package>fs.impl</version-package>
+    <bundle.namespace>org.neo4j.fs</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-io</artifactId>
+  <artifactId>neo4j-fs</artifactId>
+  <groupId>org.neo4j</groupId>
   <version>3.0.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
-  <name>Neo4j - IO</name>
-  <description>Input/output abstraction layer for Neo4j.</description>
+  <name>Neo4j - File System API</name>
+  <description>File System API for Neo4j.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -51,36 +53,14 @@ the relevant Commercial Agreement.
 
   <dependencies>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-unsafe</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-fs</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-primitive-collections</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
     </dependency>
 
-    <!-- Test dependencies -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-core</artifactId>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-library</artifactId>
-        <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
@@ -88,40 +68,9 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-unsafe</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-all</artifactId>
+        <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <!--
-          Run mutation tests like this:
-          mvn org.pitest:pitest-maven:mutationCoverage
-
-          NOTE: This takes about 9 to 10 minutes to run.
-        -->
-        <groupId>org.pitest</groupId>
-        <artifactId>pitest-maven</artifactId>
-        <version>1.0.0</version>
-        <configuration>
-          <targetTests>
-            <param>org.neo4j.io.pagecache.*</param>
-          </targetTests>
-          <targetClasses>
-            <param>org.neo4j.io.pagecache.impl.*</param>
-          </targetClasses>
-          <threads>8</threads>
-          <jvmArgs>
-            <value>-ea</value>
-          </jvmArgs>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
 </project>

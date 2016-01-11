@@ -36,7 +36,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.fs.Files.createOrOpenAsOuputStream;
 
 /**
  * A {@link Supplier} of {@link OutputStream}s backed by on-disk files, which

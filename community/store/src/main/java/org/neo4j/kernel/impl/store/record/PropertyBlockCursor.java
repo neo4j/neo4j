@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.store;
+package org.neo4j.kernel.impl.store.record;
 
 import java.util.function.Supplier;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.api.store.LegacyStorePropertyCursor;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
 
 /**
  * Cursor over a set of {@link PropertyBlock} instances.

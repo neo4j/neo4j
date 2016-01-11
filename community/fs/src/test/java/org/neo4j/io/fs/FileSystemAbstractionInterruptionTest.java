@@ -32,8 +32,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Factory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 
@@ -45,19 +45,19 @@ import static org.junit.Assert.fail;
 @RunWith( Parameterized.class )
 public class FileSystemAbstractionInterruptionTest
 {
-    private static final Factory<FileSystemAbstraction> ephemeral = new Factory<FileSystemAbstraction>()
+    private static final Supplier<FileSystemAbstraction> ephemeral = new Supplier<FileSystemAbstraction>()
     {
         @Override
-        public FileSystemAbstraction newInstance()
+        public FileSystemAbstraction get()
         {
             return new EphemeralFileSystemAbstraction();
         }
     };
 
-    private static final Factory<FileSystemAbstraction> real = new Factory<FileSystemAbstraction>()
+    private static final Supplier<FileSystemAbstraction> real = new Supplier<FileSystemAbstraction>()
     {
         @Override
-        public FileSystemAbstraction newInstance()
+        public FileSystemAbstraction get()
         {
             return new DefaultFileSystemAbstraction();
         }
@@ -76,12 +76,12 @@ public class FileSystemAbstractionInterruptionTest
     public final TargetDirectory.TestDirectory testdir =
             TargetDirectory.testDirForTest( FileSystemAbstractionInterruptionTest.class );
 
-    private FileSystemAbstraction fs;
+    private final FileSystemAbstraction fs;
     private File file;
 
-    public FileSystemAbstractionInterruptionTest( @SuppressWarnings( "UnusedParameters" ) String name, Factory<FileSystemAbstraction> factory )
+    public FileSystemAbstractionInterruptionTest( @SuppressWarnings( "UnusedParameters" ) String name, Supplier<FileSystemAbstraction> factory )
     {
-        fs = factory.newInstance();
+        fs = factory.get();
     }
 
     @Before

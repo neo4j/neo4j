@@ -37,7 +37,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.fs.Files.createOrOpenAsOuputStream;
 
 public class StoreLogService extends AbstractLogService implements Lifecycle
 {

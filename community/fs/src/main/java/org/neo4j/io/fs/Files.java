@@ -17,9 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.file;
-
-import org.neo4j.io.fs.FileSystemAbstraction;
+package org.neo4j.io.fs;
 
 import java.io.File;
 import java.io.IOException;

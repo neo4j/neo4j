@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.record.PropertyBlockCursor;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.PropertyItem;
 
