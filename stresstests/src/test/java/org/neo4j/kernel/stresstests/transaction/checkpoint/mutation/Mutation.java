@@ -17,34 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.stresstests.mutation;
+package org.neo4j.kernel.stresstests.transaction.checkpoint.mutation;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 
-/**
- * Created by davide on 22/06/15.
- */
-class PropertyMutation implements Mutation
+interface Mutation
 {
-    private final GraphDatabaseService db;
-
-    public PropertyMutation( GraphDatabaseService db )
-    {
-        this.db = db;
-    }
-
-    @Override
-    public void perform( long nodeId, String value )
-    {
-        Node node = db.getNodeById( nodeId );
-        if ( node.hasProperty( value ) )
-        {
-            node.removeProperty( value );
-        }
-        else
-        {
-            node.setProperty( value, 10 );
-        }
-    }
+    void perform( long nodeId, String value );
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.stresstests;
+package org.neo4j.kernel.stresstests.transaction.checkpoint;
 
 import org.junit.Test;
 
@@ -30,8 +30,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.stresstests.tracers.TimerTransactionTracer;
-import org.neo4j.kernel.stresstests.workload.Workload;
+import org.neo4j.kernel.stresstests.transaction.checkpoint.tracers.TimerTransactionTracer;
+import org.neo4j.kernel.stresstests.transaction.checkpoint.workload.Workload;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
@@ -39,7 +39,7 @@ import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
 import static java.lang.System.getenv;
-import static org.neo4j.kernel.stresstests.mutation.RandomMutationFactory.defaultRandomMutation;
+import static org.neo4j.kernel.stresstests.transaction.checkpoint.mutation.RandomMutationFactory.defaultRandomMutation;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
 /**

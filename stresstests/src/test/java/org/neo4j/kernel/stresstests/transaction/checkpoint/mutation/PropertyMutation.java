@@ -17,15 +17,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.stresstests.mutation;
-
+package org.neo4j.kernel.stresstests.transaction.checkpoint.mutation;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 
-public class RandomMutationFactory
+/**
+ * Created by davide on 22/06/15.
+ */
+class PropertyMutation implements Mutation
 {
-    public static RandomMutation defaultRandomMutation( long nodeCount, GraphDatabaseService db )
+    private final GraphDatabaseService db;
+
+    public PropertyMutation( GraphDatabaseService db )
     {
-        return new SimpleRandomMutation( nodeCount, db, new LabelMutation( db ), new PropertyMutation( db ) );
+        this.db = db;
+    }
+
+    @Override
+    public void perform( long nodeId, String value )
+    {
+        Node node = db.getNodeById( nodeId );
+        if ( node.hasProperty( value ) )
+        {
+            node.removeProperty( value );
+        }
+        else
+        {
+            node.setProperty( value, 10 );
+        }
     }
 }

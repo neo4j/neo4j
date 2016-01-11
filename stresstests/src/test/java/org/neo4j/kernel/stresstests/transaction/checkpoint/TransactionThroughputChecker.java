@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.stresstests;
+package org.neo4j.kernel.stresstests.transaction.checkpoint;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.kernel.stresstests.workload.Workload;
+import org.neo4j.kernel.stresstests.transaction.checkpoint.workload.Workload;
 
 import static org.junit.Assert.assertTrue;
 

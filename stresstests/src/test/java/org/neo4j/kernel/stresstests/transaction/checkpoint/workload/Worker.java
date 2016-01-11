@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.stresstests.workload;
+package org.neo4j.kernel.stresstests.transaction.checkpoint.workload;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.stresstests.mutation.RandomMutation;
+import org.neo4j.kernel.stresstests.transaction.checkpoint.mutation.RandomMutation;
 
 class Worker implements Runnable
 {
