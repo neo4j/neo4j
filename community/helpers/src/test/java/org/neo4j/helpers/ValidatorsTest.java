@@ -17,21 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.helpers;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
-
+import org.neo4j.helpers.Validators;
 import static org.junit.Assert.fail;
 
 public class ValidatorsTest
 {
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TemporaryFolder directory = new TemporaryFolder();
 
     @Test
     public void shouldFindFilesByRegex() throws Exception
@@ -68,11 +69,11 @@ public class ValidatorsTest
 
     private void validate( String fileByName )
     {
-        Validators.REGEX_FILE_EXISTS.validate( directory.file( fileByName ) );
+        Validators.REGEX_FILE_EXISTS.accept( new File( directory.getRoot(), fileByName ) );
     }
 
     private void existenceOfFile( String name ) throws IOException
     {
-        directory.file( name ).createNewFile();
+        directory.newFile( name );
     }
 }

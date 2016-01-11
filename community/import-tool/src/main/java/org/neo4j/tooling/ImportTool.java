@@ -29,14 +29,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
-import org.neo4j.helpers.Args;
-import org.neo4j.helpers.Args.Option;
-import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -47,10 +43,8 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.kernel.impl.util.Validator;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -67,10 +61,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.nio.charset.Charset.defaultCharset;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.Format.bytes;
-import static org.neo4j.helpers.Strings.TAB;
-import static org.neo4j.kernel.impl.util.Converters.withDefault;
+
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
@@ -734,4 +725,17 @@ public class ImportTool
             this.anchor = anchor;
         }
     }
+
+    public static final Consumer<File> CONTAINS_NO_EXISTING_DATABASE = new Consumer<File>()
+    {
+        @Override
+        public void accept( File value )
+        {
+            if ( new DefaultFileSystemAbstraction()
+                    .fileExists( new File( value, StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) ) ) )
+            {
+                throw new IllegalArgumentException( "Directory '" + value + "' already contains a database" );
+            }
+        }
+    };
 }

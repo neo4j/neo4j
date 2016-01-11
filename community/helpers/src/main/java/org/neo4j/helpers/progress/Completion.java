@@ -52,8 +52,7 @@ public final class Completion
                     target.run();
                 }
                 catch ( Exception e )
-                {
-                    e.printStackTrace();
+                {   // On purpose
                 }
             }
         }

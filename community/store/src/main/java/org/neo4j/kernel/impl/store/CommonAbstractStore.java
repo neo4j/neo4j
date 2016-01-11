@@ -24,24 +24,21 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
@@ -53,7 +50,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 {
     public static final String ALL_STORES_VERSION = "v0.A.7";
     public static final String UNKNOWN_VERSION = "Unknown";
-    protected final Config configuration;
+    protected final Configuration configuration;
     protected final PageCache pageCache;
     protected final File storageFileName;
     protected final IdType idType;
@@ -81,7 +78,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      */
     public CommonAbstractStore(
             File fileName,
-            Config configuration,
+            Configuration configuration,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
@@ -782,11 +779,5 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     public String toString()
     {
         return getClass().getSimpleName();
-    }
-
-    public static abstract class Configuration
-    {
-        public static final Setting<Boolean> rebuild_idgenerators_fast =
-                GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 }

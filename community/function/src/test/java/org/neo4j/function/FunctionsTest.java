@@ -17,21 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.function;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.function.Functions;
-import org.neo4j.kernel.configuration.Settings;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.function.Functions.map;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class FunctionsTest
 {
@@ -39,6 +38,13 @@ public class FunctionsTest
     public void testMap() throws Exception
     {
         assertThat( map( stringMap( "foo", "bar" ) ).apply( "foo" ), equalTo( "bar" ) );
+    }
+
+    private Map<String,String> stringMap( String key, String value )
+    {
+        Map<String,String> map = new HashMap<>();
+        map.put( key, value );
+        return map;
     }
 
     @Test
@@ -74,7 +80,8 @@ public class FunctionsTest
     @Test
     public void testCompose() throws Exception
     {
+        Function<String, Integer> func = string -> Integer.parseInt( string );
         Function<Integer, Integer> inc = value -> value + 1;
-        assertThat( Functions.<String, Integer, Integer>compose().apply( Settings.INTEGER, inc ).apply( "3" ), equalTo( 4 ));
+        assertThat( Functions.<String, Integer, Integer>compose().apply( func, inc ).apply( "3" ), equalTo( 4 ));
     }
 }

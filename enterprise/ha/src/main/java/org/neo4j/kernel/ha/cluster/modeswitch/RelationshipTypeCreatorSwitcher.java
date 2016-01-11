@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha.cluster.modeswitch;
 
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
@@ -29,6 +28,7 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 
 public class RelationshipTypeCreatorSwitcher extends AbstractComponentSwitcher<TokenCreator>
 {

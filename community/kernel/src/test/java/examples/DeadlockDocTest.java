@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.helpers.TransactionTemplate;
+import org.neo4j.graphdb.impl.TransactionTemplate;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.test.EmbeddedDatabaseRule;
 

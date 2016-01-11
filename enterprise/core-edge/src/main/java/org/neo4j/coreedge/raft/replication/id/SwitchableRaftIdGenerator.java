@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.raft.replication.id;
 
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.LogProvider;
 
 public class SwitchableRaftIdGenerator implements IdGenerator

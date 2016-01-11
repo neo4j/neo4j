@@ -44,6 +44,7 @@
     <module>codegen</module>
     <module>storage-engine-api</module>
     <module>proc</module>
+	<module>helpers</module>
 	<module>store</module>
     <module>kernel</module>
     <module>jmx</module>

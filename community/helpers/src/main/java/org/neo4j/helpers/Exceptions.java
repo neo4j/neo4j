@@ -28,8 +28,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.kernel.impl.locking.Locks.Client;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Exceptions
@@ -276,7 +274,7 @@ public class Exceptions
     }
 
     @Deprecated
-    public static Predicate<StackTraceElement> classImplementingInterface( final Class<Client> cls )
+    public static Predicate<StackTraceElement> classImplementingInterface( final Class<?> cls )
     {
         return item -> {
             try

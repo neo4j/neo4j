@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
@@ -34,6 +33,7 @@ import org.neo4j.kernel.ha.com.master.MasterImplTest;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;

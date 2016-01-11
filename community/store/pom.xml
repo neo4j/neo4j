@@ -8,7 +8,7 @@
   </parent>
 
   <properties>
-    <short-name>stora</short-name>
+    <short-name>store</short-name>
     <version-package>store.impl</version-package>
     <bundle.namespace>org.neo4j.store</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
@@ -60,6 +60,21 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-collections</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-logging</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graphdb-api</artifactId>
       <version>${project.version}</version>
     </dependency>
 

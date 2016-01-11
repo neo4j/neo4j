@@ -26,9 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
-
-import org.neo4j.kernel.impl.util.Validator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
 
@@ -55,11 +54,11 @@ import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
  * </pre>
  *
  * Multiple values for an option is supported, however the only means of extracting all values is be
- * using {@link #interpretOptions(String, Function, Function, Validator...)}, all other methods revolve
+ * using {@link #interpretOptions(String, Function, Function, Consumer...)}, all other methods revolve
  * around single value, i.e. will fail if there are multiple.
  *
  * Options can have metadata which can be extracted using
- * {@link #interpretOptions(String, Function, Function, Validator...)}. Metadata looks like:
+ * {@link #interpretOptions(String, Function, Function, Consumer...)}. Metadata looks like:
  * <pre>
  *   --my-option:Metadata my-value
  * </pre>
@@ -515,7 +514,7 @@ public class Args
 
     @SafeVarargs
     public final <T> T interpretOption( String key, Function<String,T> defaultValue,
-            Function<String,T> converter, Validator<T>... validators )
+            Function<String,T> converter, Consumer<T>... validators )
     {
         T value;
         if ( !has( key ) )
@@ -544,7 +543,7 @@ public class Args
      */
     @SafeVarargs
     public final <T> Collection<T> interpretOptions( String key, Function<String,T> defaultValue,
-            Function<String,T> converter, Validator<T>... validators )
+            Function<String,T> converter, Consumer<T>... validators )
     {
         Collection<Option<T>> options = interpretOptionsWithMetadata( key, defaultValue, converter, validators );
         Collection<T> values = new ArrayList<>( options.size() );
@@ -571,7 +570,7 @@ public class Args
      */
     @SafeVarargs
     public final <T> Collection<Option<T>> interpretOptionsWithMetadata( String key, Function<String,T> defaultValue,
-            Function<String,T> converter, Validator<T>... validators )
+            Function<String,T> converter, Consumer<T>... validators )
     {
         Collection<Option<T>> values = new ArrayList<>();
         if ( !hasNonNull( key ) )
@@ -595,7 +594,7 @@ public class Args
 
     @SafeVarargs
     public final <T> T interpretOrphan( int index, Function<String,T> defaultValue,
-            Function<String,T> converter, Validator<T>... validators )
+            Function<String,T> converter, Consumer<T>... validators )
     {
         assert index >= 0;
 
@@ -613,13 +612,13 @@ public class Args
     }
 
     @SafeVarargs
-    private final <T> T validated( T value, Validator<T>... validators )
+    private final <T> T validated( T value, Consumer<T>... validators )
     {
         if ( value != null )
         {
-            for ( Validator<T> validator : validators )
+            for ( Consumer<T> validator : validators )
             {
-                validator.validate( value );
+                validator.accept( value );
             }
         }
         return value;

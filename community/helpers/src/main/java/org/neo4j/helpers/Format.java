@@ -25,8 +25,6 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.io.ByteUnit;
-
 public class Format
 {
     public static String date()
@@ -90,11 +88,11 @@ public class Format
     }
 
     @Deprecated
-    public static int KB = (int) ByteUnit.kibiBytes( 1 );
+    public static int KB = 1024;
     @Deprecated
-    public static int MB = (int) ByteUnit.mebiBytes( 1 );
+    public static int MB = KB * KB;
     @Deprecated
-    public static int GB = (int) ByteUnit.gibiBytes( 1 );
+    public static int GB = MB * KB;
 
     public static String bytes( long bytes )
     {

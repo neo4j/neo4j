@@ -19,11 +19,11 @@
  */
 package org.neo4j.coreedge.raft.replication.id;
 
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.id.IdRangeIterator;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 

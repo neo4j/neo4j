@@ -17,25 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.helpers;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
-
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
 
 public class Validators
 {
-    public static final Validator<File> REGEX_FILE_EXISTS = new Validator<File>()
+    public static final Consumer<File> REGEX_FILE_EXISTS = new Consumer<File>()
     {
         @Override
-        public void validate( File file )
+        public void accept( File file )
         {
             if ( matchingFiles( file ).isEmpty() )
             {
@@ -63,10 +60,10 @@ public class Validators
         return files;
     }
 
-    public static final Validator<File> DIRECTORY_IS_WRITABLE = new Validator<File>()
+    public static final Consumer<File> DIRECTORY_IS_WRITABLE = new Consumer<File>()
     {
         @Override
-        public void validate( File value )
+        public void accept( File value )
         {
             if ( value.mkdirs() )
             {   // It's OK, we created the directory right now, which means we have write access to it
@@ -89,25 +86,12 @@ public class Validators
         }
     };
 
-    public static final Validator<File> CONTAINS_NO_EXISTING_DATABASE = new Validator<File>()
+    public static <T> Consumer<T[]> atLeast( final String key, final int length )
     {
-        @Override
-        public void validate( File value )
-        {
-            if ( new DefaultFileSystemAbstraction()
-                    .fileExists( new File( value, StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) ) ) )
-            {
-                throw new IllegalArgumentException( "Directory '" + value + "' already contains a database" );
-            }
-        }
-    };
-
-    public static <T> Validator<T[]> atLeast( final String key, final int length )
-    {
-        return new Validator<T[]>()
+        return new Consumer<T[]>()
         {
             @Override
-            public void validate( T[] value )
+            public void accept( T[] value )
             {
                 if ( value.length < length )
                 {
@@ -119,12 +103,12 @@ public class Validators
         };
     }
 
-    public static final <T> Validator<T> emptyValidator()
+    public static final <T> Consumer<T> emptyValidator()
     {
-        return new Validator<T>()
+        return new Consumer<T>()
         {
             @Override
-            public void validate( T value )
+            public void accept( T value )
             {   // Do nothing
             }
         };

@@ -26,14 +26,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 
 import org.neo4j.function.Functions;
 import org.neo4j.helpers.Args.Option;
-import org.neo4j.kernel.impl.util.Converters;
-import org.neo4j.kernel.impl.util.Validator;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -118,14 +116,14 @@ public class TestArgs
         int expectedValue = 42;
         Args args = Args.parse( "--arg", String.valueOf( expectedValue ));
         @SuppressWarnings( "unchecked" )
-        Validator<Integer> validator = mock( Validator.class );
+        Consumer<Integer> validator = mock( Consumer.class );
 
         // WHEN
         int value = args.interpretOption( "arg", Converters.<Integer>mandatory(), Converters.toInt(), validator );
 
         // THEN
         assertEquals( expectedValue, value );
-        verify( validator ).validate( expectedValue );
+        verify( validator ).accept( expectedValue );
     }
 
     @Test
@@ -135,14 +133,14 @@ public class TestArgs
         int expectedValue = 42;
         Args args = Args.parse( String.valueOf( expectedValue ) );
         @SuppressWarnings( "unchecked" )
-        Validator<Integer> validator = mock( Validator.class );
+        Consumer<Integer> validator = mock( Consumer.class );
 
         // WHEN
         int value = args.interpretOrphan( 0, Converters.<Integer>mandatory(), Converters.toInt(), validator );
 
         // THEN
         assertEquals( expectedValue, value );
-        verify( validator ).validate( expectedValue );
+        verify( validator ).accept( expectedValue );
     }
 
     @Test

@@ -17,24 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.helpers;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
-
 import static org.junit.Assert.assertArrayEquals;
 
-import static org.neo4j.kernel.impl.util.Converters.regexFiles;
+import static org.neo4j.helpers.Converters.regexFiles;
 
 public class ConvertersTest
 {
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TemporaryFolder directory = new TemporaryFolder();
 
     @Test
     public void shouldSortFilesByNumberCleverly() throws Exception
@@ -47,7 +46,7 @@ public class ConvertersTest
         File file32 = existenceOfFile( "file32" );
 
         // WHEN
-        File[] files = regexFiles( true ).apply( directory.file( "file.*" ).getAbsolutePath() );
+        File[] files = regexFiles( true ).apply( new File( directory.getRoot(),  "file.*" ).getAbsolutePath() );
 
         // THEN
         assertArrayEquals( new File[] {file1, file2, file12, file32, file123}, files );
@@ -55,8 +54,6 @@ public class ConvertersTest
 
     private File existenceOfFile( String name ) throws IOException
     {
-        File file = directory.file( name );
-        file.createNewFile();
-        return file;
+        return directory.newFile( name );
     }
 }

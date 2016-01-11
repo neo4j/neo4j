@@ -26,12 +26,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.ext.udc.UdcConstants;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.StartupStatistics;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
