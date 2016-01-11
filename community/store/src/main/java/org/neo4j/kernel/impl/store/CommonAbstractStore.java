@@ -25,6 +25,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 
 import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -50,6 +51,9 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 {
     public static final String ALL_STORES_VERSION = "v0.A.7";
     public static final String UNKNOWN_VERSION = "Unknown";
+
+    protected static Setting<Boolean> rebuild_idgenerators_fast;
+
     protected final Configuration configuration;
     protected final PageCache pageCache;
     protected final File storageFileName;
@@ -390,7 +394,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     protected boolean doFastIdGeneratorRebuild()
     {
-        return configuration.get( Configuration.rebuild_idgenerators_fast );
+        return configuration.get( rebuild_idgenerators_fast );
     }
 
     /**

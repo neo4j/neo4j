@@ -33,6 +33,8 @@
   <modules>
     <module>resource</module>
     <module>collections</module>
+    <module>lifecycle</module>
+    <module>diagnostics</module>
     <module>primitive-collections</module>
     <module>graphdb-api</module>
     <module>unsafe</module>
@@ -44,8 +46,9 @@
     <module>codegen</module>
     <module>storage-engine-api</module>
     <module>proc</module>
-	<module>helpers</module>
-	<module>store</module>
+    <module>helpers</module>
+    <module>configuration</module>
+    <module>store</module>
     <module>kernel</module>
     <module>jmx</module>
     <module>udc</module>

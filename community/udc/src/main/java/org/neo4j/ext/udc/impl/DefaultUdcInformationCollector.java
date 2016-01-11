@@ -31,9 +31,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
+import org.neo4j.diagnostics.OsBeanUtil;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;

@@ -20,7 +20,7 @@
 package org.neo4j.shell;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
+import org.neo4j.kernel.configuration.Description;
 
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;

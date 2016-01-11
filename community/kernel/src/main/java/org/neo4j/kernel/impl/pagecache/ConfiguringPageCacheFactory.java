@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import org.neo4j.kernel.impl.util.OsBeanUtil;
+import org.neo4j.diagnostics.OsBeanUtil;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;

@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
+import org.neo4j.diagnostics.OsBeanUtil;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -43,7 +44,6 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;

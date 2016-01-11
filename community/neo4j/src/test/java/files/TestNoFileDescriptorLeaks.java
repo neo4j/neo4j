@@ -27,8 +27,8 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.diagnostics.OsBeanUtil;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.lessThan;
