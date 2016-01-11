@@ -80,25 +80,13 @@ public class LuceneLabelScanStoreChaosIT
     }
 
     @Test
-    public void shouldPreventCorruptedLabelScanStoreToStartup() throws Exception
+    public void rebuildCorruptedLabelScanStoreToStartup() throws Exception
     {
-        // GIVEN
-        createLabeledNode( Labels.First );
+        Node node = createLabeledNode( Labels.First );
 
-        // WHEN
-        // TODO how do we make sure it was deleted and then fully rebuilt? I mean if we somehow deleted
-        // the wrong directory here then it would also work, right?
-        try
-        {
-            dbRule.restartDatabase( corruptTheLabelScanStoreIndex() );
-            fail( "Shouldn't be able to start up" );
-        }
-        catch ( RuntimeException e )
-        {
-            // THEN
-            Throwable ioe = peel( e, Predicates.<Throwable>instanceOf( RuntimeException.class ) );
-            assertThat( ioe.getMessage(), containsString( "Label scan store could not be read" ) );
-        }
+        dbRule.restartDatabase( corruptTheLabelScanStoreIndex() );
+
+        assertEquals( asSet( node ), getAllNodesWithLabel( Labels.First ) );
     }
 
     private RestartAction corruptTheLabelScanStoreIndex()

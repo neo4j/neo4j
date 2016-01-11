@@ -19,19 +19,18 @@
  */
 package org.neo4j.backup;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -47,7 +46,6 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 
-@Ignore("Label scan store to be upgraded")
 public class BackupEmbeddedIT
 {
     @ClassRule

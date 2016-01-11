@@ -173,7 +173,7 @@ public class LabelScanStoreHaIT
         }
 
         @Override
-        public void corruptIndex( IOException e )
+        public void corruptedIndex()
         {
         }
 

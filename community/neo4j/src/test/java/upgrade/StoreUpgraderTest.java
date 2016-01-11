@@ -21,7 +21,6 @@ package upgrade;
 
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,11 +49,7 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
-import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationParticipant;
-import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -66,7 +61,11 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
+import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
+import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -101,7 +100,6 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateAl
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 
-@Ignore("Label scan store to be upgraded")
 @RunWith(Parameterized.class)
 public class StoreUpgraderTest
 {

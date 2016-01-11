@@ -105,50 +105,6 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
         }
     }
 
-    private UniquenessVerifier createUniquenessVerifier() throws IOException
-    {
-        ensureOpen();
-        maybeRefreshBlocking();
-        List<IndexPartition> partitions = getPartitions();
-        return hasSinglePartition( partitions ) ? createSimpleUniquenessVerifier( partitions )
-                                                : createPartitionedUniquenessVerifier( partitions );
-    }
-
-    private SimpleIndexReader createSimpleReader( List<IndexPartition> partitions ) throws IOException
-    {
-        IndexPartition singlePartition = partitions.get( 0 );
-        return new SimpleIndexReader( singlePartition.acquireSearcher(), config, samplingConfig, taskCoordinator );
-    }
-
-    private PartitionedIndexReader createPartitionedReader( List<IndexPartition> partitions ) throws IOException
-    {
-        List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedIndexReader( searchers );
-    }
-
-    private UniquenessVerifier createSimpleUniquenessVerifier( List<IndexPartition> partitions ) throws IOException
-    {
-        IndexPartition singlePartition = partitions.get( 0 );
-        PartitionSearcher partitionSearcher = singlePartition.acquireSearcher();
-        return new SimpleUniquenessVerifier( partitionSearcher );
-    }
-
-    private UniquenessVerifier createPartitionedUniquenessVerifier( List<IndexPartition> partitions ) throws IOException
-    {
-        List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedUniquenessVerifier( searchers );
-    }
-
-    private static List<PartitionSearcher> acquireSearchers( List<IndexPartition> partitions ) throws IOException
-    {
-        List<PartitionSearcher> searchers = new ArrayList<>( partitions.size() );
-        for ( IndexPartition partition : partitions )
-        {
-            searchers.add( partition.acquireSearcher() );
-        }
-        return searchers;
-    }
-
     @Override
     public void drop() throws IOException
     {
@@ -167,7 +123,7 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
     public boolean isOnline() throws IOException
     {
         ensureOpen();
-        IndexPartition partition = getPartitions().get( 0 );
+        IndexPartition partition = getFirstPartition( getPartitions() );
         Directory directory = partition.getDirectory();
         try ( DirectoryReader reader = DirectoryReader.open( directory ) )
         {
@@ -182,10 +138,10 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
         commitCloseLock.lock();
         try
         {
-            IndexPartition partition = getPartitions().get( 0 );
+            IndexPartition partition = getFirstPartition( getPartitions() );
             IndexWriter indexWriter = partition.getIndexWriter();
             indexWriter.setCommitData( ONLINE_COMMIT_USER_DATA );
-            indexWriter.commit();
+            flush();
         }
         finally
         {
@@ -196,5 +152,49 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
     public void markAsFailed( String failure ) throws IOException
     {
         indexStorage.storeIndexFailure( failure );
+    }
+
+    private UniquenessVerifier createUniquenessVerifier() throws IOException
+    {
+        ensureOpen();
+        maybeRefreshBlocking();
+        List<IndexPartition> partitions = getPartitions();
+        return hasSinglePartition( partitions ) ? createSimpleUniquenessVerifier( partitions )
+                                                : createPartitionedUniquenessVerifier( partitions );
+    }
+
+    private SimpleIndexReader createSimpleReader( List<IndexPartition> partitions ) throws IOException
+    {
+        IndexPartition singlePartition = getFirstPartition( partitions );
+        return new SimpleIndexReader( singlePartition.acquireSearcher(), config, samplingConfig, taskCoordinator );
+    }
+
+    private PartitionedIndexReader createPartitionedReader( List<IndexPartition> partitions ) throws IOException
+    {
+        List<PartitionSearcher> searchers = acquireSearchers( partitions );
+        return new PartitionedIndexReader( searchers );
+    }
+
+    private UniquenessVerifier createSimpleUniquenessVerifier( List<IndexPartition> partitions ) throws IOException
+    {
+        IndexPartition singlePartition = getFirstPartition( partitions );
+        PartitionSearcher partitionSearcher = singlePartition.acquireSearcher();
+        return new SimpleUniquenessVerifier( partitionSearcher );
+    }
+
+    private UniquenessVerifier createPartitionedUniquenessVerifier( List<IndexPartition> partitions ) throws IOException
+    {
+        List<PartitionSearcher> searchers = acquireSearchers( partitions );
+        return new PartitionedUniquenessVerifier( searchers );
+    }
+
+    private static List<PartitionSearcher> acquireSearchers( List<IndexPartition> partitions ) throws IOException
+    {
+        List<PartitionSearcher> searchers = new ArrayList<>( partitions.size() );
+        for ( IndexPartition partition : partitions )
+        {
+            searchers.add( partition.acquireSearcher() );
+        }
+        return searchers;
     }
 }

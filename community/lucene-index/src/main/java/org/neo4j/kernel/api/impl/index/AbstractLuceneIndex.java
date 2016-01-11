@@ -45,7 +45,6 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 
 import static java.util.stream.Collectors.toList;
 
-// todo: this component has an implicit possibility to be opened and closed multiple times. we should revisit and at least test it.
 public abstract class AbstractLuceneIndex implements Closeable
 {
     protected final ReentrantLock commitCloseLock = new ReentrantLock();
@@ -62,6 +61,7 @@ public abstract class AbstractLuceneIndex implements Closeable
 
     public void create() throws IOException
     {
+        ensureNotOpen();
         indexStorage.prepareFolder( indexStorage.getIndexFolder() );
         indexStorage.reserveIndexFailureStorage();
         createNewPartitionFolder();
@@ -145,7 +145,12 @@ public abstract class AbstractLuceneIndex implements Closeable
 
     public void flush() throws IOException
     {
-        // TODO: do we need it?
+        List<IndexPartition> partitions = getPartitions();
+        for ( IndexPartition partition : partitions )
+        {
+            partition.getIndexWriter().commit();
+        }
+
     }
 
     @Override
@@ -280,9 +285,23 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
     }
 
+    protected void ensureNotOpen()
+    {
+        if ( open )
+        {
+            throw new IllegalStateException( "Lucene index should not be open to be able to perform required " +
+                                             "operation." );
+        }
+    }
+
     protected boolean hasSinglePartition( List<IndexPartition> partitions )
     {
         return partitions.size() == 1;
+    }
+
+    protected IndexPartition getFirstPartition( List<IndexPartition> partitions )
+    {
+        return partitions.get( 0 );
     }
 
     private boolean luceneDirectoryExists( File folder ) throws IOException

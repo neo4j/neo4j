@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -74,7 +73,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -86,13 +84,14 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.string
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.staging.ProcessorAssignmentStrategies.eagerRandomSaturation;
 
-@Ignore("Label scan store to be upgraded")
 @RunWith( Parameterized.class )
 public class ParallelBatchImporterTest
 {
+    @Rule
+    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+
     private static final int NODE_COUNT = 10_000;
-    private static final int RELATIONSHIP_COUNT = NODE_COUNT*5;
-    public final @Rule TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private static final int RELATIONSHIP_COUNT = NODE_COUNT * 5;
     private final Configuration config = new Configuration.Default()
     {
         @Override

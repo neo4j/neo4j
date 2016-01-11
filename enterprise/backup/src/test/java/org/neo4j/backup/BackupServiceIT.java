@@ -353,7 +353,6 @@ public class BackupServiceIT
         }
     }
 
-    @Ignore("Label scan store to be upgraded")
     @Test
     public void shouldBeAbleToBackupEvenIfTransactionLogsAreIncomplete() throws Throwable
     {
@@ -641,7 +640,6 @@ public class BackupServiceIT
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
     }
 
-    @Ignore("Label scan store to be upgraded")
     @Test
     public void shouldContainTransactionsThatHappenDuringBackupProcess() throws Throwable
     {
@@ -739,7 +737,6 @@ public class BackupServiceIT
         }
     }
 
-    @Ignore("Label scan store to be upgraded")
     @Test
     public void theBackupServiceShouldBeHappyUnderStress() throws Exception
     {

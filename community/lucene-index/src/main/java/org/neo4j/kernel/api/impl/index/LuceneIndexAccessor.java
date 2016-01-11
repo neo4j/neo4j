@@ -68,8 +68,6 @@ public class LuceneIndexAccessor implements IndexAccessor
     @Override
     public void force() throws IOException
     {
-        // TODO:
-        // do not commit all writers except first
         luceneIndex.markAsOnline();
         luceneIndex.maybeRefreshBlocking();
     }

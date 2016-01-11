@@ -57,7 +57,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
-@Ignore("Label scan store to be upgraded")
 public class TestMigrateToDenseNodeSupport
 {
     private static final Label referenceNode = label( "ReferenceNode" );

@@ -68,7 +68,7 @@ public class LuceneLabelScanStore implements LabelScanStore
             }
 
             @Override
-            public void corruptIndex( IOException e )
+            public void corruptedIndex()
             {
             }
 
@@ -89,7 +89,7 @@ public class LuceneLabelScanStore implements LabelScanStore
 
         void lockedIndex( LockObtainFailedException e );
 
-        void corruptIndex( IOException e );
+        void corruptedIndex();
 
         void rebuilding();
 
@@ -152,19 +152,12 @@ public class LuceneLabelScanStore implements LabelScanStore
             }
             else if ( !luceneIndex.isValid() )
             {
-                // todo: rebuild instead of failing? failing is here now only because there is a test expecting failure...
-//                monitor.corruptIndex(  );
-//                luceneIndex.create();
-//                needsRebuild = true;
-
                 log.warn( "Lucene scan store index could not be read. Preparing to rebuild." );
-
-                throw new IOException( "Label scan store could not be read, and needs to be rebuilt. " +
-                                       "To trigger a rebuild, ensure the database is stopped, delete the files in '" +
-                                       luceneIndex + "', and then start the database again." );
+                monitor.corruptedIndex();
+                luceneIndex.drop();
+                luceneIndex.create();
+                needsRebuild = true;
             }
-
-            // todo: test this strange open-close thingy
             luceneIndex.open();
         }
         catch ( LockObtainFailedException e )

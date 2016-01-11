@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -52,13 +51,11 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.consistency.ConsistencyCheckService.defaultLogFileName;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
-@Ignore("Label scan store to be upgraded")
 public class ConsistencyCheckServiceIntegrationTest
 {
     @Test

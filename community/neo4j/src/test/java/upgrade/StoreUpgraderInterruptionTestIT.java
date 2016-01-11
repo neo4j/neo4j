@@ -19,7 +19,6 @@
  */
 package upgrade;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -71,11 +70,10 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyS
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasLatestVersion;
 
-@Ignore("Label scan store to be upgraded")
 @RunWith( Parameterized.class )
 public class StoreUpgraderInterruptionTestIT
 {
-    @Parameterized.Parameter( 0 )
+    @Parameterized.Parameter
     public String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
     private final LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider( new

@@ -21,7 +21,6 @@ package upgrade;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -55,26 +54,22 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
-import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
-import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
+import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
+import static java.lang.Integer.MAX_VALUE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
-
-import static java.lang.Integer.MAX_VALUE;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -82,7 +77,8 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatHugeStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatStoreDirectory;
-@Ignore("Label scan store to be upgraded")
+import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
+
 public class StoreMigratorFrom19IT
 {
     @Rule

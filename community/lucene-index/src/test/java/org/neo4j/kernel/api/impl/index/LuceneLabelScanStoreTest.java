@@ -76,7 +76,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class LuceneLabelScanStoreTest
 {
     private static final long[] NO_LABELS = new long[0];
@@ -193,8 +193,8 @@ public class LuceneLabelScanStoreTest
         int labelId1 = 1, labelId2 = 2;
         long nodeId1 = 10, nodeId2 = 11;
         start( asList(
-                labelChanges( nodeId1, NO_LABELS, new long[] { labelId1 } ),
-                labelChanges( nodeId2, NO_LABELS, new long[] { labelId1, labelId2 } )
+                labelChanges( nodeId1, NO_LABELS, new long[]{labelId1} ),
+                labelChanges( nodeId2, NO_LABELS, new long[]{labelId1, labelId2} )
         ) );
 
         // WHEN
@@ -215,8 +215,8 @@ public class LuceneLabelScanStoreTest
         int labelId1 = 1, labelId2 = 2;
         long nodeId1 = 10, nodeId2 = 1280;
         start( asList(
-                labelChanges( nodeId1, NO_LABELS, new long[] { labelId1 } ),
-                labelChanges( nodeId2, NO_LABELS, new long[] { labelId1, labelId2 } )
+                labelChanges( nodeId1, NO_LABELS, new long[]{labelId1} ),
+                labelChanges( nodeId2, NO_LABELS, new long[]{labelId1, labelId2} )
         ) );
 
         // WHEN
@@ -227,12 +227,12 @@ public class LuceneLabelScanStoreTest
         assertFalse( iterator.hasNext() );
 
         // THEN
-        assertArrayEquals( new long[] { nodeId1 }, sorted( range1.nodes() ) );
-        assertArrayEquals( new long[] { nodeId2 }, sorted( range2.nodes() ) );
+        assertArrayEquals( new long[]{nodeId1}, sorted( range1.nodes() ) );
+        assertArrayEquals( new long[]{nodeId2}, sorted( range2.nodes() ) );
 
-        assertArrayEquals( new long[] { labelId1 }, sorted( range1.labels( nodeId1 ) ) );
+        assertArrayEquals( new long[]{labelId1}, sorted( range1.labels( nodeId1 ) ) );
 
-        assertArrayEquals( new long[] { labelId1, labelId2 }, sorted( range2.labels( nodeId2 ) ) );
+        assertArrayEquals( new long[]{labelId1, labelId2}, sorted( range2.labels( nodeId2 ) ) );
     }
 
     @Test
@@ -240,13 +240,13 @@ public class LuceneLabelScanStoreTest
     {
         // given
         long labelId = 0;
-        List<NodeLabelUpdate> updates = new ArrayList<>(  );
-        for ( int i = 0; i < 34; i++)
+        List<NodeLabelUpdate> updates = new ArrayList<>();
+        for ( int i = 0; i < 34; i++ )
         {
-            updates.add( NodeLabelUpdate.labelChanges(i, new long[] {}, new long[]{labelId}));
+            updates.add( NodeLabelUpdate.labelChanges( i, new long[]{}, new long[]{labelId} ) );
         }
 
-        start(updates);
+        start( updates );
 
         // when
         LabelScanReader reader = store.newReader();
@@ -266,13 +266,13 @@ public class LuceneLabelScanStoreTest
     {
         // given
         long label0Id = 0;
-        List<NodeLabelUpdate> label0Updates = new ArrayList<>(  );
-        for ( int i = 0; i < 34; i++)
+        List<NodeLabelUpdate> label0Updates = new ArrayList<>();
+        for ( int i = 0; i < 34; i++ )
         {
             label0Updates.add( NodeLabelUpdate.labelChanges( i, new long[]{}, new long[]{label0Id} ) );
         }
 
-        start(label0Updates);
+        start( label0Updates );
 
         // when
         write( Collections.<NodeLabelUpdate>emptyIterator() );
@@ -310,41 +310,33 @@ public class LuceneLabelScanStoreTest
     {
         // GIVEN a start of the store with existing data in it
         start( asList(
-                labelChanges( 1, NO_LABELS, new long[] {1} ),
-                labelChanges( 2, NO_LABELS, new long[] {1, 2} )
+                labelChanges( 1, NO_LABELS, new long[]{1} ),
+                labelChanges( 2, NO_LABELS, new long[]{1, 2} )
         ) );
 
         // THEN
         assertTrue( "Didn't rebuild the store on startup",
-                monitor.noIndexCalled&monitor.rebuildingCalled&monitor.rebuiltCalled );
-        assertNodesForLabel( 1,
-                1, 2 );
-        assertNodesForLabel( 2,
-                2 );
+                monitor.noIndexCalled & monitor.rebuildingCalled & monitor.rebuiltCalled );
+        assertNodesForLabel( 1, 1, 2 );
+        assertNodesForLabel( 2, 2 );
     }
 
     @Test
-    public void shouldRefuseStartIfIndexCorrupted() throws Exception
+    public void rebuildCorruptedIndexIndexOnStartup() throws Exception
     {
         // GIVEN a start of the store with existing data in it
         usePersistentDirectory();
         List<NodeLabelUpdate> data = asList(
-                labelChanges( 1, NO_LABELS, new long[] {1} ),
-                labelChanges( 2, NO_LABELS, new long[] {1, 2} ) );
+                labelChanges( 1, NO_LABELS, new long[]{1} ),
+                labelChanges( 2, NO_LABELS, new long[]{1, 2} ) );
         start( data );
 
         // WHEN the index is corrupted and then started again
-        try
-        {
-            scrambleIndexFilesAndRestart( data );
-            fail("Should not have been able to start.");
-        }
-        catch( LifecycleException e )
-        {
-            assertThat( e.getCause(), instanceOf( IOException.class ) );
-            assertThat( e.getCause().getMessage(), startsWith(
-                    "Label scan store could not be read, and needs to be rebuilt" ) );
-        }
+        scrambleIndexFilesAndRestart( data );
+
+
+        assertTrue( "Index corruption should be detected", monitor.corruptedIndex );
+        assertTrue( "Index should be rebuild", monitor.rebuildingCalled );
     }
 
     @Test
@@ -353,7 +345,7 @@ public class LuceneLabelScanStoreTest
         // GIVEN
         // 16 is the magic number of the page iterator
         // 32 is the number of nodes in each lucene document
-        final int labelId = 1, nodeCount = 32*16 + 10;
+        final int labelId = 1, nodeCount = 32 * 16 + 10;
         start();
         write( new PrefetchingIterator<NodeLabelUpdate>()
         {
@@ -397,7 +389,7 @@ public class LuceneLabelScanStoreTest
         LabelScanReader reader = store.newReader();
 
         // THEN
-        assertThat( asSet( reader.labelsForNode( nodeId ) ), hasItems(labelId1, labelId2) );
+        assertThat( asSet( reader.labelsForNode( nodeId ) ), hasItems( labelId1, labelId2 ) );
         reader.close();
     }
 
@@ -528,6 +520,7 @@ public class LuceneLabelScanStoreTest
     private static class TrackingMonitor implements LuceneLabelScanStore.Monitor
     {
         boolean initCalled, rebuildingCalled, rebuiltCalled, noIndexCalled;
+        boolean corruptedIndex = false;
 
         @Override
         public void noIndex()
@@ -541,8 +534,9 @@ public class LuceneLabelScanStoreTest
         }
 
         @Override
-        public void corruptIndex( IOException corruptionException )
+        public void corruptedIndex()
         {
+            corruptedIndex = true;
         }
 
         @Override

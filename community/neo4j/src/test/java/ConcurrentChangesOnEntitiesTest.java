@@ -45,7 +45,6 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-@Ignore("Label scan store to be upgraded")
 public class ConcurrentChangesOnEntitiesTest
 {
     @Rule

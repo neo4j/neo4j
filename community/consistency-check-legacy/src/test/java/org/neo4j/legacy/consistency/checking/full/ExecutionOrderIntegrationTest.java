@@ -19,7 +19,6 @@
  */
 package org.neo4j.legacy.consistency.checking.full;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -66,19 +65,16 @@ import org.neo4j.legacy.consistency.store.DiffRecordAccess;
 import org.neo4j.legacy.consistency.store.RecordAccess;
 import org.neo4j.legacy.consistency.store.RecordReference;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.withSettings;
-
-import static java.lang.String.format;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
-@Ignore("Label scan store to be upgraded")
 public class ExecutionOrderIntegrationTest
 {
     @Rule

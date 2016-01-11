@@ -62,7 +62,6 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSam
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 
-@Ignore("Label scan store to be upgraded")
 @RunWith( Parameterized.class )
 public class StoreUpgradeOnStartupTest
 {

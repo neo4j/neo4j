@@ -133,7 +133,6 @@ import static org.neo4j.legacy.consistency.checking.schema.IndexRules.loadAllInd
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
-@Ignore("Label scan store to be upgraded")
 @RunWith( Parameterized.class )
 public class FullCheckIntegrationTest
 {

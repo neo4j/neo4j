@@ -21,7 +21,6 @@ package upgrade;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -69,7 +68,6 @@ import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
 import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
-@Ignore("Label scan store to be upgraded")
 public class StoreMigratorFrom20IT
 {
     @Rule

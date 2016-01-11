@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -209,7 +208,6 @@ public class ConsistencyCheckToolTest
         verifyZeroInteractions( service );
     }
 
-    @Ignore("Label scan store to be upgraded")
     @Test
     public void shouldExecuteRecoveryWhenStoreWasNonCleanlyShutdown() throws Exception
     {
