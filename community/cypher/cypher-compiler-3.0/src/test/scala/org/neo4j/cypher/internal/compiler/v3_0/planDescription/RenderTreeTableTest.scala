@@ -508,9 +508,9 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
         |+---------------+----------------+-----------------------+
         || +NodeHashJoin |             42 | a, anon[45], anon[77] |
         || |\            +----------------+-----------------------+
-        || | +Argument   |              1 |                       |
+        || | +EmptyRow   |              1 |                       |
         || |             +----------------+-----------------------+
-        || +Argument     |              1 |                       |
+        || +EmptyRow     |              1 |                       |
         |+---------------+----------------+-----------------------+
         |""".stripMargin )
   }
