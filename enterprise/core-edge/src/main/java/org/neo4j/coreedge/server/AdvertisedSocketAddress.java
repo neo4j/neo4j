@@ -23,6 +23,11 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+import io.netty.buffer.ByteBuf;
+
+import org.neo4j.coreedge.raft.replication.StringMarshal;
+import org.neo4j.coreedge.raft.state.membership.Marshal;
+
 public class AdvertisedSocketAddress
 {
     private final String address;
@@ -62,5 +67,30 @@ public class AdvertisedSocketAddress
     {
         String[] split = address.split( ":" );
         return new InetSocketAddress( split[0], Integer.valueOf( split[1] ) );
+    }
+
+    public static class AdvertisedSocketAddressMarshal implements Marshal<AdvertisedSocketAddress>
+    {
+        public void marshal( AdvertisedSocketAddress address, ByteBuf buffer )
+        {
+            StringMarshal.marshal( buffer, address.address );
+        }
+
+        public void marshal( AdvertisedSocketAddress address, ByteBuffer buffer )
+        {
+            StringMarshal.marshal( buffer, address.address );
+        }
+
+        public AdvertisedSocketAddress unmarshal( ByteBuf buffer )
+        {
+            String host = StringMarshal.unmarshal( buffer );
+            return new AdvertisedSocketAddress( host );
+        }
+
+        public AdvertisedSocketAddress unmarshal( ByteBuffer buffer )
+        {
+            String host = StringMarshal.unmarshal( buffer );
+            return new AdvertisedSocketAddress( host );
+        }
     }
 }

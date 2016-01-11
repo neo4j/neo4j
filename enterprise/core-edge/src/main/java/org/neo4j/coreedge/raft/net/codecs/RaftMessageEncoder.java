@@ -26,8 +26,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.AdvertisedSocketAddressEncoder;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
@@ -115,8 +115,10 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Mes
 
     private void writeMember( CoreMember member, ByteBuf buffer ) throws UnsupportedEncodingException
     {
-        AdvertisedSocketAddressEncoder encoder = new AdvertisedSocketAddressEncoder();
-        encoder.encode( member.getCoreAddress(), buffer );
-        encoder.encode( member.getRaftAddress(), buffer );
+        AdvertisedSocketAddress.AdvertisedSocketAddressMarshal marshal = new AdvertisedSocketAddress
+                .AdvertisedSocketAddressMarshal();
+
+        marshal.marshal( member.getCoreAddress(), buffer );
+        marshal.marshal( member.getRaftAddress(), buffer );
     }
 }

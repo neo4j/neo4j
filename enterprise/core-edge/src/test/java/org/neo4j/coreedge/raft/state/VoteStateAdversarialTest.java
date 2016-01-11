@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.function.Supplier;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
@@ -37,19 +38,18 @@ import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class VoteStateAdversarialTest
 {
-    public VoteState<CoreMember> createVoteStore( FileSystemAbstraction fileSystem ) throws IOException
-    {
-        File directory = new File( "raft-log" );
-        fileSystem.mkdir( directory );
-        return new OnDiskVoteState( fileSystem, directory, 100, mock(Supplier.class), new CoreMemberMarshal() );
-    }
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void shouldDiscardVoteIfChannelFails() throws Exception
@@ -60,7 +60,7 @@ public class VoteStateAdversarialTest
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         FileSystemAbstraction fileSystem = new SelectiveFileSystemAbstraction(
-                new File( "raft-log/vote.state" ), new AdversarialFileSystemAbstraction( adversary, fs ), fs );
+                new File( testDir.directory(), "vote.A" ), new AdversarialFileSystemAbstraction( adversary, fs ), fs );
         VoteState<CoreMember> store = createVoteStore( fileSystem );
 
         final CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
@@ -68,12 +68,12 @@ public class VoteStateAdversarialTest
         final CoreMember member2 = new CoreMember( new AdvertisedSocketAddress( "host2:1001" ),
                 new AdvertisedSocketAddress( "host2:2001" ) );
 
-        store.votedFor( member1 );
+        store.votedFor( member1, 0 );
         adversary.enable();
 
         try
         {
-            store.votedFor( member2 );
+            store.votedFor( member2, 1 );
             fail( "Should have thrown exception" );
         }
         catch ( RaftStorageException e )
@@ -82,7 +82,12 @@ public class VoteStateAdversarialTest
         }
 
         verifyCurrentLogAndNewLogLoadedFromFileSystem( store, fileSystem,
-                store1 -> assertEquals( member1, store1.votedFor() ) );
+                theStore -> assertEquals( member1, theStore.votedFor() ) );
+    }
+
+    private interface VoteVerifier
+    {
+        void verifyVote( VoteState<CoreMember> store ) throws RaftStorageException;
     }
 
     private void verifyCurrentLogAndNewLogLoadedFromFileSystem(
@@ -93,8 +98,13 @@ public class VoteStateAdversarialTest
         voteVerifier.verifyVote( createVoteStore( fileSystem ) );
     }
 
-    private interface VoteVerifier
+
+    private VoteState<CoreMember> createVoteStore( FileSystemAbstraction fileSystem ) throws IOException
     {
-        void verifyVote( VoteState<CoreMember> store ) throws RaftStorageException;
+        final Supplier mock = mock( Supplier.class );
+        when( mock.get() ).thenReturn( mock( DatabaseHealth.class ) );
+
+        return new OnDiskVoteState( fileSystem, testDir.directory(), 100, mock,
+                new CoreMemberMarshal() );
     }
 }

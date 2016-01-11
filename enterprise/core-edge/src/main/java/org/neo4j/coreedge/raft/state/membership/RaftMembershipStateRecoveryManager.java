@@ -38,7 +38,7 @@ public class RaftMembershipStateRecoveryManager<MEMBER> extends StateRecoveryMan
     }
 
     @Override
-    protected long getLogIndex( File file ) throws IOException
+    protected long getOrdinalOfLastRecord( File file ) throws IOException
     {
         return readLastEntryFrom( file ).logIndex();
     }
@@ -56,8 +56,8 @@ public class RaftMembershipStateRecoveryManager<MEMBER> extends StateRecoveryMan
         temporaryStoreChannel.read( forInitialRead );
         forInitialRead.flip();
 
-        InMemoryRaftMembershipState result = new InMemoryRaftMembershipState();
-        InMemoryRaftMembershipState lastRead;
+        InMemoryRaftMembershipState<MEMBER> result = new InMemoryRaftMembershipState<>();
+        InMemoryRaftMembershipState<MEMBER> lastRead;
 
         while ( (lastRead = marshal.unmarshal( forInitialRead )) != null )
         {

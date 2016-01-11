@@ -124,7 +124,7 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
     public void update( Outcome<MEMBER> outcome ) throws RaftStorageException
     {
         termState.update( outcome.getTerm() );
-        voteState.votedFor( outcome.getVotedFor() );
+        voteState.votedFor( outcome.getVotedFor(), outcome.getTerm() );
         leader = outcome.getLeader();
         leaderCommit = outcome.getLeaderCommit();
         votesForMe = outcome.getVotesForMe();

@@ -27,11 +27,9 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.state.StatePersister;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
-import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationStateRecoveryManager;
 import org.neo4j.coreedge.raft.state.membership.Marshal;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -41,7 +39,6 @@ public class OnDiskVoteState extends LifecycleAdapter implements VoteState<CoreM
 
     private final StatePersister<InMemoryVoteState<CoreMember>> statePersister;
     private final ByteBuffer workingBuffer;
-
 
     private InMemoryVoteState<CoreMember> inMemoryVoteState;
     private final InMemoryVoteState.InMemoryVoteStateStateMarshal<CoreMember> marshal;
@@ -54,47 +51,28 @@ public class OnDiskVoteState extends LifecycleAdapter implements VoteState<CoreM
         File fileB = new File( storeDir, FILENAME + "B" );
 
         workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateStateMarshal
-                .NUMBER_OF_VOTES_PER_WRITE );
+                .NUMBER_OF_BYTES_PER_VOTE );
 
-        IdAllocationStateRecoveryManager recoveryManager =
-                new IdAllocationStateRecoveryManager( fileSystemAbstraction );
+        this.marshal = new InMemoryVoteState.InMemoryVoteStateStateMarshal<>( memberMarshal );
+
+        VoteStateRecoveryManager recoveryManager =
+                new VoteStateRecoveryManager( fileSystemAbstraction, marshal );
 
         final StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
 
 
-        this.inMemoryVoteState = readLastEntryFrom( fileSystemAbstraction, recoveryStatus.previouslyActive() );
+        this.inMemoryVoteState = recoveryManager.readLastEntryFrom( fileSystemAbstraction, recoveryStatus
+                .previouslyActive() );
 
-        this.marshal = new InMemoryVoteState.InMemoryVoteStateStateMarshal<>(memberMarshal);
 
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
                 workingBuffer, marshal, recoveryStatus.previouslyInactive(), databaseHealthSupplier );
     }
 
-    private InMemoryVoteState<CoreMember> readLastEntryFrom( FileSystemAbstraction fileSystemAbstraction, File file )
-            throws IOException
-    {
-        final StoreChannel temporaryStoreChannel = fileSystemAbstraction.open( file, "rw" );
-        temporaryStoreChannel.read( workingBuffer );
-        workingBuffer.flip();
-
-        InMemoryVoteState<CoreMember> result = new InMemoryVoteState<>();
-        InMemoryVoteState<CoreMember> lastRead;
-
-        while ( (lastRead = marshal.unmarshal( workingBuffer )) != null )
-        {
-            result = lastRead;
-            workingBuffer.flip();
-            temporaryStoreChannel.read( workingBuffer );
-            workingBuffer.flip();
-        }
-
-        return result;
-    }
-
     @Override
     public void shutdown() throws Throwable
     {
-        // hey, we have a lifecycle, let's shut some stuff down.
+        statePersister.close();
     }
 
     @Override
@@ -104,9 +82,26 @@ public class OnDiskVoteState extends LifecycleAdapter implements VoteState<CoreM
     }
 
     @Override
-    public void votedFor( CoreMember votedFor ) throws RaftStorageException
+    public void votedFor( CoreMember votedFor, long term ) throws RaftStorageException
     {
-        inMemoryVoteState.votedFor( votedFor );
-        statePersister.persistStoreData( inMemoryVoteState );
+        InMemoryVoteState<CoreMember> tempState = new InMemoryVoteState<>( inMemoryVoteState );
+        tempState.votedFor( votedFor, term );
+
+        try
+        {
+            statePersister.persistStoreData( tempState );
+        }
+        catch ( IOException e )
+        {
+            throw new RaftStorageException( e );
+        }
+
+        inMemoryVoteState = tempState;
+    }
+
+    @Override
+    public long term()
+    {
+        return inMemoryVoteState.term();
     }
 }

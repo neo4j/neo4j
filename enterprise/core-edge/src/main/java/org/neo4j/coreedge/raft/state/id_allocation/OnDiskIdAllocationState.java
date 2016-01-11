@@ -123,7 +123,14 @@ public class OnDiskIdAllocationState implements IdAllocationState
     public void logIndex( long logIndex )
     {
         inMemoryIdAllocationState.logIndex( logIndex );
-        statePersister.persistStoreData( inMemoryIdAllocationState );
+        try
+        {
+            statePersister.persistStoreData( inMemoryIdAllocationState );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override

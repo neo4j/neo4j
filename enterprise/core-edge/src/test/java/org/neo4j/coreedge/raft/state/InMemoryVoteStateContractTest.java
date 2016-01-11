@@ -27,6 +27,6 @@ public class InMemoryVoteStateContractTest extends VoteStoreContractTest
 {
     @Override public VoteState<CoreMember> createVoteStore()
     {
-        return new InMemoryVoteState<>();
+        return new InMemoryVoteState<>( );
     }
 }

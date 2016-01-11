@@ -32,15 +32,15 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.test.TargetDirectory;
 
+import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal.NUMBER_OF_BYTES_PER_WRITE;
-
-
+import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal
+        .NUMBER_OF_BYTES_PER_WRITE;
 import static org.neo4j.coreedge.raft.state.id_allocation.OnDiskIdAllocationState.FILENAME;
 
 public class OnDiskIdAllocationStateTest
@@ -153,7 +153,7 @@ public class OnDiskIdAllocationStateTest
     }
 
     @Test
-    public void shouldPanicIfCannotPersistToDisk() throws Exception
+    public void shouldPanicAndThrowExceptionIfCannotPersistToDisk() throws Exception
     {
         // given
         EphemeralFileSystemAbstraction fsa = new ExplodingFileSystemAbstraction();
@@ -165,9 +165,17 @@ public class OnDiskIdAllocationStateTest
         OnDiskIdAllocationState store = new OnDiskIdAllocationState( fsa, testDir.directory(), 100, supplier );
 
         // when
-        store.logIndex( 99 );
+        try
+        {
+            store.logIndex( 99 );
+            // then
+            fail( "Must throw IOExceptionWrapped in RuntimeException" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( IOException.class, e.getCause().getClass() );
+        }
 
-        // then
         verify( databaseHealth ).panic( any( Throwable.class ) );
     }
 

@@ -87,7 +87,14 @@ public class OnDiskRaftMembershipState<MEMBER> implements RaftMembershipState<ME
     public void logIndex( long index )
     {
         inMemoryRaftMembershipState.logIndex( index );
-        statePersister.persistStoreData( inMemoryRaftMembershipState );
+        try
+        {
+            statePersister.persistStoreData( inMemoryRaftMembershipState );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override

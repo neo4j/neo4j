@@ -19,13 +19,31 @@
  */
 package org.neo4j.coreedge.raft.state.vote;
 
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.coreedge.raft.state.membership.Marshal;
 
 public class InMemoryVoteState<MEMBER> implements VoteState<MEMBER>
 {
-    MEMBER votedFor;
+    private MEMBER votedFor;
+    private long term = -1;
+
+    public InMemoryVoteState()
+    {
+    }
+
+    public InMemoryVoteState( MEMBER votedFor, long term )
+    {
+        this.term = term;
+        this.votedFor = votedFor;
+    }
+
+    public InMemoryVoteState( InMemoryVoteState<MEMBER> inMemoryVoteState )
+    {
+        this.votedFor = inMemoryVoteState.votedFor;
+        this.term = inMemoryVoteState.term;
+    }
 
     @Override
     public MEMBER votedFor()
@@ -34,37 +52,73 @@ public class InMemoryVoteState<MEMBER> implements VoteState<MEMBER>
     }
 
     @Override
-    public void votedFor( MEMBER votedFor )
+    public void votedFor( MEMBER votedFor, long term )
     {
+        assert ensureVoteIsUniquePerTerm( votedFor, term ) : "Votes for any instance should always be in more recent terms";
+
         this.votedFor = votedFor;
+        this.term = term;
+    }
+
+    private boolean ensureVoteIsUniquePerTerm( MEMBER votedFor, long term )
+    {
+        if ( votedFor == null && this.votedFor == null )
+        {
+            return true;
+        }
+        else if ( votedFor == null )
+        {
+            return term > this.term;
+        }
+        else if ( this.votedFor == null )
+        {
+            return term > this.term;
+        }
+        else
+        {
+            return this.votedFor.equals( votedFor ) || term > this.term;
+        }
+    }
+
+    @Override
+    public long term()
+    {
+        return term;
     }
 
     public static class InMemoryVoteStateStateMarshal<CoreMember>
             implements Marshal<InMemoryVoteState<CoreMember>>
 
     {
-        public static final int NUMBER_OF_VOTES_PER_WRITE = 9999;
+        public static final int NUMBER_OF_BYTES_PER_VOTE = 100_000; // 100kB URI max
         private final Marshal<CoreMember> marshal;
 
         public InMemoryVoteStateStateMarshal( Marshal<CoreMember> marshal )
         {
-
             this.marshal = marshal;
         }
 
         @Override
         public void marshal( InMemoryVoteState<CoreMember> state, ByteBuffer buffer )
         {
+            buffer.putLong( state.term );
             marshal.marshal( state.votedFor(), buffer );
         }
 
         @Override
         public InMemoryVoteState<CoreMember> unmarshal( ByteBuffer source )
         {
-            final InMemoryVoteState<CoreMember> state = new InMemoryVoteState<>();
-            state.votedFor( marshal.unmarshal( source ) );
-            return state;
-        }
+            try
+            {
+                final long term = source.getLong();
+                final CoreMember member = marshal.unmarshal( source );
 
+                return new InMemoryVoteState<>( member, term );
+            }
+            catch ( BufferUnderflowException ex )
+            {
+                return null;
+            }
+        }
     }
 }

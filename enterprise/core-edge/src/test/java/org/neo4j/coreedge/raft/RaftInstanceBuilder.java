@@ -122,7 +122,7 @@ public class RaftInstanceBuilder<MEMBER>
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> databaseHealth( final DatabaseHealth databaseHealth)
+    public RaftInstanceBuilder<MEMBER> databaseHealth( final DatabaseHealth databaseHealth )
     {
         this.databaseHealthSupplier = () -> databaseHealth;
         return this;

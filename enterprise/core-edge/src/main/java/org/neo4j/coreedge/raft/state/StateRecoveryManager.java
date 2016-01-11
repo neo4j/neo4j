@@ -69,8 +69,8 @@ public abstract class StateRecoveryManager
         ensureExists( fileA );
         ensureExists( fileB );
 
-        long a = getLogIndex( fileA );
-        long b = getLogIndex( fileB );
+        long a = getOrdinalOfLastRecord( fileA );
+        long b = getOrdinalOfLastRecord( fileB );
 
         if ( a > b )
         {
@@ -93,5 +93,5 @@ public abstract class StateRecoveryManager
         }
     }
 
-    protected abstract long getLogIndex( File file ) throws IOException;
+    protected abstract long getOrdinalOfLastRecord( File file ) throws IOException;
 }

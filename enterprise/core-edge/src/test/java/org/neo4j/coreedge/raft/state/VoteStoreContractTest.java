@@ -41,7 +41,7 @@ public abstract class VoteStoreContractTest
                 new AdvertisedSocketAddress( "host1:2001" ) );
 
         // when
-        voteState.votedFor( member );
+        voteState.votedFor( member, 0 );
 
         // then
         assertEquals( member, voteState.votedFor() );
@@ -68,8 +68,8 @@ public abstract class VoteStoreContractTest
                 new AdvertisedSocketAddress( "host2:2001" ) );
 
         // when
-        voteState.votedFor( member1 );
-        voteState.votedFor( member2 );
+        voteState.votedFor( member1, 0 );
+        voteState.votedFor( member2, 1 );
 
         // then
         assertEquals( member2, voteState.votedFor() );
@@ -82,10 +82,10 @@ public abstract class VoteStoreContractTest
         VoteState<CoreMember> voteState = createVoteStore();
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                 new AdvertisedSocketAddress( "host1:2001" ) );
-        voteState.votedFor( member );
+        voteState.votedFor( member, 0 );
 
         // when
-        voteState.votedFor( null );
+        voteState.votedFor( null, 1 );
 
         // then
         assertNull( voteState.votedFor() );

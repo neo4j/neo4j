@@ -23,8 +23,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.replication.StringMarshal;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
@@ -39,8 +37,8 @@ public class StringMarshalTest
         final ByteBuf buffer = UnpooledByteBufAllocator.DEFAULT.buffer();
 
         // when
-        StringMarshal.serialize( buffer, TEST_STRING );
-        String reconstructed = StringMarshal.deserialize( buffer );
+        StringMarshal.marshal( buffer, TEST_STRING );
+        String reconstructed = StringMarshal.unmarshal( buffer );
 
         // then
         assertNotSame( TEST_STRING, reconstructed );
@@ -55,8 +53,8 @@ public class StringMarshalTest
         final ByteBuf buffer = UnpooledByteBufAllocator.DEFAULT.buffer();
 
         // when
-        StringMarshal.serialize( buffer, TEST_STRING );
-        String reconstructed = StringMarshal.deserialize( buffer );
+        StringMarshal.marshal( buffer, TEST_STRING );
+        String reconstructed = StringMarshal.unmarshal( buffer );
 
         // then
         assertNotSame( TEST_STRING, reconstructed );
@@ -70,8 +68,8 @@ public class StringMarshalTest
         final ByteBuf buffer = UnpooledByteBufAllocator.DEFAULT.buffer();
 
         // when
-        StringMarshal.serialize( buffer, null );
-        String reconstructed = StringMarshal.deserialize( buffer );
+        StringMarshal.marshal( buffer, null );
+        String reconstructed = StringMarshal.unmarshal( buffer );
 
         // then
         assertNull( reconstructed );

@@ -25,5 +25,7 @@ public interface VoteState<MEMBER>
 {
     MEMBER votedFor();
 
-    void votedFor( MEMBER votedFor ) throws RaftStorageException;
+    void votedFor( MEMBER votedFor, long term ) throws RaftStorageException;
+
+    long term();
 }

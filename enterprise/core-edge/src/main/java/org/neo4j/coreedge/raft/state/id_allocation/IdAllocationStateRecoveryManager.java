@@ -37,7 +37,7 @@ public class IdAllocationStateRecoveryManager extends StateRecoveryManager
     }
 
     @Override
-    protected long getLogIndex( File file ) throws IOException
+    protected long getOrdinalOfLastRecord( File file ) throws IOException
     {
         long newPosition = beginningOfLastCompleteEntry( file );
 

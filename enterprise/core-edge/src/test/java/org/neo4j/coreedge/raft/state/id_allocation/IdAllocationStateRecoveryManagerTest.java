@@ -68,7 +68,7 @@ public class IdAllocationStateRecoveryManagerTest
         IdAllocationStateRecoveryManager manager = new IdAllocationStateRecoveryManager( fsa );
 
         // when
-        final long logIndex = manager.getLogIndex( file );
+        final long logIndex = manager.getOrdinalOfLastRecord( file );
 
         // then
         assertEquals( 42, logIndex );

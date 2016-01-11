@@ -34,18 +34,50 @@ public class CoreMemberMarshalTest
     public void shouldSerializeAndDeserializeUsingByteBuffer() throws Exception
     {
         // given
-        CoreMemberMarshal serializer = new CoreMemberMarshal();
+        CoreMemberMarshal marshal = new CoreMemberMarshal();
 
         final CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                 new AdvertisedSocketAddress( "host1:2001" ) );
 
         // when
         final ByteBuffer buffer = ByteBuffer.allocate( 1_000 );
-        serializer.marshal( member, buffer );
+        marshal.marshal( member, buffer );
         buffer.flip();
-        final CoreMember recovered = serializer.unmarshal( buffer );
+        final CoreMember recovered = marshal.unmarshal( buffer );
 
         // then
         assertEquals( member, recovered );
+    }
+
+    @Test
+    public void shouldManageNull() throws Exception
+    {
+        // given
+        CoreMemberMarshal marshal = new CoreMemberMarshal();
+
+        final CoreMember aRealMember = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
+                new AdvertisedSocketAddress( "host1:2001" ) );
+
+        final CoreMember aNullMember = null;
+
+        final CoreMember anotherRealMember = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
+                new AdvertisedSocketAddress( "host1:2001" ) );
+
+        // when
+        final ByteBuffer buffer = ByteBuffer.allocate( 1_000 );
+
+        marshal.marshal( aRealMember, buffer );
+        marshal.marshal( aNullMember, buffer );
+        marshal.marshal( anotherRealMember, buffer );
+
+        buffer.flip();
+        final CoreMember theRestoredRealMember = marshal.unmarshal( buffer );
+        final CoreMember theRestoredNullMember = marshal.unmarshal( buffer );
+        final CoreMember theRestoredAnotherRealMember = marshal.unmarshal( buffer );
+
+        // then
+        assertEquals( aRealMember, theRestoredRealMember );
+        assertEquals( aNullMember, theRestoredNullMember );
+        assertEquals( anotherRealMember, theRestoredAnotherRealMember );
     }
 }

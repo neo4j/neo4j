@@ -19,18 +19,19 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
+import java.util.Iterator;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
-import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.Message;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Election;
 import org.neo4j.coreedge.raft.RaftMessages.Vote;
+import org.neo4j.coreedge.raft.ReplicatedString;
+import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
@@ -38,8 +39,9 @@ import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.state.RaftState;
+import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -54,19 +56,17 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
-import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesResponse;
-import static org.neo4j.coreedge.server.RaftTestMember.member;
+import static org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
+import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesResponse;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.heartbeat;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteRequest;
-import static org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
+import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
-import java.util.Iterator;
 
 
 @RunWith(MockitoJUnitRunner.class)
@@ -181,10 +181,15 @@ public class FollowerTest
         Follower follower = new Follower();
 
         // when
-        Outcome<RaftTestMember> outcome1 = follower.handle( voteRequest().from( member1 ).term( state.term() )
+        final long startingTerm = state.term() + 1;
+
+        Outcome<RaftTestMember> outcome1 = follower.handle( voteRequest().from( member1 ).term( startingTerm )
                 .lastLogIndex( 0 )
                 .lastLogTerm( -1 ).build(), state, log() );
+
+        // This updates state.term() as a side-effect
         state.update( outcome1 );
+
         Outcome<RaftTestMember> outcome2 = follower.handle( voteRequest().from( member2 ).term( state.term() )
                 .lastLogIndex( 0 )
                 .lastLogTerm( -1 ).build(), state, log() );

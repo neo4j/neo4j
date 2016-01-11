@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
@@ -32,12 +33,12 @@ import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -46,6 +47,9 @@ import static org.mockito.Mockito.when;
 
 public class OnDiskVoteStateTest
 {
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void shouldCallWriteAllAndForceOnVoteUpdate() throws Exception
     {
@@ -58,13 +62,14 @@ public class OnDiskVoteStateTest
         AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "localhost:" + 1234 );
         CoreMember member = new CoreMember( localhost, localhost );
 
-        OnDiskVoteState store = new OnDiskVoteState( fsa, new File( "" ), 100, mock( Supplier.class ), new CoreMemberMarshal() );
+        OnDiskVoteState store = new OnDiskVoteState( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
+                mock( Supplier.class ), new CoreMemberMarshal() );
 
         // When
-        store.votedFor( member );
+        store.votedFor( member, 0 );
 
         // Then
-        verify( channel ).writeAll( any( ByteBuffer.class ), anyInt() );
+        verify( channel ).writeAll( any( ByteBuffer.class ) );
         verify( channel ).force( anyBoolean() );
     }
 
@@ -76,9 +81,10 @@ public class OnDiskVoteStateTest
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
         // Mock the first call to succeed, so we can first store a proper value
-        doNothing().doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ), anyInt() );
+        doNothing().doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ) );
 
-        OnDiskVoteState store = new OnDiskVoteState( fsa, new File( "" ), 100, mock( Supplier.class ), new CoreMemberMarshal() );
+        OnDiskVoteState store = new OnDiskVoteState( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
+                mock( Supplier.class ), new CoreMemberMarshal() );
 
         // This has to be real because it will be serialized
         AdvertisedSocketAddress firstLocalhost = new AdvertisedSocketAddress( "localhost:" + 1234 );
@@ -87,7 +93,7 @@ public class OnDiskVoteStateTest
         // When
         // We do the first store successfully, so we can meaningfully compare the stored value after the failed
         // invocation
-        store.votedFor( firstMember );
+        store.votedFor( firstMember, 0 );
 
         // Then
         assertEquals( firstMember, store.votedFor() );
@@ -99,7 +105,7 @@ public class OnDiskVoteStateTest
         // When
         try
         {
-            store.votedFor( secondMember );
+            store.votedFor( secondMember, 1 );
             fail( "Test setup should have caused an exception here" );
         }
         catch ( Exception e )
@@ -119,10 +125,10 @@ public class OnDiskVoteStateTest
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
 
-        OnDiskVoteState store = new OnDiskVoteState( fsa, new File( "" ), 100, mock( Supplier.class ), new CoreMemberMarshal() );
+        OnDiskVoteState store = new OnDiskVoteState( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
+                mock( Supplier.class ), new CoreMemberMarshal() );
 
         // When
-        // We shut it down
         store.shutdown();
 
         // Then

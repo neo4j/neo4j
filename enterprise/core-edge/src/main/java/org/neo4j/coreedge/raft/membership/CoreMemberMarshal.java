@@ -26,10 +26,6 @@ import io.netty.buffer.ByteBuf;
 import org.neo4j.coreedge.raft.state.membership.Marshal;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.AdvertisedSocketAddressDecoder;
-import org.neo4j.coreedge.server.AdvertisedSocketAddressEncoder;
-
-import static org.neo4j.coreedge.server.AdvertisedSocketAddressEncoder.encode;
 
 /**
  * Format:
@@ -48,33 +44,56 @@ import static org.neo4j.coreedge.server.AdvertisedSocketAddressEncoder.encode;
  */
 public class CoreMemberMarshal implements Marshal<CoreMember>
 {
+    private final static AdvertisedSocketAddress NULL_ADDRESS = new AdvertisedSocketAddress( "" );
+
+    final AdvertisedSocketAddress.AdvertisedSocketAddressMarshal marshal = new AdvertisedSocketAddress
+            .AdvertisedSocketAddressMarshal();
+
     public void marshal( CoreMember member, ByteBuffer buffer )
     {
-        AdvertisedSocketAddressEncoder encoder = new AdvertisedSocketAddressEncoder();
-        encode( member.getCoreAddress(), buffer );
-        encode( member.getRaftAddress(), buffer );
+        if ( member == null )
+        {
+            marshal.marshal( NULL_ADDRESS, buffer );
+            marshal.marshal( NULL_ADDRESS, buffer );
+        }
+        else
+        {
+           marshal.marshal( member.getCoreAddress(), buffer );
+           marshal.marshal( member.getRaftAddress(), buffer );
+        }
     }
 
     public void marshal( CoreMember member, ByteBuf buffer )
     {
-        AdvertisedSocketAddressEncoder encoder = new AdvertisedSocketAddressEncoder();
-        encode( member.getCoreAddress(), buffer );
-        encode( member.getRaftAddress(), buffer );
+        marshal.marshal( member.getCoreAddress(), buffer );
+        marshal.marshal( member.getRaftAddress(), buffer );
     }
 
     public CoreMember unmarshal( ByteBuffer buffer )
     {
-        AdvertisedSocketAddressDecoder decoder = new AdvertisedSocketAddressDecoder();
-        AdvertisedSocketAddress coreAddress = decoder.decode( buffer );
-        AdvertisedSocketAddress raftAddress = decoder.decode( buffer );
-        return new CoreMember( coreAddress, raftAddress );
+        AdvertisedSocketAddress coreAddress = marshal.unmarshal( buffer );
+        AdvertisedSocketAddress raftAddress = marshal.unmarshal( buffer );
+
+        return dealWithPossibleNullAddress( coreAddress, raftAddress );
     }
 
     public CoreMember unmarshal( ByteBuf buffer )
     {
-        AdvertisedSocketAddressDecoder decoder = new AdvertisedSocketAddressDecoder();
-        AdvertisedSocketAddress coreAddress = decoder.decode( buffer );
-        AdvertisedSocketAddress raftAddress = decoder.decode( buffer );
-        return new CoreMember( coreAddress, raftAddress );
+        AdvertisedSocketAddress coreAddress = marshal.unmarshal( buffer );
+        AdvertisedSocketAddress raftAddress = marshal.unmarshal( buffer );
+        return dealWithPossibleNullAddress( coreAddress, raftAddress );
+    }
+
+    private CoreMember dealWithPossibleNullAddress( AdvertisedSocketAddress coreAddress, AdvertisedSocketAddress
+            raftAddress )
+    {
+        if ( coreAddress.equals( NULL_ADDRESS ) && raftAddress.equals( NULL_ADDRESS ) )
+        {
+            return null;
+        }
+        else
+        {
+            return new CoreMember( coreAddress, raftAddress );
+        }
     }
 }

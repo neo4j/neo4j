@@ -52,7 +52,7 @@ public class RaftStateTest
     {
         // given
         RaftState<RaftTestMember> raftState = new RaftState<>( new RaftTestMember( 0 ), mock( TermState.class ),
-                new FakeMembership(), new InMemoryRaftLog(), new InMemoryVoteState<>() );
+                new FakeMembership(), new InMemoryRaftLog(), new InMemoryVoteState<>( ) );
 
         raftState.update( new Outcome<>( CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, initialFollowerStates(), true, emptyLogCommands(),
                 emptyOutgoingMessages(), Collections.emptySet() ) );

@@ -54,7 +54,7 @@ public class VoteStateDurabilityTest
 
         final CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                 new AdvertisedSocketAddress( "host1:2001" ) );
-        voteState.votedFor( member );
+        voteState.votedFor( member, 0 );
 
         verifyCurrentLogAndNewLogLoadedFromFileSystem( voteState, fileSystem,
                 voteStore1 -> assertEquals( member, voteStore1.votedFor() ) );
