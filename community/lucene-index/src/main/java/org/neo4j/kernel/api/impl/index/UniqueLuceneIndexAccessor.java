@@ -29,10 +29,10 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.kernel.impl.api.index.updater.UniquePropertyIndexUpdater;
+import org.neo4j.kernel.impl.store.index.NodePropertyUpdate;
 
 /**
  * Variant of {@link LuceneIndexAccessor} that also verifies uniqueness constraints.

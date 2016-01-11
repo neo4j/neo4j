@@ -27,11 +27,11 @@ import java.util.List;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
+import org.neo4j.kernel.impl.store.index.NodePropertyUpdate;
 import org.neo4j.register.Register;
 
 class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator

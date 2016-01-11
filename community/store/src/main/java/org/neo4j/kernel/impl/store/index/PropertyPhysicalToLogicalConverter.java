@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.store.index;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -25,12 +25,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.transaction.state.LabelChangeSummary;
-import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
+import org.neo4j.kernel.impl.store.record.PropertyRecordChange;
 
 public class PropertyPhysicalToLogicalConverter
 {
@@ -44,9 +42,10 @@ public class PropertyPhysicalToLogicalConverter
     /**
      * Converts physical changes to PropertyRecords for a node into logical updates
      *
+     * @param target {@link Collection} to put updates into.
+     * @param changes changes to derive updates from.
      * @param labelsBefore labels that node had before the change.
      * @param labelsAfter labels that node has after the change.
-     * @return logical updates of the physical property record changes.
      */
     public void apply( Collection<NodePropertyUpdate> target, Iterable<PropertyRecordChange> changes,
             long[] labelsBefore, long[] labelsAfter )

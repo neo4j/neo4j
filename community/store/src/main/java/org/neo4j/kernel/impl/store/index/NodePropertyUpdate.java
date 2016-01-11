@@ -17,17 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.impl.store.index;
 
 import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.impl.api.index.UpdateMode;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.kernel.impl.api.index.UpdateMode.ADDED;
-import static org.neo4j.kernel.impl.api.index.UpdateMode.CHANGED;
-import static org.neo4j.kernel.impl.api.index.UpdateMode.REMOVED;
 
 public class NodePropertyUpdate
 {
@@ -219,18 +214,19 @@ public class NodePropertyUpdate
 
     public static NodePropertyUpdate add( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
-        return new NodePropertyUpdate( nodeId, propertyKeyId, null, EMPTY_LONG_ARRAY, value, labels, ADDED );
+        return new NodePropertyUpdate( nodeId, propertyKeyId, null, EMPTY_LONG_ARRAY, value, labels, UpdateMode.ADDED );
     }
 
     public static NodePropertyUpdate change( long nodeId, int propertyKeyId, Object valueBefore, long[] labelsBefore,
             Object valueAfter, long[] labelsAfter )
     {
         return new NodePropertyUpdate( nodeId, propertyKeyId, valueBefore, labelsBefore, valueAfter, labelsAfter,
-                CHANGED );
+                UpdateMode.CHANGED );
     }
 
     public static NodePropertyUpdate remove( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
-        return new NodePropertyUpdate( nodeId, propertyKeyId, value, labels, null, EMPTY_LONG_ARRAY, REMOVED );
+        return new NodePropertyUpdate( nodeId, propertyKeyId, value, labels, null, EMPTY_LONG_ARRAY,
+                UpdateMode.REMOVED );
     }
 }

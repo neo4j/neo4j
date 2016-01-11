@@ -33,8 +33,8 @@ import java.util.Set;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.store.index.NodePropertyUpdate;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.core.IsEqual.equalTo;

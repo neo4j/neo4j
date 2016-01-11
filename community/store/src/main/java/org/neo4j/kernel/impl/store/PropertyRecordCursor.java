@@ -17,25 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.store;
+package org.neo4j.kernel.impl.store;
 
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlockCursor;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
 /**
  * Cursor over {@link PropertyRecord} instances.
- *
- * Used by {@link LegacyStorePropertyCursor} to find all properties of a node or relationship.
- *
  */
 public class PropertyRecordCursor
 {
     private long currentRecordId;
-    private PropertyStore propertyStore;
+    private final PropertyStore propertyStore;
 
-    private PropertyRecord record;
+    private final PropertyRecord record;
 
     public PropertyRecordCursor( PropertyRecord record, PropertyStore propertyStore  )
     {
@@ -57,10 +53,8 @@ public class PropertyRecordCursor
             currentRecordId = record.getNextProp();
 
             return true;
-        } else
-        {
-            return false;
         }
+        return false;
     }
 
     public PropertyRecord getRecord()
@@ -74,7 +68,7 @@ public class PropertyRecordCursor
 
     public PropertyBlockCursor getPropertyBlockCursor( PropertyBlockCursor propertyBlockCursor )
     {
-        if (propertyBlockCursor == null)
+        if ( propertyBlockCursor == null )
         {
             propertyBlockCursor = new PropertyBlockCursor( propertyStore );
         }

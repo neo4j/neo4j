@@ -22,6 +22,8 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.store.index.NodePropertyUpdate;
+
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;

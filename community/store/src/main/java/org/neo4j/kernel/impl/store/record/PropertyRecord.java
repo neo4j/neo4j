@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.kernel.impl.api.store.PropertyBlockCursor;
 
 /**
  * PropertyRecord is a container for PropertyBlocks. PropertyRecords form
