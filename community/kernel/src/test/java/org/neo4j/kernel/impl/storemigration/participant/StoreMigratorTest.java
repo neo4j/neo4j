@@ -57,8 +57,8 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.storemigration.participant.StoreMigrator.readLastTxLogPosition;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
+import static org.neo4j.storageengine.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
+import static org.neo4j.storageengine.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 
 @RunWith( Parameterized.class )
 public class StoreMigratorTest

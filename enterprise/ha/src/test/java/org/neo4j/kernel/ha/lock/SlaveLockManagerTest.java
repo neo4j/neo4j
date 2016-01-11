@@ -28,8 +28,8 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.NullLog;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNotNull;

@@ -51,10 +51,10 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogFilename;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.EMPTY_ADDITIONAL_ARRAY;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
+import static org.neo4j.storageengine.log.TransactionIdStore.BASE_TX_ID;
 
 public class LegacyLogEntryReaderTest
 {

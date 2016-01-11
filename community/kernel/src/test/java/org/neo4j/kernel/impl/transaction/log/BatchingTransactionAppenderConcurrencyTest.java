@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifeRule;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;

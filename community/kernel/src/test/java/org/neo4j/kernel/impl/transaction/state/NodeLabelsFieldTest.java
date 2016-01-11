@@ -34,20 +34,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.helpers.Bits;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -57,6 +57,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.helpers.Bits.bits;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -64,7 +65,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NodeLabelsFieldTest

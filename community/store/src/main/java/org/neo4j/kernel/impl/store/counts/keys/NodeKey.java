@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.counts.keys;
 
-import org.neo4j.kernel.impl.api.CountsVisitor;
-
-import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
+import org.neo4j.kernel.impl.store.counts.CountsVisitor;
 
 public final class NodeKey implements CountsKey
 {
@@ -40,7 +38,7 @@ public final class NodeKey implements CountsKey
     @Override
     public String toString()
     {
-        return String.format( "NodeKey[(%s)]", label( labelId ) );
+        return String.format( "NodeKey[(%s)]", "label=" + labelId );
     }
 
     @Override

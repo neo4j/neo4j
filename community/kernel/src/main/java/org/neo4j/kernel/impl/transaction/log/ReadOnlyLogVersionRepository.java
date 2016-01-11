@@ -25,6 +25,7 @@ import java.nio.file.NoSuchFileException;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.storageengine.log.LogVersionRepository;
 
 public class ReadOnlyLogVersionRepository implements LogVersionRepository
 {

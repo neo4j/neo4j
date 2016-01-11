@@ -20,7 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.store.counts.CountsAccessor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;

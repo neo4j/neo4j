@@ -32,7 +32,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.TransactionTemplate;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
 
@@ -46,7 +46,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.storageengine.log.TransactionIdStore.BASE_TX_ID;
 
 public class TxPushStrategyConfigIT
 {

@@ -24,10 +24,9 @@ import java.io.File;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.store.counts.CountsAccessor;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -66,17 +65,6 @@ public class StoreAccess
     // internal state
     private boolean closeable;
     private final NeoStores neoStores;
-
-    public StoreAccess( GraphDatabaseAPI graphdb )
-    {
-        this( getNeoStoresFrom( graphdb ) );
-    }
-
-    @SuppressWarnings( "deprecation" )
-    private static NeoStores getNeoStoresFrom( GraphDatabaseAPI graphdb )
-    {
-        return graphdb.getDependencyResolver().resolveDependency( NeoStores.class );
-    }
 
     public StoreAccess( NeoStores store )
     {

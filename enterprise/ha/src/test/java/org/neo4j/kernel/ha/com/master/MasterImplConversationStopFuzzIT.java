@@ -53,13 +53,13 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
 import org.neo4j.kernel.impl.util.collection.TimedRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;

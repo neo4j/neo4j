@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.function.Predicate;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorWrapper;
@@ -33,12 +32,12 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.store.counts.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.counts.ReadOnlyCountsTracker;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -538,7 +537,7 @@ public class NeoStores implements AutoCloseable
     CountsTracker createCountStore( String storeName )
     {
         File storeFile = getStoreFile( storeName );
-        boolean readOnly = config.get( GraphDatabaseSettings.read_only );
+        boolean readOnly = config.get( StoreSettings.read_only );
         CountsTracker counts = readOnly
                                ? createReadOnlyCountsTracker( storeFile )
                                : createWritableCountsTracker( storeFile );

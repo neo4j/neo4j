@@ -22,13 +22,11 @@ package org.neo4j.kernel.impl.store.counts;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.api.CountsVisitor;
+import org.neo4j.kernel.impl.store.StoreSettings;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
@@ -73,18 +71,17 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
  */
 @Rotation(value = Rotation.Strategy.LEFT_RIGHT, parameters = {CountsTracker.LEFT, CountsTracker.RIGHT})
 public class CountsTracker extends AbstractKeyValueStore<CountsKey>
-        implements CountsVisitor.Visitable, CountsAccessor
+        implements CountsAccessor
 {
     /** The format specifier for the current version of the store file format. */
     private static final byte[] FORMAT = {'N', 'e', 'o', 'C', 'o', 'u', 'n', 't',
                                           'S', 't', 'o', 'r', 'e', /**/0, 1, 'V'};
-    @SuppressWarnings("unchecked")
     private static final HeaderField<?>[] HEADER_FIELDS = new HeaderField[]{FileVersion.FILE_VERSION};
     public static final String LEFT = ".a", RIGHT = ".b";
     public static final String TYPE_DESCRIPTOR = "CountsStore";
 
-    public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
-            File baseFile )
+    public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages,
+            Configuration config, File baseFile )
     {
         super( fs, pages, baseFile, new RotationMonitor()
         {
@@ -117,7 +114,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
                         headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
             }
         }, new RotationTimerFactory( Clock.SYSTEM_CLOCK,
-                config.get( GraphDatabaseSettings.store_interval_log_rotation_wait_time ) ), 16, 16, HEADER_FIELDS );
+                config.get( StoreSettings.store_interval_log_rotation_wait_time ) ), 16, 16, HEADER_FIELDS );
     }
 
     public CountsTracker setInitializer( final DataInitializer<Updater> initializer )

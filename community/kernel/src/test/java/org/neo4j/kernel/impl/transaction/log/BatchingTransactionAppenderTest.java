@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.test.CleanupRule;
 
 import static org.hamcrest.CoreMatchers.containsString;

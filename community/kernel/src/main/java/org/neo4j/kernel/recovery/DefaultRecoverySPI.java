@@ -27,10 +27,10 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
+import org.neo4j.storageengine.log.LogVersionRepository;
 
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.tryOpenForVersion;
 

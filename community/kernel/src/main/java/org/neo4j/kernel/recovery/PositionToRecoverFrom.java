@@ -25,7 +25,7 @@ import org.neo4j.function.ThrowingLongFunction;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
+import static org.neo4j.storageengine.log.LogVersionRepository.BASE_LOG_VERSION;
 
 /**
  * Utility class to find the log position to start recovery from
@@ -62,9 +62,9 @@ public class PositionToRecoverFrom implements ThrowingLongFunction<LogPosition,I
         }
         else
         {
-            if ( latestCheckPoint.oldestLogVersionFound != INITIAL_LOG_VERSION )
+            if ( latestCheckPoint.oldestLogVersionFound != BASE_LOG_VERSION )
             {
-                long fromLogVersion = Math.max( INITIAL_LOG_VERSION, latestCheckPoint.oldestLogVersionFound );
+                long fromLogVersion = Math.max( BASE_LOG_VERSION, latestCheckPoint.oldestLogVersionFound );
                 throw new UnderlyingStorageException( "No check point found in any log file from version " +
                                                       fromLogVersion + " to " + currentLogVersion );
             }

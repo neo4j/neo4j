@@ -30,8 +30,8 @@ import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 /**
  * {@link Handler Response handler} which commits received transactions (for transaction stream responses)

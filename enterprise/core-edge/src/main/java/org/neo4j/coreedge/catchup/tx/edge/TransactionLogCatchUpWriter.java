@@ -40,9 +40,9 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Math.max;
 
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
+import static org.neo4j.storageengine.log.TransactionIdStore.BASE_TX_ID;
 
 public class TransactionLogCatchUpWriter implements TxPullResponseListener, AutoCloseable
 {

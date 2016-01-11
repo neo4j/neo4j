@@ -33,8 +33,8 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;

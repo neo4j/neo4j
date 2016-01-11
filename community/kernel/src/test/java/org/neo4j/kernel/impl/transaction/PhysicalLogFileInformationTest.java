@@ -23,9 +23,9 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;

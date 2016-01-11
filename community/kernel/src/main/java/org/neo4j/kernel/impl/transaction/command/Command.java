@@ -44,9 +44,10 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
+
+import static org.neo4j.helpers.Bits.bitFlag;
+import static org.neo4j.helpers.Bits.bitFlags;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.util.Bits.bitFlag;
-import static org.neo4j.kernel.impl.util.Bits.bitFlags;
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.relationshipType;
 

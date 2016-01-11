@@ -17,23 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.id.IdGenerator;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.store.id.IdType;
 
-/**
- * @deprecated This will be moved to internal packages in the next major release.
- */
-// TODO 3.0: Move to org.neo4j.kernel.impl.store.id package
-@Deprecated
 public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 {
     private final Map<IdType, IdGenerator> generators = new HashMap<>();
@@ -44,6 +35,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
         this.fs = fs;
     }
 
+    @Override
     public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
     {
         long maxValue = idType.getMaxValue();
@@ -54,11 +46,13 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
         return generator;
     }
 
+    @Override
     public IdGenerator get( IdType idType )
     {
         return generators.get( idType );
     }
 
+    @Override
     public void create( File fileName, long highId, boolean throwIfFileExists )
     {
         IdGeneratorImpl.createGenerator( fs, fileName, highId, throwIfFileExists );

@@ -28,7 +28,7 @@ import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 public class LocalDatabase
 {

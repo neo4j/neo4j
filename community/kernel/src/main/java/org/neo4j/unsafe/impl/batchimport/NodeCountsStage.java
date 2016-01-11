@@ -19,9 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.counts.CountsAccessor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;

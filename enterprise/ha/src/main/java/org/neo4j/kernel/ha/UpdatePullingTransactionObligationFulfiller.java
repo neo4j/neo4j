@@ -26,8 +26,8 @@ import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 /**
  * Fulfills transaction obligations by poking {@link UpdatePuller} and awaiting it to commit and apply

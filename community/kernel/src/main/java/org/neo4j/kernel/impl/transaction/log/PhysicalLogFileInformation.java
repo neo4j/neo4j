@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
+import org.neo4j.storageengine.log.TransactionIdStore;
+
 public class PhysicalLogFileInformation implements LogFileInformation
 {
     public interface LogVersionToTimestamp

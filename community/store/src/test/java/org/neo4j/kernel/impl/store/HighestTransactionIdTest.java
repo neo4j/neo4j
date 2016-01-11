@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.storageengine.log.TransactionId;
 import org.neo4j.test.Race;
 
 import static org.junit.Assert.assertEquals;

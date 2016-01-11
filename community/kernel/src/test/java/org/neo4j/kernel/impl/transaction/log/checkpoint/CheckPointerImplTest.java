@@ -31,12 +31,12 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;

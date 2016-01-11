@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import org.neo4j.storageengine.log.LogVersionRepository;
+
 public class LogHeader
 {
-    public static final int LOG_HEADER_SIZE = 16;
+    public static final int LOG_HEADER_SIZE = LogVersionRepository.BASE_LOG_BYTE_OFFSET;
 
     public final byte logFormatVersion;
     public final long logVersion;
@@ -54,7 +56,7 @@ public class LogHeader
     @Override
     public int hashCode()
     {
-        int result = (int) logFormatVersion;
+        int result = logFormatVersion;
         result = 31 * result + (int) (logVersion ^ (logVersion >>> 32));
         result = 31 * result + (int) (lastCommittedTxId ^ (lastCommittedTxId >>> 32));
         return result;

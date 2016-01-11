@@ -45,7 +45,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -53,15 +52,17 @@ import org.neo4j.metrics.source.CoreEdgeMetrics;
 import org.neo4j.metrics.source.db.CheckPointingMetrics;
 import org.neo4j.metrics.source.db.CypherMetrics;
 import org.neo4j.metrics.source.db.TransactionMetrics;
+import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
-import static org.neo4j.kernel.IdType.RELATIONSHIP_TYPE_TOKEN;
+import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP_TYPE_TOKEN;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvPath;

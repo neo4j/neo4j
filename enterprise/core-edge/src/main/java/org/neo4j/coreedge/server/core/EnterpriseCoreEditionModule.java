@@ -107,13 +107,13 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 

@@ -26,7 +26,6 @@ import java.util.function.Function;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -37,6 +36,7 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;

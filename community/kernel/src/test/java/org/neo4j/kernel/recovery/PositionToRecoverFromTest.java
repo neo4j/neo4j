@@ -29,7 +29,8 @@ import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
+
+import static org.neo4j.storageengine.log.LogVersionRepository.BASE_LOG_VERSION;
 
 public class PositionToRecoverFromTest
 {
@@ -68,13 +69,13 @@ public class PositionToRecoverFromTest
     public void shouldRecoverFromStartOfLogZeroIfThereAreNoCheckPointAndOldestLogIsVersionZero() throws Throwable
     {
         // given
-        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, true, INITIAL_LOG_VERSION ) );
+        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, true, BASE_LOG_VERSION ) );
 
         // when
         LogPosition logPosition = new PositionToRecoverFrom( finder ).apply( logVersion );
 
         // then
-        assertEquals( LogPosition.start( INITIAL_LOG_VERSION ), logPosition );
+        assertEquals( LogPosition.start( BASE_LOG_VERSION ), logPosition );
     }
 
     @Test

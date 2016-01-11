@@ -29,7 +29,7 @@ import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.mock;

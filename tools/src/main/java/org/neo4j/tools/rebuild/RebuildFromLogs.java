@@ -74,9 +74,9 @@ import static java.lang.String.format;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
+import static org.neo4j.storageengine.log.TransactionIdStore.BASE_TX_ID;
 
 /**
  * Tool to rebuild store based on available transaction logs.

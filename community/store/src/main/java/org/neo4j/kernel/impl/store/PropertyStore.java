@@ -33,17 +33,13 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
-import org.neo4j.kernel.impl.api.store.PropertyRecordCursor;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -57,10 +53,6 @@ import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
  */
 public class PropertyStore extends AbstractRecordStore<PropertyRecord>
 {
-    public static abstract class Configuration extends AbstractStore.Configuration
-    {
-    }
-
     public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
     public static final int DEFAULT_PAYLOAD_SIZE = 32;
 

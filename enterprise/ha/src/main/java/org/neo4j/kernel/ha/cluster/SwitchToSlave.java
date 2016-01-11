@@ -76,13 +76,13 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.StoreUtil;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
@@ -92,7 +92,7 @@ import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.hasInstanceId;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.getServerId;
 import static org.neo4j.kernel.impl.store.NeoStores.isStorePresent;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.storageengine.log.TransactionIdStore.BASE_TX_ID;
 
 public class SwitchToSlave
 {

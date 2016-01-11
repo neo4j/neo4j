@@ -27,12 +27,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.util.LockWrapper;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.impl.locking.LockWrapper.readLock;
-import static org.neo4j.kernel.impl.locking.LockWrapper.writeLock;
+import static org.neo4j.kernel.impl.util.LockWrapper.readLock;
+import static org.neo4j.kernel.impl.util.LockWrapper.writeLock;
 
 /**
  * The base for building a key value store based on rotating immutable
@@ -47,7 +47,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
     private final Format format;
     final RotationStrategy rotationStrategy;
-    private RotationTimerFactory rotationTimerFactory;
+    private final RotationTimerFactory rotationTimerFactory;
     private volatile ProgressiveState<Key> state;
     private DataInitializer<EntryUpdater<Key>> stateInitializer;
     final int keySize;

@@ -42,7 +42,7 @@ public abstract class Abstract64BitRecord extends AbstractBaseRecord
     {
         this.id = id;
     }
-    
+
     @Override
     public long getLongId()
     {

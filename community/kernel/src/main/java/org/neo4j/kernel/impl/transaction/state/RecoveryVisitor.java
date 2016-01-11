@@ -25,9 +25,9 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;

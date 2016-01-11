@@ -74,6 +74,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.log.TransactionId;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.NeoStoreDataSourceRule;
 import org.neo4j.test.PageCacheRule;

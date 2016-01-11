@@ -26,15 +26,15 @@ import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.counts.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 

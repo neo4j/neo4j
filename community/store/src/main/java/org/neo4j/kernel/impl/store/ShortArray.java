@@ -24,8 +24,8 @@ import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+import org.neo4j.helpers.Bits;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.kernel.impl.util.Bits;
 
 public enum ShortArray
 {

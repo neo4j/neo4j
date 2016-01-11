@@ -32,12 +32,12 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;

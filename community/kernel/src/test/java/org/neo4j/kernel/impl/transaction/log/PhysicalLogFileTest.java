@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.storageengine.log.LogVersionRepository;
+import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 

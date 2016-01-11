@@ -35,9 +35,9 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.storageengine.log.TransactionIdStore.BASE_TX_ID;
 
 /**
  * In full backup we're more tolerant about missing transactions. Just as long as we fulfill this criterion:

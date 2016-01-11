@@ -45,13 +45,13 @@ import org.neo4j.kernel.impl.transaction.command.CommandReading.DynamicRecordAdd
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+import static org.neo4j.helpers.Bits.bitFlag;
+import static org.neo4j.helpers.Bits.notFlag;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.util.Bits.bitFlag;
-import static org.neo4j.kernel.impl.util.Bits.notFlag;
 
 public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
 {

@@ -23,9 +23,9 @@ import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
 import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.helpers.collection.IteratorUtil.first;

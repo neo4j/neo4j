@@ -30,8 +30,8 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstanceStore;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.helpers.CappedLogger;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.impl.util.CappedLogger;
 
 class LearnerContextImpl
         extends AbstractContextImpl

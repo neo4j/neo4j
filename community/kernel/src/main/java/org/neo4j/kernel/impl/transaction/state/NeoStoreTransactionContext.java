@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
 
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;

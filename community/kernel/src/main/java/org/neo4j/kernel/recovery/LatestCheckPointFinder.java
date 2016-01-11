@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
+import static org.neo4j.storageengine.log.LogVersionRepository.BASE_LOG_VERSION;
 
 public class LatestCheckPointFinder
 {
@@ -56,7 +56,7 @@ public class LatestCheckPointFinder
         long versionToSearchForCommits = fromVersionBackwards;
         LogEntryStart latestStartEntry = null;
         long oldestVersionFound = -1;
-        while ( version >= INITIAL_LOG_VERSION )
+        while ( version >= BASE_LOG_VERSION )
         {
             LogVersionedStoreChannel channel = PhysicalLogFile.tryOpenForVersion( logFiles, fileSystem, version );
             if ( channel == null )

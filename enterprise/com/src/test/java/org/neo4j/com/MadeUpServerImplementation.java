@@ -32,10 +32,10 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 public class MadeUpServerImplementation implements MadeUpCommunicationInterface
 {

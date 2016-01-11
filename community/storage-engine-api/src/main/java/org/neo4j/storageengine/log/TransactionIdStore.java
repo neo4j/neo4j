@@ -17,11 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
-
-import org.neo4j.kernel.impl.store.TransactionId;
-
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+package org.neo4j.storageengine.log;
 
 /**
  * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
@@ -46,8 +42,6 @@ public interface TransactionIdStore
     // Tx id counting starting from this value (this value means no transaction ever committed)
     long BASE_TX_ID = 1;
     long BASE_TX_CHECKSUM = 0;
-    long BASE_TX_LOG_VERSION = 0;
-    long BASE_TX_LOG_BYTE_OFFSET = LOG_HEADER_SIZE;
 
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented

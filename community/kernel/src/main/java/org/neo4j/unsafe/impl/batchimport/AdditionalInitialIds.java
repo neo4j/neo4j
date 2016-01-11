@@ -20,7 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 /**
  * Migrating a store uses the {@link ParallelBatchImporter} to do so, where node/relationship stores

@@ -33,8 +33,8 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.TickingClock;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 

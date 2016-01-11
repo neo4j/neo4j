@@ -37,7 +37,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 

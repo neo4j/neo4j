@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.counts.keys;
 
-import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
-import static org.neo4j.kernel.impl.util.IdPrettyPrinter.propertyKey;
-
 abstract class IndexKey implements CountsKey
 {
     private final int labelId;
@@ -48,7 +45,9 @@ abstract class IndexKey implements CountsKey
     @Override
     public String toString()
     {
-        return String.format( "IndexKey[%s (%s {%s})]", type.name(), label( labelId ), propertyKey( propertyKeyId ) );
+        return String.format( "IndexKey[%s (%s {%s})]", type.name(),
+                "label=" + labelId,
+                "propertyKey=" + propertyKeyId );
     }
 
     @Override

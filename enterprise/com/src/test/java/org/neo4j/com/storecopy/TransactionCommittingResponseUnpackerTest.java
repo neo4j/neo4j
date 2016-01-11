@@ -52,7 +52,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.storageengine.log.TransactionIdStore.BASE_TX_ID;
 
 public class TransactionCommittingResponseUnpackerTest
 {

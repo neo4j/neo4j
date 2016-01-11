@@ -25,6 +25,7 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import org.neo4j.cursor.GenericCursor;
+import org.neo4j.helpers.Bits;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
@@ -37,7 +38,6 @@ import org.neo4j.kernel.impl.store.ShortArray;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.kernel.impl.util.Bits;
 
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
 import static org.neo4j.kernel.impl.store.PropertyType.BOOL;

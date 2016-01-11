@@ -23,7 +23,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 public class OnDiskLastTxIdGetter implements LastTxIdGetter
 {

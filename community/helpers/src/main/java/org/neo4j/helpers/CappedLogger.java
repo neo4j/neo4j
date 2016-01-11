@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.helpers;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 
 /**
@@ -175,11 +174,11 @@ public class CappedLogger
 
         // The thread-safety of these normal fields are guarded by the volatile reads and writes to the
         // CappedLogger.filter field.
-        private boolean hasCountLimit;
-        private int countLimit;
-        private long timeLimitMillis;
-        private Clock clock;
-        private boolean filterDuplicates;
+        private final boolean hasCountLimit;
+        private final int countLimit;
+        private final long timeLimitMillis;
+        private final Clock clock;
+        private final boolean filterDuplicates;
 
         // Atomically updated
         private volatile int currentCount;

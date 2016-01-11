@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.neo4j.storageengine.log.TransactionIdStore;
+
 class TransactionCommitment implements Commitment
 {
     private final boolean hasLegacyIndexChanges;

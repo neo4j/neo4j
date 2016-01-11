@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;

@@ -23,9 +23,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import org.junit.Test;
+
+import org.neo4j.helpers.Bits;
+
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.kernel.impl.util.Bits.bits;
+import static org.neo4j.helpers.Bits.bits;
 
 public class TestBits
 {

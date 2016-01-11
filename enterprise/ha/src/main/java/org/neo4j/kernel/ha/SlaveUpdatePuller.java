@@ -32,6 +32,7 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.concurrent.BinaryLatch;
+import org.neo4j.helpers.CappedLogger;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
@@ -39,12 +40,11 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 import static java.lang.System.currentTimeMillis;
 

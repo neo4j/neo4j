@@ -23,12 +23,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.LogProvider;
@@ -62,7 +61,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     protected ByteBuffer createHeaderRecord()
     {
-        int denseNodeThreshold = configuration.get( GraphDatabaseSettings.dense_node_threshold );
+        int denseNodeThreshold = configuration.get( StoreSettings.dense_node_threshold );
         ByteBuffer headerRecord = ByteBuffer.allocate( RelationshipGroupStore.RECORD_SIZE ).putInt( denseNodeThreshold );
         headerRecord.flip();
         headerRecord.limit( headerRecord.capacity() );

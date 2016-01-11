@@ -23,8 +23,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.kernel.impl.store.TransactionId;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 public class RequestContextFactory extends LifecycleAdapter
 {

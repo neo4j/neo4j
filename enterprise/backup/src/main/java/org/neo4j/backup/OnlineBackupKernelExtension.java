@@ -40,13 +40,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.log.TransactionIdStore;
 
 import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
 
