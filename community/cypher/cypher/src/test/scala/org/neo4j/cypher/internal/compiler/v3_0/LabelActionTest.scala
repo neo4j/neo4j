@@ -26,11 +26,13 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{KernelPredi
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{LabelAction, LabelSetOp}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{IdempotentResult, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{IdempotentResult, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.graphdb.{PropertyContainer, Node, Path, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
+
+import scala.collection.Iterator
 
 class LabelActionTest extends GraphDatabaseFunSuite {
   val queryContext = new SnitchingQueryContext
@@ -199,4 +201,7 @@ class SnitchingQueryContext extends QueryContext {
   override def singleShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] = ???
 
   override def allShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] = ???
+
+  override def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
+
 }

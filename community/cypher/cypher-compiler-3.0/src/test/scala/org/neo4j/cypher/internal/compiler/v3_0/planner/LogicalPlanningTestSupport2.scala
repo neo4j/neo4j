@@ -23,16 +23,16 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.Converge.iterateUntilConverged
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{ExpanderStep, TraversalMatcher}
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{EntityProducer, LazyLabel}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.cardinality.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{cartesianProductsOrValueJoins, SingleComponentPlanner, IDPQueryGraphSolverMonitor, IDPQueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.{LogicalPlanRewriter, unnestApply}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, ProcedureName, ProcedureSignature}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
@@ -151,6 +151,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       override def monoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node]): TraversalMatcher = ???
 
       override def bidirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node], end: EntityProducer[Node]): TraversalMatcher = ???
+
+      override def procedureSignature(name: ProcedureName): ProcedureSignature = ???
     }
 
     def planFor(queryString: String): SemanticPlan = {

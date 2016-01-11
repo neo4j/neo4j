@@ -29,6 +29,8 @@ import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
+import scala.collection.Iterator
+
 /*
  * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
  * two layers, the query engine layer and, for lack of a better name, the core database layer.
@@ -158,6 +160,7 @@ trait QueryContext extends TokenContext {
 
   def lockRelationships(relIds: Long*)
 
+  def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]]
 }
 
 trait Operations[T <: PropertyContainer] {

@@ -23,8 +23,8 @@ import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, NormalMode, TaskCloser}
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.collection.Iterables._
 

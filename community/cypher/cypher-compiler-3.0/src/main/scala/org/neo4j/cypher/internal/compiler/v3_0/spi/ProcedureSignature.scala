@@ -17,16 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.pipes
+package org.neo4j.cypher.internal.compiler.v3_0.spi
 
-import java.net.URL
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
-trait ExternalResource {
-  def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]]
-}
+case class ProcedureSignature(name: ProcedureName,
+                              inputSignature: Seq[FieldSignature],
+                              outputSignature: Seq[FieldSignature] )
 
-object ExternalResource {
-  def empty: ExternalResource = new ExternalResource {
-    override def getCsvIterator(url: URL, fieldTerminator: Option[String]): Iterator[Array[String]] = Iterator.empty
-  }
-}
+case class ProcedureName(namespace: Seq[String], name: String)
+
+case class FieldSignature(name: String, typ: CypherType)

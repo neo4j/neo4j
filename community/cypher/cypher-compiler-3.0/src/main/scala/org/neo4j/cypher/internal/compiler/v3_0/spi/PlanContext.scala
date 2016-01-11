@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.spi
 
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.EntityProducer
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{TraversalMatcher, ExpanderStep}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{ExpanderStep, TraversalMatcher}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -58,4 +58,7 @@ trait PlanContext extends TokenContext {
   def bidirectionalTraversalMatcher(steps: ExpanderStep,
                                     start: EntityProducer[Node],
                                     end: EntityProducer[Node]): TraversalMatcher
+
+
+  def procedureSignature(name: ProcedureName): ProcedureSignature
 }

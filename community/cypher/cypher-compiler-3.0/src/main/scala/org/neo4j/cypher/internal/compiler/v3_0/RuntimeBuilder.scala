@@ -61,9 +61,8 @@ trait RuntimeBuilder {
       case e: CantCompileQueryException =>
         monitor.unableToHandlePlan(logicalPlan, e)
         fallback(preparedQuery)
-        val foo = interpretedProducer.apply(logicalPlan, pipeBuildContext, planContext, tracer, preparedQuery, createFingerprintReference, config)
-
-        foo
+        interpretedProducer
+          .apply(logicalPlan, pipeBuildContext, planContext, tracer, preparedQuery, createFingerprintReference, config)
     }
   }
 
@@ -171,7 +170,6 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
 }
 
 object CompiledPlanBuilder {
-
 
   def createTracer( mode: ExecutionMode ) : DescriptionProvider = mode match {
     case ProfileMode =>

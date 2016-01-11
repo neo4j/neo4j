@@ -60,6 +60,13 @@ case object DPPlannerName extends CostBasedPlannerName {
   val name = "DP"
 }
 
+/**
+  * Procedures are not really planned, b
+  */
+case object ProcedurePlannerName extends CostBasedPlannerName {
+  val name = "PROCEDURE"
+}
+
 object PlannerName {
 
   def apply(name: String): PlannerName = name.toUpperCase match {

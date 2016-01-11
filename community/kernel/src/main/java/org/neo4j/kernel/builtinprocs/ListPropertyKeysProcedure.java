@@ -22,17 +22,19 @@ package org.neo4j.kernel.builtinprocs;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.proc.Neo4jTypes;
 import org.neo4j.proc.Procedure;
 import org.neo4j.proc.ProcedureSignature;
 
 import static org.neo4j.helpers.collection.IteratorUtil.stream;
 import static org.neo4j.kernel.api.ProcedureRead.readStatement;
+import static org.neo4j.proc.ProcedureSignature.procedureSignature;
 
 public class ListPropertyKeysProcedure extends Procedure.BasicProcedure
 {
     public ListPropertyKeysProcedure( ProcedureSignature.ProcedureName name )
     {
-        super( new ProcedureSignature( name ));
+        super( procedureSignature( name ).out( name.name(), Neo4jTypes.NTString ).build() );
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import org.neo4j.cypher.internal.frontend.v3_0._
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext.Simple
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
@@ -404,17 +405,17 @@ case class PragmaWithout(excluded: Seq[Variable])(val position: InputPosition) e
     SemanticCheckResult.success(s.importScope(previousScope, excludedNames))
 }
 
-case class CallProcedure(namespace: List[String], procName: ProcedureName,
+case class CallProcedure(namespace: List[String], procName: ProcName,
                          args: IndexedSeq[Expression])(val position: InputPosition) extends Clause {
 
-  override def semanticCheck: SemanticCheck = SemanticCheckResult.success
+  override def semanticCheck: SemanticCheck = args.semanticCheck(Simple)
 
   override def name = "CALL"
 }
 
-case class ProcedureName(name: String)(val position: InputPosition) extends SymbolicName {
+case class ProcName(name: String)(val position: InputPosition) extends SymbolicName {
   override def equals(x: Any): Boolean = x match {
-    case ProcedureName(other) => other.toLowerCase == name.toLowerCase
+    case ProcName(other) => other.toLowerCase == name.toLowerCase
     case _ => false
   }
   override def hashCode = name.toLowerCase.hashCode

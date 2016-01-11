@@ -26,15 +26,15 @@ class CallProcedureTest extends ParserAstTest[ast.Clause] with Query {
   implicit val parser = Clause
 
   test("CALL foo") {
-    yields(ast.CallProcedure(List.empty, ast.ProcedureName("foo")(pos), IndexedSeq.empty))
+    yields(ast.CallProcedure(List.empty, ast.ProcName("foo")(pos), IndexedSeq.empty))
   }
 
   test("CALL foo()") {
-    yields(ast.CallProcedure(List.empty, ast.ProcedureName("foo")(pos), IndexedSeq.empty))
+    yields(ast.CallProcedure(List.empty, ast.ProcName("foo")(pos), IndexedSeq.empty))
   }
 
   test("CALL foo('Test', 1+2)") {
-    yields(ast.CallProcedure(List.empty, ast.ProcedureName("foo")(pos),
+    yields(ast.CallProcedure(List.empty, ast.ProcName("foo")(pos),
       Vector(
         ast.StringLiteral("Test")(pos),
         ast.Add(
@@ -45,7 +45,7 @@ class CallProcedureTest extends ParserAstTest[ast.Clause] with Query {
   }
 
   test("CALL foo.bar.baz('Test', 1+2)") {
-    yields(ast.CallProcedure(List("foo", "bar"), ast.ProcedureName("baz")(pos),
+    yields(ast.CallProcedure(List("foo", "bar"), ast.ProcName("baz")(pos),
       Vector(
         ast.StringLiteral("Test")(pos),
         ast.Add(

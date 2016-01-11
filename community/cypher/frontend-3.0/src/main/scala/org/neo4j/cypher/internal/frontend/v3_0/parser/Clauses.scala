@@ -171,7 +171,7 @@ trait Clauses extends Parser
     group(keyword("LIMIT") ~~ Expression) ~~>> (ast.Limit(_))
   }
 
-  def CallProcedure = rule {
+  def Call = rule("CALL") {
     group(keyword("CALL") ~~ zeroOrMore( SymbolicNameString ~ "." ) ~ ProcedureName ~ ProcedureArguments ) ~~>> (ast.CallProcedure(_, _, _))
   }
 

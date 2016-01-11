@@ -49,7 +49,12 @@ import org.neo4j.kernel.impl.api.{KernelStatement => InternalKernelStatement}
 import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.security.URLAccessValidationError
+<<<<<<< 5e3f50392fe56811200517563a08786619b1d96f
 import org.neo4j.kernel.GraphDatabaseAPI
+=======
+import org.neo4j.kernel.{GraphDatabaseAPI, Traversal, Uniqueness}
+import org.neo4j.proc.{ProcedureSignature => KernelProcedureSignature}
+>>>>>>> Support for calling procedures from cypher
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -555,6 +560,12 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
+  def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any])  = {
+    val kn = new KernelProcedureSignature.ProcedureName(signature.name.namespace.asJava, signature.name.name)
+    val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
+    _statement.readOperations().procedureCallRead(kn, toArray).iterator().asScala
+  }
+
   private def buildPathFinder(depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
                               filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {
     val startExpander = expander match {
@@ -586,7 +597,6 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
         else if (filters.forall(filter => filter test nextNode)) nextNode
         else null
     }
-  }
 }
 
 object TransactionBoundQueryContext {

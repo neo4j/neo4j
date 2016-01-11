@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{cartesianProductsOrValueJoins, SingleComponentPlanner, IDPQueryGraphSolver, IDPQueryGraphSolverMonitor}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 
 object CostBasedPipeBuilderFactory {
 
@@ -48,6 +49,8 @@ object CostBasedPipeBuilderFactory {
         val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
         val singleComponentPlanner = SingleComponentPlanner(monitor, maxTableSize = Int.MaxValue)
         IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
+
+      case _ => throw new InternalException(s"$n is not a valid planner")
     }
 
     val actualPlannerName = plannerName.getOrElse(CostBasedPlannerName.default)

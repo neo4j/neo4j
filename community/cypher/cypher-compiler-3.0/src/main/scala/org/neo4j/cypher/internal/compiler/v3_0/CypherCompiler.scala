@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer.Compilatio
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs.DelegatingProcedureExecutablePlanBuilder
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.closing
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.LogicalPlanRewriter
@@ -97,11 +98,12 @@ object CypherCompilerFactory {
       config = config,
       updateStrategy = updateStrategy
     )
+    val procedurePlanProducer = new DelegatingProcedureExecutablePlanBuilder(costPlanProducer)
     val rulePlanProducer = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer)
 
     // Pick planner based on input
     val planBuilder = ExecutablePlanBuilder.create(plannerName, rulePlanProducer,
-                                                   costPlanProducer, planBuilderMonitor, config.useErrorsOverWarnings)
+                                                   procedurePlanProducer, planBuilderMonitor, config.useErrorsOverWarnings)
 
     val execPlanBuilder = new ExecutionPlanBuilder(graph,clock, planBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _) )
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](config.queryCacheSize)

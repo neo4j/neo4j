@@ -24,12 +24,16 @@ import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
+import org.neo4j.cypher.internal.frontend.v3_0.symbols
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.graphdb.{GraphDatabaseService, Node}
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.proc.Neo4jTypes.AnyType
+import org.neo4j.proc.{Neo4jTypes, ProcedureSignature => KernelProcedureSignature}
 
 import scala.collection.JavaConverters._
 
@@ -117,4 +121,26 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
     InstrumentedGraphStatistics(TransactionBoundGraphStatistics(_statement), MutableGraphStatisticsSnapshot())
 
   val txIdProvider = LastCommittedTxIdProvider(gdb)
+
+  override def procedureSignature(name: ProcedureName) = {
+    val kn = new KernelProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
+    val ks = _statement.readOperations().procedureGet(kn)
+    val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
+    val output = ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
+
+    ProcedureSignature(name, input, output)
+  }
+
+  private def asCypherType(neoType: AnyType): CypherType = neoType match {
+    case Neo4jTypes.NTString => symbols.CTString
+    case Neo4jTypes.NTInteger => symbols.CTInteger
+    case Neo4jTypes.NTFloat => symbols.CTFloat
+    case Neo4jTypes.NTNumber => symbols.CTNumber
+    case Neo4jTypes.NTBoolean => symbols.CTBoolean
+    case l: Neo4jTypes.ListType => symbols.CTCollection(asCypherType(l.innerType()))
+    case Neo4jTypes.NTMap => symbols.CTMap
+    case Neo4jTypes.NTNode => symbols.CTNode
+    case Neo4jTypes.NTRelationship => symbols.CTRelationship
+    case Neo4jTypes.NTPath => symbols.CTPath
+  }
 }
