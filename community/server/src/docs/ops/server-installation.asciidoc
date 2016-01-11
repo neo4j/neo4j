@@ -24,13 +24,13 @@ We recommend that you install http://openjdk.java.net/[OpenJDK 8] or http://www.
 == Setting Proper File Permissions ==
 
 When installing Neo4j Server, keep in mind that the _bin/neo4j_ executable will need to be run by some OS system user, and that user will need write permissions to some files/directories.
-This goes specifically for the _data/graph.db_ directory.
+This goes specifically for the _data/databases/graph.db_ directory.
 That user will also need execute permissions on other files, such as those in _bin/_.
 
 It is recommended to either choose or create a user who will own and manage the Neo4j Server.
 This user should own the entire Neo4j directory, so make sure to untar/unzip it as this user and not with `sudo` (UNIX/Linux/OSx) etc.
 
-If _data/graph.db_ is not writable by the user Neo4j won't be able to write anything either to the store or its log files.
+If _data/databases/graph.db_ is not writable by the user Neo4j won't be able to write anything either to the store or its log files.
 As a result any logs would be appended to _console.log_.
 The following error message would indicate a possible permissions issue: `Write transactions to database disabled`.
 

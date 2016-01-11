@@ -47,14 +47,14 @@ The following process is recommended:
 
 .Upgrade the database store on the previous master
  . Install Neo4j {neo4j-version} on the previous master, keeping the database
-  store (typically _data/graph.db_) from the previous version.
+  store (typically _data/databases/graph.db_) from the previous version.
  . Disable HA in the configuration, by setting `org.neo4j.server.database.mode=SINGLE`.
  . <<deployment-upgrading,Upgrade as described for a single instance of Neo4j>> (this may involve configuring with `allow_store_upgrade=true`, as described in <<explicit-upgrade, "Explicit Upgrades">>).
  . Once upgraded, shut down Neo4j again.
  . Re-enable HA in the configuration, by setting `org.neo4j.server.database.mode=HA` again.
 
 .Upgrade the slaves
-- Install Neo4j {neo4j-version} on all previous slaves *and remove their database store* (typically _data/graph.db_).
+- Install Neo4j {neo4j-version} on all previous slaves *and remove their database store* (typically _data/databases/graph.db_).
   _Slaves should not be started with a previous store present._
 - Note: The security configuration of the master is _not_ propagated to the slaves.
   See <<rest-api-security-copy-config>> for more information.
@@ -97,11 +97,11 @@ The following process is recommended:
 .Upgrade a single database store
 - Perform upgrade, using one slave instance to do so:
  . Shut down a single slave instance.
- . Install Neo4j {neo4j-version} on that instance, keeping the database store (typically _data/graph.db_) from the previous version.
+ . Install Neo4j {neo4j-version} on that instance, keeping the database store (typically _data/databases/graph.db_) from the previous version.
  . Disable HA in the configuration, by setting `org.neo4j.server.database.mode=SINGLE`.
  . <<deployment-upgrading,Upgrade as described for a single instance of Neo4j>>. This may involve configuring with `allow_store_upgrade=true`, as described in <<explicit-upgrade, "Explicit Upgrades">>).
  . Once upgraded, shut down Neo4j again.
- . Copy the upgraded database store (typically _data/graph.db_) to a separate location.
+ . Copy the upgraded database store (typically _data/databases/graph.db_) to a separate location.
 
 [WARNING]
 You *must* also ensure any external application will not attempt to access this instance while it performs the upgrade in `SINGLE` mode.
@@ -115,13 +115,13 @@ You should either disable access externally (e.g. in the load balancer), or by r
 .Upgrade remaining slaves
 - Repeat for each remaining slave:
  . Shut down the slave.
- . Replace the entire database store directory (typically _data/graph.db_) with the upgraded copy.
+ . Replace the entire database store directory (typically _data/databases/graph.db_) with the upgraded copy.
  . Start up slave, allow to join the cluster and sync any new transactions.
 
 .Upgrade the master
 . Shut down the master
 . Wait for failover to occur to one of the slaves.
-. Replace the entire database store directory (typically _data/graph.db_) with the upgraded copy.
+. Replace the entire database store directory (typically _data/databases/graph.db_) with the upgraded copy.
 . Start up the old master, and allow to join the cluster.
   It will now be a slave.
 
