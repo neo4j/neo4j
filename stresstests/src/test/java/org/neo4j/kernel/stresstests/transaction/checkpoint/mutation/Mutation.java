@@ -17,15 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.stresstests.mutation;
+package org.neo4j.kernel.stresstests.transaction.checkpoint.mutation;
 
 
-import org.neo4j.graphdb.GraphDatabaseService;
-
-public class RandomMutationFactory
+interface Mutation
 {
-    public static RandomMutation defaultRandomMutation( long nodeCount, GraphDatabaseService db )
-    {
-        return new SimpleRandomMutation( nodeCount, db, new LabelMutation( db ), new PropertyMutation( db ) );
-    }
+    void perform( long nodeId, String value );
 }

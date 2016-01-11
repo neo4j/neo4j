@@ -17,34 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.stresstests.mutation;
+package org.neo4j.kernel.stresstests.transaction.checkpoint.mutation;
 
-import org.neo4j.graphdb.DynamicLabel;
+
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
 
-class LabelMutation implements Mutation
+public class RandomMutationFactory
 {
-    private final GraphDatabaseService db;
-
-    public LabelMutation( GraphDatabaseService db )
+    public static RandomMutation defaultRandomMutation( long nodeCount, GraphDatabaseService db )
     {
-        this.db = db;
-    }
-
-    @Override
-    public void perform( long nodeId, String value )
-    {
-        Node node = db.getNodeById( nodeId );
-        Label label = DynamicLabel.label( value );
-        if ( node.hasLabel( label ) )
-        {
-            node.removeLabel( label );
-        }
-        else
-        {
-            node.addLabel( label );
-        }
+        return new SimpleRandomMutation( nodeCount, db, new LabelMutation( db ), new PropertyMutation( db ) );
     }
 }

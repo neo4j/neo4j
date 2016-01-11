@@ -17,19 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.stresstests.mutation;
+package org.neo4j.kernel.stresstests.transaction.checkpoint.mutation;
 
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 
-/**
- * Created by davide on 22/06/15.
- */
-class PropertyMutation implements Mutation
+class LabelMutation implements Mutation
 {
     private final GraphDatabaseService db;
 
-    public PropertyMutation( GraphDatabaseService db )
+    public LabelMutation( GraphDatabaseService db )
     {
         this.db = db;
     }
@@ -38,13 +37,14 @@ class PropertyMutation implements Mutation
     public void perform( long nodeId, String value )
     {
         Node node = db.getNodeById( nodeId );
-        if ( node.hasProperty( value ) )
+        Label label = DynamicLabel.label( value );
+        if ( node.hasLabel( label ) )
         {
-            node.removeProperty( value );
+            node.removeLabel( label );
         }
         else
         {
-            node.setProperty( value, 10 );
+            node.addLabel( label );
         }
     }
 }
