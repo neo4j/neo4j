@@ -22,10 +22,10 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 import java.util.Arrays;
 
 import org.neo4j.csv.reader.SourceTraceability;
-import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.batchimport.api.Group;
+import org.neo4j.unsafe.batchimport.api.InputEntity;
+import org.neo4j.unsafe.batchimport.api.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 import static java.util.Arrays.copyOf;

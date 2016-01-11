@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.collection.primitive.array.NumberArrayFactory;
 import org.neo4j.test.Race;
 
 import static org.junit.Assert.assertArrayEquals;

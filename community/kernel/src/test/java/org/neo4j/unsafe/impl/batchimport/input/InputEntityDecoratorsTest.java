@@ -25,6 +25,9 @@ import org.mockito.InOrder;
 import java.util.function.Function;
 
 import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.unsafe.batchimport.api.InputEntity;
+import org.neo4j.unsafe.batchimport.api.InputNode;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;

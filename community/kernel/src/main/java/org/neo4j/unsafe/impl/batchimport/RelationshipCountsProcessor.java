@@ -19,12 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.collection.primitive.array.LongArray;
+import org.neo4j.collection.primitive.array.NumberArrayFactory;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.store.counts.CountsAccessor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 /**
  * Calculates counts as labelId --[type]--> labelId for relationships with the labels coming from its start/end nodes.

@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
-import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
+import org.neo4j.collection.MemoryStatsVisitor;
+import org.neo4j.collection.primitive.array.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
 import org.neo4j.unsafe.impl.batchimport.stats.GenericStatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;

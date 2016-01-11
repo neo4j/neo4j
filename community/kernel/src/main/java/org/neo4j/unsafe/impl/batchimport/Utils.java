@@ -21,7 +21,9 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.NoSuchElementException;
 
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.batchimport.api.InputIterable;
+import org.neo4j.unsafe.batchimport.api.InputIterator;
+import org.neo4j.unsafe.batchimport.api.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.SourceInputIterator;
 
 /**

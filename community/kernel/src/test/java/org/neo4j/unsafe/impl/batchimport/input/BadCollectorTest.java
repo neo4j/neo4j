@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;

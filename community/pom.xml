@@ -44,6 +44,7 @@
     <module>logging</module>
     <module>neo4j-slf4j</module>
     <module>codegen</module>
+	<module>batch-import-api</module>
     <module>storage-engine-api</module>
     <module>proc</module>
     <module>helpers</module>

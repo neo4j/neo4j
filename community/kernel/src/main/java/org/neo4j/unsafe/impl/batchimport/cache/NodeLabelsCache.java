@@ -19,6 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import org.neo4j.collection.MemoryStatsVisitor;
+import org.neo4j.collection.primitive.array.LongArray;
+import org.neo4j.collection.primitive.array.NumberArrayFactory;
 import org.neo4j.helpers.Bits;
 
 import static java.lang.Integer.numberOfLeadingZeros;

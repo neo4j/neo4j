@@ -19,10 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.collection.primitive.array.NumberArrayFactory;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.counts.CountsAccessor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
 /**

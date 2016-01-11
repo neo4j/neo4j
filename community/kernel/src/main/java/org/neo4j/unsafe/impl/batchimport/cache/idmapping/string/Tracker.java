@@ -19,12 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import org.neo4j.collection.MemoryStatsVisitor;
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
-import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.batchimport.api.Collector;
+import org.neo4j.unsafe.batchimport.api.Group;
+import org.neo4j.unsafe.batchimport.api.IdMapper;
+import org.neo4j.unsafe.batchimport.api.InputIterable;
 
 /**
  * {@link EncodingIdMapper} is an index where arbitrary ids, be it {@link String} or {@code long} or whatever

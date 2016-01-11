@@ -23,8 +23,8 @@ import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
-import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.batchimport.api.BatchImporter;
+import org.neo4j.unsafe.batchimport.api.InputIterator;
 
 /**
  * Used by {@link StoreMigrator} for providing {@link RelationshipRecord} and {@link NodeRecord}

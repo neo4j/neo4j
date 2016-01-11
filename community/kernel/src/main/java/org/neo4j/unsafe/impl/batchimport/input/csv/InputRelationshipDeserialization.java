@@ -20,9 +20,9 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.neo4j.csv.reader.SourceTraceability;
-import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.batchimport.api.Group;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 /**

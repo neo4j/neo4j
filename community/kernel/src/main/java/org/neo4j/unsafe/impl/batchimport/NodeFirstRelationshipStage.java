@@ -23,8 +23,8 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.unsafe.batchimport.api.Collector;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
 /**

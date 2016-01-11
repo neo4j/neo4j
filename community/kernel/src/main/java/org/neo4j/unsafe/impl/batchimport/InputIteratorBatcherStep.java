@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.unsafe.batchimport.api.BatchImporter;
+import org.neo4j.unsafe.batchimport.api.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.staging.IteratorBatcherStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 

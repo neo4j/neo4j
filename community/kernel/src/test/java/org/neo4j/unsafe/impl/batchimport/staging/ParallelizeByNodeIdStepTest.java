@@ -24,9 +24,9 @@ import org.junit.Test;
 import java.util.Arrays;
 
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.Batch;
 import org.neo4j.unsafe.impl.batchimport.ParallelizeByNodeIdStep;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

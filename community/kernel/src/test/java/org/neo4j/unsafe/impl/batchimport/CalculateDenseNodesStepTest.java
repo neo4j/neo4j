@@ -21,8 +21,8 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.array.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.staging.Step;
 

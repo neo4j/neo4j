@@ -32,7 +32,7 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.batchimport.api.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;

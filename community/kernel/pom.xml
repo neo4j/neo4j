@@ -265,6 +265,11 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-diagnostics</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-batch-import-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- test dependencies -->
     <dependency>

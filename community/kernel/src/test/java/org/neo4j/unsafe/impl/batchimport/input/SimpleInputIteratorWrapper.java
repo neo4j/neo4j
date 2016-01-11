@@ -22,8 +22,8 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.util.Iterator;
 
 import org.neo4j.csv.reader.SourceTraceability;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.batchimport.api.InputIterable;
+import org.neo4j.unsafe.batchimport.api.InputIterator;
 
 /**
  * Makes an {@link Iterator} provide {@link SourceTraceability source information}.

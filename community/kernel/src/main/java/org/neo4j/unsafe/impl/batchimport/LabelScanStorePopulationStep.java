@@ -21,8 +21,8 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.unsafe.batchimport.api.InputNode;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;

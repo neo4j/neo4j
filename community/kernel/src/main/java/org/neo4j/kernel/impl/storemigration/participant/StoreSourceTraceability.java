@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.storemigration.participant;
 
 import org.neo4j.csv.reader.SourceTraceability;
-import org.neo4j.unsafe.impl.batchimport.BatchImporter;
+import org.neo4j.unsafe.batchimport.api.BatchImporter;
 
 /**
  * Provides source information when reading from a neo4j store. Mostly for store migration purposes
