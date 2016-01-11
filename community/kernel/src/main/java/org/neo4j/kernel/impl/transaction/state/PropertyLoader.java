@@ -69,7 +69,7 @@ public class PropertyLoader
 
     public <RECEIVER extends PropertyReceiver> RECEIVER graphLoadProperties( RECEIVER records )
     {
-        return loadProperties( metaDataStore.asRecord().getNextProp(), records );
+        return loadProperties( metaDataStore.graphPropertyRecord().getNextProp(), records );
     }
 
     private <RECEIVER extends PropertyReceiver> RECEIVER loadProperties( long nextProp, RECEIVER receiver )

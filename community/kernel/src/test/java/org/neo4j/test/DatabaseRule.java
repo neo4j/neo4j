@@ -97,9 +97,11 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 
     public <FROM, TO> Function<FROM,TO> tx( Function<FROM,TO> function )
     {
-        return from -> executeAndCommit( graphDb -> {
-            return function.apply( from );
-        } );
+        Function<FROM,TO> outer = from -> {
+            Function<GraphDatabaseService,TO> inner = graphDb -> function.apply( from );
+            return executeAndCommit( inner );
+        };
+        return outer;
     }
 
     private <T> T transaction( Function<? super GraphDatabaseService, T> function, boolean commit )

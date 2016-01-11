@@ -133,7 +133,7 @@ public class DirectRecordAccess implements DiffRecordAccess
     @Override
     public RecordReference<NeoStoreRecord> graph()
     {
-        return new DirectRecordReference<>( access.getRawNeoStores().getMetaDataStore().asRecord(), this );
+        return new DirectRecordReference<>( access.getRawNeoStores().getMetaDataStore().graphPropertyRecord(), this );
     }
 
     @Override
