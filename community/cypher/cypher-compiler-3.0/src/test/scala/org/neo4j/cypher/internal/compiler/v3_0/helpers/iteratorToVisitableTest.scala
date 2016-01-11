@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_0.helpers
 
 import org.mockito.Mockito.verifyZeroInteractions
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -54,7 +54,7 @@ class iteratorToVisitableTest extends CypherFunSuite {
 
   test("should accept nothing if iterator is empty") {
     // Given
-    val visitor = mock[ResultVisitor[RuntimeException]]
+    val visitor = mock[InternalResultVisitor[RuntimeException]]
 
     // When
     iteratorToVisitable.accept(Iterator.empty, visitor)
@@ -63,13 +63,13 @@ class iteratorToVisitableTest extends CypherFunSuite {
     verifyZeroInteractions(visitor)
   }
 
-  private case class RecordingResultVisitor(columns: String*)(rowsToAccept: Int = Int.MaxValue) extends ResultVisitor[RuntimeException] {
+  private case class RecordingResultVisitor(columns: String*)(rowsToAccept: Int = Int.MaxValue) extends InternalResultVisitor[RuntimeException] {
 
     require(rowsToAccept >= 0)
 
     val recorded = new ArrayBuffer[(String, Any)]()
 
-    def visit(row: ResultRow) = {
+    def visit(row: InternalResultRow) = {
       recorded ++= columns.map(name => name -> row.get(name))
       recorded.size != rowsToAccept
     }

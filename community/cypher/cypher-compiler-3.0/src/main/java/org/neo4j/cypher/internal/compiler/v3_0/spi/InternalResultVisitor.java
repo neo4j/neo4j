@@ -17,23 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.executionplan;
+package org.neo4j.cypher.internal.compiler.v3_0.spi;
 
-import java.util.List;
-
-import org.neo4j.cypher.internal.compiler.v3_0.ExecutionMode;
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription;
-import org.neo4j.cypher.internal.compiler.v3_0.spi.InternalResultVisitor;
-
-public interface GeneratedQueryExecution
+public interface InternalResultVisitor<VisitationException extends Exception>
 {
-    List<String> javaColumns();
-
-    <E extends Exception> void accept( final InternalResultVisitor<E> visitor ) throws E;
-
-    ExecutionMode executionMode();
-
-    InternalPlanDescription executionPlanDescription();
-
-    void setSuccessfulCloseable( SuccessfulCloseable closeable );
+    boolean visit( InternalResultRow row ) throws VisitationException;
 }

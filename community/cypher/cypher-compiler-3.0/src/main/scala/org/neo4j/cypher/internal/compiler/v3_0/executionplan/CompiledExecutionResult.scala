@@ -23,9 +23,8 @@ import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.ProfilerStatisticsNotReadyException
-import org.neo4j.graphdb.Result.ResultVisitor
 
 trait SuccessfulCloseable {
   def success(): Unit
@@ -48,7 +47,7 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
 
   override def javaColumns: util.List[String] = compiledCode.javaColumns()
 
-  override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit =
+  override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]): Unit =
     compiledCode.accept(visitor)
 
   override def executionPlanDescription(): InternalPlanDescription = {

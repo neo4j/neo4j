@@ -23,8 +23,8 @@ import java.io.PrintWriter
 
 import org.neo4j.cypher.internal.compiler.v3_0.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_0.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
-import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
 
 trait InternalExecutionResult extends Iterator[Map[String, Any]] {
@@ -41,7 +41,6 @@ trait InternalExecutionResult extends Iterator[Map[String, Any]] {
   def planDescriptionRequested: Boolean
   def executionType: QueryExecutionType
   def notifications: Iterable[InternalNotification]
-  //todo this should not depend on external visitor
   @throws(classOf[Exception])
-  def accept[EX <: Exception](visitor: ResultVisitor[EX])
+  def accept[EX <: Exception](visitor: InternalResultVisitor[EX])
 }

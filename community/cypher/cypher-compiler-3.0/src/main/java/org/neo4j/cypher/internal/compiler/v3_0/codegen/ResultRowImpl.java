@@ -23,9 +23,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.neo4j.graphdb.*;
+import org.neo4j.cypher.internal.compiler.v3_0.spi.InternalResultRow;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
 
-public class ResultRowImpl implements Result.ResultRow
+public class ResultRowImpl implements InternalResultRow
 {
     private Map<String, Object> results = new HashMap<>();
 

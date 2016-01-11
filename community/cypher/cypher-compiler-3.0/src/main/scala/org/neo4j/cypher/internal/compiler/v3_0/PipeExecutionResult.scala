@@ -22,17 +22,16 @@ package org.neo4j.cypher.internal.compiler.v3_0
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher.internal.frontend.v3_0.helpers.JavaCompatibility._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, iteratorToVisitable}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.JavaCompatibility._
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
 import org.neo4j.graphdb.{NotFoundException, ResourceIterator}
-import org.neo4j.graphdb.Result.ResultVisitor
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -104,7 +103,7 @@ class PipeExecutionResult(val result: ResultIterator,
   //notifications only present for EXPLAIN
   override val notifications = Iterable.empty[InternalNotification]
 
-  def accept[EX <: Exception](visitor: ResultVisitor[EX]) = {
+  def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
     try {
       iteratorToVisitable.accept(self, visitor)
     } finally {

@@ -26,13 +26,12 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.IsCollection
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{TaskCloser, _}
 import org.neo4j.cypher.internal.frontend.v3_0.EntityNotFoundException
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.graphdb.QueryExecutionType._
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{ResourceIterator, _}
 
 import scala.collection.{Map, mutable}
@@ -101,7 +100,7 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
 
       override def javaColumns: util.List[String] = self.javaColumns
 
-      override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = throw new UnsupportedOperationException
+      override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]): Unit = throw new UnsupportedOperationException
 
       override def executionPlanDescription(): InternalPlanDescription = self.executionPlanDescription()
         .addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
@@ -157,14 +156,14 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
   //TODO when allowing writes this should be moved to the generated class
   protected def queryType: QueryType = QueryType.READ_ONLY
 
-  private def populateResults(results: util.List[util.Map[String, Any]])(row: ResultRow) = {
+  private def populateResults(results: util.List[util.Map[String, Any]])(row: InternalResultRow) = {
     val map = new util.HashMap[String, Any]()
     columns.foreach(c => map.put(c, row.get(c)))
     results.add(map)
   }
 
   private def populateDumpToStringResults(builder: mutable.Builder[Map[String, String], Seq[Map[String, String]]])
-                                         (row: ResultRow) = {
+                                         (row: InternalResultRow) = {
     val map = new mutable.HashMap[String, String]()
     columns.foreach(c => map.put(c, text(row.get(c))))
 
@@ -204,10 +203,10 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
     case (k, v) => k + " -> " + text(v)
   }.mkString("{", ", ", "}")
 
-  private def doInAccept[T](body: ResultRow => T) = {
+  private def doInAccept[T](body: InternalResultRow => T) = {
     if (!taskCloser.isClosed) {
-      accept(new ResultVisitor[RuntimeException] {
-        override def visit(row: ResultRow): Boolean = {
+      accept(new InternalResultVisitor[RuntimeException] {
+        override def visit(row: InternalResultRow): Boolean = {
           body(row)
           true
         }
@@ -270,7 +269,7 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
   def javaColumns: util.List[String]
 
   //todo this should not depend on external visitor
-  def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit
+  def accept[EX <: Exception](visitor: InternalResultVisitor[EX]): Unit
 
   override def executionPlanDescription(): InternalPlanDescription
 }

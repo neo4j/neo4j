@@ -25,10 +25,10 @@ import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_0.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, explained}
 import org.neo4j.graphdb.ResourceIterator
-import org.neo4j.graphdb.Result.ResultVisitor
 
 case class ExplainExecutionResult(columns: List[String],
                                   executionPlanDescription: InternalPlanDescription, queryType: QueryType,
@@ -63,7 +63,7 @@ case class ExplainExecutionResult(columns: List[String],
 
   def hasNext = false
 
-  override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = {}
+  override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {}
 }
 
 final class EmptyResourceIterator[T]() extends ResourceIterator[T] {

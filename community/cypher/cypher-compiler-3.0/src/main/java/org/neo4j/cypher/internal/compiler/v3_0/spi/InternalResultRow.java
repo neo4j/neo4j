@@ -17,23 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.executionplan;
+package org.neo4j.cypher.internal.compiler.v3_0.spi;
 
-import java.util.List;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
 
-import org.neo4j.cypher.internal.compiler.v3_0.ExecutionMode;
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription;
-import org.neo4j.cypher.internal.compiler.v3_0.spi.InternalResultVisitor;
-
-public interface GeneratedQueryExecution
+public interface InternalResultRow
 {
-    List<String> javaColumns();
+    Node getNode( String key );
 
-    <E extends Exception> void accept( final InternalResultVisitor<E> visitor ) throws E;
+    Relationship getRelationship( String key );
 
-    ExecutionMode executionMode();
+    Object get( String key );
 
-    InternalPlanDescription executionPlanDescription();
+    String getString( String key );
 
-    void setSuccessfulCloseable( SuccessfulCloseable closeable );
+    Number getNumber( String key );
+
+    Boolean getBoolean( String key );
+
+    Path getPath( String key );
 }

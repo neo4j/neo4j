@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.AcceptingExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{ProcedureSignature, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics, NormalMode, TaskCloser}
-import org.neo4j.graphdb.Result.ResultVisitor
 
 import scala.collection.JavaConverters._
 
@@ -48,7 +47,7 @@ case class ProcedureExecutionResult[E <: Exception](taskCloser: TaskCloser,
 
   override def javaColumns: java.util.List[String] = signature.outputSignature.seq.map(_.name).asJava
 
-  override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = {
+  override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
     context.callReadOnlyProcedure(signature, args).foreach { res =>
       var i = 0
       val row = new ResultRowImpl
