@@ -19,15 +19,17 @@
  */
 package org.neo4j.coreedge.raft.state;
 
+import java.io.IOException;
+
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.state.term.TermState;
 
 import static org.junit.Assert.*;
 
-public abstract class TermStoreContractTest
+public abstract class TermStateContractTest
 {
-    public abstract TermState createTermStore();
+    public abstract TermState createTermStore() throws IOException;
 
     @Test
     public void shouldStoreCurrentTerm() throws Exception

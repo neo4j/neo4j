@@ -19,9 +19,12 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import org.junit.Test;
-
 import java.io.File;
+import java.io.IOException;
+import java.util.function.Supplier;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
@@ -32,17 +35,25 @@ import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TermStateAdversarialTest
 {
-    public TermState createTermStore( FileSystemAbstraction fileSystem )
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
+    public TermState createTermStore( FileSystemAbstraction fileSystem ) throws IOException
     {
-        File directory = new File( "raft-log" );
-        fileSystem.mkdir( directory );
-        return new OnDiskTermState( fileSystem, directory );
+        final Supplier mock = mock( Supplier.class );
+        when(mock.get()).thenReturn( mock( DatabaseHealth.class) );
+
+        return new OnDiskTermState( fileSystem, testDir.directory(), 100, mock );
     }
 
     @Test
@@ -53,8 +64,8 @@ public class TermStateAdversarialTest
         adversary.disable();
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        FileSystemAbstraction fileSystem = new SelectiveFileSystemAbstraction(
-                new File( "raft-log/term.state" ), new AdversarialFileSystemAbstraction( adversary, fs ), fs );
+        FileSystemAbstraction fileSystem = new SelectiveFileSystemAbstraction( new File( testDir.directory(),
+                "term.A" ), new AdversarialFileSystemAbstraction( adversary, fs ), fs );
         TermState log = createTermStore( fileSystem );
 
         log.update( 21 );
@@ -80,7 +91,8 @@ public class TermStateAdversarialTest
     }
 
     private void verifyCurrentLogAndNewLogLoadedFromFileSystem(
-            TermState log, FileSystemAbstraction fileSystem, TermVerifier termVerifier ) throws RaftStorageException
+            TermState log, FileSystemAbstraction fileSystem, TermVerifier termVerifier ) throws RaftStorageException,
+            IOException
     {
         termVerifier.verifyTerm( log );
         termVerifier.verifyTerm( createTermStore( fileSystem ) );

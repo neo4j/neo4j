@@ -31,6 +31,7 @@ import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
 import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.test.TargetDirectory;
@@ -49,6 +50,19 @@ public class OnDiskVoteStateTest
 {
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
+    @Test
+    public void shouldRoundTripVoteToDisk() throws Exception
+    {
+        // given
+        OnDiskVoteState state = new OnDiskVoteState( new EphemeralFileSystemAbstraction(), testDir.directory(), 100,
+                mock( Supplier.class ), new CoreMemberMarshal() );
+
+        // when
+        state.votedFor(  );
+
+        // then
+    }
 
     @Test
     public void shouldCallWriteAllAndForceOnVoteUpdate() throws Exception

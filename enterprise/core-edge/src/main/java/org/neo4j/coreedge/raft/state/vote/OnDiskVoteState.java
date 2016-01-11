@@ -28,35 +28,33 @@ import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.state.StatePersister;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
 import org.neo4j.coreedge.raft.state.membership.Marshal;
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class OnDiskVoteState extends LifecycleAdapter implements VoteState<CoreMember>
+public class OnDiskVoteState<MEMBER> extends LifecycleAdapter implements VoteState<MEMBER>
 {
     public static final String FILENAME = "vote.";
 
-    private final StatePersister<InMemoryVoteState<CoreMember>> statePersister;
-    private final ByteBuffer workingBuffer;
+    private final StatePersister<InMemoryVoteState<MEMBER>> statePersister;
 
-    private InMemoryVoteState<CoreMember> inMemoryVoteState;
-    private final InMemoryVoteState.InMemoryVoteStateStateMarshal<CoreMember> marshal;
+    private InMemoryVoteState<MEMBER> inMemoryVoteState;
 
     public OnDiskVoteState( FileSystemAbstraction fileSystemAbstraction, File storeDir,
                             int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier,
-                            Marshal<CoreMember> memberMarshal ) throws IOException
+                            Marshal<MEMBER> memberMarshal ) throws IOException
     {
         File fileA = new File( storeDir, FILENAME + "A" );
         File fileB = new File( storeDir, FILENAME + "B" );
 
-        workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateStateMarshal
+        ByteBuffer workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateStateMarshal
                 .NUMBER_OF_BYTES_PER_VOTE );
 
-        this.marshal = new InMemoryVoteState.InMemoryVoteStateStateMarshal<>( memberMarshal );
+        InMemoryVoteState.InMemoryVoteStateStateMarshal<MEMBER> marshal = new InMemoryVoteState
+                .InMemoryVoteStateStateMarshal<>( memberMarshal );
 
-        VoteStateRecoveryManager recoveryManager =
-                new VoteStateRecoveryManager( fileSystemAbstraction, marshal );
+        VoteStateRecoveryManager<MEMBER> recoveryManager =
+                new VoteStateRecoveryManager<>( fileSystemAbstraction, marshal );
 
         final StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
 
@@ -70,21 +68,15 @@ public class OnDiskVoteState extends LifecycleAdapter implements VoteState<CoreM
     }
 
     @Override
-    public void shutdown() throws Throwable
-    {
-        statePersister.close();
-    }
-
-    @Override
-    public CoreMember votedFor()
+    public MEMBER votedFor()
     {
         return inMemoryVoteState.votedFor();
     }
 
     @Override
-    public void votedFor( CoreMember votedFor, long term ) throws RaftStorageException
+    public void votedFor( MEMBER votedFor, long term ) throws RaftStorageException
     {
-        InMemoryVoteState<CoreMember> tempState = new InMemoryVoteState<>( inMemoryVoteState );
+        InMemoryVoteState<MEMBER> tempState = new InMemoryVoteState<>( inMemoryVoteState );
         tempState.votedFor( votedFor, term );
 
         try
@@ -103,5 +95,11 @@ public class OnDiskVoteState extends LifecycleAdapter implements VoteState<CoreM
     public long term()
     {
         return inMemoryVoteState.term();
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        statePersister.close();
     }
 }

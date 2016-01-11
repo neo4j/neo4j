@@ -39,8 +39,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal
-        .NUMBER_OF_BYTES_PER_WRITE;
+import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal.NUMBER_OF_BYTES_PER_WRITE;
 import static org.neo4j.coreedge.raft.state.id_allocation.OnDiskIdAllocationState.FILENAME;
 
 public class OnDiskIdAllocationStateTest

@@ -19,9 +19,30 @@
  */
 package org.neo4j.coreedge.raft.state.term;
 
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
+
+import org.neo4j.coreedge.raft.state.membership.Marshal;
+
 public class InMemoryTermState implements TermState
 {
+    public static final int TERM_BYTES = 8;
+
     private long term = 0;
+
+    public InMemoryTermState()
+    {
+    }
+
+    public InMemoryTermState( InMemoryTermState inMemoryTermState )
+    {
+        this.term = inMemoryTermState.term;
+    }
+
+    private InMemoryTermState( long term )
+    {
+        this.term = term;
+    }
 
     @Override
     public long currentTerm()
@@ -32,10 +53,37 @@ public class InMemoryTermState implements TermState
     @Override
     public void update( long newTerm )
     {
+        failIfInvalid( newTerm );
+        term = newTerm;
+    }
+
+    public void failIfInvalid( long newTerm )
+    {
         if ( newTerm < term )
         {
             throw new IllegalArgumentException( "Cannot move to a lower term" );
         }
-        term = newTerm;
+    }
+
+    public static class InMemoryTermStateMarshal implements Marshal<InMemoryTermState>
+    {
+        @Override
+        public void marshal( InMemoryTermState inMemoryTermState, ByteBuffer buffer )
+        {
+            buffer.putLong( inMemoryTermState.currentTerm() );
+        }
+
+        @Override
+        public InMemoryTermState unmarshal( ByteBuffer source )
+        {
+            try
+            {
+                return new InMemoryTermState( source.getLong() );
+            }
+            catch ( BufferUnderflowException ex )
+            {
+                return null;
+            }
+        }
     }
 }

@@ -35,7 +35,7 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.mockito.Mockito.mock;
 
-public class OnDiskVoteStateContractTest extends VoteStoreContractTest
+public class OnDiskVoteStateContractTest extends VoteStateContractTest
 {
     @Rule
     public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );

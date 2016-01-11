@@ -23,7 +23,7 @@ import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.CoreMember;
 
-public class InMemoryVoteStateContractTest extends VoteStoreContractTest
+public class InMemoryVoteStateContractTest extends VoteStateContractTest
 {
     @Override public VoteState<CoreMember> createVoteStore()
     {

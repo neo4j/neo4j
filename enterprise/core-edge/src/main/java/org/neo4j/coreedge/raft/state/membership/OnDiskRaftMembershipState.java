@@ -29,8 +29,9 @@ import org.neo4j.coreedge.raft.state.StatePersister;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class OnDiskRaftMembershipState<MEMBER> implements RaftMembershipState<MEMBER>
+public class OnDiskRaftMembershipState<MEMBER> extends LifecycleAdapter implements RaftMembershipState<MEMBER>
 {
     public static final int MAX_SIZE_OF_ADDRESS_STATE_ON_DISK = 2_000_000;
     private static final String FILENAME = "membership.state.";
@@ -127,4 +128,9 @@ public class OnDiskRaftMembershipState<MEMBER> implements RaftMembershipState<ME
         inMemoryRaftMembershipState.deregisterListener( listener );
     }
 
+    @Override
+    public void shutdown() throws Throwable
+    {
+        statePersister.close();
+    }
 }

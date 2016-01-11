@@ -22,78 +22,85 @@ package org.neo4j.coreedge.raft.state.term;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.Supplier;
 
 import org.neo4j.coreedge.raft.log.RaftStorageException;
+import org.neo4j.coreedge.raft.state.StatePersister;
+import org.neo4j.coreedge.raft.state.StateRecoveryManager;
+import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class OnDiskTermState extends LifecycleAdapter implements TermState
 {
-    public static final int TERM_BYTES = 8;
+    public static final String FILENAME = "term.";
 
-    private final StoreChannel channel;
-    private long term;
+    private final ByteBuffer workingBuffer;
+    private InMemoryTermState inMemoryTermState;
 
-    public OnDiskTermState( FileSystemAbstraction fileSystem, File directory )
+    private final StatePersister<InMemoryTermState> statePersister;
+
+    public OnDiskTermState( FileSystemAbstraction fileSystemAbstraction, File storeDir,
+                            int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier )
+            throws IOException
     {
-        try
-        {
-            channel = fileSystem.open( new File( directory, "term.state" ), "rw" );
-            term = readTerm();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        File fileA = new File( storeDir, FILENAME + "A" );
+        File fileB = new File( storeDir, FILENAME + "B" );
+
+        workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateStateMarshal
+                .NUMBER_OF_BYTES_PER_VOTE );
+
+
+        TermStateRecoveryManager recoveryManager =
+                new TermStateRecoveryManager( fileSystemAbstraction, new InMemoryTermState.InMemoryTermStateMarshal() );
+
+        final StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
+
+
+        this.inMemoryTermState = recoveryManager.readLastEntryFrom( fileSystemAbstraction, recoveryStatus
+                .previouslyActive() );
+
+
+        this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
+                workingBuffer, new InMemoryTermState.InMemoryTermStateMarshal(), recoveryStatus.previouslyInactive(),
+                databaseHealthSupplier );
     }
 
     @Override
     public void shutdown() throws Throwable
     {
-        channel.force( false );
-        channel.close();
+        statePersister.close();
     }
 
     @Override
     public long currentTerm()
     {
-        return term;
+        return inMemoryTermState.currentTerm();
     }
 
     @Override
     public void update( long newTerm ) throws RaftStorageException
     {
-        if ( newTerm < term )
-        {
-            throw new IllegalArgumentException( "Cannot move to a lower term" );
-        }
-
+        inMemoryTermState.failIfInvalid( newTerm );
         try
         {
-            ByteBuffer buffer = ByteBuffer.allocate( TERM_BYTES );
-            buffer.putLong( newTerm );
-            buffer.flip();
-
-            channel.writeAll( buffer, 0 );
-            channel.force( false );
+            if ( needsToWriteToDisk( newTerm ) )
+            {
+                InMemoryTermState tempState = new InMemoryTermState( inMemoryTermState );
+                tempState.update( newTerm );
+                statePersister.persistStoreData( tempState );
+                inMemoryTermState = tempState;
+            }
         }
         catch ( IOException e )
         {
-            throw new RaftStorageException( "Failed to update term", e );
+            throw new RaftStorageException( e );
         }
-        term = newTerm;
     }
 
-    private long readTerm() throws IOException
+    private boolean needsToWriteToDisk( long newTerm )
     {
-        if ( channel.size() < TERM_BYTES )
-        {
-            return 0;
-        }
-        ByteBuffer buffer = ByteBuffer.allocate( TERM_BYTES );
-        channel.read( buffer, 0 );
-        buffer.flip();
-        return buffer.getLong();
+        return newTerm > inMemoryTermState.currentTerm();
     }
 }

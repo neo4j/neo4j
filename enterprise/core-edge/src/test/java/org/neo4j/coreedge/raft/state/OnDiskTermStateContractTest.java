@@ -19,21 +19,28 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import java.io.File;
+import java.io.IOException;
+import java.util.function.Supplier;
+
+import org.junit.Rule;
 
 import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.TargetDirectory;
 
-public class OnDiskTermStateContractTest extends TermStoreContractTest
+import static org.mockito.Mockito.mock;
+
+public class OnDiskTermStateContractTest extends TermStateContractTest
 {
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
     @Override
-    public TermState createTermStore()
+    public TermState createTermStore() throws IOException
     {
         FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        File directory = new File( "raft-log" );
-        fileSystem.mkdir( directory );
-        return new OnDiskTermState( fileSystem, directory );
+        return new OnDiskTermState( fileSystem, testDir.directory(), 100, mock( Supplier.class ) );
     }
 }

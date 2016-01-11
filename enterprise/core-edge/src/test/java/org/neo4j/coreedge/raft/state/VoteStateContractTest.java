@@ -28,7 +28,7 @@ import org.neo4j.coreedge.server.CoreMember;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public abstract class VoteStoreContractTest
+public abstract class VoteStateContractTest
 {
     public abstract VoteState<CoreMember> createVoteStore();
 

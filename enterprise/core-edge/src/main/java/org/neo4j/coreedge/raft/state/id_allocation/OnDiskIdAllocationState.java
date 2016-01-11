@@ -31,8 +31,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal.NUMBER_OF_BYTES_PER_WRITE;
+import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal
+        .NUMBER_OF_BYTES_PER_WRITE;
 
 /**
  * The OnDiskAllocationState is a decorator around InMemoryIdAllocationState providing on-disk persistence of
@@ -41,7 +43,7 @@ import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationSt
  * <p>
  * It is log structured for convenience and ease of operational problem solving.
  */
-public class OnDiskIdAllocationState implements IdAllocationState
+public class OnDiskIdAllocationState extends LifecycleAdapter implements IdAllocationState
 {
     public static final String FILENAME = "id.allocation.";
 
@@ -155,5 +157,11 @@ public class OnDiskIdAllocationState implements IdAllocationState
     public void lastIdRangeStart( IdType idType, long idRangeStart )
     {
         inMemoryIdAllocationState.lastIdRangeStart( idType, idRangeStart );
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        statePersister.close();
     }
 }

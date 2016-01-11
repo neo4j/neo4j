@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft.state;
 import org.neo4j.coreedge.raft.state.term.InMemoryTermState;
 import org.neo4j.coreedge.raft.state.term.TermState;
 
-public class InMemoryTermStateContractTest extends TermStoreContractTest
+public class InMemoryTermStateContractTest extends TermStateContractTest
 {
     @Override
     public TermState createTermStore()

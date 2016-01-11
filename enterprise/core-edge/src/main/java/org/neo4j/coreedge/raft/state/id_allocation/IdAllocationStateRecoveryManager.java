@@ -27,11 +27,12 @@ import org.neo4j.coreedge.raft.state.StateRecoveryManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 
-import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal.NUMBER_OF_BYTES_PER_WRITE;
+import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal
+        .NUMBER_OF_BYTES_PER_WRITE;
 
 public class IdAllocationStateRecoveryManager extends StateRecoveryManager
 {
-    public IdAllocationStateRecoveryManager( FileSystemAbstraction fileSystem)
+    public IdAllocationStateRecoveryManager( FileSystemAbstraction fileSystem )
     {
         super( fileSystem );
     }
@@ -83,9 +84,6 @@ public class IdAllocationStateRecoveryManager extends StateRecoveryManager
         }
 
         long fileSize = fileSystem.getFileSize( storeFile );
-        long positionOfLastCompleteEntry =
-                ((fileSize / NUMBER_OF_BYTES_PER_WRITE) - 1)
-                        * NUMBER_OF_BYTES_PER_WRITE;
-        return positionOfLastCompleteEntry;
+        return ((fileSize / NUMBER_OF_BYTES_PER_WRITE) - 1) * NUMBER_OF_BYTES_PER_WRITE;
     }
 }

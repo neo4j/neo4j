@@ -140,4 +140,7 @@ public class CoreEdgeClusterSettings
 
     @Description("The maximum file size before the vote state store is rotated (in unit of entries)")
     public static Setting<Integer> vote_state_size = setting( "core_edge.raft_vote_state_size", INTEGER, "1000" );
+
+    @Description("The maximum file size before the term state store is rotated (in unit of entries)")
+    public static Setting<Integer> term_state_size = setting( "core_edge.raft_term_state_size", INTEGER, "1000" );
 }

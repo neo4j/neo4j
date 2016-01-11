@@ -20,6 +20,8 @@
 package org.neo4j.coreedge.raft.state;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.function.Supplier;
 
 import org.junit.Test;
 
@@ -29,14 +31,15 @@ import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 public class TermStateDurabilityTest
 {
-    public TermState createTermStore( EphemeralFileSystemAbstraction fileSystem )
+    public TermState createTermStore( EphemeralFileSystemAbstraction fileSystem ) throws IOException
     {
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
-        return new OnDiskTermState( fileSystem, directory );
+        return new OnDiskTermState( fileSystem, directory, 100, mock( Supplier.class ) );
     }
 
     @Test
@@ -73,7 +76,7 @@ public class TermStateDurabilityTest
 
     private void verifyCurrentLogAndNewLogLoadedFromFileSystem( TermState termState,
                                                                 EphemeralFileSystemAbstraction fileSystem,
-                                                                TermVerifier termVerifier ) throws RaftStorageException
+                                                                TermVerifier termVerifier ) throws RaftStorageException, IOException
     {
         termVerifier.verifyTerm( termState );
         termVerifier.verifyTerm( createTermStore( fileSystem ) );
