@@ -103,7 +103,7 @@ public class VoteStateAdversarialTest
         final Supplier mock = mock( Supplier.class );
         when( mock.get() ).thenReturn( mock( DatabaseHealth.class ) );
 
-        return new OnDiskVoteState( fileSystem, testDir.directory(), 100, mock,
+        return new OnDiskVoteState<>( fileSystem, testDir.directory(), 100, mock,
                 new CoreMember.CoreMemberMarshal() );
     }
 }

@@ -54,7 +54,7 @@ public class OnDiskVoteStateTest
     public void shouldRoundTripVoteToDisk() throws Exception
     {
         // given
-        OnDiskVoteState state = new OnDiskVoteState( new EphemeralFileSystemAbstraction(), testDir.directory(), 100,
+        OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( new EphemeralFileSystemAbstraction(), testDir.directory(), 100,
                 mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
 
         // when
@@ -75,11 +75,11 @@ public class OnDiskVoteStateTest
         AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "localhost:" + 1234 );
         CoreMember member = new CoreMember( localhost, localhost );
 
-        OnDiskVoteState store = new OnDiskVoteState( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
+        OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
                 mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
 
         // When
-        store.votedFor( member, 0 );
+        state.votedFor( member, 0 );
 
         // Then
         verify( channel ).writeAll( any( ByteBuffer.class ) );
@@ -96,7 +96,7 @@ public class OnDiskVoteStateTest
         // Mock the first call to succeed, so we can first store a proper value
         doNothing().doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ) );
 
-        OnDiskVoteState store = new OnDiskVoteState( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
+        OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
                 mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
 
         // This has to be real because it will be serialized
@@ -106,10 +106,10 @@ public class OnDiskVoteStateTest
         // When
         // We do the first store successfully, so we can meaningfully compare the stored value after the failed
         // invocation
-        store.votedFor( firstMember, 0 );
+        state.votedFor( firstMember, 0 );
 
         // Then
-        assertEquals( firstMember, store.votedFor() );
+        assertEquals( firstMember, state.votedFor() );
 
         // This should not be stored
         AdvertisedSocketAddress secondLocalhost = new AdvertisedSocketAddress( "localhost:" + 1235 );
@@ -118,16 +118,15 @@ public class OnDiskVoteStateTest
         // When
         try
         {
-            store.votedFor( secondMember, 1 );
+            state.votedFor( secondMember, 1 );
             fail( "Test setup should have caused an exception here" );
         }
         catch ( Exception e )
         {
+            // Then
+            // The stored member should not be updated
+            assertEquals( firstMember, state.votedFor() );
         }
-
-        // Then
-        // The stored member should not be updated
-        assertEquals( firstMember, store.votedFor() );
     }
 
     @Test
@@ -138,11 +137,11 @@ public class OnDiskVoteStateTest
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
 
-        OnDiskVoteState store = new OnDiskVoteState( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
+        OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
                 mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
 
         // When
-        store.shutdown();
+        state.shutdown();
 
         // Then
         verify( channel ).force( false );

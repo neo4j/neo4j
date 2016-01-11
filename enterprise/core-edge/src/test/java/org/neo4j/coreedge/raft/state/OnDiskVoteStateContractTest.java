@@ -46,7 +46,7 @@ public class OnDiskVoteStateContractTest extends VoteStateContractTest
         File directory = testDirectory.directory( "raft-log" );
         try
         {
-            return new OnDiskVoteState( fileSystem, directory, 100, mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
+            return new OnDiskVoteState<>( fileSystem, directory, 100, mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
         }
         catch ( IOException e )
         {

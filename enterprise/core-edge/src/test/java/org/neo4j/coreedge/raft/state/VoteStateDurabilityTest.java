@@ -42,7 +42,7 @@ public class VoteStateDurabilityTest
     {
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
-        return new OnDiskVoteState( fileSystem, directory, 100, mock(Supplier.class), new CoreMember.CoreMemberMarshal() );
+        return new OnDiskVoteState<>( fileSystem, directory, 100, mock(Supplier.class), new CoreMember.CoreMemberMarshal() );
     }
 
     @Test

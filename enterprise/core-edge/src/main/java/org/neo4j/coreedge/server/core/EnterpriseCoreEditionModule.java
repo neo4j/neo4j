@@ -187,10 +187,10 @@ public class EnterpriseCoreEditionModule
             throw new RuntimeException( e );
         }
 
-        VoteState voteState;
+        VoteState<CoreMember> voteState;
         try
         {
-            voteState = life.add( new OnDiskVoteState( fileSystem, raftLogsDirectory,
+            voteState = life.add( new OnDiskVoteState<>( fileSystem, raftLogsDirectory,
                     config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
                     new CoreMember.CoreMemberMarshal() ) );
         }
