@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.{CodeGenerator, CodeStructure}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InterpretedExecutionPlanBuilder.interpretedToExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, GeneratedQuery, InternalExecutionResult, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference, Provider}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, GeneratedQuery, InternalExecutionResult, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference, Provider, READ_ONLY}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments
@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, InvalidArgumentException, SemanticTable}
-import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.helpers.Clock
 
 object RuntimeBuilder {
@@ -147,7 +146,7 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
               //close all statements
               taskCloser.close(success = true)
               new ExplainExecutionResult(compiled.columns.toList,
-                compiled.planDescription, QueryType.READ_ONLY, preparedQuery.notificationLogger.notifications)
+                compiled.planDescription, READ_ONLY, preparedQuery.notificationLogger.notifications)
             } else
               compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode), params, taskCloser)
           } catch {

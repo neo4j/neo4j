@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.ResultRowImpl
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.AcceptingExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{AcceptingExecutionResult, InternalQueryType, READ_ONLY}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, ProcedureSignature, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics, NormalMode, TaskCloser}
-import org.neo4j.graphdb.QueryExecutionType.QueryType
+import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics, TaskCloser}
 
 import scala.collection.JavaConverters._
 
@@ -41,10 +40,9 @@ case class ProcedureExecutionResult[E <: Exception](taskCloser: TaskCloser,
                                                     context: QueryContext,
                                                     signature: ProcedureSignature,
                                                     args: Seq[Any],
-                                                    executionPlanDescription: InternalPlanDescription)
+                                                    executionPlanDescription: InternalPlanDescription,
+                                                    executionMode: ExecutionMode)
   extends AcceptingExecutionResult(taskCloser, context) {
-
-  override def executionMode: ExecutionMode = NormalMode
 
   override def javaColumns: java.util.List[String] = signature.outputSignature.seq.map(_.name).asJava
 
@@ -66,5 +64,5 @@ case class ProcedureExecutionResult[E <: Exception](taskCloser: TaskCloser,
   override def queryStatistics() = context.getOptStatistics.getOrElse(InternalQueryStatistics())
 
   //TODO so far only read-only queries, change when we have updating procedures
-  override protected def queryType: QueryType = QueryType.READ_ONLY
+  override def executionType: InternalQueryType = READ_ONLY
 }

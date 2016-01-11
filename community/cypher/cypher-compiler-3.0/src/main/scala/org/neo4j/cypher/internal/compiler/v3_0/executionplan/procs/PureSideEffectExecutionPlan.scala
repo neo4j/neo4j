@@ -1,11 +1,29 @@
+/*
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, InternalExecutionResult, InternalQueryType}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, QueryContext, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, ExplainExecutionResult, ExplainMode, PlannerName, ProcedurePlannerName, ProcedureRuntimeName, RuntimeName, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
-import org.neo4j.graphdb.QueryExecutionType.QueryType
 
 /**
   * Execution plan for performing pure side-effects, i.e. returning no data to the user.
@@ -13,7 +31,7 @@ import org.neo4j.graphdb.QueryExecutionType.QueryType
   * @param queryType The type of the query
   * @param sideEffect The actual side-effect to be performed
   */
-case class PureSideEffectExecutionPlan(name: String, queryType: QueryType, sideEffect: (QueryContext => Unit))
+case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryType, sideEffect: (QueryContext => Unit))
   extends ExecutionPlan {
 
   override def run(ctx: QueryContext, planType: ExecutionMode,
@@ -28,7 +46,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: QueryType, sideE
     } else
       sideEffect(countingCtx)
       taskCloser.close(success = true)
-      PureSideEffectInternalExecutionResult(description, taskCloser, countingCtx, queryType)
+      PureSideEffectInternalExecutionResult(description, taskCloser, countingCtx, queryType, planType)
   }
 
   private def description = PlanDescriptionImpl(new Id, name, NoChildren, Seq.empty, Set.empty)

@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor3_0, exceptionHandlerFor3_0}
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CompiledExecutionResult, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CompiledExecutionResult, InternalExecutionResult, READ_WRITE}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
 import org.neo4j.cypher.internal.compiler.v3_0.{PipeExecutionResult, PlannerName, RuntimeName}
 import org.neo4j.cypher.{ExecutionResult, InternalException}
-import org.neo4j.graphdb.QueryExecutionType.QueryType
 
 object RewindableExecutionResult {
   self =>
@@ -35,7 +34,7 @@ object RewindableExecutionResult {
       case other: PipeExecutionResult =>
         exceptionHandlerFor3_0.runSafely {
           new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
-            other.executionMode, QueryType.READ_WRITE) {
+            other.executionMode, READ_WRITE) {
             override def executionPlanDescription(): InternalPlanDescription = super.executionPlanDescription()
                                                                                .addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
           }

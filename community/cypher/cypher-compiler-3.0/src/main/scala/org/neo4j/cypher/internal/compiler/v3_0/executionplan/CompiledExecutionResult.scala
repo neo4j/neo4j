@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.ProfilerStatisticsNotReadyException
-import org.neo4j.graphdb.QueryExecutionType.QueryType
 
 trait SuccessfulCloseable {
   def success(): Unit
@@ -60,5 +59,5 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
   override def queryStatistics() = InternalQueryStatistics()
 
   //TODO delegate to compiled code once writes are being implemented
-  override protected def queryType: QueryType = QueryType.READ_ONLY
+  override def executionType = READ_ONLY
 }

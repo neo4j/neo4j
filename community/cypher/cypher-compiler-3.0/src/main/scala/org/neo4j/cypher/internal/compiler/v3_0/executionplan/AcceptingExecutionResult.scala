@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.{TaskCloser, _}
 import org.neo4j.cypher.internal.frontend.v3_0.EntityNotFoundException
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
-import org.neo4j.graphdb.QueryExecutionType._
 import org.neo4j.graphdb.{ResourceIterator, _}
 
 import scala.collection.{Map, mutable}
@@ -125,7 +124,7 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
 
       override def queryStatistics(): InternalQueryStatistics = self.queryStatistics()
 
-      override protected def queryType: QueryType = self.queryType
+      override def executionType: InternalQueryType = self.executionType
     }
   }
 
@@ -142,12 +141,6 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
   val mode = executionMode
 
   override def planDescriptionRequested: Boolean = executionMode == ExplainMode || executionMode == ProfileMode
-
-  override def executionType = if (executionMode == ProfileMode) {
-    profiled(queryType)
-  } else {
-    query(queryType)
-  }
 
   override def notifications = Iterable.empty[InternalNotification]
 
@@ -267,7 +260,7 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
 
   def accept[EX <: Exception](visitor: InternalResultVisitor[EX]): Unit
 
-  protected def queryType: QueryType
+  def executionType: InternalQueryType
 
   override def executionPlanDescription(): InternalPlanDescription
 }

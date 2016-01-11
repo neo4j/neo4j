@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalExecutionResult, InternalQueryType}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, iteratorToVisitable}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, Query
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.JavaCompatibility._
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
-import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
 import org.neo4j.graphdb.{NotFoundException, ResourceIterator}
 
 import scala.collection.JavaConverters._
@@ -41,7 +40,7 @@ class PipeExecutionResult(val result: ResultIterator,
                           val state: QueryState,
                           val executionPlanBuilder: () => InternalPlanDescription,
                           val executionMode: ExecutionMode,
-                          val queryType: QueryType)
+                          val executionType: InternalQueryType)
   extends InternalExecutionResult
   with CollectionSupport {
 
@@ -97,8 +96,6 @@ class PipeExecutionResult(val result: ResultIterator,
     def remove() { throw new UnsupportedOperationException("remove") }
     def close() { self.close() }
   }
-
-  def executionType = if (executionMode == ProfileMode) profiled(queryType) else query(queryType)
 
   //notifications only present for EXPLAIN
   override val notifications = Iterable.empty[InternalNotification]

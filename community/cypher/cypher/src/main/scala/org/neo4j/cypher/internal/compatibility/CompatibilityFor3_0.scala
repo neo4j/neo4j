@@ -25,7 +25,7 @@ import java.{lang, util}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v3_0
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => ExecutionPlan_v3_0, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => ExecutionPlan_v3_0, InternalExecutionResult, READ_ONLY, READ_WRITE, SCHEMA_WRITE, WRITE}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor}
@@ -302,7 +302,19 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
     CompatibilityPlanDescriptionFor3_0(i, CypherVersion.v3_0, planner, runtime)
   }
 
-  def executionType: QueryExecutionType = exceptionHandlerFor3_0.runSafely {inner.executionType}
+  def executionType: QueryExecutionType = {
+    val qt = inner.executionType match {
+      case READ_ONLY => QueryExecutionType.QueryType.READ_ONLY
+      case READ_WRITE => QueryExecutionType.QueryType.READ_WRITE
+      case WRITE => QueryExecutionType.QueryType.WRITE
+      case SCHEMA_WRITE => QueryExecutionType.QueryType.SCHEMA_WRITE
+    }
+    inner.executionMode match {
+      case ExplainModev3_0 => QueryExecutionType.explained(qt)
+      case ProfileModev3_0 => QueryExecutionType.profiled(qt)
+      case NormalModev3_0 => QueryExecutionType.query(qt)
+    }
+  }
 
   def notifications = inner.notifications.map(asKernelNotification)
 

@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutablePlanBuilder, ExecutionPlan, PlanFingerprint, PlanFingerprintReference}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutablePlanBuilder, ExecutionPlan, PlanFingerprint, PlanFingerprintReference, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, PlanContext, ProcedureName, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, PreparedQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{CallProcedure, CreateIndex, CreateNodePropertyExistenceConstraint, CreateRelationshipPropertyExistenceConstraint, CreateUniquePropertyConstraint, DropIndex, DropNodePropertyExistenceConstraint, DropRelationshipPropertyExistenceConstraint, DropUniquePropertyConstraint, Expression, LabelName, ProcName, PropertyKeyName, RelTypeName}
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InvalidArgumentException, SemanticTable}
-import org.neo4j.graphdb.QueryExecutionType.QueryType
 
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands
@@ -54,47 +53,47 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       case CreateUniquePropertyConstraint(node, label, prop) =>
-        PureSideEffectExecutionPlan("CreateUniqueConstraint", QueryType.SCHEMA_WRITE, (ctx) => {
+        PureSideEffectExecutionPlan("CreateUniqueConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.createUniqueConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
         })
 
       // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       case DropUniquePropertyConstraint(_, label, prop) =>
-        PureSideEffectExecutionPlan("DropUniqueConstraint", QueryType.SCHEMA_WRITE, (ctx) => {
+        PureSideEffectExecutionPlan("DropUniqueConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.dropUniqueConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
         })
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
       case CreateNodePropertyExistenceConstraint(_, label, prop) =>
-        PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", QueryType.SCHEMA_WRITE, (ctx) => {
+        PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.createNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
         })
 
       // DROP CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
       case DropNodePropertyExistenceConstraint(_, label, prop) =>
-        PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", QueryType.SCHEMA_WRITE, (ctx) => {
+        PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.dropNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
         })
 
       // CREATE CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
       case CreateRelationshipPropertyExistenceConstraint(_, relType, prop) =>
-        PureSideEffectExecutionPlan("CreateRelationshipPropertyExistenceConstraint", QueryType.SCHEMA_WRITE, (ctx) => {
+        PureSideEffectExecutionPlan("CreateRelationshipPropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
         })
 
       // DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
       case DropRelationshipPropertyExistenceConstraint(_, relType, prop) =>
-        PureSideEffectExecutionPlan("DropRelationshipPropertyExistenceConstraint", QueryType.SCHEMA_WRITE, (ctx) => {
+        PureSideEffectExecutionPlan("DropRelationshipPropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
           (ctx.dropRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
         })
 
       case CreateIndex(label, prop) =>
-        PureSideEffectExecutionPlan("CreateIndex", QueryType.SCHEMA_WRITE, (ctx) => {
+        PureSideEffectExecutionPlan("CreateIndex", SCHEMA_WRITE, (ctx) => {
           (ctx.addIndexRule _).tupled(labelProp(ctx)(label, prop))
         })
 
       case DropIndex(label, prop) =>
-        PureSideEffectExecutionPlan("DropIndex", QueryType.SCHEMA_WRITE, (ctx) => {
+        PureSideEffectExecutionPlan("DropIndex", SCHEMA_WRITE, (ctx) => {
           (ctx.dropIndexRule _).tupled(labelProp(ctx)(label, prop))
         })
 

@@ -158,7 +158,6 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
 
     // Then
     result shouldBe empty
-    println(result.executionPlanDescription())
   }
 
   private def register(types: Neo4jTypes.AnyType*) = {

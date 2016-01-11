@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, InternalExecutionResult, READ_ONLY}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalResource, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, GraphStatistics, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, ExecutionMode, ExplainExecutionResult, ExplainMode, ProcedurePlannerName, ProcedureRuntimeName, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.InvalidArgumentException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
-import org.neo4j.graphdb.QueryExecutionType.QueryType
 
 /**
   * Execution plan for calling procedures
@@ -59,9 +58,9 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, args: Seq[E
       //close all statements
       taskCloser.close(success = true)
       new ExplainExecutionResult(signature.outputSignature.seq.map(_.name).toList,
-        description, QueryType.READ_ONLY, Set.empty)
+        description, READ_ONLY, Set.empty)
     } else
-      new ProcedureExecutionResult(taskCloser, ctx, signature, input, description)
+      new ProcedureExecutionResult(taskCloser, ctx, signature, input, description, planType)
   }
 
   private def fail(f: FieldSignature, ctx: QueryContext) = {
