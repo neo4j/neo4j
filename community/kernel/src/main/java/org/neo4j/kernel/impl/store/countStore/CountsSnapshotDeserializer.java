@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
-import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
@@ -36,7 +35,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.value;
 
 public class CountsSnapshotDeserializer
 {
-    public static CountsSnapshot deserialize( ReadableLogChannel channel ) throws IOException, UnknownKey
+    public static CountsSnapshot deserialize( ReadableLogChannel channel ) throws IOException
     {
         long txid = channel.getLong();
         int size = channel.getInt();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
 import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
 import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
 import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
-import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -57,7 +56,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     ByteBuffer serializedBytes;
 
     @Before
-    public void setup() throws IOException, UnknownKey
+    public void setup() throws IOException
     {
         logChannel = new InMemoryLogChannel();
         countsSnapshot = new CountsSnapshot( 1, new ConcurrentHashMap<>() );
@@ -70,7 +69,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     }
 
     @Test
-    public void correctlyDeserializeTxId() throws IOException, UnknownKey
+    public void correctlyDeserializeTxId() throws IOException
     {
         //GIVEN
         serializedBytes = ByteBuffer.allocate( 1000 );
@@ -86,7 +85,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     }
 
     @Test
-    public void correctlyDeserializeTxIdAndMapSize() throws IOException, UnknownKey
+    public void correctlyDeserializeTxIdAndMapSize() throws IOException
     {
         //GIVEN
         InMemoryCountsStore countStore = new InMemoryCountsStore();
@@ -109,7 +108,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     }
 
     @Test
-    public void correctlyDeserializeEntityNode() throws IOException, UnknownKey
+    public void correctlyDeserializeEntityNode() throws IOException
     {
         //GIVEN
         serializedBytes = ByteBuffer.allocate( 1000 );
@@ -130,7 +129,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     }
 
     @Test
-    public void correctlyDeserializeEntityRelationship() throws IOException, UnknownKey
+    public void correctlyDeserializeEntityRelationship() throws IOException
     {
         //GIVEN
         serializedBytes = ByteBuffer.allocate( 1000 );
@@ -152,7 +151,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     }
 
     @Test
-    public void correctlyDeserializeIndexSample() throws IOException, UnknownKey
+    public void correctlyDeserializeIndexSample() throws IOException
     {
         //GIVEN
         serializedBytes = ByteBuffer.allocate( 1000 );
@@ -174,7 +173,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     }
 
     @Test
-    public void correctlyDeserializeIndexStatistics() throws IOException, UnknownKey
+    public void correctlyDeserializeIndexStatistics() throws IOException
     {
         //GIVEN
         serializedBytes = ByteBuffer.allocate( 1000 );

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,7 +27,6 @@ import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
 import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
 import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
 import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
-import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_NODE;
@@ -38,7 +37,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.INDEX_STATIS
 public class CountsSnapshotSerializer
 {
     public static void serialize( WritableLogChannel channel, CountsSnapshot countsSnapshot )
-            throws UnknownKey, IOException
+            throws IOException
     {
         channel.putLong( countsSnapshot.getTxId() );
         channel.putInt( countsSnapshot.getMap().size() );

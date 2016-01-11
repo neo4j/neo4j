@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.counts.keys;
 
-import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
-
 public enum CountsKeyType
 {
     EMPTY ( 0 ), ENTITY_NODE( 2 ), ENTITY_RELATIONSHIP( 3 ), INDEX_STATISTICS( 4 ), INDEX_SAMPLE( 5 );
@@ -32,9 +30,8 @@ public enum CountsKeyType
         this.code = (byte) code;
     }
 
-    public static CountsKeyType value(byte val) throws UnknownKey
+    public static CountsKeyType value(byte val)
     {
-
         switch (val){
 
         case 2:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
-import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
@@ -54,7 +53,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     ByteBuffer serializedBytes;
 
     @Before
-    public void setup() throws IOException, UnknownKey
+    public void setup() throws IOException
     {
         logChannel = new InMemoryLogChannel();
         countsSnapshot = new CountsSnapshot( 1, new ConcurrentHashMap<>() );
@@ -67,13 +66,13 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     }
 
     @Test
-    public void correctlySerializesTxId() throws IOException, UnknownKey
+    public void correctlySerializesTxId() throws IOException
     {
         //GIVEN
         serializedBytes = ByteBuffer.allocate( Long.BYTES );
         expectedBytes = ByteBuffer.allocate( Long.BYTES );
         writeExpectedTxID( expectedBytes, 1 );
-        writeAndSerializeEntityNode( 1, 1 ); //Something needs to be writing to test this.
+        writeAndSerializeEntityNode( 1, 1 ); //Something needs to be written to test this.
         expectedBytes.position( 0 );
 
         //WHEN
@@ -84,14 +83,14 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     }
 
     @Test
-    public void correctlySerializesTxIdAndMapSize() throws IOException, UnknownKey
+    public void correctlySerializesTxIdAndMapSize() throws IOException
     {
         //GIVEN
         ByteBuffer serializedBytes = ByteBuffer.allocate( Long.BYTES + Integer.BYTES );
         ByteBuffer expectedBytes = ByteBuffer.allocate( Long.BYTES + Integer.BYTES );
         writeExpectedTxID( expectedBytes, 1 );
         writeExpectedCountStoreSize( expectedBytes, 1 );
-        writeAndSerializeEntityNode( 1, 1 ); //Something needs to be writing to test this.
+        writeAndSerializeEntityNode( 1, 1 ); //Something needs to be written to test this.
         expectedBytes.position( 0 );
 
         //WHEN
@@ -102,7 +101,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     }
 
     @Test
-    public void correctlySerializesEntityNode() throws IOException, UnknownKey
+    public void correctlySerializesEntityNode() throws IOException
     {
         //GIVEN
         int serializedLength = Long.BYTES + Integer.BYTES //Serialization Prefix
@@ -122,7 +121,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     }
 
     @Test
-    public void correctlySerializesEntityRelationship() throws IOException, UnknownKey
+    public void correctlySerializesEntityRelationship() throws IOException
     {
         //GIVEN
         int serializedLength = Long.BYTES + Integer.BYTES //Serialization Prefix
@@ -144,7 +143,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     }
 
     @Test
-    public void correctlySerializesIndexSample() throws IOException, UnknownKey
+    public void correctlySerializesIndexSample() throws IOException
     {
         //GIVEN
         int serializedLength = Long.BYTES + Integer.BYTES //Serialization Prefix
@@ -166,7 +165,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     }
 
     @Test
-    public void correctlySerializesIndexStatistics() throws IOException, UnknownKey
+    public void correctlySerializesIndexStatistics() throws IOException
     {
         //GIVEN
         int serializedLength = Long.BYTES + Integer.BYTES //Serialization Prefix
@@ -188,7 +187,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void throwsExceptionOnWrongValueLengthForEntityNode() throws IOException, UnknownKey
+    public void throwsExceptionOnWrongValueLengthForEntityNode() throws IOException
     {
         Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
         brokenMap.put( nodeKey( 1 ), new long[]{1, 1} );
@@ -197,7 +196,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void throwsExceptionOnWrongValueLengthForEntityRelationship() throws IOException, UnknownKey
+    public void throwsExceptionOnWrongValueLengthForEntityRelationship() throws IOException
     {
         Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
         brokenMap.put( relationshipKey( 1, 1, 1 ), new long[]{1, 1} );
@@ -206,7 +205,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void throwsExceptionOnWrongValueLengthForIndexSample() throws IOException, UnknownKey
+    public void throwsExceptionOnWrongValueLengthForIndexSample() throws IOException
     {
         Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
         brokenMap.put( indexSampleKey( 1, 1 ), new long[]{1} );
@@ -215,7 +214,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void throwsExceptionOnWrongValueLengthForIndexStatistics() throws IOException, UnknownKey
+    public void throwsExceptionOnWrongValueLengthForIndexStatistics() throws IOException
     {
         Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
         brokenMap.put( indexStatisticsKey( 1, 1 ), new long[]{1} );
@@ -254,21 +253,21 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
         buffer.putInt( size );
     }
 
-    private void writeAndSerializeEntityNode( int labelId, long count ) throws IOException, UnknownKey
+    private void writeAndSerializeEntityNode( int labelId, long count ) throws IOException
     {
         countsSnapshot.getMap().put( nodeKey( labelId ), new long[]{count} );
         serialize( logChannel, countsSnapshot );
     }
 
     private void writeAndSerializeEntityRelationship( int startId, int type, int endId, long count )
-            throws IOException, UnknownKey
+            throws IOException
     {
         countsSnapshot.getMap().put( relationshipKey( startId, type, endId ), new long[]{count} );
         serialize( logChannel, countsSnapshot );
     }
 
     private void writeAndSerializeIndexSample( int labelId, int propertyKeyId, long count )
-            throws IOException, UnknownKey
+            throws IOException
     {
         countsSnapshot.getMap()
                 .put( CountsKeyFactory.indexSampleKey( labelId, propertyKeyId ), new long[]{count, count} );
@@ -276,7 +275,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     }
 
     private void writeAndSerializeIndexStatistics( int labelId, int propertyKeyId, long count )
-            throws IOException, UnknownKey
+            throws IOException
     {
         countsSnapshot.getMap()
                 .put( CountsKeyFactory.indexStatisticsKey( labelId, propertyKeyId ), new long[]{count, count} );

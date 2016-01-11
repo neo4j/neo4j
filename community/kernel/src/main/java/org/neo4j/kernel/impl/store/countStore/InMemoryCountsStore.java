@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -41,7 +41,7 @@ public class InMemoryCountsStore implements CountsStore
     //TODO Always return long, not long[]. This requires splitting index keys into 4 keys, one for each value.
     private final ConcurrentHashMap<CountsKey,long[]> map;
     private final OutOfOrderSequence lastTxId = new ArrayQueueOutOfOrderSequence( 0L, 100, EMPTY_METADATA );
-    private volatile CountsSnapshot snapshot;
+    private CountsSnapshot snapshot;
 
     public InMemoryCountsStore( CountsSnapshot snapshot )
     {
@@ -81,7 +81,8 @@ public class InMemoryCountsStore implements CountsStore
     }
 
     /**
-     *  For each key in the updates param, applies it's value as a diff to the cooresponding value in the given map.
+     * For each key in the updates param, applies it's value as a diff to the cooresponding value in the given map.
+     *
      * @param updates A map containing the diffs to apply to the corresponding values in the map.
      * @param map The map to be updated.
      */
@@ -120,14 +121,13 @@ public class InMemoryCountsStore implements CountsStore
     @Override
     public CountsSnapshot snapshot( long txId )
     {
-        if ( snapshot != null )
-        {
-            throw new IllegalStateException( "Cannot perform snapshot while another snapshot is processing." );
-        }
-
         lock.writeLock().lock();
         try
         {
+            if ( snapshot != null )
+            {
+                throw new IllegalStateException( "Cannot perform snapshot while another snapshot is processing." );
+            }
             long snapshotTxId = Math.max( txId, lastTxId.highestEverSeen() );
             snapshot = new CountsSnapshot( snapshotTxId, copyOfMap( this.map ) );
         }

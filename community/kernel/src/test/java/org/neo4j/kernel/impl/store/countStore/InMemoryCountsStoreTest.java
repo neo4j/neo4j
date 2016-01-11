@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -75,8 +75,8 @@ public class InMemoryCountsStoreTest
         //WHEN
         countStore.updateAll( 1, update );
 
-        //THEN
-        Assert.assertNull( countStore.get( null ) );
+        //THEN throws
+        countStore.get( null );
     }
 
 

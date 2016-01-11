@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,14 +24,12 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -49,7 +47,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
 {
     @Test
-    public void smallWorkloadOnInMemoryLogTest() throws IOException, UnknownKey
+    public void smallWorkloadOnInMemoryLogTest() throws IOException
     {
         //GIVEN
         InMemoryLogChannel tempChannel = new InMemoryLogChannel();
@@ -73,13 +71,13 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
         {
             long[] value = countsSnapshot.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
-            Assert.assertTrue( Arrays.equals( value, pair.getValue() ) );
+            Assert.assertArrayEquals( value, pair.getValue() );
         }
     }
 
 
     @Test
-    public void largeWorkloadOnPhysicalLogTest() throws IOException, UnknownKey
+    public void largeWorkloadOnPhysicalLogTest() throws IOException
     {
         //GIVEN
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -115,14 +113,14 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
         {
             long[] value = recovered.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
-            Assert.assertTrue( Arrays.equals( value, pair.getValue() ) );
+            Assert.assertArrayEquals( value, pair.getValue() );
         }
 
         for ( Map.Entry<CountsKey,long[]> pair : recovered.getMap().entrySet() )
         {
             long[] value = countsSnapshot.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
-            Assert.assertTrue( Arrays.equals( value, pair.getValue() ) );
+            Assert.assertArrayEquals( value, pair.getValue() );
         }
     }
 
