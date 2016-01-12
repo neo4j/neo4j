@@ -65,7 +65,7 @@ class MapsTest extends RefcardTest with QueryStatisticsTestSupport {
 RETURN
 
 {name: "Alice", age: 38,
- address: {city: 'London', residential: true}}
+ address: {city: "London", residential: true}}
 
 ###
 
@@ -94,7 +94,7 @@ RETURN matchedNode
 Nodes and relationships are returned as maps of their data.
 
 ###assertion=returns-one
-WITH {name: "Alice", age: 38, children: ['John', 'Max']} AS map
+WITH {name: "Alice", age: 38, children: ["John", "Max"]} AS map
 RETURN
 
 map.name, map.age, map.children[0]

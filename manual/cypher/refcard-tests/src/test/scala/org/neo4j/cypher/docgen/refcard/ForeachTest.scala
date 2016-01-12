@@ -66,7 +66,7 @@ Execute a mutating operation for each relationship of a path.
 WITH ["Alice", "Bob", "Charlie"] AS coll
 
 FOREACH (value IN coll |
- CREATE (:Person {name:value}))
+ CREATE (:Person {name: value}))
 ###
 Execute a mutating operation for each element in a collection.
 """

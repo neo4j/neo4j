@@ -92,13 +92,8 @@ RETURN
 Combination of filter and extract in a concise notation.
 
 ###assertion=returns-one
-<<<<<<< HEAD:manual/cypher/refcard-tests/src/test/scala/org/neo4j/cypher/docgen/refcard/CollectionFunctionsTest.scala
-MATCH (n)  WHERE id(n) = %A%
-WITH [n] as coll
-=======
 MATCH (n) WHERE id(n) = %A%
 WITH [n] AS coll
->>>>>>> upstream/2.3:manual/cypher/refcard-tests/src/test/scala/org/neo4j/cypher/docgen/refcard/CollectionExpressionsTest.scala
 RETURN
 
 extract(x IN coll | x.prop)
@@ -107,13 +102,8 @@ extract(x IN coll | x.prop)
 A collection of the value of the expression for each element in the original collection.
 
 ###assertion=returns-one parameters=value
-<<<<<<< HEAD:manual/cypher/refcard-tests/src/test/scala/org/neo4j/cypher/docgen/refcard/CollectionFunctionsTest.scala
-MATCH (n)  WHERE id(n) = %A%
-WITH [n] as coll
-=======
 MATCH (n) WHERE id(n) = %A%
 WITH [n] AS coll
->>>>>>> upstream/2.3:manual/cypher/refcard-tests/src/test/scala/org/neo4j/cypher/docgen/refcard/CollectionExpressionsTest.scala
 RETURN
 
 filter(x IN coll WHERE x.prop <> {value})
@@ -122,13 +112,8 @@ filter(x IN coll WHERE x.prop <> {value})
 A filtered collection of the elements where the predicate is `TRUE`.
 
 ###assertion=returns-one
-<<<<<<< HEAD:manual/cypher/refcard-tests/src/test/scala/org/neo4j/cypher/docgen/refcard/CollectionFunctionsTest.scala
-MATCH (n)  WHERE id(n) = %A%
-WITH [n] as coll
-=======
 MATCH (n) WHERE id(n) = %A%
 WITH [n] AS coll
->>>>>>> upstream/2.3:manual/cypher/refcard-tests/src/test/scala/org/neo4j/cypher/docgen/refcard/CollectionExpressionsTest.scala
 RETURN
 
 reduce(s = "", x IN coll | s + x.prop)

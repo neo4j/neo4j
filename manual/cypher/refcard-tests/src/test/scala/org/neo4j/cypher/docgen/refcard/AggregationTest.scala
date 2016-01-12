@@ -67,15 +67,9 @@ count(*)
 The number of matching rows.
 
 ###assertion=returns-one
-<<<<<<< HEAD
-MATCH path=(variable)-->(m)
+MATCH path = (variable)-->(m)
 WHERE id(variable) = %A% AND id(m) = %B%
-RETURN NODES(path),
-=======
-MATCH path = (identifier)-->(m)
-WHERE id(identifier) = %A% AND id(m) = %B%
 RETURN nodes(path),
->>>>>>> upstream/2.3
 
 count(variable)
 ###
@@ -83,15 +77,9 @@ count(variable)
 The number of non-++NULL++ values.
 
 ###assertion=returns-one
-<<<<<<< HEAD
-MATCH path=(variable)-->(m)
+MATCH path = (variable)-->(m)
 WHERE id(variable) = %A% AND id(m) = %B%
-RETURN NODES(path),
-=======
-MATCH path = (identifier)-->(m)
-WHERE id(identifier) = %A% AND id(m) = %B%
 RETURN nodes(path),
->>>>>>> upstream/2.3
 
 count(DISTINCT variable)
 ###

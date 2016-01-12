@@ -150,11 +150,7 @@ WHERE id(n) = %A% AND id(m) = %B%
 
 RETURN r###
 
-<<<<<<< HEAD
-Bind a variable to the relationship.
-=======
-Bind the relationship to identifier `r`.
->>>>>>> upstream/2.3
+Bind the relationship to variable `r`.
 
 ###assertion=related
 MATCH
@@ -176,22 +172,18 @@ WHERE id(n) = %A% AND id(m) = %B%
 
 RETURN n, m###
 
-Veriable lenth path of any number of relationships from `n` to `m`.
+Variable lenth path of any number of relationships from `n` to `m`.
 (Please see the performance tips.)
 
 ###assertion=create parameters=aname
-<<<<<<< HEAD
-MATCH (n)  WHERE id(n) = %A%
-=======
 MATCH (n) WHERE id(n) = %A%
->>>>>>> upstream/2.3
 CREATE UNIQUE
 
 (n)-[:KNOWS]->(m {property: {value}})
 
 RETURN m###
 
-A relationship of type `KNOWS` from `n` to an `m` that has the declared property.
+A relationship of type `KNOWS` from `n` to an `m` having the declared property.
 
 ###assertion=empty
 MATCH p =
