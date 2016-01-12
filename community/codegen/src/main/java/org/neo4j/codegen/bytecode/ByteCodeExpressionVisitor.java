@@ -93,6 +93,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
         case "byte":
         case "short":
         case "char":
+        case "boolean":
             methodVisitor.visitVarInsn( Opcodes.ILOAD, variable.index() );
             break;
         case "long":

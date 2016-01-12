@@ -183,6 +183,12 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     public void beginIf( Expression test )
     {
         callSuperIfNecessary();
+        test.accept( expressionVisitor );
+
+        Label l0 = new Label();
+        methodVisitor.visitJumpInsn( IFEQ, l0 );
+
+        stateStack.push(new If(methodVisitor, l0));
     }
 
     @Override
