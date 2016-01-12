@@ -28,28 +28,28 @@ import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.{BY_NUMBER, BY_STR
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{TypeAndDirectionExpander, OnlyDirectionExpander, KernelPredicate}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
-import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, Bound, EntityNotFoundException, FailedIndexException}
+import org.neo4j.cypher.internal.frontend.v2_3.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.function.Predicate
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
+import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.kernel.security.URLAccessValidationError
-import org.neo4j.kernel.{Uniqueness, Traversal, GraphDatabaseAPI}
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.{RelationshipProxy, ThreadToStatementContextBridge}
+import org.neo4j.kernel.security.URLAccessValidationError
 import org.neo4j.tooling.GlobalGraphOperations
 
 import scala.collection.JavaConverters._
@@ -502,18 +502,18 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       case (Some(min), Some(max)) => Evaluators.includingDepths(min, max)
     }
 
-    val baseTraversalDescription: TraversalDescription = Traversal.description()
+    val baseTraversalDescription: TraversalDescription = graph.traversalDescription()
       .evaluator(depthEval)
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)
 
     val traversalDescription = if (relTypes.isEmpty) {
-      baseTraversalDescription.expand(Traversal.expanderForAllTypes(toGraphDb(direction)))
+      baseTraversalDescription.expand(PathExpanderBuilder.allTypes(toGraphDb(direction)).build())
     } else {
-      val emptyExpander = Traversal.emptyExpander()
+      val emptyExpander = PathExpanderBuilder.empty()
       val expander = relTypes.foldLeft(emptyExpander) {
         case (e, t) => e.add(DynamicRelationshipType.withName(t), toGraphDb(direction))
       }
-      baseTraversalDescription.expand(expander)
+      baseTraversalDescription.expand(expander.build())
     }
     traversalDescription.traverse(realNode).iterator().asScala
   }
@@ -529,9 +529,9 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                       filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {
     val startExpander = expander match {
       case OnlyDirectionExpander(_, _, dir) =>
-        Traversal.expanderForAllTypes(toGraphDb(dir))
+        PathExpanderBuilder.allTypes(toGraphDb(dir))
       case TypeAndDirectionExpander(_,_,typDirs) =>
-        typDirs.foldLeft(Traversal.emptyExpander()) {
+        typDirs.foldLeft(PathExpanderBuilder.empty()) {
           case (acc, (typ, dir)) => acc.add(DynamicRelationshipType.withName(typ), toGraphDb(dir))
         }
     }
@@ -550,7 +550,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       override def test(path: Path): Boolean = pathPredicate.test(path)
     }
 
-    new ShortestPath(depth, expanderWithAllPredicates, shortestPathPredicate) {
+    new ShortestPath(depth, expanderWithAllPredicates.build(), shortestPathPredicate) {
       override protected def filterNextLevelNodes(nextNode: Node): Node =
         if (filters.isEmpty) nextNode
         else if (filters.forall(filter => filter test nextNode)) nextNode

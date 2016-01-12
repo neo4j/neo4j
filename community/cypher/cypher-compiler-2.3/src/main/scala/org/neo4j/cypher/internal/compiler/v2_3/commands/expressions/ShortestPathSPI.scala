@@ -63,7 +63,7 @@ case class TypeAndDirectionExpander(nodeFilters: Seq[KernelPredicate[PropertyCon
     copy(nodeFilters = newNodeFilters, relFilters = newRelFilters)
 
   def add(typ: String, dir: SemanticDirection): TypeAndDirectionExpander =
-    copy(typDirs = typDirs :+ (typ, dir))
+    copy(typDirs = typDirs :+ typ -> dir)
 }
 
 object Expander {
