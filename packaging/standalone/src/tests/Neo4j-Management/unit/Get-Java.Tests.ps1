@@ -401,6 +401,10 @@ InModuleScope Neo4j-Management {
       $result = Get-Java -ForArbiter -Neo4jServer $serverObject
       $resultArgs = ($result.args -join ' ')
 
+      It "should have main class of org.neo4j.server.enterprise.StandaloneClusterClient" {
+        $resultArgs | Should Match ([regex]::Escape('-DserverMainClass=org.neo4j.server.enterprise.StandaloneClusterClient'))
+      }
+
       It "should have correct WorkingDir" {
         $resultArgs | Should Match ([regex]::Escape('-DworkingDir="TestDrive:\Path'))
       }
