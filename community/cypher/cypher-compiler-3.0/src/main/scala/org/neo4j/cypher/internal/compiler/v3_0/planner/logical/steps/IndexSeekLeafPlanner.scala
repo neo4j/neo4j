@@ -80,11 +80,12 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
       case predicate@Equals(a, Property(seekable@Variable(name), propKeyName))
         if a.dependencies.forall(arguments) && !arguments(seekable) =>
         val expr = SingleQueryExpression(a)
-        producePlanFor(seekable.name, propKeyName, predicate, expr, labelPredicateMap, hints, argumentIds)
+        (seekable.name, producePlanFor(seekable.name, propKeyName, predicate,
+          expr, labelPredicateMap, hints, argumentIds))
 
       // n.prop STARTS WITH "prefix%..."
       case predicate@AsStringRangeSeekable(seekable) =>
-        (seekable.name,producePlanFor(seekable.name, seekable.propertyKey, PartialPredicate(seekable.expr, predicate),
+        (seekable.name, producePlanFor(seekable.name, seekable.propertyKey, PartialPredicate(seekable.expr, predicate),
           seekable.asQueryExpression, labelPredicateMap, hints, argumentIds))
 
       // n.prop <|<=|>|>= value

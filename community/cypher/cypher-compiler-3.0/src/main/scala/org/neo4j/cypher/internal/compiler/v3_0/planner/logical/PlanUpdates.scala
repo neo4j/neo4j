@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.mergeUniqueIndexSeekLeafPlanner
-import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{ContainerIndex, PathExpression, Variable}
 
 /*
@@ -92,7 +91,6 @@ case object PlanUpdates
         //DELETE expr
         case expr =>
           context.logicalPlanProducer.planDeleteExpression(source, p)
-        case e => throw new CypherTypeException(s"Don't know how to delete a $e")
       }
 
       if (context.config.updateStrategy.alwaysEager || query.updateGraph.mergeDeleteOverlap)
