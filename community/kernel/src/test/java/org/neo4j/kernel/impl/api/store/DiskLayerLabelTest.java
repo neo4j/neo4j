@@ -30,7 +30,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -39,6 +38,7 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.asJavaSet;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -117,7 +117,7 @@ public class DiskLayerLabelTest extends DiskLayerTest
         PrimitiveLongIterator nodesForLabel2 = disk.nodesGetForLabel( state.getStoreStatement(), labelId2 );
 
         // THEN
-        assertEquals( asSet( node1.getId(), node2.getId() ), IteratorUtil.asSet( nodesForLabel1 ) );
-        assertEquals( asSet( node2.getId() ), IteratorUtil.asSet( nodesForLabel2 ) );
+        assertEquals( asSet( node1.getId(), node2.getId() ), asJavaSet( nodesForLabel1 ) );
+        assertEquals( asSet( node2.getId() ), asJavaSet( nodesForLabel2 ) );
     }
 }

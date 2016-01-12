@@ -53,6 +53,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.asJavaSet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
@@ -125,7 +126,7 @@ public class IndexQueryTransactionStateTest
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( 1l, 3l ) ) );
+        assertThat( asJavaSet( result ), equalTo( asSet( 1l, 3l ) ) );
     }
 
     @Test
@@ -159,7 +160,7 @@ public class IndexQueryTransactionStateTest
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
+        assertThat( asJavaSet( result ), equalTo( asSet( 2l, 3l ) ) );
     }
 
     @Test
@@ -198,7 +199,7 @@ public class IndexQueryTransactionStateTest
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( nodeId, 2l, 3l ) ) );
+        assertThat( asJavaSet( result ), equalTo( asSet( nodeId, 2l, 3l ) ) );
     }
 
     @Test
@@ -244,7 +245,7 @@ public class IndexQueryTransactionStateTest
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( nodeId, 2l, 3l ) ) );
+        assertThat( asJavaSet( result ), equalTo( asSet( nodeId, 2l, 3l ) ) );
     }
 
     @Test
@@ -287,7 +288,7 @@ public class IndexQueryTransactionStateTest
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
+        assertThat( asJavaSet( result ), equalTo( asSet( 2l, 3l ) ) );
     }
 
     @Test
@@ -332,7 +333,7 @@ public class IndexQueryTransactionStateTest
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
+        assertThat( asJavaSet( result ), equalTo( asSet( 2l, 3l ) ) );
     }
 
     @Test

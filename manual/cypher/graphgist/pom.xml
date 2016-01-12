@@ -42,7 +42,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-io</artifactId>
+      <artifactId>neo4j-fs</artifactId>
       <type>test-jar</type>
       <scope>compile</scope>
     </dependency>

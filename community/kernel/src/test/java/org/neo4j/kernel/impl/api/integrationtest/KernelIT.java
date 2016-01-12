@@ -52,6 +52,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
+
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.asJavaSet;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -169,7 +171,11 @@ public class KernelIT extends KernelIntegrationTest
         {
             // Yay!
         }
-
+        finally
+        {
+            statement.close();
+            tx.close();
+        }
     }
 
     @Test
@@ -235,7 +241,7 @@ public class KernelIT extends KernelIntegrationTest
         // THEN
         tx = db.beginTx();
         statement = statementContextSupplier.get();
-        assertEquals( asSet( labelId1 ), asSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
+        assertEquals( asSet( labelId1 ), asJavaSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
         tx.close();
 
     }
@@ -256,7 +262,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertFalse( statement.readOperations().nodeHasLabel( node.getId(), labelId2 ) );
-        assertEquals( asSet( labelId1 ), asSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
+        assertEquals( asSet( labelId1 ), asJavaSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
 
         statement.close();
         tx.success();
@@ -326,7 +332,7 @@ public class KernelIT extends KernelIntegrationTest
         tx.success();
         tx.close();
 
-        assertThat( asSet( labels ), equalTo( Collections.<Integer>emptySet() ) );
+        assertThat( asJavaSet( labels ), equalTo( Collections.<Integer>emptySet() ) );
     }
 
     @Test

@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import org.neo4j.collection.primitive.array.IntArray;
 import org.neo4j.unsafe.impl.batchimport.Utils;
-import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 
 /**
  * {@link Tracker} capable of keeping {@code int} range values, using {@link IntArray}.

@@ -53,8 +53,8 @@ import static org.junit.Assert.fail;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.asJavaSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.test.ThreadingRule.waitingWhileIn;
@@ -142,8 +142,8 @@ public class LuceneIndexAccessorTest
         PrimitiveLongIterator results = reader.scan();
 
         // THEN
-        assertEquals( asSet( nodeId, nodeId2 ), asSet( results ) );
-        assertEquals( asSet( nodeId ), asUniqueSet( reader.seek( value ) ) );
+        assertEquals( asSet( nodeId, nodeId2 ), asJavaSet( results ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.asUniqueSet( reader.seek( value ) ) );
         reader.close();
     }
 
@@ -216,7 +216,7 @@ public class LuceneIndexAccessorTest
         updateAndCommit( asList( remove( nodeId, value ) ) );
 
         // THEN
-        assertEquals( asSet( nodeId ), asUniqueSet( reader.seek( value ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.asUniqueSet( reader.seek( value ) ) );
         reader.close();
     }
 
@@ -230,10 +230,10 @@ public class LuceneIndexAccessorTest
         IndexReader secondReader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), asUniqueSet( firstReader.seek( value ) ) );
-        assertEquals( asSet(  ), asUniqueSet( firstReader.seek( value2 ) ) );
-        assertEquals( asSet( nodeId ), asUniqueSet( secondReader.seek( value ) ) );
-        assertEquals( asSet( nodeId2 ), asUniqueSet( secondReader.seek( value2 ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.asUniqueSet( firstReader.seek( value ) ) );
+        assertEquals( asSet(  ), PrimitiveLongCollections.asUniqueSet( firstReader.seek( value2 ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.asUniqueSet( secondReader.seek( value ) ) );
+        assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.asUniqueSet( secondReader.seek( value2 ) ) );
         firstReader.close();
         secondReader.close();
     }
@@ -248,7 +248,7 @@ public class LuceneIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), asUniqueSet( reader.seek( value ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.asUniqueSet( reader.seek( value ) ) );
         reader.close();
     }
 
@@ -263,8 +263,8 @@ public class LuceneIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), asUniqueSet( reader.seek( value2 ) ) );
-        assertEquals( emptySetOf( Long.class ), asUniqueSet( reader.seek( value ) ) );
+        assertEquals( asSet( nodeId ), PrimitiveLongCollections.asUniqueSet( reader.seek( value2 ) ) );
+        assertEquals( emptySetOf( Long.class ), PrimitiveLongCollections.asUniqueSet( reader.seek( value ) ) );
         reader.close();
     }
 
@@ -281,8 +281,8 @@ public class LuceneIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId2 ), asUniqueSet( reader.seek( value2 ) ) );
-        assertEquals( asSet(  ), asUniqueSet( reader.seek( value ) ) );
+        assertEquals( asSet( nodeId2 ), PrimitiveLongCollections.asUniqueSet( reader.seek( value2 ) ) );
+        assertEquals( asSet(  ), PrimitiveLongCollections.asUniqueSet( reader.seek( value ) ) );
         reader.close();
     }
 

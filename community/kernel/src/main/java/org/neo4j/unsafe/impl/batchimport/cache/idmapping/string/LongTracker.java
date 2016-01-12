@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
+import org.neo4j.collection.primitive.array.LongArray;
 
 /**
  * {@link Tracker} capable of keeping {@code long} range values, using {@link LongArray}.

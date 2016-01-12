@@ -61,6 +61,7 @@ import static org.mockito.Mockito.when;
 
 import static java.util.Arrays.asList;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.asJavaSet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -222,7 +223,7 @@ public class StateHandlingStatementOperationsTest
         PrimitiveLongIterator results = context.nodesGetFromIndexScan( statement, index );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), asJavaSet( results ) );
     }
 
     @Test
@@ -252,7 +253,7 @@ public class StateHandlingStatementOperationsTest
         PrimitiveLongIterator results = context.nodesGetFromIndexSeek( statement, index, "value" );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), asJavaSet( results ) );
     }
 
     @Test
@@ -282,7 +283,7 @@ public class StateHandlingStatementOperationsTest
         PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByPrefix( statement, index, "prefix" );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), asJavaSet( results ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -344,7 +345,7 @@ public class StateHandlingStatementOperationsTest
                 upper, false );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), asJavaSet( results ) );
     }
 
     @Test
@@ -375,7 +376,7 @@ public class StateHandlingStatementOperationsTest
         PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByString( statement, index, "Anne", true, "Bill", false );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), asJavaSet( results ) );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )
