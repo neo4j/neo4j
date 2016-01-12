@@ -171,7 +171,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
         callSuperIfNecessary();
         Label l0 = new Label();
         methodVisitor.visitLabel( l0 );
-        methodVisitor.visitFrame( F_SAME, 0, null, 0, null );
         test.accept( expressionVisitor );
         Label l1 = new Label();
         methodVisitor.visitJumpInsn( IFEQ, l1 );

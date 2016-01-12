@@ -51,7 +51,7 @@ class ClassByteCodeWriter implements ClassEmitter, Opcodes
 
     ClassByteCodeWriter( TypeReference type, TypeReference base, TypeReference[] interfaces )
     {
-        this.classWriter = new ClassWriter( ClassWriter.COMPUTE_MAXS );
+        this.classWriter = new ClassWriter( ClassWriter.COMPUTE_FRAMES );
         String[] iNames = new String[interfaces.length];
         for ( int i = 0; i < interfaces.length; i++ )
         {

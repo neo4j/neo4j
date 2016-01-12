@@ -19,6 +19,7 @@
  */
 package org.neo4j.codegen.bytecode;
 
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -169,6 +170,34 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     @Override
     public void or( Expression lhs, Expression rhs )
     {
+        /*
+         * something like:
+         *
+         * LOAD lhs
+         * IF TRUE GOTO 0
+         * LOAD rhs
+         * IF FALSE GOTO 1
+         *
+         * 0:
+         *  LOAD TRUE
+         *  GOTO 2
+         * 1:
+         *  LOAD FALSE
+         * 2:
+         *  ...continue doing stuff
+         */
+        lhs.accept( this );
+        Label l0 = new Label();
+        methodVisitor.visitJumpInsn( IFNE, l0 );
+        rhs.accept( this );
+        Label l1 = new Label();
+        methodVisitor.visitJumpInsn( IFEQ, l1 );
+        methodVisitor.visitLabel( l0 );
+        methodVisitor.visitInsn( ICONST_1 );
+        Label l2 = new Label();
+        methodVisitor.visitJumpInsn( GOTO, l2 );
+        methodVisitor.visitInsn( ICONST_0 );
+        methodVisitor.visitLabel( l2 );
 
     }
 
