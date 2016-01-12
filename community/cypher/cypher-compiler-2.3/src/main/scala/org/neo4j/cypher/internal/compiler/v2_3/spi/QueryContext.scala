@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.spi
 import java.net.URL
 
 import org.neo4j.cypher.internal.compiler.v2_3.InternalQueryStatistics
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.graphdb.{Path, PropertyContainer, Relationship, Node}
@@ -137,6 +138,12 @@ trait QueryContext extends TokenContext {
                                maxHops: Option[Int],
                                direction: SemanticDirection,
                                relTypes: Seq[String]): Iterator[Path]
+
+  def singleShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
+                         filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path]
+
+  def allShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
+                      filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path]
 }
 
 trait LockingQueryContext extends QueryContext {

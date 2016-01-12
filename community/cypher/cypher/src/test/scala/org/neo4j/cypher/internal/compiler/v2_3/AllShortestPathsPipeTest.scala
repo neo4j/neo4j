@@ -26,18 +26,18 @@ import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb.{Node, Path}
 
-import scala.collection.mutable.Map
+import scala.collection.mutable
 
 class AllShortestPathsPipeTest extends GraphDatabaseFunSuite {
 
   private implicit val monitor = mock[PipeMonitor]
 
   def runThroughPipeAndGetPath(a: Node, b: Node) = {
-    val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a" -> CTNode, "b" -> CTNode)
+    val source = new FakePipe(List(mutable.Map("a" -> a, "b" -> b)), "a" -> CTNode, "b" -> CTNode)
 
     val pipe = new ShortestPathPipe(source, ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), SemanticDirection.BOTH, false,
       Some(15), single = false, relIterator = None))()
-    graph.inTx(pipe.createResults(QueryStateHelper.empty).toList.map(m => m("p").asInstanceOf[Path]))
+    graph.withTx(tx => pipe.createResults(QueryStateHelper.queryStateFrom(graph, tx)).toList.map(m => m("p").asInstanceOf[Path]))
   }
 
   test("should return the shortest path between two nodes") {
