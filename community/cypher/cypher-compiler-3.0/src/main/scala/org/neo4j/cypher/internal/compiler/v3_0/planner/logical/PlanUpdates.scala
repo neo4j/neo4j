@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.mergeUniqueIndexSeekLeafPlanner
-import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{PathExpression, Variable}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{ContainerIndex, PathExpression, Variable}
 
 /*
  * This coordinates PlannerQuery planning of updates.
@@ -60,14 +59,24 @@ case object PlanUpdates
     //DELETE a
     case p: DeleteExpression =>
       p.expression match {
+        //DELETE user
         case Variable(n) if context.semanticTable.isNode(n) =>
           context.logicalPlanProducer.planDeleteNode(source, p)
+        //DELETE rel
         case Variable(r) if context.semanticTable.isRelationship(r) =>
           context.logicalPlanProducer.planDeleteRelationship(source, p)
+        //DELETE path
         case PathExpression(e)  =>
           context.logicalPlanProducer.planDeletePath(source, p)
-
-        case e => throw new CypherTypeException(s"Don't know how to delete a $e")
+        //DELETE users[{i}]
+        case ContainerIndex(Variable(n),indexExpr) if context.semanticTable.isNodeCollection(n) =>
+          context.logicalPlanProducer.planDeleteNode(source, p)
+        //DELETE rels[{i}]
+        case ContainerIndex(Variable(r),indexExpr) if context.semanticTable.isRelationshipCollection(r) =>
+          context.logicalPlanProducer.planDeleteRelationship(source, p)
+        //DELETE expr
+        case expr =>
+          context.logicalPlanProducer.planDeleteExpression(source, p)
       }
   }
 

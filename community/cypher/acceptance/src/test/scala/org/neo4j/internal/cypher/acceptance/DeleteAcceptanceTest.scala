@@ -156,4 +156,120 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assertStats(result, nodesDeleted = 0)
   }
+
+  test("should be able to delete a node from a collection") {
+    // Given
+    val user = createLabeledNode("User")
+    (0 to 3).foreach(_ => relate(user, createNode(), "FRIEND"))
+
+    // When
+    val result = updateWithBothPlanners(
+      """ MATCH (:User)-[:FRIEND]->(n)
+        | WITH collect(n) AS friends
+        | DETACH DELETE friends[{friendIndex}]""".stripMargin,
+      "friendIndex" -> 1)
+
+    // Then (no exception, and correct result)
+    assertStats(result, nodesDeleted = 1, relationshipsDeleted = 1)
+  }
+
+  test("should be able to delete a relationship from a collection") {
+    // Given
+    val user = createLabeledNode("User")
+    (0 to 3).foreach(_ => relate(user, createNode(), "FRIEND"))
+
+    // When
+    val result = updateWithBothPlanners(
+      """ MATCH (:User)-[r:FRIEND]->()
+        | WITH collect(r) AS friendships
+        | DELETE friendships[{friendIndex}]""".stripMargin,
+      "friendIndex" -> 1)
+
+    // Then (no exception, and correct result)
+    assertStats(result, nodesDeleted = 0, relationshipsDeleted = 1)
+  }
+
+  test("should be able to delete nodes from a map") {
+    // Given
+    createLabeledNode("User")
+    createLabeledNode("User")
+
+    // When
+    val result = updateWithBothPlanners(
+      """ MATCH (u:User)
+        | WITH {key: u} AS nodes
+        | DELETE nodes.key""".stripMargin)
+
+    // Then (no exception, and correct result)
+    assertStats(result, nodesDeleted = 2, relationshipsDeleted = 0)
+  }
+
+  test("should be able to delete relationships from a map") {
+    // Given
+    val a = createLabeledNode("User")
+    val b = createLabeledNode("User")
+    relate(a, b)
+    relate(b, a)
+
+    // When
+    val result = updateWithBothPlanners(
+      """ MATCH (:User)-[r]->(:User)
+        | WITH {key: r} AS rels
+        | DELETE rels.key""".stripMargin)
+
+    // Then (no exception, and correct result)
+    assertStats(result, nodesDeleted = 0, relationshipsDeleted = 2)
+  }
+
+  test("should be able to detach delete nodes from a nested map/collection") {
+    // Given
+    val a = createLabeledNode("User")
+    val b = createLabeledNode("User")
+    relate(a, b)
+    relate(b, a)
+
+    // When
+    val result = updateWithBothPlanners(
+      """ MATCH (u:User)
+        | WITH {key: collect(u)} AS nodeMap
+        | DETACH DELETE nodeMap.key[0]""".stripMargin)
+
+    // Then (no exception, and correct result)
+    assertStats(result, nodesDeleted = 1, relationshipsDeleted = 2)
+  }
+
+  test("should be able to delete relationships from a nested map/collection") {
+    // Given
+    val a = createLabeledNode("User")
+    val b = createLabeledNode("User")
+    relate(a, b)
+    relate(b, a)
+
+    // When
+    val result = updateWithBothPlanners(
+      """ MATCH (:User)-[r]->(:User)
+        | WITH {key: {key: collect(r)}} AS rels
+        | DELETE rels.key.key[0]""".stripMargin)
+
+    // Then (no exception, and correct result)
+    assertStats(result, nodesDeleted = 0, relationshipsDeleted = 1)
+  }
+
+  test("should be able to delete paths from a nested map/collection") {
+    // Given
+    val a = createLabeledNode("User")
+    val b = createLabeledNode("User")
+    relate(a, b)
+    relate(b, a)
+
+    // When
+    val result = updateWithBothPlanners(
+      """ MATCH p=(:User)-[r]->(:User)
+        | WITH {key: collect(p)} AS pathColls
+        | DELETE pathColls.key[0], pathColls.key[1]""".stripMargin)
+
+    // Then (no exception, and correct result)
+    assertStats(result, nodesDeleted = 2, relationshipsDeleted = 2)
+  }
+
 }

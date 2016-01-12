@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelName, PathExpression, PropertyKeyName, RelTypeName, Variable}
+import org.neo4j.cypher.internal.frontend.v3_0.ast._
 
 import scala.annotation.tailrec
 
@@ -55,9 +55,22 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
    * Finds all identifiers being deleted.
    */
   def identifiersToDelete = (deleteExpressions flatMap {
-    case DeleteExpression(identifier:Variable, _) => Seq(IdName.fromVariable(identifier))
+    // DELETE n
+    case DeleteExpression(identifier: Variable, _) => Seq(IdName.fromVariable(identifier))
+    // DELETE (n)-[r]-()
     case DeleteExpression(PathExpression(e), _) => e.dependencies.map(IdName.fromVariable)
+    // DELETE expr
+    case DeleteExpression(expr, _) => Seq(findVariableInNestedStructure(expr))
   }).toSet
+
+  @tailrec
+  private def findVariableInNestedStructure(e: Expression): IdName = e match {
+    case v: Variable => IdName.fromVariable(v)
+      // DELETE coll[i]
+    case ContainerIndex(expr, _) => findVariableInNestedStructure(expr)
+      // DELETE map.key
+    case Property(expr, _) => findVariableInNestedStructure(expr)
+  }
 
   /*
    * Finds all node properties being created with CREATE (:L)
@@ -193,7 +206,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
    * and what is deleted here
    */
   def deleteOverlap(qg: QueryGraph): Boolean = {
-    val identifiersToRead = qg.patternNodes ++ qg.patternRelationships.map(_.name)
+    val identifiersToRead = qg.patternNodes ++ qg.patternRelationships.map(_.name) ++ qg.argumentIds
     (identifiersToRead intersect identifiersToDelete).nonEmpty
   }
 

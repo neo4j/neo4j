@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyType, LazyTypes}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{SortDescription, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast, symbols}
@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirec
  * much testing
  */
 case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends CollectionSupport {
+
   def solvePredicate(plan: LogicalPlan, solved: Expression)(implicit context: LogicalPlanningContext) =
     plan.updateSolved(_.amendQueryGraph(_.addPredicates(solved)))
 
@@ -493,6 +494,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
     if (delete.forced) DetachDeletePath(inner, delete.expression)(solved)
     else DeletePath(inner, delete.expression)(solved)
+  }
+
+  def planDeleteExpression(inner: LogicalPlan, delete: DeleteExpression)
+                          (implicit context: LogicalPlanningContext): LogicalPlan = {
+    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(delete))
+
+    if (delete.forced) DetachDeleteExpression(inner, delete.expression)(solved)
+    else DeleteExpressionPlan(inner, delete.expression)(solved)
   }
 
   def planSetLabel(inner: LogicalPlan, pattern: SetLabelPattern)
