@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.kernel.api.impl.index.builder.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.index.populator.DeferredConstraintVerificationUniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;

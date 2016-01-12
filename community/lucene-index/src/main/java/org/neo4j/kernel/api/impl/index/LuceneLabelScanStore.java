@@ -38,8 +38,6 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class LuceneLabelScanStore implements LabelScanStore
 {
-    public static final String INDEX_IDENTIFIER = "labelStore";
-
     private final LuceneLabelScanIndex luceneIndex;
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
     private final FullStoreChangeStream fullStoreStream;

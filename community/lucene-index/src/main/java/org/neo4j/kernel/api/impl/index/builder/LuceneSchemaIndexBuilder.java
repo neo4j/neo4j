@@ -17,32 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.impl.index.builder;
 
-import java.io.File;
 import java.util.Map;
-import java.util.Objects;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndex;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class LuceneSchemaIndexBuilder
+public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneSchemaIndexBuilder>
 {
     private IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
     private IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
-    private DirectoryFactory directoryFactory = DirectoryFactory.PERSISTENT;
-    private FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-    private File indexRootFolder;
-    private String indexIdentifier;
-    private PartitionedIndexStorage indexStorage;
 
     private LuceneSchemaIndexBuilder()
     {
@@ -51,12 +41,6 @@ public class LuceneSchemaIndexBuilder
     public static LuceneSchemaIndexBuilder create()
     {
         return new LuceneSchemaIndexBuilder();
-    }
-
-    public LuceneSchemaIndexBuilder withIndexIdentifier( String indexIdentifier )
-    {
-        this.indexIdentifier = indexIdentifier;
-        return this;
     }
 
     public LuceneSchemaIndexBuilder withSamplingConfig( IndexSamplingConfig samplingConfig )
@@ -85,52 +69,15 @@ public class LuceneSchemaIndexBuilder
         return this;
     }
 
-    public LuceneSchemaIndexBuilder withIndexStorage( PartitionedIndexStorage indexStorage )
-    {
-        this.indexStorage = indexStorage;
-        return this;
-    }
-
     public LuceneSchemaIndexBuilder uniqueIndex()
     {
         this.indexConfig = IndexConfiguration.UNIQUE;
         return this;
     }
 
-    public LuceneSchemaIndexBuilder withDirectoryFactory( DirectoryFactory directoryFactory )
-    {
-        this.directoryFactory = directoryFactory;
-        return this;
-    }
-
-    public LuceneSchemaIndexBuilder withFileSystem( FileSystemAbstraction fileSystem )
-    {
-        this.fileSystem = fileSystem;
-        return this;
-    }
-
-    public LuceneSchemaIndexBuilder withIndexRootFolder( File indexRootFolder )
-    {
-        this.indexRootFolder = indexRootFolder;
-        return this;
-    }
-
     public LuceneSchemaIndex build()
     {
-        return new LuceneSchemaIndex( buildIndexStorage(), indexConfig, samplingConfig );
+        return new LuceneSchemaIndex( storageBuilder.buildIndexStorage(), indexConfig, samplingConfig );
     }
 
-    private PartitionedIndexStorage buildIndexStorage()
-    {
-        if ( indexStorage == null )
-        {
-            Objects.requireNonNull( directoryFactory );
-            Objects.requireNonNull( fileSystem );
-            Objects.requireNonNull( indexRootFolder );
-            Objects.requireNonNull( indexIdentifier );
-            indexStorage =
-                    new PartitionedIndexStorage( directoryFactory, fileSystem, indexRootFolder, indexIdentifier );
-        }
-        return indexStorage;
-    }
 }

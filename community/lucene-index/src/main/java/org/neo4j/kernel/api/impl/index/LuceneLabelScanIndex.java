@@ -37,11 +37,6 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
     private final BitmapDocumentFormat format;
     private final LabelScanStorageStrategy storageStrategy;
 
-    public LuceneLabelScanIndex( PartitionedIndexStorage indexStorage )
-    {
-        this( BitmapDocumentFormat._32, indexStorage );
-    }
-
     public LuceneLabelScanIndex( BitmapDocumentFormat format, PartitionedIndexStorage indexStorage )
     {
         super( indexStorage );

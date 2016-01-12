@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore.Monitor;
+import org.neo4j.kernel.api.impl.index.builder.LuceneLabelScanIndexBuilder;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.configuration.Config;
@@ -88,10 +89,11 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
 
     private LuceneLabelScanIndex getLuceneIndex( KernelContext context, DirectoryFactory directoryFactory )
     {
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( directoryFactory, context.fileSystem(),
-                LabelScanStoreProvider.getStoreDirectory( context.storeDir() ),
-                LuceneLabelScanStore.INDEX_IDENTIFIER );
-        return new LuceneLabelScanIndex( indexStorage );
+        return LuceneLabelScanIndexBuilder.create()
+                .withDirectoryFactory( directoryFactory )
+                .withFileSystem( context.fileSystem() )
+                .withIndexRootFolder( LabelScanStoreProvider.getStoreDirectory( context.storeDir() ) )
+                .build();
     }
 
 }

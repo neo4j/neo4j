@@ -33,19 +33,14 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.neo4j.function.Predicates;
-import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore;
+import org.neo4j.kernel.api.impl.index.builder.LuceneLabelScanIndexBuilder;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.DatabaseRule.RestartAction;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.Exceptions.peel;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
@@ -136,7 +131,7 @@ public class LuceneLabelScanStoreChaosIT
     private List<File> labelScanStoreIndexDirectories( File storeDirectory )
     {
         File rootDir = new File( new File( new File( new File( storeDirectory, "schema" ), "label" ), "lucene" ),
-                LuceneLabelScanStore.INDEX_IDENTIFIER );
+                LuceneLabelScanIndexBuilder.DEFAULT_INDEX_IDENTIFIER );
 
         File[] partitionDirs = rootDir.listFiles( File::isDirectory );
         return (partitionDirs == null) ? Collections.emptyList() : Stream.of( partitionDirs ).collect( toList() );

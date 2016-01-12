@@ -46,6 +46,7 @@ import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.impl.index.builder.LuceneLabelScanIndexBuilder;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -53,23 +54,19 @@ import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -449,9 +446,13 @@ public class LuceneLabelScanStoreTest
         monitor = new TrackingMonitor();
 
         indexStorage = new PartitionedIndexStorage( directoryFactory, new DefaultFileSystemAbstraction(), dir,
-                LuceneLabelScanStore.INDEX_IDENTIFIER );
+                LuceneLabelScanIndexBuilder.DEFAULT_INDEX_IDENTIFIER );
+        LuceneLabelScanIndex index = LuceneLabelScanIndexBuilder.create()
+                                .withDirectoryFactory( directoryFactory )
+                                .withIndexStorage( indexStorage )
+                                .withDocumentFormat( documentFormat )
+                                .build();
 
-        LuceneLabelScanIndex index = new LuceneLabelScanIndex( documentFormat, indexStorage );
         store = new LuceneLabelScanStore( index, asStream( existingData ), NullLogProvider.getInstance(), monitor );
         life.add( store );
 

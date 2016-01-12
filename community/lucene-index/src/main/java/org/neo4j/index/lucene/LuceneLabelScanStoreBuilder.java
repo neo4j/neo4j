@@ -25,12 +25,15 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanIndex;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore;
+import org.neo4j.kernel.api.impl.index.builder.LuceneLabelScanIndexBuilder;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 /**
  * Means of obtaining a {@link LabelScanStore}, independent of the {@link org.neo4j.kernel.extension.KernelExtensions}
@@ -62,12 +65,12 @@ public class LuceneLabelScanStoreBuilder
         if ( null == labelScanStore )
         {
             // TODO: Replace with kernel extension based lookup
-            PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT, fileSystem,
-                    LabelScanStoreProvider.getStoreDirectory( storeDir ),
-                    LuceneLabelScanStore.INDEX_IDENTIFIER );
-            LuceneLabelScanIndex index = new LuceneLabelScanIndex( indexStorage );
-            labelScanStore = new LuceneLabelScanStore( index, fullStoreStream, logProvider,
-                    LuceneLabelScanStore.Monitor.EMPTY );
+            LuceneLabelScanIndex index = LuceneLabelScanIndexBuilder.create()
+                    .withFileSystem( fileSystem )
+                    .withIndexRootFolder( LabelScanStoreProvider.getStoreDirectory( storeDir ) )
+                    .build();
+            labelScanStore = new LuceneLabelScanStore( index, fullStoreStream,
+                    logProvider, LuceneLabelScanStore.Monitor.EMPTY );
 
             try
             {

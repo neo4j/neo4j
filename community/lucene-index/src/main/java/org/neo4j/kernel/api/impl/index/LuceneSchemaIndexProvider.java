@@ -30,6 +30,7 @@ import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.impl.index.builder.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.index.populator.DeferredConstraintVerificationUniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.impl.index.populator.NonUniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -41,7 +42,6 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -73,8 +73,11 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
             IndexConfiguration config, IndexSamplingConfig samplingConfig )
     {
-        PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
-        LuceneSchemaIndex luceneIndex = new LuceneSchemaIndex( indexStorage, config, samplingConfig );
+        LuceneSchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
+                                        .withIndexConfig( config )
+                                        .withSamplingConfig( samplingConfig )
+                                        .withIndexStorage( getIndexStorage( indexId ) )
+                                        .build();
         if ( config.isUnique() )
         {
             return new DeferredConstraintVerificationUniqueLuceneIndexPopulator( luceneIndex, descriptor );
@@ -89,8 +92,11 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
-        LuceneSchemaIndex luceneIndex = new LuceneSchemaIndex( indexStorage, config, samplingConfig );
+        LuceneSchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create()
+                                            .withIndexConfig( config )
+                                            .withSamplingConfig( samplingConfig )
+                                            .withIndexStorage( getIndexStorage( indexId ) )
+                                            .build();
         luceneIndex.open();
         return new LuceneIndexAccessor( luceneIndex );
     }
@@ -164,8 +170,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 
     private boolean indexIsOnline( PartitionedIndexStorage indexStorage ) throws IOException
     {
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
-        try ( LuceneSchemaIndex index = new LuceneSchemaIndex( indexStorage, IndexConfiguration.NON_UNIQUE, samplingConfig ) )
+        try ( LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create().withIndexStorage( indexStorage ).build() )
         {
             if ( index.exists() )
             {
