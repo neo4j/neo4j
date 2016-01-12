@@ -362,7 +362,7 @@ public class EncodingIdMapper implements IdMapper
         long max = highestSetIndex; // excluding the last one because we compare i w/ i+1
         long numberOfCollisions = 0;
         SameGroupDetector sameGroupDetector = new SameGroupDetector();
-        for ( int i = 0; i < max; )
+        for ( long i = 0; i < max; )
         {
             int batch = (int) min( max-i, 10_000 );
             for ( int j = 0; j < batch; j++, i++ )
