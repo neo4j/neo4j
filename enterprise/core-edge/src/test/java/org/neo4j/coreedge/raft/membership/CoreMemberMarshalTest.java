@@ -27,6 +27,7 @@ import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class CoreMemberMarshalTest
 {
@@ -79,5 +80,30 @@ public class CoreMemberMarshalTest
         assertEquals( aRealMember, theRestoredRealMember );
         assertEquals( aNullMember, theRestoredNullMember );
         assertEquals( anotherRealMember, theRestoredAnotherRealMember );
+    }
+
+    @Test
+    public void shouldReturnNullForHalfWrittenInstance() throws Exception
+    {
+        // given
+        // a CoreMember and a ByteBuffer to write it to
+        CoreMember.CoreMemberMarshal marshal = new CoreMember.CoreMemberMarshal();
+        final CoreMember aRealMember = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
+                new AdvertisedSocketAddress( "host1:2001" ) );
+
+        final ByteBuffer buffer = ByteBuffer.allocate( 1_000 );
+
+        // and the CoreMember is serialized but for 5 bytes at the end
+        marshal.marshal( aRealMember, buffer );
+        buffer.limit( buffer.position() - 5 );
+        buffer.flip();
+
+        // when
+        // that member is read back
+        CoreMember member = marshal.unmarshal( buffer );
+
+        // then
+        // it should be null and not a half written instance
+        assertNull( member );
     }
 }

@@ -140,7 +140,7 @@ public class CoreMember
         private CoreMember dealWithPossibleNullAddress( AdvertisedSocketAddress coreAddress, AdvertisedSocketAddress
                 raftAddress )
         {
-            if ( coreAddress.equals( NULL_ADDRESS ) && raftAddress.equals( NULL_ADDRESS ) )
+            if ( coreAddress == null || raftAddress == null || (coreAddress.equals( NULL_ADDRESS ) && raftAddress.equals( NULL_ADDRESS ) ) )
             {
                 return null;
             }

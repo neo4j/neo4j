@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.server;
 
 import java.net.InetSocketAddress;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -83,14 +84,28 @@ public class AdvertisedSocketAddress
 
         public AdvertisedSocketAddress unmarshal( ByteBuf buffer )
         {
-            String host = StringMarshal.unmarshal( buffer );
-            return new AdvertisedSocketAddress( host );
+            try
+            {
+                String host = StringMarshal.unmarshal( buffer );
+                return new AdvertisedSocketAddress( host );
+            }
+            catch( IndexOutOfBoundsException notEnoughBytes )
+            {
+                return null;
+            }
         }
 
         public AdvertisedSocketAddress unmarshal( ByteBuffer buffer )
         {
-            String host = StringMarshal.unmarshal( buffer );
-            return new AdvertisedSocketAddress( host );
+            try
+            {
+                String host = StringMarshal.unmarshal( buffer );
+                return new AdvertisedSocketAddress( host );
+            }
+            catch( BufferUnderflowException notEnoughBytes )
+            {
+                return null;
+            }
         }
     }
 }
