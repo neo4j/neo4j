@@ -39,7 +39,8 @@ public class CoreMember
         this.raftAddress = raftAddress;
     }
 
-    @Override public String toString()
+    @Override
+    public String toString()
     {
         return format( "CoreMember{coreAddress=%s, raftAddress=%s}", coreAddress, raftAddress );
     }
@@ -90,6 +91,9 @@ public class CoreMember
      * │             │port                  4 bytes││
      * │             └─────────────────────────────┘│
      * └────────────────────────────────────────────┘
+     *
+     * This Marshal implementation can also serialize and deserialize null values. They are encoded as a CoreMember
+     * with empty strings in the address fields, so they still adhere to the format displayed above.
      */
     public static class CoreMemberMarshal implements Marshal<CoreMember>
     {
@@ -107,8 +111,8 @@ public class CoreMember
             }
             else
             {
-               marshal.marshal( member.getCoreAddress(), buffer );
-               marshal.marshal( member.getRaftAddress(), buffer );
+                marshal.marshal( member.getCoreAddress(), buffer );
+                marshal.marshal( member.getRaftAddress(), buffer );
             }
         }
 

@@ -41,7 +41,8 @@ public abstract class StateRecoveryManager
             return previouslyInactive;
         }
 
-        public void setFileStatus(File active, File inactive) {
+        public void setFileStatus( File active, File inactive )
+        {
             this.previouslyActive = active;
             this.previouslyInactive = inactive;
         }
@@ -74,7 +75,7 @@ public abstract class StateRecoveryManager
 
         if ( a > b )
         {
-            recoveryStatus.setFileStatus( fileA, fileB);
+            recoveryStatus.setFileStatus( fileA, fileB );
         }
         else
         {

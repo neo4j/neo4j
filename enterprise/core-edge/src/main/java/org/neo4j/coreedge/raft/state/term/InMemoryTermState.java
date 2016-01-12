@@ -26,8 +26,6 @@ import org.neo4j.coreedge.raft.state.membership.Marshal;
 
 public class InMemoryTermState implements TermState
 {
-    public static final int TERM_BYTES = 8;
-
     private long term = 0;
 
     public InMemoryTermState()
@@ -57,6 +55,11 @@ public class InMemoryTermState implements TermState
         term = newTerm;
     }
 
+    /**
+     * This method implements the invariant of this class, that term never transitions to lower values. If
+     * newTerm is lower than the term already stored in this class, it will throw an
+     * {@link IllegalArgumentException}.
+     */
     public void failIfInvalid( long newTerm )
     {
         if ( newTerm < term )

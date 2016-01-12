@@ -21,9 +21,22 @@ package org.neo4j.coreedge.raft.state.term;
 
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 
+/**
+ * Represents the current term for this Raft instance. Implementations of this interface are expected to
+ * maintain the invariant that the term never transitions to a lower value.
+ */
 public interface TermState
 {
     long currentTerm();
 
+    /**
+     * Updates the term to a new value. This value is generally expected, but not required, to be persisted. Consecutive
+     * calls to this method should always have monotonically increasing arguments, thus maintaining the raft invariant
+     * that the term is always non-decreasing. {@link IllegalArgumentException} can be thrown if an invalid value is
+     * passed as argument.
+     *
+     * @param newTerm The new value.
+     * @throws RaftStorageException If the implementation persists the state and a storage exception was raised.
+     */
     void update( long newTerm ) throws RaftStorageException;
 }
