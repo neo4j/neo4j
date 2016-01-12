@@ -29,24 +29,26 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.helpers.TransactionTemplate;
+import org.neo4j.graphdb.impl.TransactionTemplate;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.storageengine.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
-import static org.neo4j.storageengine.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TxPushStrategyConfigIT
 {

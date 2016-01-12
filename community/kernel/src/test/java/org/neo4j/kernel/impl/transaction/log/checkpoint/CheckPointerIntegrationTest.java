@@ -52,7 +52,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.lang.System.getProperty;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.storageengine.log.LogVersionRepository.BASE_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.BASE_LOG_VERSION;
 
 public class CheckPointerIntegrationTest
 {

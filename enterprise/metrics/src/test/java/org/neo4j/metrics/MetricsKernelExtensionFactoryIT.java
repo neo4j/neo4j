@@ -45,6 +45,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -52,7 +53,6 @@ import org.neo4j.metrics.source.CoreEdgeMetrics;
 import org.neo4j.metrics.source.db.CheckPointingMetrics;
 import org.neo4j.metrics.source.db.CypherMetrics;
 import org.neo4j.metrics.source.db.TransactionMetrics;
-import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.is;

@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
-import org.neo4j.kernel.impl.store.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;

@@ -80,11 +80,12 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.unsafe.batchimport.api.BatchImporter;
 import org.neo4j.unsafe.batchimport.api.InputEntity;
 import org.neo4j.unsafe.batchimport.api.InputIterable;
@@ -113,8 +114,6 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
-import static org.neo4j.storageengine.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
-import static org.neo4j.storageengine.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
@@ -284,14 +283,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         // The legacy store we're migrating doesn't have this record in neostore so try to extract it from tx log
         if ( lastTxId == TransactionIdStore.BASE_TX_ID )
         {
-            return new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
+            return new LogPosition( LogVersionRepository.BASE_LOG_VERSION, LogVersionRepository.BASE_LOG_BYTE_OFFSET );
         }
 
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fileSystem );
         long logVersion = logFiles.getHighestLogVersion();
         if ( logVersion == -1 )
         {
-            return new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
+            return new LogPosition( LogVersionRepository.BASE_LOG_VERSION, LogVersionRepository.BASE_LOG_BYTE_OFFSET );
         }
         long offset = fileSystem.getFileSize( logFiles.getLogFileForVersion( logVersion ) );
         return new LogPosition( logVersion, offset );

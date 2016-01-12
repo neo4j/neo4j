@@ -39,7 +39,7 @@ import static java.util.Arrays.asList;
 import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
-import static org.neo4j.kernel.impl.store.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.impl.api.index.NodePropertyUpdate.add;
 
 public class UniqueLuceneIndexPopulatorTest
 {

@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -49,7 +50,6 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.index.NodePropertyUpdate;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
@@ -164,7 +164,7 @@ public class NeoStoreIndexStoreViewTest
         createAlistairAndStefanNodes();
         getOrCreateIds();
 
-        neoStores = new StoreAccess( graphDb ).getRawNeoStores();
+        neoStores = new StoreAccess( graphDb.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get() ).getRawNeoStores();
         counts = neoStores.getCounts();
         locks = mock( LockService.class, new Answer()
         {

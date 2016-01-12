@@ -22,12 +22,9 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -206,7 +203,7 @@ public class PropertyIT extends KernelIntegrationTest
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), equalTo( newProperty.value() ) );
-            assertThat( IteratorUtil.asList( statement.nodeGetPropertyKeys( nodeId ) ), equalTo( Arrays.asList(
+            assertThat( PrimitiveIntCollections.asList( statement.nodeGetPropertyKeys( nodeId ) ), equalTo( Arrays.asList(
                     newProperty.propertyKeyId() ) ) );
         }
     }

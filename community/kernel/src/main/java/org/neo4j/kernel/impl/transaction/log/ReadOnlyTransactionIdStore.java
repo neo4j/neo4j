@@ -25,8 +25,6 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
-import org.neo4j.storageengine.log.TransactionId;
-import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;

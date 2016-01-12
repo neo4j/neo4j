@@ -41,10 +41,10 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.tools.console.input.ArgsCommand;
 
 import static java.lang.String.format;

@@ -29,7 +29,7 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
-import org.neo4j.storageengine.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;

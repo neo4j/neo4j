@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.ArrayList;
 
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.store.index.NodePropertyUpdate;
 
 public abstract class CollectingIndexUpdater implements IndexUpdater
 {

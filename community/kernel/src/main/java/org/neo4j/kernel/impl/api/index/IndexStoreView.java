@@ -24,7 +24,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.store.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.register.Register.DoubleLongRegister;
 

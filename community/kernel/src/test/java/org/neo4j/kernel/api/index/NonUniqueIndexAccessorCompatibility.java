@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.store.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;

@@ -23,6 +23,7 @@ import java.util.HashSet;
 
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
@@ -40,7 +41,6 @@ import static org.junit.Assert.assertThat;
 
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -69,7 +69,7 @@ public class DiskLayerLabelTest extends DiskLayerTest
         node.next();
         PrimitiveIntIterator readLabels = node.get().getLabels();
         assertEquals( new HashSet<>( asList( labelId1, labelId2 ) ),
-                addToCollection( readLabels, new HashSet<Integer>() ) );
+                PrimitiveIntCollections.addToCollection( readLabels, new HashSet<Integer>() ) );
     }
 
     @Test

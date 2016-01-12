@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.storageengine.log.LogVersionRepository.BASE_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.BASE_LOG_VERSION;
 
 public class PositionToRecoverFromTest
 {

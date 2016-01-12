@@ -29,13 +29,14 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.TransactionTemplate;
+import org.neo4j.graphdb.impl.TransactionTemplate;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
 
 public class BiggerThanLogTxIT
 {
@@ -160,7 +161,7 @@ public class BiggerThanLogTxIT
         return template.with( db ).execute( transaction -> {
             // We're not actually asserting that this transaction produces log data
             // bigger than the threshold.
-            long rotationThreshold = parseLongWithUnit( ROTATION_THRESHOLD );
+            long rotationThreshold = Config.parseLongWithUnit( ROTATION_THRESHOLD );
             int nodeCount = 100;
             byte[] arrayProperty = new byte[(int) (rotationThreshold / nodeCount)];
             for ( int i = 0; i < nodeCount; i++ )

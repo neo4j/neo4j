@@ -29,8 +29,8 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 
 public class Neo4jMockitoHelpers
 {

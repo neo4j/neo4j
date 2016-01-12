@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.store.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
 import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.ThreadingRule;

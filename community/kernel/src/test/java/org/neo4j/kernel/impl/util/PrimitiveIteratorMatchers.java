@@ -27,11 +27,10 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 import static junit.framework.TestCase.fail;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
 
 public class PrimitiveIteratorMatchers
 {
@@ -43,7 +42,7 @@ public class PrimitiveIteratorMatchers
             @Override
             protected boolean matchesSafely( PrimitiveLongIterator item )
             {
-                List<Long> actual = asList( item );
+                List<Long> actual = PrimitiveLongCollections.asList( item );
                 List<Long> expected = expected();
 
                 eachActual:

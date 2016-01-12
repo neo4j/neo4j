@@ -40,9 +40,9 @@ import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifeRule;
-import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.Race;
 

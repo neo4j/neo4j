@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.storageengine.log.LogVersionRepository.BASE_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.BASE_LOG_VERSION;
 
 public class LatestCheckPointFinder
 {

@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.logging.NullLog;
 
 import static java.lang.String.format;
@@ -74,9 +75,9 @@ import static java.lang.String.format;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
-import static org.neo4j.storageengine.log.TransactionIdStore.BASE_TX_ID;
 
 /**
  * Tool to rebuild store based on available transaction logs.
@@ -288,7 +289,7 @@ class RebuildFromLogs
         private void checkConsistency() throws ConsistencyCheckIncompleteException
         {
             LabelScanStore labelScanStore = dataSource.getLabelScanStore();
-            StoreAccess nativeStores = new StoreAccess( graphdb ).initialize();
+            StoreAccess nativeStores = new StoreAccess( graphdb.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get() ).initialize();
             DirectStoreAccess stores = new DirectStoreAccess( nativeStores, labelScanStore, indexes );
             FullCheck fullCheck = new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ),
                     Statistics.NONE, ConsistencyCheckService.defaultConsistencyCheckThreadsNumber() );

@@ -51,8 +51,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.log.LogVersionRepository;
-import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.equalTo;

@@ -46,8 +46,8 @@ import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.storageengine.log.TransactionIdStore;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
 

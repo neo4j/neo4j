@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -1089,7 +1090,8 @@ public class TxStateTest
         state.relationshipDoDelete( relC, relType + 1, startNode, endNode );
 
         // Then
-        assertThat( IteratorUtil.asList( state.nodeRelationshipTypes( startNode ) ), equalTo( asList( relType ) ) );
+        assertThat( PrimitiveIntCollections.asList( state.nodeRelationshipTypes( startNode ) ),
+                equalTo( asList( relType ) ) );
     }
 
     @Test

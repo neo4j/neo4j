@@ -25,7 +25,7 @@ import org.neo4j.function.ThrowingLongFunction;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-import static org.neo4j.storageengine.log.LogVersionRepository.BASE_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.BASE_LOG_VERSION;
 
 /**
  * Utility class to find the log position to start recovery from

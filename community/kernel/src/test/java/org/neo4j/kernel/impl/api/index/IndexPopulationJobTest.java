@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.logging.AssertableLogProvider;
@@ -97,9 +96,9 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
+import static org.neo4j.kernel.impl.api.index.NodePropertyUpdate.change;
+import static org.neo4j.kernel.impl.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.impl.store.index.NodePropertyUpdate.remove;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class IndexPopulationJobTest

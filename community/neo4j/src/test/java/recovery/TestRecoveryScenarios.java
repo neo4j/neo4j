@@ -55,7 +55,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 
 /**
@@ -334,7 +333,7 @@ public class TestRecoveryScenarios
     @SuppressWarnings("deprecation")
     private void crashAndRestart( InMemoryIndexProvider indexProvider )
     {
-        FileSystemAbstraction uncleanFs = fsRule.snapshot( shutdownDbAction( db ) );
+        FileSystemAbstraction uncleanFs = fsRule.snapshot( () -> db.shutdown() );
         db = (GraphDatabaseAPI) databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
     }
 }

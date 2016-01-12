@@ -22,9 +22,9 @@ package org.neo4j.coreedge.catchup.tx.edge;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.log.TransactionIdStore;
 
 public class ApplyPulledTransactions implements TxPullResponseListener
 {

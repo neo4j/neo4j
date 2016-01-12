@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import org.neo4j.helpers.Configuration;
+import org.neo4j.test.Configuration;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Collections.singletonMap;
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.ext.udc.UdcSettings.udc_enabled;
-import static org.neo4j.helpers.Configuration.DEFAULT;
+import static org.neo4j.test.Configuration.DEFAULT;
 
 @RunWith(Parameterized.class)
 public class UdcSettingsTest

@@ -48,8 +48,8 @@ import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
-import org.neo4j.kernel.impl.store.index.NodePropertyUpdate;
 import org.neo4j.register.Register.DoubleLong;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;

@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.util.collection;
 import java.util.List;
 
 import org.junit.Test;
-import org.neo4j.helpers.collection.IteratorUtil;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import static java.util.Arrays.asList;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertFalse;
@@ -155,7 +155,7 @@ public class SimpleBitSetTest
         set.put( 78 );
 
         // When
-        List<Integer> found = IteratorUtil.asList( set.iterator() );
+        List<Integer> found = PrimitiveIntCollections.asList( set.iterator() );
 
         // Then
         assertThat( found, equalTo( asList( 4, 7, 63, 78 ) ));

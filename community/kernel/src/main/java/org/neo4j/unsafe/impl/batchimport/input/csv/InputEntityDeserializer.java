@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.csv.reader.CharSeeker;
@@ -27,7 +28,6 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.unsafe.batchimport.api.Collector;
 import org.neo4j.unsafe.batchimport.api.InputEntity;
 import org.neo4j.unsafe.batchimport.api.InputIterator;
@@ -49,13 +49,13 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
     private final int delimiter;
     private final Function<ENTITY,ENTITY> decorator;
     private final Deserialization<ENTITY> deserialization;
-    private final Validator<ENTITY> validator;
+    private final Consumer<ENTITY> validator;
     private final Extractors.StringExtractor stringExtractor = new Extractors.StringExtractor( false );
     private final Collector badCollector;
 
     InputEntityDeserializer( Header header, CharSeeker data, int delimiter,
             Deserialization<ENTITY> deserialization, Function<ENTITY,ENTITY> decorator,
-            Validator<ENTITY> validator, Collector badCollector )
+            Consumer<ENTITY> validator, Collector badCollector )
     {
         this.header = header;
         this.data = data;
@@ -97,7 +97,7 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
             }
 
             entity = decorator.apply( entity );
-            validator.validate( entity );
+            validator.accept( entity );
 
             return entity;
         }

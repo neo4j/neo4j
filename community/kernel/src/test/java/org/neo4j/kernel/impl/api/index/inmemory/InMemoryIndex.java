@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.store.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
 import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.storageengine.api.schema.IndexReader;
 

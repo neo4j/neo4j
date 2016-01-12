@@ -34,9 +34,9 @@ import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator.Configuration;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.Log;
-import org.neo4j.storageengine.log.TransactionIdStore;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.core.IsEqual.equalTo;

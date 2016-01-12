@@ -20,7 +20,8 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
-import org.neo4j.storageengine.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 /**
  * Migrating a store uses the {@link ParallelBatchImporter} to do so, where node/relationship stores
@@ -89,13 +90,13 @@ public interface AdditionalInitialIds
         @Override
         public long lastCommittedTransactionLogVersion()
         {
-            return TransactionIdStore.BASE_TX_LOG_VERSION;
+            return LogVersionRepository.BASE_LOG_VERSION;
         }
 
         @Override
         public long lastCommittedTransactionLogByteOffset()
         {
-            return TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
+            return LogVersionRepository.BASE_LOG_BYTE_OFFSET;
         }
     };
 }

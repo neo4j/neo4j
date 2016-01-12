@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.neo4j.storageengine.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 
 public class LogHeader
 {

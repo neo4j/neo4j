@@ -833,16 +833,6 @@ public class PrimitiveLongCollections
         };
     }
 
-    public static List<Long> primitivesList( PrimitiveLongIterator iterator )
-    {
-        ArrayList<Long> result = new ArrayList<>();
-        while ( iterator.hasNext() )
-        {
-            result.add( iterator.next() );
-        }
-        return result;
-    }
-
     public static Set<Long> asJavaSet( PrimitiveLongIterator iterator )
     {
         return internalAsSet( iterator, false );
