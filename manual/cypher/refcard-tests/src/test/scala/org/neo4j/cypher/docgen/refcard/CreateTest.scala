@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 class CreateTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "CREATE"
-  val css = "write c4-4 c5-5 c6-3"
+  val css = "write c4-3 c5-4 c6-1"
   override val linkId = "query-create"
 
   override def assert(name: String, result: InternalExecutionResult) {

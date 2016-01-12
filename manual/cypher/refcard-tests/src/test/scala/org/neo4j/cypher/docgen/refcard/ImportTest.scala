@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 class ImportTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List()
   val title = "Import"
-  val css = "write c2-1 c4-4 c5-4 c6-3"
+  val css = "write c2-1 c4-4 c5-5 c6-3"
   override val linkId = "cypherdoc-importing-csv-files-with-cypher"
 
   implicit var csvFilesDir: File = createDir(dir, "csv")
@@ -93,7 +93,8 @@ Load CSV data which has headers.
 ###assertion=created
 //
 
-LOAD CSV FROM '%ARTIST_WITH_FIELD_DELIMITER%'
+LOAD CSV FROM
+'%ARTIST_WITH_FIELD_DELIMITER%'
 AS line FIELDTERMINATOR ';'
 CREATE (:Artist {name: line[1], year: toInt(line[2])})
 ###

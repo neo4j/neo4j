@@ -80,11 +80,11 @@ timestamp()###
 Milliseconds since midnight, January 1, 1970 UTC.
 
 ###assertion=returns-one
-MATCH (n)-[node_or_relationship]->(m)
+MATCH (n)-[nodeOrRelationship]->(m)
 WHERE id(n) = %A% AND id(m) = %B%
 RETURN
 
-id(node_or_relationship)###
+id(nodeOrRelationship)###
 
 The internal id of the relationship or node.
 
@@ -93,14 +93,14 @@ RETURN
 
 toInt({expr})###
 
-Converts the given input in an integer if possible; otherwise it returns +NULL+.
+Converts the given input into an integer if possible; otherwise it returns +NULL+.
 
 ###assertion=toFloat parameters=toFloat
 RETURN
 
 toFloat({expr})###
 
-Converts the given input in a floating point number if possible; otherwise it returns +NULL+.
+Converts the given input into a floating point number if possible; otherwise it returns +NULL+.
 
 ###assertion=returns-one parameters=map
 RETURN

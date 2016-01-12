@@ -44,7 +44,7 @@ class ExamplesTest extends RefcardTest with QueryStatisticsTestSupport {
   override def parameters(name: String): Map[String, Any] =
     name match {
       case "parameters=name" =>
-        Map("name" -> "Andreas", "city" -> "Malmö", "skip_number" -> 10)
+        Map("name" -> "Andreas", "city" -> "Malmö", "skipNumber" -> 10)
       case _ => Map()
     }
 
@@ -59,11 +59,11 @@ class ExamplesTest extends RefcardTest with QueryStatisticsTestSupport {
 
 MATCH (user:Person)-[:FRIEND]-(friend)
 WHERE user.city = {city}
-WITH user, count(friend) as friendCount
+WITH user, count(friend) AS friendCount
 WHERE friendCount > 10
 RETURN user.name
 ORDER BY friendCount DESC
-SKIP {skip_number}
+SKIP {skipNumber}
 LIMIT 10
 
 ###

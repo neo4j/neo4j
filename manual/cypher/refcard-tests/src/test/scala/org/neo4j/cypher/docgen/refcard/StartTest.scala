@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 class StartTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "START"
-  val css = "col carddeprecation c2-1 c3-3 c4-4 c5-4 c6-6"
+  val css = "col carddeprecation c2-1 c3-3 c4-4 c5-5 c6-6"
   override def indexProps: List[String] = List("value", "name", "key")
   override val linkId = "query-start"
 
@@ -79,7 +79,7 @@ class StartTest extends RefcardTest with QueryStatisticsTestSupport {
 ### assertion=index-match parameters=index-match
 //
 
-START n=node:nodeIndexName(key={value})
+START n = node:nodeIndexName(key = {value})
 
 RETURN n###
 

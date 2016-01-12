@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 class ReturnTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "RETURN"
-  val css = "read c3-3 c4-3 c5-3 c6-2"
+  val css = "read c3-3 c4-2 c5-3 c6-2"
   override val linkId = "query-return"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -54,7 +54,7 @@ class ReturnTest extends RefcardTest with QueryStatisticsTestSupport {
   override def parameters(name: String): Map[String, Any] =
     name match {
       case "parameters=limits" =>
-        Map("limit_number" -> 2, "skip_number" -> 1)
+        Map("limitNumber" -> 2, "skipNumber" -> 1)
       case "" =>
         Map()
     }
@@ -116,7 +116,7 @@ Sort the result in descending order.
 MATCH (n)
 RETURN *
 
-SKIP {skip_number}
+SKIP {skipNumber}
 ###
 
 Skip a number of results.
@@ -126,7 +126,7 @@ Skip a number of results.
 MATCH (n)
 RETURN *
 
-LIMIT {limit_number}
+LIMIT {limitNumber}
 ###
 
 Limit the number of results.
@@ -136,7 +136,7 @@ Limit the number of results.
 MATCH (n)
 RETURN *
 
-SKIP {skip_number} LIMIT {limit_number}
+SKIP {skipNumber} LIMIT {limitNumber}
 ###
 
 Skip results at the top and limit the number of results.

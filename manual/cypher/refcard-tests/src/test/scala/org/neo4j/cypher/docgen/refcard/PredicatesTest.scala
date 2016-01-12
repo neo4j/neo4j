@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 class PredicatesTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Predicates"
-  val css = "general c2-2 c3-3 c4-2 c5-1 c6-4"
+  val css = "general c2-2 c3-3 c4-1 c5-4 c6-6"
   override val linkId = "query-where"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -76,7 +76,7 @@ AND
 
 n.property <> {value}
 
-RETURN n,m###
+RETURN n, m###
 
 Use comparison operators.
 
@@ -96,7 +96,7 @@ WHERE id(n) = %A% AND id(m) = %B% AND
 
 n.number >= 1 AND n.number <= 10
 
-RETURN n,m###
+RETURN n, m###
 
 Use boolean operators to combine predicates.
 
@@ -106,7 +106,7 @@ WHERE id(n) = %A% AND id(m) = %B% AND
 
 1 <= n.number <= 10
 
-RETURN n,m###
+RETURN n, m###
 
 Use chained operators to combine predicates.
 
@@ -128,7 +128,7 @@ WHERE
 
 variable IS NULL
 
-RETURN n,m###
+RETURN n, m###
 
 Check if something is `NULL`.
 

@@ -26,7 +26,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class PathFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
   val title = "Path Functions"
-  val css = "general c3-3 c4-3 c5-4 c6-6"
+  val css = "general c3-3 c4-3 c5-2 c6-5"
   override val linkId = "query-functions-collection"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -63,7 +63,7 @@ class PathFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=returns-one
-MATCH path=(n)-->(m)
+MATCH path = (n)-->(m)
 WHERE id(n) = %A% AND id(m) = %B%
 RETURN
 
@@ -73,7 +73,7 @@ length(path)
 The number of relationships in the path.
 
 ###assertion=returns-one
-MATCH path=(n)-->(m)
+MATCH path = (n)-->(m)
 WHERE id(n) = %A% AND id(m) = %B%
 RETURN
 
@@ -83,7 +83,7 @@ nodes(path)
 The nodes in the path as a collection.
 
 ###assertion=returns-one
-MATCH path=(n)-->(m)
+MATCH path = (n)-->(m)
 WHERE id(n) = %A% AND id(m) = %B%
 RETURN
 
@@ -93,20 +93,13 @@ relationships(path)
 The relationships in the path as a collection.
 
 ###assertion=returns-one
-MATCH path=(n)-->(m)
+MATCH path = (n)-->(m)
 WHERE id(n) = %A% AND id(m) = %B%
-RETURN extract(x IN nodes(path) | x.prop)
+RETURN
+
+extract(x IN nodes(path) | x.prop)
 ###
 
-Assign a path and process its nodes.
-
-###assertion=friends
-MATCH path = (begin) -[*]-> (end)
-WHERE id(begin) = %A% AND id(end) = %B%
-FOREACH
-  (n IN rels(path) | SET n.marked = TRUE)
-###
-
-Execute a mutating operation for each relationship of a path.
+Extract properties from the nodes in a path.
 """
 }

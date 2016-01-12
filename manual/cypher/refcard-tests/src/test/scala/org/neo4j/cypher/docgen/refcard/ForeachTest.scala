@@ -23,53 +23,51 @@ import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 
-class RemoveTest extends RefcardTest with QueryStatisticsTestSupport {
-  val graphDescription = List("ROOT LINK A:Person", "A LINK B", "B LINK C", "C LINK ROOT")
-  val title = "REMOVE"
-  val css = "write c2-2 c4-3 c5-4 c6-2"
-  override val linkId = "query-remove"
+class ForeachTest extends RefcardTest with QueryStatisticsTestSupport {
+  val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
+  val title = "FOREACH"
+  val css = "write c4-3 c5-5 c6-2"
+  override val linkId = "query-foreach"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
-      case "remove-label" =>
-        assertStats(result, labelsRemoved = 1)
+      case "foreach" =>
+        assertStats(result, nodesCreated = 3, labelsAdded = 3, propertiesWritten = 3)
         assert(result.toList.size === 0)
-      case "remove-prop" =>
-        assertStats(result, nodesCreated = 1, propertiesWritten = 2)
+      case "friends" =>
+        assertStats(result, nodesCreated = 0, propertiesWritten = 1)
         assert(result.toList.size === 0)
     }
   }
 
   override def parameters(name: String): Map[String, Any] =
     name match {
-      case "parameters=set" =>
-        Map("value" -> "a value")
-      case "parameters=map" =>
-        Map("map" -> Map("property" -> "a value"))
       case "" =>
         Map()
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("value" -> 10),
-    "B" -> Map("value" -> 20),
-    "C" -> Map("value" -> 30))
+    "A" -> Map("prop" -> "Andrés"),
+    "B" -> Map("prop" -> "Tobias"),
+    "C" -> Map("prop" -> "Chris")
+  )
 
   def text = """
-###assertion=remove-label
-MATCH (n:Person)
+###assertion=friends
+MATCH path = (begin)-[*]->(end)
+WHERE id(begin) = %A% AND id(end) = %B%
 
-REMOVE n:Person
+FOREACH (r IN rels(path) |
+  SET r.marked = TRUE)
 ###
+Execute a mutating operation for each relationship of a path.
 
-Remove a label from `n`.
+###assertion=foreach
+WITH ["Alice", "Bob", "Charlie"] AS coll
 
-###assertion=remove-prop
-CREATE (n {property: "value"})
-
-REMOVE n.property
+FOREACH (value IN coll |
+ CREATE (:Person {name:value}))
 ###
-
-Remove a property.
+Execute a mutating operation for each element in a collection.
 """
 }

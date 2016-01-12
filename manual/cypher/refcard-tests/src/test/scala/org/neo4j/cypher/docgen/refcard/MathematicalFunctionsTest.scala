@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 class MathematicalFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A")
   val title = "Mathematical Functions"
-  val css = "general c2-1 c3-2 c4-1 c5-2 c6-5"
+  val css = "general c2-1 c3-3 c4-2 c5-3 c6-5"
   override val linkId = "query-functions-mathematical"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -72,7 +72,7 @@ RETURN
 
 round({expr})
 
-,floor({expr}),ceil({expr})
+, floor({expr}), ceil({expr})
 ###
 
 Round to the nearest integer, +ceil+ and +floor+ find the next integer up or down.
@@ -98,7 +98,7 @@ RETURN
 
 sin({expr})
 
-,cos({expr}),tan({expr}),cot({expr}),asin({expr}),acos({expr}),atan({expr}),atan2({expr},{expr}),haversin({expr})
+,cos({expr}), tan({expr}), cot({expr}), asin({expr}), acos({expr}), atan({expr}), atan2({expr}, {expr}), haversin({expr})
 ###
 
 Trigonometric functions, also `cos`, `tan`, `cot`, `asin`, `acos`, `atan`, `atan2`, `haversin`.
