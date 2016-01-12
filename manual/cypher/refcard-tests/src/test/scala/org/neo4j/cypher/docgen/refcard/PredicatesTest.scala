@@ -176,7 +176,7 @@ String matching.
 
 ###assertion=returns-one parameters=regex
 MATCH (n)
-WHERE EXISTS(n.property) AND
+WHERE exists(n.property) AND
 
 n.property =~ "Tob.*"
 
