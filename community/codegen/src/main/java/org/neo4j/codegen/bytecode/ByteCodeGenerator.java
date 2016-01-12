@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.codegen.source;
+package org.neo4j.codegen.bytecode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,13 +27,14 @@ import org.neo4j.codegen.ClassEmitter;
 import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.CompilationFailureException;
 import org.neo4j.codegen.TypeReference;
+import org.neo4j.codegen.source.Configuration;
 
-class ByteCodeGenerator extends CodeGenerator
+public class ByteCodeGenerator extends CodeGenerator
 {
     private final Configuration configuration;
-    private final Map<TypeReference, ClassByteCodeWriter> classes = new HashMap<>();
+    private final Map<TypeReference,ClassByteCodeWriter> classes = new HashMap<>();
 
-    ByteCodeGenerator( ClassLoader parentClassLoader, Configuration configuration)
+    public ByteCodeGenerator( ClassLoader parentClassLoader, Configuration configuration)
     {
         super( parentClassLoader );
         this.configuration = configuration;

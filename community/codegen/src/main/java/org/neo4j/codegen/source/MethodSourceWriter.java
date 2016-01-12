@@ -401,9 +401,10 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void cast( TypeReference type, Expression expression )
     {
+        append( "(" );
         append( "(").append( type.name() ).append( ") " );
         expression.accept( this );
-
+        append( ")" );
     }
 
     @Override

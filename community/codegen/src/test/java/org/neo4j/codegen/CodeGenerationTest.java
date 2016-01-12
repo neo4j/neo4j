@@ -457,8 +457,9 @@ public class CodeGenerationTest
                         methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
                 {
                     loop.expression( invoke(
+                            Expression.cast( Runnable.class,
                             invoke( callEach.load( "targets" ),
-                                    methodReference( Iterator.class, Runnable.class, "next" ) ),
+                                    methodReference( Iterator.class, Object.class, "next" ) )),
                             methodReference( Runnable.class, void.class, "run" ) ) );
                 }
             }

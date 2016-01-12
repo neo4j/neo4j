@@ -35,6 +35,7 @@ import org.neo4j.codegen.CodeGenerationStrategyNotSupportedException;
 import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.CodeGeneratorOption;
 import org.neo4j.codegen.TypeReference;
+import org.neo4j.codegen.bytecode.ByteCodeGenerator;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.codegen.CompilationFailureException.format;
