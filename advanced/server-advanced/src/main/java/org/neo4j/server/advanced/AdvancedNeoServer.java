@@ -26,7 +26,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.advanced.modules.JMXManagementModule;
+import org.neo4j.server.enterprise.modules.JMXManagementModule;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.modules.ServerModule;
 

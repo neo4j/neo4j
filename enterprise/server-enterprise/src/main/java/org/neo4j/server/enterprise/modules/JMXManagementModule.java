@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.advanced.modules;
+package org.neo4j.server.enterprise.modules;
 
 import java.lang.management.ManagementFactory;
 
@@ -27,7 +27,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.advanced.jmx.ServerManagement;
+import org.neo4j.server.enterprise.jmx.ServerManagement;
 import org.neo4j.server.modules.ServerModule;
 
 public class JMXManagementModule implements ServerModule

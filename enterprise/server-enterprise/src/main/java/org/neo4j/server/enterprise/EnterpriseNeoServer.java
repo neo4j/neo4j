@@ -39,6 +39,7 @@ import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
+import org.neo4j.server.enterprise.modules.JMXManagementModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.webadmin.rest.DatabaseRoleInfoServerModule;
@@ -138,9 +139,8 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     @Override
     protected Iterable<ServerModule> createServerModules()
     {
-        return mix(
-                asList( (ServerModule) new DatabaseRoleInfoServerModule( webServer, getConfig(),
-                        logProvider ) ), super.createServerModules() );
+        return mix( asList( new DatabaseRoleInfoServerModule( webServer, getConfig(), logProvider ),
+                new JMXManagementModule( this ) ), super.createServerModules() );
     }
 
     @Override

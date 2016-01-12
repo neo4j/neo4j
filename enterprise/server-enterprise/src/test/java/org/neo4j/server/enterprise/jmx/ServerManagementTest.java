@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.advanced.jmx;
+package org.neo4j.server.enterprise.jmx;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +29,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
-import org.neo4j.server.advanced.helpers.AdvancedServerBuilder;
+import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.configuration.ServerConfigFactory;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.CleanupRule;
@@ -57,7 +57,7 @@ public class ServerManagementTest
         String dbDirectory2 = baseDir.directory( "db2" ).getAbsolutePath();
 
         Config config = ServerConfigFactory.loadConfig( null,
-                AdvancedServerBuilder
+                EnterpriseServerBuilder
                         .server()
                         .withDefaultDatabaseTuning()
                         .usingDatabaseDir( dbDirectory1 )
