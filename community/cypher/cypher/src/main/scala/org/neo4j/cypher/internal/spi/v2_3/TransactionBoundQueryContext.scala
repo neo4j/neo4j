@@ -27,6 +27,8 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
@@ -34,7 +36,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription}
+import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -42,7 +44,10 @@ import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.{RelationshipProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.security.URLAccessValidationError
-import org.neo4j.kernel.{GraphDatabaseAPI, Traversal, Uniqueness}
+import org.neo4j.kernel.GraphDatabaseAPI
+import java.util.function.Predicate
+import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
+import org.neo4j.graphalgo.impl.path.ShortestPath
 
 import scala.collection.JavaConverters._
 import scala.collection.{Iterator, mutable}
@@ -270,7 +275,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def indexScan(index: IndexDescriptor) =
     mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
-  def uniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
+  override def lockingExactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
@@ -494,20 +499,67 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       case (Some(min), Some(max)) => Evaluators.includingDepths(min, max)
     }
 
-    val baseTraversalDescription: TraversalDescription = Traversal.description()
+    val baseTraversalDescription: TraversalDescription = graph.traversalDescription()
       .evaluator(depthEval)
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)
 
     val traversalDescription = if (relTypes.isEmpty) {
-      baseTraversalDescription.expand(Traversal.expanderForAllTypes(toGraphDb(direction)))
+      baseTraversalDescription.expand(PathExpanderBuilder.allTypes(toGraphDb(direction)).build())
     } else {
-      val emptyExpander = Traversal.emptyExpander()
+      val emptyExpander = PathExpanderBuilder.empty()
       val expander = relTypes.foldLeft(emptyExpander) {
         case (e, t) => e.add(RelationshipType.withName(t), toGraphDb(direction))
       }
-      baseTraversalDescription.expand(expander)
+      baseTraversalDescription.expand(expander.build())
     }
     traversalDescription.traverse(realNode).iterator().asScala
+  }
+
+  override def singleShortestPath(left: Node, right: Node, depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
+                                  filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] = {
+    val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
+
+    Option(pathFinder.findSinglePath(left, right))
+  }
+
+  private def buildPathFinder(depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
+                      filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {
+    val startExpander = expander match {
+      case OnlyDirectionExpander(_, _, dir) =>
+        PathExpanderBuilder.allTypes(toGraphDb(dir))
+      case TypeAndDirectionExpander(_,_,typDirs) =>
+        typDirs.foldLeft(PathExpanderBuilder.empty()) {
+          case (acc, (typ, dir)) => acc.add(DynamicRelationshipType.withName(typ), toGraphDb(dir))
+        }
+    }
+
+    val expanderWithNodeFilters = expander.nodeFilters.foldLeft(startExpander) {
+      case (acc, filter) => acc.addNodeFilter(new Predicate[PropertyContainer] {
+        override def test(t: PropertyContainer): Boolean = filter.test(t)
+      })
+    }
+    val expanderWithAllPredicates = expander.relFilters.foldLeft(expanderWithNodeFilters) {
+      case (acc, filter) => acc.addRelationshipFilter(new Predicate[PropertyContainer] {
+        override def test(t: PropertyContainer): Boolean = filter.test(t)
+      })
+    }
+    val shortestPathPredicate = new ShortestPathPredicate {
+      override def test(path: Path): Boolean = pathPredicate.test(path)
+    }
+
+    new ShortestPath(depth, expanderWithAllPredicates.build(), shortestPathPredicate) {
+      override protected def filterNextLevelNodes(nextNode: Node): Node =
+        if (filters.isEmpty) nextNode
+        else if (filters.forall(filter => filter test nextNode)) nextNode
+        else null
+    }
+  }
+
+  override def allShortestPath(left: Node, right: Node, depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
+                               filters: Seq[KernelPredicate[PropertyContainer]]): scala.Iterator[Path] = {
+    val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
+
+    pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
   def nodeCountByCountStore(labelId: Int): Long = {

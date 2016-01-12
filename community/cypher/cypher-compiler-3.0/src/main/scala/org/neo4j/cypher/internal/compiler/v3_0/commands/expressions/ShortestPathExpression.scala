@@ -32,11 +32,23 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphalgo.GraphAlgoFactory
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType.withName
-import org.neo4j.graphdb._
-import java.util.function.{Predicate => KernelPredicate}
-import org.neo4j.kernel.Traversal
+import org.neo4j.graphdb.{Node, Path, PropertyContainer}
+//import java.util.function.{Predicate => KernelPredicate}
+//=======
+//package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
+//
+//import org.neo4j.cypher.internal.compiler.v2_3._
+//import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates._
+//import org.neo4j.cypher.internal.compiler.v2_3.commands.{PathExtractor, Pattern, ShortestPath, SingleNode, _}
+//import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsAllNodes, ReadsRelationships}
+//import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+//import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+//import org.neo4j.cypher.internal.frontend.v2_3.SyntaxException
+//import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
+//import org.neo4j.cypher.internal.frontend.v2_3.symbols._
+//import org.neo4j.graphdb.{Node, Path, PropertyContainer}
+//>>>>>>> upstream/2.3:community/cypher/cypher-compiler-2.3/src/main/scala/org/neo4j/cypher/internal/compiler/v2_3/commands/expressions/ShortestPathExpression.scala
 
-import scala.collection.JavaConverters._
 import scala.collection.Map
 
 case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates: Seq[Predicate] = Seq.empty) extends Expression with PathExtractor {
@@ -55,28 +67,34 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     val start = getEndPoint(ctx, shortestPathPattern.left)
     val end = getEndPoint(ctx, shortestPathPattern.right)
     val (expander, nodePredicates) = addPredicates(ctx, makeRelationshipTypeExpander())
-    val shortestPathPredicate = createShortestPathPredicate(ctx, predicates)
-    val shortestPathStrategy = if (shortestPathPattern.single)
-      new SingleShortestPathStrategy(expander, shortestPathPattern.allowZeroLength, shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), shortestPathPredicate, nodePredicates)
-    else
-      new AllShortestPathsStrategy(expander, shortestPathPattern.allowZeroLength, shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), shortestPathPredicate)
+    val maybePredicate = if (predicates.isEmpty) None else Some(Ands(NonEmptyList.from(predicates)))
+    /* This test is made after a full shortest path candidate has been produced,
+     * accepting or disqualifying it as appropriate.
+     */
+    val shortestPathPredicate = createShortestPathPredicate(ctx, maybePredicate)
 
-    shortestPathStrategy.findResult(start, end)
-  }
-
-  /* This test is made after a full shortest path candidate has been produced,
-   * accepting or disqualifying it as appropriate.
-   */
-  private def createShortestPathPredicate(incomingCtx: ExecutionContext, predicates: Seq[Predicate])(implicit state: QueryState): ShortestPathPredicate = new ShortestPathPredicate {
-    override def test(path: Path): Boolean = if (predicates.isEmpty) true
+    if (shortestPathPattern.single) {
+      val result = state.query.singleShortestPath(start, end, shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), expander, shortestPathPredicate, nodePredicates)
+      if (!shortestPathPattern.allowZeroLength && result.forall(p => p.length() == 0))
+        null
+      else
+        result.orNull
+    }
     else {
-      incomingCtx += shortestPathPattern.pathName -> path
-      incomingCtx += shortestPathPattern.relIterator.get -> path.relationships()
-
-      val ands = Ands(NonEmptyList.from(predicates))
-      ands.isTrue(incomingCtx)
+      val result = state.query.allShortestPath(start, end, shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), expander, shortestPathPredicate, nodePredicates)
+      result.filter { p => shortestPathPattern.allowZeroLength || p.length() > 0 }
     }
   }
+
+  private def createShortestPathPredicate(incomingCtx: ExecutionContext, maybePredicate: Option[Predicate])(implicit state: QueryState): KernelPredicate[Path] =
+    new KernelPredicate[Path] {
+      override def test(path: Path): Boolean = maybePredicate.map {
+        predicate =>
+          incomingCtx += shortestPathPattern.pathName -> path
+          incomingCtx += shortestPathPattern.relIterator.get -> path.relationships()
+          predicate.isTrue(incomingCtx)
+      }.getOrElse(true)
+    }
 
   private def getEndPoint(m: Map[String, Any], start: SingleNode): Node = m.getOrElse(start.name,
     throw new SyntaxException(s"To find a shortest path, both ends of the path need to be provided. Couldn't find `$start`")).asInstanceOf[Node]
@@ -118,7 +136,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     }
   }
 
-  private def addAllOrNoneRelationshipExpander(ctx: ExecutionContext, currentExpander: Expander, all: Boolean, predicate: Predicate, relName: String)(implicit state: QueryState) = {
+  private def addAllOrNoneRelationshipExpander(ctx: ExecutionContext, currentExpander: Expander, all: Boolean, predicate: Predicate, relName: String)(implicit state: QueryState): Expander = {
     predicate match {
       case PropertyExists(_, propertyKey) =>
         currentExpander.addRelationshipFilter(
@@ -152,11 +170,11 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     (currentExpander.addNodeFilter(filter), currentNodePredicates :+ filter)
   }
 
-  private def makeRelationshipTypeExpander() = if (shortestPathPattern.relTypes.isEmpty) {
-    Traversal.expanderForAllTypes(toGraphDb(shortestPathPattern.dir))
+  private def makeRelationshipTypeExpander(): Expander = if (shortestPathPattern.relTypes.isEmpty) {
+    Expander.expanderForAllTypes(shortestPathPattern.dir)
   } else {
-    shortestPathPattern.relTypes.foldLeft(Traversal.emptyExpander()) {
-      case (e, t) => e.add(withName(t), toGraphDb(shortestPathPattern.dir))
+    shortestPathPattern.relTypes.foldLeft(Expander.typeDirExpander()) {
+      case (e, t) => e.add(t, shortestPathPattern.dir)
     }
   }
 
@@ -184,37 +202,4 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
   }
 
   override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes, ReadsAllRelationships)
-}
-
-trait ShortestPathStrategy {
-  def findResult(start: Node, end: Node): Any
-}
-
-class SingleShortestPathStrategy(expander: Expander, allowZeroLength: Boolean, depth: Int, predicate: ShortestPathPredicate,
-                                 filters: Seq[KernelPredicate[PropertyContainer]]) extends ShortestPathStrategy {
-  private val finder = new org.neo4j.graphalgo.impl.path.ShortestPath(depth, expander, predicate) {
-    protected override def filterNextLevelNodes(nextNode: Node): Node = {
-      if (filters.isEmpty)
-        nextNode
-      else
-        if (filters.forall(filter => filter test nextNode)) nextNode
-        else null
-    }
-  }
-
-  def findResult(start: Node, end: Node): Path = {
-    val result = finder.findSinglePath(start, end)
-    if (!allowZeroLength && result != null && result.length() == 0)
-      null
-    else
-      result
-  }
-}
-
-class AllShortestPathsStrategy(expander: Expander, allowZeroLength: Boolean, depth: Int, predicate: ShortestPathPredicate) extends ShortestPathStrategy {
-  private val finder = GraphAlgoFactory.shortestPath(expander, depth, predicate)
-
-  def findResult(start: Node, end: Node): Stream[Path] = {
-    finder.findAllPaths(start, end).asScala.toStream
-  }.filter { p => allowZeroLength || p.length() > 0 }
 }

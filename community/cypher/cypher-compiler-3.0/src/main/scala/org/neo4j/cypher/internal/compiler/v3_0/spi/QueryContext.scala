@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.spi
 
 import java.net.URL
 
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v3_0.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
@@ -142,6 +143,12 @@ trait QueryContext extends TokenContext {
                                maxHops: Option[Int],
                                direction: SemanticDirection,
                                relTypes: Seq[String]): Iterator[Path]
+
+  def singleShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
+                         filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path]
+
+  def allShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
+                      filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path]
 
   def nodeCountByCountStore(labelId: Int): Long
 

@@ -50,6 +50,6 @@ class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a"->CTNode, "b"->CTNode)
 
     val pipe = new ShortestPathPipe(source, path)()
-    graph.inTx(pipe.createResults(QueryStateHelper.empty).next()("p").asInstanceOf[Path])
+    graph.withTx(tx => pipe.createResults(QueryStateHelper.queryStateFrom(graph, tx)).next()("p").asInstanceOf[Path])
   }
 }
