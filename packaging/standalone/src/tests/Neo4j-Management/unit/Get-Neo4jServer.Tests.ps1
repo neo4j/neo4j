@@ -70,19 +70,6 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Valid Advanced Neo4j installation" {
-      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j-adv' -ServerType 'Advanced' -ServerVersion '99.99'
-     
-      $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j-adv' -ErrorAction Stop
-  
-      It "detects an advanced edition" {
-         $neoServer.ServerType | Should Be "Advanced"      
-      }
-      It "detects correct version" {
-         $neoServer.ServerVersion | Should Be "99.99"      
-      }
-    }
-
     Context "Valid Community Neo4j installation" {
       global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j-com' -ServerType 'Community' -ServerVersion '99.99'
 

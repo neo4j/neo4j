@@ -77,12 +77,6 @@ terms of the relevant Commercial Agreement.
         </dependency>
         <dependency>
           <groupId>org.neo4j.build</groupId>
-          <artifactId>advanced-build</artifactId>
-          <version>${project.version}</version>
-          <type>pom</type>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j.build</groupId>
           <artifactId>enterprise-build</artifactId>
           <version>${project.version}</version>
           <type>pom</type>
