@@ -26,7 +26,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class AggregationTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Aggregation"
-  val css = "general c3-3 c4-3 c5-4 c6-6"
+  val css = "general c3-3 c4-4 c5-4 c6-6"
   override val linkId = "query-aggregation"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -57,7 +57,7 @@ class AggregationTest extends RefcardTest with QueryStatisticsTestSupport {
 
   def text = """
 ###assertion=returns-one
-MATCH path=(n)-->(m)
+MATCH path = (n)-->(m)
 WHERE id(n) = %A% AND id(m) = %B%
 RETURN NODES(path),
 
@@ -67,9 +67,9 @@ count(*)
 The number of matching rows.
 
 ###assertion=returns-one
-MATCH path=(identifier)-->(m)
+MATCH path = (identifier)-->(m)
 WHERE id(identifier) = %A% AND id(m) = %B%
-RETURN NODES(path),
+RETURN nodes(path),
 
 count(identifier)
 ###
@@ -77,9 +77,9 @@ count(identifier)
 The number of non-++NULL++ values.
 
 ###assertion=returns-one
-MATCH path=(identifier)-->(m)
+MATCH path = (identifier)-->(m)
 WHERE id(identifier) = %A% AND id(m) = %B%
-RETURN NODES(path),
+RETURN nodes(path),
 
 count(DISTINCT identifier)
 ###
@@ -102,7 +102,7 @@ RETURN
 
 sum(n.property)
 
-,avg(n.property),min(n.property),max(n.property)
+,avg(n.property), min(n.property), max(n.property)
 ###
 
 Sum numerical values. Similar functions are +avg+, +min+, +max+.

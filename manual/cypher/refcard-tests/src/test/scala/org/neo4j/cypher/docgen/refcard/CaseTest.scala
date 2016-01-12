@@ -27,7 +27,7 @@ class CaseTest extends RefcardTest with QueryStatisticsTestSupport {
   def graphDescription = List(
     "A KNOWS B")
   val title = "CASE"
-  val css = "general c2-1 c3-3 c4-2 c5-3 c6-1"
+  val css = "general c2-1 c3-3 c4-2 c5-5 c6-4"
   override val linkId = "cypher-expressions"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -51,8 +51,8 @@ MATCH n
 RETURN
 
 CASE n.eyes
- WHEN 'blue' THEN 1
- WHEN 'brown' THEN 2
+ WHEN "blue" THEN 1
+ WHEN "brown" THEN 2
  ELSE 3
 END
 
@@ -67,7 +67,7 @@ MATCH n
 RETURN
 
 CASE
- WHEN n.eyes = 'blue' THEN 1
+ WHEN n.eyes = "blue" THEN 1
  WHEN n.age < 40 THEN 2
  ELSE 3
 END

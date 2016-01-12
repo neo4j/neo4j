@@ -26,7 +26,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class LabelsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A:Person KNOWS ROOT")
   val title = "Labels"
-  val css = "general c2-1 c3-2 c4-2 c5-3 c6-2"
+  val css = "general c2-1 c3-2 c4-1 c5-3 c6-3"
   override val linkId = "cypherdoc-labels-constraints-and-indexes"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -66,7 +66,7 @@ class LabelsTest extends RefcardTest with QueryStatisticsTestSupport {
 ###assertion=create parameters=bname
 //
 
-CREATE (n:Person {name:{value}})
+CREATE (n:Person {name: {value}})
 
 DELETE n
 RETURN n###
@@ -76,7 +76,7 @@ Create a node with label and property.
 ###assertion=create parameters=bname
 //
 
-MERGE (n:Person {name:{value}})
+MERGE (n:Person {name: {value}})
 
 DELETE n
 RETURN n###
@@ -99,7 +99,7 @@ MATCH (n:Person)
 
 RETURN n###
 
-Matches nodes labeled as `Person`.
+Matches nodes labeled `Person`.
 
 ###assertion=related parameters=aname
 //

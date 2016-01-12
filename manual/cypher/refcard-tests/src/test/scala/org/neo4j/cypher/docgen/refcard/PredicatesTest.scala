@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionRe
 class PredicatesTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Predicates"
-  val css = "general c2-2 c3-3 c4-2 c5-1 c6-4"
+  val css = "general c2-2 c3-3 c4-1 c5-4 c6-6"
   override val linkId = "query-where"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -76,12 +76,12 @@ AND
 
 n.property <> {value}
 
-RETURN n,m###
+RETURN n, m###
 
 Use comparison operators.
 
 ###assertion=returns-three
-MATCH n
+MATCH (n)
 WHERE
 
 exists(n.property)
@@ -96,7 +96,7 @@ WHERE id(n) = %A% AND id(m) = %B% AND
 
 n.number >= 1 AND n.number <= 10
 
-RETURN n,m###
+RETURN n, m###
 
 Use boolean operators to combine predicates.
 
@@ -106,7 +106,7 @@ WHERE id(n) = %A% AND id(m) = %B% AND
 
 1 <= n.number <= 10
 
-RETURN n,m###
+RETURN n, m###
 
 Use chained operators to combine predicates.
 
@@ -128,12 +128,12 @@ WHERE
 
 identifier IS NULL
 
-RETURN n,m###
+RETURN n, m###
 
 Check if something is `NULL`.
 
 ###assertion=returns-one parameters=aname
-MATCH n
+MATCH (n)
 WHERE
 
 NOT exists(n.property) OR n.property = {value}
@@ -143,7 +143,7 @@ RETURN n###
 Either property does not exist or predicate is +TRUE+.
 
 ###assertion=returns-none parameters=aname
-MATCH n
+MATCH (n)
 WHERE
 
 n.property = {value}
@@ -153,7 +153,7 @@ RETURN n###
 Non-existing property returns `NULL`, which is not equal to anything.
 
 ###assertion=returns-none parameters=aname
-MATCH n
+MATCH (n)
 WHERE
 
 n["property"] = {value}
@@ -163,7 +163,7 @@ RETURN n###
 Properties may also be accessed using a dynamically computed property name.
 
 ###assertion=returns-two
-MATCH n
+MATCH (n)
 WHERE
 
 n.property STARTS WITH "Tob" OR
@@ -175,7 +175,7 @@ RETURN n###
 String matching.
 
 ###assertion=returns-one parameters=regex
-MATCH n
+MATCH (n)
 WHERE EXISTS(n.property) AND
 
 n.property =~ "Tob.*"
@@ -185,7 +185,7 @@ RETURN n###
 String regular expression matching.
 
 ###assertion=returns-four
-MATCH n, m
+MATCH (n), (m)
 WHERE
 
 (n)-[:KNOWS]->(m)
@@ -195,7 +195,7 @@ RETURN n###
 Make sure the pattern has at least one match.
 
 ###assertion=returns-none
-MATCH n, m
+MATCH (n), (m)
 WHERE id(n) = %A% AND id(m) = %B% AND
 
 NOT (n)-[:KNOWS]->(m)
@@ -205,7 +205,7 @@ RETURN n###
 Exclude matches to `(n)-[:KNOWS]->(m)` from the result.
 
 ###assertion=returns-one parameters=names
-MATCH n
+MATCH (n)
 WHERE exists(n.property) AND
 
 n.property IN [{value1}, {value2}]

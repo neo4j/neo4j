@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionRe
 class ReturnTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "RETURN"
-  val css = "read c3-3 c4-3 c5-3 c6-2"
+  val css = "read c3-3 c4-2 c5-3 c6-2"
   override val linkId = "query-return"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -54,7 +54,7 @@ class ReturnTest extends RefcardTest with QueryStatisticsTestSupport {
   override def parameters(name: String): Map[String, Any] =
     name match {
       case "parameters=limits" =>
-        Map("limit_number" -> 2, "skip_number" -> 1)
+        Map("limitNumber" -> 2, "skipNumber" -> 1)
       case "" =>
         Map()
     }
@@ -68,14 +68,14 @@ class ReturnTest extends RefcardTest with QueryStatisticsTestSupport {
   def text = """
 ###assertion=all-nodes
 //
-MATCH n
+MATCH (n)
 
 RETURN *###
 
 Return the value of all identifiers.
 
 ### assertion=alias
-MATCH n
+MATCH (n)
 WHERE id(n) = 1
 
 RETURN n AS columnName###
@@ -83,7 +83,7 @@ RETURN n AS columnName###
 Use alias for result column name.
 
 ### assertion=unique
-MATCH n--x
+MATCH (n)--(x)
 WHERE id(x) in [%A%,%C%]
 AND n.name = "B"
 
@@ -93,7 +93,7 @@ Return unique rows.
 
 ###assertion=all-nodes
 //
-MATCH n
+MATCH (n)
 RETURN *
 
 ORDER BY n.property
@@ -103,7 +103,7 @@ Sort the result.
 
 ###assertion=all-nodes
 //
-MATCH n
+MATCH (n)
 RETURN *
 
 ORDER BY n.property DESC
@@ -113,36 +113,36 @@ Sort the result in descending order.
 
 ###assertion=skip parameters=limits
 //
-MATCH n
+MATCH (n)
 RETURN *
 
-SKIP {skip_number}
+SKIP {skipNumber}
 ###
 
 Skip a number of results.
 
 ###assertion=skiplimit parameters=limits
 //
-MATCH n
+MATCH (n)
 RETURN *
 
-LIMIT {limit_number}
+LIMIT {limitNumber}
 ###
 
 Limit the number of results.
 
 ###assertion=skiplimit parameters=limits
 //
-MATCH n
+MATCH (n)
 RETURN *
 
-SKIP {skip_number} LIMIT {limit_number}
+SKIP {skipNumber} LIMIT {limitNumber}
 ###
 
 Skip results at the top and limit the number of results.
 
 ###assertion=count
-MATCH n
+MATCH (n)
 
 RETURN count(*)
 ###

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionRe
 class StringFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "String Functions"
-  val css = "general c2-1 c3-2 c4-1 c5-3 c6-5"
+  val css = "general c2-1 c3-2 c4-3 c5-3 c6-5"
   override val linkId = "query-functions-string"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -49,7 +49,7 @@ class StringFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
       case "parameters=replace" =>
         Map("original" -> "Hi", "search" -> "i", "replacement" -> "ello")
       case "parameters=sub" =>
-        Map("original" -> "String", "begin" -> 3, "substring_length" -> 2, "sub_length" -> 2)
+        Map("original" -> "String", "begin" -> 3, "subLength" -> 2)
       case "parameters=split" =>
         Map("original" -> "A,B,C", "delimiter" -> ",")
       case "" =>
@@ -83,17 +83,17 @@ All arguments are be expressions.
 ###assertion=returns-one parameters=sub
 RETURN
 
-substring({original}, {begin}, {sub_length})
+substring({original}, {begin}, {subLength})
 ###
 
 Get part of a string.
-The `sub_length` argument is optional.
+The `subLength` argument is optional.
 
 ###assertion=returns-one parameters=sub
 RETURN
 
-left({original}, {sub_length}),
-  right({original}, {sub_length})
+left({original}, {subLength}),
+  right({original}, {subLength})
 ###
 
 The first part of a string. The last part of the string.
