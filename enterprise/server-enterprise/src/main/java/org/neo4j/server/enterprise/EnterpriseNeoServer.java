@@ -35,7 +35,7 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.advanced.AdvancedNeoServer;
+import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
@@ -50,7 +50,7 @@ import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.Iterables.mix;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
-public class EnterpriseNeoServer extends AdvancedNeoServer
+public class EnterpriseNeoServer extends CommunityNeoServer
 {
     public enum Mode
     {

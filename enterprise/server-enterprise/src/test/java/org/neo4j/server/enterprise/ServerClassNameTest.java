@@ -23,22 +23,21 @@ import org.junit.Test;
 
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.advanced.AdvancedNeoServer;
 
 import static org.junit.Assert.assertEquals;
 
 /**
  * The classes that extend AbstractNeoServer are currently known to be:
- * CommunityNeoServer, AdvancedNeoServer, and EnterpriseNeoServer
+ * CommunityNeoServer and EnterpriseNeoServer
  * <p>
  * This test asserts that those names won't change, for example during an
  * otherwise perfectly reasonable refactoring. Changing those names will cause
  * problems for the server which relies on those names to yield the correct
- * Neo4j edition (community, advanced, enterprise) to the Web UI and other clients.
+ * Neo4j edition (community, enterprise) to the Web UI and other clients.
  * <p>
- * Although this test asserts naming against classes in other modules (neo4j,
- * neo4j-advanced) it lives in neo4j-enterprise because otherwise the CommunityNeoServer
- * and AdvancedNeoServer would not be visible.
+ * Although this test asserts naming against classes in other modules (neo4j),
+ * it lives in neo4j-enterprise because otherwise the CommunityNeoServer
+ * and EnterpriseNeoServer would not be visible.
  */
 public class ServerClassNameTest
 {
@@ -48,14 +47,6 @@ public class ServerClassNameTest
     {
         assertEquals( getErrorMessage( CommunityNeoServer.class ), "communityneoserver",
                 CommunityNeoServer.class.getSimpleName().toLowerCase() );
-    }
-
-    @Test
-    public void shouldMaintainNamingOfAdvancedNeoServerSoThatTheNeo4jEditionIsCorrectlyShownToRESTAPICallers()
-            throws Exception
-    {
-        assertEquals( getErrorMessage( AdvancedNeoServer.class ), "advancedneoserver",
-                AdvancedNeoServer.class.getSimpleName().toLowerCase() );
     }
 
     @Test

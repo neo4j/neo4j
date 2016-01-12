@@ -22,10 +22,10 @@ package org.neo4j.server.enterprise;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.advanced.AdvancedBootstrapper;
 
-public class EnterpriseBootstrapper extends AdvancedBootstrapper
+public class EnterpriseBootstrapper extends CommunityBootstrapper
 {
     public static void main( String[] args )
     {

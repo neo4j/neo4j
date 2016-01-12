@@ -28,7 +28,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.advanced.AdvancedNeoServer;
+import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.configuration.ServerConfigFactory;
 import org.neo4j.server.configuration.ServerSettings;
@@ -64,7 +64,8 @@ public class ServerManagementTest
                         .createPropertiesFiles(), NullLog.getInstance() );
 
         // When
-        NeoServer server = cleanup.add( new AdvancedNeoServer( config, graphDbDependencies(), NullLogProvider.getInstance() ) );
+        NeoServer server = cleanup.add( new EnterpriseNeoServer( config, graphDbDependencies(), NullLogProvider
+                .getInstance() ) );
         server.start();
 
         assertNotNull( server.getDatabase().getGraph() );
