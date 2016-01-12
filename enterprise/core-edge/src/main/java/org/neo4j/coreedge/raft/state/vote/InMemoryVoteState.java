@@ -86,14 +86,14 @@ public class InMemoryVoteState<MEMBER> implements VoteState<MEMBER>
         return term;
     }
 
-    public static class InMemoryVoteStateStateMarshal<CoreMember>
+    public static class InMemoryVoteStateMarshal<CoreMember>
             implements Marshal<InMemoryVoteState<CoreMember>>
 
     {
         public static final int NUMBER_OF_BYTES_PER_VOTE = 100_000; // 100kB URI max
         private final Marshal<CoreMember> marshal;
 
-        public InMemoryVoteStateStateMarshal( Marshal<CoreMember> marshal )
+        public InMemoryVoteStateMarshal( Marshal<CoreMember> marshal )
         {
             this.marshal = marshal;
         }
@@ -112,6 +112,11 @@ public class InMemoryVoteState<MEMBER> implements VoteState<MEMBER>
             {
                 final long term = source.getLong();
                 final CoreMember member = marshal.unmarshal( source );
+
+                if ( member == null )
+                {
+                    return null;
+                }
 
                 return new InMemoryVoteState<>( member, term );
             }

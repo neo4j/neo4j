@@ -48,7 +48,7 @@ public class OnDiskTermState extends LifecycleAdapter implements TermState
         File fileA = new File( storeDir, FILENAME + "A" );
         File fileB = new File( storeDir, FILENAME + "B" );
 
-        workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateStateMarshal
+        workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateMarshal
                 .NUMBER_OF_BYTES_PER_VOTE );
 
 

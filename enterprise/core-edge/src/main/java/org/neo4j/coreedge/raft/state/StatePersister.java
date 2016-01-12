@@ -84,7 +84,7 @@ public class StatePersister<STATE>
         }
     }
 
-    public void switchStoreFile() throws IOException
+    private void switchStoreFile() throws IOException
     {
         currentStoreChannel.close();
 

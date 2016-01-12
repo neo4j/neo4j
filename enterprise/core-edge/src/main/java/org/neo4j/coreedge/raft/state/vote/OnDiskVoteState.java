@@ -47,11 +47,10 @@ public class OnDiskVoteState<MEMBER> extends LifecycleAdapter implements VoteSta
         File fileA = new File( storeDir, FILENAME + "A" );
         File fileB = new File( storeDir, FILENAME + "B" );
 
-        ByteBuffer workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateStateMarshal
+        ByteBuffer workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateMarshal
                 .NUMBER_OF_BYTES_PER_VOTE );
 
-        InMemoryVoteState.InMemoryVoteStateStateMarshal<MEMBER> marshal = new InMemoryVoteState
-                .InMemoryVoteStateStateMarshal<>( memberMarshal );
+        InMemoryVoteState.InMemoryVoteStateMarshal<MEMBER> marshal = new InMemoryVoteState.InMemoryVoteStateMarshal<>( memberMarshal );
 
         VoteStateRecoveryManager<MEMBER> recoveryManager =
                 new VoteStateRecoveryManager<>( fileSystemAbstraction, marshal );

@@ -29,10 +29,10 @@ import org.neo4j.io.fs.StoreChannel;
 
 public class VoteStateRecoveryManager<MEMBER> extends StateRecoveryManager
 {
-    private final InMemoryVoteState.InMemoryVoteStateStateMarshal<MEMBER> marshal;
+    private final InMemoryVoteState.InMemoryVoteStateMarshal<MEMBER> marshal;
 
     public VoteStateRecoveryManager( FileSystemAbstraction fileSystemAbstraction,
-                                     InMemoryVoteState.InMemoryVoteStateStateMarshal<MEMBER> marshal )
+                                     InMemoryVoteState.InMemoryVoteStateMarshal<MEMBER> marshal )
     {
         super( fileSystemAbstraction );
         this.marshal = marshal;
