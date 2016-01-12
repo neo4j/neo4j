@@ -88,7 +88,7 @@
   	</includes>
   	</dependencySet>
     <dependencySet>
-      <outputDirectory>/lib</outputDirectory>
+      <outputDirectory>lib</outputDirectory>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <useStrictFiltering>true</useStrictFiltering>
