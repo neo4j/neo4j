@@ -41,10 +41,12 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
       // CALL foo.bar.baz("arg1", 2)
       case CallProcedure(namespace, ProcName(name), args) =>
         val signature = planContext.procedureSignature(ProcedureName(namespace, name))
-        if (args.nonEmpty && args.size != signature.inputSignature.size)
+        if (args.nonEmpty && args.size != signature.inputSignature.size) {
           throw new InvalidArgumentException(
             s"""Procedure ${signature.name.name} takes ${signature.inputSignature.size}
-                  |arguments but ${args.size} was provided.""".stripMargin)
+                |arguments but ${args.size} was provided.""".stripMargin)
+        }
+        //type check arguments
         args.zip(signature.inputSignature).foreach {
           case (arg, field) => typeCheck(inputQuery.semanticTable)(arg, field)
         }
@@ -87,16 +89,17 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
           (ctx.dropRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
         })
 
+      // CREATE INDEX ON :LABEL(prop)
       case CreateIndex(label, prop) =>
         PureSideEffectExecutionPlan("CreateIndex", SCHEMA_WRITE, (ctx) => {
           (ctx.addIndexRule _).tupled(labelProp(ctx)(label, prop))
         })
 
+      // DROP INDEX ON :LABEL(prop)
       case DropIndex(label, prop) =>
         PureSideEffectExecutionPlan("DropIndex", SCHEMA_WRITE, (ctx) => {
           (ctx.dropIndexRule _).tupled(labelProp(ctx)(label, prop))
         })
-
 
       case _ => delegate.producePlan(inputQuery, planContext, tracer, createFingerprintReference)
     }

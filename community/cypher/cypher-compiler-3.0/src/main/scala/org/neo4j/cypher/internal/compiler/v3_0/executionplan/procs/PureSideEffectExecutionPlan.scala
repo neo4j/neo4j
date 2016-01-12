@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, InternalExecutionResult, InternalQueryType}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, QueryContext, UpdateCountingQueryContext}
-import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, ExplainExecutionResult, ExplainMode, PlannerName, ProcedurePlannerName, ProcedureRuntimeName, RuntimeName, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, ExplainExecutionResult, ExplainMode, PlannerName, ProcedurePlannerName, ProcedureRuntimeName, RuntimeName}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 
 /**
@@ -37,16 +37,15 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
   override def run(ctx: QueryContext, planType: ExecutionMode,
                    params: Map[String, Any]): InternalExecutionResult = {
     val countingCtx = new UpdateCountingQueryContext(ctx)
-    val taskCloser = new TaskCloser
-    taskCloser.addTask(countingCtx.close)
     if (planType == ExplainMode) {
       //close all statements
-      taskCloser.close(success = true)
+      ctx.close(success = true)
       new ExplainExecutionResult(List.empty, description, queryType, Set.empty)
-    } else
+    } else {
       sideEffect(countingCtx)
-      taskCloser.close(success = true)
-      PureSideEffectInternalExecutionResult(description, taskCloser, countingCtx, queryType, planType)
+      ctx.close(success = true)
+      PureSideEffectInternalExecutionResult(description, countingCtx, queryType, planType)
+    }
   }
 
   private def description = PlanDescriptionImpl(new Id, name, NoChildren, Seq.empty, Set.empty)

@@ -23,6 +23,7 @@ import java.util.stream.Stream
 
 import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite, InvalidArgumentException}
 import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.proc.Procedure.{BasicProcedure, Context}
 import org.neo4j.proc.ProcedureSignature.procedureSignature
 import org.neo4j.proc.{Neo4jTypes, ProcedureSignature => KernelSignature}
@@ -46,6 +47,41 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
         Map("label" -> "C")))
   }
 
+  test("sys.db.labels work on an empty database") {
+    // Given an empty database
+    //When
+    val result = execute("CALL sys.db.labels")
+
+    // Then
+    result.toList shouldBe empty
+  }
+
+  test("removing labels from nodes does not remove labels from label store") {
+    // Given
+    createLabeledNode("A")
+    execute("MATCH (a:A) REMOVE a:A")
+
+    //When
+    val result = execute("CALL sys.db.labels")
+
+    // Then
+    result.toList should equal(
+      List(Map("label" -> "A")))
+  }
+
+  test("removing all the nodes does not remove labels from label store") {
+    // Given
+    createLabeledNode("A")
+    execute("MATCH (a) DETACH DELETE a")
+
+    //When
+    val result = execute("CALL sys.db.labels")
+
+    // Then
+    result.toList should equal(
+      List(Map("label" -> "A")))
+  }
+
   test("should be able to find types from built-in-procedure") {
     // Given
     relate(createNode(), createNode(), "A")
@@ -53,6 +89,34 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     relate(createNode(), createNode(), "C")
 
     // When
+    val result = execute("CALL sys.db.relationshipTypes")
+
+    // Then
+    result.toList should equal(
+      List(
+        Map("relationshipTypes" -> "A"),
+        Map("relationshipTypes" -> "B"),
+        Map("relationshipTypes" -> "C")))
+  }
+
+  test("sys.db.relationshipType work on an empty database") {
+    // Given an empty database
+    //When
+    val result = execute("CALL sys.db.relationshipTypes")
+
+    // Then
+    result.toList shouldBe empty
+  }
+
+  test("removing all the relationships does not remove relationship types from the store") {
+    // Given
+    // Given
+    relate(createNode(), createNode(), "A")
+    relate(createNode(), createNode(), "B")
+    relate(createNode(), createNode(), "C")
+    execute("MATCH (a) DETACH DELETE a")
+
+    //When
     val result = execute("CALL sys.db.relationshipTypes")
 
     // Then
@@ -76,6 +140,48 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
         Map("propertyKeys" -> "A"),
         Map("propertyKeys" -> "B"),
         Map("propertyKeys" -> "C")))
+  }
+
+  test("sys.db.propertyKeys works on an empty database") {
+    // Given an empty database
+
+    // When
+    val result = execute("CALL sys.db.propertyKeys")
+
+    // Then
+    result shouldBe empty
+  }
+
+  test("removing properties from nodes and relationships does not remove them from the store") {
+    // Given
+    relate(createNode("A" -> 1), createNode("B" -> 1), "R" ->1)
+    execute("MATCH (a)-[r]-(b) REMOVE a.A, r.R, b.B")
+
+    // When
+    val result = execute("CALL sys.db.propertyKeys")
+
+    // Then
+    result.toList should equal(
+      List(
+        Map("propertyKeys" -> "A"),
+        Map("propertyKeys" -> "B"),
+        Map("propertyKeys" -> "R")))
+  }
+
+  test("removing all nodes and relationship does not remove properties from the store") {
+    // Given
+    relate(createNode("A" -> 1), createNode("B" -> 1), "R" ->1)
+    execute("MATCH (a) DETACH DELETE a")
+
+    // When
+    val result = execute("CALL sys.db.propertyKeys")
+
+    // Then
+    result.toList should equal(
+      List(
+        Map("propertyKeys" -> "A"),
+        Map("propertyKeys" -> "B"),
+        Map("propertyKeys" -> "R")))
   }
 
   test("should be able to call procedure with explicit arguments") {
@@ -117,6 +223,14 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     execute("CALL my.first.proc(42.3)").toList should equal(List(Map("out0" -> 42.3)))
   }
 
+  test("arguments are nullable") {
+    // Given
+    register(Neo4jTypes.NTNumber)
+
+    // Then
+    execute("CALL my.first.proc(NULL)").toList should equal(List(Map("out0" -> null)))
+  }
+
   test("should fail a procedure declares an integer but gets a float ") {
     // Given
     register(Neo4jTypes.NTInteger)
@@ -141,6 +255,16 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
   }
 
+  test("should fail if too many arguments") {
+    // Given
+    register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+
+    // Then
+    an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42)"))
+  }
+
+
+
   test("should fail if implicit argument is missing") {
     // Given
     register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
@@ -158,6 +282,10 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
 
     // Then
     result shouldBe empty
+  }
+
+  test("should fail if calling non-existent procedure") {
+    a [ProcedureException] shouldBe thrownBy(execute("CALL no.such.thing.exists(42)"))
   }
 
   private def register(types: Neo4jTypes.AnyType*) = {

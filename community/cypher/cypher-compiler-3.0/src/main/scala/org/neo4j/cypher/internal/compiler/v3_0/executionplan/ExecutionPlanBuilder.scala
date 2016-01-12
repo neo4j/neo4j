@@ -90,8 +90,8 @@ object ExecutablePlanBuilder {
 
 trait ExecutablePlanBuilder {
 
-  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer:
-  CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext,
+                  tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
                   createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan
 }
 

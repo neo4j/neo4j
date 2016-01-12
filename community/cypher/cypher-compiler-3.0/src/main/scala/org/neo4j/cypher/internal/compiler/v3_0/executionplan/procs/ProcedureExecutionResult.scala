@@ -42,7 +42,7 @@ case class ProcedureExecutionResult[E <: Exception](taskCloser: TaskCloser,
                                                     args: Seq[Any],
                                                     executionPlanDescription: InternalPlanDescription,
                                                     executionMode: ExecutionMode)
-  extends AcceptingExecutionResult(taskCloser, context) {
+  extends AcceptingExecutionResult(context, Some(taskCloser)) {
 
   override def javaColumns: java.util.List[String] = signature.outputSignature.seq.map(_.name).asJava
 

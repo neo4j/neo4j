@@ -39,7 +39,7 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
                               context: QueryContext,
                               compiledCode: GeneratedQueryExecution,
                               description: Provider[InternalPlanDescription])
-  extends AcceptingExecutionResult(taskCloser, context) with SuccessfulCloseable  {
+  extends AcceptingExecutionResult(context, Some(taskCloser)) with SuccessfulCloseable  {
   compiledCode.setSuccessfulCloseable(this)
 
   // *** Delegate to compiled code

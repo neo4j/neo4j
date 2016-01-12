@@ -25,23 +25,19 @@ import java.util
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{AcceptingExecutionResult, InternalQueryType}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics}
 
 /**
   * Empty result, as produced by a pure side-effect.
   */
-case class PureSideEffectInternalExecutionResult(executionPlanDescription: InternalPlanDescription,
-                                                 taskCloser: TaskCloser, ctx: QueryContext,
-                                                 executionType: InternalQueryType,
-                                                 executionMode: ExecutionMode)
-  extends AcceptingExecutionResult(taskCloser, ctx) {
+case class PureSideEffectInternalExecutionResult(executionPlanDescription: InternalPlanDescription, ctx: QueryContext, executionType: InternalQueryType, executionMode: ExecutionMode)
+  extends AcceptingExecutionResult(ctx) {
 
   override def javaColumns: util.List[String] = java.util.Collections.emptyList()
 
   override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
-    taskCloser.close(success = true)
+    ctx.close(success = true)
   }
-
 
   override def queryStatistics() = ctx.getOptStatistics.getOrElse(InternalQueryStatistics())
 

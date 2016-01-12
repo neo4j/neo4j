@@ -61,10 +61,12 @@ case object DPPlannerName extends CostBasedPlannerName {
 }
 
 /**
-  * Procedures are not really planned, b
+  * Queries that doesn't require planning are dealt with by a separate planning step
   */
-case object ProcedurePlannerName extends CostBasedPlannerName {
+case object ProcedurePlannerName extends PlannerName {
   val name = "PROCEDURE"
+
+  override def toTextOutput: String = "PROCEDURE"
 }
 
 object PlannerName {

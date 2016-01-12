@@ -60,7 +60,7 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, args: Seq[E
       new ExplainExecutionResult(signature.outputSignature.seq.map(_.name).toList,
         description, READ_ONLY, Set.empty)
     } else
-      new ProcedureExecutionResult(taskCloser, ctx, signature, input, description, planType)
+      ProcedureExecutionResult(taskCloser, ctx, signature, input, description, planType)
   }
 
   private def fail(f: FieldSignature, ctx: QueryContext) = {
@@ -69,7 +69,7 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, args: Seq[E
       s"""Procedure ${signature.name.name} expected an argument with ${f.name} with type ${f.typ}""")
   }
 
-  private def description = PlanDescriptionImpl(new Id, "CallProcedure", NoChildren, Seq(), Set.empty)
+  private def description = PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren, Seq(), Set.empty)
 
   override def notifications = Seq.empty
 

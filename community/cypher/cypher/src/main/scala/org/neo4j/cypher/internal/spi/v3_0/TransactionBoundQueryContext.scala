@@ -28,8 +28,8 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_0.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.DirectionConverter.toGraphDb
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{TypeAndDirectionExpander, OnlyDirectionExpander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
@@ -40,7 +40,8 @@ import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.traversal.{Uniqueness, Evaluators, TraversalDescription}
+import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -49,12 +50,7 @@ import org.neo4j.kernel.impl.api.{KernelStatement => InternalKernelStatement}
 import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.security.URLAccessValidationError
-<<<<<<< 5e3f50392fe56811200517563a08786619b1d96f
-import org.neo4j.kernel.GraphDatabaseAPI
-=======
-import org.neo4j.kernel.{GraphDatabaseAPI, Traversal, Uniqueness}
-import org.neo4j.proc.{ProcedureSignature => KernelProcedureSignature}
->>>>>>> Support for calling procedures from cypher
+import org.neo4j.proc
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -561,7 +557,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any])  = {
-    val kn = new KernelProcedureSignature.ProcedureName(signature.name.namespace.asJava, signature.name.name)
+    val kn = new proc.ProcedureSignature.ProcedureName(signature.name.namespace.asJava, signature.name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
     _statement.readOperations().procedureCallRead(kn, toArray).iterator().asScala
   }
@@ -597,6 +593,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
         else if (filters.forall(filter => filter test nextNode)) nextNode
         else null
     }
+  }
 }
 
 object TransactionBoundQueryContext {

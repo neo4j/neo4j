@@ -36,11 +36,11 @@ import org.neo4j.graphdb.{ResourceIterator, _}
 import scala.collection.{Map, mutable}
 
 /*
-* An AcceptingExecutionResult delegates all methods to the accept method which is the responsibility
-* extending classes to provide.
+* An AcceptingExecutionResult delegates all methods to the accept method which extending classes are responsible
+* for providing.
 */
-abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
-                                        context: QueryContext)
+abstract class AcceptingExecutionResult(context: QueryContext,
+                                        taskCloser: Option[TaskCloser] = None)
   extends InternalExecutionResult with SuccessfulCloseable {
   self =>
 
@@ -48,7 +48,7 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
 
   private lazy val innerIterator: util.Iterator[util.Map[String, Any]] = {
     val list = new util.ArrayList[util.Map[String, Any]]()
-    if (!taskCloser.isClosed) doInAccept(populateResults(list))
+    if (isOpen) doInAccept(populateResults(list))
     list.iterator()
   }
 
@@ -62,8 +62,8 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
 
   override def columnAs[T](column: String): Iterator[T] = map { case m => extractColumn(column, m).asInstanceOf[T] }
 
-  override def javaIterator: ResourceIterator[util.Map[String, Any]] = new
-      WrappingResourceIterator[util.Map[String, Any]] {
+  override def javaIterator: ResourceIterator[util.Map[String, Any]] =
+    new WrappingResourceIterator[util.Map[String, Any]] {
     def hasNext = self.hasNext
 
     def next() = innerIterator.next()
@@ -95,7 +95,7 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
       populateDumpToStringResults(dumpToStringBuilder)(row)
     }
     val iterator = result.iterator()
-    new AcceptingExecutionResult(taskCloser, context) {
+    new AcceptingExecutionResult(context, taskCloser) {
 
       override def javaColumns: util.List[String] = self.javaColumns
 
@@ -135,7 +135,7 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
   }
 
   override def close() = {
-    taskCloser.close(success = successful)
+    taskCloser.foreach(_.close(success = successful))
   }
 
   val mode = executionMode
@@ -196,7 +196,7 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
   }.mkString("{", ", ", "}")
 
   private def doInAccept[T](body: InternalResultRow => T) = {
-    if (!taskCloser.isClosed) {
+    if (isOpen) {
       accept(new InternalResultVisitor[RuntimeException] {
         override def visit(row: InternalResultRow): Boolean = {
           body(row)
@@ -253,6 +253,10 @@ abstract class AcceptingExecutionResult(taskCloser: TaskCloser,
       self.close()
     }
   }
+
+  private def isClosed = taskCloser.exists(_.isClosed)
+
+  private def isOpen = !isClosed
 
   def executionMode: ExecutionMode
 
