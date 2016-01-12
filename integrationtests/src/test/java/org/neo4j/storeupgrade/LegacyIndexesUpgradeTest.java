@@ -19,8 +19,6 @@
  */
 package org.neo4j.storeupgrade;
 
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -44,6 +42,7 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.test.NestedThrowableMatcher;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -249,40 +248,6 @@ public class LegacyIndexesUpgradeTest
     private IntFunction<String> basicKeyFactory()
     {
         return value -> "key-" + (value % 3);
-    }
-
-    private class NestedThrowableMatcher extends TypeSafeMatcher<Throwable>
-    {
-        private final Class<? extends Throwable> expectedType;
-
-        public NestedThrowableMatcher( Class<? extends Throwable> expectedType )
-        {
-            this.expectedType = expectedType;
-        }
-
-        @Override
-        public void describeTo( Description description )
-        {
-            description.appendText( "expect " )
-                    .appendValue( expectedType )
-                    .appendText( " to be exception cause." );
-        }
-
-        @Override
-        protected boolean matchesSafely( Throwable item )
-        {
-            Throwable currentThrowable = item;
-            do
-            {
-                if ( expectedType.isInstance( currentThrowable ) )
-                {
-                    return true;
-                }
-                currentThrowable = currentThrowable.getCause();
-            }
-            while ( currentThrowable != null );
-            return false;
-        }
     }
 
     private void checkMigrationProgressFeedback()

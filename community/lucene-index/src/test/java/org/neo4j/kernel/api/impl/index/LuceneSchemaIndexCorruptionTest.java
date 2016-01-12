@@ -130,7 +130,7 @@ public class LuceneSchemaIndexCorruptionTest
     private LuceneSchemaIndexProvider newFaultySchemaIndexProvider( long faultyIndexId, Exception error )
     {
         FaultyIndexStorageFactory storageFactory = new FaultyIndexStorageFactory( faultyIndexId, error );
-        return new LuceneSchemaIndexProvider( fs.get(), storageFactory );
+        return new LuceneSchemaIndexProvider( storageFactory );
     }
 
     private class FaultyIndexStorageFactory extends IndexStorageFactory

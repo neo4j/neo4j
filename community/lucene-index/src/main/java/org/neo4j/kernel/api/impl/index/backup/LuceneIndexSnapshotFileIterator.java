@@ -43,14 +43,14 @@ public class LuceneIndexSnapshotFileIterator extends PrefetchingIterator<File> i
     private final Iterator<String> fileNames;
     private final IndexCommit snapshot;
 
-    public static ResourceIterator<File> forIndex( File indexDirectory, IndexWriter indexWriter ) throws IOException
+    public static ResourceIterator<File> forIndex( File indexFolder, IndexWriter indexWriter ) throws IOException
     {
         IndexDeletionPolicy deletionPolicy = indexWriter.getConfig().getIndexDeletionPolicy();
         if ( deletionPolicy instanceof SnapshotDeletionPolicy )
         {
             SnapshotDeletionPolicy policy = (SnapshotDeletionPolicy) deletionPolicy;
             return hasCommits( indexWriter )
-                   ? new LuceneIndexSnapshotFileIterator( indexDirectory, policy )
+                   ? new LuceneIndexSnapshotFileIterator( indexFolder, policy )
                    : emptyIterator();
         }
         else
@@ -98,9 +98,7 @@ public class LuceneIndexSnapshotFileIterator extends PrefetchingIterator<File> i
     private static boolean hasCommits( IndexWriter indexWriter ) throws IOException
     {
         Directory directory = indexWriter.getDirectory();
-        return DirectoryReader.indexExists( directory ) &&
-               SegmentInfos.readLatestCommit( directory ) != null;
+        return DirectoryReader.indexExists( directory ) && SegmentInfos.readLatestCommit( directory ) != null;
     }
-
 
 }

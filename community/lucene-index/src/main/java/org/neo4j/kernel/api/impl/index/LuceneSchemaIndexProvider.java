@@ -63,7 +63,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     /**
      * Visible <b>only</b> for testing.
      */
-    LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, IndexStorageFactory indexStorageFactory )
+    LuceneSchemaIndexProvider( IndexStorageFactory indexStorageFactory )
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.indexStorageFactory = indexStorageFactory;

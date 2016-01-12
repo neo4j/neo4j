@@ -45,7 +45,7 @@ import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 
-public class LuceneSnapshotterTest
+public class LuceneIndexSnapshotFileIteratorTest
 {
     @Rule
     public final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
@@ -86,7 +86,6 @@ public class LuceneSnapshotterTest
     @Test
     public void shouldReturnEmptyIteratorWhenNoCommitsHaveBeenMade() throws IOException
     {
-        String[] strings = dir.listAll();
         try ( ResourceIterator<File> snapshot = LuceneIndexSnapshotFileIterator.forIndex( indexDir, writer ) )
         {
             assertFalse( snapshot.hasNext() );

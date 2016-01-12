@@ -34,8 +34,8 @@ import org.neo4j.kernel.api.impl.index.storage.layout.FolderLayout;
  */
 public class FailureStorage
 {
-    public static final int MAX_FAILURE_SIZE = 16384;
-    public static final String DEFAULT_FAILURE_FILE_NAME = "failure-message";
+    private static final int MAX_FAILURE_SIZE = 16384;
+    private static final String DEFAULT_FAILURE_FILE_NAME = "failure-message";
 
     private final FileSystemAbstraction fs;
     private final FolderLayout folderLayout;

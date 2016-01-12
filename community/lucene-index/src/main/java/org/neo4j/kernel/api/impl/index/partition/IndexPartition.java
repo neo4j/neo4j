@@ -38,11 +38,11 @@ public class IndexPartition implements Closeable
     private final IndexWriter indexWriter;
     private final Directory directory;
     private final SearcherManager searcherManager;
-    private final File indexDirectory;
+    private final File indexFolder;
 
-    public IndexPartition( File indexDirectory, Directory directory ) throws IOException
+    public IndexPartition( File partitionFolder, Directory directory ) throws IOException
     {
-        this.indexDirectory = indexDirectory;
+        this.indexFolder = partitionFolder;
         this.directory = directory;
         this.indexWriter = new IndexWriter( directory, IndexWriterConfigs.standardConfig() );
         this.searcherManager = new SearcherManager( indexWriter, true, new SearcherFactory() );
@@ -58,6 +58,13 @@ public class IndexPartition implements Closeable
         return directory;
     }
 
+    /**
+     * Return searcher for requested partition.
+     * There is no tracking of acquired searchers, so the expectation is that callers will call close on acquired
+     * searchers to release resources.
+     * @return partition searcher
+     * @throws IOException if exception happened during searcher acquisition
+     */
     public PartitionSearcher acquireSearcher() throws IOException
     {
         return new PartitionSearcher( searcherManager );
@@ -76,6 +83,6 @@ public class IndexPartition implements Closeable
 
     public ResourceIterator<File> snapshot() throws IOException
     {
-        return LuceneIndexSnapshotFileIterator.forIndex( indexDirectory, indexWriter );
+        return LuceneIndexSnapshotFileIterator.forIndex( indexFolder, indexWriter );
     }
 }

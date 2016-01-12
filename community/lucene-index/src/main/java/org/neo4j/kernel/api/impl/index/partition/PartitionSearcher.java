@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.impl.index.partition;
 
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.ReferenceManager;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -28,12 +28,12 @@ import java.io.IOException;
 public class PartitionSearcher implements Closeable
 {
     private IndexSearcher indexSearcher;
-    private SearcherManager searcherManager;
+    private ReferenceManager<IndexSearcher> referenceManager;
 
-    public PartitionSearcher( SearcherManager searcherManager ) throws IOException
+    public PartitionSearcher( ReferenceManager<IndexSearcher> referenceManager ) throws IOException
     {
-        this.searcherManager = searcherManager;
-        this.indexSearcher = searcherManager.acquire();
+        this.referenceManager = referenceManager;
+        this.indexSearcher = referenceManager.acquire();
     }
 
     public IndexSearcher getIndexSearcher()
@@ -44,6 +44,6 @@ public class PartitionSearcher implements Closeable
     @Override
     public void close() throws IOException
     {
-        searcherManager.release( indexSearcher );
+        referenceManager.release( indexSearcher );
     }
 }
