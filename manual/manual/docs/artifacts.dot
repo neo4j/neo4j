@@ -29,17 +29,6 @@ subgraph cluster_community {
  "server" -> "shell"
 }
 
-subgraph cluster_advanced {
- label="Advanced"
- "management" -> "kernel"
- "management" -> "jmx"
- "neo4j-advanced" -> "neo4j-community"
- "neo4j-advanced" -> "management"
- "server-advanced" -> "server"
- "server-advanced" -> "neo4j-advanced"
- "server-advanced" -> "shell"
-}
-
 subgraph cluster_enterprise {
  label="Enterprise"
  "com" -> "kernel"
@@ -51,11 +40,9 @@ subgraph cluster_enterprise {
  "ha" -> "lucene-index"
  "ha" -> "com"
  "ha" -> "shell"
- "neo4j-enterprise" -> "neo4j-advanced"
  "neo4j-enterprise" -> "com"
  "neo4j-enterprise" -> "backup"
  "neo4j-enterprise" -> "ha"
- "server-enterprise" -> "server-advanced"
  "server-enterprise" -> "neo4j-enterprise"
  "server-enterprise" -> "shell" 
 }
@@ -82,16 +69,12 @@ subgraph cluster_packaging {
  label="Packaging & Products"
  "standalone" -> "neo4j-community"
  "standalone" -> "server"
- "standalone" -> "neo4j-advanced"
- "standalone" -> "server-advanced"
  "standalone" -> "neo4j-enterprise"
  "standalone" -> "server-enterprise"
  "standalone" -> "windows-wrapper"
  "standalone" -> "manual"
  "neo4j-enterprise-windows" -> "standalone" [arrowhead="none"]
  "neo4j-enterprise-unix" -> "standalone" [arrowhead="none"]
- "neo4j-advanced-windows" -> "standalone" [arrowhead="none"]
- "neo4j-advanced-unix" -> "standalone" [arrowhead="none"]
  "neo4j-community-windows" -> "standalone" [arrowhead="none"]
  "neo4j-community-unix" -> "standalone" [arrowhead="none"]
 }
