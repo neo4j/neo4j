@@ -34,11 +34,6 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-advanced</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-query-logging</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -186,10 +181,6 @@
                 </resource>
                 <resource>
                   <directory>${project.build.directory}/../../ha/src/main/java/</directory>
-                  <filtering>false</filtering>
-                </resource>
-                 <resource>
-                  <directory>${project.build.directory}/../../../advanced/management/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
                  <resource>
