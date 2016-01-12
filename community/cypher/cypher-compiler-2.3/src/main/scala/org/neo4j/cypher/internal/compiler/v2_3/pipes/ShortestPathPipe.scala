@@ -39,11 +39,12 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
   private def pathName = shortestPathCommand.pathName
   private val shortestPathExpression = ShortestPathExpression(shortestPathCommand, predicates)
 
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = input.flatMap(ctx => {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = input.flatMap(ctx => {
     val result: Stream[Path] = shortestPathExpression(ctx)(state) match {
       case in: Stream[_] => CastSupport.castOrFail[Stream[Path]](in)
-      case null          => Stream()
-      case path: Path    => Stream(path)
+      case null => Stream()
+      case path: Path => Stream(path)
+      case iterator: Iterator[Path] => iterator.toStream
     }
 
     shortestPathCommand.relIterator match {

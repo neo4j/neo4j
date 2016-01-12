@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.spi
 
 import java.net.URL
 
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{KernelPredicate, Expander}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
@@ -135,7 +136,6 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def nodeIsDense(node: Long): Boolean = singleDbHit(inner.nodeIsDense(node))
 
-  // Legacy dependency between kernel and compiler
   override def variableLengthPathExpand(node: PatternNode,
                                         realNode: Node,
                                         minHops: Option[Int],
@@ -145,6 +145,16 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
     manyDbHits(inner.variableLengthPathExpand(node, realNode, minHops, maxHops, direction, relTypes))
 
   override def isLabelSetOnNode(label: Int, node: Long): Boolean = getLabelsForNode(node).contains(label)
+
+  override def singleShortestPath(left: Node, right: Node, depth: Int, expander: Expander,
+                                  pathPredicate: KernelPredicate[Path],
+                                  filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] =
+    singleDbHit(inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters))
+
+  override def allShortestPath(left: Node, right: Node, depth: Int, expander: Expander,
+                               pathPredicate: KernelPredicate[Path],
+                               filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
+    manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

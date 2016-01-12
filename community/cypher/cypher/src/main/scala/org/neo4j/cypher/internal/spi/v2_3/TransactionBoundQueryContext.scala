@@ -27,12 +27,17 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{TypeAndDirectionExpander, OnlyDirectionExpander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, Bound, EntityNotFoundException, FailedIndexException}
 import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.function.Predicate
+import org.neo4j.graphalgo.impl.path.ShortestPath
+import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
@@ -511,6 +516,53 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       baseTraversalDescription.expand(expander)
     }
     traversalDescription.traverse(realNode).iterator().asScala
+  }
+
+  override def singleShortestPath(left: Node, right: Node, depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
+                                  filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] = {
+    val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
+
+    Option(pathFinder.findSinglePath(left, right))
+  }
+
+  private def buildPathFinder(depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
+                      filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {
+    val startExpander = expander match {
+      case OnlyDirectionExpander(_, _, dir) =>
+        Traversal.expanderForAllTypes(toGraphDb(dir))
+      case TypeAndDirectionExpander(_,_,typDirs) =>
+        typDirs.foldLeft(Traversal.emptyExpander()) {
+          case (acc, (typ, dir)) => acc.add(DynamicRelationshipType.withName(typ), toGraphDb(dir))
+        }
+    }
+
+    val expanderWithNodeFilters = expander.nodeFilters.foldLeft(startExpander) {
+      case (acc, filter) => acc.addNodeFilter(new Predicate[PropertyContainer] {
+        override def test(t: PropertyContainer): Boolean = filter.test(t)
+      })
+    }
+    val expanderWithAllPredicates = expander.relFilters.foldLeft(expanderWithNodeFilters) {
+      case (acc, filter) => acc.addRelationshipFilter(new Predicate[PropertyContainer] {
+        override def test(t: PropertyContainer): Boolean = filter.test(t)
+      })
+    }
+    val shortestPathPredicate = new ShortestPathPredicate {
+      override def test(path: Path): Boolean = pathPredicate.test(path)
+    }
+
+    new ShortestPath(depth, expanderWithAllPredicates, shortestPathPredicate) {
+      override protected def filterNextLevelNodes(nextNode: Node): Node =
+        if (filters.isEmpty) nextNode
+        else if (filters.forall(filter => filter test nextNode)) nextNode
+        else null
+    }
+  }
+
+  override def allShortestPath(left: Node, right: Node, depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
+                               filters: Seq[KernelPredicate[PropertyContainer]]): scala.Iterator[Path] = {
+    val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
+
+    pathFinder.findAllPaths(left, right).iterator().asScala
   }
 }
 
