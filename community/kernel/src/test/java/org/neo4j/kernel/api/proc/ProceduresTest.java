@@ -23,18 +23,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.stream.Stream;
-
+import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.impl.proc.Procedures;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertThat;
 
-import static java.util.stream.Collectors.toList;
-
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
 import static org.neo4j.kernel.api.proc.Procedure.Key.key;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.helpers.collection.IteratorUtil.asList;
 
 public class ProceduresTest
 {
@@ -45,9 +45,9 @@ public class ProceduresTest
     private final Procedure procedure = new Procedure.BasicProcedure(signature)
     {
         @Override
-        public Stream<Object[]> apply( Context ctx, Object[] input )
+        public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input )
         {
-            return Stream.<Object[]>of( input );
+            return RawIterator.<Object[], ProcedureException>of( input );
         }
     };
 
@@ -68,12 +68,12 @@ public class ProceduresTest
         procs.register( procedure );
 
         // When
-        Stream<Object[]> result = procs.call( new Procedure.BasicContext()
+        RawIterator<Object[], ProcedureException> result = procs.call( new Procedure.BasicContext()
         {
         }, signature.name(), new Object[]{1337} );
 
         // Then
-        assertThat( result.collect( toList() ), contains( equalTo( new Object[]{1337} ) ) );
+        assertThat( asList( result ), contains( equalTo( new Object[]{1337} ) ) );
     }
 
     @Test
@@ -81,7 +81,8 @@ public class ProceduresTest
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "There is no procedure with the name `org.myproc` registered for this database instance. Please ensure you've spelled the " +
+        exception.expectMessage( "There is no procedure with the name `org.myproc` registered for this " +
+                                 "database instance. Please ensure you've spelled the " +
                                  "procedure name correctly and that the procedure is properly deployed." );
 
         // When
@@ -105,11 +106,38 @@ public class ProceduresTest
     }
 
     @Test
+    public void shouldNotAllowDuplicateFieldNamesInInput() throws Throwable
+    {
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Procedure `asd(a :: ANY?, a :: ANY?) :: ()` cannot be " +
+                                 "registered, because it contains a duplicated input field, 'a'. " +
+                                 "You need to rename or remove one of the duplicate fields." );
+
+        // When
+        procs.register( procedureWithSignature( procedureSignature( "asd" ).in( "a", NTAny ).in( "a", NTAny ).build() ) );
+    }
+
+    @Test
+    public void shouldNotAllowDuplicateFieldNamesInOutput() throws Throwable
+    {
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Procedure `asd() :: (a :: ANY?, a :: ANY?)` cannot be registered, " +
+                                 "because it contains a duplicated output field, 'a'. " +
+                                 "You need to rename or remove one of the duplicate fields." );
+
+        // When
+        procs.register( procedureWithSignature( procedureSignature( "asd" ).out( "a", NTAny ).out( "a", NTAny ).build() ) );
+    }
+
+    @Test
     public void shouldSignalNonExistantProcedure() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "There is no procedure with the name `org.myproc` registered for this database instance. Please ensure you've spelled the " +
+        exception.expectMessage( "There is no procedure with the name `org.myproc` registered for this " +
+                                 "database instance. Please ensure you've spelled the " +
                                  "procedure name correctly and that the procedure is properly deployed." );
 
         // When
@@ -125,9 +153,9 @@ public class ProceduresTest
         procs.register( new Procedure.BasicProcedure(signature)
         {
             @Override
-            public Stream<Object[]> apply( Context ctx, Object[] input ) throws ProcedureException
+            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
             {
-                return Stream.<Object[]>of( new Object[]{ctx.get( someKey )} );
+                return RawIterator.<Object[], ProcedureException>of( new Object[]{ctx.get( someKey )} );
             }
         } );
 
@@ -135,9 +163,21 @@ public class ProceduresTest
         ctx.put( someKey, "hello, world" );
 
         // When
-        Stream<Object[]> result = procs.call( ctx, signature.name(), new Object[0] );
+        RawIterator<Object[], ProcedureException> result = procs.call( ctx, signature.name(), new Object[0] );
 
         // Then
-        assertThat( result.collect( toList() ), contains( equalTo( new Object[]{ "hello, world" } ) ) );
+        assertThat( asList( result ), contains( equalTo( new Object[]{ "hello, world" } ) ) );
+    }
+
+    private Procedure.BasicProcedure procedureWithSignature( final ProcedureSignature signature )
+    {
+        return new Procedure.BasicProcedure(signature)
+        {
+            @Override
+            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+            {
+                return null;
+            }
+        };
     }
 }

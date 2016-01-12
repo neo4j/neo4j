@@ -34,7 +34,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.proc.Procedures;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.storageengine.api.StorageEngine;

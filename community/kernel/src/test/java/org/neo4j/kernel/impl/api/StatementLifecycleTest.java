@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.proc.Procedures;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
 import static org.mockito.Mockito.mock;

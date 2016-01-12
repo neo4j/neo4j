@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
+import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -63,7 +63,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.Procedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.Procedures;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -659,7 +659,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Stream<Object[]> procedureCallRead( ProcedureName name, Object[] input ) throws ProcedureException
+    public RawIterator<Object[], ProcedureException> procedureCallRead( ProcedureName name, Object[] input ) throws ProcedureException
     {
         statement.assertOpen();
         Procedure.BasicContext ctx = new Procedure.BasicContext();

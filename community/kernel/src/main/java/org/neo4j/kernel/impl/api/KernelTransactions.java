@@ -28,7 +28,7 @@ import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.proc.Procedures;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;

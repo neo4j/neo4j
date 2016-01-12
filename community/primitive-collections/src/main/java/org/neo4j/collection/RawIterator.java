@@ -20,6 +20,7 @@
 package org.neo4j.collection;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Just like {@link Iterator}, but with the addition that {@link #hasNext()} and {@link #next()} can
@@ -34,5 +35,29 @@ public interface RawIterator<T,EXCEPTION extends Exception>
 
     T next() throws EXCEPTION;
 
-    void remove();
+    default void remove() { throw new UnsupportedOperationException(); }
+
+    static <T, EX extends Exception> RawIterator<T, EX> of( T ... values )
+    {
+        return new RawIterator<T,EX>()
+        {
+            private int position = 0;
+
+            @Override
+            public boolean hasNext() throws EX
+            {
+                return position < values.length;
+            }
+
+            @Override
+            public T next() throws EX
+            {
+                if(!hasNext())
+                {
+                    throw new NoSuchElementException();
+                }
+                return values[position++];
+            }
+        };
+    }
 }

@@ -32,6 +32,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.neo4j.collection.RawIterator;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import static java.util.Arrays.asList;
@@ -351,6 +353,30 @@ public final class Iterables
         return new MapIterable.MapIterator<>( from, function );
     }
 
+    public static <FROM, TO, EX extends Exception> RawIterator<TO, EX> map(
+            ThrowingFunction<? super FROM, ? extends TO, EX> function, RawIterator<FROM, EX> from )
+    {
+        return new RawMapIterator<>( from, function );
+    }
+
+    public static <T, EX extends Exception> RawIterator<T, EX> asRawIterator( Iterator<T> iter )
+    {
+        return new RawIterator<T,EX>()
+        {
+            @Override
+            public boolean hasNext() throws EX
+            {
+                return iter.hasNext();
+            }
+
+            @Override
+            public T next() throws EX
+            {
+                return iter.next();
+            }
+        };
+    }
+
     public static <FROM, TO> Iterator<TO> flatMap( Function<? super FROM, ? extends Iterator<TO>> function, Iterator<FROM> from )
     {
         return new CombiningIterator<>( map(function, from) );
@@ -609,6 +635,38 @@ public final class Iterables
             {
                 fromIterator.remove();
             }
+        }
+    }
+
+    private static class RawMapIterator<FROM, TO, EX extends Exception>
+            implements RawIterator<TO, EX>
+    {
+        private final RawIterator<FROM, EX> fromIterator;
+        private final ThrowingFunction<? super FROM, ? extends TO, EX> function;
+
+        public RawMapIterator( RawIterator<FROM, EX> fromIterator, ThrowingFunction<? super FROM, ? extends TO, EX> function )
+        {
+            this.fromIterator = fromIterator;
+            this.function = function;
+        }
+
+        @Override
+        public boolean hasNext() throws EX
+        {
+            return fromIterator.hasNext();
+        }
+
+        @Override
+        public TO next() throws EX
+        {
+            FROM from = fromIterator.next();
+            return function.apply( from );
+        }
+
+        @Override
+        public void remove()
+        {
+            fromIterator.remove();
         }
     }
 

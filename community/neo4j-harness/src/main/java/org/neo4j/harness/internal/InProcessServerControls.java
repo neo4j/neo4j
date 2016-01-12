@@ -92,6 +92,7 @@ public class InProcessServerControls implements ServerControls
         return name.length() == 32;
     }
 
+    @Override
     public GraphDatabaseService graph()
     {
         return server.getDatabase().getGraph();

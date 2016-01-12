@@ -31,9 +31,9 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.api.proc.Procedures
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._

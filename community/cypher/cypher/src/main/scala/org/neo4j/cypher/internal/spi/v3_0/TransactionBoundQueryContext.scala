@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.spi.v3_0
 import java.net.URL
 import java.util.function.Predicate
 
+import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.InternalException
@@ -44,6 +45,7 @@ import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
+import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.api.{KernelStatement => InternalKernelStatement}
@@ -556,10 +558,14 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
-  def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any])  = {
+  def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]) = {
     val kn = new proc.ProcedureSignature.ProcedureName(signature.name.namespace.asJava, signature.name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
-    _statement.readOperations().procedureCallRead(kn, toArray).iterator().asScala
+    val read: RawIterator[Array[AnyRef], ProcedureException] = _statement.readOperations().procedureCallRead(kn, toArray)
+    new scala.Iterator[Array[AnyRef]] {
+      override def hasNext: Boolean = read.hasNext
+      override def next(): Array[AnyRef] = read.next
+    }
   }
 
   private def buildPathFinder(depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],

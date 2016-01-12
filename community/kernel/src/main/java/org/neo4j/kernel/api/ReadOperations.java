@@ -22,8 +22,8 @@ package org.neo4j.kernel.api;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
+import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
@@ -555,5 +555,5 @@ public interface ReadOperations
     ProcedureSignature procedureGet( ProcedureSignature.ProcedureName name ) throws ProcedureException;
 
     /** Invoke a read-only procedure by name */
-    Stream<Object[]> procedureCallRead( ProcedureSignature.ProcedureName name, Object[] input ) throws ProcedureException;
+    RawIterator<Object[], ProcedureException> procedureCallRead( ProcedureSignature.ProcedureName name, Object[] input ) throws ProcedureException;
 }

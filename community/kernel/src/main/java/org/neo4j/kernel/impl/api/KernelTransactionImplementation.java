@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.proc.Procedures;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;

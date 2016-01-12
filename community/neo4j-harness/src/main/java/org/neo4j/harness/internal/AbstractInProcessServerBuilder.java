@@ -19,6 +19,8 @@
  */
 package org.neo4j.harness.internal;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -28,13 +30,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 
-import org.apache.commons.io.FileUtils;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilder;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -53,6 +54,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     private File serverFolder;
     private final Extensions extensions = new Extensions();
+    private final Procs procedures = new Procs();
     private final Fixtures fixtures = new Fixtures();
 
     /**
@@ -112,14 +114,17 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         AbstractNeoServer neoServer = createNeoServer( config, dependencies, userLogProvider );
         InProcessServerControls controls = new InProcessServerControls( serverFolder, neoServer, logOutputStream );
         controls.start();
+
+
         try
         {
+            procedures.applyTo( neoServer.getDatabase().getGraph() );
             fixtures.applyTo( controls );
         }
-        catch ( RuntimeException e )
+        catch ( Exception e )
         {
             controls.close();
-            throw e;
+            throw Exceptions.launderedException( e );
         }
         return controls;
     }
@@ -171,6 +176,13 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     public TestServerBuilder withFixture( Function<GraphDatabaseService,Void> fixtureFunction )
     {
         fixtures.add( fixtureFunction );
+        return this;
+    }
+
+    @Override
+    public TestServerBuilder withProcedure( Class<?> procedureClass )
+    {
+        procedures.add( procedureClass );
         return this;
     }
 

@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.proc.Procedures;
+import org.neo4j.kernel.impl.proc.Procedures;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;

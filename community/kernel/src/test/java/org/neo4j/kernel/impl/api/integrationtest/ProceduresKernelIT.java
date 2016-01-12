@@ -23,22 +23,19 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.stream.Stream;
-
+import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Procedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 
-import static java.util.stream.Collectors.toList;
-
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.helpers.collection.IteratorUtil.asList;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ProceduresKernelIT extends KernelIntegrationTest
 {
@@ -52,9 +49,9 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     private final Procedure.BasicProcedure procedure = new Procedure.BasicProcedure( signature )
     {
         @Override
-        public Stream<Object[]> apply( Context ctx, Object[] input )
+        public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input )
         {
-            return Stream.<Object[]>of( input );
+            return RawIterator.<Object[], ProcedureException>of( input );
         }
     };
 
@@ -79,11 +76,11 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         kernel.registerProcedure( procedure );
 
         // When
-        Stream<Object[]> found = readOperationsInNewTransaction()
+        RawIterator<Object[], ProcedureException> found = readOperationsInNewTransaction()
                 .procedureCallRead( new ProcedureSignature.ProcedureName( new String[]{"example"}, "exampleProc" ), new Object[]{ 1337 } );
 
         // Then
-        assertThat( found.collect( toList() ), contains( equalTo( new Object[]{1337} ) ) );
+        assertThat( asList( found ), contains( equalTo( new Object[]{1337} ) ) );
     }
 
     @Test
@@ -93,16 +90,16 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         kernel.registerProcedure( new Procedure.BasicProcedure( signature )
         {
             @Override
-            public Stream<Object[]> apply( Context ctx, Object[] input ) throws ProcedureException
+            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
             {
-                return Stream.<Object[]>of( new Object[]{ ctx.get( ReadOperations.readStatement ) } );
+                return RawIterator.<Object[], ProcedureException>of( new Object[]{ ctx.get( ReadOperations.readStatement ) } );
             }
         } );
 
         // When
-        Stream<Object[]> stream = readOperationsInNewTransaction().procedureCallRead( signature.name(), new Object[]{""} );
+        RawIterator<Object[], ProcedureException> stream = readOperationsInNewTransaction().procedureCallRead( signature.name(), new Object[]{""} );
 
         // Then
-        assertNotNull( stream.collect( toList() ).get( 0 )[0] );
+        assertNotNull( asList( stream  ).get( 0 )[0] );
     }
 }

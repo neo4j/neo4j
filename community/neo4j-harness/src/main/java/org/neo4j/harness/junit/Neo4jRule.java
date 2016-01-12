@@ -139,6 +139,13 @@ public class Neo4jRule implements TestRule, TestServerBuilder
         return this;
     }
 
+    @Override
+    public TestServerBuilder withProcedure( Class<?> procedureClass )
+    {
+        builder = builder.withProcedure( procedureClass );
+        return this;
+    }
+
     public URI httpURI()
     {
         if(controls == null)
