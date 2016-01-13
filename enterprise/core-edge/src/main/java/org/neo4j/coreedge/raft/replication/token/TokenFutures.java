@@ -39,7 +39,7 @@ public class TokenFutures
         CompletableFutureTokenId completableFutureTokenId = new CompletableFutureTokenId()
         {
             @Override
-            public void close() throws Exception
+            public void close()
             {
                 disposeFuture( key, this );
             }
@@ -121,7 +121,7 @@ public class TokenFutures
 
     public interface FutureTokenId extends java.lang.AutoCloseable, Future<Integer>
     {
+        @Override
+        void close();
     }
-
-
 }

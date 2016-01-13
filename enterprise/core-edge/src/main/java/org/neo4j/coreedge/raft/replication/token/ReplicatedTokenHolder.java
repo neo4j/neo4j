@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
@@ -67,6 +69,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
     private final IdType tokenIdType;
     private final TokenFactory<TOKEN> tokenFactory;
     private final TokenType type;
+    private long timeoutMillis;
 
     private final TokenFutures tokenFutures = new TokenFutures();
     private long lastCommittedIndex = Long.MAX_VALUE;
@@ -74,7 +77,8 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
     // TODO: Clean up all the resolving, which now happens every time with special selection strategies.
 
     public ReplicatedTokenHolder( Replicator replicator, IdGeneratorFactory idGeneratorFactory, IdType tokenIdType,
-            Dependencies dependencies, TokenFactory<TOKEN> tokenFactory, TokenType type )
+            Dependencies dependencies, TokenFactory<TOKEN> tokenFactory, TokenType type,
+                                  long timeoutMillis)
     {
         this.replicator = replicator;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -82,6 +86,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         this.dependencies = dependencies;
         this.tokenFactory = tokenFactory;
         this.type = type;
+        this.timeoutMillis = timeoutMillis;
         this.tokenCache = new InMemoryTokenCache<>( this.getClass() );
     }
 
@@ -117,12 +122,10 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
     @Override
     public int getOrCreateId( String tokenName )
     {
+        Integer tokenId = tokenCache.getId( tokenName );
+        if ( tokenId != null )
         {
-            Integer tokenId = tokenCache.getId( tokenName );
-            if ( tokenId != null )
-            {
-                return tokenId;
-            }
+            return tokenId;
         }
 
         return requestToken( tokenName );
@@ -130,35 +133,18 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
 
     private int requestToken( String tokenName )
     {
-        ReplicatedTokenRequest tokenRequest = new ReplicatedTokenRequest( type, tokenName, createCommands( tokenName ) );
-
         try( TokenFutures.CompletableFutureTokenId tokenFuture = tokenFutures.createFuture( tokenName ) )
         {
+            ReplicatedTokenRequest tokenRequest = new ReplicatedTokenRequest( type, tokenName, createCommands( tokenName ) );
             try
             {
                 replicator.replicate( tokenRequest );
+                return tokenFuture.get( timeoutMillis, TimeUnit.MILLISECONDS );
             }
-            catch ( Replicator.ReplicationFailedException e )
+            catch ( Replicator.ReplicationFailedException | InterruptedException | ExecutionException | TimeoutException e )
             {
-                // TODO: This is really a NoLeaderTimeoutException... should clarify exception and semantics of the
-                // TODO: replicator interface. e.g. who is responsible for retry, does the exception imply that replication
-                // TODO: might have occurred, etc.
-                throw new RuntimeException( "Replication failures not currently handled." );
+                throw new org.neo4j.graphdb.TransactionFailureException(  "Could not create token", e  );
             }
-
-            try
-            {
-                return tokenFuture.get();
-            }
-            catch ( InterruptedException | ExecutionException e )
-            {
-                // TODO: Handle exceptions.
-                throw new RuntimeException( "Future exceptions currently not handled." );
-            }
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( "Error closing future.", e );
         }
     }
 

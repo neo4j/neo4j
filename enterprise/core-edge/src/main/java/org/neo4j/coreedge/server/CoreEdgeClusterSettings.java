@@ -94,6 +94,10 @@ public class CoreEdgeClusterSettings
     public static final Setting<Long> tx_replication_retry_interval =
             setting( "core_edge.tx_replication_retry_interval", DURATION, "1s" );
 
+    @Description("Time out for a token to be replicated")
+    public static final Setting<Long> token_creation_timeout =
+            setting( "core_edge.token_creation_timeout", DURATION, "1s" );
+
     @Description("Expected size of core cluster")
     public static final Setting<Integer> expected_core_cluster_size =
             setting( "core_edge.expected_core_cluster_size", INTEGER, "3" );

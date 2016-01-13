@@ -246,12 +246,13 @@ public class EnterpriseCoreEditionModule
 
         this.idGeneratorFactory = dependencies.satisfyDependency( replicatedIdGeneratorFactory );
 
-        ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder =
-                new ReplicatedRelationshipTypeTokenHolder( replicator, this.idGeneratorFactory, dependencies );
-        ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder =
-                new ReplicatedPropertyKeyTokenHolder( replicator, this.idGeneratorFactory, dependencies );
-        ReplicatedLabelTokenHolder labelTokenHolder =
-                new ReplicatedLabelTokenHolder( replicator, this.idGeneratorFactory, dependencies );
+        Long tokenCreationTimeout = config.get( CoreEdgeClusterSettings.token_creation_timeout );
+        ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder = new ReplicatedRelationshipTypeTokenHolder(
+                replicator, this.idGeneratorFactory, dependencies, tokenCreationTimeout );
+        ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder = new ReplicatedPropertyKeyTokenHolder(
+                replicator, this.idGeneratorFactory, dependencies, tokenCreationTimeout );
+        ReplicatedLabelTokenHolder labelTokenHolder = new ReplicatedLabelTokenHolder(
+                replicator, this.idGeneratorFactory, dependencies, tokenCreationTimeout );
 
         LifeSupport tokenLife = new LifeSupport();
         this.relationshipTypeTokenHolder = tokenLife.add( relationshipTypeTokenHolder );
