@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen.{CompiledConversionUtils, CompiledExpandUtils, CompiledMathHelper, NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter
 import org.neo4j.cypher.internal.compiler.v2_3.codegen._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{GeneratedQuery, GeneratedQueryExecution, SuccessfulCloseable}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
@@ -49,7 +49,6 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.api.{ReadOperations, Statement, StatementTokenNameLookup, TokenNameLookup}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
-import org.neo4j.kernel.impl.core.NodeManager
 
 import scala.collection.mutable
 
@@ -69,9 +68,9 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       val fields = Fields(
         closer = clazz.field(typeRef[TaskCloser], "closer"),
         ro = clazz.field(typeRef[ReadOperations], "ro"),
-        nodeManager = clazz.field(typeRef[NodeManager], "nodeManager"),
+        entityAccessor = clazz.field(typeRef[EntityAccessor], "entityAccessor"),
         executionMode = clazz.field(typeRef[ExecutionMode], "executionMode"),
-        description = clazz.field(typeRef[org.neo4j.function.Supplier[InternalPlanDescription]], "description"),
+        description = clazz.field(typeRef[Provider[InternalPlanDescription]], "description"),
         tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),
         params = clazz.field(typeRef[util.Map[String, Object]], "params"),
         closeable = clazz.field(typeRef[SuccessfulCloseable], "closeable"),
@@ -113,22 +112,22 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       using(clazz.generateMethod(typeRef[GeneratedQueryExecution], "execute",
         param[TaskCloser]("closer"),
         param[Statement]("statement"),
-        param[NodeManager]("nodeManager"),
+        param[EntityAccessor]("entityAccessor"),
         param[ExecutionMode]("executionMode"),
-        param[org.neo4j.function.Supplier[InternalPlanDescription]]("description"),
+        param[Provider[InternalPlanDescription]]("description"),
         param[QueryExecutionTracer]("tracer"),
         param[util.Map[String, Object]]("params"))) { execute =>
         execute.returns(Expression.invoke(Expression.newInstance(execution), MethodReference.constructorReference(execution,
           typeRef[TaskCloser],
           typeRef[Statement],
-          typeRef[NodeManager],
+          typeRef[EntityAccessor],
           typeRef[ExecutionMode],
-          typeRef[org.neo4j.function.Supplier[InternalPlanDescription]],
+          typeRef[Provider[InternalPlanDescription]],
           typeRef[QueryExecutionTracer],
           typeRef[util.Map[String, Object]]),
           execute.load("closer"),
           execute.load("statement"),
-          execute.load("nodeManager"),
+          execute.load("entityAccessor"),
           execute.load("executionMode"),
           execute.load("description"),
           execute.load("tracer"),
@@ -179,7 +178,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
 private case class Fields(closer: FieldReference,
                           ro: FieldReference,
-                          nodeManager: FieldReference,
+                          entityAccessor: FieldReference,
                           executionMode: FieldReference,
                           description: FieldReference,
                           tracer: FieldReference,
@@ -332,7 +331,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     body.returns()
   }
 
-  override def materializeNode(nodeIdVar: String) = Expression.invoke(nodeManager, Methods.newNodeProxyById, generator.load(nodeIdVar))
+  override def materializeNode(nodeIdVar: String) = Expression.invoke(entityAccessor, Methods.newNodeProxyById, generator.load(nodeIdVar))
 
   override def node(nodeIdVar: String) = Templates.newInstance(typeRef[NodeIdWrapper], generator.load(nodeIdVar))
 
@@ -344,7 +343,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       onSuccess)
   }
 
-  override def materializeRelationship(relIdVar: String) = Expression.invoke(nodeManager, Methods.newRelationshipProxyById, generator.load(relIdVar))
+  override def materializeRelationship(relIdVar: String) = Expression.invoke(entityAccessor, Methods.newRelationshipProxyById, generator.load(relIdVar))
 
   override def relationship(relIdVar: String) = Templates.newInstance(typeRef[RelationshipIdWrapper], generator.load(relIdVar))
 
@@ -443,7 +442,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   private def readOperations = Expression.get(generator.self(), fields.ro)
 
-  private def nodeManager = Expression.get(generator.self(), fields.nodeManager)
+  private def entityAccessor = Expression.get(generator.self(), fields.entityAccessor)
 
   private def resultRow = generator.load("row")
 
@@ -792,10 +791,10 @@ private object Methods {
   val nodesGetForLabel = method[ReadOperations, PrimitiveLongIterator]("nodesGetForLabel", typeRef[Int])
   val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])
   val nextLong = method[PrimitiveLongIterator, Long]("next")
-  val newNodeProxyById = method[NodeManager, Node]("newNodeProxyById")
+  val newNodeProxyById = method[EntityAccessor, Node]("newNodeProxyById")
   val nodeId = method[NodeIdWrapper, Long]("id")
   val relId = method[RelationshipIdWrapper, Long]("id")
-  val newRelationshipProxyById = method[NodeManager, Relationship]("newRelationshipProxyById")
+  val newRelationshipProxyById = method[EntityAccessor, Relationship]("newRelationshipProxyById")
   val set = method[ResultRowImpl, Unit]("set", typeRef[String], typeRef[Object])
   val visit = method[ResultVisitor[_], Boolean]("visit", typeRef[ResultRow])
   val executeOperator = method[QueryExecutionTracer, QueryExecutionEvent]("executeOperator", typeRef[Id])
@@ -845,18 +844,18 @@ private object Templates {
   val CONSTRUCTOR = MethodTemplate.constructor(
     param[TaskCloser]("closer"),
     param[Statement]("statement"),
-    param[NodeManager]("nodeManager"),
+    param[EntityAccessor]("entityAccessor"),
     param[ExecutionMode]("executionMode"),
-    param[org.neo4j.function.Supplier[InternalPlanDescription]]("description"),
+    param[Provider[InternalPlanDescription]]("description"),
     param[QueryExecutionTracer]("tracer"),
     param[util.Map[String, Object]]("params")).
     put(self(), typeRef[TaskCloser], "closer", load("closer")).
     put(self(), typeRef[ReadOperations], "ro", invoke(load("statement"), method[Statement, ReadOperations]("readOperations"))).
     put(self(), typeRef[ExecutionMode], "executionMode", load("executionMode")).
-    put(self(), typeRef[org.neo4j.function.Supplier[InternalPlanDescription]], "description", load("description")).
+    put(self(), typeRef[Provider[InternalPlanDescription]], "description", load("description")).
     put(self(), typeRef[QueryExecutionTracer], "tracer", load("tracer")).
     put(self(), typeRef[util.Map[String, Object]], "params", load("params")).
-    put(self(), typeRef[NodeManager], "nodeManager", load("nodeManager")).
+    put(self(), typeRef[EntityAccessor], "entityAccessor", load("entityAccessor")).
     build()
 
   val SET_SUCCESSFUL_CLOSEABLE = MethodTemplate.method(typeRef[Unit], "setSuccessfulCloseable",
@@ -873,7 +872,7 @@ private object Templates {
     returns(get(self(), typeRef[ExecutionMode], "executionMode")).
     build()
   val EXECUTION_PLAN_DESCRIPTION = MethodTemplate.method(typeRef[InternalPlanDescription], "executionPlanDescription").
-    returns(invoke(get(self(), typeRef[org.neo4j.function.Supplier[InternalPlanDescription]], "description"), method[org.neo4j.function.Supplier[InternalPlanDescription], InternalPlanDescription]("get"))).
+    returns(invoke(get(self(), typeRef[Provider[InternalPlanDescription]], "description"), method[Provider[InternalPlanDescription], InternalPlanDescription]("get"))).
     build()
   val JAVA_COLUMNS = MethodTemplate.method(typeRef[util.List[String]], "javaColumns").
     returns(get(typeRef[util.List[String]], "COLUMNS")).
