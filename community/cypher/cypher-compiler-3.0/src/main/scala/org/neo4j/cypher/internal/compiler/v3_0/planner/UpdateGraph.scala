@@ -91,8 +91,8 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   /*
    * finds all label names being removed on given node, REMOVE a:L
    */
-  def labelsToRemoveForNode(idName: IdName): Set[LabelName] = removeLabelPatterns.collect {
-    case RemoveLabelPattern(n, labels) if n == idName => labels
+  def labelsToRemove: Set[LabelName] = removeLabelPatterns.collect {
+    case RemoveLabelPattern(n, labels) => labels
   }.flatten.toSet
 
   /*
@@ -118,8 +118,9 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   def overlaps(qg: QueryGraph) =
       nonEmpty &&
       (createNodeOverlap(qg) || createRelationshipOverlap(qg) ||
-        deleteOverlap(qg) || removeLabelOverlap(qg) || setLabelOverlap(qg) || setPropertyOverlap(qg)
-        || mergeNodeDeleteOverlap)
+        deleteOverlap(qg) || removeLabelOverlap(qg) || setLabelOverlap(qg) || setPropertyOverlap(qg))
+
+  def overlaps(ug: UpdateGraph) = deleteOverlapWithMergeNodeIn(ug)
 
   /*
    * Checks for overlap between nodes being read in the query graph
@@ -145,7 +146,9 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   }
 
   //if we do match delete and merge we always need to be eager
-  def mergeNodeDeleteOverlap = deleteExpressions.nonEmpty && mergeNodePatterns.nonEmpty
+  def deleteOverlapWithMergeNodeInSelf = deleteExpressions.nonEmpty && mergeNodePatterns.nonEmpty
+
+  def deleteOverlapWithMergeNodeIn(other: UpdateGraph) = deleteExpressions.nonEmpty && other.mergeNodePatterns.nonEmpty
 
   /*
    * Checks for overlap between rels being read in the query graph

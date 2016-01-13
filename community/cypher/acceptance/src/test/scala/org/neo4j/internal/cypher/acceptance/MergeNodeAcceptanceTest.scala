@@ -515,6 +515,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("merge should handle argument properly") {
     createNode("x" -> 42)
+    createNode("x" -> "not42")
 
     val query = """WITH 42 AS x MERGE (c:N {x: x})"""
 
