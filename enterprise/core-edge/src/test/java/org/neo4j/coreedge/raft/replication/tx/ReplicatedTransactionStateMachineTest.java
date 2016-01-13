@@ -20,8 +20,6 @@
 package org.neo4j.coreedge.raft.replication.tx;
 
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
@@ -31,14 +29,15 @@ import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.CurrentReplicatedLockState;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -66,7 +65,7 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine(
-                localCommitProcess, globalSession, lockState( lockSessionId ) );
+                localCommitProcess, globalSession, lockState( lockSessionId ), new CommittingTransactionsRegistry() );
 
         // when
         listener.onReplicated( tx, 0 );
@@ -88,7 +87,7 @@ public class ReplicatedTransactionStateMachineTest
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
         ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine(
-                localCommitProcess, globalSession, lockState( lockSessionId ) );
+                localCommitProcess, globalSession, lockState( lockSessionId ), new CommittingTransactionsRegistry() );
 
         // when
         listener.onReplicated( tx, 0 );
@@ -112,10 +111,11 @@ public class ReplicatedTransactionStateMachineTest
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
+        CommittingTransactions committingTransactions = new CommittingTransactionsRegistry();
         final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine(
-                localCommitProcess, globalSession, lockState( currentLockSessionId ) );
+                localCommitProcess, globalSession, lockState( currentLockSessionId ), committingTransactions );
 
-        Future<Long> future = listener.getFutureTxId( localOperationId );
+        CommittingTransaction future = committingTransactions.register( localOperationId );
 
         // when
         listener.onReplicated( tx, 0 );
@@ -123,12 +123,12 @@ public class ReplicatedTransactionStateMachineTest
         // then
         try
         {
-            future.get(1, TimeUnit.SECONDS);
+            future.waitUntilCommitted( 1, TimeUnit.SECONDS );
             fail( "Should have thrown exception" );
         }
-        catch ( ExecutionException e )
+        catch ( TransactionFailureException e )
         {
-            assertThat( e.getCause().getMessage(), containsString( "different leader" ) );
+            assertEquals( Status.Transaction.LockSessionInvalid, e.status() );
         }
     }
 
@@ -142,29 +142,8 @@ public class ReplicatedTransactionStateMachineTest
     public CurrentReplicatedLockState lockState( int lockSessionId )
     {
         CurrentReplicatedLockState lockState = mock( CurrentReplicatedLockState.class );
-        when(lockState.currentLockSession()).thenReturn( new StubLockSession( lockSessionId ) );
+        when( lockState.currentLockSession() ).thenReturn( new StubLockSession( lockSessionId ) );
         return lockState;
     }
 
-    private class StubLockSession implements CurrentReplicatedLockState.LockSession
-    {
-        private final int id;
-
-        private StubLockSession( int id )
-        {
-            this.id = id;
-        }
-
-        @Override
-        public int id()
-        {
-            return id;
-        }
-
-        @Override
-        public boolean isMine()
-        {
-            return false;
-        }
-    }
 }

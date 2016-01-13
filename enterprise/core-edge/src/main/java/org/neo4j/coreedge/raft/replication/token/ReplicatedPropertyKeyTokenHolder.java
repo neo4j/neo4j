@@ -34,9 +34,9 @@ import org.neo4j.storageengine.api.Token;
 
 public class ReplicatedPropertyKeyTokenHolder extends ReplicatedTokenHolder<Token,PropertyKeyTokenRecord> implements PropertyKeyTokenHolder
 {
-    public ReplicatedPropertyKeyTokenHolder( Replicator replicator, IdGeneratorFactory idGeneratorFactory, Dependencies dependencies )
+    public ReplicatedPropertyKeyTokenHolder( Replicator replicator, IdGeneratorFactory idGeneratorFactory, Dependencies dependencies, long timeoutMillis )
     {
-        super( replicator, idGeneratorFactory, IdType.PROPERTY_KEY_TOKEN, dependencies, new Token.Factory(), TokenType.PROPERTY );
+        super( replicator, idGeneratorFactory, IdType.PROPERTY_KEY_TOKEN, dependencies, new Token.Factory(), TokenType.PROPERTY, timeoutMillis );
     }
 
     @Override

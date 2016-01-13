@@ -30,9 +30,9 @@ import java.util.List;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -70,6 +70,8 @@ public class ReplicatedTokenHolderTest
     final int INJECTED_TOKEN_ID = 1024;
     Dependencies dependencies = mock( Dependencies.class );
 
+    long TIMEOUT_MILLIS = 1000;
+
     @Before
     public void setup()
     {
@@ -98,7 +100,7 @@ public class ReplicatedTokenHolderTest
                 .thenReturn( mock( TransactionRepresentationCommitProcess.class ) );
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
-                idGeneratorFactory, dependencies );
+                idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
@@ -108,6 +110,38 @@ public class ReplicatedTokenHolderTest
 
         // then
         assertEquals( EXPECTED_TOKEN_ID, tokenId );
+    }
+
+    @Test
+    public void shouldTimeoutIfTokenDoesNotReplicateWithinTimeout() throws Exception
+    {
+        // given
+        IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
+        IdGenerator idGenerator = mock( IdGenerator.class );
+        when( idGenerator.nextId() ).thenReturn( 1L );
+
+        when( idGeneratorFactory.get( any( IdType.class ) ) ).thenReturn( idGenerator );
+
+        Replicator replicator = new DropAllTheThingsReplicator();
+        when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) )
+                .thenReturn( mock( TransactionRepresentationCommitProcess.class ) );
+
+        ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
+                idGeneratorFactory, dependencies, 10 );
+
+        tokenHolder.setLastCommittedIndex( -1 );
+        tokenHolder.start();
+
+        // when
+        try
+        {
+            tokenHolder.getOrCreateId( "Person" );
+            fail( "Token creation attempt should have timed out" );
+        }
+        catch ( TransactionFailureException ex )
+        {
+            // expected
+        }
     }
 
     @Test
@@ -126,7 +160,7 @@ public class ReplicatedTokenHolderTest
                 commitProcess );
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder(
-                new StubReplicator(), idGeneratorFactory, dependencies );
+                new StubReplicator(), idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
         tokenHolder.setLastCommittedIndex( -1 );
 
         // when
@@ -145,7 +179,7 @@ public class ReplicatedTokenHolderTest
     {
         // given
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder =
-                new ReplicatedLabelTokenHolder( null, null, dependencies );
+                new ReplicatedLabelTokenHolder( null, null, dependencies, TIMEOUT_MILLIS );
 
         // when
         tokenHolder.setInitialTokens( asList( new Token( "name1", 1 ), new Token( "name2", 2 ) ) );
@@ -159,7 +193,7 @@ public class ReplicatedTokenHolderTest
     {
         // given
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( null,
-                null, dependencies );
+                null, dependencies, TIMEOUT_MILLIS );
 
         // when
         try
@@ -186,7 +220,7 @@ public class ReplicatedTokenHolderTest
         Replicator replicator = new StubReplicator();
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
-                idGeneratorFactory, dependencies );
+                idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
@@ -213,7 +247,7 @@ public class ReplicatedTokenHolderTest
         RaceConditionSimulatingReplicator replicator = new RaceConditionSimulatingReplicator();
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
-                idGeneratorFactory, dependencies );
+                idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
@@ -240,7 +274,7 @@ public class ReplicatedTokenHolderTest
         RaceConditionSimulatingReplicator replicator = new RaceConditionSimulatingReplicator();
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
-                idGeneratorFactory, dependencies );
+                idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
@@ -297,6 +331,28 @@ public class ReplicatedTokenHolderTest
             this.listeners.remove( listener );
         }
     }
+
+    static class DropAllTheThingsReplicator implements Replicator
+    {
+        @Override
+        public void replicate( final ReplicatedContent content ) throws ReplicationFailedException
+        {
+
+        }
+
+        @Override
+        public void subscribe( ReplicatedContentListener listener )
+        {
+
+        }
+
+        @Override
+        public void unsubscribe( ReplicatedContentListener listener )
+        {
+
+        }
+    }
+
 
     static class StubReplicator implements Replicator
     {
