@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.System.currentTimeMillis;
@@ -43,7 +44,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     private long epoch;
 
     public NodeManager( NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions relationshipActions,
-                        ThreadToStatementContextBridge threadToTransactionBridge )
+            ThreadToStatementContextBridge threadToTransactionBridge )
     {
         this.nodeActions = nodeActions;
         this.relationshipActions = relationshipActions;
@@ -52,7 +53,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         // so we use the thread-safe CopyOnWriteArrayList.
         this.nodePropertyTrackers = new CopyOnWriteArrayList<>();
         this.relationshipPropertyTrackers = new CopyOnWriteArrayList<>();
-
     }
 
     @Override
@@ -134,5 +134,21 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     public void removeRelationshipPropertyTracker( PropertyTracker<Relationship> relationshipPropertyTracker )
     {
         relationshipPropertyTrackers.remove( relationshipPropertyTracker );
+    }
+
+    // The following methods are needed only for compatibility for older versions of cypher compiler, i.e., 2.0
+
+    public boolean isDeleted( Node resource )
+    {
+        KernelStatement statement = (KernelStatement)
+                threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).acquireStatement();
+        return statement.txState().nodeIsDeletedInThisTx( resource.getId() );
+    }
+
+    public boolean isDeleted( Relationship resource )
+    {
+        KernelStatement statement = (KernelStatement)
+                threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).acquireStatement();
+        return statement.txState().relationshipIsDeletedInThisTx( resource.getId() );
     }
 }
