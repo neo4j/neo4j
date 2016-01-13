@@ -103,7 +103,7 @@ InModuleScope Neo4j-Management {
       $Neo4jDir = (Get-Item 'TestDrive:\neo4j').FullName.TrimEnd('\')
 
       It "detects correct home path using double dot" {
-         $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j\system\..' -ErrorAction Stop
+         $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j\lib\..' -ErrorAction Stop
          $neoServer.Home | Should Be $Neo4jDir      
       }
 

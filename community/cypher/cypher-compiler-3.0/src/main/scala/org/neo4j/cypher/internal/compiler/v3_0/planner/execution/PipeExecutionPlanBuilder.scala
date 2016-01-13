@@ -315,6 +315,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
       CreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ)(context.semanticTable), endNode.name, props.map(toCommandExpression))()
 
+    case MergeCreateRelationship(_, idName, startNode, typ, endNode, props) =>
+      MergeCreateRelationshipPipe(source, idName.name, startNode.name, typ, endNode.name, props.map(toCommandExpression))()
+
     case SetLabels(_, IdName(name), labels) =>
      SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))()
 
@@ -421,11 +424,11 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case apply@LetSelectOrAntiSemiApply(_, _, idName, predicate) =>
       LetSelectOrSemiApplyPipe(lhs, rhs, idName.name, buildPredicate(predicate), negated = true)()
 
-    case apply@ConditionalApply(_, _, IdName(name)) =>
-      ConditionalApplyPipe(lhs, rhs, name, negated = false)()
+    case apply@ConditionalApply(_, _, ids) =>
+      ConditionalApplyPipe(lhs, rhs, ids.map(_.name), negated = false)()
 
-    case apply@AntiConditionalApply(_, _, IdName(name)) =>
-      ConditionalApplyPipe(lhs, rhs, name, negated = true)()
+    case apply@AntiConditionalApply(_, _, ids) =>
+      ConditionalApplyPipe(lhs, rhs, ids.map(_.name), negated = true)()
 
     case Union(_, _) =>
       NewUnionPipe(lhs, rhs)()

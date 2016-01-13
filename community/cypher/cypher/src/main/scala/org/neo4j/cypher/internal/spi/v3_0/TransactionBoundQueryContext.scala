@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v3_0
 
 import java.net.URL
+import java.util.function.Predicate
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
@@ -27,15 +28,19 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_0.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{TypeAndDirectionExpander, OnlyDirectionExpander, KernelPredicate}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.graphalgo.impl.path.ShortestPath
+import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription}
+import org.neo4j.graphdb.traversal.{Uniqueness, Evaluators, TraversalDescription}
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -44,7 +49,7 @@ import org.neo4j.kernel.impl.api.{KernelStatement => InternalKernelStatement}
 import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.security.URLAccessValidationError
-import org.neo4j.kernel.{GraphDatabaseAPI, Traversal, Uniqueness}
+import org.neo4j.kernel.GraphDatabaseAPI
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -504,18 +509,18 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       case (Some(min), Some(max)) => Evaluators.includingDepths(min, max)
     }
 
-    val baseTraversalDescription: TraversalDescription = Traversal.description()
+    val baseTraversalDescription: TraversalDescription = graph.traversalDescription()
       .evaluator(depthEval)
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)
 
     val traversalDescription = if (relTypes.isEmpty) {
-      baseTraversalDescription.expand(Traversal.expanderForAllTypes(toGraphDb(direction)))
+      baseTraversalDescription.expand(PathExpanderBuilder.allTypes(toGraphDb(direction)).build())
     } else {
-      val emptyExpander = Traversal.emptyExpander()
+      val emptyExpander = PathExpanderBuilder.empty()
       val expander = relTypes.foldLeft(emptyExpander) {
         case (e, t) => e.add(RelationshipType.withName(t), toGraphDb(direction))
       }
-      baseTraversalDescription.expand(expander)
+      baseTraversalDescription.expand(expander.build())
     }
     traversalDescription.traverse(realNode).iterator().asScala
   }
@@ -533,6 +538,55 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   override def lockRelationships(relIds: Long*) =
     relIds.sorted.foreach(_statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, _))
+
+  override def singleShortestPath(left: Node, right: Node, depth: Int, expander: expressions.Expander,
+                                  pathPredicate: KernelPredicate[Path],
+                                  filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] = {
+    val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
+
+    Option(pathFinder.findSinglePath(left, right))
+  }
+
+  override def allShortestPath(left: Node, right: Node, depth: Int, expander: expressions.Expander,
+                               pathPredicate: KernelPredicate[Path],
+                               filters: Seq[KernelPredicate[PropertyContainer]]): scala.Iterator[Path] = {
+    val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
+
+    pathFinder.findAllPaths(left, right).iterator().asScala
+  }
+
+  private def buildPathFinder(depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
+                              filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {
+    val startExpander = expander match {
+      case OnlyDirectionExpander(_, _, dir) =>
+        PathExpanderBuilder.allTypes(toGraphDb(dir))
+      case TypeAndDirectionExpander(_,_,typDirs) =>
+        typDirs.foldLeft(PathExpanderBuilder.empty()) {
+          case (acc, (typ, dir)) => acc.add(RelationshipType.withName(typ), toGraphDb(dir))
+        }
+    }
+
+    val expanderWithNodeFilters = expander.nodeFilters.foldLeft(startExpander) {
+      case (acc, filter) => acc.addNodeFilter(new Predicate[PropertyContainer] {
+        override def test(t: PropertyContainer): Boolean = filter.test(t)
+      })
+    }
+    val expanderWithAllPredicates = expander.relFilters.foldLeft(expanderWithNodeFilters) {
+      case (acc, filter) => acc.addRelationshipFilter(new Predicate[PropertyContainer] {
+        override def test(t: PropertyContainer): Boolean = filter.test(t)
+      })
+    }
+    val shortestPathPredicate = new ShortestPathPredicate {
+      override def test(path: Path): Boolean = pathPredicate.test(path)
+    }
+
+    new ShortestPath(depth, expanderWithAllPredicates.build(), shortestPathPredicate) {
+      override protected def filterNextLevelNodes(nextNode: Node): Node =
+        if (filters.isEmpty) nextNode
+        else if (filters.forall(filter => filter test nextNode)) nextNode
+        else null
+    }
+  }
 }
 
 object TransactionBoundQueryContext {

@@ -134,8 +134,8 @@ public interface RaftMessages
             @Override
             public String toString()
             {
-                return format( "Vote.Request{term=%d, candidate=%s, lastAppended=%d, lastLogTerm=%d}",
-                        term, candidate, lastLogIndex, lastLogTerm );
+                return format( "Vote.Request from %s {term=%d, candidate=%s, lastAppended=%d, lastLogTerm=%d}",
+                        from, term, candidate, lastLogIndex, lastLogTerm );
             }
 
             public long lastLogTerm()
@@ -195,7 +195,7 @@ public interface RaftMessages
             @Override
             public String toString()
             {
-                return format( "Vote.Response{from=%s, term=%d, voteGranted=%s}", from(), term, voteGranted );
+                return format( "Vote.Response from %s {term=%d, voteGranted=%s}", from, term, voteGranted );
             }
 
             public long term()
@@ -290,7 +290,7 @@ public interface RaftMessages
             {
                 return format( "AppendEntries.Request from %s {leaderTerm=%d, prevLogIndex=%d, " +
                                 "prevLogTerm=%d, entry=%s, leaderCommit=%d}",
-                        super.from(), leaderTerm, prevLogIndex, prevLogTerm, Arrays.toString( entries ), leaderCommit );
+                        from, leaderTerm, prevLogIndex, prevLogTerm, Arrays.toString( entries ), leaderCommit );
             }
         }
 
@@ -355,8 +355,8 @@ public interface RaftMessages
             @Override
             public String toString()
             {
-                return String.format( "Response{term=%d, success=%s, matchIndex=%d, appendIndex=%d}",
-                        term, success, matchIndex, appendIndex );
+                return String.format( "AppendEntries.Response from %s {term=%d, success=%s, matchIndex=%d, appendIndex=%d}",
+                        from, term, success, matchIndex, appendIndex );
             }
         }
     }
@@ -433,7 +433,7 @@ public interface RaftMessages
         @Override
         public String toString()
         {
-            return format( "Heartbeat{leaderTerm=%d, commitIndex=%d, commitIndexTerm=%d}", leaderTerm,
+            return format( "Heartbeat from %s {leaderTerm=%d, commitIndex=%d, commitIndexTerm=%d}", from, leaderTerm,
                     commitIndex, commitIndexTerm );
         }
     }
@@ -484,7 +484,7 @@ public interface RaftMessages
             @Override
             public String toString()
             {
-                return format( "NewEntry.Request{content=%s}", content );
+                return format( "NewEntry.Request from %s {content=%s}", from, content );
             }
 
             @Override
@@ -519,7 +519,7 @@ public interface RaftMessages
 
     abstract class BaseMessage<MEMBER> implements Message<MEMBER>
     {
-        private MEMBER from;
+        protected MEMBER from;
         private Type type;
 
         public BaseMessage( MEMBER from, Type type )

@@ -56,7 +56,6 @@ public class OnDiskTermStateTest
         return new OnDiskTermState( fileSystem, testDir.directory(), 100, mock );
     }
 
-
     @Test
     public void shouldCallWriteAllAndForceOnVoteUpdate() throws Exception
     {

@@ -34,9 +34,9 @@ import org.neo4j.kernel.impl.util.Dependencies;
 
 public class ReplicatedRelationshipTypeTokenHolder extends ReplicatedTokenHolder<RelationshipTypeToken,RelationshipTypeTokenRecord> implements RelationshipTypeTokenHolder
 {
-    public ReplicatedRelationshipTypeTokenHolder( Replicator replicator, IdGeneratorFactory idGeneratorFactory, Dependencies dependencies )
+    public ReplicatedRelationshipTypeTokenHolder( Replicator replicator, IdGeneratorFactory idGeneratorFactory, Dependencies dependencies, long timeoutMillis )
     {
-        super( replicator, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_TOKEN, dependencies, new RelationshipTypeToken.Factory(), TokenType.RELATIONSHIP );
+        super( replicator, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_TOKEN, dependencies, new RelationshipTypeToken.Factory(), TokenType.RELATIONSHIP, timeoutMillis );
     }
 
     @Override

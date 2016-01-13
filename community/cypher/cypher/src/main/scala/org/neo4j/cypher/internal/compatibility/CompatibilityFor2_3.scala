@@ -22,11 +22,10 @@ package org.neo4j.cypher.internal.compatibility
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.EntityAccessor
 import org.neo4j.cypher.{QueryStatistics, _}
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.{v3_0, v2_3}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult, EntityAccessor}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, QueryContext}
@@ -164,7 +163,7 @@ trait CompatibilityFor2_3 {
       Try(compiler.prepareQuery(preParsedQuery.statement,
                                 preParsedQuery.rawStatement,
                                 as2_3(preParsedQuery.notificationLogger),
-//                                preParsedQuery.planner.name,
+                                preParsedQuery.planner.name,
                                 Some(as2_3(preParsedQuery.offset)), tracer))
     new ParsedQuery {
       def isPeriodicCommit = preparedQueryForV_2_3.map(_.isPeriodicCommit).getOrElse(false)
@@ -438,8 +437,9 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
       case CypherRuntime.compiled => Some(CompiledRuntimeName)
     }
 
+    val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
     CypherCompilerFactory.costBasedCompiler(
-      graph, config, clock, GeneratedQueryStructure, new WrappedMonitors2_3( kernelMonitors ),
+      graph, new EntityAccessorWrapper2_3(nodeManager), config, clock, GeneratedQueryStructure, new WrappedMonitors2_3( kernelMonitors ),
       new StringInfoLogger2_3( log ), rewriterSequencer, plannerName, runtimeName)
   }
 
@@ -451,8 +451,11 @@ case class CompatibilityFor2_3Rule(graph: GraphDatabaseService,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor2_3 {
-  protected val compiler = CypherCompilerFactory.ruleBasedCompiler(
-    graph, config, clock, new WrappedMonitors2_3( kernelMonitors ), rewriterSequencer)
+  protected val compiler = {
+    val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
+    CypherCompilerFactory.ruleBasedCompiler(
+            graph, new EntityAccessorWrapper2_3(nodeManager), config, clock, new WrappedMonitors2_3( kernelMonitors ), rewriterSequencer)
+  }
 
   override val queryCacheSize: Int = config.queryCacheSize
 }

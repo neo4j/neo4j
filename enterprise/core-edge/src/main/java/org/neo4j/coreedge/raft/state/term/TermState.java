@@ -27,6 +27,8 @@ import org.neo4j.coreedge.raft.log.RaftStorageException;
  */
 public interface TermState
 {
+    String TERM_TAG = "term";
+
     long currentTerm();
 
     /**

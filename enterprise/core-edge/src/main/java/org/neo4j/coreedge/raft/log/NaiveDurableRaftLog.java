@@ -195,6 +195,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             writeEntry( new Entry( logEntry.term(), contentOffset ) );
             contentOffset += length;
             appendIndex++;
+            appendIndexMonitor.appendIndex(appendIndex);
             for ( Listener listener : listeners )
             {
                 listener.onAppended( logEntry.content(), appendIndex );
@@ -258,6 +259,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         try
         {
             storeCommitIndex( actualNewCommitIndex );
+            commitIndexMonitor.commitIndex(commitIndex);
         }
         catch ( IOException e )
         {

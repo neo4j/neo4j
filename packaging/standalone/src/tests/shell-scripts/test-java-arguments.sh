@@ -43,7 +43,7 @@ for run_command in run_console run_daemon; do
 
   test_expect_success "should add lib dirs to classpath" "
     ${run_command} &&
-    test_expect_java_arg '-cp $(neo4j_home)/lib/*:$(neo4j_home)/system/lib/*'
+    test_expect_java_arg '-cp $(neo4j_home)/lib/*'
   "
 
   test_expect_success "should add plugins to classpath" "

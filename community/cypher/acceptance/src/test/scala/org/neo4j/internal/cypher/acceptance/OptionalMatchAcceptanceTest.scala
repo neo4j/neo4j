@@ -130,13 +130,13 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("should support optional match to find self loops") {
-    val result = executeWithAllPlannersAndRuntimes("match (a:B) optional match (a)-[r]-(a) return r")
+    val result = executeWithAllPlanners("match (a:B) optional match (a)-[r]-(a) return r")
 
     assert(result.toSet === Set(Map("r" -> selfRel)))
   }
 
   test("should support optional match to not find self loops") {
-    val result = executeWithAllPlannersAndRuntimes("match (a) where not (a:B) optional match (a)-[r]->(a) return r")
+    val result = executeWithAllPlanners("match (a) where not (a:B) optional match (a)-[r]->(a) return r")
 
     assert(result.toSet === Set(Map("r" -> null)))
   }
@@ -190,7 +190,7 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("should handle correlated optional matches - the first does not match, and the second must not match") {
-    val result = executeWithAllPlannersAndRuntimes(
+    val result = executeWithAllPlanners(
       """match (a:A), (b:B)
         |optional match (a)-->(x)
         |optional match (x)-[r]->(b)

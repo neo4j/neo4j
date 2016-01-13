@@ -45,6 +45,7 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
         case in: Stream[_] => CastSupport.castOrFail[Stream[Path]](in)
         case null          => Stream()
         case path: Path    => Stream(path)
+        case in: Iterator[_] => CastSupport.castOrFail[Stream[Path]](in.toStream)
       }
 
       shortestPathCommand.relIterator match {

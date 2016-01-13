@@ -165,17 +165,6 @@
                             </mapping>
 
                             <mapping>
-                                <recurseDirectories>true</recurseDirectories>
-                                <sources>
-                                    <source>
-                                        <location>${project.build.directory}/neo4j-${edition}-${neo4j.version}/system
-                                        </location>
-                                    </source>
-                                </sources>
-                                <directory>/usr/share/neo4j/system</directory>
-                            </mapping>
-
-                            <mapping>
                                 <directory>/usr/share/neo4j/conf</directory>
                                 <sources>
                                     <softlinkSource>

@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphdb.Node
 
+import scala.collection.mutable.ListBuffer
+
 case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: String, toName: String,
                                   dir: SemanticDirection, types: LazyTypes, predicate: Predicate)
                                 (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
@@ -49,12 +51,18 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
               val relationships = relCache.get(fromNode, toNode, dir)
                 .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, types.types(state.query)))
 
-              if (relationships.isEmpty) Iterator.single(row.newWith2(relName, null, toName, toNode))
-              else relationships.map { rel =>
-                val candidateRow = row.newWith2(relName, rel, toName, toNode)
-                if (predicate.isTrue(candidateRow)(state)) candidateRow
-                else row.newWith1(relName, null)
+              val it = relationships.toIterator
+              val filteredRows = ListBuffer.empty[ExecutionContext]
+              while (it.hasNext) {
+                val candidateRow = row.newWith1(relName, it.next())
+
+                if (predicate.isTrue(candidateRow)(state)) {
+                  filteredRows.append(candidateRow)
+                }
               }
+
+              if (filteredRows.isEmpty) Iterator.single(row.newWith1(relName, null))
+              else filteredRows
             }
 
           case null => Iterator(row.newWith1(relName, null))

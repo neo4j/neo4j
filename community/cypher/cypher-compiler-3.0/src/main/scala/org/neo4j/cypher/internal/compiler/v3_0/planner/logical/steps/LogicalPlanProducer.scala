@@ -456,18 +456,27 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
       pattern.endNode, pattern.properties)(solved)
   }
 
-  def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idName: IdName)
+  def planMergeCreateRelationship(inner: LogicalPlan, pattern: CreateRelationshipPattern)
+                            (implicit context: LogicalPlanningContext): LogicalPlan = {
+
+    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+
+    MergeCreateRelationship(inner, pattern.relName, pattern.startNode, LazyType(pattern.relType)(context.semanticTable),
+      pattern.endNode, pattern.properties)(solved)
+  }
+
+  def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idNames: Seq[IdName])
                     (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = lhs.solved ++ rhs.solved
 
-    ConditionalApply(lhs, rhs, idName)(solved)
+    ConditionalApply(lhs, rhs, idNames)(solved)
   }
 
-  def planAntiConditionalApply(inner: LogicalPlan, outer: LogicalPlan, idName: IdName)
+  def planAntiConditionalApply(inner: LogicalPlan, outer: LogicalPlan, idNames: Seq[IdName])
                           (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved ++ outer.solved
 
-    AntiConditionalApply(inner, outer, idName)(solved)
+    AntiConditionalApply(inner, outer, idNames)(solved)
   }
 
   def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression)

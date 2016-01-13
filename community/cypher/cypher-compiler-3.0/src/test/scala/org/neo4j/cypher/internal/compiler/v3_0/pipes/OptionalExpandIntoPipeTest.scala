@@ -198,6 +198,27 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     result should equal(List(Map("a" -> null, "r" -> null, "b" -> null)))
   }
 
+  test("expand into should handle multiple relationships between the same node") {
+    // given
+    val rel1 = newMockedRelationship(1, startNode, endNode1)
+    val rel2 = newMockedRelationship(1, startNode, endNode1)
+    mockRelationships(rel1, rel2)
+    val left = newMockedPipe("a",
+      row("a" -> startNode, "b" -> endNode1)
+    )
+
+    val predicate = mock[Predicate]
+    when(predicate.isTrue(any[ExecutionContext])(any[QueryState]))
+      .thenReturn(true)
+      .thenReturn(false)
+    // when
+    val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, predicate)().createResults(queryState).toList
+
+    // then
+    result.toList should equal(List(
+      Map("a" -> startNode, "b" -> endNode1, "r" -> rel1)))
+  }
+
   private def mockRelationships(rels: Relationship*) {
     when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
       def answer(invocation: InvocationOnMock): Iterator[Relationship] = rels.iterator

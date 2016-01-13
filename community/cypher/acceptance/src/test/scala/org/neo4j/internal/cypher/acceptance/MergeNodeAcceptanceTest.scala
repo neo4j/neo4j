@@ -625,13 +625,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
         "RETURN x, y;").toList
   }
 
-  test("merge_should_see_variables_introduced_by_other_update_actions") {
-    // when
-    val result = executeWithRulePlanner("CREATE (a) MERGE (a)-[:X]->() RETURN a")
 
-    // then
-    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
-  }
 
   test("merge_inside_foreach_should_see_variables_introduced_by_update_actions_outside_foreach") {
     // when
@@ -639,23 +633,6 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     // then
     assertStats(result, nodesCreated = 4, relationshipsCreated = 3, propertiesWritten = 3)
-  }
-
-  test("merge_should_see_variables_introduced_by_update_actions") {
-    // when
-    val result = executeWithRulePlanner("CREATE (a) MERGE (a)-[:X]->() RETURN a")
-
-    // then
-    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
-  }
-
-  test("should not use eager if on create modifies relationships which don't affect the match clauses") {
-    val result = executeWithRulePlanner(
-      """MATCH (src:LeftLabel), (dst:RightLabel)
-        |MERGE (src)-[r:IS_RELATED_TO ]->(dst)
-        |ON CREATE SET r.p3 = 42;""".stripMargin)
-
-    result.executionPlanDescription().toString should not include "Eager"
   }
 
   test("merge must properly handle multiple labels") {
@@ -697,5 +674,33 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val result = updateWithBothPlanners(query)
 
     assertStats(result, nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1, propertiesWritten = 1)
+  }
+
+  test("unwind combined with merge") {
+    val query = "UNWIND [1,2,3,4] AS int MERGE (n {id: int}) RETURN count(*)"
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesCreated = 4, propertiesWritten = 4)
+    result.toList should equal(List(Map("count(*)" -> 4)))
+  }
+
+  test("merges should not be able to match on deleted nodes") {
+    // GIVEN
+    val node1 = createLabeledNode(Map("value" -> 1), "A")
+    val node2 = createLabeledNode(Map("value" -> 2), "A")
+
+    val query = """
+                  |MATCH (a:A)
+                  |DELETE a
+                  |MERGE (a2:A)
+                  |RETURN a2.value
+                """.stripMargin
+
+    // WHEN
+    val result = updateWithBothPlanners(query)
+
+    // THEN
+    result.toList should not contain Map("a2" -> node1)
+    result.toList should not contain Map("a2" -> node2)
   }
 }

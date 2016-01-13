@@ -156,81 +156,60 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   test("should introduce eagerness between MATCH and DELETE + DELETE and MERGE for relationship") {
     val a = createNode()
     val b = createNode()
-    val rel1 = relate(a, b, "T")
-    val rel2 = relate(a, b, "T")
+    val rel1 = relate(a, b, "T", Map("id" -> 1))
+    val rel2 = relate(a, b, "T", Map("id" -> 2))
     val query =
       """
         |MATCH (a)-[t:T]->(b)
         |DELETE t
         |MERGE (a)-[t2:T]->(b)
-        |RETURN t2
+        |RETURN exists(t2.id)
       """.stripMargin
 
-    //TODO: We should not need eager between MATCH and DELETE when directed pattern
-    val result = executeWithRulePlanner(query)
+    val result = updateWithBothPlanners(query)
     assertStats(result, relationshipsDeleted = 2, relationshipsCreated = 1)
 
     // Merge should not be able to match on deleted relationship
-    result.toList should not contain Map("t2" -> rel1)
-    result.toList should not contain Map("t2" -> rel2)
-    assertNumberOfEagerness(query, 2)
+    result.toList should equal(List(Map("exists(t2.id)" -> false), Map("exists(t2.id)" -> false)))
+    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce eagerness between DELETE and MERGE for relationships when there is no read matching the merge") {
     val a = createNode()
     val b = createNode()
-    relate(a, b, "T")
-    relate(a, b, "T")
+    relate(a, b, "T", Map("id" -> 1))
+    relate(a, b, "T", Map("id" -> 1))
     val query =
       """
         |MATCH (a)-[t:T]->(b)
         |DELETE t
         |MERGE (a)-[t2:T2]->(b)
-        |RETURN t2
+        |RETURN exists(t2.id)
       """.stripMargin
 
-    assertStats(executeWithRulePlanner(query), relationshipsDeleted = 2, relationshipsCreated = 1)
-    //TODO this might be safe without eager, given that the match is directed and probably need to check the direction
-    assertNumberOfEagerness(query, 2)
+    val result = updateWithBothPlanners(query)
+    assertStats(result, relationshipsDeleted = 2, relationshipsCreated = 1)
+    result.toList should equal(List(Map("exists(t2.id)" -> false), Map("exists(t2.id)" -> false)))
+    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce eagerness between DELETE and MERGE for relationships when there is a read matching the merge") {
     val a = createNode()
     val b = createNode()
-    relate(a, b, "T")
-    relate(a, b, "T")
+    relate(a, b, "T", Map("id" -> 1))
+    relate(a, b, "T", Map("id" -> 1))
     val query =
       """
         |MATCH (a)-[t]->(b)
         |DELETE t
         |MERGE (a)-[t2:T2]->(b)
-        |RETURN t2
+        |RETURN exists(t2.id)
       """.stripMargin
 
-    assertStats(executeWithRulePlanner(query), relationshipsDeleted = 2, relationshipsCreated = 1)
-    //TODO: We should not need eager between MATCH and DELETE, when directed pattern
-    assertNumberOfEagerness(query, 2)
-  }
-
-  ignore("should not introduce eagerness between DELETE and MERGE for relationships when deleting variable not bound for same type") {
-    // TODO: Delete must know what type(s) of relationship it deletes to be able to solve this
-    val a = createNode()
-    val b = createNode()
-    relate(a, b, "T1")
-    relate(a, b, "T1")
-    relate(a, b, "T2")
-    relate(a, b, "T2")
-    val query =
-      """
-        |MATCH (a)-[t:T1]->(b)
-        |MATCH (a)-[:T2]->(b)
-        |DELETE t
-        |MERGE (a)-[t2:T2]->(b)
-        |RETURN t2
-      """.stripMargin
-
-    assertStats(executeWithRulePlanner(query), relationshipsDeleted = 2)
-    assertNumberOfEagerness(query, 0)
+    val result = updateWithBothPlanners(query)
+    assertStats(result, relationshipsDeleted = 2, relationshipsCreated = 1)
+    result.toList should equal(List(Map("exists(t2.id)" -> false), Map("exists(t2.id)" -> false)))
+    assertNumberOfEagerness(query, 1)
   }
 
   // TESTS FOR MATCH AND CREATE
@@ -437,14 +416,13 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 1)
   }
 
-  test("should not introduce an eager pipe between a non-directional leaf relationship read and a relationship merge") {
+  test("should introduce an eager pipe between a non-directional read and a relationship merge") {
     relate(createNode(), createNode(), "TYPE")
     relate(createNode(), createNode(), "TYPE")
     val query = "MATCH (a)-[:TYPE]-(b) MERGE (a)-[:TYPE]->(b) RETURN count(*) as count"
 
-    val result = executeWithRulePlanner(query)
+    val result = updateWithBothPlanners(query)
     assertStats(result, relationshipsCreated = 2)
-    //TODO: This should not need to be eager?
     assertNumberOfEagerness(query, 1)
     result.columnAs[Int]("count").next should equal(4)
 
@@ -799,8 +777,8 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result: InternalExecutionResult = updateWithBothPlanners(query)
     assertStats(result, labelsAdded = 2, nodesCreated = 1)
-    assertNumberOfEagerness(query, 1)
     result.toList should equal(List(Map("c" -> 12)))
+    assertNumberOfEagerness(query, 1)
   }
 
   test("on match set label on unstable iterator should not be eager if no overlap") {
@@ -811,8 +789,8 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result: InternalExecutionResult = updateWithBothPlanners(query)
     assertStats(result, labelsAdded = 3)
-    assertNumberOfEagerness(query, 0)
     result.toList should equal(List(Map("c" -> 36)))
+    assertNumberOfEagerness(query, 0)
   }
 
   test("on create set label on unstable iterator should be eager") {
@@ -907,7 +885,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode()
     createNode()
     val query = "MATCH (a), (b) MERGE (a)-[r:KNOWS]->(b)"
-    assertStats(executeWithRulePlanner(query), relationshipsCreated = 4)
+    assertStats(updateWithBothPlanners(query), relationshipsCreated = 4)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -917,7 +895,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(a, b, "KNOWS")
 
     val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON MATCH SET a.prop = 42"
-    assertStats(executeWithRulePlanner(query), propertiesWritten = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -929,9 +907,9 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(node0, node3, "KNOWS")
 
     val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON MATCH SET b:Foo"
-
-    assertStats(executeWithRulePlanner(query), relationshipsCreated = 3, labelsAdded = 1)
-    assertNumberOfEagerness(query, 0)
+    assertStats(updateWithBothPlanners(query), relationshipsCreated = 3, labelsAdded = 1)
+    //TODO this we need to consider not only overlap but also what known labels the node we set has
+    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce eagerness when the ON MATCH includes writing to a right-side matched label") {
@@ -941,9 +919,9 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val node3 = createLabeledNode("Bar")
     relate(node0, node3, "KNOWS")
 
-    val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON MATCH SET a:Bar"
+    val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON MATCH SET a:Bar RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), relationshipsCreated = 3, labelsAdded = 1)
+    assertStats(updateWithBothPlanners(query), relationshipsCreated = 3, labelsAdded = 1)
     assertNumberOfEagerness(query, 1)
   }
 
@@ -956,8 +934,9 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON CREATE SET b:Foo"
 
-    assertStats(executeWithRulePlanner(query), relationshipsCreated = 3, labelsAdded = 2)
-    assertNumberOfEagerness(query, 0)
+    assertStats(updateWithBothPlanners(query), relationshipsCreated = 3, labelsAdded = 2)
+    //TODO this we need to consider not only overlap but also what known labels the node we set has
+    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce eagerness when the ON CREATE includes writing to a right-side matched label") {
@@ -969,7 +948,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON CREATE SET a:Bar"
 
-    assertStats(executeWithRulePlanner(query), relationshipsCreated = 3, labelsAdded = 2)
+    assertStats(updateWithBothPlanners(query), relationshipsCreated = 3, labelsAdded = 2)
     assertNumberOfEagerness(query, 1)
   }
 
@@ -977,7 +956,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createLabeledNode("A")
     val query = "MATCH (a:A) MERGE (a)-[:BAR]->(b:B) WITH a MATCH (a) WHERE (a)-[:FOO]->() RETURN a"
 
-    assertStats(executeWithRulePlanner(query), relationshipsCreated = 1, nodesCreated = 1, labelsAdded = 1)
+    assertStats(updateWithBothPlanners(query), relationshipsCreated = 1, nodesCreated = 1, labelsAdded = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -989,7 +968,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val query = "MATCH (a:A) MERGE (a)-[:BAR]->(b:A) WITH a MATCH (a2) RETURN count (a2) AS nodes"
 
-    val result: InternalExecutionResult = executeWithRulePlanner(query)
+    val result: InternalExecutionResult = updateWithBothPlanners(query)
     assertStats(result, nodesCreated = 2, relationshipsCreated = 2, labelsAdded = 2)
 
     result.toList should equal(List(Map("nodes" -> 15)))
@@ -1001,7 +980,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createLabeledNode("B")
     val query = "MATCH (a:A), (b:B) MERGE (a)-[:BAR]->(b) WITH a MATCH (a) WHERE (a)-[:FOO]->() RETURN a"
 
-    assertStats(executeWithRulePlanner(query), relationshipsCreated = 1)
+    assertStats(updateWithBothPlanners(query), relationshipsCreated = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1067,7 +1046,19 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   test("should not be eager when merging on already bound variables") {
     val query = "MERGE (city:City) MERGE (country:Country) MERGE (city)-[:IN]->(country)"
 
-    assertStats(executeWithRulePlanner(query), nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1)
+    assertNumberOfEagerness(query,  0)
+  }
+
+  test("should not use eager if on create modifies relationships which don't affect the match clauses") {
+    createLabeledNode("LeftLabel")
+    createLabeledNode("RightLabel")
+    val query = """MATCH (src:LeftLabel), (dst:RightLabel)
+              |MERGE (src)-[r:IS_RELATED_TO ]->(dst)
+              |ON CREATE SET r.p3 = 42""".stripMargin
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, relationshipsCreated = 1, propertiesWritten = 1)
     assertNumberOfEagerness(query,  0)
   }
 
