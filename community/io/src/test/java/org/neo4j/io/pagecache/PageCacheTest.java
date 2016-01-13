@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
@@ -1636,6 +1637,112 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void writeLocksMustNotBeExclusive() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        try ( PagedFile pf = pageCache.map( existingFile( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+
+            executor.submit( () -> {
+                try ( PageCursor innerCursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+                {
+                    assertTrue( innerCursor.next() );
+                }
+                return null;
+            }).get();
+        }
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void writeLockMustInvalidateInnerReadLock() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        try ( PagedFile pf = pageCache.map( existingFile( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+
+            executor.submit( () -> {
+                try ( PageCursor innerCursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+                {
+                    assertTrue( innerCursor.next() );
+                    assertTrue( innerCursor.shouldRetry() );
+                }
+                return null;
+            }).get();
+        }
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void writeLockMustInvalidateExistingReadLock() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        BinaryLatch startLatch = new BinaryLatch();
+        BinaryLatch continueLatch = new BinaryLatch();
+
+        try ( PagedFile pf = pageCache.map( existingFile( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() ); // Ensure that page 0 exists so the read cursor can get it
+            assertTrue( cursor.next() ); // Then unlock it
+
+            Future<Object> read = executor.submit( () -> {
+                try ( PageCursor innerCursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+                {
+                    assertTrue( innerCursor.next() );
+                    assertFalse( innerCursor.shouldRetry() );
+                    startLatch.release();
+                    continueLatch.await();
+                    assertTrue( innerCursor.shouldRetry() );
+                }
+                return null;
+            } );
+
+            startLatch.await();
+            assertTrue( cursor.next( 0 ) ); // Re-take the write lock on page 0.
+            continueLatch.release();
+            read.get();
+        }
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void writeUnlockMustInvalidateReadLocks() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        BinaryLatch startLatch = new BinaryLatch();
+        BinaryLatch continueLatch = new BinaryLatch();
+
+        try ( PagedFile pf = pageCache.map( existingFile( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() ); // Lock page 0
+
+            Future<Object> read = executor.submit( () -> {
+                try ( PageCursor innerCursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+                {
+                    assertTrue( innerCursor.next() );
+                    assertTrue( innerCursor.shouldRetry() );
+                    startLatch.release();
+                    continueLatch.await();
+                    assertTrue( innerCursor.shouldRetry() );
+                }
+                return null;
+            } );
+
+            startLatch.await();
+            assertTrue( cursor.next() ); // Unlock page 0
+            continueLatch.release();
+            read.get();
+        }
+    }
+
     @Test( timeout = SHORT_TIMEOUT_MILLIS)
     public void mustNotFlushCleanPagesWhenEvicting() throws Exception
     {
@@ -3101,7 +3208,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     // architecture that we support.
     // This test has no timeout because one may want to run it on a CPU
     // emulator, where it's not unthinkable for it to take minutes.
-    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
+    @Test
     public void mustSupportUnalignedWordAccesses() throws Exception
     {
         // 8 MB pages, 10 of them for 80 MB.
