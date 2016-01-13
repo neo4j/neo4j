@@ -177,7 +177,7 @@ public class EnterpriseCoreEditionModule
         NaiveDurableRaftLog raftLog = new NaiveDurableRaftLog( fileSystem, raftLogsDirectory,
                 new RaftContentSerializer(), platformModule.monitors );
 
-        DurableTermStore termStore = new DurableTermStore( fileSystem, raftLogsDirectory );
+        DurableTermStore termStore = new DurableTermStore( fileSystem, raftLogsDirectory, platformModule.monitors );
         DurableVoteStore voteStore = new DurableVoteStore( fileSystem, raftLogsDirectory );
 
         life.add( raftLog );

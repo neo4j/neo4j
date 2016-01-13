@@ -17,24 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state;
+package org.neo4j.metrics.source;
 
-import java.io.File;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.coreedge.raft.state.term.DurableTermStore;
-import org.neo4j.coreedge.raft.state.term.TermStore;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.coreedge.raft.log.monitoring.RaftTermMonitor;
 
-public class DurableTermStoreContractTest extends TermStoreContractTest
+public class RaftTermMetric implements RaftTermMonitor
 {
+    private AtomicLong term = new AtomicLong( 0 );
+
     @Override
-    public TermStore createTermStore()
+    public long term()
     {
-        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        File directory = new File( "raft-log" );
-        fileSystem.mkdir( directory );
-        return new DurableTermStore( fileSystem, directory, new Monitors() );
+        return term.get();
+    }
+
+    @Override
+    public void term( long term )
+    {
+        this.term.set( term );
     }
 }

@@ -39,6 +39,7 @@ import org.junit.Test;
 import org.neo4j.coreedge.raft.state.term.DurableTermStore;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class DurableTermStoreTest
 {
@@ -50,7 +51,7 @@ public class DurableTermStoreTest
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
 
-        DurableTermStore store = new DurableTermStore( fsa, new File("") );
+        DurableTermStore store = new DurableTermStore( fsa, new File(""), new Monitors() );
 
         // When
         store.update( 100L );
@@ -69,7 +70,7 @@ public class DurableTermStoreTest
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
         doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ), anyInt() );
 
-        DurableTermStore store = new DurableTermStore( fsa, new File("") );
+        DurableTermStore store = new DurableTermStore( fsa, new File(""), new Monitors() );
 
         // Then
         // Sanity check more than anything else, to make sure the failed update below will retain the value
@@ -96,7 +97,7 @@ public class DurableTermStoreTest
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
 
-        DurableTermStore store = new DurableTermStore( fsa, new File("") );
+        DurableTermStore store = new DurableTermStore( fsa, new File(""), new Monitors() );
 
         // When
         // We shut it down

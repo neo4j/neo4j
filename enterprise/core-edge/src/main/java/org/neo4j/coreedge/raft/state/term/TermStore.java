@@ -23,6 +23,8 @@ import org.neo4j.coreedge.raft.log.RaftStorageException;
 
 public interface TermStore
 {
+    String TERM_TAG = "term";
+
     long currentTerm();
 
     void update( long newTerm ) throws RaftStorageException;

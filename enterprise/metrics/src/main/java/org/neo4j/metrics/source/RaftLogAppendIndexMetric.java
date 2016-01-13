@@ -17,24 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state;
+package org.neo4j.metrics.source;
 
-import java.io.File;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.coreedge.raft.state.term.DurableTermStore;
-import org.neo4j.coreedge.raft.state.term.TermStore;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.coreedge.raft.log.monitoring.RaftLogAppendIndexMonitor;
 
-public class DurableTermStoreContractTest extends TermStoreContractTest
+public class RaftLogAppendIndexMetric implements RaftLogAppendIndexMonitor
 {
+    private AtomicLong appendIndex = new AtomicLong( 0 );
+
     @Override
-    public TermStore createTermStore()
+    public long appendIndex()
     {
-        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        File directory = new File( "raft-log" );
-        fileSystem.mkdir( directory );
-        return new DurableTermStore( fileSystem, directory, new Monitors() );
+        return appendIndex.get();
+    }
+
+    @Override
+    public void appendIndex( long appendIndex )
+    {
+        this.appendIndex.set( appendIndex );
     }
 }

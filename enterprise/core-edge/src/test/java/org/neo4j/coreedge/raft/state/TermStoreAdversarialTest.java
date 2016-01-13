@@ -32,6 +32,7 @@ import org.neo4j.coreedge.raft.state.term.TermStore;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -42,7 +43,7 @@ public class TermStoreAdversarialTest
     {
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
-        return new DurableTermStore( fileSystem, directory );
+        return new DurableTermStore( fileSystem, directory, new Monitors() );
     }
 
     @Test
