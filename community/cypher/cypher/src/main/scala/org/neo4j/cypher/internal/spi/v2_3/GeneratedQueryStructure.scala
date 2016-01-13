@@ -814,8 +814,8 @@ private object Templates {
   val newCountingMap = Expression.invoke(method[Primitive,PrimitiveLongIntMap]("longIntMap"))
 
   def asList(values: Seq[Expression]): Expression = Expression.invoke(
-    methodReference(typeRef[util.Arrays], typeRef[util.List[String]], "asList", typeRef[Array[String]]),
-    values: _*)
+    methodReference(typeRef[util.Arrays], typeRef[util.List[String]], "asList", typeRef[Array[Object]]),
+    Expression.newArray(typeRef[String], values: _*))
 
   def handleExceptions[V](generate: CodeBlock, ro: FieldReference)(block: CodeBlock => V) = using(generate.tryBlock()) { body =>
     // the body of the try

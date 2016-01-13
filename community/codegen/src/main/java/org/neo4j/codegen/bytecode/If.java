@@ -38,6 +38,5 @@ public class If implements Block
     public void endBlock()
     {
         methodVisitor.visitLabel( l0 );
-        methodVisitor.visitFrame( F_SAME, 0, null, 0, null );
     }
 }

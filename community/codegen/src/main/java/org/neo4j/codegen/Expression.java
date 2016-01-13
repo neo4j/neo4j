@@ -70,7 +70,7 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    static Expression load( final LocalVariable variable)
+    public static Expression load( final LocalVariable variable)
     {
         return new Expression()
         {

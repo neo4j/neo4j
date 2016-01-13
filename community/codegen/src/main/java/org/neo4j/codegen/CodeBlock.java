@@ -19,20 +19,21 @@
  */
 package org.neo4j.codegen;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.function.Consumer;
 
+import static org.neo4j.codegen.LocalVariables.copy;
 import static org.neo4j.codegen.Resource.withResource;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
 public class CodeBlock implements AutoCloseable
 {
+
     final ClassGenerator clazz;
     private MethodEmitter emitter;
     private final CodeBlock parent;
     private boolean done;
-    private Map<String, LocalVariable> localVariables = new HashMap<>(  );
-    private int varCount = 0;
+
+    protected LocalVariables localVariables = new LocalVariables();
 
     CodeBlock( CodeBlock parent )
     {
@@ -40,7 +41,8 @@ public class CodeBlock implements AutoCloseable
         this.emitter = parent.emitter;
         parent.emitter = InvalidState.IN_SUB_BLOCK;
         this.parent = parent;
-        this.localVariables = parent.localVariables;
+        //copy over local variables from parent
+        this.localVariables = copy(parent.localVariables);
     }
 
     CodeBlock( ClassGenerator clazz, MethodEmitter emitter, Parameter...parameters )
@@ -48,10 +50,10 @@ public class CodeBlock implements AutoCloseable
         this.clazz = clazz;
         this.emitter = emitter;
         this.parent = null;
-        localVariables.put("this", localVariable( clazz.handle(), "this" ) );
+        localVariables.createNew( clazz.handle(), "this" );
         for ( Parameter parameter : parameters )
         {
-            localVariables.put( parameter.name(), localVariable( parameter.type(), parameter.name() ) );
+            localVariables.createNew( parameter.type(), parameter.name() );
         }
     }
 
@@ -75,7 +77,7 @@ public class CodeBlock implements AutoCloseable
         this.emitter = InvalidState.BLOCK_CLOSED;
     }
 
-    private void endBlock()
+    protected void endBlock()
     {
         if ( !done )
         {
@@ -84,9 +86,14 @@ public class CodeBlock implements AutoCloseable
         }
     }
 
+    protected void emit( Consumer<MethodEmitter> emitFunction )
+    {
+        emitFunction.accept( emitter );
+    }
+
     public void expression( Expression expression )
     {
-        emitter.expression( expression );
+        emit( ( e ) -> e.expression( expression ) );
     }
 
     LocalVariable local( String name )
@@ -96,15 +103,14 @@ public class CodeBlock implements AutoCloseable
 
     public LocalVariable declare( TypeReference type, String name )
     {
-        LocalVariable local = localVariable( type, name );
-        localVariables.put(name, local);
-        emitter.declare( local );
+        LocalVariable local = localVariables.createNew( type, name );
+        emit( e -> e.declare( local ) );
         return local;
     }
 
     public void assign( LocalVariable local, Expression value )
     {
-        emitter.assignVariableInScope( local, value );
+        emit( e -> e.assignVariableInScope( local, value ) );
     }
 
     public void assign( Class<?> type, String name, Expression value )
@@ -114,14 +120,13 @@ public class CodeBlock implements AutoCloseable
 
     public void assign( TypeReference type, String name, Expression value )
     {
-        LocalVariable variable = localVariable( type, name );
-        localVariables.put(name, variable );
-        emitter.assign( variable, value );
+        LocalVariable variable = localVariables.createNew( type, name );
+        emit( e -> e.assign( variable, value ) );
     }
 
     public void put( Expression target, FieldReference field, Expression value )
     {
-        emitter.put( target, field, value );
+        emit( e -> e.put( target, field, value ) );
     }
 
     public Expression self()
@@ -136,65 +141,50 @@ public class CodeBlock implements AutoCloseable
 
     public CodeBlock forEach( Parameter local, Expression iterable )
     {
-        emitter.beginForEach( local, iterable );
+        emit( e -> e.beginForEach( local, iterable ) );
         return new CodeBlock( this );
     }
 
     public CodeBlock whileLoop( Expression test )
     {
-        emitter.beginWhile( test );
+        emit( e -> e.beginWhile( test ) );
         return new CodeBlock( this );
     }
 
     public CodeBlock ifStatement( Expression test )
     {
-        emitter.beginIf( test );
+        emit( e -> e.beginIf( test ) );
         return new CodeBlock( this );
     }
 
-    CodeBlock emitCatch( Parameter exception )
-    {
-        endBlock();
-        emitter.beginCatch( exception );
-        return new CodeBlock( this );
-    }
-
-    CodeBlock emitFinally()
-    {
-        endBlock();
-        emitter.beginFinally();
-        return new CodeBlock( this );
-    }
-
-    public CodeBlock tryBlock( Class<?> resourceType, String resourceName, Expression resource )
+    public TryBlock tryBlock( Class<?> resourceType, String resourceName, Expression resource )
     {
         return tryBlock( withResource( resourceType, resourceName, resource ) );
     }
 
-    public CodeBlock tryBlock( TypeReference resourceType, String resourceName, Expression resource )
+    public TryBlock tryBlock( TypeReference resourceType, String resourceName, Expression resource )
     {
         return tryBlock( withResource( resourceType, resourceName, resource ) );
     }
 
     public TryBlock tryBlock( Resource... resources )
     {
-        emitter.beginTry( resources );
-        return new TryBlock( this );
+        return new TryBlock( this, resources );
     }
 
     public void returns()
     {
-        emitter.returns();
+        emit( MethodEmitter::returns );
     }
 
     public void returns( Expression value )
     {
-        emitter.returns( value );
+        emit( e -> e.returns( value ) );
     }
 
     public void throwException( Expression exception )
     {
-        emitter.throwException( exception );
+        emit( e -> e.throwException( exception ) );
     }
 
     public TypeReference owner()
@@ -202,8 +192,4 @@ public class CodeBlock implements AutoCloseable
         return clazz.handle();
     }
 
-    private LocalVariable localVariable( TypeReference type, String name )
-    {
-        return new LocalVariable( type, name, varCount++ );
-    }
 }

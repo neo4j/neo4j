@@ -22,36 +22,25 @@ package org.neo4j.codegen;
 import java.util.List;
 import java.util.function.Consumer;
 
-public interface MethodEmitter
+public class CatchClause
 {
-    void done();
+    private final Parameter exception;
+    private final List<Consumer<MethodEmitter>> actions;
 
-    void expression( Expression expression );
+    public CatchClause( Parameter exception, List<Consumer<MethodEmitter>> actions )
+    {
+        this.exception = exception;
+        this.actions = actions;
+    }
 
-    void put( Expression target, FieldReference field, Expression value );
+    public Parameter exception()
+    {
+        return exception;
+    }
 
-    void returns();
+    public List<Consumer<MethodEmitter>> actions()
+    {
+        return actions;
+    }
 
-    void returns( Expression value );
-
-    void assign( LocalVariable local, Expression value );
-
-    void beginWhile( Expression test );
-
-    void beginIf( Expression test );
-
-    void endBlock();
-
-    void tryCatchBlock( List<Consumer<MethodEmitter>> body,
-            List<CatchClause> catchClauses,
-            List<Consumer<MethodEmitter>> finalClauses,
-            LocalVariables localVariables, Resource... resources );
-
-    void throwException( Expression exception );
-
-    void declare( LocalVariable local );
-
-    void assignVariableInScope( LocalVariable local, Expression value );
-
-    void beginForEach( Parameter local, Expression iterable );
 }

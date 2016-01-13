@@ -19,6 +19,9 @@
  */
 package org.neo4j.codegen;
 
+import java.util.List;
+import java.util.function.Consumer;
+
 class InvalidState implements MethodEmitter
 {
     public static final ClassEmitter CLASS_DONE = new ClassEmitter()
@@ -99,31 +102,20 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
-    public void beginFinally()
-    {
-        throw new IllegalStateException( reason );
-    }
-
-    @Override
     public void endBlock()
     {
         throw new IllegalStateException( reason );
     }
 
     @Override
-    public void beginTry( Resource... resources )
+    public void tryCatchBlock( List<Consumer<MethodEmitter>> body, List<CatchClause> catchClauses,
+            List<Consumer<MethodEmitter>> finalClauses, LocalVariables localVariables, Resource... resources )
     {
         throw new IllegalStateException( reason );
     }
 
     @Override
     public void throwException( Expression exception )
-    {
-        throw new IllegalStateException( reason );
-    }
-
-    @Override
-    public void beginCatch( Parameter exception )
     {
         throw new IllegalStateException( reason );
     }

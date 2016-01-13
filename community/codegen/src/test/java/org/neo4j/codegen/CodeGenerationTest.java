@@ -37,6 +37,7 @@ import java.util.List;
 import org.neo4j.codegen.source.Configuration;
 import org.neo4j.codegen.source.SourceCode;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -49,6 +50,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -56,6 +58,7 @@ import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.invoke;
 import static org.neo4j.codegen.Expression.newArray;
 import static org.neo4j.codegen.Expression.newInstance;
+import static org.neo4j.codegen.Expression.or;
 import static org.neo4j.codegen.ExpressionTemplate.cast;
 import static org.neo4j.codegen.ExpressionTemplate.load;
 import static org.neo4j.codegen.ExpressionTemplate.self;
@@ -555,6 +558,35 @@ public class CodeGenerationTest
         verifyZeroInteractions( runner4 );
     }
 
+    @Test
+    public void shouldGenerateMethodUsingOr() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( boolean.class, "conditional",
+                    param( boolean.class, "test1" ), param( boolean.class, "test2" )) )
+            {
+                conditional.returns( or( conditional.load( "test1" ), conditional.load( "test2" ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+
+        // when
+        MethodHandle conditional =
+                instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class);
+
+        // then
+        assertThat(conditional.invoke( true, true), equalTo(true));
+        assertThat(conditional.invoke( true, false), equalTo(true));
+        assertThat(conditional.invoke( false, true), equalTo(true));
+        assertThat(conditional.invoke( false, false), equalTo(false));
+    }
+
+
     public static class ResourceFactory
     {
         int open, close, inside;
@@ -604,6 +636,102 @@ public class CodeGenerationTest
     }
 
     @Test
+    public void shouldGenerateTryCatch() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock run = simple.generateMethod( void.class, "run",
+                    param( Runnable.class, "body" ),
+                    param( Runnable.class, "catcher" ) ) )
+            {
+                try ( TryBlock tryBlock = run.tryBlock() )
+                {
+                    tryBlock.expression( invoke( run.load( "body" ), RUN ) );
+                    try ( CodeBlock catchBlock = tryBlock.catchBlock(param(RuntimeException.class, "E")) )
+                    {
+                        catchBlock.expression( invoke( run.load( "catcher" ), RUN ) );
+                    }
+                }
+            }
+            handle = simple.handle();
+        }
+
+        // when
+        Runnable successBody = mock( Runnable.class ),
+                failBody = mock( Runnable.class ),
+                successCatch = mock( Runnable.class ), failCatch = mock( Runnable.class );
+        RuntimeException theFailure = new RuntimeException();
+        doThrow( theFailure ).when( failBody ).run();
+        MethodHandle run = instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class );
+
+
+        //success
+        run.invoke( successBody, successCatch );
+        verify( successBody ).run();
+        verify( successCatch, never() ).run();
+
+        //failure
+        run.invoke( failBody, failCatch );
+        InOrder orderFailure = inOrder( failBody, failCatch );
+        orderFailure.verify( failBody ).run();
+        orderFailure.verify( failCatch ).run();
+    }
+
+    @Test
+    public void shouldGenerateTryAndMultipleCatch() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock run = simple.generateMethod( void.class, "run",
+                    param( Runnable.class, "body" ),
+                    param( Runnable.class, "catcher1" ),
+                    param( Runnable.class, "catcher2" ) ) )
+            {
+                try ( TryBlock tryBlock = run.tryBlock() )
+                {
+                    tryBlock.expression( invoke( run.load( "body" ), RUN ) );
+                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( MyFirstException.class, "E" ) ) )
+                    {
+                        catchBlock.expression( invoke( run.load( "catcher1" ), RUN ) );
+                    }
+                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( MySecondException.class, "E" ) ) )
+                    {
+                        catchBlock.expression( invoke( run.load( "catcher2" ), RUN ) );
+                    }
+                }
+            }
+            handle = simple.handle();
+        }
+
+        // when
+
+        Runnable body1 = mock( Runnable.class ), body2 = mock( Runnable.class ),
+                catcher11 = mock( Runnable.class ), catcher12 = mock( Runnable.class ),
+                catcher21 = mock( Runnable.class ), catcher22 = mock( Runnable.class );
+        doThrow( MyFirstException.class ).when( body1 ).run();
+        doThrow( MySecondException.class ).when( body2 ).run();
+
+        MethodHandle run =
+                instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class, Runnable.class );
+
+
+        run.invoke( body1, catcher11, catcher12 );
+        verify( body1 ).run();
+        verify( catcher11 ).run();
+        verify( catcher12, never() ).run();
+
+
+        run.invoke( body2, catcher21, catcher22 );
+        verify( body2 ).run();
+        verify( catcher22 ).run();
+        verify( catcher21, never() ).run();
+    }
+
+    @Test
     public void shouldGenerateTryFinally() throws Throwable
     {
         // given
@@ -645,6 +773,121 @@ public class CodeGenerationTest
         order.verify( body ).run();
         order.verify( finalize ).run();
     }
+
+    @Test
+    public void shouldGenerateTryCatchFinally() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock run = simple.generateMethod( void.class, "run",
+                    param( Runnable.class, "body" ),
+                    param( Runnable.class, "catcher" ),
+                    param( Runnable.class, "finalize" ) ) )
+            {
+                try ( TryBlock tryBlock = run.tryBlock() )
+                {
+                    tryBlock.expression( invoke( run.load( "body" ), RUN ) );
+                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( RuntimeException.class, "E" ) ) )
+                    {
+                        catchBlock.expression( invoke( run.load( "catcher" ), RUN ) );
+                    }
+                    try ( CodeBlock finallyBlock = tryBlock.finallyBlock() )
+                    {
+                        finallyBlock.expression( invoke( run.load( "finalize" ), RUN ) );
+                    }
+                }
+            }
+            handle = simple.handle();
+        }
+
+        // when
+        Runnable successBody = mock( Runnable.class ), failBody = mock( Runnable.class ),
+                successCatch = mock( Runnable.class ), failCatch = mock( Runnable.class ),
+                successFinally = mock( Runnable.class ), failFinally = mock( Runnable.class );
+        RuntimeException theFailure = new RuntimeException();
+        doThrow( theFailure ).when( failBody ).run();
+        MethodHandle run =
+                instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class, Runnable.class );
+
+        //success
+        run.invoke( successBody, successCatch, successFinally );
+        verify( successBody ).run();
+        verify( successCatch, never() ).run();
+        verify( successFinally ).run();
+
+        //failure
+        run.invoke( failBody, failCatch, failFinally );
+        InOrder order = inOrder( failBody, failCatch, failFinally );
+        order.verify( failBody ).run();
+        order.verify( failCatch ).run();
+        order.verify( failFinally ).run();
+    }
+
+    @Test
+    public void shouldGenerateTryMultipleCatchAndFinally() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock run = simple.generateMethod( void.class, "run",
+                    param( Runnable.class, "body" ),
+                    param( Runnable.class, "catcher1" ),
+                    param( Runnable.class, "catcher2" ),
+                    param( Runnable.class, "finalize" )
+            ) )
+            {
+                try ( TryBlock tryBlock = run.tryBlock() )
+                {
+                    tryBlock.expression( invoke( run.load( "body" ), RUN ) );
+                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( MyFirstException.class, "E" ) ) )
+                    {
+                        catchBlock.expression( invoke( run.load( "catcher1" ), RUN ) );
+                    }
+                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( MySecondException.class, "E" ) ) )
+                    {
+                        catchBlock.expression( invoke( run.load( "catcher2" ), RUN ) );
+                    }
+                    try ( CodeBlock finallyBlock = tryBlock.finallyBlock() )
+                    {
+                        finallyBlock.expression( invoke( run.load( "finalize" ), RUN ) );
+                    }
+                }
+            }
+            handle = simple.handle();
+        }
+
+        // when
+
+        Runnable body1 = mock( Runnable.class ), body2 = mock( Runnable.class ),
+                catcher11 = mock( Runnable.class ), catcher12 = mock( Runnable.class ), finalize1 =
+                mock( Runnable.class ),
+                catcher21 = mock( Runnable.class ), catcher22 = mock( Runnable.class ), finalize2 =
+                mock( Runnable.class );
+        doThrow( MyFirstException.class ).when( body1 ).run();
+        doThrow( MySecondException.class ).when( body2 ).run();
+
+        MethodHandle run =
+                instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class, Runnable.class,
+                        Runnable.class );
+
+
+        run.invoke( body1, catcher11, catcher12, finalize1 );
+        verify( body1 ).run();
+        verify( catcher11 ).run();
+        verify( catcher12, never() ).run();
+        verify( finalize1 ).run();
+
+
+        run.invoke( body2, catcher21, catcher22, finalize2 );
+        verify( body2 ).run();
+        verify( catcher22 ).run();
+        verify( catcher21, never() ).run();
+        verify( finalize2 ).run();
+    }
+
 
     @Test
     public void shouldThrowException() throws Throwable
@@ -816,4 +1059,13 @@ public class CodeGenerationTest
             throw new AssertionError( "Cannot create method", e );
         }
     }
+
+    public static class MyFirstException extends RuntimeException
+    {
+    }
+
+    public static class MySecondException extends RuntimeException
+    {
+    }
+
 }

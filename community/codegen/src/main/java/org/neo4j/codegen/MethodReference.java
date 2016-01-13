@@ -47,6 +47,12 @@ public class MethodReference
     }
 
     public static MethodReference methodReference( TypeReference owner, TypeReference returns, String name,
+            TypeReference... parameters )
+    {
+        return new MethodReference( owner, name, returns, Modifier.PUBLIC, parameters );
+    }
+
+    public static MethodReference methodReference( TypeReference owner, TypeReference returns, String name,
             int modifiers, TypeReference... parameters )
     {
         return new MethodReference( owner, name, returns, modifiers, parameters );

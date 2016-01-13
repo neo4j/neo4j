@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v3_0
 
+import java.lang.reflect.Modifier
 import java.util
 
 import org.neo4j.codegen
@@ -142,7 +143,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
   }
 
   def method[O <: AnyRef, R](name: String, params: TypeReference*)(implicit owner: Manifest[O], returns: Manifest[R]): MethodReference =
-    MethodReference.methodReference(typeReference(owner), typeReference(returns), name, params: _*)
+    MethodReference.methodReference(typeReference(owner), typeReference(returns), name, Modifier.PUBLIC, params: _*)
 
   def staticField[O <: AnyRef, R](name: String)(implicit owner: Manifest[O], fieldType: Manifest[R]): FieldReference =
     FieldReference.staticField(typeReference(owner), typeReference(fieldType), name)
@@ -846,8 +847,8 @@ private object Templates {
   val newCountingMap = Expression.invoke(method[Primitive,PrimitiveLongIntMap]("longIntMap"))
 
   def asList(values: Seq[Expression]): Expression = Expression.invoke(
-    methodReference(typeRef[util.Arrays], typeRef[util.List[String]], "asList", typeRef[Array[String]]),
-    values: _*)
+    methodReference(typeRef[util.Arrays], typeRef[util.List[String]], "asList", typeRef[Array[Object]]),
+      Expression.newArray(typeRef[String], values: _*))
 
   def handleExceptions[V](generate: CodeBlock, ro: FieldReference)(block: CodeBlock => V) = using(generate.tryBlock()) { body =>
     // the body of the try

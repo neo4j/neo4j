@@ -24,13 +24,18 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Consumer;
 
 import org.neo4j.codegen.BaseExpressionVisitor;
+import org.neo4j.codegen.CatchClause;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.LocalVariable;
+import org.neo4j.codegen.LocalVariables;
 import org.neo4j.codegen.MethodDeclaration;
 import org.neo4j.codegen.MethodEmitter;
 import org.neo4j.codegen.MethodReference;
@@ -44,6 +49,7 @@ import static org.neo4j.codegen.ByteCodeUtils.exceptions;
 import static org.neo4j.codegen.ByteCodeUtils.outerName;
 import static org.neo4j.codegen.ByteCodeUtils.signature;
 import static org.neo4j.codegen.ByteCodeUtils.typeName;
+import static org.neo4j.codegen.MethodReference.methodReference;
 
 class MethodByteCodeEmitter implements MethodEmitter, Opcodes
 {
@@ -121,6 +127,7 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
         case "byte":
         case "short":
         case "char":
+        case "boolean":
             methodVisitor.visitInsn( IRETURN );
             break;
         case "long":
@@ -162,7 +169,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
         default:
             methodVisitor.visitVarInsn( ASTORE, variable.index() );
         }
-
     }
 
     @Override
@@ -190,11 +196,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
         stateStack.push(new If(methodVisitor, l0));
     }
 
-    @Override
-    public void beginFinally()
-    {
-        callSuperIfNecessary();
-    }
 
     @Override
     public void endBlock()
@@ -209,19 +210,153 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     }
 
     @Override
-    public void beginTry( Resource... resources )
+    public void tryCatchBlock( List<Consumer<MethodEmitter>> body, List<CatchClause> catchClauses,
+            List<Consumer<MethodEmitter>> finalClauses, LocalVariables localVariables, Resource... resources )
     {
         callSuperIfNecessary();
+        //Note we are not giving the same gurantee as built in try-with-resources
+        //we are essentially rewriting to:
+        //Resource resource = ...
+        //try...
+        //finally { ... resource.close}
+        List<Consumer<MethodEmitter>> updatedFinalClauses = resources.length == 0 ?
+                                                            finalClauses : new ArrayList<>( finalClauses );
+        for ( Resource resource : resources )
+        {
+            LocalVariable variable = localVariables.createNew( resource.type(), resource.name() );
+            assign( variable, resource.producer() );
+
+            MethodReference close = methodReference( resource.type(), TypeReference.VOID, "close" );
+            updatedFinalClauses.add( ( e ) -> e.expression(
+                    Expression.invoke( Expression.load( variable ), close ) ) );
+        }
+
+        if ( !catchClauses.isEmpty() )
+        {
+           tryCatchFinally( body, catchClauses, updatedFinalClauses, localVariables );
+        }
+        else
+        {
+            tryFinally( body, updatedFinalClauses, localVariables );
+        }
+    }
+
+    private void tryFinally(List<Consumer<MethodEmitter>> body,
+            List<Consumer<MethodEmitter>> finalClauses, LocalVariables localVariables)
+    {
+        Label startLabel = new Label();
+        Label endLabel = new Label();
+        Label continueLabel = new Label();
+        //if we have a simple try {} finally {} we only need to run finally after body
+        //and make sure we catch any errors and then run finally and rethrow
+        Label handlerLabel = new Label();
+        methodVisitor.visitTryCatchBlock( startLabel, endLabel, handlerLabel, null );
+        methodVisitor.visitLabel( startLabel );
+        body.forEach( e -> e.accept( this ) );
+        methodVisitor.visitLabel( endLabel );
+        //run finally on success
+        finalClauses.forEach( e -> e.accept( this ) );
+
+        int indexToStoreException = localVariables.nextIndex();
+        //catch error and run finally
+        methodVisitor.visitJumpInsn( GOTO, continueLabel );
+        methodVisitor.visitLabel( handlerLabel );
+        //store error
+        methodVisitor.visitVarInsn( ASTORE, indexToStoreException );
+        finalClauses.forEach( e -> e.accept( this ) );
+        //catch and rethrow
+        methodVisitor.visitVarInsn( ALOAD, indexToStoreException );
+        methodVisitor.visitInsn( ATHROW );
+        methodVisitor.visitLabel( continueLabel );
+    }
+
+    private void tryCatchFinally(List<Consumer<MethodEmitter>> body, List<CatchClause> catchClauses,
+            List<Consumer<MethodEmitter>> finalClauses, LocalVariables localVariables)
+    {
+        Label startLabel = new Label();
+        Label endLabel = new Label();
+        Label continueLabel = new Label();
+        //if we have catch clauses we need to catch error, run body create labels for each catch clauses
+        //we also need to make sure that the final clauses run both after body and after each catch block
+        //and also make sure if any of the catch clauses fail we still run finally
+
+        //generate try-catch block for each catch clause
+        List<Label> handlerLabels = new ArrayList<>( catchClauses.size() );
+        catchClauses.forEach(
+                c -> {
+                    Label handlerLabel = new Label();
+                    methodVisitor.visitTryCatchBlock( startLabel, endLabel, handlerLabel,
+                            byteCodeName( c.exception().type() ) );
+                    handlerLabels.add( handlerLabel );
+                } );
+
+        //generate try-catch block for handling finally
+        List<Label> endLabelsForFinal = new ArrayList<>( catchClauses.size() );
+        Label handlerLabelFinal = new Label();
+        Label endFinal = new Label();
+        if ( !finalClauses.isEmpty() )
+        {
+            methodVisitor.visitTryCatchBlock( startLabel, endLabel, handlerLabelFinal, null );
+            for ( Label handlerLabel : handlerLabels )
+            {
+                Label endCatchLabel = new Label();
+                methodVisitor.visitTryCatchBlock( handlerLabel, endCatchLabel, handlerLabelFinal, null );
+                endLabelsForFinal.add( endCatchLabel );
+            }
+            methodVisitor.visitTryCatchBlock( handlerLabelFinal, endFinal, handlerLabelFinal, null );
+        }
+
+        //run body
+        methodVisitor.visitLabel( startLabel );
+        body.forEach( e -> e.accept( this ) );
+        methodVisitor.visitLabel( endLabel );
+
+        //if body succeeded we need to run final
+        finalClauses.forEach( e -> e.accept( this ) );
+
+        //handle catch
+        int indexToStoreException = localVariables.nextIndex();
+        for ( int i = 0; i < catchClauses.size(); i++ )
+        {
+            CatchClause catchClause = catchClauses.get( i );
+            Label handlerLabel = handlerLabels.get( i );
+            methodVisitor.visitJumpInsn( GOTO, continueLabel );
+            methodVisitor.visitLabel( handlerLabel );
+            //store exception for later use
+            methodVisitor.visitVarInsn( ASTORE, indexToStoreException );
+            catchClause.actions().forEach( e -> e.accept( this ) );
+
+            //run final clauses on failure
+            if ( !finalClauses.isEmpty() )
+            {
+                methodVisitor.visitLabel( endLabelsForFinal.get( i ) );
+                finalClauses.forEach( e -> e.accept( this ) );
+            }
+        }
+
+        if ( !finalClauses.isEmpty() )
+        {
+            indexToStoreException = localVariables.nextIndex();
+            //need to catch exceptions on finally
+            methodVisitor.visitJumpInsn( GOTO, continueLabel );
+            methodVisitor.visitLabel( handlerLabelFinal );
+            methodVisitor.visitVarInsn( ASTORE, indexToStoreException );
+            methodVisitor.visitLabel( endFinal );
+
+            //run finally again
+            finalClauses.forEach( e -> e.accept( this ) );
+
+            //rethrow
+            methodVisitor.visitVarInsn( ALOAD, indexToStoreException );
+            methodVisitor.visitInsn( ATHROW );
+        }
+
+        //continue
+        methodVisitor.visitLabel( continueLabel );
     }
 
     @Override
     public void throwException( Expression exception )
-    {
-        callSuperIfNecessary();
-    }
-
-    @Override
-    public void beginCatch( Parameter exception )
     {
         callSuperIfNecessary();
     }

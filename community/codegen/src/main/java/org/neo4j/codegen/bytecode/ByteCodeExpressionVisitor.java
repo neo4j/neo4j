@@ -196,6 +196,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
         methodVisitor.visitInsn( ICONST_1 );
         Label l2 = new Label();
         methodVisitor.visitJumpInsn( GOTO, l2 );
+        methodVisitor.visitLabel( l1 );
         methodVisitor.visitInsn( ICONST_0 );
         methodVisitor.visitLabel( l2 );
 

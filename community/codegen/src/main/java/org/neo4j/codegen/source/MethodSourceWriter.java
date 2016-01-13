@@ -23,11 +23,15 @@ import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Consumer;
 
+import org.neo4j.codegen.CatchClause;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.ExpressionVisitor;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.LocalVariable;
+import org.neo4j.codegen.LocalVariables;
 import org.neo4j.codegen.MethodEmitter;
 import org.neo4j.codegen.MethodReference;
 import org.neo4j.codegen.Parameter;
@@ -163,8 +167,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         level.push( LEVEL );
     }
 
-    @Override
-    public void beginCatch( Parameter exception )
+    private void beginCatch( Parameter exception )
     {
         indent().append( "catch ( " ).append( exception.type().name() ).append( " " ).append( exception.name() )
                 .append( " )\n" );
@@ -172,16 +175,14 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         level.push( LEVEL );
     }
 
-    @Override
-    public void beginFinally()
+    private void beginFinally()
     {
         indent().append( "finally\n" );
         indent().append( "{\n" );
         level.push( LEVEL );
     }
 
-    @Override
-    public void beginTry( final Resource... resources )
+    private void beginTry( final Resource... resources )
     {
         if ( resources.length > 0 && classSourceWriter.configuration.isSet( SourceCode.SIMPLIFY_TRY_WITH_RESOURCE ) )
         {
@@ -222,6 +223,51 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
             level.push( LEVEL );
         }
     }
+
+    @Override
+    public void tryCatchBlock( List<Consumer<MethodEmitter>> body,
+            List<CatchClause> catchClauses,
+            List<Consumer<MethodEmitter>> finalClauses, LocalVariables localVariables, Resource... resources )
+    {
+        //try
+        beginTry(resources);
+        body.forEach( e -> e.accept( this ) );
+        endBlock();
+        //catch
+        catchClauses.forEach( ( c ) -> {
+            beginCatch( c.exception() );
+            c.actions().forEach( e -> e.accept( this ) );
+            endBlock();
+        } );
+        if ( !finalClauses.isEmpty() )
+        {
+            beginFinally();
+            finalClauses.forEach( e -> e.accept( this ) );
+            endBlock();
+        }
+    }
+//
+//        indent().append( "try\n" );
+//        indent().append( "{\n" );
+//        indent();
+//        body.forEach( e -> e.accept( this ) );
+//        indent().append( '}' );
+//        for ( CatchClause catchClause : catchClauses )
+//        {
+//            indent().append( "catch ( " ).append( catchClause.exception().type().name() ).append( " " )
+//                    .append( catchClause.exception().name() )
+//                    .append( " )\n" );
+//            indent().append( "{\n" );
+//           catchClause.actions().forEach( e -> e.accept( this ) );
+//        }
+//        indent().append( '}' );
+//        if (!finalClauses.isEmpty())
+//        {
+//            indent().append( "finally\n" );
+//            indent().append( "{\n" );
+//            finalClauses.forEach( e -> e.accept( this ) );
+//            indent().append( '}' );
+//        }
 
     @Override
     public void throwException( Expression exception )
