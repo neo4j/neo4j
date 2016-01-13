@@ -27,7 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 
-class LuceneIndexStorageBuilder
+public class LuceneIndexStorageBuilder
 {
     private DirectoryFactory directoryFactory = DirectoryFactory.PERSISTENT;
     private FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
@@ -39,12 +39,12 @@ class LuceneIndexStorageBuilder
     {
     }
 
-    static LuceneIndexStorageBuilder create()
+    public static LuceneIndexStorageBuilder create()
     {
         return new LuceneIndexStorageBuilder();
     }
 
-    PartitionedIndexStorage buildIndexStorage()
+    public PartitionedIndexStorage build()
     {
         if ( indexStorage == null )
         {
@@ -58,31 +58,31 @@ class LuceneIndexStorageBuilder
         return indexStorage;
     }
 
-    LuceneIndexStorageBuilder withIndexIdentifier( String indexIdentifier )
+    public LuceneIndexStorageBuilder withIndexIdentifier( String indexIdentifier )
     {
         this.indexIdentifier = indexIdentifier;
         return this;
     }
 
-    LuceneIndexStorageBuilder withDirectoryFactory( DirectoryFactory directoryFactory )
+    public LuceneIndexStorageBuilder withDirectoryFactory( DirectoryFactory directoryFactory )
     {
         this.directoryFactory = directoryFactory;
         return this;
     }
 
-    LuceneIndexStorageBuilder withFileSystem( FileSystemAbstraction fileSystem )
+    public LuceneIndexStorageBuilder withFileSystem( FileSystemAbstraction fileSystem )
     {
         this.fileSystem = fileSystem;
         return this;
     }
 
-    LuceneIndexStorageBuilder withIndexRootFolder( File indexRootFolder )
+    public LuceneIndexStorageBuilder withIndexRootFolder( File indexRootFolder )
     {
         this.indexRootFolder = indexRootFolder;
         return this;
     }
 
-    LuceneIndexStorageBuilder withIndexStorage( PartitionedIndexStorage indexStorage )
+    public LuceneIndexStorageBuilder withIndexStorage( PartitionedIndexStorage indexStorage )
     {
         this.indexStorage = indexStorage;
         return this;

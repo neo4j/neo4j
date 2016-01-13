@@ -64,8 +64,6 @@ public class LuceneLabelScanStoreChaosIT
         deleteNode( node2 ); // just to create a hole in the store
 
         // WHEN
-        // TODO how do we make sure it was deleted and then fully rebuilt? I mean if we somehow deleted
-        // the wrong directory here then it would also work, right?
         dbRule.restartDatabase( deleteTheLabelScanStoreIndex() );
 
         // THEN

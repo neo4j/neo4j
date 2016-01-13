@@ -187,14 +187,4 @@ public class LuceneDocumentStructureTest
         // then
         assertEquals( "Prefix", query.getPrefix().text() );
     }
-
-    @Test
-    public void shouldBuildScanQuery() throws Exception
-    {
-        // given
-        MatchAllDocsQuery query = LuceneDocumentStructure.newScanQuery();
-
-        // then
-        assertNotNull( query );
-    }
 }

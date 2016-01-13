@@ -45,6 +45,7 @@ import static java.lang.String.format;
 public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
 {
 
+    // TODO: Integer.MAX_VALUE usually used as sentinel marker in lucene, test can we use it as max partition size ?
     private final Integer MAXIMUM_PARTITION_SIZE =
             Integer.getInteger( "labelScanStore.maxPartitionSize", Integer.MAX_VALUE );
 

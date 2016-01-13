@@ -47,6 +47,6 @@ public class LuceneLabelScanIndexBuilder extends AbstractLuceneIndexBuilder<Luce
 
     public LuceneLabelScanIndex build()
     {
-        return new LuceneLabelScanIndex( format, storageBuilder.buildIndexStorage() );
+        return new LuceneLabelScanIndex( format, storageBuilder.build() );
     }
 }

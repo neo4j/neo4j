@@ -19,19 +19,16 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.store.Directory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.ZipOutputStream;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;

@@ -81,42 +81,30 @@ public class LuceneIndexAccessorTest
     {
         final File dir = new File( "dir" );
         return Arrays.asList(
-                arg( new IOFunction<DirectoryFactory,LuceneIndexAccessor>()
-                {
-                    @Override
-                    public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
-                            throws IOException
-                    {
-                        LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
-                                .withFileSystem( new EphemeralFileSystemAbstraction() )
-                                .withDirectoryFactory( dirFactory )
-                                .withIndexRootFolder( dir )
-                                .withIndexIdentifier( "1" )
-                                .build();
+                arg( dirFactory1 -> {
+                    LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
+                            .withFileSystem( new EphemeralFileSystemAbstraction() )
+                            .withDirectoryFactory( dirFactory1 )
+                            .withIndexRootFolder( dir )
+                            .withIndexIdentifier( "1" )
+                            .build();
 
-                        index.create();
-                        index.open();
-                        return new LuceneIndexAccessor( index );
-                    }
+                    index.create();
+                    index.open();
+                    return new LuceneIndexAccessor( index );
                 } ),
-                arg( new IOFunction<DirectoryFactory,LuceneIndexAccessor>()
-                {
-                    @Override
-                    public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
-                            throws IOException
-                    {
-                        LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
-                                .uniqueIndex()
-                                .withFileSystem( new EphemeralFileSystemAbstraction() )
-                                .withDirectoryFactory( dirFactory )
-                                .withIndexRootFolder( dir )
-                                .withIndexIdentifier( "testIndex" )
-                                .build();
+                arg( dirFactory1 -> {
+                    LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
+                            .uniqueIndex()
+                            .withFileSystem( new EphemeralFileSystemAbstraction() )
+                            .withDirectoryFactory( dirFactory1 )
+                            .withIndexRootFolder( dir )
+                            .withIndexIdentifier( "testIndex" )
+                            .build();
 
-                        index.create();
-                        index.open();
-                        return new LuceneIndexAccessor( index );
-                    }
+                    index.create();
+                    index.open();
+                    return new LuceneIndexAccessor( index );
                 } )
         );
     }

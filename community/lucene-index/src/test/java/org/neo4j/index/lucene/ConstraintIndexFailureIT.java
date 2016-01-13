@@ -28,9 +28,8 @@ import java.io.IOException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -103,8 +102,9 @@ public class ConstraintIndexFailureIT
     private void storeIndexFailure( String failure ) throws IOException
     {
         File luceneRootDirectory = new File( storeDir.directory(), "schema/index/lucene" );
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT, new
-                DefaultFileSystemAbstraction(), luceneRootDirectory, "1" );
+        PartitionedIndexStorage indexStorage = LuceneIndexStorageBuilder.create()
+                .withIndexRootFolder( luceneRootDirectory )
+                .withIndexIdentifier( "1" ).build();
         indexStorage.storeIndexFailure( failure );
     }
 }

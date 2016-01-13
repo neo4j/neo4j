@@ -77,7 +77,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
 
     public LuceneSchemaIndex build()
     {
-        return new LuceneSchemaIndex( storageBuilder.buildIndexStorage(), indexConfig, samplingConfig );
+        return new LuceneSchemaIndex( storageBuilder.build(), indexConfig, samplingConfig );
     }
 
 }
