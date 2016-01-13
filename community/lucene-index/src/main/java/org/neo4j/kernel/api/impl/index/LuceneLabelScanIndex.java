@@ -72,20 +72,7 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
     public LabelScanWriter getLabelScanWriter( Lock heldLock )
     {
         ensureOpen();
-        readWriteLock.lock();
-        try
-        {
-            List<IndexPartition> partitions = getPartitions();
-            if ( hasSinglePartition( partitions ) )
-            {
-                return new SimpleLuceneLabelScanWriter( getFirstPartition( partitions ), format, heldLock );
-            }
-            throw new UnsupportedOperationException();
-        }
-        finally
-        {
-            readWriteLock.unlock();
-        }
+        return new PartitionedLuceneLabelScanWriter( this, format, heldLock );
     }
 
     /**

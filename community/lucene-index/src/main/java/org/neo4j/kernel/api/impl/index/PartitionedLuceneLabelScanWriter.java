@@ -42,21 +42,22 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 
 import static java.lang.String.format;
 
-// todo: should use the index itself and create partitions on demand based on given node ids
-public class SimpleLuceneLabelScanWriter implements LabelScanWriter
+public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
 {
-    private final IndexPartition partition;
-    private final PartitionSearcher partitionSearcher;
+
+    private final Integer MAXIMUM_PARTITION_SIZE =
+            Integer.getInteger( "labelScanStore.maxPartitionSize", Integer.MAX_VALUE );
+
     private final BitmapDocumentFormat format;
 
     private final List<NodeLabelUpdate> updates;
     private long currentRange;
     private final Lock heldLock;
+    private LuceneLabelScanIndex index;
 
-    public SimpleLuceneLabelScanWriter( IndexPartition partition, BitmapDocumentFormat format, Lock heldLock )
+    public PartitionedLuceneLabelScanWriter( LuceneLabelScanIndex index, BitmapDocumentFormat format, Lock heldLock )
     {
-        this.partition = partition;
-        this.partitionSearcher = acquireSearcher( partition );
+        this.index = index;
         this.format = format;
         this.heldLock = heldLock;
         currentRange = -1;
@@ -73,7 +74,8 @@ public class SimpleLuceneLabelScanWriter implements LabelScanWriter
             if ( range < currentRange )
             {
                 throw new IllegalArgumentException( format( "NodeLabelUpdates must be supplied in order of " +
-                        "ascending node id. Current range:%d, node id of this update:%d",
+                                                            "ascending node id. Current range:%d, node id of this " +
+                                                            "update:%d",
                         currentRange, update.getNodeId() ) );
             }
 
@@ -95,8 +97,7 @@ public class SimpleLuceneLabelScanWriter implements LabelScanWriter
         {
             try
             {
-                partitionSearcher.close();
-                partition.maybeRefreshBlocking();
+                index.maybeRefreshBlocking();
             }
             finally
             {
@@ -105,7 +106,7 @@ public class SimpleLuceneLabelScanWriter implements LabelScanWriter
         }
     }
 
-    private Map<Long/*range*/, Bitmap> readLabelBitMapsInRange( IndexSearcher searcher, long range ) throws IOException
+    private Map<Long/*range*/,Bitmap> readLabelBitMapsInRange( IndexSearcher searcher, long range ) throws IOException
     {
         Map<Long/*label*/,Bitmap> fields = new HashMap<>();
         Term documentTerm = format.rangeTerm( range );
@@ -133,33 +134,59 @@ public class SimpleLuceneLabelScanWriter implements LabelScanWriter
         {
             return;
         }
-
-        IndexSearcher searcher = partitionSearcher.getIndexSearcher();
-        Map<Long/*label*/,Bitmap> fields = readLabelBitMapsInRange( searcher, currentRange );
-        updateFields( updates, fields );
-
-        Document document = new Document();
-        format.addRangeValuesField( document, currentRange );
-
-        for ( Map.Entry<Long/*label*/,Bitmap> field : fields.entrySet() )
+        IndexPartition partition = getCurrentPartition();
+        try ( PartitionSearcher partitionSearcher = partition.acquireSearcher() )
         {
-            // one field per label
-            Bitmap value = field.getValue();
-            if ( value.hasContent() )
+            IndexSearcher searcher = partitionSearcher.getIndexSearcher();
+            Map<Long/*label*/,Bitmap> fields = readLabelBitMapsInRange( searcher, currentRange );
+            updateFields( updates, fields );
+
+            Document document = new Document();
+            format.addRangeValuesField( document, currentRange );
+
+            for ( Map.Entry<Long/*label*/,Bitmap> field : fields.entrySet() )
             {
-                format.addLabelAndSearchFields( document, field.getKey(), value );
+                // one field per label
+                Bitmap value = field.getValue();
+                if ( value.hasContent() )
+                {
+                    format.addLabelAndSearchFields( document, field.getKey(), value );
+                }
             }
-        }
 
-        if ( isEmpty( document ) )
-        {
-            partition.getIndexWriter().deleteDocuments( format.rangeTerm( document ) );
+            if ( isEmpty( document ) )
+            {
+                partition.getIndexWriter().deleteDocuments( format.rangeTerm( document ) );
+            }
+            else
+            {
+                partition.getIndexWriter().updateDocument( format.rangeTerm( document ), document );
+            }
+            updates.clear();
         }
-        else
+    }
+
+    // since only one writer is allowed at any point in time
+    // its safe to do partition allocation without any additional lock
+    private IndexPartition getCurrentPartition() throws IOException
+    {
+        int partition = getPartitionForRange();
+
+        while ( isNotEnoughPartitions( partition ) )
         {
-            partition.getIndexWriter().updateDocument( format.rangeTerm( document ), document );
+            index.addNewPartition();
         }
-        updates.clear();
+        return index.getPartitions().get( partition );
+    }
+
+    private boolean isNotEnoughPartitions( int partition )
+    {
+        return index.getPartitions().size() < (partition + 1);
+    }
+
+    private int getPartitionForRange()
+    {
+        return Math.toIntExact( currentRange / MAXIMUM_PARTITION_SIZE );
     }
 
     private boolean isEmpty( Document document )
@@ -174,7 +201,7 @@ public class SimpleLuceneLabelScanWriter implements LabelScanWriter
         return true;
     }
 
-    private void updateFields( Iterable<NodeLabelUpdate> updates, Map<Long/*label*/, Bitmap> fields )
+    private void updateFields( Iterable<NodeLabelUpdate> updates, Map<Long/*label*/,Bitmap> fields )
     {
         for ( NodeLabelUpdate update : updates )
         {
@@ -183,7 +210,7 @@ public class SimpleLuceneLabelScanWriter implements LabelScanWriter
         }
     }
 
-    private void clearLabels( Map<Long, Bitmap> fields, NodeLabelUpdate update )
+    private void clearLabels( Map<Long,Bitmap> fields, NodeLabelUpdate update )
     {
         for ( Bitmap bitmap : fields.values() )
         {
@@ -191,7 +218,7 @@ public class SimpleLuceneLabelScanWriter implements LabelScanWriter
         }
     }
 
-    private void setLabels( Map<Long, Bitmap> fields, NodeLabelUpdate update )
+    private void setLabels( Map<Long,Bitmap> fields, NodeLabelUpdate update )
     {
         for ( long label : update.getLabelsAfter() )
         {
@@ -201,25 +228,6 @@ public class SimpleLuceneLabelScanWriter implements LabelScanWriter
                 fields.put( label, bitmap = new Bitmap() );
             }
             format.bitmapFormat().set( bitmap, update.getNodeId(), true );
-        }
-    }
-
-    /**
-     * Acquires {@link PartitionSearcher} for the given {@link IndexPartition}
-     * converting {@link IOException} to {@link UncheckedIOException} if needed.
-     *
-     * This method is called only once per writer to not disturb lucene's {@link SearcherManager}
-     * on every {@link #flush() flush} call.
-     */
-    private static PartitionSearcher acquireSearcher( IndexPartition partition )
-    {
-        try
-        {
-            return partition.acquireSearcher();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
         }
     }
 }

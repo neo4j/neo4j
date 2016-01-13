@@ -45,6 +45,8 @@ import org.mockito.Mockito;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +69,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyList;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -93,6 +96,7 @@ public class LuceneLabelScanStoreWriterTest
     @After
     public void closeDirFactory() throws Exception
     {
+        System.setProperty( "labelScanStore.maxPartitionSize", "");
         dirFactory.close();
     }
 
@@ -104,12 +108,17 @@ public class LuceneLabelScanStoreWriterTest
         int nodeId2 = 65;
         StubIndexPartition partition = newStubIndexPartition();
 
+        LuceneLabelScanIndex index = mock( LuceneLabelScanIndex.class );
+        when( index.getFirstPartition( anyList() ) ).thenReturn( partition );
+        when( index.getPartitions() ).thenReturn( Arrays.asList( partition ) );
+
         long node1Range = format.bitmapFormat().rangeOf( nodeId1 );
         long node2Range = format.bitmapFormat().rangeOf( nodeId2 );
         assertNotEquals( node1Range, node2Range );
 
         // when
-        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( partition, format, mock( Lock.class ) );
+        PartitionedLuceneLabelScanWriter writer =
+                createWriter( index );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{} ) );
         try
         {
@@ -131,8 +140,11 @@ public class LuceneLabelScanStoreWriterTest
         int label2 = 202;
         StubIndexPartition partition = newStubIndexPartition();
 
+        LuceneLabelScanIndex index = buildLabelScanIndex( partition );
+
         // when
-        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( partition, format, mock( Lock.class ) );
+        PartitionedLuceneLabelScanWriter writer =
+                createWriter( index );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeId, new long[]{}, new long[]{label1, label2} ) );
         writer.close();
@@ -158,8 +170,11 @@ public class LuceneLabelScanStoreWriterTest
         long range = format.bitmapFormat().rangeOf( nodeId1 );
         assertEquals( range, format.bitmapFormat().rangeOf( nodeId2 ) );
 
+        LuceneLabelScanIndex index = buildLabelScanIndex( partition );
+
         // when
-        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( partition, format, mock( Lock.class ) );
+        PartitionedLuceneLabelScanWriter writer =
+                createWriter( index );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeId1, new long[]{}, new long[]{label1} ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{label2} ) );
@@ -186,8 +201,11 @@ public class LuceneLabelScanStoreWriterTest
         long node2Range = format.bitmapFormat().rangeOf( nodeId2 );
         assertNotEquals( node1Range, node2Range );
 
+        LuceneLabelScanIndex index = buildLabelScanIndex( partition );
+
         // when
-        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( partition, format, mock( Lock.class ) );
+        PartitionedLuceneLabelScanWriter writer =
+                createWriter( index );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeId1, new long[]{}, new long[]{label1} ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{label2} ) );
@@ -214,13 +232,16 @@ public class LuceneLabelScanStoreWriterTest
         long range = format.bitmapFormat().rangeOf( nodeId1 );
         assertEquals( range, format.bitmapFormat().rangeOf( nodeId2 ) );
 
+        LuceneLabelScanIndex index = buildLabelScanIndex( partition );
+
         // node already indexed
-        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( partition, format, mock( Lock.class ) );
+        PartitionedLuceneLabelScanWriter writer =
+                createWriter( index );
         writer.write( NodeLabelUpdate.labelChanges( nodeId1, new long[]{}, new long[]{label1} ) );
         writer.close();
 
         // when
-        writer = new SimpleLuceneLabelScanWriter( partition, format, mock( Lock.class ) );
+        writer = createWriter( index );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{label2} ) );
         writer.close();
 
@@ -230,11 +251,36 @@ public class LuceneLabelScanStoreWriterTest
         assertTrue( format.bitmapFormat().hasLabel( parseLong( document.get( valueOf( label2 ) ) ), nodeId2 ) );
     }
 
-    private StubIndexPartition newStubIndexPartition()
+    @Test
+    public void automaticPartitionCreation() throws IOException
+    {
+        int nodeForPartition1 = 1;
+        int nodeForPartition2 = (format.bitmapFormat().rangeSize() * 2) + 1;
+        int labelNode1 = 201;
+        int labelNode2 = 202;
+
+        System.setProperty( "labelScanStore.maxPartitionSize", "2" );
+
+        StubIndexPartition partition = newStubIndexPartition();
+        LuceneLabelScanIndex index = buildLabelScanIndex( partition );
+        PartitionedLuceneLabelScanWriter writer = createWriter( index );
+
+        writer.write( NodeLabelUpdate.labelChanges( nodeForPartition1, new long[]{}, new long[]{labelNode1} ) );
+
+        writer.write( NodeLabelUpdate.labelChanges( nodeForPartition2, new long[]{}, new long[]{labelNode2} ) );
+        writer.close();
+        assertEquals("We should have 2 index partitions", 2, index.getPartitions().size());
+    }
+
+    private PartitionedLuceneLabelScanWriter createWriter( LuceneLabelScanIndex index )
+    {
+        return new PartitionedLuceneLabelScanWriter( index, format, mock( Lock.class ) );
+    }
+
+    private StubIndexPartition newStubIndexPartition( File folder )
     {
         try
         {
-            File folder = testDir.directory();
             Directory directory = dirFactory.open( folder );
             return new StubIndexPartition( folder, directory );
         }
@@ -242,6 +288,12 @@ public class LuceneLabelScanStoreWriterTest
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    private StubIndexPartition newStubIndexPartition()
+    {
+        File folder = testDir.directory();
+        return newStubIndexPartition( folder );
     }
 
     private static PartitionSearcher newStubPartitionSearcher( Map<Term,Document> storage )
@@ -410,5 +462,22 @@ public class LuceneLabelScanStoreWriterTest
         {
             return 1L;
         }
+    }
+
+    private LuceneLabelScanIndex buildLabelScanIndex( StubIndexPartition partition ) throws IOException
+    {
+        List<IndexPartition> partitions = new ArrayList<>();
+        partitions.add( partition );
+        LuceneLabelScanIndex index = mock( LuceneLabelScanIndex.class );
+        when( index.getPartitions() ).thenReturn( partitions );
+        when( index.getFirstPartition( anyList() ) ).thenReturn( partition );
+
+        when( index.addNewPartition() ).then( invocation -> {
+            StubIndexPartition newPartition =
+                    newStubIndexPartition( testDir.directory( String.valueOf( partitions.size() ) ) );
+            partitions.add( newPartition );
+            return newPartition;
+        } );
+        return index;
     }
 }

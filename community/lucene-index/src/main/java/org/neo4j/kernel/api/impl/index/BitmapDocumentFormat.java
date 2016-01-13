@@ -75,7 +75,7 @@ public enum BitmapDocumentFormat
     public static final String RANGE = "range", LABEL = "label";
     private final BitmapFormat format;
 
-    private BitmapDocumentFormat( BitmapFormat format )
+    BitmapDocumentFormat( BitmapFormat format )
     {
         this.format = format;
     }

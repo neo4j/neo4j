@@ -69,9 +69,7 @@ public class LuceneLabelScanStoreChaosIT
         dbRule.restartDatabase( deleteTheLabelScanStoreIndex() );
 
         // THEN
-        assertEquals(
-                asSet( node1, node3 ),
-                getAllNodesWithLabel( Labels.First ) );
+        assertEquals( asSet( node1, node3 ), getAllNodesWithLabel( Labels.First ) );
     }
 
     @Test
@@ -188,8 +186,6 @@ public class LuceneLabelScanStoreChaosIT
 
     private enum Labels implements Label
     {
-        First,
-        Second,
-        Third;
+        First, Second, Third
     }
 }
