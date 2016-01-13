@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -65,8 +65,9 @@ public class RecoveryRequiredChecker
         long logVersion = MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
 
-        LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>( LogEntryVersion.CURRENT.byteCode(),
-                new RecordStorageCommandReaderFactory() );
+        LogEntryReader<ReadableClosablePositionAwareChannel> reader =
+                new VersionAwareLogEntryReader<>( LogEntryVersion.CURRENT.byteCode(),
+                        new RecordStorageCommandReaderFactory() );
 
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         return new PositionToRecoverFrom( finder ).apply( logVersion ) != LogPosition.UNSPECIFIED;

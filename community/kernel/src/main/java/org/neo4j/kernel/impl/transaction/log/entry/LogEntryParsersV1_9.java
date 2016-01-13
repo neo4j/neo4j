@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -35,7 +35,7 @@ public enum LogEntryParsersV1_9 implements LogEntryParser<IdentifiableLogEntry>
     EMPTY
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
                 {
                     return null;
@@ -57,7 +57,7 @@ public enum LogEntryParsersV1_9 implements LogEntryParser<IdentifiableLogEntry>
     TX_PREPARE
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
                 {
                     // we ignore this we do not this in the new log format, just parse data to be skipped in the
@@ -84,7 +84,7 @@ public enum LogEntryParsersV1_9 implements LogEntryParser<IdentifiableLogEntry>
     TX_START
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
                 {
                     LogPosition position = marker.newPosition();
@@ -122,7 +122,7 @@ public enum LogEntryParsersV1_9 implements LogEntryParser<IdentifiableLogEntry>
     COMMAND
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
                 {
                     int identifier = channel.getInt();
@@ -148,7 +148,7 @@ public enum LogEntryParsersV1_9 implements LogEntryParser<IdentifiableLogEntry>
     DONE
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
@@ -174,7 +174,7 @@ public enum LogEntryParsersV1_9 implements LogEntryParser<IdentifiableLogEntry>
     TX_1P_COMMIT
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
@@ -200,7 +200,7 @@ public enum LogEntryParsersV1_9 implements LogEntryParser<IdentifiableLogEntry>
     TX_2P_COMMIT
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {

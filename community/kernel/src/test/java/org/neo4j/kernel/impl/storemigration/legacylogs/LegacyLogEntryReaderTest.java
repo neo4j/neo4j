@@ -32,7 +32,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.VersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.IdentifiableLogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
@@ -85,13 +85,13 @@ public class LegacyLogEntryReaderTest
     public void shouldReturnNoEntriesWhenTheChannelContainsNothing() throws IOException
     {
         // given
-        final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = mock( LogEntryReader.class );
-        when( logEntryReader.readLogEntry( any( ReadableVersionableLogChannel.class ) ) ).thenReturn( null );
+        final LogEntryReader<VersionableReadableClosablePositionAwareChannel> logEntryReader = mock( LogEntryReader.class );
+        when( logEntryReader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn( null );
         final LegacyLogEntryReader reader = new LegacyLogEntryReader( fs,
-                new Function<LogHeader,LogEntryReader<ReadableVersionableLogChannel>>()
+                new Function<LogHeader,LogEntryReader<VersionableReadableClosablePositionAwareChannel>>()
         {
             @Override
-            public LogEntryReader<ReadableVersionableLogChannel> apply( LogHeader from ) throws RuntimeException
+            public LogEntryReader<VersionableReadableClosablePositionAwareChannel> apply( LogHeader from ) throws RuntimeException
             {
                 return logEntryReader;
             }
@@ -116,8 +116,8 @@ public class LegacyLogEntryReaderTest
         final LogEntry command = new LogEntryCommand( new Command.NodeCommand( record, record ) );
         final LogEntry commit = new OnePhaseCommit( 42, 43 );
 
-        final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = mock( LogEntryReader.class );
-        when( logEntryReader.readLogEntry( any( ReadableVersionableLogChannel.class ) ) ).thenReturn(
+        final LogEntryReader<VersionableReadableClosablePositionAwareChannel> logEntryReader = mock( LogEntryReader.class );
+        when( logEntryReader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn(
                 new IdentifiableLogEntry( start, 1 ),
                 new IdentifiableLogEntry( command, 1 ),
                 new IdentifiableLogEntry( commit, 1 ),

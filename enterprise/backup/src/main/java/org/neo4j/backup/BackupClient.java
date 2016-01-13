@@ -37,7 +37,7 @@ import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -54,7 +54,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
 
     public BackupClient( String hostNameOrIp, int port, LogProvider logProvider, StoreId storeId, long timeout,
             ResponseUnpacker unpacker, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor,
-            LogEntryReader<ReadableLogChannel> reader )
+            LogEntryReader<ReadableClosablePositionAwareChannel> reader )
     {
         super( hostNameOrIp, port, logProvider, storeId, FRAME_LENGTH,
                 new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ), timeout,

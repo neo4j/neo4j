@@ -19,6 +19,12 @@
  */
 package org.neo4j.com;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -31,19 +37,13 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -92,14 +92,14 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private final ResponseUnpacker responseUnpacker;
     private final ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
-    private final LogEntryReader<ReadableLogChannel> entryReader;
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> entryReader;
 
     public Client( String hostNameOrIp, int port, LogProvider logProvider, StoreId storeId, int frameLength,
             ProtocolVersion protocolVersion, long readTimeout, int maxConcurrentChannels, int chunkSize,
             ResponseUnpacker responseUnpacker,
             ByteCounterMonitor byteCounterMonitor,
             RequestMonitor requestMonitor,
-            LogEntryReader<ReadableLogChannel> entryReader )
+            LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
         this.entryReader = entryReader;
         assert byteCounterMonitor != null;

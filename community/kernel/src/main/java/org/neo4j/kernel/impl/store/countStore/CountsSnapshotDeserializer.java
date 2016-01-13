@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
@@ -35,7 +35,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.value;
 
 public class CountsSnapshotDeserializer
 {
-    public static CountsSnapshot deserialize( ReadableLogChannel channel ) throws IOException
+    public static CountsSnapshot deserialize( ReadableClosableChannel channel ) throws IOException
     {
         long txid = channel.getLong();
         int size = channel.getInt();

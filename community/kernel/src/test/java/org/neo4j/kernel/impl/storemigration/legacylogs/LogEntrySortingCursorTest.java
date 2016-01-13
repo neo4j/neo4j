@@ -28,7 +28,7 @@ import java.util.Random;
 
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.VersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.IdentifiableLogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
@@ -47,9 +47,9 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.EMPTY_AD
 public class LogEntrySortingCursorTest
 {
     private static final Random random = new Random( 42l );
-    private final ReadableVersionableLogChannel channel = mock( ReadableVersionableLogChannel.class );
+    private final VersionableReadableClosablePositionAwareChannel channel = mock( VersionableReadableClosablePositionAwareChannel.class );
     @SuppressWarnings("unchecked")
-    private final LogEntryReader<ReadableVersionableLogChannel> reader = mock( LogEntryReader.class );
+    private final LogEntryReader<VersionableReadableClosablePositionAwareChannel> reader = mock( LogEntryReader.class );
 
     @Test
     public void shouldDoNothingIfTheListIsOrdered() throws IOException

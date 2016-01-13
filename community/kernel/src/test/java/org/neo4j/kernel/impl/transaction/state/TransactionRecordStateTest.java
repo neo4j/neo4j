@@ -69,10 +69,10 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
-import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.VersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -496,7 +496,7 @@ public class TransactionRecordStateTest
 
         // WHEN applying a transaction, which has first round-tripped through a log (written then read)
         TransactionRepresentation transaction = transaction( deleteNode( store, nodeId.get() ) );
-        InMemoryVersionableLogChannel channel = new InMemoryVersionableLogChannel();
+        InMemoryVersionableReadableClosablePositionAwareChannel channel = new InMemoryVersionableReadableClosablePositionAwareChannel();
         writeToChannel( transaction, channel );
         CommittedTransactionRepresentation recoveredTransaction = readFromChannel( channel );
         // and applying that recovered transaction
@@ -1182,12 +1182,12 @@ public class TransactionRecordStateTest
         assertTrue( "Expected " + klass + ". was: " + next, klass.isInstance( next ) );
     }
 
-    private CommittedTransactionRepresentation readFromChannel( ReadableVersionableLogChannel channel )
+    private CommittedTransactionRepresentation readFromChannel( VersionableReadableClosablePositionAwareChannel channel )
             throws IOException
     {
-        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+        LogEntryReader<VersionableReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory() );
-        try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> cursor = new PhysicalTransactionCursor<>(
+        try ( PhysicalTransactionCursor<VersionableReadableClosablePositionAwareChannel> cursor = new PhysicalTransactionCursor<>(
                 channel, logEntryReader ) )
         {
             assertTrue( cursor.next() );

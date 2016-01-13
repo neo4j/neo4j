@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageComma
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.VersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -134,7 +134,7 @@ public class IndexCreationTest
                 new SimpleTriggerInfo( "test" )
         );
 
-        ReadableVersionableLogChannel logChannel = pLogFile.getReader( LogPosition.start( version ) );
+        VersionableReadableClosablePositionAwareChannel logChannel = pLogFile.getReader( LogPosition.start( version ) );
 
         final AtomicBoolean success = new AtomicBoolean( false );
 

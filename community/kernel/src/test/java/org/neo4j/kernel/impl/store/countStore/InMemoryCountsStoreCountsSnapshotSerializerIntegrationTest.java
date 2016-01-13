@@ -30,11 +30,11 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadPositionableReadableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotDeserializer.deserialize;
@@ -50,7 +50,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
     public void smallWorkloadOnInMemoryLogTest() throws IOException
     {
         //GIVEN
-        InMemoryLogChannel tempChannel = new InMemoryLogChannel();
+        InMemoryClosableChannel tempChannel = new InMemoryClosableChannel();
         Map<CountsKey,long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 1 );
         CountsSnapshot countsSnapshot = new CountsSnapshot( 1, map );
 
@@ -101,10 +101,10 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
 
         physicalLogVersionedStoreChannel.position( 0 );
 
-        try ( ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( physicalLogVersionedStoreChannel,
+        try ( ReadAheadPositionableReadableChannel readAheadChannel = new ReadAheadPositionableReadableChannel( physicalLogVersionedStoreChannel,
                 LogVersionBridge.NO_MORE_CHANNELS ) )
         {
-            recovered = deserialize( readAheadLogChannel );
+            recovered = deserialize( readAheadChannel );
         }
 
         //THEN

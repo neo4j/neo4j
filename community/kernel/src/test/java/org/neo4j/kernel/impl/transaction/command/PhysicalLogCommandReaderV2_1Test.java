@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -42,7 +42,7 @@ public class PhysicalLogCommandReaderV2_1Test
     {
         // GIVEN
         PhysicalLogCommandReaderV2_1 reader = new PhysicalLogCommandReaderV2_1();
-        InMemoryLogChannel data = new InMemoryLogChannel();
+        InMemoryClosableChannel data = new InMemoryClosableChannel();
         long id = 5;
         int keyId = 6;
         byte[] data1 = new byte[] {1, 2, 3, 4, 5};

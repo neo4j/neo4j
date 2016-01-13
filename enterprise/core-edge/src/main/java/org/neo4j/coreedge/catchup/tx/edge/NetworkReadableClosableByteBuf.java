@@ -17,21 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com;
+package org.neo4j.coreedge.catchup.tx.edge;
 
 import java.io.IOException;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
-public class NetworkReadableLogChannel implements ReadableLogChannel
+public class NetworkReadableClosableByteBuf implements ReadableClosablePositionAwareChannel
 {
-    private final ChannelBuffer delegate;
+    private final ByteBuf delegate;
 
-    public NetworkReadableLogChannel( ChannelBuffer input )
+    public NetworkReadableClosableByteBuf( ByteBuf input )
     {
         this.delegate = input;
     }

@@ -39,8 +39,8 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadPositionableReadableChannel;
+import org.neo4j.kernel.impl.transaction.log.VersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
@@ -278,12 +278,12 @@ public class TestLogPruning
                 StoreChannel storeChannel = fs.open( files.getLogFileForVersion( version ), "r" );
                 LogVersionedStoreChannel versionedStoreChannel = PhysicalLogFile.openForVersion( files, fs, version );
                         new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, CURRENT_LOG_VERSION );
-                try ( ReadableVersionableLogChannel channel =
-                              new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
+                try ( VersionableReadableClosablePositionAwareChannel channel =
+                              new ReadAheadPositionableReadableChannel( versionedStoreChannel, bridge, 1000 ) )
                 {
-                    try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
+                    try ( PhysicalTransactionCursor<VersionableReadableClosablePositionAwareChannel> physicalTransactionCursor =
                             new PhysicalTransactionCursor<>( channel,
-                                    new VersionAwareLogEntryReader<ReadableVersionableLogChannel>(
+                                    new VersionAwareLogEntryReader<VersionableReadableClosablePositionAwareChannel>(
                                             new RecordStorageCommandReaderFactory() ) ) )
                     {
                         while ( physicalTransactionCursor.next())

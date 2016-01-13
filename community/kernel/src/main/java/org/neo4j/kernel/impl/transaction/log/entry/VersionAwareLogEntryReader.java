@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
@@ -41,7 +41,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVers
  *
  * Read all about it at {@link LogEntryVersion}.
  */
-public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> implements LogEntryReader<SOURCE>
+public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionAwareChannel> implements LogEntryReader<SOURCE>
 {
     // Exists for backwards compatibility until we drop support for one of the two versions (1.9 and 2.0)
     // that doesn't have log entry version in its format.
