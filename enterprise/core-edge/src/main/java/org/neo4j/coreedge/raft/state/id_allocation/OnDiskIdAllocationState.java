@@ -24,18 +24,15 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import org.neo4j.coreedge.raft.replication.id.IdAllocationState;
 import org.neo4j.coreedge.raft.state.StatePersister;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal
-        .NUMBER_OF_BYTES_PER_WRITE;
+import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal.NUMBER_OF_BYTES_PER_WRITE;
 
 /**
  * The OnDiskAllocationState is a decorator around InMemoryIdAllocationState providing on-disk persistence of
@@ -44,7 +41,7 @@ import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationSt
  * <p>
  * It is log structured for convenience and ease of operational problem solving.
  */
-public class OnDiskIdAllocationState implements IdAllocationState
+public class OnDiskIdAllocationState extends LifecycleAdapter implements IdAllocationState
 {
     public static final String FILENAME = "id.allocation.";
 
@@ -61,41 +58,19 @@ public class OnDiskIdAllocationState implements IdAllocationState
         File fileA = new File( storeDir, FILENAME + "A" );
         File fileB = new File( storeDir, FILENAME + "B" );
 
-        workingBuffer = ByteBuffer.allocate( NUMBER_OF_BYTES_PER_WRITE );
+        this.workingBuffer = ByteBuffer.allocate( NUMBER_OF_BYTES_PER_WRITE );
 
         IdAllocationStateRecoveryManager recoveryManager =
-                new IdAllocationStateRecoveryManager( fileSystemAbstraction );
+                new IdAllocationStateRecoveryManager( fileSystemAbstraction,
+                        new InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal() );
 
         final StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
 
-        marshal = new InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal();
-        inMemoryIdAllocationState = readLastEntryFrom( fileSystemAbstraction, recoveryStatus.previouslyActive() );
+        this.marshal = new InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal();
+        this.inMemoryIdAllocationState = recoveryManager.readLastEntryFrom( fileSystemAbstraction, recoveryStatus.previouslyActive() );
 
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
-                workingBuffer,
-                marshal, recoveryStatus.previouslyInactive(),
-                databaseHealthSupplier );
-    }
-
-    private InMemoryIdAllocationState readLastEntryFrom( FileSystemAbstraction fileSystemAbstraction, File file )
-            throws IOException
-    {
-        final StoreChannel temporaryStoreChannel = fileSystemAbstraction.open( file, "rw" );
-        temporaryStoreChannel.read( workingBuffer );
-        workingBuffer.flip();
-
-        InMemoryIdAllocationState result = new InMemoryIdAllocationState();
-        InMemoryIdAllocationState lastRead = null;
-
-        while ( (lastRead = marshal.unmarshal( workingBuffer )) != null )
-        {
-            result = lastRead;
-            workingBuffer.flip();
-            temporaryStoreChannel.read( workingBuffer );
-            workingBuffer.flip();
-        }
-
-        return result;
+                workingBuffer, marshal, recoveryStatus.previouslyInactive(), databaseHealthSupplier );
     }
 
     @Override
@@ -126,7 +101,14 @@ public class OnDiskIdAllocationState implements IdAllocationState
     public void logIndex( long logIndex )
     {
         inMemoryIdAllocationState.logIndex( logIndex );
-        statePersister.persistStoreData( inMemoryIdAllocationState );
+        try
+        {
+            statePersister.persistStoreData( inMemoryIdAllocationState );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -153,8 +135,9 @@ public class OnDiskIdAllocationState implements IdAllocationState
         inMemoryIdAllocationState.lastIdRangeStart( idType, idRangeStart );
     }
 
-    public File currentStoreFile()
+    @Override
+    public void shutdown() throws Throwable
     {
-        throw new NotImplementedException();
+        statePersister.close();
     }
 }

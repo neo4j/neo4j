@@ -241,7 +241,7 @@ public class StateRecoveryManagerTest
         }
 
         @Override
-        protected long getLogIndex( File storeFile ) throws IOException
+        protected long getOrdinalOfLastRecord( File storeFile ) throws IOException
         {
             // Assumes no trailing garbage
             final long fileSize = fileSystem.getFileSize( storeFile );

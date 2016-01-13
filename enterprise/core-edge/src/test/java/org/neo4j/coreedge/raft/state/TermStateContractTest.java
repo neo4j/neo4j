@@ -19,40 +19,42 @@
  */
 package org.neo4j.coreedge.raft.state;
 
+import java.io.IOException;
+
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.state.term.TermStore;
+import org.neo4j.coreedge.raft.state.term.TermState;
 
 import static org.junit.Assert.*;
 
-public abstract class TermStoreContractTest
+public abstract class TermStateContractTest
 {
-    public abstract TermStore createTermStore();
+    public abstract TermState createTermStore() throws IOException;
 
     @Test
     public void shouldStoreCurrentTerm() throws Exception
     {
         // given
-        TermStore termStore = createTermStore();
+        TermState termState = createTermStore();
 
         // when
-        termStore.update( 21 );
+        termState.update( 21 );
 
         // then
-        assertEquals( 21, termStore.currentTerm() );
+        assertEquals( 21, termState.currentTerm() );
     }
 
     @Test
     public void rejectLowerTerm() throws Exception
     {
         // given
-        TermStore termStore = createTermStore();
-        termStore.update( 21 );
+        TermState termState = createTermStore();
+        termState.update( 21 );
 
         // when
         try
         {
-            termStore.update( 20 );
+            termState.update( 20 );
             fail( "Should have thrown exception" );
         }
         catch ( IllegalArgumentException e )

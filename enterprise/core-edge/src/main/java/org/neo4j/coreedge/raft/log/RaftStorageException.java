@@ -30,4 +30,9 @@ public class RaftStorageException extends Exception
     {
         super( message );
     }
+
+    public RaftStorageException( Exception e )
+    {
+        super(e);
+    }
 }

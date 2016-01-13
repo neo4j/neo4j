@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state.id_allocation;
+package org.neo4j.coreedge.raft.state.term;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,12 +27,12 @@ import org.neo4j.coreedge.raft.state.StateRecoveryManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 
-public class IdAllocationStateRecoveryManager extends StateRecoveryManager
+public class TermStateRecoveryManager extends StateRecoveryManager
 {
-    private final InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal marshal;
+    private final InMemoryTermState.InMemoryTermStateMarshal marshal;
 
-    public IdAllocationStateRecoveryManager( FileSystemAbstraction fileSystem,
-                                             InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal marshal )
+    public TermStateRecoveryManager( FileSystemAbstraction fileSystem,
+                                     InMemoryTermState.InMemoryTermStateMarshal marshal )
     {
         super( fileSystem );
         this.marshal = marshal;
@@ -41,20 +41,20 @@ public class IdAllocationStateRecoveryManager extends StateRecoveryManager
     @Override
     protected long getOrdinalOfLastRecord( File file ) throws IOException
     {
-        return readLastEntryFrom( fileSystem, file ).logIndex();
+        return readLastEntryFrom( fileSystem, file ).currentTerm();
     }
 
-    public InMemoryIdAllocationState readLastEntryFrom( FileSystemAbstraction fileSystemAbstraction, File file )
+    public InMemoryTermState readLastEntryFrom( FileSystemAbstraction fileSystemAbstraction, File file )
             throws IOException
     {
         final ByteBuffer workingBuffer = ByteBuffer.allocate( (int) fileSystemAbstraction.getFileSize( file ) );
 
-        final StoreChannel channel = fileSystemAbstraction.open( file, "r" );
+        final StoreChannel channel = fileSystemAbstraction.open( file, "rw" );
         channel.read( workingBuffer );
         workingBuffer.flip();
 
-        InMemoryIdAllocationState result = new InMemoryIdAllocationState();
-        InMemoryIdAllocationState lastRead;
+        InMemoryTermState result = new InMemoryTermState();
+        InMemoryTermState lastRead;
 
         while ( (lastRead = marshal.unmarshal( workingBuffer )) != null )
         {

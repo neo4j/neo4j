@@ -21,9 +21,20 @@ package org.neo4j.coreedge.raft.state.membership;
 
 import java.nio.ByteBuffer;
 
+/**
+ * This interface defines the ability of a class to marshal instances of another class to and from a ByteBuffer.
+ * @param <TARGET> The class being marshaled.
+ */
 public interface Marshal<TARGET>
 {
+    /**
+     * Marshals the target into buffer. The buffer is expected to be large enough to hold the result.
+     */
     void marshal( TARGET target, ByteBuffer buffer );
 
+    /**
+     * Unmarshals an instance of TARGET from source. If the source does not have enough bytes to fully read an instance,
+     * null will be returned.
+     */
     TARGET unmarshal( ByteBuffer source );
 }

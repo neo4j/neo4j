@@ -19,29 +19,44 @@
  */
 package org.neo4j.coreedge.raft.state;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.function.Supplier;
+
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.test.TargetDirectory;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import org.junit.Test;
-
-import org.neo4j.coreedge.raft.state.term.DurableTermStore;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreFileChannel;
-
-public class DurableTermStoreTest
+public class OnDiskTermStateTest
 {
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
+    private OnDiskTermState createTermState( FileSystemAbstraction fileSystem ) throws IOException
+    {
+        final Supplier mock = mock( Supplier.class );
+        when( mock.get() ).thenReturn( mock( DatabaseHealth.class ) );
+
+        return new OnDiskTermState( fileSystem, testDir.directory(), 100, mock );
+    }
+
+
     @Test
     public void shouldCallWriteAllAndForceOnVoteUpdate() throws Exception
     {
@@ -50,13 +65,13 @@ public class DurableTermStoreTest
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
 
-        DurableTermStore store = new DurableTermStore( fsa, new File("") );
+        OnDiskTermState state = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
 
         // When
-        store.update( 100L );
+        state.update( 100L );
 
         // Then
-        verify( channel ).writeAll( any( ByteBuffer.class ), anyInt() );
+        verify( channel ).writeAll( any( ByteBuffer.class ) );
         verify( channel ).force( anyBoolean() );
     }
 
@@ -67,9 +82,9 @@ public class DurableTermStoreTest
         StoreFileChannel channel = mock( StoreFileChannel.class );
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
-        doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ), anyInt() );
+        doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ) );
 
-        DurableTermStore store = new DurableTermStore( fsa, new File("") );
+        OnDiskTermState store = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
 
         // Then
         // Sanity check more than anything else, to make sure the failed update below will retain the value
@@ -79,10 +94,11 @@ public class DurableTermStoreTest
         try
         {
             store.update( 2 );
-            fail( "Test setup should have caused an exception here");
+            fail( "Test setup should have caused an exception here" );
         }
-        catch( Exception e )
-        {}
+        catch ( Exception e )
+        {
+        }
 
         // Then
         assertEquals( 0, store.currentTerm() );
@@ -96,7 +112,7 @@ public class DurableTermStoreTest
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
 
-        DurableTermStore store = new DurableTermStore( fsa, new File("") );
+        OnDiskTermState store = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
 
         // When
         // We shut it down
