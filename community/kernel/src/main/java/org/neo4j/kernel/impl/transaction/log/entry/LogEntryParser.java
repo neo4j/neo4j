@@ -22,15 +22,15 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
 /**
- * Reads and parses the next {@link LogEntry} from {@link ReadableLogChannel}, given the {@link LogEntryVersion}.
+ * Reads and parses the next {@link LogEntry} from {@link ReadableClosableChannel}, given the {@link LogEntryVersion}.
  *
  * @param <T> Specific type of {@link LogEntry} returned from
- * {@link #parse(LogEntryVersion, ReadableLogChannel, LogPositionMarker, CommandReaderFactory)}.
+ * {@link #parse(LogEntryVersion, ReadableClosableChannel, LogPositionMarker, CommandReaderFactory)}.
  */
 public interface LogEntryParser<T extends LogEntry>
 {
@@ -38,7 +38,7 @@ public interface LogEntryParser<T extends LogEntry>
      * Parses the next {@link LogEntry} read from the {@code channel}.
      *
      * @param version {@link LogEntryVersion} this log entry is determined to be of.
-     * @param channel {@link ReadableLogChannel} to read the data from.
+     * @param channel {@link ReadableClosableChannel} to read the data from.
      * @param marker {@link LogPositionMarker} marking the position in the {@code channel} that is the
      * start of this entry.
      * @param commandReaderFactory {@link CommandReaderFactory} for retrieving a {@link CommandReader}
@@ -46,7 +46,7 @@ public interface LogEntryParser<T extends LogEntry>
      * @return the next {@link LogEntry} read and parsed from the {@code channel}.
      * @throws IOException I/O error from channel or if data was read past the end of the channel.
      */
-    T parse( LogEntryVersion version, ReadableLogChannel channel,
+    T parse( LogEntryVersion version, ReadableClosableChannel channel,
              LogPositionMarker marker, CommandReaderFactory commandReaderFactory ) throws IOException;
 
     /**

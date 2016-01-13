@@ -25,10 +25,10 @@ import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
 
@@ -39,7 +39,7 @@ public class MasterClient214 extends MasterClient210
     public MasterClient214( String hostNameOrIp, int port, LogProvider logProvider, StoreId storeId, long readTimeoutSeconds,
                             long lockReadTimeout, int maxConcurrentChannels, int chunkSize, ResponseUnpacker unpacker,
                             ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor,
-                            LogEntryReader<ReadableLogChannel> entryReader )
+                            LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
         super( hostNameOrIp, port, logProvider, storeId, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels,
                 chunkSize, PROTOCOL_VERSION, unpacker, byteCounterMonitor, requestMonitor, entryReader );

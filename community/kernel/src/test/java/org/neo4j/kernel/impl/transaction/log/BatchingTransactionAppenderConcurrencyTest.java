@@ -92,7 +92,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     @Before
     public void setUp()
     {
-        class Channel extends InMemoryLogChannel implements Flushable
+        class Channel extends InMemoryClosableChannel implements Flushable
         {
             @Override
             public Flushable prepareForFlush()

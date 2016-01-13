@@ -33,17 +33,17 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBufferFactory;
 import org.jboss.netty.buffer.ChannelBufferIndexFinder;
 
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
 /**
- * Wraps an {@link InMemoryLogChannel}, making it look like one {@link ChannelBuffer}.
+ * Wraps an {@link InMemoryClosableChannel}, making it look like one {@link ChannelBuffer}.
  */
 public class ChannelBufferWrapper implements ChannelBuffer
 {
-    private final InMemoryLogChannel delegate;
+    private final InMemoryClosableChannel delegate;
 
-    public ChannelBufferWrapper( InMemoryLogChannel delegate )
+    public ChannelBufferWrapper( InMemoryClosableChannel delegate )
     {
         this.delegate = delegate;
     }

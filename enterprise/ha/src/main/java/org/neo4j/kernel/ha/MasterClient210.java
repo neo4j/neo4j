@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
@@ -45,11 +45,10 @@ import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
@@ -85,7 +84,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
                             long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
                             ResponseUnpacker responseUnpacker,
                             ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor,
-                            LogEntryReader<ReadableLogChannel> entryReader )
+                            LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
         super( hostNameOrIp, port, logProvider, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION, readTimeoutMillis,
                 maxConcurrentChannels, chunkSize, responseUnpacker, byteCounterMonitor, requestMonitor, entryReader );
@@ -97,7 +96,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
                      long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
                      ProtocolVersion protocolVersion, ResponseUnpacker responseUnpacker,
                      ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor,
-                     LogEntryReader<ReadableLogChannel> entryReader )
+                     LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
         super( hostNameOrIp, port, logProvider, storeId, MasterServer.FRAME_LENGTH, protocolVersion, readTimeoutMillis,
                 maxConcurrentChannels, chunkSize, responseUnpacker, byteCounterMonitor, requestMonitor, entryReader );

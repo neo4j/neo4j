@@ -31,21 +31,22 @@ import static java.lang.System.arraycopy;
 /**
  * Basically a sequence of {@link StoreChannel channels} seamlessly seen as one.
  */
-public class ReadAheadLogChannel implements ReadableVersionableLogChannel
+public class ReadAheadPositionableReadableChannel implements VersionableReadableClosablePositionAwareChannel
 {
     private static final int DEFAULT_READ_AHEAD_SIZE = 1024 * 4;
 
     private final ByteBuffer aheadBuffer;
     private LogVersionedStoreChannel channel;
+//    private StoreChannel channel;
     private final LogVersionBridge bridge;
     private final int readAheadSize;
 
-    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge )
+    public ReadAheadPositionableReadableChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge )
     {
         this(startingChannel, bridge, DEFAULT_READ_AHEAD_SIZE);
     }
 
-    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, int readAheadSize )
+    public ReadAheadPositionableReadableChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, int readAheadSize )
     {
         this.channel = startingChannel;
         this.bridge = bridge;

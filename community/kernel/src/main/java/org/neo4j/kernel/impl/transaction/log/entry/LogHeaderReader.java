@@ -27,13 +27,13 @@ import java.nio.channels.ReadableByteChannel;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 public class LogHeaderReader
 {
-    public static LogHeader readLogHeader( ReadableLogChannel channel ) throws IOException
+    public static LogHeader readLogHeader( ReadableClosableChannel channel ) throws IOException
     {
         long encodedLogVersions = channel.getLong();
         byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );

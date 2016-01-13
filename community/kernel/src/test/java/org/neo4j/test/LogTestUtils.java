@@ -34,9 +34,8 @@ import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadPositionableReadableChannel;
+import org.neo4j.kernel.impl.transaction.log.VersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -137,7 +136,7 @@ public class LogTestUtils
 
             PhysicalLogVersionedStoreChannel logVersionedChannel = new PhysicalLogVersionedStoreChannel( channel,
                     header.logVersion, header.logFormatVersion );
-            ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( logVersionedChannel,
+            VersionableReadableClosablePositionAwareChannel logChannel = new ReadAheadPositionableReadableChannel( logVersionedChannel,
                     LogVersionBridge.NO_MORE_CHANNELS );
 
             return new LogEntryCursor( new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() ),
@@ -197,8 +196,8 @@ public class LogTestUtils
 
             PhysicalLogVersionedStoreChannel inChannel =
                     new PhysicalLogVersionedStoreChannel( in, logHeader.logVersion, logHeader.logFormatVersion );
-            ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel, LogVersionBridge.NO_MORE_CHANNELS );
-            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>(
+            VersionableReadableClosablePositionAwareChannel inBuffer = new ReadAheadPositionableReadableChannel( inChannel, LogVersionBridge.NO_MORE_CHANNELS );
+            LogEntryReader<VersionableReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>(
                     new RecordStorageCommandReaderFactory() );
 
             LogEntry entry;

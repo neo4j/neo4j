@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-public interface ReadableVersionableLogChannel extends ReadableLogChannel, VersionableLog
+import java.io.Closeable;
+import org.neo4j.storageengine.api.ReadableChannel;
+
+public interface ReadableClosableChannel extends ReadableChannel, Closeable
 {
 }
