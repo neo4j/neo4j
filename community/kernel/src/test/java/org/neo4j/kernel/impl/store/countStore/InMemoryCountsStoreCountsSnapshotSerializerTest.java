@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
@@ -47,7 +47,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.INDEX_STATIS
 
 public class InMemoryCountsStoreCountsSnapshotSerializerTest
 {
-    InMemoryLogChannel logChannel;
+    InMemoryClosableChannel logChannel;
     CountsSnapshot countsSnapshot;
     ByteBuffer expectedBytes;
     ByteBuffer serializedBytes;
@@ -55,7 +55,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     @Before
     public void setup() throws IOException
     {
-        logChannel = new InMemoryLogChannel();
+        logChannel = new InMemoryClosableChannel();
         countsSnapshot = new CountsSnapshot( 1, new ConcurrentHashMap<>() );
     }
 
@@ -237,7 +237,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
         writeExpectedCountStoreSize( expectedBytes, 1 );
     }
 
-    private void writeSimpleHeader( InMemoryLogChannel logChannel ) throws IOException
+    private void writeSimpleHeader( InMemoryClosableChannel logChannel ) throws IOException
     {
         logChannel.putLong( 1 );
         logChannel.putInt( 1 );

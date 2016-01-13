@@ -164,6 +164,7 @@ public class LogMatchers
             }
         };
     }
+
     public static Matcher<? extends LogEntry> checkPoint( final LogPosition position )
     {
         return new TypeSafeMatcher<CheckPoint>()
@@ -171,7 +172,7 @@ public class LogMatchers
             @Override
             public boolean matchesSafely( CheckPoint cp )
             {
-                return cp != null &&  position.equals( cp.getLogPosition() );
+                return cp != null && position.equals( cp.getLogPosition() );
             }
 
             @Override
@@ -183,7 +184,7 @@ public class LogMatchers
     }
 
     public static Matcher<? extends LogEntry> commandEntry( final long key,
-            final Class<? extends Command> commandClass )
+                                                            final Class<? extends Command> commandClass )
     {
         return new TypeSafeMatcher<LogEntryCommand>()
         {
@@ -197,7 +198,7 @@ public class LogMatchers
 
                 Command command = (Command) commandEntry.getXaCommand();
                 return command.getKey() == key &&
-                       command.getClass().equals( commandClass );
+                        command.getClass().equals( commandClass );
             }
 
             @Override

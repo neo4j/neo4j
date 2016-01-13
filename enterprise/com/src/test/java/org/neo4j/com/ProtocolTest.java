@@ -19,21 +19,21 @@
  */
 package org.neo4j.com;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.junit.Test;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
+
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.junit.Test;
 
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -52,7 +52,7 @@ public class ProtocolTest
         long timeStarted = 12345, lastTxWhenStarted = 12, timeCommitted = timeStarted+10;
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, lastTxWhenStarted, timeCommitted, -1 );
         Protocol.TransactionSerializer serializer = new Protocol.TransactionSerializer( transaction );
-        ChannelBuffer buffer = new ChannelBufferWrapper( new InMemoryLogChannel() );
+        ChannelBuffer buffer = new ChannelBufferWrapper( new InMemoryClosableChannel() );
 
         // WHEN serializing the transaction
         serializer.write( buffer );
@@ -60,7 +60,7 @@ public class ProtocolTest
         // THEN deserializing the same transaction should yield the same data.
         // ... remember that this deserializer doesn't read the data source name string. Read it manually here
         assertEquals( NeoStoreDataSource.DEFAULT_DATA_SOURCE_NAME, Protocol.readString( buffer ) );
-        VersionAwareLogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
+        VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
         TransactionRepresentation readTransaction = new Protocol.TransactionRepresentationDeserializer( reader )
                 .read( buffer, ByteBuffer.allocate( 1000 ) );
         assertArrayEquals( additionalHeader, readTransaction.additionalHeader() );

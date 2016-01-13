@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -37,10 +37,10 @@ public class DefaultSlaveFactory implements SlaveFactory
     private final Monitors monitors;
     private final int chunkSize;
     private StoreId storeId;
-    private final Supplier<LogEntryReader<ReadableLogChannel>> entryReader;
+    private final Supplier<LogEntryReader<ReadableClosablePositionAwareChannel>> entryReader;
 
     public DefaultSlaveFactory( LogProvider logProvider, Monitors monitors, int chunkSize,
-            Supplier<LogEntryReader<ReadableLogChannel>> logEntryReader )
+            Supplier<LogEntryReader<ReadableClosablePositionAwareChannel>> logEntryReader )
     {
         this.logProvider = logProvider;
         this.monitors = monitors;

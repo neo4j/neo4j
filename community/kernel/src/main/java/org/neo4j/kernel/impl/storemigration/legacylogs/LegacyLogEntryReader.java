@@ -30,8 +30,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadPositionableReadableChannel;
+import org.neo4j.kernel.impl.transaction.log.VersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -46,10 +46,10 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 class LegacyLogEntryReader
 {
     private final FileSystemAbstraction fs;
-    private final Function<LogHeader,LogEntryReader<ReadableVersionableLogChannel>> readerFactory;
+    private final Function<LogHeader,LogEntryReader<VersionableReadableClosablePositionAwareChannel>> readerFactory;
 
     LegacyLogEntryReader( FileSystemAbstraction fs,
-            Function<LogHeader,LogEntryReader<ReadableVersionableLogChannel>> readerFactory )
+            Function<LogHeader,LogEntryReader<VersionableReadableClosablePositionAwareChannel>> readerFactory )
     {
         this.fs = fs;
         this.readerFactory = readerFactory;
@@ -66,14 +66,14 @@ class LegacyLogEntryReader
         final StoreChannel rawChannel = fs.open( logFile, "r" );
 
         final LogHeader header = readLogHeader( ByteBuffer.allocate( LOG_HEADER_SIZE ), rawChannel, false );
-        LogEntryReader<ReadableVersionableLogChannel> reader = readerFactory.apply( header );
+        LogEntryReader<VersionableReadableClosablePositionAwareChannel> reader = readerFactory.apply( header );
 
         // this ensures that the last committed txId field in the header is initialized properly
         long lastCommittedTxId = Math.max( BASE_TX_ID, header.lastCommittedTxId );
 
         final PhysicalLogVersionedStoreChannel channel =
                 new PhysicalLogVersionedStoreChannel( rawChannel, header.logVersion, header.logFormatVersion );
-        final ReadableVersionableLogChannel readableChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
+        final VersionableReadableClosablePositionAwareChannel readableChannel = new ReadAheadPositionableReadableChannel( channel, NO_MORE_CHANNELS );
         final IOCursor<LogEntry> cursor = new LogEntrySortingCursor( reader, readableChannel );
 
         return Pair.of( new LogHeader( CURRENT_LOG_VERSION, header.logVersion, lastCommittedTxId ), cursor );

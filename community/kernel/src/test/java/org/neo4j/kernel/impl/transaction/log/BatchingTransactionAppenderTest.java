@@ -77,7 +77,7 @@ public class BatchingTransactionAppenderTest
     @Rule
     public final LifeRule life = new LifeRule( true );
 
-    private final InMemoryVersionableLogChannel channel = new InMemoryVersionableLogChannel();
+    private final InMemoryVersionableReadableClosablePositionAwareChannel channel = new InMemoryVersionableReadableClosablePositionAwareChannel();
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
     private final LogFile logFile = mock( LogFile.class );
@@ -101,9 +101,9 @@ public class BatchingTransactionAppenderTest
         appender.append( new TransactionToApply( transaction ), logAppendEvent );
 
         // THEN
-        final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+        final LogEntryReader<VersionableReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory() );
-        try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
+        try ( PhysicalTransactionCursor<VersionableReadableClosablePositionAwareChannel> reader =
                       new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
             reader.next();
@@ -172,9 +172,9 @@ public class BatchingTransactionAppenderTest
                 logAppendEvent );
 
         // THEN
-        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+        LogEntryReader<VersionableReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory() );
-        try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
+        try ( PhysicalTransactionCursor<VersionableReadableClosablePositionAwareChannel> reader =
                       new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
             reader.next();
@@ -192,7 +192,7 @@ public class BatchingTransactionAppenderTest
     public void shouldNotAppendCommittedTransactionsWhenTooFarAhead() throws Exception
     {
         // GIVEN
-        InMemoryLogChannel channel = new InMemoryLogChannel();
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
         when( logFile.getWriter() ).thenReturn( channel );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
                 transactionIdStore, BYPASS, databaseHealth ) );
@@ -232,7 +232,7 @@ public class BatchingTransactionAppenderTest
         // GIVEN
         long txId = 3;
         String failureMessage = "Forces a failure";
-        FlushablePositionAwareChannel channel = spy( new InMemoryLogChannel() );
+        FlushablePositionAwareChannel channel = spy( new InMemoryClosableChannel() );
         IOException failure = new IOException( failureMessage );
         when( channel.putInt( anyInt() ) ).thenThrow( failure );
         when( logFile.getWriter() ).thenReturn( channel );
@@ -265,7 +265,7 @@ public class BatchingTransactionAppenderTest
         // GIVEN
         long txId = 3;
         String failureMessage = "Forces a failure";
-        FlushablePositionAwareChannel channel = spy( new InMemoryLogChannel() );
+        FlushablePositionAwareChannel channel = spy( new InMemoryClosableChannel() );
         IOException failure = new IOException( failureMessage );
         final Flushable flushable = mock( Flushable.class );
         doAnswer( new Answer<Flushable>()

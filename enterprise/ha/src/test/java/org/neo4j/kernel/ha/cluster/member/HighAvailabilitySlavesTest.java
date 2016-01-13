@@ -40,7 +40,7 @@ import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -165,7 +165,7 @@ public class HighAvailabilitySlavesTest
     public void shouldSupportConcurrentConsumptionOfSlaves() throws Exception
     {
         // Given
-        LogEntryReader<ReadableLogChannel> logEntryReader =
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
                 new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
         HighAvailabilitySlaves haSlaves = new HighAvailabilitySlaves( clusterMembersOfSize( 1000 ),
                 mock( Cluster.class ), new DefaultSlaveFactory( NullLogProvider.getInstance(), new Monitors(), 42,

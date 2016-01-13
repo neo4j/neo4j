@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -33,8 +33,8 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
     EMPTY
             {
                 @Override
-                public LogEntry parse( LogEntryVersion version, ReadableLogChannel channel, LogPositionMarker marker,
-                        CommandReaderFactory commandReader ) throws IOException
+                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
+                                       CommandReaderFactory commandReader ) throws IOException
                 {
                     return null;
 
@@ -56,8 +56,8 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
     TX_START
             {
                 @Override
-                public LogEntry parse( LogEntryVersion version, ReadableLogChannel channel, LogPositionMarker marker,
-                        CommandReaderFactory commandReader ) throws IOException
+                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
+                                       CommandReaderFactory commandReader ) throws IOException
                 {
                     LogPosition position = marker.newPosition();
                     int masterId = channel.getInt();
@@ -88,8 +88,8 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
     COMMAND
             {
                 @Override
-                public LogEntry parse( LogEntryVersion version, ReadableLogChannel channel, LogPositionMarker marker,
-                        CommandReaderFactory commandReader ) throws IOException
+                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
+                                       CommandReaderFactory commandReader ) throws IOException
                 {
                     StorageCommand command = commandReader.byVersion(
                             version.byteCode(), version.logHeaderFormatVersion() ).read( channel );
@@ -112,8 +112,8 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
     TX_1P_COMMIT
             {
                 @Override
-                public LogEntry parse( LogEntryVersion version, ReadableLogChannel channel, LogPositionMarker marker,
-                        CommandReaderFactory commandReader ) throws IOException
+                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
+                                       CommandReaderFactory commandReader ) throws IOException
                 {
                     long txId = channel.getLong();
                     long timeWritten = channel.getLong();
@@ -135,8 +135,8 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
     CHECK_POINT
             {
                 @Override
-                public LogEntry parse( LogEntryVersion version, ReadableLogChannel channel, LogPositionMarker marker,
-                        CommandReaderFactory commandReader ) throws IOException
+                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
+                                       CommandReaderFactory commandReader ) throws IOException
                 {
                     long logVersion = channel.getLong();
                     long byteOffset = channel.getLong();

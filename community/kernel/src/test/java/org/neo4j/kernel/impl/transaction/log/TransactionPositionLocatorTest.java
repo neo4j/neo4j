@@ -42,8 +42,8 @@ import static org.mockito.Mockito.when;
 
 public class TransactionPositionLocatorTest
 {
-    private final LogEntryReader<ReadableLogChannel> logEntryReader = mock( LogEntryReader.class );
-    private final ReadableLogChannel channel = mock( ReadableLogChannel.class );
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = mock( LogEntryReader.class );
+    private final ReadableClosablePositionAwareChannel channel = mock( ReadableClosablePositionAwareChannel.class );
     private final TransactionMetadataCache metadataCache = mock( TransactionMetadataCache.class );
 
     private final long txId = 42;

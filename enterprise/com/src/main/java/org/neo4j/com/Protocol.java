@@ -39,7 +39,8 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -96,9 +97,9 @@ public abstract class Protocol
     };
     public static class TransactionRepresentationDeserializer implements Deserializer<TransactionRepresentation>
     {
-        private final LogEntryReader<ReadableLogChannel> reader;
+        private final LogEntryReader<ReadableClosablePositionAwareChannel> reader;
 
-        public TransactionRepresentationDeserializer( LogEntryReader<ReadableLogChannel> reader )
+        public TransactionRepresentationDeserializer( LogEntryReader<ReadableClosablePositionAwareChannel> reader )
         {
             this.reader = reader;
         }
@@ -107,7 +108,7 @@ public abstract class Protocol
         public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
                 throws IOException
         {
-            NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
+            NetworkReadableClosableChannel channel = new NetworkReadableClosableChannel( buffer );
 
             int authorId = channel.getInt();
             int masterId = channel.getInt();
@@ -224,7 +225,7 @@ public abstract class Protocol
             ByteBuffer input, long timeout,
             Deserializer<PAYLOAD> payloadDeserializer,
             ResourceReleaser channelReleaser,
-            final LogEntryReader<ReadableLogChannel> entryReader ) throws IOException
+            final LogEntryReader<ReadableClosablePositionAwareChannel> entryReader ) throws IOException
     {
         final DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, timeout,
                 internalProtocolVersion, applicationProtocolVersion );
@@ -249,9 +250,9 @@ public abstract class Protocol
             @Override
             public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
             {
-                NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
+                NetworkReadableClosableChannel channel = new NetworkReadableClosableChannel( dechunkingBuffer );
 
-                try ( PhysicalTransactionCursor<ReadableLogChannel> cursor =
+                try ( PhysicalTransactionCursor<ReadableClosablePositionAwareChannel> cursor =
                               new PhysicalTransactionCursor<>( channel, entryReader ) )
                 {
                     while ( cursor.next() && !visitor.visit( cursor.get() ) )
