@@ -26,7 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
 import org.neo4j.com.CommittedTransactionSerializer;
-import org.neo4j.coreedge.catchup.storecopy.core.NetworkWritableLogByteBuf;
+import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.raft.replication.storeid.StoreIdEncoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
 
@@ -37,7 +37,7 @@ public class TxPullResponseEncoder extends MessageToMessageEncoder<TxPullRespons
     {
         ByteBuf encoded = ctx.alloc().buffer();
         new StoreIdEncoder().encode( response.storeId(), encoded );
-        new CommittedTransactionSerializer( new NetworkWritableLogByteBuf( encoded ) ).visit( response.tx() );
+        new CommittedTransactionSerializer( new NetworkFlushableByteBuf( encoded ) ).visit( response.tx() );
         out.add( encoded );
     }
 }

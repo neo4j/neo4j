@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacylogs;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Function;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;

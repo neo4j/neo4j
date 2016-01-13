@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha.com.master;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
@@ -34,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 public class MasterServerTest
 {

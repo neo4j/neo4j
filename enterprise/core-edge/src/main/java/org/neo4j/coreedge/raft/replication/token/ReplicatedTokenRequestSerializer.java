@@ -27,8 +27,8 @@ import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.raft.net.NetworkReadableLogChannelNetty4;
-import org.neo4j.coreedge.raft.net.NetworkWritableLogChannelNetty4;
 import org.neo4j.coreedge.raft.replication.StringMarshal;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -65,7 +65,7 @@ public class ReplicatedTokenRequestSerializer
     public static byte[] createCommandBytes( Collection<Command> commands )
     {
         ByteBuf commandBuffer = Unpooled.buffer();
-        NetworkWritableLogChannelNetty4 channel = new NetworkWritableLogChannelNetty4( commandBuffer );
+        NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( commandBuffer );
 
         try
         {

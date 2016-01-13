@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -66,7 +66,7 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
                 new TransactionMetadataCache( 10, 100 ) ) );
         life.start();
 
-        WritableLogChannel channel = logFile.getWriter();
+        FlushableChannel channel = logFile.getWriter();
         this.writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
     }
 
