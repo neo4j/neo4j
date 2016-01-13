@@ -20,6 +20,8 @@
 package org.neo4j.cypher
 
 import org.neo4j.graphdb.Node
+import org.neo4j.helpers.collection.IteratorUtil
+import scala.collection.JavaConverters._
 
 class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -209,5 +211,31 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
                   |RETURN length((c)-[:R]-(:B)-[:R]-(:B)-[:R]-(p)) AS res""".stripMargin
 
     executeWithAllPlanners(query).toList should equal(List(Map("res" -> 1)))
+  }
+
+  test("shortest path and unwind should work together")
+  {
+    val a1 = createLabeledNode("A")
+    val a2 = createLabeledNode("A")
+    val a3 = createLabeledNode("A")
+    val a4 = createLabeledNode("A")
+
+    relate(a1, a2, "T")
+    relate(a2, a3, "T")
+    relate(a3, a4, "T")
+
+    val result = graph.execute(
+      """
+        |CYPHER PLANNER=COST
+        |MATCH p = (:A)-[:T*]-(:A)
+        |WITH p WHERE length(p) > 1
+        |UNWIND nodes(p)[1..-1] as n
+        |RETURN id(n) as n, count(*) as c""".stripMargin)
+
+    result.asScala.toList.map(_.asScala) should equal(List(
+      Map("n" -> 5, "c" -> 4),Map("n" -> 6, "c" -> 4)
+    ))
+
+    result.close()
   }
 }
