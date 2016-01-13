@@ -16,9 +16,8 @@ Here in the installation directory, you'll find:
 * bin - scripts and other executables
 * conf - server configuration
 * data - database, log, and other variable files
-* lib - core libraries
+* lib - libraries
 * plugins - user extensions
-* system - super-secret server stuff
 
 Make it go
 ----------

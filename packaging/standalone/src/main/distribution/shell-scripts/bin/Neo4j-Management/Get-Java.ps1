@@ -185,7 +185,7 @@ Function Get-Java
         "-DworkingDir=`"$($Neo4jServer.Home)`"" `
         ,"-Djava.util.logging.config.file=`"$($Neo4jServer.Home)\conf\windows-wrapper-logging.properties`"" `
         ,"-DconfigFile=`"conf/$($wrapperConfig)`"" `
-        ,"-DserverClasspath=`"lib/*.jar;system/lib/*.jar;plugins/**/*.jar;./conf*`"" `
+        ,"-DserverClasspath=`"lib/*.jar;plugins/**/*.jar;./conf*`"" `
         ,"-DserverMainClass=$($serverMainClass)" `
         ,"-jar","`"$($Neo4jServer.Home)\bin\windows-service-wrapper-5.jar`""
       )

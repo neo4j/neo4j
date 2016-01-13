@@ -64,9 +64,6 @@ Function Confirm-Neo4jHome
     $testPath = $Neo4jHome
     if (-not (Test-Path -Path $testPath)) { return $false }
 
-    $testPath = (Join-Path -Path $Neo4jHome -ChildPath 'system\lib')
-    if (-not (Test-Path -Path $testPath)) { return $false }
-    
     return $true
   }
   
