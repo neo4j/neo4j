@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.countStore;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+
+import org.junit.Assert;
+import org.junit.Test;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
@@ -60,14 +60,14 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
 
         //THEN
         Assert.assertEquals( countsSnapshot.getTxId(), recovered.getTxId() );
-        for ( Map.Entry<CountsKey,long[]> pair : countsSnapshot.getMap().entrySet() )
+        for ( Map.Entry<CountsKey, long[]> pair : countsSnapshot.getMap().entrySet() )
         {
             long[] value = recovered.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
             Assert.assertArrayEquals( value, pair.getValue() );
         }
 
-        for ( Map.Entry<CountsKey,long[]> pair : recovered.getMap().entrySet() )
+        for ( Map.Entry<CountsKey, long[]> pair : recovered.getMap().entrySet() )
         {
             long[] value = countsSnapshot.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
@@ -87,13 +87,13 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
         PhysicalLogVersionedStoreChannel physicalLogVersionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( rawChannel, header.logVersion, header.logFormatVersion );
 
-        Map<CountsKey,long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 100000 );
+        Map<CountsKey, long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 100000 );
         CountsSnapshot countsSnapshot = new CountsSnapshot( 1, map );
         CountsSnapshot recovered;
 
         //WHEN
-        try ( PhysicalWritableLogChannel tempChannel = new PhysicalWritableLogChannel(
-                physicalLogVersionedStoreChannel ) )
+        try ( PositionAwarePhysicalFlushableChannel tempChannel =
+                      new PositionAwarePhysicalFlushableChannel( physicalLogVersionedStoreChannel ) )
         {
 
             serialize( tempChannel, countsSnapshot );
@@ -109,14 +109,14 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
 
         //THEN
         Assert.assertEquals( countsSnapshot.getTxId(), recovered.getTxId() );
-        for ( Map.Entry<CountsKey,long[]> pair : countsSnapshot.getMap().entrySet() )
+        for ( Map.Entry<CountsKey, long[]> pair : countsSnapshot.getMap().entrySet() )
         {
             long[] value = recovered.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
             Assert.assertArrayEquals( value, pair.getValue() );
         }
 
-        for ( Map.Entry<CountsKey,long[]> pair : recovered.getMap().entrySet() )
+        for ( Map.Entry<CountsKey, long[]> pair : recovered.getMap().entrySet() )
         {
             long[] value = countsSnapshot.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );

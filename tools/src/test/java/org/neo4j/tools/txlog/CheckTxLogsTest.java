@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
@@ -661,7 +661,7 @@ public class CheckTxLogsTest
 
         try ( StoreChannel channel = fs.open( log, "rw" );
               LogVersionedStoreChannel versionedChannel = new PhysicalLogVersionedStoreChannel( channel, 0, (byte) 0 );
-              PhysicalWritableLogChannel writableLogChannel = new PhysicalWritableLogChannel( versionedChannel ) )
+              PhysicalFlushableChannel writableLogChannel = new PhysicalFlushableChannel( versionedChannel ) )
         {
             long offset = channel.size();
             channel.position( offset );

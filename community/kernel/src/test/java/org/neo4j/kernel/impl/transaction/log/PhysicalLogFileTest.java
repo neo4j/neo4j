@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogFile.LogFileVisitor;
@@ -44,6 +44,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 public class PhysicalLogFileTest
@@ -89,14 +90,14 @@ public class PhysicalLogFileTest
         {
             life.start();
 
-            WritableLogChannel writer = logFile.getWriter();
+            FlushablePositionAwareChannel writer = logFile.getWriter();
             LogPositionMarker positionMarker = new LogPositionMarker();
             writer.getCurrentPosition( positionMarker );
             int intValue = 45;
             long longValue = 4854587;
             writer.putInt( intValue );
             writer.putLong( longValue );
-            writer.emptyBufferIntoChannelAndClearIt().flush();
+            writer.prepareForFlush().flush();
 
             // THEN
             try ( ReadableLogChannel reader = logFile.getReader( positionMarker.newPosition() ) )
@@ -127,7 +128,7 @@ public class PhysicalLogFileTest
         life.start();
         try
         {
-            WritableLogChannel writer = logFile.getWriter();
+            FlushablePositionAwareChannel writer = logFile.getWriter();
             LogPositionMarker positionMarker = new LogPositionMarker();
             writer.getCurrentPosition( positionMarker );
             LogPosition position1 = positionMarker.newPosition();
@@ -137,13 +138,13 @@ public class PhysicalLogFileTest
             writer.putInt( intValue );
             writer.putLong( longValue );
             writer.put( someBytes, someBytes.length );
-            writer.emptyBufferIntoChannelAndClearIt().flush();
+            writer.prepareForFlush().flush();
             writer.getCurrentPosition( positionMarker );
             LogPosition position2 = positionMarker.newPosition();
             long longValue2 = 123456789L;
             writer.putLong( longValue2 );
             writer.put( someBytes, someBytes.length );
-            writer.emptyBufferIntoChannelAndClearIt().flush();
+            writer.prepareForFlush().flush();
 
             // THEN
             try ( ReadableLogChannel reader = logFile.getReader( position1 ) )
@@ -176,14 +177,14 @@ public class PhysicalLogFileTest
                 transactionIdStore, logVersionRepository, mock( Monitor.class ),
                 new TransactionMetadataCache( 10, 100 )) );
         life.start();
-        WritableLogChannel writer = logFile.getWriter();
+        FlushablePositionAwareChannel writer = logFile.getWriter();
         LogPositionMarker mark = new LogPositionMarker();
         writer.getCurrentPosition( mark );
         for ( int i = 0; i < 5; i++ )
         {
             writer.put( (byte)i );
         }
-        writer.emptyBufferIntoChannelAndClearIt();
+        writer.prepareForFlush();
 
         // WHEN/THEN
         final AtomicBoolean called = new AtomicBoolean();

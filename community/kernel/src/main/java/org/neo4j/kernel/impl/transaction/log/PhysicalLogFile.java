@@ -64,7 +64,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     private final TransactionMetadataCache transactionMetadataCache;
     private final Monitor monitor;
     private final ByteBuffer headerBuffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
-    private PhysicalWritableLogChannel writer;
+    private PositionAwarePhysicalFlushableChannel writer;
     private final LogVersionRepository logVersionRepository;
     private final LogVersionBridge readerLogVersionBridge;
 
@@ -105,7 +105,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         // Move to the end
         channel.position( channel.size() );
 
-        writer = new PhysicalWritableLogChannel( channel );
+        writer = new PositionAwarePhysicalFlushableChannel( channel );
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence
@@ -181,7 +181,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public WritableLogChannel getWriter()
+    public FlushablePositionAwareChannel getWriter()
     {
         return writer;
     }

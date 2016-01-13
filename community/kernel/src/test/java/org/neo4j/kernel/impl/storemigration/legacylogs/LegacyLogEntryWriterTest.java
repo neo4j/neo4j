@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -134,7 +134,7 @@ public class LegacyLogEntryWriterTest
         verify( logEntryWriter, times( 1 ) ).writeCommitEntry( 84l, 85l );
     }
 
-    private Function<WritableLogChannel, LogEntryWriter> liftToFactory( final LogEntryWriter logEntryWriter )
+    private Function<FlushableChannel, LogEntryWriter> liftToFactory( final LogEntryWriter logEntryWriter )
     {
         return ignored -> logEntryWriter;
     }

@@ -27,7 +27,7 @@ import java.util.Arrays;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
-public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChannel
+public class InMemoryLogChannel implements ReadableLogChannel, FlushablePositionAwareChannel
 {
     private static final Flushable NO_OP_FLUSHABLE = new Flushable()
     {
@@ -125,7 +125,7 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     }
 
     @Override
-    public Flushable emptyBufferIntoChannelAndClearIt()
+    public Flushable prepareForFlush()
     {
         return NO_OP_FLUSHABLE;
     }

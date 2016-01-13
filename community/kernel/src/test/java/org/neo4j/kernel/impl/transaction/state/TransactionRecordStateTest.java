@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,6 +26,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -68,12 +68,12 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -633,7 +633,7 @@ public class TransactionRecordStateTest
         recordState.createSchemaRule( uniquenessConstraintRule( constraintId, 1, 1, indexId ) );
 
         // WHEN
-        recordState.extractCommands( new ArrayList<StorageCommand>() );
+        recordState.extractCommands( new ArrayList<>() );
 
         // THEN
         verify( integrityValidator ).validateSchemaRule( any() );
@@ -705,15 +705,7 @@ public class TransactionRecordStateTest
                 String name = invocation.getMethod().getName();
                 if ( name.equals( "acquireNodeLock" ) || name.equals( "acquireRelationshipLock" ) )
                 {
-                    final Lock mock = mock( Lock.class, new Answer()
-                    {
-                        @Override
-                        public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
-                        {
-                            return null;
-                        }
-                    } );
-                    return mock;
+                    return mock( Lock.class, (Answer) invocationOnMock -> null );
                 }
                 else
                 {
@@ -1203,7 +1195,7 @@ public class TransactionRecordStateTest
         }
     }
 
-    private void writeToChannel( TransactionRepresentation transaction, WritableLogChannel channel ) throws IOException
+    private void writeToChannel( TransactionRepresentation transaction, FlushableChannel channel ) throws IOException
     {
         TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
         writer.append( transaction, 2 );

@@ -19,16 +19,16 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
+import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.raft.net.NetworkReadableLogChannelNetty4;
-import org.neo4j.coreedge.raft.net.NetworkWritableLogChannelNetty4;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
@@ -48,7 +48,7 @@ public class ReplicatedTransactionFactory
     {
         ByteBuf transactionBuffer = Unpooled.buffer();
 
-        NetworkWritableLogChannelNetty4 channel = new NetworkWritableLogChannelNetty4( transactionBuffer );
+        NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( transactionBuffer );
         ReplicatedTransactionFactory.TransactionSerializer.write( tx, channel );
 
         /*
@@ -71,7 +71,7 @@ public class ReplicatedTransactionFactory
 
     public static class TransactionSerializer
     {
-        public static void write( TransactionRepresentation tx, NetworkWritableLogChannelNetty4 channel ) throws
+        public static void write( TransactionRepresentation tx, NetworkFlushableChannelNetty4 channel ) throws
                 IOException
         {
             channel.putInt( tx.getAuthorId() );
