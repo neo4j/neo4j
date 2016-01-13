@@ -69,7 +69,7 @@ class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSu
   test("create nodes from a collection parameter") {
     createLabeledNode(Map("year" -> 2014), "Year")
 
-    val result = executeWithRulePlanner(
+    val result = updateWithBothPlanners(
       "UNWIND {events} as event MATCH (y:Year {year:event.year}) MERGE (y)<-[:IN]-(e:Event {id:event.id}) RETURN e.id as x order by x",
       "events" -> List(Map("year" -> 2014, "id" -> 1), Map("year" -> 2014, "id" -> 2))
     )

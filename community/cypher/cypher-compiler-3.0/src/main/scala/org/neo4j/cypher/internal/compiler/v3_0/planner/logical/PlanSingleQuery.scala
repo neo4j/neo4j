@@ -44,12 +44,7 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
         context.logicalPlanProducer.planEager(partPlan)
       else partPlan
     val planWithUpdates = planUpdates(in, planWithEffect)(context)
-    val planWithUpdatesAndEffects =
-      if (alwaysEager || in.updateGraph.mergeNodeDeleteOverlap)
-        context.logicalPlanProducer.planEager(planWithUpdates)
-      else planWithUpdates
-
-    val projectedPlan = planEventHorizon(in, planWithUpdatesAndEffects)
+    val projectedPlan = planEventHorizon(in, planWithUpdates)
     val projectedContext = context.recurse(projectedPlan)
     val expressionRewriter = expressionRewriterFactory(projectedContext)
     val completePlan = projectedPlan.endoRewrite(expressionRewriter)
@@ -72,15 +67,14 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
       //if we have unsafe rels we need to check relation overlap and delete
       //overlap immediately
       (hasUnsafeRelationships(plannerQuery) &&
-        (plannerQuery.updateGraph.createRelationshipOverlap(plannerQuery.queryGraph) ||
+        (plannerQuery.updateGraph.relationshipOverlap(plannerQuery.queryGraph) ||
           plannerQuery.updateGraph.deleteOverlap(plannerQuery.queryGraph) ||
           plannerQuery.updateGraph.setPropertyOverlap(plannerQuery.queryGraph))
       ) ||
         //otherwise only do checks if we have more that one leaf
         leaves.size > 1 && leaves.drop(1).exists(
           nodeOverlap(_, plannerQuery, leaves.head) ||
-            plannerQuery.updateGraph.createRelationshipOverlap(plannerQuery.queryGraph) ||
-            plannerQuery.updateGraph.setLabelOverlap(plannerQuery.queryGraph) ||
+            plannerQuery.updateGraph.relationshipOverlap(plannerQuery.queryGraph) ||
             plannerQuery.updateGraph.setPropertyOverlap(plannerQuery.queryGraph) ||
             plannerQuery.updateGraph.deleteOverlap(plannerQuery.queryGraph))
     }
@@ -93,16 +87,18 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
    */
   private def nodeOverlap(start: IdName, plannerQuery: PlannerQuery, stableId: IdName): Boolean = {
     val startLabels = plannerQuery.queryGraph.allKnownLabelsOnNode(start).toSet
+    val stableLabels = plannerQuery.queryGraph.allKnownLabelsOnNode(stableId).toSet
     val writeLabels = plannerQuery.updateGraph.createLabels
     val createProperties = plannerQuery.updateGraph.createNodeProperties
     val removeLabels = plannerQuery.updateGraph.labelsToRemoveForNode(start)
     val startProperties = plannerQuery.queryGraph.allKnownPropertiesOnIdentifier(start).map(_.propertyKey)
 
+
     plannerQuery.updatesNodes && (
       ( ((startLabels.isEmpty && startProperties.isEmpty) && plannerQuery.createsNodes) || //MATCH () CREATE (...)?
         (startLabels intersect writeLabels).nonEmpty) || //MATCH (:A) CREATE (:A)?
         startProperties.exists(createProperties.overlaps) || //MATCH ({prop:42}) CREATE ({prop:...})
-
+        plannerQuery.updateGraph.setLabelOverlap(plannerQuery.queryGraph) ||
         //MATCH (n:A), (m:B) REMOVE (n:B)
         removeLabels.exists(l => {
           //it is ok to have overlap on the stable id

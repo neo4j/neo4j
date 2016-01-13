@@ -19,13 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyType
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
-case class AntiConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
+case class MergeCreateRelationship(source: LogicalPlan, idName: IdName, startNode: IdName, typ: LazyType, endNode: IdName,
+                                   properties: Option[Expression])
+                                  (val solved: PlannerQuery with CardinalityEstimation)
+  extends LogicalPlan with LogicalPlanWithoutExpressions {
 
-  val lhs = Some(left)
-  val rhs = Some(right)
+  override def lhs: Option[LogicalPlan] = Some(source)
 
-  def availableSymbols = left.availableSymbols ++ right.availableSymbols ++ items
+  override def availableSymbols: Set[IdName] = source.availableSymbols + idName + startNode + endNode
+
+  override def rhs: Option[LogicalPlan] = None
+
+  override def strictness: StrictnessMode = source.strictness
 }

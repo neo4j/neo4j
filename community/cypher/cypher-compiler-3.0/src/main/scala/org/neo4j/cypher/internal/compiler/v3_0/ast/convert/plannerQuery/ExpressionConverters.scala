@@ -73,7 +73,7 @@ object ExpressionConverters {
           (acc, children) => children(acc)
         case p: Expression =>
           (acc, _) => acc + Predicate(p.idNames, p)
-      }.map(filterUnnamed).toSet
+      }.map(filterUnnamed)
     }
 
     private def filterUnnamed(predicate: Predicate): Predicate = predicate match {

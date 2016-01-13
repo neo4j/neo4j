@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{SimplePatternLength, PatternRelationship, IdName}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticTable, SyntaxException}
 
@@ -121,7 +121,7 @@ object ClauseConverters {
         nodesCreatedBefore.collectFirst {
           case c if c.labels.nonEmpty || c.properties.nonEmpty =>
             throw new SyntaxException(
-              s"Can't create node ${c.nodeName.name} with labels or properties here. The variable is already declared in this context")
+              s"Can't create node `${c.nodeName.name}` with labels or properties here. The variable is already declared in this context")
         }
 
         builder
@@ -139,9 +139,7 @@ object ClauseConverters {
       if (!seen(pattern.nodeName)) result.append(pattern)
       else if (pattern.labels.nonEmpty || pattern.properties.nonEmpty) {
         //reused patterns must be pure variable
-        throw new SyntaxException(s"Can't create node ${
-          pattern.nodeName.name
-        } with labels or properties here. The variable is already declared in this context")
+        throw new SyntaxException(s"Can't create node `${pattern.nodeName.name}` with labels or properties here. The variable is already declared in this context")
       }
       seen.add(pattern.nodeName)
     }
@@ -276,6 +274,45 @@ object ClauseConverters {
             ug.addMutatingPatterns(
               MergeNodePattern(CreateNodePattern(IdName.fromVariable(id), labels, props),
                 matchGraph, onCreate, onMatch)))
+      //MERGE (n)-[r: R]->(m)
+      case (builder, EveryPath(pattern: RelationshipChain)) =>
+        val (nodes, rels) = allCreatePatterns(pattern)
+        //remove duplicates from loops, (a:L)-[:ER1]->(a)
+        val dedupedNodes = dedup(nodes)
+
+        //create nodes that are not already matched or created
+        val nodesToCreate = dedupedNodes.filterNot(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+        //we must check that we are not trying to set a pattern or label on any already created nodes
+        val nodesCreatedBefore = dedupedNodes.filter(pattern => builder.allSeenPatternNodes(pattern.nodeName)).toSet
+
+        nodesCreatedBefore.collectFirst {
+          case c if c.labels.nonEmpty || c.properties.nonEmpty =>
+            throw new SyntaxException(
+              s"Can't create node `${c.nodeName.name}` with labels or properties here. The variable is already declared in this context")
+        }
+
+        val pos = pattern.position
+
+        val hasLabels = nodes.flatMap(n =>
+          n.labels.map(l => HasLabels(Variable(n.nodeName.name)(pos), Seq(l))(pos))
+        )
+
+        val hasProps = nodes.flatMap(n =>
+          toPropertySelection(Variable(n.nodeName.name)(pos), toPropertyMap(n.properties))
+        ) ++ rels.flatMap(n =>
+          toPropertySelection(Variable(n.relName.name)(pos), toPropertyMap(n.properties)))
+
+        val matchGraph = QueryGraph(
+          patternNodes = nodes.map(_.nodeName).toSet,
+          patternRelationships = rels.map(r => PatternRelationship(r.relName, (r.leftNode, r.rightNode),
+            r.direction, Seq(r.relType), SimplePatternLength)).toSet,
+          selections = Selections.from(hasLabels ++ hasProps:_*),
+          argumentIds = acc.currentlyAvailableVariables ++ nodesCreatedBefore.map(_.nodeName)
+        )
+
+        builder
+          .amendUpdateGraph(ug => ug
+            .addMutatingPatterns(MergeRelationshipPattern(nodesToCreate, rels, matchGraph, onCreate, onMatch)))
 
       case _ => throw new CantHandleQueryException("not supported yet")
     }

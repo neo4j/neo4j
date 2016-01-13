@@ -47,7 +47,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should report which node the merge starts from") {
-    val query = "EXPLAIN MERGE (first)-[:PIZZA]->(second)"
+    val query = "CYPHER planner=rule EXPLAIN MERGE (first)-[:PIZZA]->(second)"
 
     val result = execute(query)
     val plan = result.executionPlanDescription()

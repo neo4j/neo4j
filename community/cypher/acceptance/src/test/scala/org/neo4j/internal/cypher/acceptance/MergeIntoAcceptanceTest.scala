@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 
 class MergeIntoAcceptanceTest extends ExecutionEngineFunSuite{
 
@@ -109,4 +110,8 @@ class MergeIntoAcceptanceTest extends ExecutionEngineFunSuite{
     val res = execute("MATCH ()-[r:TYPE]->() RETURN extract(key IN keys(r)| key + '->' + r[key]) as keyValue")
     res.toList should equal(List(Map("keyValue" -> Seq("foo->baz", "bar->baz"))))
   }
+
+
+  //MERGE INTO is only used by the rule planner
+  override def execute(q: String, params: (String, Any)*): InternalExecutionResult= super.execute(s"CYPHER planner=rule $q", params:_*)
 }

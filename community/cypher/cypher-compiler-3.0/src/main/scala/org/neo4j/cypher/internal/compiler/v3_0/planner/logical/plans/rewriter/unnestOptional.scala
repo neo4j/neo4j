@@ -19,16 +19,31 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 case object unnestOptional extends Rewriter {
 
-  def apply(input: AnyRef) = bottomUp(instance).apply(input)
+
+  def apply(input: AnyRef) = if (isSafe(input)) bottomUp(instance).apply(input) else input
+
+  import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
+
+  /*
+   * It is not safe to unnest an optional expand with when we have
+   * a merge relationship, since it must be able to read its own
+   * writes
+   */
+  private def isSafe(input: AnyRef) = !input.exists {
+        case _:MergeCreateRelationship => true
+  }
 
   private val instance: Rewriter = Rewriter.lift {
+
+    case apply:AntiConditionalApply => apply
+
     case apply@Apply(lhs,
       Optional(
       e@Expand(_: Argument, _, _, _, _, _, _))) =>

@@ -244,7 +244,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("merge 2 nodes with same variable but different labels") {
     expectError(
       "MERGE (a: Foo)-[r:KNOWS]->(a: Bar)",
-      "Can't create `a` with properties or labels here. The variable is already declared in this context"
+      "Can't create node `a` with labels or properties here. The variable is already declared in this context"
     )
   }
 

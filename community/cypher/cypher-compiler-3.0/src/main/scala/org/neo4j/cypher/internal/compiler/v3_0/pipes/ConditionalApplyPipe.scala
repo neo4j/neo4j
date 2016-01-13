@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 
-case class ConditionalApplyPipe(source: Pipe, inner: Pipe, item: String, negated: Boolean)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], negated: Boolean)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.flatMap {
       (outerContext) =>
-        if (condition(outerContext.get(item).get)) {
+        if (condition(outerContext)) {
           val original = outerContext.clone()
           val innerState = state.withInitialContext(outerContext)
           val innerResults = inner.createResults(innerState)
@@ -38,7 +38,10 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, item: String, negated
         } else Iterator.single(outerContext)
     }
 
-  private def condition(value: Any) = if (negated) value == null else value != null
+  private def condition(context: ExecutionContext) = {
+    val cond = items.exists { context.get(_).get != null}
+      if (negated) !cond else cond
+  }
 
   private def name = if (negated) "AntiConditionalApply" else "ConditionalApply"
 
