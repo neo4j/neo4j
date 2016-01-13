@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 
 /**
  * Utility for reading and writing property values from/into a channel. Supports neo4j property types,
@@ -49,7 +49,7 @@ public abstract class ValueType
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.put( (Boolean)value ? (byte)1 : (byte)0 );
             }
@@ -63,7 +63,7 @@ public abstract class ValueType
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.put( (Byte)value );
             }
@@ -77,7 +77,7 @@ public abstract class ValueType
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putShort( (Short)value );
             }
@@ -91,7 +91,7 @@ public abstract class ValueType
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putInt( (Character)value );
             }
@@ -105,7 +105,7 @@ public abstract class ValueType
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putInt( (Integer) value );
             }
@@ -119,7 +119,7 @@ public abstract class ValueType
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putLong( (Long)value );
             }
@@ -133,7 +133,7 @@ public abstract class ValueType
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putFloat( (Float)value );
             }
@@ -150,7 +150,7 @@ public abstract class ValueType
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 byte[] bytes = UTF8.encode( (String)value );
                 into.putInt( bytes.length ).put( bytes, bytes.length );
@@ -165,7 +165,7 @@ public abstract class ValueType
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putDouble( (Double)value );
             }
@@ -187,7 +187,7 @@ public abstract class ValueType
         }
 
         @Override
-        public void write( Object value, WritableLogChannel into ) throws IOException
+        public void write( Object value, FlushableChannel into ) throws IOException
         {
             ValueType componentType = typeOf( value.getClass().getComponentType() );
             into.put( componentType.id() );
@@ -263,5 +263,5 @@ public abstract class ValueType
 
     public abstract Object read( ReadableLogChannel from ) throws IOException;
 
-    public abstract void write( Object value, WritableLogChannel into ) throws IOException;
+    public abstract void write( Object value, FlushableChannel into ) throws IOException;
 }

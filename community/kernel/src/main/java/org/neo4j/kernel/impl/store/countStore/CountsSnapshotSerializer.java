@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
 import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
 import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
 import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_NODE;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_RELATIONSHIP;
@@ -36,7 +36,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.INDEX_STATIS
 
 public class CountsSnapshotSerializer
 {
-    public static void serialize( WritableLogChannel channel, CountsSnapshot countsSnapshot )
+    public static void serialize( FlushableChannel channel, CountsSnapshot countsSnapshot )
             throws IOException
     {
         channel.putLong( countsSnapshot.getTxId() );

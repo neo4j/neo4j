@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.Flushable;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
@@ -34,11 +28,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeRule;
 
 import static org.hamcrest.Matchers.is;
@@ -46,6 +46,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
 import static org.neo4j.test.ThreadTestUtils.fork;
 
@@ -94,7 +95,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         class Channel extends InMemoryLogChannel implements Flushable
         {
             @Override
-            public Flushable emptyBufferIntoChannelAndClearIt()
+            public Flushable prepareForFlush()
             {
                 try
                 {
@@ -120,7 +121,7 @@ public class BatchingTransactionAppenderConcurrencyTest
                     throw new IOException( e );
                 }
             }
-        };
+        }
 
         when( logFile.getWriter() ).thenReturn( new Channel() );
     }

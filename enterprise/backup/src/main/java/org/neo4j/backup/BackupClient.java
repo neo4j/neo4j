@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import java.io.IOException;
+
 import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.Client;
@@ -37,14 +39,12 @@ import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.backup.BackupServer.FRAME_LENGTH;
 import static org.neo4j.backup.BackupServer.PROTOCOL_VERSION;
-
-import java.io.IOException;
 
 
 class BackupClient extends Client<TheBackupInterface> implements TheBackupInterface
@@ -88,7 +88,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
         return type != BackupRequestType.FULL_BACKUP;
     }
 
-    public static enum BackupRequestType implements RequestType<TheBackupInterface>
+    public enum BackupRequestType implements RequestType<TheBackupInterface>
     {
         FULL_BACKUP( new TargetCaller<TheBackupInterface, Void>()
         {
@@ -127,7 +127,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
         private final ObjectSerializer serializer;
 
         @SuppressWarnings( "rawtypes" )
-        private BackupRequestType( TargetCaller masterCaller, ObjectSerializer serializer )
+        BackupRequestType( TargetCaller masterCaller, ObjectSerializer serializer )
         {
             this.masterCaller = masterCaller;
             this.serializer = serializer;

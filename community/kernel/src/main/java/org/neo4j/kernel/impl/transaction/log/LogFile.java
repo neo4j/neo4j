@@ -33,9 +33,9 @@ public interface LogFile
     }
 
     /**
-     * @return {@link WritableLogChannel} capable of appending data to this log.
+     * @return {@link FlushableChannel} capable of appending data to this log.
      */
-    WritableLogChannel getWriter();
+    FlushablePositionAwareChannel getWriter();
 
     /**
      * @param position {@link LogPosition} to position the returned reader at.

@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -237,7 +237,7 @@ public class StoreCopyClient
             // where there are no logs, and the transaction stream we're about to write will probably contain
             // transactions that goes some time back, before the last committed transaction id. So we cannot
             // use a TransactionAppender, since it has checks for which transactions one can append.
-            WritableLogChannel channel = logFile.getWriter();
+            FlushableChannel channel = logFile.getWriter();
             final TransactionLogWriter writer = new TransactionLogWriter(
                     new LogEntryWriter( channel ) );
             final AtomicLong firstTxId = new AtomicLong( BASE_TX_ID );

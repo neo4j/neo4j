@@ -19,17 +19,17 @@
  */
 package org.neo4j.com;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.List;
 
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Visitor;
@@ -54,15 +54,7 @@ public abstract class Protocol
 {
     public static final int MEGA = 1024 * 1024;
     public static final int DEFAULT_FRAME_LENGTH = 16 * MEGA;
-    public static final ObjectSerializer<Integer> INTEGER_SERIALIZER = new ObjectSerializer<Integer>()
-    {
-        @Override
-        @SuppressWarnings( "boxing" )
-        public void write( Integer responseObject, ChannelBuffer result ) throws IOException
-        {
-            result.writeInt( responseObject );
-        }
-    };
+    public static final ObjectSerializer<Integer> INTEGER_SERIALIZER = ( responseObject, result ) -> result.writeInt( responseObject );
     public static final ObjectSerializer<Long> LONG_SERIALIZER = new ObjectSerializer<Long>()
     {
         @Override
@@ -259,7 +251,8 @@ public abstract class Protocol
             {
                 NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
 
-                try ( PhysicalTransactionCursor cursor = new PhysicalTransactionCursor( channel, entryReader ) )
+                try ( PhysicalTransactionCursor<ReadableLogChannel> cursor =
+                              new PhysicalTransactionCursor<>( channel, entryReader ) )
                 {
                     while ( cursor.next() && !visitor.visit( cursor.get() ) )
                     {
@@ -319,7 +312,7 @@ public abstract class Protocol
         @Override
         public void write( ChannelBuffer buffer ) throws IOException
         {
-            NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
+            NetworkFlushableChannel channel = new NetworkFlushableChannel( buffer );
 
             writeString( buffer, NeoStoreDataSource.DEFAULT_DATA_SOURCE_NAME );
             channel.putInt( tx.getAuthorId() );

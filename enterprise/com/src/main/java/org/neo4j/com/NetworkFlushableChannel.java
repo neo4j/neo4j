@@ -17,80 +17,76 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.storecopy.core;
+package org.neo4j.com;
 
 import java.io.Flushable;
 import java.io.IOException;
 
-import io.netty.buffer.ByteBuf;
+import org.jboss.netty.buffer.ChannelBuffer;
 
-import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 
-public class NetworkWritableLogByteBuf implements WritableLogChannel
+public class NetworkFlushableChannel implements Flushable, FlushableChannel
 {
-    private final ByteBuf delegate;
+    private final ChannelBuffer delegate;
 
-    public NetworkWritableLogByteBuf( ByteBuf byteBuf )
+    public NetworkFlushableChannel( ChannelBuffer delegate )
     {
-        this.delegate = byteBuf;
+        this.delegate = delegate;
     }
 
+    @Override
+    public void flush() throws IOException
+    {
+    }
 
     @Override
-    public WritableLogChannel put( byte value ) throws IOException
+    public FlushableChannel put( byte value ) throws IOException
     {
         delegate.writeByte( value );
         return this;
     }
 
     @Override
-    public WritableLogChannel putShort( short value ) throws IOException
+    public FlushableChannel putShort( short value ) throws IOException
     {
         delegate.writeShort( value );
         return this;
     }
 
     @Override
-    public WritableLogChannel putInt( int value ) throws IOException
+    public FlushableChannel putInt( int value ) throws IOException
     {
         delegate.writeInt( value );
         return this;
     }
 
     @Override
-    public WritableLogChannel putLong( long value ) throws IOException
+    public FlushableChannel putLong( long value ) throws IOException
     {
         delegate.writeLong( value );
         return this;
     }
 
     @Override
-    public WritableLogChannel putFloat( float value ) throws IOException
+    public FlushableChannel putFloat( float value ) throws IOException
     {
         delegate.writeFloat( value );
         return this;
     }
 
     @Override
-    public WritableLogChannel putDouble( double value ) throws IOException
+    public FlushableChannel putDouble( double value ) throws IOException
     {
         delegate.writeDouble( value );
         return this;
     }
 
     @Override
-    public WritableLogChannel put( byte[] value, int length ) throws IOException
+    public FlushableChannel put( byte[] value, int length ) throws IOException
     {
         delegate.writeBytes( value, 0, length );
         return this;
-    }
-
-    @Override
-    public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
-    {
-        positionMarker.unspecified();
-        return positionMarker;
     }
 
     @Override
@@ -99,8 +95,8 @@ public class NetworkWritableLogByteBuf implements WritableLogChannel
     }
 
     @Override
-    public Flushable emptyBufferIntoChannelAndClearIt()
+    public Flushable prepareForFlush()
     {
-        return null;
+        return this;
     }
 }

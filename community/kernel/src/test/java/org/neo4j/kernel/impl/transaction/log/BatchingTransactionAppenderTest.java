@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.io.Flushable;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.io.Flushable;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.CleanupRule;
@@ -231,7 +232,7 @@ public class BatchingTransactionAppenderTest
         // GIVEN
         long txId = 3;
         String failureMessage = "Forces a failure";
-        WritableLogChannel channel = spy( new InMemoryLogChannel() );
+        FlushablePositionAwareChannel channel = spy( new InMemoryLogChannel() );
         IOException failure = new IOException( failureMessage );
         when( channel.putInt( anyInt() ) ).thenThrow( failure );
         when( logFile.getWriter() ).thenReturn( channel );
@@ -264,7 +265,7 @@ public class BatchingTransactionAppenderTest
         // GIVEN
         long txId = 3;
         String failureMessage = "Forces a failure";
-        WritableLogChannel channel = spy( new InMemoryLogChannel() );
+        FlushablePositionAwareChannel channel = spy( new InMemoryLogChannel() );
         IOException failure = new IOException( failureMessage );
         final Flushable flushable = mock( Flushable.class );
         doAnswer( new Answer<Flushable>()
@@ -275,7 +276,7 @@ public class BatchingTransactionAppenderTest
                 invocation.callRealMethod();
                 return flushable;
             }
-        } ).when( channel ).emptyBufferIntoChannelAndClearIt();
+        } ).when( channel ).prepareForFlush();
         doThrow( failure ).when( flushable ).flush();
         LogFile logFile = mock( LogFile.class );
         when( logFile.getWriter() ).thenReturn( channel );
@@ -308,9 +309,9 @@ public class BatchingTransactionAppenderTest
     public void shouldBeAbleToWriteACheckPoint() throws Throwable
     {
         // Given
-        WritableLogChannel channel = mock( WritableLogChannel.class, RETURNS_MOCKS );
+        FlushablePositionAwareChannel channel = mock( FlushablePositionAwareChannel.class, RETURNS_MOCKS );
         Flushable flushable = mock( Flushable.class );
-        when( channel.emptyBufferIntoChannelAndClearIt() ).thenReturn( flushable );
+        when( channel.prepareForFlush() ).thenReturn( flushable );
         when( channel.putLong( anyLong() ) ).thenReturn( channel );
         when( logFile.getWriter() ).thenReturn( channel );
         BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
@@ -322,7 +323,7 @@ public class BatchingTransactionAppenderTest
         // Then
         verify( channel, times( 1 ) ).putLong( 1l );
         verify( channel, times( 1 ) ).putLong( 2l );
-        verify( channel, times( 1 ) ).emptyBufferIntoChannelAndClearIt();
+        verify( channel, times( 1 ) ).prepareForFlush();
         verify( flushable, times( 1 ) ).flush();
         verifyZeroInteractions( databaseHealth );
     }
@@ -332,7 +333,7 @@ public class BatchingTransactionAppenderTest
     {
         // Given
         IOException ioex = new IOException( "boom!" );
-        WritableLogChannel channel = mock( WritableLogChannel.class, RETURNS_MOCKS );
+        FlushablePositionAwareChannel channel = mock( FlushablePositionAwareChannel.class, RETURNS_MOCKS );
         when (channel.put( anyByte() ) ).thenReturn( channel );
         when( channel.putLong( anyLong() ) ).thenThrow( ioex );
         when( channel.put( anyByte() ) ).thenThrow( ioex );

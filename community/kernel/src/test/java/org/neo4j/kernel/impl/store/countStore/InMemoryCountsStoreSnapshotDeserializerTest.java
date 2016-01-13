@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.store.countStore;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotDeserializer.deserialize;
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_NODE;
