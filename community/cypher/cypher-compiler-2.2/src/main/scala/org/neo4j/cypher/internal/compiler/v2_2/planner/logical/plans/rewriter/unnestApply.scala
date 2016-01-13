@@ -36,7 +36,7 @@ case object unnestApply extends Rewriter {
     SR : SingleRow - operator that produces single row with no columns
    */
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
     // SR Ax R => R iff Arg0 introduces no arguments
     case Apply(_: SingleRow, rhs) =>
       rhs
@@ -71,7 +71,7 @@ case object unnestApply extends Rewriter {
     // L Ax (Arg LOJ R) => L LOJ R
     case apply@Apply(lhs, join@OuterHashJoin(_, _:Argument, rhs)) =>
       join.copy(left = lhs)(apply.solved)
-  }
+  })
 
-  override def apply(input: AnyRef) = bottomUp(instance).apply(input)
+  override def apply(input: AnyRef) = instance.apply(input)
 }

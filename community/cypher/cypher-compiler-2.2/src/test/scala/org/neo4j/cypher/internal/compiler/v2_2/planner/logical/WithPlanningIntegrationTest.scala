@@ -46,21 +46,21 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     resultText should equal(
       // oh perty where art thou!?
-      "Projection(Limit(Expand(Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),Argument(Set(IdName(a)))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll),UnsignedDecimalIntegerLiteral(1)),Map(b -> Identifier(b)))")
+      "Projection(Limit(Expand(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll),UnsignedDecimalIntegerLiteral(1)),Map(b -> Identifier(b)))")
   }
 
   test("should build plans with WITH and selections") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1").plan
 
     result.toString should equal(
-      "Projection(Selection(Vector(In(Property(Identifier(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42))))),Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),Expand(Argument(Set(IdName(a))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll))),Map(r1 -> Identifier(r1)))")
+      "Projection(Selection(Vector(In(Property(Identifier(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42))))),Expand(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll)),Map(r1 -> Identifier(r1)))")
   }
 
   test("should build plans for two matches separated by WITH") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b").plan
 
     result.toString should equal(
-      "Projection(Expand(Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),Argument(Set(IdName(a)))),IdName(a),OUTGOING,List(),IdName(b),IdName(r),ExpandAll),Map(b -> Identifier(b)))")
+      "Projection(Expand(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),IdName(a),OUTGOING,List(),IdName(b),IdName(r),ExpandAll),Map(b -> Identifier(b)))")
   }
 
   test("should build plans that project endpoints of re-matched directed relationship arguments") {
