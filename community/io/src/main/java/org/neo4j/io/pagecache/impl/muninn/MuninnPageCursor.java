@@ -49,8 +49,6 @@ abstract class MuninnPageCursor implements PageCursor
     protected long nextPageId;
     private long pointer;
     private int size;
-
-    private boolean claimed;
     private int offset;
 
     public final void initialise( MuninnPagedFile pagedFile, long pageId, int pf_flags )
@@ -60,21 +58,6 @@ abstract class MuninnPageCursor implements PageCursor
         this.tracer = pagedFile.tracer;
         this.pageId = pageId;
         this.pf_flags = pf_flags;
-    }
-
-    public final void markAsClaimed()
-    {
-        claimed = true;
-    }
-
-    public final void assertUnclaimed()
-    {
-        if ( claimed )
-        {
-            throw new IllegalStateException(
-                    "Cannot operate on more than one PageCursor at a time," +
-                            " because it is prone to deadlocks" );
-        }
     }
 
     @Override
@@ -105,7 +88,6 @@ abstract class MuninnPageCursor implements PageCursor
     {
         unpinCurrentPage();
         pagedFile = null;
-        claimed = false;
     }
 
     /**

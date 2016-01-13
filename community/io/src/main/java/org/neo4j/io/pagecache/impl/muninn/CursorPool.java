@@ -19,70 +19,15 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
-
 final class CursorPool
 {
-    private static boolean disableCursorPooling = flag( CursorPool.class, "disableCursorPooling", false );
-    private static boolean disableClaimedCheck = flag( CursorPool.class, "disableClaimedCheck", false );
-
-    private final ThreadLocal<MuninnReadPageCursor> readCursorCache = new MuninnReadPageCursorThreadLocal();
-    private final ThreadLocal<MuninnWritePageCursor> writeCursorCache = new MuninnWritePageCursorThreadLocal();
-
     public MuninnReadPageCursor takeReadCursor()
     {
-        if ( disableCursorPooling )
-        {
-            return new MuninnReadPageCursor();
-        }
-
-        MuninnReadPageCursor cursor = readCursorCache.get();
-
-        assertUnclaimed( cursor, writeCursorCache );
-
-        cursor.markAsClaimed();
-        return cursor;
+        return new MuninnReadPageCursor();
     }
 
     public MuninnWritePageCursor takeWriteCursor()
     {
-        if ( disableCursorPooling )
-        {
-            return new MuninnWritePageCursor();
-        }
-
-        MuninnWritePageCursor cursor = writeCursorCache.get();
-
-        assertUnclaimed( cursor, readCursorCache );
-
-        cursor.markAsClaimed();
-        return cursor;
-    }
-
-    private static void assertUnclaimed( MuninnPageCursor first, ThreadLocal<? extends MuninnPageCursor> second )
-    {
-        if ( !disableClaimedCheck )
-        {
-            first.assertUnclaimed();
-            second.get().assertUnclaimed();
-        }
-    }
-
-    private static class MuninnReadPageCursorThreadLocal extends ThreadLocal<MuninnReadPageCursor>
-    {
-        @Override
-        protected MuninnReadPageCursor initialValue()
-        {
-            return new MuninnReadPageCursor();
-        }
-    }
-
-    private static class MuninnWritePageCursorThreadLocal extends ThreadLocal<MuninnWritePageCursor>
-    {
-        @Override
-        protected MuninnWritePageCursor initialValue()
-        {
-            return new MuninnWritePageCursor();
-        }
+        return new MuninnWritePageCursor();
     }
 }

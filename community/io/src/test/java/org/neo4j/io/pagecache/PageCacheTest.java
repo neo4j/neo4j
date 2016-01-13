@@ -1549,91 +1549,36 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @SuppressWarnings( "unused" )
-    @Test( expected = IllegalStateException.class )
-    public void mustThrowWhenClaimingExclusivelyMoreThanOneCursorFromSamePagedFile() throws IOException // TODO remove
+    @Test
+    public void allowOpeningMultipleReadAndWriteCursorsPerThread() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
-        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
-              PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
-              PageCursor b = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
-        {
-            fail( "The second io() call should have thrown" );
-        }
-    }
+        File fileA = existingFile( "a" );
+        File fileB = existingFile( "b" );
 
-    @SuppressWarnings( "unused" )
-    @Test( expected = IllegalStateException.class )
-    public void mustThrowWhenClaimingExclusivelyMoreThanOneCursorFromSamePageCacheButDifferentPagedFiles() throws Exception // TODO remove
-    {
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        generateFileWithRecords( fileA, 1, 16 );
+        generateFileWithRecords( fileB, 1, 16 );
 
-        try ( PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize );
-              PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize );
-              PageCursor a = pfA.io( 0, PF_SHARED_WRITE_LOCK );
-              PageCursor b = pfB.io( 0, PF_SHARED_WRITE_LOCK ) )
-        {
-            fail( "The second io() call should have thrown" );
-        }
-    }
-
-    @SuppressWarnings( "unused" )
-    @Test( expected = IllegalStateException.class )
-    public void mustThrowWhenClaimingWithReadLockMoreThanOneCursorFromSamePagedFile() throws IOException // TODO remove
-    {
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-
-        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
-              PageCursor a = pf.io( 0, PF_SHARED_READ_LOCK );
-              PageCursor b = pf.io( 0, PF_SHARED_READ_LOCK ) )
-        {
-            fail( "The second io() call should have thrown" );
-        }
-    }
-
-    @SuppressWarnings( "unused" )
-    @Test( expected = IllegalStateException.class )
-    public void mustThrowWhenClaimingWithReadLockMoreThanOneCursorFromSamePageCacheButDifferentPagedFiles() throws Exception // TODO remove
-    {
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-
-        try ( PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize );
-              PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize );
+        try ( PagedFile pfA = pageCache.map( fileA, filePageSize );
+              PagedFile pfB = pageCache.map( fileB, filePageSize );
               PageCursor a = pfA.io( 0, PF_SHARED_READ_LOCK );
-              PageCursor b = pfB.io( 0, PF_SHARED_READ_LOCK ) )
+              PageCursor b = pfA.io( 0, PF_SHARED_READ_LOCK );
+              PageCursor c = pfA.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor d = pfA.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor e = pfB.io( 0, PF_SHARED_READ_LOCK );
+              PageCursor f = pfB.io( 0, PF_SHARED_READ_LOCK );
+              PageCursor g = pfB.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor h = pfB.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
-            fail( "The second io() call should have thrown" );
-        }
-    }
-
-    @SuppressWarnings( "unused" )
-    @Test( expected = IllegalStateException.class )
-    public void mustThrowWhenClaimingReadCursorWhileHavingWriteCursor() throws Exception // TODO remove
-    {
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-
-        try ( PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize );
-              PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize );
-              PageCursor a = pfA.io( 0, PF_SHARED_WRITE_LOCK );
-              PageCursor b = pfB.io( 0, PF_SHARED_READ_LOCK ) )
-        {
-            fail( "The second io() call should have thrown" );
-        }
-    }
-
-    @SuppressWarnings( "unused" )
-    @Test( expected = IllegalStateException.class )
-    public void mustThrowWhenClaimingWriteCursorWhileHavingReadCursor() throws Exception // TODO remove
-    {
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-
-        try ( PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize );
-              PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize );
-              PageCursor a = pfA.io( 0, PF_SHARED_READ_LOCK );
-              PageCursor b = pfB.io( 0, PF_SHARED_WRITE_LOCK ) )
-        {
-            fail( "The second io() call should have thrown" );
+            assertTrue( a.next() );
+            assertTrue( b.next() );
+            assertTrue( c.next() );
+            assertTrue( d.next() );
+            assertTrue( e.next() );
+            assertTrue( f.next() );
+            assertTrue( g.next() );
+            assertTrue( h.next() );
         }
     }
 
