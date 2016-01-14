@@ -20,28 +20,37 @@
 package org.neo4j.coreedge.raft.state;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.function.Supplier;
 
 import org.junit.Rule;
 
-import org.neo4j.coreedge.raft.state.vote.DurableVoteStore;
-import org.neo4j.coreedge.raft.state.vote.VoteStore;
+import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
+import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 
-public class DurableVoteStoreContractTest extends VoteStoreContractTest
+import static org.mockito.Mockito.mock;
+
+public class OnDiskVoteStateContractTest extends VoteStateContractTest
 {
     @Rule
     public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Override
-    public VoteStore<CoreMember> createVoteStore()
+    public VoteState<CoreMember> createVoteStore()
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         File directory = testDirectory.directory( "raft-log" );
-        return new DurableVoteStore( fileSystem, directory );
+        try
+        {
+            return new OnDiskVoteState<>( fileSystem, directory, 100, mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
-
-
 }

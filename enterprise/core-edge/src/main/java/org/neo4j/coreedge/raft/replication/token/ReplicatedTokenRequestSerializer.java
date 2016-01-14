@@ -19,13 +19,13 @@
  */
 package org.neo4j.coreedge.raft.replication.token;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import org.neo4j.coreedge.raft.net.NetworkReadableLogChannelNetty4;
 import org.neo4j.coreedge.raft.net.NetworkWritableLogChannelNetty4;
@@ -44,7 +44,7 @@ public class ReplicatedTokenRequestSerializer
     public static void serialize( ReplicatedTokenRequest content, ByteBuf buffer )
     {
         buffer.writeInt( content.type().ordinal() );
-        StringMarshal.serialize( buffer, content.tokenName() );
+        StringMarshal.marshal( buffer, content.tokenName() );
 
         buffer.writeInt( content.commandBytes().length );
         buffer.writeBytes( content.commandBytes() );
@@ -53,7 +53,7 @@ public class ReplicatedTokenRequestSerializer
     public static ReplicatedTokenRequest deserialize( ByteBuf buffer )
     {
         TokenType type = TokenType.values()[buffer.readInt()];
-        String tokenName = StringMarshal.deserialize( buffer );
+        String tokenName = StringMarshal.unmarshal( buffer );
 
         int commandBytesLength = buffer.readInt();
         byte[] commandBytes = new  byte[commandBytesLength];

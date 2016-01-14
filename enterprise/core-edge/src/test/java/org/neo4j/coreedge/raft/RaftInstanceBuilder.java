@@ -30,10 +30,10 @@ import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.replication.LeaderOnlyReplicator;
 import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
 import org.neo4j.coreedge.raft.state.membership.InMemoryRaftMembershipState;
-import org.neo4j.coreedge.raft.state.term.InMemoryTermStore;
-import org.neo4j.coreedge.raft.state.term.TermStore;
-import org.neo4j.coreedge.raft.state.vote.InMemoryVoteStore;
-import org.neo4j.coreedge.raft.state.vote.VoteStore;
+import org.neo4j.coreedge.raft.state.term.InMemoryTermState;
+import org.neo4j.coreedge.raft.state.term.TermState;
+import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState;
+import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.LogProvider;
@@ -46,8 +46,8 @@ public class RaftInstanceBuilder<MEMBER>
     private int expectedClusterSize;
     private RaftGroup.Builder<MEMBER> memberSetBuilder;
 
-    private TermStore termStore = new InMemoryTermStore();
-    private VoteStore<MEMBER> voteStore = new InMemoryVoteStore<>();
+    private TermState termState = new InMemoryTermState();
+    private VoteState<MEMBER> voteState = new InMemoryVoteState<>();
     private RaftLog raftLog = new InMemoryRaftLog();
     private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK,
             NullLogProvider.getInstance() );
@@ -87,7 +87,7 @@ public class RaftInstanceBuilder<MEMBER>
         RaftLogShippingManager<MEMBER> logShipping = new RaftLogShippingManager<>( outbound, logProvider, raftLog,
                 clock, member, membershipManager, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
 
-        return new RaftInstance<>( member, termStore, voteStore, raftLog, electionTimeout, heartbeatInterval,
+        return new RaftInstance<>( member, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
                 renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider, membershipManager,
                 logShipping, databaseHealthSupplier, clock );
     }
@@ -122,7 +122,7 @@ public class RaftInstanceBuilder<MEMBER>
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> databaseHealth( final DatabaseHealth databaseHealth)
+    public RaftInstanceBuilder<MEMBER> databaseHealth( final DatabaseHealth databaseHealth )
     {
         this.databaseHealthSupplier = () -> databaseHealth;
         return this;

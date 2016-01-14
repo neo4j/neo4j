@@ -29,7 +29,7 @@ public class StringMarshal
     public static final String DEFAULT_CHARSET = "UTF-8";
     public static final int NULL_STRING_LENGTH = -1;
 
-    public static void serialize( ByteBuf buffer, String string )
+    public static void marshal( ByteBuf buffer, String string )
     {
         try
         {
@@ -51,7 +51,7 @@ public class StringMarshal
         }
     }
 
-    public static void serialize( ByteBuffer buffer, String string )
+    public static void marshal( ByteBuffer buffer, String string )
     {
         try
         {
@@ -73,7 +73,7 @@ public class StringMarshal
         }
     }
 
-    public static String deserialize( ByteBuf buffer )
+    public static String unmarshal( ByteBuf buffer )
     {
         try
         {
@@ -92,7 +92,7 @@ public class StringMarshal
         }
     }
 
-    public static String deserialize( ByteBuffer buffer )
+    public static String unmarshal( ByteBuffer buffer )
     {
         try
         {

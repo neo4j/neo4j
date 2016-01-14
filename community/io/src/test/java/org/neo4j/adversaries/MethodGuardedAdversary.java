@@ -19,27 +19,28 @@
  */
 package org.neo4j.adversaries;
 
+import static java.util.stream.Collectors.toSet;
+
 import java.util.Set;
+import java.lang.reflect.Method;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toSet;
-
 /**
- * An adversary that delegates failure injection only when invoked through certain classes.
+ * An adversary that delegates failure injection only when invoked through certain methods.
  */
-public class ClassGuardedAdversary extends StackTraceElementGuardedAdversary
+public class MethodGuardedAdversary extends StackTraceElementGuardedAdversary
 {
-    public ClassGuardedAdversary( Adversary delegate, Class<?>... victimClassSet )
+    public MethodGuardedAdversary( Adversary delegate, Method... victimMethodSet )
     {
         super( delegate, new Predicate<StackTraceElement>()
         {
-            private final Set<String> victimClasses = Stream.of( victimClassSet ).map( Class::getName ).collect( toSet() );
+            private final Set<String> victimMethods = Stream.of( victimMethodSet ).map( Method::getName ).collect( toSet() );
 
             @Override
             public boolean test( StackTraceElement stackTraceElement )
             {
-                return victimClasses.contains( stackTraceElement.getClassName() );
+                return victimMethods.contains( stackTraceElement.getMethodName() );
             }
         } );
     }

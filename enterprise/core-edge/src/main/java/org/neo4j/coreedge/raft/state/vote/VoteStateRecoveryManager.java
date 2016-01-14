@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state.id_allocation;
+package org.neo4j.coreedge.raft.state.vote;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,34 +27,34 @@ import org.neo4j.coreedge.raft.state.StateRecoveryManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 
-public class IdAllocationStateRecoveryManager extends StateRecoveryManager
+public class VoteStateRecoveryManager<MEMBER> extends StateRecoveryManager
 {
-    private final InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal marshal;
+    private final InMemoryVoteState.InMemoryVoteStateMarshal<MEMBER> marshal;
 
-    public IdAllocationStateRecoveryManager( FileSystemAbstraction fileSystem,
-                                             InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal marshal )
+    public VoteStateRecoveryManager( FileSystemAbstraction fileSystemAbstraction,
+                                     InMemoryVoteState.InMemoryVoteStateMarshal<MEMBER> marshal )
     {
-        super( fileSystem );
+        super( fileSystemAbstraction );
         this.marshal = marshal;
     }
 
     @Override
     protected long getOrdinalOfLastRecord( File file ) throws IOException
     {
-        return readLastEntryFrom( fileSystem, file ).logIndex();
+        return readLastEntryFrom( fileSystem, file ).term();
     }
 
-    public InMemoryIdAllocationState readLastEntryFrom( FileSystemAbstraction fileSystemAbstraction, File file )
+    public InMemoryVoteState<MEMBER> readLastEntryFrom( FileSystemAbstraction fileSystemAbstraction, File file )
             throws IOException
     {
-        final ByteBuffer workingBuffer = ByteBuffer.allocate( (int) fileSystemAbstraction.getFileSize( file ) );
+        final ByteBuffer workingBuffer = ByteBuffer.allocate( 2_000_000 );
 
-        final StoreChannel channel = fileSystemAbstraction.open( file, "r" );
+        final StoreChannel channel = fileSystemAbstraction.open( file, "rw" );
         channel.read( workingBuffer );
         workingBuffer.flip();
 
-        InMemoryIdAllocationState result = new InMemoryIdAllocationState();
-        InMemoryIdAllocationState lastRead;
+        InMemoryVoteState<MEMBER> result = new InMemoryVoteState<>( );
+        InMemoryVoteState<MEMBER> lastRead;
 
         while ( (lastRead = marshal.unmarshal( workingBuffer )) != null )
         {

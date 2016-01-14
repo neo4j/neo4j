@@ -19,44 +19,54 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import org.junit.Test;
-
 import java.io.File;
+import java.io.IOException;
+import java.util.function.Supplier;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.coreedge.raft.state.term.DurableTermStore;
-import org.neo4j.coreedge.raft.state.term.TermStore;
+import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
+import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-public class TermStoreAdversarialTest
+public class TermStateAdversarialTest
 {
-    public TermStore createTermStore( FileSystemAbstraction fileSystem )
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
+    public TermState createTermStore( FileSystemAbstraction fileSystem ) throws IOException
     {
-        File directory = new File( "raft-log" );
-        fileSystem.mkdir( directory );
-        return new DurableTermStore( fileSystem, directory, new Monitors() );
+        final Supplier mock = mock( Supplier.class );
+        when(mock.get()).thenReturn( mock( DatabaseHealth.class) );
+
+        return new OnDiskTermState( fileSystem, testDir.directory(), 100, mock );
     }
 
     @Test
     public void shouldDiscardTermIfChannelFails() throws Exception
     {
         ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, false ),
-                DurableTermStore.class );
+                OnDiskTermState.class );
         adversary.disable();
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        FileSystemAbstraction fileSystem = new SelectiveFileSystemAbstraction(
-                new File( "raft-log/term.state" ), new AdversarialFileSystemAbstraction( adversary, fs ), fs );
-        TermStore log = createTermStore( fileSystem );
+        FileSystemAbstraction fileSystem = new SelectiveFileSystemAbstraction( new File( testDir.directory(),
+                "term.A" ), new AdversarialFileSystemAbstraction( adversary, fs ), fs );
+        TermState log = createTermStore( fileSystem );
 
         log.update( 21 );
         adversary.enable();
@@ -73,15 +83,16 @@ public class TermStoreAdversarialTest
 
         verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, new TermVerifier()
         {
-            public void verifyTerm( TermStore termStore ) throws RaftStorageException
+            public void verifyTerm( TermState termState ) throws RaftStorageException
             {
-                assertEquals( 21, termStore.currentTerm() );
+                assertEquals( 21, termState.currentTerm() );
             }
         } );
     }
 
     private void verifyCurrentLogAndNewLogLoadedFromFileSystem(
-            TermStore log,FileSystemAbstraction fileSystem, TermVerifier termVerifier ) throws RaftStorageException
+            TermState log, FileSystemAbstraction fileSystem, TermVerifier termVerifier ) throws RaftStorageException,
+            IOException
     {
         termVerifier.verifyTerm( log );
         termVerifier.verifyTerm( createTermStore( fileSystem ) );
@@ -89,6 +100,6 @@ public class TermStoreAdversarialTest
 
     private interface TermVerifier
     {
-        void verifyTerm( TermStore termStore ) throws RaftStorageException;
+        void verifyTerm( TermState termState ) throws RaftStorageException;
     }
 }

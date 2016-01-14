@@ -21,73 +21,73 @@ package org.neo4j.coreedge.raft.state;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.state.vote.VoteStore;
+import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public abstract class VoteStoreContractTest
+public abstract class VoteStateContractTest
 {
-    public abstract VoteStore<CoreMember> createVoteStore();
+    public abstract VoteState<CoreMember> createVoteStore();
 
     @Test
     public void shouldStoreVote() throws Exception
     {
         // given
-        VoteStore<CoreMember> voteStore = createVoteStore();
+        VoteState<CoreMember> voteState = createVoteStore();
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                 new AdvertisedSocketAddress( "host1:2001" ) );
 
         // when
-        voteStore.update( member );
+        voteState.votedFor( member, 0 );
 
         // then
-        assertEquals( member, voteStore.votedFor() );
+        assertEquals( member, voteState.votedFor() );
     }
 
     @Test
     public void shouldStartWithNoVote() throws Exception
     {
         // given
-        VoteStore<CoreMember> voteStore = createVoteStore();
+        VoteState<CoreMember> voteState = createVoteStore();
 
         // then
-        assertNull( voteStore.votedFor() );
+        assertNull( voteState.votedFor() );
     }
 
     @Test
     public void shouldUpdateVote() throws Exception
     {
         // given
-        VoteStore<CoreMember> voteStore = createVoteStore();
+        VoteState<CoreMember> voteState = createVoteStore();
         CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                 new AdvertisedSocketAddress( "host1:2001" ) );
         CoreMember member2 = new CoreMember( new AdvertisedSocketAddress( "host2:1001" ),
                 new AdvertisedSocketAddress( "host2:2001" ) );
 
         // when
-        voteStore.update( member1 );
-        voteStore.update( member2 );
+        voteState.votedFor( member1, 0 );
+        voteState.votedFor( member2, 1 );
 
         // then
-        assertEquals( member2, voteStore.votedFor() );
+        assertEquals( member2, voteState.votedFor() );
     }
 
     @Test
     public void shouldClearVote() throws Exception
     {
         // given
-        VoteStore<CoreMember> voteStore = createVoteStore();
+        VoteState<CoreMember> voteState = createVoteStore();
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                 new AdvertisedSocketAddress( "host1:2001" ) );
-        voteStore.update( member );
+        voteState.votedFor( member, 0 );
 
         // when
-        voteStore.update( null );
+        voteState.votedFor( null, 1 );
 
         // then
-        assertNull( voteStore.votedFor() );
+        assertNull( voteState.votedFor() );
     }
 }

@@ -26,13 +26,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.AdvertisedSocketAddressDecoder;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 
 import static org.neo4j.coreedge.raft.RaftMessages.Type.APPEND_ENTRIES_REQUEST;
 import static org.neo4j.coreedge.raft.RaftMessages.Type.APPEND_ENTRIES_RESPONSE;
@@ -133,9 +132,12 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
 
     private CoreMember retrieveMember( ByteBuf buffer ) throws UnsupportedEncodingException
     {
-        AdvertisedSocketAddressDecoder decoder = new AdvertisedSocketAddressDecoder();
-        AdvertisedSocketAddress coreAddress = decoder.decode( buffer );
-        AdvertisedSocketAddress raftAddress = decoder.decode( buffer );
+        AdvertisedSocketAddress.AdvertisedSocketAddressMarshal marshal =
+                new AdvertisedSocketAddress.AdvertisedSocketAddressMarshal();
+
+        AdvertisedSocketAddress coreAddress = marshal.unmarshal( buffer );
+        AdvertisedSocketAddress raftAddress = marshal.unmarshal( buffer );
+
         return new CoreMember( coreAddress, raftAddress );
     }
 

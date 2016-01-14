@@ -29,8 +29,8 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.raft.state.term.TermStore;
-import org.neo4j.coreedge.raft.state.vote.InMemoryVoteStore;
+import org.neo4j.coreedge.raft.state.term.TermState;
+import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -51,8 +51,8 @@ public class RaftStateTest
     public void shouldRemoveFollowerStateAfterBecomingLeader() throws Exception
     {
         // given
-        RaftState<RaftTestMember> raftState = new RaftState<>( new RaftTestMember( 0 ), mock( TermStore.class ),
-                new FakeMembership(), new InMemoryRaftLog(), new InMemoryVoteStore<>() );
+        RaftState<RaftTestMember> raftState = new RaftState<>( new RaftTestMember( 0 ), mock( TermState.class ),
+                new FakeMembership(), new InMemoryRaftLog(), new InMemoryVoteState<>( ) );
 
         raftState.update( new Outcome<>( CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, initialFollowerStates(), true, emptyLogCommands(),
                 emptyOutgoingMessages(), Collections.emptySet() ) );

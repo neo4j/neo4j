@@ -33,7 +33,7 @@ import static com.codahale.metrics.MetricRegistry.name;
 
 import static org.neo4j.coreedge.raft.log.RaftLog.APPEND_INDEX_TAG;
 import static org.neo4j.coreedge.raft.log.RaftLog.COMMIT_INDEX_TAG;
-import static org.neo4j.coreedge.raft.state.term.TermStore.TERM_TAG;
+import static org.neo4j.coreedge.raft.state.term.TermState.TERM_TAG;
 
 @Documented(".Core Edge Metrics")
 public class CoreEdgeMetrics extends LifecycleAdapter

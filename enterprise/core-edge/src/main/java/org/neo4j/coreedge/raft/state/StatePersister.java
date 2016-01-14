@@ -60,7 +60,7 @@ public class StatePersister<STATE>
         this.databaseHealthSupplier = databaseHealthSupplier;
     }
 
-    public synchronized void persistStoreData( STATE state )
+    public synchronized void persistStoreData( STATE state ) throws IOException
     {
         try
         {
@@ -80,10 +80,11 @@ public class StatePersister<STATE>
         catch ( IOException e )
         {
             databaseHealthSupplier.get().panic( e );
+            throw e;
         }
     }
 
-    public void switchStoreFile() throws IOException
+    private void switchStoreFile() throws IOException
     {
         currentStoreChannel.close();
 
@@ -106,5 +107,12 @@ public class StatePersister<STATE>
             fileSystemAbstraction.deleteFile( nextStore );
         }
         return fileSystemAbstraction.create( nextStore );
+    }
+
+    public void close() throws IOException
+    {
+        currentStoreChannel.force( false );
+        currentStoreChannel.close();
+        currentStoreChannel = null;
     }
 }

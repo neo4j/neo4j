@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.membership.CoreMarshal;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.RaftTestMember;
@@ -38,7 +37,7 @@ public class InMemoryRaftMembershipStateTest
     {
         // given
         InMemoryRaftMembershipState<CoreMember> state = new InMemoryRaftMembershipState<>();
-        InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<CoreMember> marshal = new InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<>( new CoreMarshal() );
+        InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<CoreMember> marshal = new InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<>( new CoreMember.CoreMemberMarshal() );
 
         // when
         final ByteBuffer buffer = ByteBuffer.allocate( 2_000 );

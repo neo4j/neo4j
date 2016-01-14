@@ -17,13 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state.vote;
+package org.neo4j.coreedge.raft.state;
 
-import org.neo4j.coreedge.raft.log.RaftStorageException;
+import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState;
+import org.neo4j.coreedge.raft.state.vote.VoteState;
+import org.neo4j.coreedge.server.CoreMember;
 
-public interface VoteStore<MEMBER>
+public class InMemoryVoteStateContractTest extends VoteStateContractTest
 {
-    MEMBER votedFor();
-
-    void update( MEMBER votedFor ) throws RaftStorageException;
+    @Override public VoteState<CoreMember> createVoteStore()
+    {
+        return new InMemoryVoteState<>( );
+    }
 }

@@ -29,10 +29,10 @@ import org.neo4j.graphdb.factory.Description;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.list;
-import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.configuration.Settings.MANDATORY;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.list;
+import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description("Settings for Core-Edge Clusters")
 public class CoreEdgeClusterSettings
@@ -139,6 +139,12 @@ public class CoreEdgeClusterSettings
             "1000" );
 
     @Description("The maximum file size before the membership state store is rotated (in unit of entries)")
-    public static Setting<Integer> raft_membership_state_size = setting( "core_edge.raft_membership_state_size", INTEGER,
-            "1000" );
+    public static Setting<Integer> raft_membership_state_size = setting( "core_edge.raft_membership_state_size",
+            INTEGER, "1000" );
+
+    @Description("The maximum file size before the vote state store is rotated (in unit of entries)")
+    public static Setting<Integer> vote_state_size = setting( "core_edge.raft_vote_state_size", INTEGER, "1000" );
+
+    @Description("The maximum file size before the term state store is rotated (in unit of entries)")
+    public static Setting<Integer> term_state_size = setting( "core_edge.raft_term_state_size", INTEGER, "1000" );
 }

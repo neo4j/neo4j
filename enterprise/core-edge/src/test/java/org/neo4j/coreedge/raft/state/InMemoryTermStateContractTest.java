@@ -17,32 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server;
+package org.neo4j.coreedge.raft.state;
 
-import java.nio.ByteBuffer;
+import org.neo4j.coreedge.raft.state.term.InMemoryTermState;
+import org.neo4j.coreedge.raft.state.term.TermState;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-
-public class AdvertisedSocketAddressEncodeDecodeTest
+public class InMemoryTermStateContractTest extends TermStateContractTest
 {
-    @Test
-    public void shouldEncodeAndDecodeHostnamePort()
+    @Override
+    public TermState createTermStore()
     {
-        // given
-        ByteBuffer buffer = ByteBuffer.allocate( 2_000_000 );
-        AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-
-        // when
-//        sent.encoder().encode( buffer );
-
-        // then
-//        AdvertisedSocketAddress received = new AdvertisedSocketAddressDecoder().decode(  );
-//        assertNotSame( sent, received );
-//        assertEquals( sent, received );
+        return new InMemoryTermState();
     }
 }

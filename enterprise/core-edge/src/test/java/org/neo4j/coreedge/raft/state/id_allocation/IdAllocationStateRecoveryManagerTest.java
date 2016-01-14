@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -35,18 +35,19 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal.NUMBER_OF_BYTES_PER_WRITE;
+import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal
+        .NUMBER_OF_BYTES_PER_WRITE;
 
 public class IdAllocationStateRecoveryManagerTest
 {
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
-    private final int NUMBER_OF_RECORDS_PER_FILE = 100;
-    private final int NUMBER_OF_BYTES_PER_RECORD = 10;
+    private static final int NUMBER_OF_RECORDS_PER_FILE = 100;
+    private static final int NUMBER_OF_BYTES_PER_RECORD = 10;
 
-    @Before
-    public void checkArgs()
+    @BeforeClass
+    public static void checkArgs()
     {
         assertEquals( 0, NUMBER_OF_RECORDS_PER_FILE % NUMBER_OF_BYTES_PER_RECORD );
     }
@@ -65,10 +66,11 @@ public class IdAllocationStateRecoveryManagerTest
         channel.writeAll( buffer );
         channel.force( false );
 
-        IdAllocationStateRecoveryManager manager = new IdAllocationStateRecoveryManager( fsa );
+        IdAllocationStateRecoveryManager manager = new IdAllocationStateRecoveryManager( fsa,
+                new InMemoryIdAllocationStateMarshal() );
 
         // when
-        final long logIndex = manager.getLogIndex( file );
+        final long logIndex = manager.getOrdinalOfLastRecord( file );
 
         // then
         assertEquals( 42, logIndex );
@@ -100,7 +102,8 @@ public class IdAllocationStateRecoveryManagerTest
         fillUpAndForce( channel );
         channel.close();
 
-        StateRecoveryManager manager = new IdAllocationStateRecoveryManager( fsa );
+        IdAllocationStateRecoveryManager manager = new IdAllocationStateRecoveryManager( fsa,
+                new InMemoryIdAllocationStateMarshal() );
 
         // when
         final StateRecoveryManager.RecoveryStatus recoveryStatus = manager.recover( fileA, fileB );
