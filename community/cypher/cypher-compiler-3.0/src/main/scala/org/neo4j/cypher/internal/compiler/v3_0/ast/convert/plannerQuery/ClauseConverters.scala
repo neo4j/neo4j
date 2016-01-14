@@ -263,17 +263,21 @@ object ClauseConverters {
     clause.pattern.patternParts.foldLeft(acc) {
       //MERGE (n :L1:L2 {prop: 42})
       case (builder, EveryPath(NodePattern(Some(id), labels, props))) =>
+        val currentlyAvailableVariables = acc.currentlyAvailableVariables
         val matchGraph = QueryGraph(
           patternNodes = Set(IdName.fromVariable(id)),
           selections = Selections.from(labels.map(l => HasLabels(id, Seq(l))(id.position)) ++ toPropertySelection(id,
             toPropertyMap(props)) :_*),
-          argumentIds = acc.currentlyAvailableVariables
+          argumentIds = currentlyAvailableVariables
         )
-      builder
-          .amendUpdateGraph(ug =>
-            ug.addMutatingPatterns(
-              MergeNodePattern(CreateNodePattern(IdName.fromVariable(id), labels, props),
-                matchGraph, onCreate, onMatch)))
+        builder
+          .withTail(
+            MergePlannerQuery(matchGraph,
+                              UpdateGraph(Seq(
+                                MergeNodePattern(CreateNodePattern(IdName.fromVariable(id), labels, props),
+                                                 matchGraph, onCreate, onMatch)))))
+          .withTail(RegularPlannerQuery())
+
       //MERGE (n)-[r: R]->(m)
       case (builder, EveryPath(pattern: RelationshipChain)) =>
         val (nodes, rels) = allCreatePatterns(pattern)
@@ -311,8 +315,11 @@ object ClauseConverters {
         )
 
         builder
-          .amendUpdateGraph(ug => ug
-            .addMutatingPatterns(MergeRelationshipPattern(nodesToCreate, rels, matchGraph, onCreate, onMatch)))
+          .withTail(
+            MergePlannerQuery(matchGraph,
+                              UpdateGraph(Seq(
+                                MergeRelationshipPattern(nodesToCreate, rels, matchGraph, onCreate, onMatch)))))
+          .withTail(RegularPlannerQuery())
 
       case _ => throw new CantHandleQueryException("not supported yet")
     }

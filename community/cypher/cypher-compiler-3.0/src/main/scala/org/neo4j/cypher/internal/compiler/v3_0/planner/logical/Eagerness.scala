@@ -142,7 +142,6 @@ object Eagerness {
       Dn : Delete node
       Dr : Delete relationship
       E : Eager
-      M : Merge
       Sp : SetProperty
       Sm : SetPropertiesFromMap
       Sl : SetLabels
@@ -187,24 +186,8 @@ object Eagerness {
       case apply@Apply(lhs, remove@RemoveLabels(rhs, idName, labelNames)) =>
         remove.copy(source = Apply(lhs, rhs)(apply.solved), idName, labelNames)(apply.solved)
 
-      // L Ax (M R) => M Ax (L R)
-      case apply@Apply(lhs, merge@AsMergePlan(source, sourceReplacer)) =>
-        sourceReplacer(Apply(lhs, source)(apply.solved))
     }
 
     override def apply(input: AnyRef) = repeat(bottomUp(instance)).apply(input)
-  }
-
-  object AsMergePlan {
-    def unapply(v: Any): Option[(LogicalPlan, LogicalPlan => LogicalPlan)] = v match {
-      // Full merge plan pattern
-      case topMergePlan@AntiConditionalApply(condApply@ConditionalApply(apply@Apply(lhs, mergeRead), onMatch, name1), mergeCreate, name2) =>
-        Some(lhs, (plan: LogicalPlan) => AntiConditionalApply(ConditionalApply(Apply(plan, mergeRead)(apply.solved), onMatch, name1)(condApply.solved), mergeCreate, name2)(topMergePlan.solved))
-      // Merge plan pattern when there is no ON MATCH part
-      case topMergePlan@AntiConditionalApply(apply@Apply(lhs, mergeRead), mergeCreate, name) =>
-        Some(lhs, (plan: LogicalPlan) => AntiConditionalApply(Apply(plan, mergeRead)(apply.solved), mergeCreate, name)(topMergePlan.solved))
-      case _ =>
-        None
-    }
   }
 }

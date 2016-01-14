@@ -188,8 +188,11 @@ sealed trait PlannerQuery extends PageDocFormatting {
     recurse(in, this)
   }
 
-  //Returns list of querygraph of planner query and all of its tails
+  //Returns a list of query graphs from this plannerquery and all of its tails
   def allQueryGraphs: Seq[QueryGraph] = allPlannerQueries.map(_.queryGraph)
+
+  //Returns a list of update graphs from this plannerquery and all of its tails
+  def allUpdateGraphs: Seq[UpdateGraph] = allPlannerQueries.map(_.updateGraph)
 
 
   //Returns list of planner query and all of its tails
@@ -213,6 +216,13 @@ object PlannerQuery {
     val patternRelIds = patternRels.flatMap(_.coveredIds)
     patternNodeIds ++ patternRelIds
   }
+
+  def asMergePlannerQuery(plannerQuery: PlannerQuery) = plannerQuery match {
+    case RegularPlannerQuery(queryGraph, updateGraph, horizon, tail) =>
+      MergePlannerQuery(queryGraph, updateGraph, horizon, tail)
+    case _: MergePlannerQuery =>
+      plannerQuery
+  }
 }
 
 trait CardinalityEstimation {
@@ -222,8 +232,17 @@ trait CardinalityEstimation {
 }
 
 object CardinalityEstimation {
-  def lift(plannerQuery: PlannerQuery, cardinality: Cardinality) =
-    new RegularPlannerQuery(plannerQuery.queryGraph, plannerQuery.updateGraph, plannerQuery.horizon, plannerQuery.tail) with CardinalityEstimation {
-      val estimatedCardinality = cardinality
-    }
+
+  def lift(plannerQuery: PlannerQuery, cardinality: Cardinality) = plannerQuery match {
+    case _: RegularPlannerQuery =>
+      new RegularPlannerQuery(plannerQuery.queryGraph, plannerQuery.updateGraph, plannerQuery.horizon,
+                              plannerQuery.tail) with CardinalityEstimation {
+        val estimatedCardinality = cardinality
+      }
+    case _: MergePlannerQuery =>
+      new MergePlannerQuery(plannerQuery.queryGraph, plannerQuery.updateGraph, plannerQuery.horizon,
+                            plannerQuery.tail) with CardinalityEstimation {
+        val estimatedCardinality = cardinality
+      }
+  }
 }

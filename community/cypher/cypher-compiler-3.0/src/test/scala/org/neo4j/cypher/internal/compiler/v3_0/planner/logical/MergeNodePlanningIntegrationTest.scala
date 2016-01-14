@@ -33,7 +33,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
   test("should plan single merge node") {
     val allNodesScan = AllNodesScan(aId, Set.empty)(solved)
     val optional = Optional(allNodesScan)(solved)
-    val onCreate = MergeCreateNode(SingleRow()(solved), aId, Seq.empty, None)(solved)
+    val onCreate = MergeCreateNode(Argument(Set.empty)(solved)(), aId, Seq.empty, None)(solved)
 
     val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId))(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
@@ -45,7 +45,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
 
     val labelScan = NodeByLabelScan(aId, lblName("X"), Set.empty)(solved)
     val optional = Optional(labelScan)(solved)
-    val onCreate = MergeCreateNode(SingleRow()(solved), aId, Seq(lblName("X")), None)(solved)
+    val onCreate = MergeCreateNode(Argument(Set.empty)(solved)(), aId, Seq(lblName("X")), None)(solved)
 
     val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId))(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
@@ -66,7 +66,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       Collection(Seq(propertyValue))(pos))(pos)), allNodesScan)(solved)
     val optional = Optional(selection)(solved)
 
-    val onCreate = MergeCreateNode(SingleRow()(solved), aId, Seq.empty,
+    val onCreate = MergeCreateNode(Argument(Set.empty)(solved)(), aId, Seq.empty,
       Some(MapExpression(List((PropertyKeyName("prop")(pos),
         SignedDecimalIntegerLiteral("42")(pos))))(pos)))(solved)
 
@@ -79,11 +79,11 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
   test("should plan create followed by merge") {
     val createNode = CreateNode(SingleRow()(solved), aId, Seq.empty, None)(solved)
     val allNodesScan = AllNodesScan(bId, Set.empty)(solved)
-    val optional = Optional(allNodesScan, Set(aId))(solved)
-    val apply = Apply(createNode, optional)(solved)
-    val onCreate = MergeCreateNode(SingleRow()(solved), bId, Seq.empty, None)(solved)
-    val mergeNode = AntiConditionalApply(apply, onCreate, Seq(bId))(solved)
-    val emptyResult = EmptyResult(mergeNode)(solved)
+    val optional = Optional(allNodesScan)(solved)
+    val onCreate = MergeCreateNode(Argument(Set.empty)(solved)(), bId, Seq.empty, None)(solved)
+    val mergeNode = AntiConditionalApply(optional, onCreate, Seq(bId))(solved)
+    val apply = Apply(createNode, mergeNode)(solved)
+    val emptyResult = EmptyResult(apply)(solved)
 
     planFor("CREATE (a) MERGE (b)").plan should equal(emptyResult)
   }
@@ -91,9 +91,10 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
   test("should plan merge followed by create") {
     val allNodesScan = AllNodesScan(aId, Set.empty)(solved)
     val optional = Optional(allNodesScan)(solved)
-    val onCreate = MergeCreateNode(SingleRow()(solved), aId, Seq.empty, None)(solved)
+    val onCreate = MergeCreateNode(Argument(Set.empty)(solved)(), aId, Seq.empty, None)(solved)
     val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId))(solved)
-    val createNode = CreateNode(mergeNode, bId, Seq.empty, None)(solved)
+    val eager = Eager(mergeNode)(solved)
+    val createNode = CreateNode(eager, bId, Seq.empty, None)(solved)
     val emptyResult = EmptyResult(createNode)(solved)
 
     planFor("MERGE(a) CREATE (b)").plan should equal(emptyResult)
@@ -124,9 +125,9 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
    *                  /    \
    *                 /  set property
    *                /       \
-   *               /  merge create node
-   *         condApply
-   *            /    \
+   *               /    merge create node
+   *         condApply       \
+   *            /    \       arg
    *       optional  set label
    *         /
    *    allnodes
@@ -138,7 +139,9 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       aId, Seq(lblName("L")))(solved)
     val onMatch = ConditionalApply(optional, setLabels, Seq(aId))(solved)
 
-    val createAndOnCreate = SetNodeProperty(MergeCreateNode(SingleRow()(solved), aId, Seq.empty, None)(solved), aId, PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("1")(pos))(solved)
+    val argument = Argument(Set.empty)(solved)(Map.empty)
+    val mergeCreateNode = MergeCreateNode(argument, aId, Seq.empty, None)(solved)
+    val createAndOnCreate = SetNodeProperty(mergeCreateNode, aId, PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("1")(pos))(solved)
     val mergeNode = AntiConditionalApply(onMatch, createAndOnCreate, Seq(aId))(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
 

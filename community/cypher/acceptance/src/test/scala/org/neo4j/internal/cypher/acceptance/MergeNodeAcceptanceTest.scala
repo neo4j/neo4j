@@ -524,6 +524,14 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 1)
   }
 
+  test("merge should handle arguments properly with only write clauses") {
+    val query = "CREATE (a {p: 1}) MERGE (b {v: a.p})"
+
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesCreated = 2, propertiesWritten = 2)
+  }
+
   test("should be able to merge using property from match") {
     createLabeledNode(Map("name" -> "A", "bornIn" -> "New York"), "Person")
     createLabeledNode(Map("name" -> "B", "bornIn" -> "Ohio"), "Person")
