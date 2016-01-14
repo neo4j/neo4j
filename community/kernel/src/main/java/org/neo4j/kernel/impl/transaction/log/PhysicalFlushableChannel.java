@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.StoreChannel;
 
 import static java.lang.Math.min;
 
@@ -33,14 +34,14 @@ public class PhysicalFlushableChannel implements FlushableChannel
     private volatile boolean closed;
 
     protected final ByteBuffer buffer;
-    protected LogVersionedStoreChannel channel;
+    protected StoreChannel channel;
 
-    public PhysicalFlushableChannel( LogVersionedStoreChannel channel )
+    public PhysicalFlushableChannel( StoreChannel channel )
     {
         this( channel, (int) ByteUnit.kibiBytes( 512 ) );
     }
 
-    public PhysicalFlushableChannel( LogVersionedStoreChannel channel, int bufferSize )
+    public PhysicalFlushableChannel( StoreChannel channel, int bufferSize )
     {
         this.channel = channel;
         this.buffer = ByteBuffer.allocate( bufferSize );
@@ -59,7 +60,7 @@ public class PhysicalFlushableChannel implements FlushableChannel
     public Flushable prepareForFlush() throws IOException
     {
         buffer.flip();
-        LogVersionedStoreChannel channel = this.channel;
+        StoreChannel channel = this.channel;
         try
         {
             channel.writeAll( buffer );
