@@ -24,9 +24,9 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class DelimiterConverterTest
+public class CharacterConverterTest
 {
-    private final DelimiterConverter converter = new DelimiterConverter();
+    private final CharacterConverter converter = new CharacterConverter();
 
     @Test
     public void shouldConvertCharacter() throws Exception

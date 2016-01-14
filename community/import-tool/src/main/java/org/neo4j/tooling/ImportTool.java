@@ -615,12 +615,12 @@ public class ImportTool
     private static Configuration csvConfiguration( Args args, final boolean defaultSettingsSuitableForTests )
     {
         final Configuration defaultConfiguration = COMMAS;
-        final Character specificDelimiter =
-                args.interpretOption( Options.DELIMITER.key(), Converters.<Character>optional(), DELIMITER_CONVERTER );
-        final Character specificArrayDelimiter =
-                args.interpretOption( Options.ARRAY_DELIMITER.key(), Converters.<Character>optional(), DELIMITER_CONVERTER );
-        final Character specificQuote =
-                args.interpretOption( Options.QUOTE.key(), Converters.<Character>optional(), DELIMITER_CONVERTER );
+        final Character specificDelimiter = args.interpretOption( Options.DELIMITER.key(),
+                Converters.<Character>optional(), CHARACTER_CONVERTER );
+        final Character specificArrayDelimiter = args.interpretOption( Options.ARRAY_DELIMITER.key(),
+                Converters.<Character>optional(), CHARACTER_CONVERTER );
+        final Character specificQuote = args.interpretOption( Options.QUOTE.key(), Converters.<Character>optional(),
+                CHARACTER_CONVERTER );
         final Boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), null );
         final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );
         return new Configuration.Default()
@@ -682,7 +682,7 @@ public class ImportTool
         }
     };
 
-    private static final Function<String,Character> DELIMITER_CONVERTER = new DelimiterConverter();
+    private static final Function<String,Character> CHARACTER_CONVERTER = new CharacterConverter();
 
     private static final Function2<Args,String,Collection<Option<File[]>>> INPUT_FILES_EXTRACTOR =
             new Function2<Args,String,Collection<Option<File[]>>>()
