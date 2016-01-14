@@ -38,12 +38,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.metrics.source.db.CheckPointingMetrics;
 import org.neo4j.metrics.source.db.CypherMetrics;
 import org.neo4j.metrics.source.db.TransactionMetrics;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -63,8 +63,6 @@ public class MetricsKernelExtensionFactoryIT
     private static final int METRICS_VALUE = 1;
 
     @Rule
-    public final TargetDirectory.TestDirectory folder = TargetDirectory.testDirForTest( getClass() );
-    @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
     private File outputPath;
@@ -74,7 +72,7 @@ public class MetricsKernelExtensionFactoryIT
     @Before
     public void setup() throws Exception
     {
-        outputPath = folder.directory( "metrics" );
+        outputPath = clusterRule.directory( "metrics" );
     }
 
     private void createCluster( String minCypherReplanInterval, String minCheckPointIntervalTime )
@@ -97,7 +95,11 @@ public class MetricsKernelExtensionFactoryIT
         createCluster( "10m", "10m" );
 
         // Create some activity that will show up in the metrics data.
-        addNodes( 1000 );
+        addNodes( 100 );
+        cluster.sync();
+        long expectedNumberOfCommittedTransactions =
+                cluster.getMaster().getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                        .getLastCommittedTransaction().transactionId() - TransactionIdStore.BASE_TX_ID;
         cluster.stop();
 
         // Awesome. Let's get some metric numbers.
@@ -105,7 +107,7 @@ public class MetricsKernelExtensionFactoryIT
         File metricsFile = new File( outputPath, TransactionMetrics.TX_COMMITTED + ".csv" );
         long committedTransactions = readLongValueAndAssert( metricsFile,
                 ( newValue, currentValue ) -> newValue >= currentValue );
-        assertThat( committedTransactions, lessThanOrEqualTo( 1000L + 2L ) );
+        assertThat( committedTransactions, lessThanOrEqualTo( expectedNumberOfCommittedTransactions ) );
     }
 
     @Test
@@ -128,7 +130,7 @@ public class MetricsKernelExtensionFactoryIT
             tx.success();
         }
         //add more data just to make sure metrics are flushed
-        addNodes( 1000 );
+        addNodes( 100 );
         cluster.stop();
 
         //now we should have one replan event
