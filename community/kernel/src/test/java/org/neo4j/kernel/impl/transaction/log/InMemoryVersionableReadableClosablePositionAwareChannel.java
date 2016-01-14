@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
 public class InMemoryVersionableReadableClosablePositionAwareChannel extends InMemoryClosableChannel implements
-        VersionableReadableClosablePositionAwareChannel
+        ReadableLogChannel
 {
     private final long version;
     private final byte formatVersion;

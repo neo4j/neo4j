@@ -42,7 +42,7 @@ public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,Except
     @Override
     public boolean visit( LogVersionedStoreChannel channel ) throws Exception
     {
-        final VersionableReadableClosablePositionAwareChannel recoveredDataChannel = new ReadAheadPositionableReadableChannel( channel, NO_MORE_CHANNELS );
+        final ReadableLogChannel recoveredDataChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
 
         try ( final PhysicalTransactionCursor<ReadableClosablePositionAwareChannel> physicalTransactionCursor =
                       new PhysicalTransactionCursor<>( recoveredDataChannel, logEntryReader ) )
