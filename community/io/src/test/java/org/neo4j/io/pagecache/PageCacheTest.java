@@ -1549,7 +1549,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void allowOpeningMultipleReadAndWriteCursorsPerThread() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
@@ -1579,6 +1579,33 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertTrue( f.next() );
             assertTrue( g.next() );
             assertTrue( h.next() );
+        }
+    }
+
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS, expected = IOException.class )
+    public void mustNotLiveLockIfWeRunOutOfEvictablePages() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        List<PageCursor> cursors = new LinkedList<>();
+        try ( PagedFile pf = pageCache.map( existingFile( "a" ), filePageSize ) )
+        {
+            try
+            {
+                for ( long i = 0;; i++ )
+                {
+                    PageCursor cursor = pf.io( i, PF_SHARED_WRITE_LOCK );
+                    cursors.add( cursor );
+                    assertTrue( cursor.next() );
+                }
+            }
+            finally
+            {
+                for ( PageCursor cursor : cursors )
+                {
+                    cursor.close();
+                }
+            }
         }
     }
 

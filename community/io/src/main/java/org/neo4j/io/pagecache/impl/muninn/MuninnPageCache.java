@@ -44,6 +44,9 @@ import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getDouble;
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getLong;
 
 /**
  * The Muninn {@link org.neo4j.io.pagecache.PageCache page cache} implementation.
@@ -102,40 +105,33 @@ public class MuninnPageCache implements PageCache
     // Keep this many pages free and ready for use in faulting.
     // This will be truncated to be no more than half of the number of pages
     // in the cache.
-    private static final int pagesToKeepFree = Integer.getInteger(
-            "org.neo4j.io.pagecache.impl.muninn.pagesToKeepFree", 30 );
+    private static final int pagesToKeepFree = getInteger(
+            MuninnPageCache.class, "pagesToKeepFree", 30 );
+
+    // This is how many times that, during cooperative eviction, we'll iterate through the entire set of pages looking
+    // for a page to evict, before we give up and throw CacheLiveLockException. This MUST be greater than 1.
+    private static final int cooperativeEvictionLiveLockThreshold = getInteger(
+            MuninnPageCache.class, "cooperativeEvictionLiveLockThreshold", 100 );
 
     // The background flush task will only spend a certain amount of time doing IO, to avoid saturating the IO
     // subsystem during times when there is more important work to be done. It will do this by measuring how much
     // time it spends on each flush, and then accumulate a sleep debt. Once the sleep debt grows beyond this
     // threshold, the flush task will pay it back.
-    private static final long backgroundFlushSleepDebtThreshold = Long.getLong(
-            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushSleepDebtThreshold", 10 );
+    private static final long backgroundFlushSleepDebtThreshold = getLong(
+            MuninnPageCache.class, "backgroundFlushSleepDebtThreshold", 10 );
 
     // This ratio determines how the background flush task will spend its time. Specifically, it is a ratio of how
     // much of its time will be spent doing IO. For instance, setting the ratio to 0.3 will make the flusher task
     // spend 30% of its time doing IO, and 70% of its time sleeping.
     private static final double backgroundFlushIoRatio = getDouble(
-            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushIoRatio", 0.1 );
+            MuninnPageCache.class, "backgroundFlushIoRatio", 0.1 );
 
-    private static double getDouble( String property, double def )
-    {
-        try
-        {
-            return Double.parseDouble( System.getProperty( property ) );
-        }
-        catch ( Exception e )
-        {
-            return def;
-        }
-    }
-
-    private static final long backgroundFlushBusyBreak = Long.getLong(
-            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushBusyBreak", 100 );
-    private static final long backgroundFlushMediumBreak = Long.getLong(
-            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushMediumBreak", 200 );
-    private static final long backgroundFlushLongBreak = Long.getLong(
-            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushLongBreak", 1000 );
+    private static final long backgroundFlushBusyBreak = getLong(
+            MuninnPageCache.class, "backgroundFlushBusyBreak", 100 );
+    private static final long backgroundFlushMediumBreak = getLong(
+            MuninnPageCache.class, "backgroundFlushMediumBreak", 200 );
+    private static final long backgroundFlushLongBreak = getLong(
+            MuninnPageCache.class, "backgroundFlushLongBreak", 1000 );
 
     // This is a pre-allocated constant, so we can throw it without allocating any objects:
     @SuppressWarnings( "ThrowableInstanceNeverThrown" )
@@ -643,6 +639,7 @@ public class MuninnPageCache implements PageCache
 
     private MuninnPage cooperativelyEvict( PageFaultEvent faultEvent ) throws IOException
     {
+        int iterations = 0;
         int clockArm = ThreadLocalRandom.current().nextInt( pages.length );
         MuninnPage page;
         boolean evicted = false;
@@ -652,6 +649,11 @@ public class MuninnPageCache implements PageCache
 
             if ( clockArm == pages.length )
             {
+                if ( iterations == cooperativeEvictionLiveLockThreshold )
+                {
+                    throw cooperativeEvictionLiveLock();
+                }
+                iterations++;
                 clockArm = 0;
             }
 
@@ -684,6 +686,21 @@ public class MuninnPageCache implements PageCache
         }
         while ( !evicted );
         return page;
+    }
+
+    private CacheLiveLockException cooperativeEvictionLiveLock()
+    {
+        return new CacheLiveLockException(
+                "Live-lock encountered when trying to cooperatively evict a page during page fault. " +
+                "This happens when we want to access a page that is not in memory, so it has to be faulted in, but " +
+                "there are no free memory pages available to accept the page fault, so we have to evict an existing " +
+                "page, but all the in-memory pages are currently locked by other accesses. If those other access are " +
+                "waiting for our page fault to make progress, then we have a live-lock, and the only way we can get " +
+                "out of it is by throwing this exception. This should be extremely rare, but can happen if the page " +
+                "cache size is tiny and the number of concurrently running transactions is very high. You should be " +
+                "able to get around this problem by increasing the amount of memory allocated to the page cache " +
+                "with the `dbms.pagecache.memory` setting. Please contact Neo4j support if you need help tuning your " +
+                "database." );
     }
 
     private void unparkEvictor()
