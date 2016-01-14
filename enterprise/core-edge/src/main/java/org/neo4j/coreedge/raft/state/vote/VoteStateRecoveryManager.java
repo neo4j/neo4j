@@ -21,18 +21,19 @@ package org.neo4j.coreedge.raft.state.vote;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
+import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState.InMemoryVoteStateChannelMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
+import org.neo4j.storageengine.api.ReadableChannel;
 
 public class VoteStateRecoveryManager<MEMBER> extends StateRecoveryManager
 {
-    private final InMemoryVoteState.InMemoryVoteStateMarshal<MEMBER> marshal;
+    private final InMemoryVoteStateChannelMarshal<MEMBER> marshal;
 
     public VoteStateRecoveryManager( FileSystemAbstraction fileSystemAbstraction,
-                                     InMemoryVoteState.InMemoryVoteStateMarshal<MEMBER> marshal )
+                                     InMemoryVoteStateChannelMarshal<MEMBER> marshal )
     {
         super( fileSystemAbstraction );
         this.marshal = marshal;
@@ -47,16 +48,12 @@ public class VoteStateRecoveryManager<MEMBER> extends StateRecoveryManager
     public InMemoryVoteState<MEMBER> readLastEntryFrom( FileSystemAbstraction fileSystemAbstraction, File file )
             throws IOException
     {
-        final ByteBuffer workingBuffer = ByteBuffer.allocate( 2_000_000 );
-
-        final StoreChannel channel = fileSystemAbstraction.open( file, "rw" );
-        channel.read( workingBuffer );
-        workingBuffer.flip();
+        final ReadableChannel channel = new ReadAheadChannel<>( fileSystemAbstraction.open( file, "rw" ) );
 
         InMemoryVoteState<MEMBER> result = new InMemoryVoteState<>( );
         InMemoryVoteState<MEMBER> lastRead;
 
-        while ( (lastRead = marshal.unmarshal( workingBuffer )) != null )
+        while ( (lastRead = marshal.unmarshal( channel )) != null )
         {
             result = lastRead;
         }

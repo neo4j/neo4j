@@ -19,10 +19,14 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 
 import io.netty.buffer.ByteBuf;
+
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 public class StringMarshal
 {
@@ -104,6 +108,49 @@ public class StringMarshal
 
             byte[] stringBytes = new byte[len];
             buffer.get( stringBytes );
+
+            return new String( stringBytes, DEFAULT_CHARSET );
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new RuntimeException( "UTF-8 should be supported by all java platforms." );
+        }
+    }
+
+    public static void marshal( WritableChannel channel, String string ) throws IOException
+    {
+        try
+        {
+            if ( string == null )
+            {
+                channel.putInt( NULL_STRING_LENGTH );
+            }
+            else
+            {
+                byte[] bytes = string.getBytes( DEFAULT_CHARSET );
+                channel.putInt( bytes.length );
+                channel.put( bytes, bytes.length );
+            }
+
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new RuntimeException( "UTF-8 should be supported by all java platforms." );
+        }
+    }
+
+    public static String unmarshal( ReadableChannel channel ) throws IOException
+    {
+        try
+        {
+            int len = channel.getInt();
+            if ( len == NULL_STRING_LENGTH )
+            {
+                return null;
+            }
+
+            byte[] stringBytes = new byte[len];
+            channel.get( stringBytes, stringBytes.length );
 
             return new String( stringBytes, DEFAULT_CHARSET );
         }

@@ -19,14 +19,13 @@
  */
 package org.neo4j.coreedge.raft.state.membership;
 
-import java.nio.ByteBuffer;
-
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMarshal;
+import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 import static org.junit.Assert.assertEquals;
 
@@ -37,12 +36,12 @@ public class InMemoryRaftMembershipStateTest
     {
         // given
         InMemoryRaftMembershipState<CoreMember> state = new InMemoryRaftMembershipState<>();
-        InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<CoreMember> marshal = new InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<>( new CoreMember.CoreMemberMarshal() );
+        InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal<CoreMember> marshal = new InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal<>( new CoreMember.CoreMemberMarshal() );
 
         // when
-        final ByteBuffer buffer = ByteBuffer.allocate( 2_000 );
-        marshal.marshal( state, buffer );
-        final InMemoryRaftMembershipState recovered = marshal.unmarshal( buffer );
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        marshal.marshal( state, channel );
+        final InMemoryRaftMembershipState recovered = marshal.unmarshal( channel );
 
         // then
         assertEquals( state.votingMembers(), recovered.votingMembers() );
@@ -53,17 +52,16 @@ public class InMemoryRaftMembershipStateTest
     {
         // given
         InMemoryRaftMembershipState<RaftTestMember> state = new InMemoryRaftMembershipState<>();
-        InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<RaftTestMember> serializer = new InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<>( new RaftTestMarshal() );
+        InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal<RaftTestMember> serializer = new InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal<>( new RaftTestMarshal() );
 
         RaftTestGroup coreMembers = new RaftTestGroup( 1, 2, 3 ,4 );
 
         state.setVotingMembers( coreMembers.getMembers() );
 
         // when
-        final ByteBuffer buffer = ByteBuffer.allocate( 2_000_000 );
-        serializer.marshal( state, buffer );
-        buffer.flip();
-        final InMemoryRaftMembershipState recovered = serializer.unmarshal( buffer );
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        serializer.marshal( state, channel );
+        final InMemoryRaftMembershipState recovered = serializer.unmarshal( channel );
 
         // then
         assertEquals( state.votingMembers(), recovered.votingMembers() );

@@ -161,8 +161,9 @@ public class PhysicalFlushableChannel implements FlushableChannel
     @Override
     public void close() throws IOException
     {
-        prepareForFlush();
+        prepareForFlush().flush();
         closed = true;
+        channel.close();
     }
 
     public long position() throws IOException
