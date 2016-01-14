@@ -21,22 +21,20 @@ package org.neo4j.coreedge.raft.state.id_allocation;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
-import org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal;
+import org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal
-        .NUMBER_OF_BYTES_PER_WRITE;
 
 public class IdAllocationStateRecoveryManagerTest
 {
@@ -60,14 +58,13 @@ public class IdAllocationStateRecoveryManagerTest
         fsa.mkdir( testDir.directory() );
 
         File file = new File( testDir.directory(), "file" );
-        StoreChannel channel = fsa.create( file );
+        FlushableChannel channel = new PhysicalFlushableChannel( fsa.open( file, "rw" ) );
 
-        ByteBuffer buffer = partiallyFillWithWholeRecord( 42 );
-        channel.writeAll( buffer );
-        channel.force( false );
+        putRecordWithIndex( 42, channel );
+        channel.close();
 
         IdAllocationStateRecoveryManager manager = new IdAllocationStateRecoveryManager( fsa,
-                new InMemoryIdAllocationStateMarshal() );
+                new InMemoryIdAllocationStateChannelMarshal() );
 
         // when
         final long logIndex = manager.getOrdinalOfLastRecord( file );
@@ -84,26 +81,21 @@ public class IdAllocationStateRecoveryManagerTest
         fsa.mkdir( testDir.directory() );
 
         File fileA = new File( testDir.directory(), "fileA" );
-        StoreChannel channel = fsa.create( fileA );
+        FlushableChannel channelAWrite = new PhysicalFlushableChannel( fsa.create( fileA ) );
 
-        ByteBuffer buffer = partiallyFillWithWholeRecord( 42 );
-        channel.writeAll( buffer );
-        channel.force( false );
+        putRecordWithIndex( 42, channelAWrite );
 
-        buffer.clear();
-        buffer.putLong( 101 ); // extraneous bytes
-        buffer.flip();
-        channel.writeAll( buffer );
-        channel.force( false );
+        channelAWrite.putLong( 101 ); // extraneous bytes
+        channelAWrite.close();
 
         File fileB = new File( testDir.directory(), "fileB" );
-        channel = fsa.create( fileB );
+        FlushableChannel channelBWrite = new PhysicalFlushableChannel( fsa.create( fileB ) );
 
-        fillUpAndForce( channel );
-        channel.close();
+        filUpWithRecords( channelBWrite );
+        channelBWrite.close();
 
         IdAllocationStateRecoveryManager manager = new IdAllocationStateRecoveryManager( fsa,
-                new InMemoryIdAllocationStateMarshal() );
+                new InMemoryIdAllocationStateChannelMarshal() );
 
         // when
         final StateRecoveryManager.RecoveryStatus recoveryStatus = manager.recover( fileA, fileB );
@@ -114,23 +106,18 @@ public class IdAllocationStateRecoveryManagerTest
         assertEquals( fileB, recoveryStatus.previouslyActive() );
     }
 
-    private void fillUpAndForce( StoreChannel channel ) throws IOException
+    private void filUpWithRecords( WritableChannel channel ) throws IOException
     {
         for ( int i = 0; i < NUMBER_OF_RECORDS_PER_FILE; i++ )
         {
-            ByteBuffer buffer = partiallyFillWithWholeRecord( i );
-            channel.writeAll( buffer );
-            channel.force( false );
+             putRecordWithIndex( i, channel );
         }
     }
 
-    private ByteBuffer partiallyFillWithWholeRecord( long logIndex )
+    private void putRecordWithIndex( long logIndex, WritableChannel channel ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocate( NUMBER_OF_BYTES_PER_WRITE );
         InMemoryIdAllocationState state = new InMemoryIdAllocationState();
         state.logIndex( logIndex );
-        new InMemoryIdAllocationStateMarshal().marshal( state, buffer );
-        buffer.flip();
-        return buffer;
+        new InMemoryIdAllocationStateChannelMarshal().marshal( state, channel );
     }
 }

@@ -19,10 +19,14 @@
  */
 package org.neo4j.coreedge.raft.state.membership;
 
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 public class InMemoryRaftMembershipState<MEMBER> implements RaftMembershipState<MEMBER>
 {
@@ -119,43 +123,43 @@ public class InMemoryRaftMembershipState<MEMBER> implements RaftMembershipState<
         listeners.forEach( Listener::onMembershipChanged );
     }
 
-    public static class InMemoryRaftMembershipStateMarshal<MEMBER>
-            implements Marshal<InMemoryRaftMembershipState<MEMBER>>
+    public static class InMemoryRaftMembershipStateChannelMarshal<MEMBER>
+            implements ChannelMarshal<InMemoryRaftMembershipState<MEMBER>>
     {
         public static final long ENTRY_MIN_SIZE = 8 + 4; // the log index plus the number of members in the set
-        private final org.neo4j.coreedge.raft.state.membership.Marshal<MEMBER> marshal;
+        private final ChannelMarshal<MEMBER> memberMarshal;
 
-        public InMemoryRaftMembershipStateMarshal( org.neo4j.coreedge.raft.state.membership.Marshal<MEMBER> marshal )
+        public InMemoryRaftMembershipStateChannelMarshal( ChannelMarshal<MEMBER> marshal )
         {
-            this.marshal = marshal;
+            this.memberMarshal = marshal;
         }
 
         @Override
-        public void marshal( InMemoryRaftMembershipState<MEMBER> state, ByteBuffer buffer )
+        public void marshal( InMemoryRaftMembershipState<MEMBER> target, WritableChannel channel ) throws IOException
         {
-            buffer.putLong( state.logIndex );
-            buffer.putInt( state.votingMembers.size() );
-            for ( MEMBER votingMember : state.votingMembers )
+            channel.putLong( target.logIndex );
+            channel.putInt( target.votingMembers.size() );
+            for ( MEMBER votingMember : target.votingMembers )
             {
-                marshal.marshal( votingMember, buffer );
+                memberMarshal.marshal( votingMember, channel );
             }
         }
 
         @Override
-        public InMemoryRaftMembershipState<MEMBER> unmarshal( ByteBuffer buffer )
+        public InMemoryRaftMembershipState<MEMBER> unmarshal( ReadableChannel source ) throws IOException
         {
             try
             {
-                long logIndex = buffer.getLong();
-                int memberCount = buffer.getInt();
+                long logIndex = source.getLong();
+                int memberCount = source.getInt();
                 Set<MEMBER> members = new HashSet<>();
                 for ( int i = 0; i < memberCount; i++ )
                 {
-                    members.add( marshal.unmarshal( buffer ) );
+                    members.add( memberMarshal.unmarshal( source ) );
                 }
                 return new InMemoryRaftMembershipState<>( members, logIndex );
             }
-            catch ( BufferUnderflowException endOfFile )
+            catch ( ReadPastEndException noMoreBytes )
             {
                 return null;
             }

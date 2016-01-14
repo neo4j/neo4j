@@ -51,7 +51,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
-public class CoreReplicatedContentMarshalTest
+public class CoreReplicatedContentByteBufferMarshalTest
 {
     private final ReplicatedContentMarshal<ByteBuf> marshal = new CoreReplicatedContentMarshal();
 

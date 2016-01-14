@@ -32,7 +32,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal.NUMBER_OF_BYTES_PER_WRITE;
+import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal.NUMBER_OF_BYTES_PER_WRITE;
 
 /**
  * The OnDiskAllocationState is a decorator around InMemoryIdAllocationState providing on-disk persistence of
@@ -50,7 +50,7 @@ public class OnDiskIdAllocationState extends LifecycleAdapter implements IdAlloc
 
     private final StatePersister<InMemoryIdAllocationState> statePersister;
     private final ByteBuffer workingBuffer;
-    private final InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal marshal;
+    private final InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal marshal;
 
     public OnDiskIdAllocationState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
                                     int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier )
@@ -63,15 +63,15 @@ public class OnDiskIdAllocationState extends LifecycleAdapter implements IdAlloc
 
         IdAllocationStateRecoveryManager recoveryManager =
                 new IdAllocationStateRecoveryManager( fileSystemAbstraction,
-                        new InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal() );
+                        new InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal() );
 
         final StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
 
-        this.marshal = new InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal();
+        this.marshal = new InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal();
         this.inMemoryIdAllocationState = recoveryManager.readLastEntryFrom( fileSystemAbstraction, recoveryStatus.previouslyActive() );
 
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
-                workingBuffer, marshal, recoveryStatus.previouslyInactive(), databaseHealthSupplier );
+                marshal, recoveryStatus.previouslyInactive(), databaseHealthSupplier );
     }
 
     @Override

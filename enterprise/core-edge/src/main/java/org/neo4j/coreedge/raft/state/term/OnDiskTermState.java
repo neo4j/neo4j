@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.state.StatePersister;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
+import org.neo4j.coreedge.raft.state.term.InMemoryTermState.InMemoryTermStateChannelMarshal;
 import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -49,12 +50,12 @@ public class OnDiskTermState extends LifecycleAdapter implements TermState
         File fileA = new File( stateDir, FILENAME + "a" );
         File fileB = new File( stateDir, FILENAME + "b" );
 
-        workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateMarshal
+        workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateChannelMarshal
                 .NUMBER_OF_BYTES_PER_VOTE );
 
 
         TermStateRecoveryManager recoveryManager =
-                new TermStateRecoveryManager( fileSystemAbstraction, new InMemoryTermState.InMemoryTermStateMarshal() );
+                new TermStateRecoveryManager( fileSystemAbstraction, new InMemoryTermStateChannelMarshal() );
 
         final StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
 
@@ -64,7 +65,7 @@ public class OnDiskTermState extends LifecycleAdapter implements TermState
 
 
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
-                workingBuffer, new InMemoryTermState.InMemoryTermStateMarshal(), recoveryStatus.previouslyInactive(),
+                new InMemoryTermStateChannelMarshal(), recoveryStatus.previouslyInactive(),
                 databaseHealthSupplier );
     }
 

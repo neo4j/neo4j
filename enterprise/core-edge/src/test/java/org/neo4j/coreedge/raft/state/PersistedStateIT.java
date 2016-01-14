@@ -21,7 +21,6 @@ package org.neo4j.coreedge.raft.state;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 import org.junit.Rule;
@@ -30,16 +29,18 @@ import org.junit.Test;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.MethodGuardedAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
-import org.neo4j.coreedge.raft.state.membership.Marshal;
-import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.KernelEventHandlers;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLog;
+import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -58,7 +59,7 @@ public class PersistedStateIT
         EphemeralFileSystemAbstraction delegate = new EphemeralFileSystemAbstraction();
         AdversarialFileSystemAbstraction fsa = new AdversarialFileSystemAbstraction(
                 new MethodGuardedAdversary( new CountingAdversary( 100, true ),
-                        StoreChannel.class.getMethod( "writeAll", ByteBuffer.class ) ),
+                        StoreChannel.class.getMethod( "write", ByteBuffer.class ) ),
                 delegate );
 
         LongState persistedState = new LongState( fsa, testDir.directory(), 14 );
@@ -75,7 +76,7 @@ public class PersistedStateIT
         }
         catch ( Exception expected )
         {
-            ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "writeAll" );
+            ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "write" );
         }
 
         LongState restoredState = new LongState( delegate, testDir.directory(), 4 );
@@ -257,25 +258,22 @@ public class PersistedStateIT
             File fileA = new File( stateDir, FILENAME + "a" );
             File fileB = new File( stateDir, FILENAME + "b" );
 
-            ByteBuffer workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateMarshal
-                    .NUMBER_OF_BYTES_PER_VOTE );
-
-            Marshal<Long> marshal = new Marshal<Long>()
+            ChannelMarshal<Long> byteBufferMarshal = new ChannelMarshal<Long>()
             {
                 @Override
-                public void marshal( Long aLong, ByteBuffer buffer )
+                public void marshal( Long aLong, WritableChannel channel ) throws IOException
                 {
-                    buffer.putLong( aLong );
+                    channel.putLong( aLong );
                 }
 
                 @Override
-                public Long unmarshal( ByteBuffer source )
+                public Long unmarshal( ReadableChannel source ) throws IOException
                 {
                     try
                     {
                         return source.getLong();
                     }
-                    catch ( BufferUnderflowException notEnoughBytes )
+                    catch ( ReadPastEndException notEnoughBytes )
                     {
                         return null;
                     }
@@ -287,15 +285,11 @@ public class PersistedStateIT
                 @Override
                 protected long getOrdinalOfLastRecord( File file ) throws IOException
                 {
-                    final ByteBuffer workingBuffer = ByteBuffer.allocate( (int) fileSystemAbstraction.getFileSize(
-                            file ) );
-                    StoreChannel channel = fileSystemAbstraction.open( file, "r" );
-                    channel.read( workingBuffer );
-                    workingBuffer.flip();
+                    ReadableChannel channel = new ReadAheadChannel<>( fileSystemAbstraction.open( file, "r" ) );
 
                     Long result = -1L;
                     Long temp;
-                    while ( (temp = marshal.unmarshal( workingBuffer )) != null )
+                    while ( (temp = byteBufferMarshal.unmarshal( channel )) != null )
                     {
                         result = temp;
                     }
@@ -309,8 +303,7 @@ public class PersistedStateIT
 
             this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction,
                     numberOfEntriesBeforeRotation,
-                    workingBuffer,
-                    marshal,
+                    byteBufferMarshal,
                     recoveryStatus.previouslyInactive(),
                     () -> new DatabaseHealth( new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog
                             .getInstance() ) ), NullLog.getInstance() )
