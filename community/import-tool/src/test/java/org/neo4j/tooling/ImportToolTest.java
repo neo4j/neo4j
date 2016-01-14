@@ -57,15 +57,8 @@ import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
-import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
-import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
-import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories;
-import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
-import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -93,8 +86,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.tooling.GlobalGraphOperations.at;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 
 public class ImportToolTest
 {
@@ -1008,21 +999,74 @@ public class ImportToolTest
         }
     }
 
-    private File nodeDataWithMissingQuote( int totalLines, int unbalancedStartLine )
-            throws Exception
+    @Test
+    public void shouldFailAndReportStartingLineForUnbalancedQuoteAtEnd() throws Exception
     {
-        String[] lines = new String[totalLines];
+        // GIVEN
+        int unbalancedStartLine = 10;
 
-        lines[0] = "ID,name,:LABEL";
+        // WHEN
+        try
+        {
+            importTool(
+                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--nodes", nodeDataWithMissingQuote( unbalancedStartLine, unbalancedStartLine )
+                            .getAbsolutePath() );
+            fail( "Should have failed" );
+        }
+        catch ( InputException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( String.format( "See line %d", unbalancedStartLine) ) );
+        }
+    }
 
-        for (int i = 1; i < totalLines; i++) {
-            StringBuilder line = new StringBuilder( String.format( "%d,", i) );
-            if (i == unbalancedStartLine) {
-                line.append( String.format( "\"Name%d", i) );
-            } else {
-                line.append( String.format( "\"Name%d\"", i) );
+    @Test
+    public void shouldFailAndReportStartingLineForUnbalancedQuoteWithMultilinesEnabled() throws Exception
+    {
+        // GIVEN
+        int unbalancedStartLine = 10;
+
+        // WHEN
+        try
+        {
+            importTool(
+                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--multiline-fields", "true",
+                    "--nodes", nodeDataWithMissingQuote( 2*unbalancedStartLine, unbalancedStartLine )
+                            .getAbsolutePath() );
+            fail( "Should have failed" );
+        }
+        catch ( InputException e )
+        {
+            // THEN
+            assertThat( e.getMessage(),
+                    containsString( String.format( "started on line %d", unbalancedStartLine ) ) );
+            // make sure end was reached
+            assertThat( e.getMessage(),
+                    containsString( String.format( "line:%d", 2 * unbalancedStartLine + 1 ) ) );
+        }
+    }
+
+    private File nodeDataWithMissingQuote( int totalLines, int unbalancedStartLine ) throws Exception
+    {
+        String[] lines = new String[totalLines + 1];
+
+        lines[0] = "ID,:LABEL";
+
+        for ( int i = 1; i <= totalLines; i++ )
+        {
+            StringBuilder line = new StringBuilder( String.format( "%d,", i ) );
+            if ( i == unbalancedStartLine )
+            {
+                // Missing the end quote
+                line.append( "\"Secret Agent" );
             }
-            lines[i] = line.append( ",Person" ).toString();
+            else
+            {
+                line.append( "Agent" );
+            }
+            lines[i] = line.toString();
         }
 
         return data( lines );
