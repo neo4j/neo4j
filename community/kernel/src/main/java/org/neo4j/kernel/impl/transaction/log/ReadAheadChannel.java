@@ -36,6 +36,11 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
     private final ByteBuffer aheadBuffer;
     private final int readAheadSize;
 
+    public ReadAheadChannel( T channel )
+    {
+        this( channel, DEFAULT_READ_AHEAD_SIZE );
+    }
+
     public ReadAheadChannel( T channel, int readAheadSize )
     {
         this.aheadBuffer = ByteBuffer.allocate( readAheadSize );
