@@ -29,15 +29,13 @@ import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 public class PartitionedIndexWriter implements LuceneIndexWriter
 {
     private LuceneSchemaIndex index;
 
-    private static final Integer MAXIMUM_PARTITION_SIZE =
-            FeatureToggles.getInteger( PartitionedIndexWriter.class, "partitionSize",
-                    Integer.MAX_VALUE - (Integer.MAX_VALUE / 10) );
+    private final Integer MAXIMUM_PARTITION_SIZE = Integer.getInteger( "luceneSchemaIndex.maxPartitionSize",
+            Integer.MAX_VALUE - (Integer.MAX_VALUE / 10) );
 
     public PartitionedIndexWriter( LuceneSchemaIndex index ) throws IOException
     {
@@ -84,7 +82,7 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
     {
         List<IndexPartition> indexPartitions = index.getPartitions();
         Optional<IndexPartition> writablePartition = indexPartitions.stream()
-                .filter( PartitionedIndexWriter::writablePartition )
+                .filter( this::writablePartition )
                 .findFirst();
         if ( writablePartition.isPresent() )
         {
@@ -97,7 +95,7 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
         }
     }
 
-    private static boolean writablePartition( IndexPartition partition )
+    private boolean writablePartition( IndexPartition partition )
     {
         return partition.getIndexWriter().numDocs() < MAXIMUM_PARTITION_SIZE;
     }

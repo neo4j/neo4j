@@ -53,9 +53,7 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
             List<IndexPartition> partitions = getPartitions();
             if ( hasSinglePartition( partitions ) )
             {
-                IndexPartition partition = getFirstPartition( partitions );
-                PartitionSearcher searcher = partition.acquireSearcher();
-                return new SimpleLuceneLabelScanStoreReader( searcher, storageStrategy );
+                return createSimpleReader( partitions );
             }
             throw new UnsupportedOperationException();
         }
@@ -87,5 +85,12 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
     public AllEntriesLabelScanReader allNodeLabelRanges()
     {
         return storageStrategy.newNodeLabelReader( allDocumentsReader() );
+    }
+
+    private LabelScanReader createSimpleReader( List<IndexPartition> partitions ) throws IOException
+    {
+        IndexPartition partition = getFirstPartition( partitions );
+        PartitionSearcher searcher = partition.acquireSearcher();
+        return new SimpleLuceneLabelScanStoreReader( searcher, storageStrategy );
     }
 }

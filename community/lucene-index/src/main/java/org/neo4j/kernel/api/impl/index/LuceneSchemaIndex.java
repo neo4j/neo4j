@@ -169,17 +169,17 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
         return new SimpleIndexReader( singlePartition.acquireSearcher(), config, samplingConfig, taskCoordinator );
     }
 
-    private PartitionedIndexReader createPartitionedReader( List<IndexPartition> partitions ) throws IOException
-    {
-        List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedIndexReader( searchers );
-    }
-
     private UniquenessVerifier createSimpleUniquenessVerifier( List<IndexPartition> partitions ) throws IOException
     {
         IndexPartition singlePartition = getFirstPartition( partitions );
         PartitionSearcher partitionSearcher = singlePartition.acquireSearcher();
         return new SimpleUniquenessVerifier( partitionSearcher );
+    }
+
+    private PartitionedIndexReader createPartitionedReader( List<IndexPartition> partitions ) throws IOException
+    {
+        List<PartitionSearcher> searchers = acquireSearchers( partitions );
+        return new PartitionedIndexReader( searchers );
     }
 
     private UniquenessVerifier createPartitionedUniquenessVerifier( List<IndexPartition> partitions ) throws IOException

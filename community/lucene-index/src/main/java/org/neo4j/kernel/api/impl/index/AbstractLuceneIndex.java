@@ -59,6 +59,14 @@ public abstract class AbstractLuceneIndex implements Closeable
         this.indexStorage = indexStorage;
     }
 
+    /**
+     * Creates new index.
+     * As part of creation process index will allocate all required folders, index failure storage
+     * and will create its first partition.
+     * <p></p>
+     * <b>Index creation do not automatically open it. To be able to use index please open it first.</b>
+     * @throws IOException
+     */
     public void create() throws IOException
     {
         ensureNotOpen();
@@ -67,6 +75,10 @@ public abstract class AbstractLuceneIndex implements Closeable
         createNewPartitionFolder();
     }
 
+    /**
+     * Open index with all allocated partitions.
+     * @throws IOException
+     */
     public void open() throws IOException
     {
         Map<File,Directory> indexDirectories = indexStorage.openIndexDirectories();
@@ -82,6 +94,11 @@ public abstract class AbstractLuceneIndex implements Closeable
         return open;
     }
 
+    /**
+     * Check lucene index existence within all allocated partitions.
+     * @return true if index exist in all partitions, false when index is empty or does not exist
+     * @throws IOException
+     */
     public boolean exists() throws IOException
     {
         List<File> folders = indexStorage.listFolders();
@@ -99,6 +116,12 @@ public abstract class AbstractLuceneIndex implements Closeable
         return true;
     }
 
+    /**
+     * Verify state of the index.
+     * If index is already open and in use method assume that index is valid since lucene already operating with it,
+     * otherwise necessary checks perform.
+     * @return true if lucene confirm that index is in valid clean state or index is already open.
+     */
     public boolean isValid()
     {
         if ( open )
@@ -145,12 +168,23 @@ public abstract class AbstractLuceneIndex implements Closeable
 
     public void flush() throws IOException
     {
-        List<IndexPartition> partitions = getPartitions();
-        for ( IndexPartition partition : partitions )
+        if (!open)
         {
-            partition.getIndexWriter().commit();
+            return;
         }
-
+        commitCloseLock.lock();
+        try
+        {
+            List<IndexPartition> partitions = getPartitions();
+            for ( IndexPartition partition : partitions )
+            {
+                partition.getIndexWriter().commit();
+            }
+        }
+        finally
+        {
+            commitCloseLock.unlock();
+        }
     }
 
     @Override

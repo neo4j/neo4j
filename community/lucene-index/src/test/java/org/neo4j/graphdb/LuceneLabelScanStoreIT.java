@@ -19,9 +19,125 @@
  */
 package org.neo4j.graphdb;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.List;
+
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
+
+import static org.junit.Assert.assertEquals;
+
 public class LuceneLabelScanStoreIT extends LabelScanStoreIT
 {
-    // Just extending the IT from kernel which pulls in the same tests, but with the important difference
-    // that the LuceneLasbelScanStore is on the class path, and will therefore be selected instead of
-    // an in-memory store.
+
+    @Test
+    public void scanStoreStartWithoutExistentIndex() throws IOException
+    {
+        NeoStoreDataSource dataSource = getDataSource();
+        LabelScanStore labelScanStore = dataSource.getLabelScanStore();
+        labelScanStore.shutdown();
+
+        File labelScanStoreDirectory = getLabelScanStoreDirectory( dataSource );
+        FileUtils.deleteRecursively( labelScanStoreDirectory  );
+
+        labelScanStore.init();
+        labelScanStore.start();
+
+        checkLabelScanStoreAccessible( labelScanStore );
+    }
+
+    @Test
+    public void scanStoreRecreateCorruptedIndexOnStartup() throws IOException
+    {
+        NeoStoreDataSource dataSource = getDataSource();
+        LabelScanStore labelScanStore = dataSource.getLabelScanStore();
+
+        Node node = createTestNode();
+        List<Long> labels = readNodeLabels( labelScanStore, node );
+        assertEquals( "Label scan store see 1 label for node", 1, labels.size() );
+        labelScanStore.force();
+        labelScanStore.shutdown();
+
+        corruptIndex( dataSource );
+
+        labelScanStore.init();
+        labelScanStore.start();
+
+        List<Long> rebuildLabels = readNodeLabels( labelScanStore, node );
+        assertEquals( "Store should rebuild corrupted index", labels, rebuildLabels );
+    }
+
+    private List<Long> readNodeLabels( LabelScanStore labelScanStore, Node node )
+    {
+        try ( LabelScanReader reader = labelScanStore.newReader() )
+        {
+            return Iterables.toList( reader.labelsForNode( node.getId() ) );
+        }
+    }
+
+    private Node createTestNode()
+    {
+        Node node = null;
+        try (Transaction transaction = dbRule.beginTx())
+        {
+            node = dbRule.createNode( Label.label( "testLabel" ));
+            transaction.success();
+        }
+        return node;
+    }
+
+    private void corruptIndex( NeoStoreDataSource dataSource ) throws IOException
+    {
+        File labelScanStoreDirectory = getLabelScanStoreDirectory( dataSource );
+        Files.walkFileTree( labelScanStoreDirectory.toPath(), new SimpleFileVisitor<Path>()
+        {
+            @Override
+            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+            {
+                Files.write( file, ArrayUtils.add(Files.readAllBytes( file ), (byte) 7 ));
+                return FileVisitResult.CONTINUE;
+            }
+        } );
+    }
+
+    private File getLabelScanStoreDirectory( NeoStoreDataSource dataSource )
+    {
+        return LabelScanStoreProvider.getStoreDirectory( dataSource.getStoreDir() );
+    }
+
+    private NeoStoreDataSource getDataSource()
+    {
+        DependencyResolver dependencyResolver = dbRule.getDependencyResolver();
+        DataSourceManager dataSourceManager = dependencyResolver.resolveDependency( DataSourceManager.class );
+        return dataSourceManager.getDataSource();
+    }
+
+    private void checkLabelScanStoreAccessible( LabelScanStore labelScanStore ) throws IOException
+    {
+        try ( LabelScanWriter labelScanWriter = labelScanStore.newWriter() )
+        {
+            labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[]{}, new long[]{1} ) );
+        }
+        try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
+        {
+            assertEquals( 1, labelScanReader.labelsForNode( 1 ).next().intValue() );
+        }
+    }
+
 }

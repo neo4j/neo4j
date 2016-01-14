@@ -206,6 +206,7 @@ public class LuceneLabelScanStore implements LabelScanStore
     {
         // Only a single writer is allowed at any point in time. For that this lock is used and passed
         // onto the writer to release in its close()
+        // TODO:
         lock.lock();
         return luceneIndex.getLabelScanWriter(lock);
     }
