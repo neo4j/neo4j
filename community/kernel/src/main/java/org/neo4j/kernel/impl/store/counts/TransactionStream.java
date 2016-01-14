@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadPositionableReadableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
@@ -314,7 +314,7 @@ class TransactionStream
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
             StoreChannel channel, LogHeader header ) throws IOException
     {
-        return new LogEntryCursor( logEntryReader, new ReadAheadPositionableReadableChannel(
+        return new LogEntryCursor( logEntryReader, new ReadAheadLogChannel(
                 new PhysicalLogVersionedStoreChannel( channel, header.logVersion, header.logFormatVersion ),
                 NO_MORE_CHANNELS ) );
     }

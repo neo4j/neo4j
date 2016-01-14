@@ -101,9 +101,9 @@ public class BatchingTransactionAppenderTest
         appender.append( new TransactionToApply( transaction ), logAppendEvent );
 
         // THEN
-        final LogEntryReader<VersionableReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+        final LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory() );
-        try ( PhysicalTransactionCursor<VersionableReadableClosablePositionAwareChannel> reader =
+        try ( PhysicalTransactionCursor<ReadableLogChannel> reader =
                       new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
             reader.next();
@@ -172,9 +172,9 @@ public class BatchingTransactionAppenderTest
                 logAppendEvent );
 
         // THEN
-        LogEntryReader<VersionableReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+        LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory() );
-        try ( PhysicalTransactionCursor<VersionableReadableClosablePositionAwareChannel> reader =
+        try ( PhysicalTransactionCursor<ReadableLogChannel> reader =
                       new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
             reader.next();

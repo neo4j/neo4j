@@ -72,7 +72,7 @@ import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.VersionableReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -1182,12 +1182,12 @@ public class TransactionRecordStateTest
         assertTrue( "Expected " + klass + ". was: " + next, klass.isInstance( next ) );
     }
 
-    private CommittedTransactionRepresentation readFromChannel( VersionableReadableClosablePositionAwareChannel channel )
+    private CommittedTransactionRepresentation readFromChannel( ReadableLogChannel channel )
             throws IOException
     {
-        LogEntryReader<VersionableReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+        LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory() );
-        try ( PhysicalTransactionCursor<VersionableReadableClosablePositionAwareChannel> cursor = new PhysicalTransactionCursor<>(
+        try ( PhysicalTransactionCursor<ReadableLogChannel> cursor = new PhysicalTransactionCursor<>(
                 channel, logEntryReader ) )
         {
             assertTrue( cursor.next() );

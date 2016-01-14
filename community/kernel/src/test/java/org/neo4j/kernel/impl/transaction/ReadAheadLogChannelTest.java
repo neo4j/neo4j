@@ -33,7 +33,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadPositionableReadableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -41,7 +41,7 @@ import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 
-public class ReadAheadChannelTest
+public class ReadAheadLogChannelTest
 {
     @Test
     public void shouldReadFromSingleChannel() throws Exception
@@ -74,7 +74,7 @@ public class ReadAheadChannelTest
         StoreChannel storeChannel = fs.open( file, "r" );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1 /* ignored */ );
-        try ( ReadAheadPositionableReadableChannel channel = new ReadAheadPositionableReadableChannel( versionedStoreChannel, NO_MORE_CHANNELS, 16 ) )
+        try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS, 16 ) )
         {
             // THEN
             assertEquals( byteValue, channel.get() );
@@ -122,7 +122,7 @@ public class ReadAheadChannelTest
         StoreChannel storeChannel = fs.open( file( 0 ), "r" );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1 /* ignored */ );
-        try ( ReadAheadPositionableReadableChannel channel = new ReadAheadPositionableReadableChannel( versionedStoreChannel, new LogVersionBridge()
+        try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, new LogVersionBridge()
         {
             private boolean returned = false;
 
