@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.core;
+package org.neo4j.coreedge.server.core.locks;
 
 import org.junit.Test;
 
@@ -27,7 +27,6 @@ import org.neo4j.coreedge.server.RaftTestMember;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 public class ReplicatedLockStateMachineTest
