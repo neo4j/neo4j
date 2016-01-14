@@ -115,8 +115,7 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Mes
 
     private void writeMember( CoreMember member, ByteBuf buffer ) throws UnsupportedEncodingException
     {
-        AdvertisedSocketAddress.AdvertisedSocketAddressMarshal marshal = new AdvertisedSocketAddress
-                .AdvertisedSocketAddressMarshal();
+        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
 
         marshal.marshal( member.getCoreAddress(), buffer );
         marshal.marshal( member.getRaftAddress(), buffer );

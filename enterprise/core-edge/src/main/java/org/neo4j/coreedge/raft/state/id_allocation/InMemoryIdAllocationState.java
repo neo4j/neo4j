@@ -19,13 +19,15 @@
  */
 package org.neo4j.coreedge.raft.state.id_allocation;
 
+import java.io.IOException;
 import java.io.Serializable;
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.coreedge.raft.replication.id.IdAllocationState;
-import org.neo4j.coreedge.raft.state.membership.Marshal;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.kernel.IdType;
+import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 /**
  * An in-memory representation of the IDs allocated to this core instance.
@@ -125,7 +127,7 @@ public class InMemoryIdAllocationState implements IdAllocationState, Serializabl
     }
 
 
-    static class InMemoryIdAllocationStateMarshal implements Marshal<InMemoryIdAllocationState>
+    static class InMemoryIdAllocationStateChannelMarshal implements ChannelMarshal<InMemoryIdAllocationState>
     {
         public static final int NUMBER_OF_BYTES_PER_WRITE =
                 3 * IdType.values().length * 8 // 3 arrays of IdType enum value length storing longs
@@ -133,59 +135,59 @@ public class InMemoryIdAllocationState implements IdAllocationState, Serializabl
                         + 8; // the raft log index
 
         @Override
-        public void marshal( InMemoryIdAllocationState state, ByteBuffer buffer )
+        public void marshal( InMemoryIdAllocationState state, WritableChannel channel ) throws IOException
         {
-            buffer.putLong( (long) state.firstUnallocated.length );
+            channel.putLong( (long) state.firstUnallocated.length );
             for ( long l : state.firstUnallocated )
             {
-                buffer.putLong( l );
+                channel.putLong( l );
             }
 
-            buffer.putLong( (long) state.lastIdRangeStartForMe.length );
+            channel.putLong( (long) state.lastIdRangeStartForMe.length );
             for ( long l : state.lastIdRangeStartForMe )
             {
-                buffer.putLong( l );
+                channel.putLong( l );
             }
 
-            buffer.putLong( state.lastIdRangeLengthForMe.length );
+            channel.putLong( state.lastIdRangeLengthForMe.length );
             for ( int i : state.lastIdRangeLengthForMe )
             {
-                buffer.putLong( i );
+                channel.putLong( i );
             }
-            buffer.putLong( state.logIndex );
+            channel.putLong( state.logIndex );
         }
 
         @Override
-        public InMemoryIdAllocationState unmarshal( ByteBuffer buffer )
+        public InMemoryIdAllocationState unmarshal( ReadableChannel channel ) throws IOException
         {
             try
             {
-                long[] firstNotAllocated = new long[(int) buffer.getLong()];
+                long[] firstNotAllocated = new long[(int) channel.getLong()];
 
                 for ( int i = 0; i < firstNotAllocated.length; i++ )
                 {
-                    firstNotAllocated[i] = buffer.getLong();
+                    firstNotAllocated[i] = channel.getLong();
                 }
 
-                long[] lastIdRangeStartForMe = new long[(int) buffer.getLong()];
+                long[] lastIdRangeStartForMe = new long[(int) channel.getLong()];
                 for ( int i = 0; i < lastIdRangeStartForMe.length; i++ )
                 {
-                    lastIdRangeStartForMe[i] = buffer.getLong();
+                    lastIdRangeStartForMe[i] = channel.getLong();
                 }
 
-                int[] lastIdRangeLengthForMe = new int[(int) buffer.getLong()];
+                int[] lastIdRangeLengthForMe = new int[(int) channel.getLong()];
                 for ( int i = 0; i < lastIdRangeLengthForMe.length; i++ )
                 {
-                    lastIdRangeLengthForMe[i] = (int) buffer.getLong();
+                    lastIdRangeLengthForMe[i] = (int) channel.getLong();
                 }
 
-                long logIndex = buffer.getLong();
+                long logIndex = channel.getLong();
 
                 return new InMemoryIdAllocationState( firstNotAllocated, lastIdRangeStartForMe,
                         lastIdRangeLengthForMe, logIndex );
 
             }
-            catch ( BufferUnderflowException ex )
+            catch ( ReadPastEndException ex )
             {
                 return null;
             }

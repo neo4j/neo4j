@@ -21,17 +21,19 @@ package org.neo4j.coreedge.raft.state.membership;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
+import org.neo4j.coreedge.raft.state.membership.InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
+import org.neo4j.storageengine.api.ReadableChannel;
 
 public class RaftMembershipStateRecoveryManager<MEMBER> extends StateRecoveryManager
 {
-    private final InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<MEMBER> marshal;
+    private final InMemoryRaftMembershipStateChannelMarshal<MEMBER> marshal;
 
-    public RaftMembershipStateRecoveryManager( FileSystemAbstraction fileSystem, InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<MEMBER> marshal )
+    public RaftMembershipStateRecoveryManager( FileSystemAbstraction fileSystem,
+                                               InMemoryRaftMembershipStateChannelMarshal<MEMBER> marshal )
     {
         super( fileSystem );
         this.marshal = marshal;
@@ -45,21 +47,12 @@ public class RaftMembershipStateRecoveryManager<MEMBER> extends StateRecoveryMan
 
     public InMemoryRaftMembershipState<MEMBER> readLastEntryFrom( File file ) throws IOException
     {
-        int fileSize = (int) fileSystem.getFileSize( file );
-        if ( fileSize < InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal.ENTRY_MIN_SIZE )
-        {
-            return new InMemoryRaftMembershipState<>();
-        }
-        // It is worth trying to read at least one entry. We read in the whole file and read until exhaustion.
-        final StoreChannel temporaryStoreChannel = fileSystem.open( file, "rw" );
-        ByteBuffer forInitialRead = ByteBuffer.allocate( fileSize );
-        temporaryStoreChannel.read( forInitialRead );
-        forInitialRead.flip();
+        final ReadableChannel temporaryStoreChannel = new ReadAheadChannel<>( fileSystem.open( file, "rw" ) );
 
         InMemoryRaftMembershipState<MEMBER> result = new InMemoryRaftMembershipState<>();
         InMemoryRaftMembershipState<MEMBER> lastRead;
 
-        while ( (lastRead = marshal.unmarshal( forInitialRead )) != null )
+        while ( (lastRead = marshal.unmarshal( temporaryStoreChannel )) != null )
         {
             result = lastRead;
         }

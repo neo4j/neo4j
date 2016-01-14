@@ -49,7 +49,7 @@ import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
-public class RaftContentMarshalTest
+public class RaftContentByteBufferMarshalTest
 {
     CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
             new AdvertisedSocketAddress( "raft:1" ) );
