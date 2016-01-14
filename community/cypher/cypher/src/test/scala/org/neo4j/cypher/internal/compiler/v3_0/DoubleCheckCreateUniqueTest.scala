@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.mutation.{CreateUniqueAction, Uni
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.event.{KernelEventHandler, TransactionEventHandler}
 import org.neo4j.graphdb.index.IndexManager
@@ -215,12 +214,6 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
   def createRelationshipTo(otherNode: Node, `type`: RelationshipType): Relationship = {
     n.createRelationshipTo(otherNode, `type`)
   }
-
-  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipType: RelationshipType, direction: Direction): Traverser = ???
-
-  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, firstRelationshipType: RelationshipType, firstDirection: Direction, secondRelationshipType: RelationshipType, secondDirection: Direction): Traverser = ???
-
-  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipTypesAndDirections: AnyRef*): Traverser = ???
 
   def getGraphDatabase: GraphDatabaseService = ???
 

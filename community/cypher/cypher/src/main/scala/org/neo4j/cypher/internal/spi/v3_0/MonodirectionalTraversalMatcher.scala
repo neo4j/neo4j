@@ -32,8 +32,9 @@ import scala.collection.JavaConverters._
 class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node])
   extends TraversalMatcher {
 
-  val initialStartStep = new InitialStateFactory[Option[ExpanderStep]] {
+  val initialStartStep = new InitialBranchState[Option[ExpanderStep]] {
     def initialState(path: Path): Option[ExpanderStep] = Some(steps)
+    def reverse() = this
   }
 
   def baseTraversal(params: ExecutionContext, state:QueryState): TraversalDescription = Traversal.

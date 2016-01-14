@@ -23,7 +23,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 
 public class AnnotatedFieldHarvester {
 

@@ -32,9 +32,10 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.logging.BufferingLog;
@@ -56,7 +57,7 @@ import static java.util.stream.Collectors.toList;
  * UI's can change configuration by calling applyChanges. Any listener, such as services that use
  * this configuration, can be notified of changes by implementing the {@link ConfigurationChangeListener} interface.
  */
-public class Config implements DiagnosticsProvider, ConfigView
+public class Config implements DiagnosticsProvider, Configuration
 {
     private final List<ConfigurationChangeListener> listeners = new CopyOnWriteArrayList<>();
     private final Map<String, String> params = new ConcurrentHashMap<>(  );
@@ -334,7 +335,7 @@ public class Config implements DiagnosticsProvider, ConfigView
      *                 config options
      * @return a list of grouped config options
      */
-    public static Function<ConfigValues,List<ConfigView>> groups( String baseName )
+    public static Function<ConfigValues,List<Configuration>> groups( String baseName )
     {
         Pattern pattern = Pattern.compile( Pattern.quote( baseName ) + "\\.(\\d+)\\.(.+)" );
 
@@ -360,7 +361,7 @@ public class Config implements DiagnosticsProvider, ConfigView
                 }
             }
 
-            Function<Map<String,String>,ConfigView> mapper = m -> new ConfigView()
+            Function<Map<String,String>,Configuration> mapper = m -> new Configuration()
             {
                 @Override
                 public <T> T get( Setting<T> setting )

@@ -26,15 +26,12 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TraversalPosition;
-import org.neo4j.graphdb.Traverser;
-import org.neo4j.graphdb.Traverser.Order;
-
+import org.neo4j.graphdb.traversal.Evaluation;
+import org.neo4j.graphdb.traversal.Evaluator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -60,33 +57,23 @@ public class CircularGraphTest extends TraversalTestBase
         try ( Transaction tx2 = beginTx() )
         {
             final RelationshipType type = RelationshipType.withName( "TO" );
-            Traverser t = node( "1" ).traverse( Order.DEPTH_FIRST, new StopEvaluator()
+            Iterator<Node> nodes = getGraphDb().traversalDescription()
+                    .depthFirst()
+                    .relationships( type, Direction.OUTGOING )
+                    .evaluator( new Evaluator()
                     {
-                        public boolean isStopNode( TraversalPosition position )
+                        @Override
+                        public Evaluation evaluate( Path path )
                         {
-                            Relationship last = position.lastRelationshipTraversed();
-                            if ( last != null && last.isType( type ) )
-                            {
-                                Node node = position.currentNode();
-                                long currentTime = (Long) node.getProperty( "timestamp" );
-                                return currentTime >= timestamp;
-                            }
-                            return false;
+                            Relationship rel = path.lastRelationship();
+                            boolean relIsOfType = rel != null && rel.isType( type );
+                            boolean prune = relIsOfType &&
+                                    ((Long)path.endNode().getProperty( "timestamp" )).longValue() >= timestamp;
+                            return Evaluation.of( relIsOfType, !prune );
                         }
-                    }, new ReturnableEvaluator()
-                    {
-                        public boolean isReturnableNode( TraversalPosition position )
-                        {
-                            Relationship last = position.lastRelationshipTraversed();
-                            if ( last != null && last.isType( type ) )
-                            {
-                                return true;
-                            }
-                            return false;
-                        }
-                    }, type, Direction.OUTGOING
-            );
-            Iterator<Node> nodes = t.iterator();
+                    } )
+                    .traverse( node( "1" ) )
+                    .nodes().iterator();
 
             assertEquals( "2", nodes.next().getProperty( "name" ) );
             assertEquals( "3", nodes.next().getProperty( "name" ) );

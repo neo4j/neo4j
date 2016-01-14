@@ -26,8 +26,8 @@ import java.util.Map;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.shell.ShellSettings;

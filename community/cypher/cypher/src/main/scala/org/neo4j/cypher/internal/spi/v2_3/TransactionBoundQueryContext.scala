@@ -43,7 +43,7 @@ import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, Alre
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.{RelationshipProxy, ThreadToStatementContextBridge}
-import org.neo4j.kernel.security.URLAccessValidationError
+import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.kernel.GraphDatabaseAPI
 import java.util.function.Predicate
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate

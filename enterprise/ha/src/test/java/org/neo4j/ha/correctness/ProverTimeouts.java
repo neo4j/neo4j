@@ -29,7 +29,7 @@ import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 
 class ProverTimeouts extends Timeouts
 {

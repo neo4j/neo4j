@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
 import static org.neo4j.helpers.collection.Iterables.filter;

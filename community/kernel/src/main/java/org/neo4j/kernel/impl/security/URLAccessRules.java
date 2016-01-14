@@ -22,16 +22,16 @@ package org.neo4j.kernel.impl.security;
 import java.net.URL;
 import java.util.Map;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.kernel.security.URLAccessValidationError;
+import org.neo4j.graphdb.security.URLAccessValidationError;
 
 public class URLAccessRules
 {
     private static final URLAccessRule ALWAYS_PERMITTED = new URLAccessRule()
     {
         @Override
-        public URL validate( GraphDatabaseAPI gdb, URL url )
+        public URL validate( Configuration config, URL url )
         {
             return url;
         }
@@ -54,15 +54,16 @@ public class URLAccessRules
         return new URLAccessRule()
         {
             @Override
-            public URL validate( GraphDatabaseAPI gdb, URL url ) throws URLAccessValidationError
+            public URL validate( Configuration config, URL url ) throws URLAccessValidationError
             {
                 String protocol = url.getProtocol();
                 URLAccessRule protocolRule = urlAccessRules.get( protocol );
                 if ( protocolRule == null )
                 {
-                    throw new URLAccessValidationError( "loading resources via protocol '" + protocol + "' is not permitted" );
+                    throw new URLAccessValidationError( "loading resources via protocol '" + protocol +
+                            "' is not permitted" );
                 }
-                return protocolRule.validate( gdb, url );
+                return protocolRule.validate( config, url );
             }
         };
     }

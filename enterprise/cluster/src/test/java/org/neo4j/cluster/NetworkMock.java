@@ -42,7 +42,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**

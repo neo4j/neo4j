@@ -25,16 +25,15 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
+import org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullRequest;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-
-import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 
 public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequest>
 {

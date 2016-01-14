@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
@@ -197,7 +197,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public IndexPopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor )
+    public PopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );

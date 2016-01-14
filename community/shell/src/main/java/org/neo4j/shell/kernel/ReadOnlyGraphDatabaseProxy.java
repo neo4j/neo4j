@@ -36,17 +36,14 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.Traverser;
-import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.IndexPopulationProgress;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.schema.ConstraintCreator;
@@ -54,15 +51,13 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
-import org.neo4j.kernel.security.URLAccessValidationError;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 
 public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDatabaseAPI, IndexManager
 {
@@ -350,34 +345,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         public boolean hasRelationship( RelationshipType type, Direction dir )
         {
             return actual.hasRelationship( type, dir );
-        }
-
-        @Override
-        public Traverser traverse( Order traversalOrder, StopEvaluator stopEvaluator,
-                                   ReturnableEvaluator returnableEvaluator, RelationshipType relationshipType,
-                                   Direction direction )
-        {
-            return OldTraverserWrapper.traverse( this, traversalOrder, stopEvaluator,
-                    returnableEvaluator, relationshipType, direction );
-        }
-
-        @Override
-        public Traverser traverse( Order traversalOrder, StopEvaluator stopEvaluator,
-                                   ReturnableEvaluator returnableEvaluator, RelationshipType firstRelationshipType,
-                                   Direction firstDirection, RelationshipType secondRelationshipType,
-                                   Direction secondDirection )
-        {
-            return OldTraverserWrapper.traverse( this, traversalOrder, stopEvaluator,
-                    returnableEvaluator, firstRelationshipType, firstDirection,
-                    secondRelationshipType, secondDirection );
-        }
-
-        @Override
-        public Traverser traverse( Order traversalOrder, StopEvaluator stopEvaluator,
-                                   ReturnableEvaluator returnableEvaluator, Object... relationshipTypesAndDirections )
-        {
-            return OldTraverserWrapper.traverse( this, traversalOrder, stopEvaluator,
-                    returnableEvaluator, relationshipTypesAndDirections );
         }
 
         @Override

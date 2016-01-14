@@ -47,6 +47,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilderTestTools;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -55,7 +56,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.security.URLAccessValidationError;
 
 public abstract class DatabaseRule extends ExternalResource implements GraphDatabaseAPI
 {

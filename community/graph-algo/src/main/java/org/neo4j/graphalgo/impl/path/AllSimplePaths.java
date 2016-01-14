@@ -20,21 +20,15 @@
 package org.neo4j.graphalgo.impl.path;
 
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.kernel.Uniqueness;
 
 public class AllSimplePaths extends AllPaths
 {
-    public AllSimplePaths( int maxDepth, RelationshipExpander expander )
-    {
-        super( maxDepth, expander );
-    }
-
     public AllSimplePaths( int maxDepth, PathExpander expander )
     {
         super( maxDepth, expander );
     }
-    
+
     @Override
     protected Uniqueness uniqueness()
     {

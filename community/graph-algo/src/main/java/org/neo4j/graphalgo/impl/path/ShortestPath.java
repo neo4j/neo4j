@@ -40,7 +40,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.helpers.collection.IterableWrapper;
@@ -50,8 +49,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.util.MutableBoolean;
 import org.neo4j.kernel.impl.util.MutableInteger;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
 /**
  * Find (all or one) simple shortest path(s) between two nodes. It starts
@@ -90,26 +87,10 @@ public class ShortestPath implements PathFinder<Path>
         this( maxDepth, expander, Integer.MAX_VALUE );
     }
 
-    public ShortestPath( int maxDepth, RelationshipExpander expander )
-    {
-        this( maxDepth, toPathExpander( expander ), Integer.MAX_VALUE );
-    }
-
-    public ShortestPath( int maxDepth, RelationshipExpander expander, ShortestPathPredicate predicate )
-    {
-        this( maxDepth, toPathExpander( expander ) );
-        this.predicate = predicate;
-    }
-
     public ShortestPath( int maxDepth, PathExpander expander, ShortestPathPredicate predicate )
     {
         this( maxDepth, expander );
         this.predicate = predicate;
-    }
-
-    public ShortestPath( int maxDepth, RelationshipExpander expander, int maxResultCount )
-    {
-        this( maxDepth, toPathExpander( expander ), maxResultCount );
     }
 
     /**

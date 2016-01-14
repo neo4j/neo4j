@@ -26,7 +26,7 @@ import java.net.URI;
 import java.util.Arrays;
 import javax.management.remote.JMXServiceURL;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 
 /**
  * This class captures the least amount of information available for a cluster member to any

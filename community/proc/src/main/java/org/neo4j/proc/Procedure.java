@@ -20,11 +20,18 @@
 package org.neo4j.proc;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Spliterators;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.storageengine.api.Token;
+
+import static java.util.Spliterator.IMMUTABLE;
+import static java.util.Spliterator.ORDERED;
 
 public interface Procedure
 {
@@ -96,5 +103,10 @@ public interface Procedure
 
         @Override
         public abstract Stream<Object[]> apply( Context ctx, Object[] input ) throws ProcedureException;
+
+        public static Stream<Token> stream( Iterator<Token> iter )
+        {
+            return StreamSupport.stream( Spliterators.spliteratorUnknownSize( iter, ORDERED | IMMUTABLE), false);
+        }
     }
 }

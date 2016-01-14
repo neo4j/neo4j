@@ -70,8 +70,8 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexSchemaRule;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -271,7 +271,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public IndexPopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor )
+    public PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor ).getIndexPopulationProgress();

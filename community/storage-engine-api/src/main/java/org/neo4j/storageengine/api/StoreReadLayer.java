@@ -38,8 +38,8 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexSchemaRule;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 /**
@@ -152,86 +152,6 @@ public interface StoreReadLayer
 
     PrimitiveLongIterator nodesGetForLabel( StorageStatement statement, int labelId );
 
-//    /**
-//     * Searches an index backing a uniqueness constraint for a certain value.
-//     *
-//     * @param statement {@link StorageStatement} created using {@link #acquireStatement()}.
-//     * @param index {@link IndexDescriptor} specifying index to search.
-//     * @param value property value to search for.
-//     * @return ids of matching nodes.
-//     * @throws IndexNotFoundKernelException if {@code index} doesn't exist.
-//     * @throws IndexBrokenKernelException if index is broken and can't be used.
-//     */
-//    PrimitiveLongResourceIterator nodeGetFromUniqueIndexSeek( StorageStatement statement, IndexDescriptor index,
-//            Object value )
-//            throws IndexNotFoundKernelException, IndexBrokenKernelException;
-//
-//    /**
-//     * Searches an index for a certain value.
-//     *
-//     * @param statement {@link StorageStatement} created using {@link #acquireStatement()}.
-//     * @param index {@link IndexDescriptor} specifying index to search.
-//     * @param value property value to search for.
-//     * @return ids of matching nodes.
-//     * @throws IndexNotFoundKernelException if {@code index} doesn't exist.
-//     */
-//    PrimitiveLongIterator nodesGetFromIndexSeek( StorageStatement statement, IndexDescriptor index, Object value )
-//            throws IndexNotFoundKernelException;
-//
-//    /**
-//     * Searches an index for numerics values between {@code lower} and {@code upper}.
-//     *
-//     * @param statement {@link StorageStatement} created using {@link #acquireStatement()}.
-//     * @param index {@link IndexDescriptor} specifying index to search.
-//     * @param lower lower numeric bound of search (inclusive).
-//     * @param upper upper numeric bound of search (inclusive).
-//     * @return ids of matching nodes.
-//     * @throws IndexNotFoundKernelException if {@code index} doesn't exist.
-//     */
-//    PrimitiveLongIterator nodesGetFromInclusiveNumericIndexRangeSeek( StorageStatement statement,
-//            IndexDescriptor index, Number lower, Number upper )
-//            throws IndexNotFoundKernelException;
-//
-//    /**
-//     * Searches an index for string values between {@code lower} and {@code upper}.
-//     *
-//     * @param statement {@link StorageStatement} created using {@link #acquireStatement()}.
-//     * @param index {@link IndexDescriptor} specifying index to search.
-//     * @param lower lower numeric bound of search.
-//     * @param includeLower whether or not lower bound is inclusive.
-//     * @param upper upper numeric bound of search.
-//     * @param includeUpper whether or not upper bound is inclusive.
-//     * @return ids of matching nodes.
-//     * @throws IndexNotFoundKernelException if {@code index} doesn't exist.
-//     */
-//    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( StorageStatement statement, IndexDescriptor index,
-//            String lower, boolean includeLower, String upper, boolean includeUpper )
-//            throws IndexNotFoundKernelException;
-//
-//    /**
-//     * Searches an index for string values starting with {@code prefix}.
-//     *
-//     * @param statement {@link StorageStatement} created using {@link #acquireStatement()}.
-//     * @param index {@link IndexDescriptor} specifying index to search.
-//     * @param prefix prefix that matching strings must start with.
-//     * @return ids of matching nodes.
-//     * @throws IndexNotFoundKernelException if {@code index} doesn't exist.
-//     */
-//    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( StorageStatement statement,
-//            IndexDescriptor index, String prefix )
-//            throws IndexNotFoundKernelException;
-//
-//    /**
-//     * Scans an index returning all nodes.
-//     *
-//     * @param statement {@link StorageStatement} created using {@link #acquireStatement()}.
-//     * @param index {@link IndexDescriptor} specifying index to search.
-//     * @return node ids in index.
-//     * @throws IndexNotFoundKernelException if {@code index} doesn't exist.
-//     */
-//    PrimitiveLongIterator nodesGetFromIndexScan( StorageStatement statement, IndexDescriptor index )
-//            throws IndexNotFoundKernelException;
-
     /**
      * Looks for a stored index by given {@code labelId} and {@code propertyKey}
      *
@@ -255,7 +175,7 @@ public interface StoreReadLayer
      * @return progress of index population, which is the initial state of an index when it's created.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    IndexPopulationProgress indexGetPopulationProgress( IndexDescriptor index ) throws IndexNotFoundKernelException;
+    PopulationProgress indexGetPopulationProgress( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Returns any failure that happened during population or operation of an index. Such failures

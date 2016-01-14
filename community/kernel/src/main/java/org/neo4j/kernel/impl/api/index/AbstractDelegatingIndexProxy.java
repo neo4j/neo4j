@@ -33,8 +33,8 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 public abstract class AbstractDelegatingIndexProxy implements IndexProxy
 {
@@ -125,7 +125,7 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexPopulationProgress getIndexPopulationProgress()
+    public PopulationProgress getIndexPopulationProgress()
     {
         return getDelegate().getIndexPopulationProgress();
     }

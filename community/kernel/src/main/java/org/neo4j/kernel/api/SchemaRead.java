@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 interface SchemaRead
 {
@@ -57,7 +57,7 @@ interface SchemaRead
     InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /** Retrieve the population progress of an index. */
-    IndexPopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /** Get the index size. */
     long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;

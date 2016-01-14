@@ -37,9 +37,9 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.BranchState;
+import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.kernel.impl.util.SingleNodePath;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.ColumnPrinter;
@@ -354,7 +354,7 @@ public class Ls extends TransactionProvidingApp
     {
         if ( sortByType )
         {
-            Path nodeAsPath = new SingleNodePath( node );
+            Path nodeAsPath = Paths.singleNodePath( node );
             return toSortedExpander( getServer().getDb(), Direction.BOTH, filterMap,
                     caseInsensitiveFilters, looseFilters ).expand( nodeAsPath, BranchState.NO_STATE );
         }
@@ -366,7 +366,7 @@ public class Ls extends TransactionProvidingApp
             }
             else
             {
-                Path nodeAsPath = new SingleNodePath( node );
+                Path nodeAsPath = Paths.singleNodePath( node );
                 return toExpander( getServer().getDb(), Direction.BOTH, filterMap, caseInsensitiveFilters, looseFilters ).expand( nodeAsPath, BranchState.NO_STATE );
             }
         }

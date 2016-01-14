@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluators;
@@ -49,7 +48,6 @@ import org.neo4j.kernel.impl.util.NoneStrictMath;
 import static org.neo4j.graphalgo.impl.util.PathInterestFactory.single;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
 /**
  * Find (one or some) simple shortest path(s) between two nodes.
@@ -87,6 +85,7 @@ public class Dijkstra implements PathFinder<WeightedPath>
      * @deprecated Dijkstra should not be used with state
      * Use {@link #Dijkstra(PathExpander, CostEvaluator)} instead.
      */
+    @Deprecated
     public Dijkstra( PathExpander expander, InitialBranchState stateFactory, CostEvaluator<Double> costEvaluator )
     {
         this( expander, stateFactory, costEvaluator, true );
@@ -96,6 +95,7 @@ public class Dijkstra implements PathFinder<WeightedPath>
      * @deprecated Dijkstra should not be used with state.
      * Use {@link #Dijkstra(PathExpander, CostEvaluator, PathInterest)} instead.
      */
+    @Deprecated
     public Dijkstra( PathExpander expander, InitialBranchState stateFactory, CostEvaluator<Double> costEvaluator,
             boolean stopAfterLowestCost )
     {
@@ -119,30 +119,15 @@ public class Dijkstra implements PathFinder<WeightedPath>
     }
 
     /**
-     * @deprecated in favor for {@link #Dijkstra(PathExpander, CostEvaluator)}
-     */
-    public Dijkstra( RelationshipExpander expander, CostEvaluator<Double> costEvaluator )
-    {
-        this( toPathExpander( expander ), costEvaluator );
-    }
-
-    /**
      * @deprecated in favor for {@link #Dijkstra(PathExpander, CostEvaluator, PathInterest)}  }.
      */
+    @Deprecated
     public Dijkstra( PathExpander expander, CostEvaluator<Double> costEvaluator,
             boolean stopAfterLowestCost )
     {
         this( expander, costEvaluator, NoneStrictMath.EPSILON, stopAfterLowestCost ?
                                                           PathInterestFactory.allShortest( NoneStrictMath.EPSILON ) :
                                                           PathInterestFactory.all( NoneStrictMath.EPSILON ) );
-    }
-
-    /**
-     * @deprecated in favor for {@link #Dijkstra( PathExpander, CostEvaluator, PathInterest ) }.
-     */
-    public Dijkstra( RelationshipExpander expander, CostEvaluator<Double> costEvaluator, boolean stopAfterLowestCost )
-    {
-        this( toPathExpander( expander ), costEvaluator, stopAfterLowestCost );
     }
 
     /**
@@ -260,8 +245,8 @@ public class Dijkstra implements PathFinder<WeightedPath>
 
     private static class DijkstraEvaluator extends PathEvaluator.Adapter<Double>
     {
-        private MutableDouble shortestSoFar;
-        private Node endNode;
+        private final MutableDouble shortestSoFar;
+        private final Node endNode;
         private final CostEvaluator<Double> costEvaluator;
 
         DijkstraEvaluator( MutableDouble shortestSoFar, Node endNode, CostEvaluator<Double> costEvaluator )

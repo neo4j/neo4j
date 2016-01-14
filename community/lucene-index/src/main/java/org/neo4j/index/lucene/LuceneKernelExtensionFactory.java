@@ -19,13 +19,13 @@
  */
 package org.neo4j.index.lucene;
 
-import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 
 public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneKernelExtensionFactory.Dependencies>
 {

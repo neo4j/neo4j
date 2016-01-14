@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.transaction.log.IOCursor;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.IdentifiableLogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;

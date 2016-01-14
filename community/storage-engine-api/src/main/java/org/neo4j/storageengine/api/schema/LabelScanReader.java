@@ -21,8 +21,8 @@ package org.neo4j.storageengine.api.schema;
 
 import java.util.Iterator;
 
-import org.neo4j.Resource;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.Resource;
 
 /**
  * Reader of a label scan store which contains label-->nodes mappings.

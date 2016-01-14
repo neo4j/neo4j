@@ -25,20 +25,14 @@ import static java.util.Collections.unmodifiableCollection;
 import static org.junit.Assert.assertNotNull;
 
 import static org.neo4j.graphdb.Direction.BOTH;
-import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.graphdb.ReturnableEvaluator.ALL;
-import static org.neo4j.graphdb.StopEvaluator.DEPTH_ONE;
-import static org.neo4j.graphdb.Traverser.Order.BREADTH_FIRST;
 
 @SuppressWarnings("UnusedDeclaration")
 public class NodeFacadeMethods
 {
     private static final RelationshipType FOO = withName( "foo" );
     private static final RelationshipType BAR = withName( "bar" );
-    private static final RelationshipType BAZ = withName( "baz" );
     private static final Label QUUX = label( "quux" );
 
     private static final FacadeMethod<Node> HAS_PROPERTY = new FacadeMethod<Node>( "boolean hasProperty( " +
@@ -230,46 +224,6 @@ public class NodeFacadeMethods
         }
     };
 
-    private static final FacadeMethod<Node> TRAVERSE_USING_ONE_TYPE_AND_DIRECTION = new FacadeMethod<Node>( "Traverser " +
-            "traverse( Traverser.Order " +
-            "traversalOrder, StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator, " +
-            "RelationshipType relationshipType, Direction direction )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            //noinspection deprecation
-            node.traverse( BREADTH_FIRST, DEPTH_ONE, ALL, FOO, BOTH );
-        }
-    };
-
-    private static final FacadeMethod<Node> TRAVERSE_USING_TWO_TYPES_AND_DIRECTIONS = new FacadeMethod<Node>( "Traverser " +
-            "traverse( Traverser.Order " +
-            "traversalOrder, StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator, " +
-            "RelationshipType firstRelationshipType, Direction firstDirection, " +
-            "RelationshipType secondRelationshipType, Direction secondDirection )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            //noinspection deprecation
-            node.traverse( BREADTH_FIRST, DEPTH_ONE, ALL, FOO, BOTH, BAR, OUTGOING );
-        }
-    };
-
-    private static final FacadeMethod<Node> TRAVERSE_USING_ANY_NUMBER_OF_TYPES_AND_DIRECTIONS = new FacadeMethod<Node>(
-            "Traverser traverse( Traverser.Order " +
-                    "traversalOrder, StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator, " +
-                    "Object... relationshipTypesAndDirections )" )
-    {
-        @Override
-        public void call( Node node )
-        {
-            //noinspection deprecation
-            node.traverse( BREADTH_FIRST, DEPTH_ONE, ALL, FOO, BOTH, BAR, OUTGOING, BAZ, INCOMING );
-        }
-    };
-
     private static final FacadeMethod<Node> ADD_LABEL = new FacadeMethod<Node>( "void addLabel( Label label )" )
     {
         @Override
@@ -303,7 +257,7 @@ public class NodeFacadeMethods
         public void call( Node node )
         {
             consume( node.getLabels() );
-        }        
+        }
     };
 
     static final Iterable<FacadeMethod<Node>> ALL_NODE_FACADE_METHODS = unmodifiableCollection( asList(
@@ -324,9 +278,6 @@ public class NodeFacadeMethods
         GET_RELATIONSHIPS_BY_TYPE_AND_DIRECTION,
         HAS_RELATIONSHIP_BY_TYPE_AND_DIRECTION,
         GET_SINGLE_RELATIONSHIP, CREATE_RELATIONSHIP_TO,
-        TRAVERSE_USING_ONE_TYPE_AND_DIRECTION,
-        TRAVERSE_USING_TWO_TYPES_AND_DIRECTIONS,
-        TRAVERSE_USING_ANY_NUMBER_OF_TYPES_AND_DIRECTIONS,
         ADD_LABEL,
         REMOVE_LABEL,
         HAS_LABEL,

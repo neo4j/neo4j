@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.Visitor;
 
 public class PhysicalTransactionRepresentation implements TransactionRepresentation
 {

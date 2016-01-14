@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CTInteger
 import org.neo4j.cypher.internal.spi.v3_0.MonoDirectionalTraversalMatcher
-import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.Iterables.asResourceIterable
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -363,12 +362,6 @@ class MonitoredNode(inner: Node, monitor: () => Unit) extends Node {
   def getSingleRelationship(`type`: RelationshipType, dir: Direction): Relationship = null
 
   def createRelationshipTo(otherNode: Node, `type`: RelationshipType): Relationship = null
-
-  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipType: RelationshipType, direction: Direction): Traverser = null
-
-  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, firstRelationshipType: RelationshipType, firstDirection: Direction, secondRelationshipType: RelationshipType, secondDirection: Direction): Traverser = null
-
-  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipTypesAndDirections: AnyRef*): Traverser = null
 
   def getGraphDatabase: GraphDatabaseService = null
 

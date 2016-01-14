@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 

@@ -26,10 +26,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.cursor.IOCursor;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
-import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;

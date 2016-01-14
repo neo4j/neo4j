@@ -38,10 +38,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
-import org.neo4j.graphdb.Traverser;
-import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -56,7 +52,6 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -563,41 +558,6 @@ public class NodeProxy
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-    }
-
-    @Override
-    public Traverser traverse( Order traversalOrder,
-                               StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-                               RelationshipType relationshipType, Direction direction )
-    {
-        assertInUnterminatedTransaction();
-        return OldTraverserWrapper.traverse( this,
-                traversalOrder, stopEvaluator,
-                returnableEvaluator, relationshipType, direction );
-    }
-
-    @Override
-    public Traverser traverse( Order traversalOrder,
-                               StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-                               RelationshipType firstRelationshipType, Direction firstDirection,
-                               RelationshipType secondRelationshipType, Direction secondDirection )
-    {
-        assertInUnterminatedTransaction();
-        return OldTraverserWrapper.traverse( this,
-                traversalOrder, stopEvaluator,
-                returnableEvaluator, firstRelationshipType, firstDirection,
-                secondRelationshipType, secondDirection );
-    }
-
-    @Override
-    public Traverser traverse( Order traversalOrder,
-                               StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-                               Object... relationshipTypesAndDirections )
-    {
-        assertInUnterminatedTransaction();
-        return OldTraverserWrapper.traverse( this,
-                traversalOrder, stopEvaluator,
-                returnableEvaluator, relationshipTypesAndDirections );
     }
 
     @Override

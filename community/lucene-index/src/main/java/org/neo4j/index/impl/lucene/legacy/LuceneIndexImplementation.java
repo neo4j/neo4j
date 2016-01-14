@@ -27,16 +27,16 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.index.IndexCommandFactory;
-import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.spi.legacyindex.IndexCommandFactory;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
+import org.neo4j.kernel.spi.legacyindex.LegacyIndexProviderTransaction;
 
 public class LuceneIndexImplementation extends LifecycleAdapter implements IndexImplementation
 {

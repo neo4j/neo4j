@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.Thread.currentThread;
 
@@ -140,12 +140,12 @@ public class IndexPopulationJob implements Runnable
         storeScan.run();
     }
 
-    public IndexPopulationProgress getPopulationProgress()
+    public PopulationProgress getPopulationProgress()
     {
         if ( storeScan == null )
         {
             // indexing hasn't begun yet
-            return IndexPopulationProgress.NONE;
+            return PopulationProgress.NONE;
         }
         return storeScan.getProgress();
     }

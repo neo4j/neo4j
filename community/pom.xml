@@ -31,9 +31,12 @@
   </scm>
 
   <modules>
+    <module>resource</module>
+    <module>collections</module>
+    <module>primitive-collections</module>
+    <module>graphdb-api</module>
     <module>unsafe</module>
     <module>function</module>
-    <module>primitive-collections</module>
     <module>io</module>
     <module>csv</module>
     <module>logging</module>

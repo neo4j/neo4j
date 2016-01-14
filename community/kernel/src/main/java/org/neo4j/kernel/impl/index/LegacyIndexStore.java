@@ -29,13 +29,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 

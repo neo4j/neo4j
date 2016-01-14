@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

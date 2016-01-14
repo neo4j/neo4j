@@ -21,7 +21,7 @@ package org.neo4j.backup;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.subprocess.SubProcess;
 
 public class ServerProcess extends SubProcess<ServerInterface, Pair<String, String>> implements ServerInterface

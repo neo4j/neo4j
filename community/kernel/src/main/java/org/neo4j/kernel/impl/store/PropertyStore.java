@@ -28,9 +28,9 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.cursor.GenericCursor;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;

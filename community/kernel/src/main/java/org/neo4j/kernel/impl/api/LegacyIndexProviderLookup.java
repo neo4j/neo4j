@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.function.Function;
 
-import org.neo4j.graphdb.index.IndexImplementation;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 
 /**
  * Looks up an {@link IndexImplementation} given a name.

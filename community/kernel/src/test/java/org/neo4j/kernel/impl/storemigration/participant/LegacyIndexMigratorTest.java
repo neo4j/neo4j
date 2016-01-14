@@ -28,10 +28,10 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.upgrade.lucene.LegacyIndexMigrationException;

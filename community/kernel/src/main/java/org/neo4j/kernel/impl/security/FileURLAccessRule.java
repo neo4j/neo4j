@@ -26,16 +26,15 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.kernel.security.URLAccessValidationError;
+import org.neo4j.graphdb.security.URLAccessValidationError;
 
 class FileURLAccessRule implements URLAccessRule
 {
     @Override
-    public URL validate( GraphDatabaseAPI gdb, URL url ) throws URLAccessValidationError
+    public URL validate( Configuration config, URL url ) throws URLAccessValidationError
     {
         if ( !( url.getAuthority() == null || url.getAuthority().equals("") ) )
         {
@@ -47,7 +46,6 @@ class FileURLAccessRule implements URLAccessRule
             throw new URLAccessValidationError( "file URL may not contain a query component" );
         }
 
-        final Config config = gdb.getDependencyResolver().resolveDependency( Config.class );
         if ( !config.get( GraphDatabaseSettings.allow_file_urls ) )
         {
             throw new URLAccessValidationError( "configuration property '" + GraphDatabaseSettings.allow_file_urls.name() + "' is false" );

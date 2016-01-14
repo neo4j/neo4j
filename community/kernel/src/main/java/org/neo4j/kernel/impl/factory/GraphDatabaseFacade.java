@@ -46,6 +46,7 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -83,7 +84,6 @@ import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
-import org.neo4j.kernel.security.URLAccessValidationError;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.EntityType;
 
@@ -583,7 +583,7 @@ public class GraphDatabaseFacade
     @Override
     public URL validateURLAccess( URL url ) throws URLAccessValidationError
     {
-        return platformModule.urlAccessRule.validate( this, url );
+        return platformModule.urlAccessRule.validate( platformModule.config, url );
     }
 
     @Override

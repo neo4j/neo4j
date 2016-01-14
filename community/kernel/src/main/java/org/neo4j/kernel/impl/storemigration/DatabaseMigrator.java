@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.util.Map;
 
-import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -33,6 +32,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.LegacyIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.logging.LogProvider;
 
 /**

@@ -20,13 +20,11 @@
 package org.neo4j.graphalgo.impl.path;
 
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
 import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
 import static org.neo4j.kernel.Traversal.traversal;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Uniqueness;
@@ -37,18 +35,13 @@ public class AllPaths extends TraversalPathFinder
     private final int maxDepth;
     private final TraversalDescription base;
 
-    public AllPaths( int maxDepth, RelationshipExpander expander )
-    {
-        this( maxDepth, toPathExpander( expander ) );
-    }
-
     public AllPaths( int maxDepth, PathExpander expander )
     {
         this.maxDepth = maxDepth;
         this.expander = expander;
         this.base = traversal().depthFirst().uniqueness( uniqueness() );
     }
-    
+
     protected Uniqueness uniqueness()
     {
         return Uniqueness.RELATIONSHIP_PATH;
@@ -60,8 +53,8 @@ public class AllPaths extends TraversalPathFinder
 //        // Legacy single-directional traversal (for reference or something)
 //        return traversal().expand( expander ).depthFirst().uniqueness( uniqueness() )
 //                .evaluator( toDepth( maxDepth ) ).evaluator( Evaluators.includeWhereEndNodeIs( end ) )
-//                .traverse( start );   
-        
+//                .traverse( start );
+
         // Bidirectional traversal
         return bidirectionalTraversal()
                 .startSide( base.expand( expander ).evaluator( toDepth( maxDepth/2 ) ) )

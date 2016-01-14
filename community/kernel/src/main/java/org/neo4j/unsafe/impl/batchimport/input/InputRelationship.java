@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.util.Collection;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
 

@@ -28,13 +28,13 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.util.Collections.singletonMap;

@@ -29,15 +29,12 @@ import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicies;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.graphdb.traversal.UniquenessFactory;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.CommonBranchOrdering;
-import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -52,7 +49,7 @@ import static java.lang.Integer.parseInt;
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
 
 /**
- * Traverses the graph using {@link Traverser}.
+ * Traverses the graph.
  */
 @Service.Implementation( App.class )
 public class Trav extends TransactionProvidingApp
@@ -110,15 +107,15 @@ public class Trav extends TransactionProvidingApp
         boolean caseInsensitiveFilters = parser.options().containsKey( "i" );
         boolean looseFilters = parser.options().containsKey( "l" );
         boolean quiet = parser.options().containsKey( "q" );
-        
+
         // Order
-        TraversalDescription description = Traversal.description();
+        TraversalDescription description = getServer().getDb().traversalDescription();
         String order = parser.options().get( "o" );
         if ( order != null )
         {
             description = description.order( parseOrder( order ) );
         }
-        
+
         // Relationship types / expander
         String relationshipTypes = parser.options().get( "r" );
         if ( relationshipTypes != null )
@@ -127,14 +124,14 @@ public class Trav extends TransactionProvidingApp
             description = description.expand( toExpander( getServer().getDb(), null, types,
                     caseInsensitiveFilters, looseFilters ) );
         }
-        
+
         // Uniqueness
         String uniqueness = parser.options().get( "u" );
         if ( uniqueness != null )
         {
             description = description.uniqueness( parseUniqueness( uniqueness ) );
         }
-        
+
         // Depth limit
         String depthLimit = parser.options().get( "d" );
         if ( depthLimit != null )
@@ -145,7 +142,7 @@ public class Trav extends TransactionProvidingApp
         String filterString = parser.options().get( "f" );
         Map<String, Object> filterMap = filterString != null ? parseFilter( filterString, out ) : null;
         String commandToRun = parser.options().get( "c" );
-        Collection<String> commandsToRun = new ArrayList<String>();
+        Collection<String> commandsToRun = new ArrayList<>();
         if ( commandToRun != null )
         {
             commandsToRun.addAll( Arrays.asList( commandToRun.split( Pattern.quote( "&&" ) ) ) );
@@ -160,7 +157,7 @@ public class Trav extends TransactionProvidingApp
             else
             {
                 Node endNode = path.endNode();
-                Map<String, Boolean> matchPerFilterKey = new HashMap<String, Boolean>();
+                Map<String, Boolean> matchPerFilterKey = new HashMap<>();
                 for ( String key : endNode.getPropertyKeys() )
                 {
                     for ( Map.Entry<String, Object> filterEntry :
@@ -226,7 +223,7 @@ public class Trav extends TransactionProvidingApp
         {
             return BranchOrderingPolicies.PREORDER_BREADTH_FIRST;
         }
-        
-        return parseEnum( CommonBranchOrdering.class, order, null );
+
+        return parseEnum( BranchOrderingPolicies.class, order, null );
     }
 }

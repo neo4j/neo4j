@@ -61,7 +61,8 @@ public interface TransactionRepresentation extends CommandStream
     long getTimeCommitted();
 
     /**
-     * @return the identifier for the lock session associated with this transaction, or {@link #NO_LOCK_SESSION} if none. This is only used for slave commits.
+     * @return the identifier for the lock session associated with this transaction, or {-1} if none.
+     * This is only used for slave commits.
      */
     int getLockSessionId();
 }

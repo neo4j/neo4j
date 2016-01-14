@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public interface SchemaReadOperations
@@ -69,7 +69,7 @@ public interface SchemaReadOperations
     /**
      * Retrieve the population progress of an index.
      */
-    IndexPopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor ) throws
+    PopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor ) throws
             IndexNotFoundKernelException;
 
     /**

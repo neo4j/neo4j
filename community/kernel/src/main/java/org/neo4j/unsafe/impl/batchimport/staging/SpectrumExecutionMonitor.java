@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;

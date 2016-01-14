@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 public interface StoreScan<FAILURE extends Exception>
 {
@@ -27,5 +27,5 @@ public interface StoreScan<FAILURE extends Exception>
 
     void stop();
 
-    IndexPopulationProgress getProgress();
+    PopulationProgress getProgress();
 }

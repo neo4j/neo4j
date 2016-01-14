@@ -24,7 +24,6 @@ import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
 
 import scala.collection.JavaConverters._
@@ -152,12 +151,6 @@ class PathImplTest extends CypherFunSuite {
     def getSingleRelationship(`type` : RelationshipType, dir: Direction): Relationship = null
 
     def createRelationshipTo(otherNode: Node, `type` : RelationshipType): Relationship = null
-
-    def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipType: RelationshipType, direction: Direction): Traverser = null
-
-    def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, firstRelationshipType: RelationshipType, firstDirection: Direction, secondRelationshipType: RelationshipType, secondDirection: Direction): Traverser = null
-
-    def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipTypesAndDirections: AnyRef*): Traverser = null
 
     def getGraphDatabase: GraphDatabaseService = null
 

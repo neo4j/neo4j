@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 
 import static org.mockito.Mockito.mock;
 

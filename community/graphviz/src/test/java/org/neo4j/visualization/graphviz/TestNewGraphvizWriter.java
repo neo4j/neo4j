@@ -25,15 +25,11 @@ import java.io.OutputStream;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.walk.Walker;
@@ -74,9 +70,13 @@ public class TestNewGraphvizWriter
 			    .createRelationshipTo( emil, type.WORKS_FOR );
 			OutputStream out = new ByteArrayOutputStream();
 			GraphvizWriter writer = new GraphvizWriter();
-            writer.emit( out, Walker.crosscut( emil.traverse( Order.DEPTH_FIRST,
-                    StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL, type.KNOWS,
-                    Direction.BOTH, type.WORKS_FOR, Direction.BOTH ), type.KNOWS, type.WORKS_FOR ) );
+            Iterable<Node> traverser = dbRule.traversalDescription()
+                    .depthFirst()
+                    .relationships( type.KNOWS )
+                    .relationships( type.WORKS_FOR )
+                    .traverse( emil )
+                    .nodes();
+            writer.emit( out, Walker.crosscut( traverser, type.KNOWS, type.WORKS_FOR ) );
 			tx.success();
 			out.toString();
 		}

@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
@@ -121,7 +122,7 @@ public class PagedTraverserTest
     private Traverser simpleListTraverser()
     {
         return Traversal.description()
-                .expand( Traversal.expanderForTypes( RelationshipType.withName( "NEXT" ), Direction.OUTGOING ) )
+                .expand( PathExpanders.forTypeAndDirection( RelationshipType.withName( "NEXT" ), Direction.OUTGOING ) )
                 .depthFirst()
                 .uniqueness( Uniqueness.NODE_GLOBAL )
                 .traverse( startNode );

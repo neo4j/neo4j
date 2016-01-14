@@ -32,7 +32,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;

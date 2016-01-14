@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.csv.reader.SourceTraceability;
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Pair;
 
 import static java.lang.String.format;
 
