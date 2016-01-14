@@ -620,7 +620,7 @@ public class ImportTool
         final Character specificArrayDelimiter =
                 args.interpretOption( Options.ARRAY_DELIMITER.key(), Converters.<Character>optional(), DELIMITER_CONVERTER );
         final Character specificQuote =
-                args.interpretOption( Options.QUOTE.key(), Converters.<Character>optional(), Converters.toCharacter() );
+                args.interpretOption( Options.QUOTE.key(), Converters.<Character>optional(), DELIMITER_CONVERTER );
         final Boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), null );
         final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );
         return new Configuration.Default()
