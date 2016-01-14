@@ -86,30 +86,35 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         boolean needsRetry = !page.validateReadLock( lockStamp );
         if ( needsRetry )
         {
-            setOffset( 0 );
-            lockStamp = page.tryOptimisticReadLock();
-            // The page might have been evicted while we held the optimistic
-            // read lock, so we need to check with page.pin that this is still
-            // the page we're actually interested in:
-            if ( !page.isBoundTo( pagedFile.swapper, currentPageId ) )
-            {
-                // This is no longer the page we're interested in, so we have
-                // to redo the pinning.
-                // This might in turn lead to a new optimistic lock on a
-                // different page if someone else has taken the page fault for
-                // us. If nobody has done that, we'll take the page fault
-                // ourselves, and in that case we'll end up with first an exclusive
-                // lock during the faulting, and then an optimistic read lock once the
-                // fault itself is over.
-                // First, forget about this page in case pin() throws and the cursor
-                // is closed; we don't want unpinCurrentPage() to try unlocking
-                // this page.
-                page = null;
-                // Then try pin again.
-                pin( currentPageId, false );
-            }
+            startRetry();
         }
         return needsRetry;
+    }
+
+    private void startRetry() throws IOException
+    {
+        setOffset( 0 );
+        lockStamp = page.tryOptimisticReadLock();
+        // The page might have been evicted while we held the optimistic
+        // read lock, so we need to check with page.pin that this is still
+        // the page we're actually interested in:
+        if ( !page.isBoundTo( pagedFile.swapper, currentPageId ) )
+        {
+            // This is no longer the page we're interested in, so we have
+            // to redo the pinning.
+            // This might in turn lead to a new optimistic lock on a
+            // different page if someone else has taken the page fault for
+            // us. If nobody has done that, we'll take the page fault
+            // ourselves, and in that case we'll end up with first an exclusive
+            // lock during the faulting, and then an optimistic read lock once the
+            // fault itself is over.
+            // First, forget about this page in case pin() throws and the cursor
+            // is closed; we don't want unpinCurrentPage() to try unlocking
+            // this page.
+            page = null;
+            // Then try pin again.
+            pin( currentPageId, false );
+        }
     }
 
     @Override
