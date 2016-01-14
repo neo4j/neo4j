@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadPositionableReadableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotDeserializer.deserialize;
@@ -101,7 +101,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
 
         physicalLogVersionedStoreChannel.position( 0 );
 
-        try ( ReadAheadPositionableReadableChannel readAheadChannel = new ReadAheadPositionableReadableChannel( physicalLogVersionedStoreChannel,
+        try ( ReadAheadLogChannel readAheadChannel = new ReadAheadLogChannel( physicalLogVersionedStoreChannel,
                 LogVersionBridge.NO_MORE_CHANNELS ) )
         {
             recovered = deserialize( readAheadChannel );

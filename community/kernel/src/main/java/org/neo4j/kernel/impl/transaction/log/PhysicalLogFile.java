@@ -187,11 +187,11 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public VersionableReadableClosablePositionAwareChannel getReader( LogPosition position ) throws IOException
+    public ReadableLogChannel getReader( LogPosition position ) throws IOException
     {
         PhysicalLogVersionedStoreChannel logChannel = openForVersion( logFiles, fileSystem, position.getLogVersion() );
         logChannel.position( position.getByteOffset() );
-        return new ReadAheadPositionableReadableChannel( logChannel, readerLogVersionBridge );
+        return new ReadAheadLogChannel( logChannel, readerLogVersionBridge );
     }
 
     public static PhysicalLogVersionedStoreChannel openForVersion( PhysicalLogFiles logFiles,
@@ -241,7 +241,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     @Override
     public void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException
     {
-        try ( VersionableReadableClosablePositionAwareChannel reader = getReader( startingFromPosition ) )
+        try ( ReadableLogChannel reader = getReader( startingFromPosition ) )
         {
             visitor.visit( startingFromPosition, reader );
         }

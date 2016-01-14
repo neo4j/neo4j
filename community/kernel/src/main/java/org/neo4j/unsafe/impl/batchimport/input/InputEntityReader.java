@@ -28,9 +28,9 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadPositionableReadableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
-import org.neo4j.kernel.impl.transaction.log.VersionableReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -46,7 +46,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.TOKEN;
 abstract class InputEntityReader<ENTITY extends InputEntity> extends PrefetchingIterator<ENTITY>
         implements InputIterator<ENTITY>
 {
-    protected final VersionableReadableClosablePositionAwareChannel channel;
+    protected final ReadableLogChannel channel;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
     private int lineNumber;
     private final Group[] previousGroups;
@@ -63,9 +63,9 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
         readHeader( header );
     }
 
-    private ReadAheadPositionableReadableChannel reader( StoreChannel channel, int bufferSize ) throws IOException
+    private ReadAheadLogChannel reader( StoreChannel channel, int bufferSize ) throws IOException
     {
-        return new ReadAheadPositionableReadableChannel(
+        return new ReadAheadLogChannel(
                 new PhysicalLogVersionedStoreChannel( channel, 0, (byte) 0 ), NO_MORE_CHANNELS, bufferSize );
     }
 

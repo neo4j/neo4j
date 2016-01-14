@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-public interface VersionableReadableClosablePositionAwareChannel
-        extends VersionableLog, ReadableClosablePositionAwareChannel
+public interface ReadableLogChannel
+        extends ReadableClosablePositionAwareChannel, VersionableLog
 {
 }

@@ -61,7 +61,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
             if ( transactionMetadata != null )
             {
                 // we're good
-                VersionableReadableClosablePositionAwareChannel channel = logFile.getReader( transactionMetadata.getStartPosition() );
+                ReadableLogChannel channel = logFile.getReader( transactionMetadata.getStartPosition() );
                 return new PhysicalTransactionCursor<>( channel, logEntryReader );
             }
 

@@ -42,7 +42,7 @@ public interface LogFile
      * @return {@link ReadableClosableChannel} capable of reading log data, starting from {@link LogPosition position}.
      * @throws IOException
      */
-    VersionableReadableClosablePositionAwareChannel getReader( LogPosition position ) throws IOException;
+    ReadableLogChannel getReader( LogPosition position ) throws IOException;
 
     void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException;
 

@@ -31,7 +31,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.VersionableReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -112,7 +112,7 @@ public class LatestCheckPointFinderTest
         // given
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 16 ) );
-        when( reader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn( start, null );
+        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, null );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( olderLogVersion );
@@ -140,7 +140,7 @@ public class LatestCheckPointFinderTest
         // given
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 16 ) );
-        when( reader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn( start, null );
+        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, null );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
@@ -156,7 +156,7 @@ public class LatestCheckPointFinderTest
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 33 ) );
 
-        when( reader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn( checkPoint, null );
+        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( checkPoint, null );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
@@ -172,7 +172,7 @@ public class LatestCheckPointFinderTest
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 16 ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 33 ) );
-        when( reader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn( start, checkPoint, null );
+        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, checkPoint, null );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
@@ -188,7 +188,7 @@ public class LatestCheckPointFinderTest
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 16 ) );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 33 ) );
-        when( reader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn( start, checkPoint, null );
+        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, checkPoint, null );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
@@ -204,7 +204,7 @@ public class LatestCheckPointFinderTest
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 16 ) );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 16 ) );
-        when( reader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn( start, checkPoint, null );
+        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, checkPoint, null );
 
         // when
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
@@ -221,7 +221,7 @@ public class LatestCheckPointFinderTest
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 22 ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 33 ) );
 
-        when( reader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn(
+        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 mock( CheckPoint.class ), start, checkPoint, null );
 
         // when
@@ -239,7 +239,7 @@ public class LatestCheckPointFinderTest
         CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 22 ) );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 33 ) );
 
-        when( reader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn(
+        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 mock( CheckPoint.class ), checkPoint, start, null );
 
         // when
@@ -258,7 +258,7 @@ public class LatestCheckPointFinderTest
         LogEntryStart start2 = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 16 ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 33 ) );
 
-        when( reader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn(
+        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 start1, null, // first file
                 start2,  checkPoint, null // second file
         );
@@ -278,7 +278,7 @@ public class LatestCheckPointFinderTest
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 16 ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 33 ) );
 
-        when( reader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn(
+        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 null, // first file
                 start,  checkPoint, null // second file
         );
@@ -298,7 +298,7 @@ public class LatestCheckPointFinderTest
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 22 ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 16 ) );
 
-        when( reader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn(
+        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 checkPoint, // first file
                 start, null // second file
         );
@@ -318,7 +318,7 @@ public class LatestCheckPointFinderTest
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 22 ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 25 ) );
 
-        when( reader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn(
+        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 checkPoint, // first file
                 start, null // second file
         );
@@ -339,7 +339,7 @@ public class LatestCheckPointFinderTest
         LogEntry secondStart = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 27 ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 25 ) );
 
-        when( reader.readLogEntry( any( VersionableReadableClosablePositionAwareChannel.class ) ) ).thenReturn(
+        when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 null, // first file
                 firstStart, checkPoint, secondStart, null // second file
         );

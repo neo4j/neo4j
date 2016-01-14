@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cursor.IOCursor;
-import org.neo4j.kernel.impl.transaction.log.VersionableReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.IdentifiableLogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -34,16 +34,16 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 
 class LogEntrySortingCursor implements IOCursor<LogEntry>
 {
-    private final VersionableReadableClosablePositionAwareChannel channel;
-    private final LogEntryReader<VersionableReadableClosablePositionAwareChannel> reader;
+    private final ReadableLogChannel channel;
+    private final LogEntryReader<ReadableLogChannel> reader;
     // identifier -> log entry
     private final Map<Integer, List<LogEntry>> idToEntries = new HashMap<>();
 
     private LogEntry toReturn;
     private int idToFetchFrom = -1;
 
-    LogEntrySortingCursor( LogEntryReader<VersionableReadableClosablePositionAwareChannel> reader,
-                           VersionableReadableClosablePositionAwareChannel channel )
+    LogEntrySortingCursor( LogEntryReader<ReadableLogChannel> reader,
+                           ReadableLogChannel channel )
     {
         this.reader = reader;
         this.channel = channel;

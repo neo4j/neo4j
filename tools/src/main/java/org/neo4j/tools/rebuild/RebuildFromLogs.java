@@ -60,10 +60,10 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadPositionableReadableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
-import org.neo4j.kernel.impl.transaction.log.VersionableReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -188,7 +188,7 @@ class RebuildFromLogs
 
     private long findLastTransactionId( PhysicalLogFiles logFiles, long highestVersion ) throws IOException
     {
-        VersionableReadableClosablePositionAwareChannel logChannel = new ReadAheadPositionableReadableChannel(
+        ReadableLogChannel logChannel = new ReadAheadLogChannel(
                 PhysicalLogFile.openForVersion( logFiles, fs, highestVersion ), NO_MORE_CHANNELS );
 
         long lastTransactionId = -1;
@@ -238,7 +238,7 @@ class RebuildFromLogs
             int startVersion = 0;
             ReaderLogVersionBridge versionBridge = new ReaderLogVersionBridge( fs, logFiles );
             PhysicalLogVersionedStoreChannel startingChannel = openForVersion( logFiles, fs, startVersion );
-            VersionableReadableClosablePositionAwareChannel channel = new ReadAheadPositionableReadableChannel( startingChannel, versionBridge );
+            ReadableLogChannel channel = new ReadAheadLogChannel( startingChannel, versionBridge );
             long txId = BASE_TX_ID;
             TransactionQueue queue = new TransactionQueue( 10_000,
                     (tx) -> {commitProcess.commit( tx, NULL, EXTERNAL );} );

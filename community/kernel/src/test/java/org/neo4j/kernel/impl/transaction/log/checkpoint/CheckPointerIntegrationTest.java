@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadPositionableReadableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -224,7 +224,7 @@ public class CheckPointerIntegrationTest
                     break;
                 }
 
-                ReadableClosablePositionAwareChannel recoveredDataChannel = new ReadAheadPositionableReadableChannel( channel, NO_MORE_CHANNELS );
+                ReadableClosablePositionAwareChannel recoveredDataChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
 
                 try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, recoveredDataChannel ) )
                 {

@@ -28,43 +28,20 @@ import org.neo4j.storageengine.api.ReadPastEndException;
 import static java.lang.Math.min;
 import static java.lang.System.arraycopy;
 
-/**
- * Basically a sequence of {@link StoreChannel channels} seamlessly seen as one.
- */
-public class ReadAheadPositionableReadableChannel implements VersionableReadableClosablePositionAwareChannel
+public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosableChannel
 {
-    private static final int DEFAULT_READ_AHEAD_SIZE = 1024 * 4;
+    public static final int DEFAULT_READ_AHEAD_SIZE = 1024 * 4;
 
+    protected T channel;
     private final ByteBuffer aheadBuffer;
-    private LogVersionedStoreChannel channel;
-//    private StoreChannel channel;
-    private final LogVersionBridge bridge;
     private final int readAheadSize;
 
-    public ReadAheadPositionableReadableChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge )
+    public ReadAheadChannel( T channel, int readAheadSize )
     {
-        this(startingChannel, bridge, DEFAULT_READ_AHEAD_SIZE);
-    }
-
-    public ReadAheadPositionableReadableChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, int readAheadSize )
-    {
-        this.channel = startingChannel;
-        this.bridge = bridge;
-        this.readAheadSize = readAheadSize;
         this.aheadBuffer = ByteBuffer.allocate( readAheadSize );
-        aheadBuffer.position( aheadBuffer.capacity() );
-    }
-
-    @Override
-    public long getVersion()
-    {
-        return channel.getVersion();
-    }
-
-    @Override
-    public byte getLogFormatVersion()
-    {
-        return channel.getLogFormatVersion();
+        this.aheadBuffer.position( aheadBuffer.capacity() );
+        this.channel = channel;
+        this.readAheadSize = readAheadSize;
     }
 
     @Override
@@ -117,11 +94,17 @@ public class ReadAheadPositionableReadableChannel implements VersionableReadable
         int bytesGotten = 0;
         while ( bytesGotten < length )
         {   // get max 1024 bytes at the time, so that ensureDataExists functions as it should
-            int chunkSize = min( readAheadSize >> 2, (length-bytesGotten) );
+            int chunkSize = min( readAheadSize >> 2, (length - bytesGotten) );
             ensureDataExists( chunkSize );
             aheadBuffer.get( bytes, bytesGotten, chunkSize );
             bytesGotten += chunkSize;
         }
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        channel.close();
     }
 
     private void ensureDataExists( int requestedNumberOfBytes ) throws IOException
@@ -134,11 +117,8 @@ public class ReadAheadPositionableReadableChannel implements VersionableReadable
 
         // We ran out, try to read some more
         // start by copying the remaining bytes to the beginning
-        arraycopy( aheadBuffer.array(), aheadBuffer.position(), aheadBuffer.array(), 0, remaining );
-        aheadBuffer.clear();
+        compactToBeginningOfBuffer( remaining );
 
-        // fill the buffer (preferably to the brim)
-        aheadBuffer.position( remaining );
         while ( aheadBuffer.position() < aheadBuffer.capacity() )
         {   // read from the current channel to try and fill the buffer
             int read = channel.read( aheadBuffer );
@@ -151,7 +131,7 @@ public class ReadAheadPositionableReadableChannel implements VersionableReadable
                 }
 
                 // ... we need to read even further, into the next version
-                LogVersionedStoreChannel nextChannel = bridge.next( channel );
+                T nextChannel = next( channel );
                 assert nextChannel != null;
                 if ( nextChannel == channel )
                 {
@@ -165,16 +145,21 @@ public class ReadAheadPositionableReadableChannel implements VersionableReadable
         aheadBuffer.flip();
     }
 
-    @Override
-    public void close() throws IOException
+    protected T next( T channel ) throws IOException
     {
-        channel.close();
+        return channel;
     }
 
-    @Override
-    public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
+    protected long offset() throws IOException
     {
-        positionMarker.mark( channel.getVersion(), channel.position()-aheadBuffer.remaining() );
-        return positionMarker;
+        return channel.position() - aheadBuffer.remaining();
+    }
+
+    private void compactToBeginningOfBuffer( int remaining )
+    {
+        arraycopy( aheadBuffer.array(), aheadBuffer.position(), aheadBuffer.array(), 0, remaining );
+        aheadBuffer.clear();
+
+        aheadBuffer.position( remaining );
     }
 }

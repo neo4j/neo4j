@@ -44,11 +44,11 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadPositionableReadableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.log.VersionableReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -154,7 +154,7 @@ public class RecoveryTest
                         @Override
                         public boolean visit( LogVersionedStoreChannel element ) throws IOException
                         {
-                            try ( VersionableReadableClosablePositionAwareChannel channel = new ReadAheadPositionableReadableChannel( element,
+                            try ( ReadableLogChannel channel = new ReadAheadLogChannel( element,
                                     NO_MORE_CHANNELS ) )
                             {
                                 assertEquals( lastCommittedTxStartEntry, reader.readLogEntry( channel ) );
