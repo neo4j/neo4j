@@ -29,4 +29,9 @@ public class AcquireLockTimeoutException extends RuntimeException
     {
         super( String.format(message, parameters), cause );
     }
+
+    public AcquireLockTimeoutException( String message )
+    {
+        super( message );
+    }
 }

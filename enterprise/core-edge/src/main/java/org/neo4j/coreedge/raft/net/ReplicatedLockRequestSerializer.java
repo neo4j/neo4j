@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft.net;
 import io.netty.buffer.ByteBuf;
 
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.core.ReplicatedLockRequest;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockRequest;
 
 public class ReplicatedLockRequestSerializer
 {

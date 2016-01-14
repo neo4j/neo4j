@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.core;
+package org.neo4j.coreedge.server.core.locks;
 
+import org.neo4j.coreedge.raft.LeaderLocator;
+import org.neo4j.coreedge.raft.NoLeaderTimeoutException;
 import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.coreedge.server.core.CurrentReplicatedLockState.LockSession;
-import org.neo4j.kernel.impl.locking.LockClientAlreadyClosedException;
+import org.neo4j.coreedge.server.core.locks.CurrentReplicatedLockState.LockSession;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -41,13 +42,15 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
     private final MEMBER myself;
 
     private final Replicator replicator;
+    private final LeaderLocator<MEMBER> leaderLocator;
     private final Locks local;
     private final ReplicatedLockStateMachine replicatedLockStateMachine;
 
-    public LeaderOnlyLockManager( MEMBER myself, Replicator replicator, Locks local, ReplicatedLockStateMachine replicatedLockStateMachine )
+    public LeaderOnlyLockManager( MEMBER myself, Replicator replicator, LeaderLocator<MEMBER> leaderLocator, Locks local, ReplicatedLockStateMachine replicatedLockStateMachine )
     {
         this.myself = myself;
         this.replicator = replicator;
+        this.leaderLocator = leaderLocator;
         this.local = local;
         this.replicatedLockStateMachine = replicatedLockStateMachine;
     }
@@ -60,20 +63,37 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
 
     private void requestLock() throws InterruptedException
     {
-        // TODO: Don't even try if we are not the leader.
+        MEMBER leader;
 
         try
         {
-            replicator.replicate( new ReplicatedLockRequest<>( myself, replicatedLockStateMachine.nextId() ));
+            leader = leaderLocator.getLeader();
+        }
+        catch ( NoLeaderTimeoutException e )
+        {
+            throw new AcquireLockTimeoutException( e, "Could not acquire lock session." );
+        }
+
+        if( !leader.equals( myself ) )
+        {
+            throw new AcquireLockTimeoutException( "Should only attempt to take lock as leader." );
+        }
+
+        try
+        {
+            replicator.replicate( new ReplicatedLockRequest<>( myself, replicatedLockStateMachine.nextId() ) );
         }
         catch ( Replicator.ReplicationFailedException e )
         {
-            throw new LockClientAlreadyClosedException( "Could not acquire lock session. Leader switch?" );
+            throw new AcquireLockTimeoutException( e, "Could not acquire lock session." );
         }
 
         synchronized ( replicatedLockStateMachine )
         {
-            replicatedLockStateMachine.wait( LOCK_WAIT_TIME );
+            if ( !replicatedLockStateMachine.currentLockSession().isMine() )
+            {
+                replicatedLockStateMachine.wait( LOCK_WAIT_TIME );
+            }
         }
     }
 
@@ -101,6 +121,7 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
             this.lockSession = lockSession;
         }
 
+        // TODO: Simplify the ensure we are the rightful lock owner dance...
         private void ensureHoldingReplicatedLock()
         {
             if ( !sessionStarted )
@@ -113,7 +134,7 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
                     }
                     catch ( InterruptedException e )
                     {
-                        throw new RuntimeException( "Interrupted " );
+                        throw new AcquireLockTimeoutException( e, "Interrupted " );
                     }
                 }
 
@@ -121,7 +142,7 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
 
                 if( !lockSession.isMine() )
                 {
-                    throw new RuntimeException( "Did not manage to acquire valid lock session ID. " + lockSession );
+                    throw new AcquireLockTimeoutException( "Did not manage to acquire valid lock session ID. " + lockSession );
                 }
 
                 sessionStarted = true;
@@ -129,7 +150,7 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
 
             if( !replicatedLockStateMachine.currentLockSession().isMine() )
             {
-                throw new RuntimeException( "Local instance lost lock session." );
+                throw new AcquireLockTimeoutException( "Local instance lost lock session." );
             }
         }
 
