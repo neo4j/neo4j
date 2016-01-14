@@ -19,24 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, repeat}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
-/*
- * Rewriters that live here are required to adhere to the contract of
- * receiving a valid plan and producing a valid plan. It should be possible
- * to disable any and all of these rewriters, and still produce correct behavior.
- */
-case class LogicalPlanRewriter(rewriterSequencer: String => RewriterStepSequencer) extends Rewriter {
-  val instance: Rewriter = repeat(rewriterSequencer("LogicalPlanRewriter")(
-    fuseSelections,
-    unnestApply,
-    cleanUpEager,
-    simplifyEquality,
-    unnestOptional,
-    predicateRemovalThroughJoins,
-    removeIdenticalPlans
-  ).rewriter)
+case object cleanUpEager extends Rewriter {
 
-  def apply(that: AnyRef) = instance(that)
+  private val instance: Rewriter = Rewriter.lift {
+
+    // E E L => E L
+    case eager@Eager(Eager(source)) =>
+      eager.copy(inner = source)(eager.solved)
+
+    // E U => U E
+    case eager@Eager(unwind@UnwindCollection(source, _, _)) =>
+      unwind.copy(left = eager.copy(inner = source)(eager.solved))(eager.solved)
+  }
+
+  override def apply(input: AnyRef) = bottomUp(instance).apply(input)
 }

@@ -252,7 +252,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val query = "MATCH (k) CREATE (l {prop: 44}) WITH * MATCH (m) CREATE (n {prop:45}) RETURN count(*)"
 
     val result = updateWithBothPlanners(query)
-    result should use("RepeatableRead", "Eager")
+    result should use("Eager")
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, nodesCreated = 10, propertiesWritten = 10)
     assertNumberOfEagerness(query, 2)

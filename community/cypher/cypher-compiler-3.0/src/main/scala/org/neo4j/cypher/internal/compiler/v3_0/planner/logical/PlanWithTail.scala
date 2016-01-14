@@ -73,7 +73,7 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
         //If reads interfere with writes, make it a RepeatableRead
         val planWithEffects =
           if (alwaysEager || Eagerness.conflictInTail(partPlan, query))
-            context.logicalPlanProducer.planRepeatableRead(partPlan)
+            context.logicalPlanProducer.planEager(partPlan)
           else partPlan
 
         val planWithUpdates = planUpdates(query, planWithEffects)(context)
@@ -99,8 +99,9 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
           projectedPlan.endoRewrite(expressionRewriter)
         }
 
-        // planning nested expressions doesn't change outer cardinality
-        apply(completePlan, query.tail)(projectedContext)
+        val superCompletePlan = completePlan.endoRewrite(Eagerness.unnestEager)
+
+        this.apply(superCompletePlan, query.tail)(projectedContext)
 
       case None =>
         lhs

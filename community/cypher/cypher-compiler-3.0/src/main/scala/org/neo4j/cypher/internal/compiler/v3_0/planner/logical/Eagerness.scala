@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, NodeLogicalLeafPlan}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{PlannerQuery, QueryGraph}
-import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_0.{repeat, bottomUp, Rewriter, SemanticDirection}
 
 import scala.annotation.tailrec
 
@@ -129,6 +129,71 @@ object Eagerness {
   private def hasUnsafeRelationships(queryGraph: QueryGraph): Boolean = {
     val allPatterns = queryGraph.allPatternRelationships
     allPatterns.size > 1 || allPatterns.exists(r => r.dir == SemanticDirection.BOTH || !r.length.isSimple)
+  }
+
+  case object unnestEager extends Rewriter {
+
+    /*
+    Based on unnestApply (which references a paper)
+
+    This rewriter does _not_ adhere to the contract of moving from a valid
+    plan to a valid plan, but it is crucial to get eager plans placed correctly.
+
+    Glossary:
+      Ax : Apply
+      L,R: Arbitrary operator, named Left and Right
+      SR : SingleRow - operator that produces single row with no columns
+      CN : CreateNode
+      Dn : Delete node
+      Dr : Delete relationship
+      E : Eager
+      M : Merge
+      Sp : SetProperty
+      Sm : SetPropertiesFromMap
+      Sl : SetLabels
+      U : Unwind
+     */
+
+    private val instance: Rewriter = Rewriter.lift {
+
+      // L Ax (E R) => E Ax (L R)
+      case apply@Apply(lhs, eager@Eager(inner)) =>
+        eager.copy(inner = Apply(lhs, inner)(apply.solved))(apply.solved)
+
+      // L Ax (CN R) => CN Ax (L R)
+      case apply@Apply(lhs, create@CreateNode(rhs, name, labels, props)) =>
+        create.copy(source = Apply(lhs, rhs)(apply.solved), name, labels, props)(apply.solved)
+
+      // L Ax (CR R) => CR Ax (L R)
+      case apply@Apply(lhs, create@CreateRelationship(rhs, _, _, _, _, _)) =>
+        create.copy(source = Apply(lhs, rhs)(apply.solved))(apply.solved)
+
+      // L Ax (Dn R) => Dn Ax (L R)
+      case apply@Apply(lhs, delete@DeleteNode(rhs, expr)) =>
+        delete.copy(source = Apply(lhs, rhs)(apply.solved), expr)(apply.solved)
+
+      // L Ax (Dr R) => Dr Ax (L R)
+      case apply@Apply(lhs, delete@DeleteRelationship(rhs, expr)) =>
+        delete.copy(source = Apply(lhs, rhs)(apply.solved), expr)(apply.solved)
+
+      // L Ax (Sp R) => Sp Ax (L R)
+      case apply@Apply(lhs, set@SetNodeProperty(rhs, idName, key, value)) =>
+        set.copy(source = Apply(lhs, rhs)(apply.solved), idName, key, value)(apply.solved)
+
+      // L Ax (Sm R) => Sm Ax (L R)
+      case apply@Apply(lhs, set@SetNodePropertiesFromMap(rhs, idName, expr, removes)) =>
+        set.copy(source = Apply(lhs, rhs)(apply.solved), idName, expr, removes)(apply.solved)
+
+      // L Ax (Sl R) => Sl Ax (L R)
+      case apply@Apply(lhs, set@SetLabels(rhs, idName, labelNames)) =>
+        set.copy(source = Apply(lhs, rhs)(apply.solved), idName, labelNames)(apply.solved)
+
+      // L Ax (Rl R) => Rl Ax (L R)
+      case apply@Apply(lhs, remove@RemoveLabels(rhs, idName, labelNames)) =>
+        remove.copy(source = Apply(lhs, rhs)(apply.solved), idName, labelNames)(apply.solved)
+    }
+
+    override def apply(input: AnyRef) = repeat(bottomUp(instance)).apply(input)
   }
 
 }
