@@ -75,17 +75,12 @@ object Eagerness {
 
 
   /**
-   * Determines whether there is a conflict between the so-far planned LogicalPlan
-   * and the remaining parts of the PlannerQuery. This function assumes that the
-   * argument PlannerQuery is not the head of the PlannerQuery chain.
-   */
-  def conflictInTail(plan: LogicalPlan, plannerQuery: PlannerQuery): Boolean = {
-    // Start recursion by checking the given plannerQuery against itself
-    tailConflicts(plannerQuery, plannerQuery)
-  }
-
+    * Determines whether there is a conflict between the two PlannerQuery objects.
+    * This function assumes that none of the argument PlannerQuery objects is
+    * the head of the PlannerQuery chain.
+    */
   @tailrec
-  private def tailConflicts(head: PlannerQuery, tail: PlannerQuery): Boolean = {
+  def conflictInTail(head: PlannerQuery, tail: PlannerQuery): Boolean = {
     val conflict = if (tail.updateGraph.isEmpty) false
     else tail.updateGraph overlaps head.queryGraph
     if (conflict)
@@ -93,7 +88,7 @@ object Eagerness {
     else if (tail.tail.isEmpty)
       false
     else
-      tailConflicts(head, tail.tail.get)
+      conflictInTail(head, tail.tail.get)
   }
 
   /*
@@ -191,9 +186,25 @@ object Eagerness {
       // L Ax (Rl R) => Rl Ax (L R)
       case apply@Apply(lhs, remove@RemoveLabels(rhs, idName, labelNames)) =>
         remove.copy(source = Apply(lhs, rhs)(apply.solved), idName, labelNames)(apply.solved)
+
+      // L Ax (M R) => M Ax (L R)
+      case apply@Apply(lhs, merge@AsMergePlan(source, sourceReplacer)) =>
+        sourceReplacer(Apply(lhs, source)(apply.solved))
     }
 
     override def apply(input: AnyRef) = repeat(bottomUp(instance)).apply(input)
   }
 
+  object AsMergePlan {
+    def unapply(v: Any): Option[(LogicalPlan, LogicalPlan => LogicalPlan)] = v match {
+      // Full merge plan pattern
+      case topMergePlan@AntiConditionalApply(condApply@ConditionalApply(apply@Apply(lhs, mergeRead), onMatch, name1), mergeCreate, name2) =>
+        Some(lhs, (plan: LogicalPlan) => AntiConditionalApply(ConditionalApply(Apply(plan, mergeRead)(apply.solved), onMatch, name1)(condApply.solved), mergeCreate, name2)(topMergePlan.solved))
+      // Merge plan pattern when there is no ON MATCH part
+      case topMergePlan@AntiConditionalApply(apply@Apply(lhs, mergeRead), mergeCreate, name) =>
+        Some(lhs, (plan: LogicalPlan) => AntiConditionalApply(Apply(plan, mergeRead)(apply.solved), mergeCreate, name)(topMergePlan.solved))
+      case _ =>
+        None
+    }
+  }
 }

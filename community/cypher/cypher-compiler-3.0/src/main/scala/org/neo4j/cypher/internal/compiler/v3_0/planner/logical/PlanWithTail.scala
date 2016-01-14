@@ -72,7 +72,7 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
         val alwaysEager = context.config.updateStrategy.alwaysEager
         //If reads interfere with writes, make it a RepeatableRead
         val planWithEffects =
-          if (alwaysEager || Eagerness.conflictInTail(partPlan, query))
+          if (alwaysEager || Eagerness.conflictInTail(query, query))
             context.logicalPlanProducer.planEager(partPlan)
           else partPlan
 
