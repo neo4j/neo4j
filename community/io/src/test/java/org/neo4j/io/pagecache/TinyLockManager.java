@@ -50,6 +50,14 @@ public class TinyLockManager
         }
     }
 
+    public boolean tryLock( int recordId )
+    {
+        Integer record = recordId;
+        BinaryLatch myLatch = new BinaryLatch();
+        BinaryLatch existingLatch = map.putIfAbsent( record, myLatch );
+        return existingLatch == null;
+    }
+
     public void unlock( int recordId )
     {
         map.remove( recordId ).release();

@@ -56,7 +56,6 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.randomharness.Command;
 import org.neo4j.io.pagecache.randomharness.PageCountRecordFormat;
 import org.neo4j.io.pagecache.randomharness.Phase;
 import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
@@ -82,10 +81,18 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.randomharness.Command.FlushCache;
+import static org.neo4j.io.pagecache.randomharness.Command.FlushFile;
+import static org.neo4j.io.pagecache.randomharness.Command.MapFile;
+import static org.neo4j.io.pagecache.randomharness.Command.ReadMulti;
+import static org.neo4j.io.pagecache.randomharness.Command.ReadRecord;
+import static org.neo4j.io.pagecache.randomharness.Command.UnmapFile;
+import static org.neo4j.io.pagecache.randomharness.Command.WriteMulti;
+import static org.neo4j.io.pagecache.randomharness.Command.WriteRecord;
 import static org.neo4j.test.ByteArrayMatcher.byteArray;
 import static org.neo4j.test.ThreadTestUtils.fork;
 
@@ -1455,9 +1462,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         int filePageCount = 100;
         RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
-        harness.disableCommands( Command.FlushCache, Command.FlushFile, Command.MapFile, Command.UnmapFile );
-        harness.setCommandProbabilityFactor( Command.ReadRecord, 0.5 );
-        harness.setCommandProbabilityFactor( Command.WriteRecord, 0.5 );
+        harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile );
+        harness.setCommandProbabilityFactor( ReadRecord, 0.5 );
+        harness.setCommandProbabilityFactor( WriteRecord, 0.5 );
         harness.setConcurrencyLevel( 8 );
         harness.setFilePageCount( filePageCount );
         harness.setInitialMappedFiles( 1 );
@@ -2924,8 +2931,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         harness.setCommandCount( 10000 );
         harness.setRecordFormat( recordFormat );
         harness.setFileSystem( fs );
-        harness.disableCommands(
-                Command.FlushCache, Command.FlushFile, Command.MapFile, Command.UnmapFile, Command.WriteRecord );
+        harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile, WriteRecord, WriteMulti );
         harness.setPreparation( ( pageCache1, fs1, filesTouched ) -> {
             File file = filesTouched.iterator().next();
             try ( PagedFile pf = pageCache1.map( file, pageCachePageSize );
@@ -2957,7 +2963,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         harness.setInitialMappedFiles( 3 );
         harness.setCommandCount( 15_000 );
         harness.setFileSystem( fs );
-        harness.disableCommands( Command.MapFile, Command.UnmapFile, Command.ReadRecord );
+        harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
         harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
@@ -2981,7 +2987,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         harness.setInitialMappedFiles( 3 );
         harness.setCommandCount( 15_000 );
         harness.setFileSystem( fs );
-        harness.disableCommands( Command.MapFile, Command.UnmapFile, Command.ReadRecord );
+        harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
         harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
@@ -3005,7 +3011,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         harness.setInitialMappedFiles( 3 );
         harness.setCommandCount( 150_000 );
         harness.setFileSystem( fs );
-        harness.disableCommands( Command.MapFile, Command.UnmapFile, Command.ReadRecord );
+        harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
         harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
