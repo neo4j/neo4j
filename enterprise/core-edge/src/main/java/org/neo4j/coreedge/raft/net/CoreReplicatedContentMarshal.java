@@ -36,7 +36,7 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerialize
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionSerializer;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.core.ReplicatedLockRequest;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockRequest;
 
 public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<ByteBuf>
 {
