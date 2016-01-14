@@ -55,6 +55,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
+import static org.neo4j.metrics.MetricsSettings.graphiteInterval;
 import static org.neo4j.metrics.MetricsSettings.metricsEnabled;
 
 public class MetricsKernelExtensionFactoryIT
@@ -85,6 +86,7 @@ public class MetricsKernelExtensionFactoryIT
         config.put( cypher_min_replan_interval.name(), minCypherReplanInterval );
         config.put( csvPath.name(), outputPath.getAbsolutePath() );
         config.put( check_point_interval_time.name(), minCheckPointIntervalTime );
+        config.put( graphiteInterval.name(), "1s" );
         cluster = clusterRule.withSharedConfig( config ).withProvider( clusterOfSize( 1 ) ).startCluster();
         db = cluster.getMaster();
     }
@@ -95,7 +97,7 @@ public class MetricsKernelExtensionFactoryIT
         createCluster( "10m", "10m" );
 
         // Create some activity that will show up in the metrics data.
-        addNodes( 100 );
+        addNodes( 1000 );
         cluster.sync();
         long expectedNumberOfCommittedTransactions =
                 cluster.getMaster().getDependencyResolver().resolveDependency( TransactionIdStore.class )
@@ -130,7 +132,7 @@ public class MetricsKernelExtensionFactoryIT
             tx.success();
         }
         //add more data just to make sure metrics are flushed
-        addNodes( 100 );
+        addNodes( 1000 );
         cluster.stop();
 
         //now we should have one replan event
