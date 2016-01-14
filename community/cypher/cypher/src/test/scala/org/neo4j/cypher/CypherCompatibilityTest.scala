@@ -112,6 +112,28 @@ class CypherCompatibilityTest extends CypherFunSuite {
     }
   }
 
+  test("should not fail when deleting a node in cypher 2.0 compatibility mode") {
+    runWithConfig() {
+      engine =>
+        engine.execute("CREATE (n)")
+        engine.execute(s"CYPHER 2.0 MATCH (n) DELETE n") // should not fail and
+      val result = engine.execute("MATCH n RETURN n")
+        result.toList shouldBe empty
+        result.close()
+    }
+  }
+
+  test("should not fail when deleting a relationship in cypher 2.0 compatibility mode") {
+    runWithConfig() {
+      engine =>
+        engine.execute("CREATE ()-[r:T]->()")
+        engine.execute(s"CYPHER 2.0 MATCH ()-[r]->() DELETE r") // should not fail and
+      val result = engine.execute("MATCH ()-[r]->() RETURN r")
+        result.toList shouldBe empty
+        result.close()
+    }
+  }
+
   private def assertProfiled(engine: ExecutionEngine, q: String) {
     val result = engine.execute(q)
     val ignored = result.toList
