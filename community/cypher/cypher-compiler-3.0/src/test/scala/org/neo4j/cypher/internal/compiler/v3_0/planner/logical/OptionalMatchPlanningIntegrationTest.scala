@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit, _}
@@ -77,7 +76,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         Optional(
         ProjectEndpoints(
         Argument(args), IdName("r"), IdName("b2"), false, IdName("a1"), true, None, true, SimplePatternLength
-        )
+        ), _
         )
         ) =>
         args should equal(Set(IdName("r"), IdName("a1")))
@@ -95,7 +94,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       Argument(args),
       IdName("r"), IdName("b2"), false, IdName("a2"), false, None, true, SimplePatternLength
       )
-      )
+      ), _
       )
       ) =>
         args should equal(Set(IdName("r"), IdName("a1")))
@@ -112,7 +111,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       ProjectEndpoints(
       Argument(args),
       IdName("r"), IdName("a2"), false, IdName("b2"), false, None, true, SimplePatternLength
-      )
+      ), _
       )
       ) =>
         args should equal(Set(IdName("r")))

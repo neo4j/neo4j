@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 
-case class Optional(inputPlan: LogicalPlan)
+case class Optional(inputPlan: LogicalPlan, protectedSymbols: Set[IdName] = Set.empty)
                    (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
 

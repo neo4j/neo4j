@@ -251,8 +251,8 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       VarLengthExpandPipe(source, fromName, relName, toName, dir, projectedDir,
         LazyTypes(types), min, max, nodeInScope, predicate)()
 
-    case Optional(inner) =>
-      OptionalPipe(inner.availableSymbols.map(_.name), source)()
+    case Optional(inner, protectedSymbols) =>
+      OptionalPipe((inner.availableSymbols -- protectedSymbols).map(_.name), source)()
 
     case Sort(_, sortItems) =>
       SortPipe(source, sortItems.map(translateSortDescription))()

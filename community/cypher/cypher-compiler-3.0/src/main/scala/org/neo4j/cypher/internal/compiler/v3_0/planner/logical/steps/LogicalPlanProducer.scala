@@ -257,7 +257,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
       .withAddedOptionalMatch(inputPlan.solved.queryGraph)
       .withArgumentIds(ids)
     )
-    Optional(inputPlan)(solved)
+    Optional(inputPlan, ids)(solved)
   }
 
   def planOuterHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan)
