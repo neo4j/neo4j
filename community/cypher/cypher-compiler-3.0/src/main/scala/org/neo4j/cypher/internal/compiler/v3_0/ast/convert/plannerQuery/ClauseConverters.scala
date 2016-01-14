@@ -359,7 +359,7 @@ object ClauseConverters {
 
       builder.
         withHorizon(queryProjection).
-        withTail(PlannerQuery(QueryGraph(selections = selections)))
+        withTail(RegularPlannerQuery(QueryGraph(selections = selections)))
 
     case _ =>
       throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)

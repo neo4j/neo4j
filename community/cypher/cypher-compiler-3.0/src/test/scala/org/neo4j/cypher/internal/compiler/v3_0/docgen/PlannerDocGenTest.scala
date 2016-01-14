@@ -328,21 +328,21 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
     }
 
     test("renders tail free empty planner query") {
-      pprintToString(PlannerQuery(
+      pprintToString(RegularPlannerQuery(
         queryGraph = QueryGraph(),
         horizon = QueryProjection.empty
       )) should equal("GIVEN * RETURN *")
     }
 
     test("renders tail free non-empty planner query") {
-      pprintToString(PlannerQuery(
+      pprintToString(RegularPlannerQuery(
         queryGraph = QueryGraph(patternNodes = Set(IdName("a"))),
         horizon = RegularQueryProjection(projections = Map("a" -> SignedDecimalIntegerLiteral("1") _))
       )) should equal("GIVEN * MATCH (a) RETURN 1 AS `a`")
     }
 
     test("render planner query with tail") {
-      pprintToString(PlannerQuery(
+      pprintToString(RegularPlannerQuery(
         queryGraph = QueryGraph(patternNodes = Set(IdName("a"))),
         horizon = RegularQueryProjection(projections = Map("a" -> SignedDecimalIntegerLiteral("1") _)),
         tail = Some(PlannerQuery.empty)

@@ -30,9 +30,9 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     val qg2 = QueryGraph.empty
     val qg3 = QueryGraph.empty
 
-    val pq3 = PlannerQuery(queryGraph = qg3, tail = None)
-    val pq2 = PlannerQuery(queryGraph = qg2, tail = Some(pq3))
-    val pq1 = PlannerQuery(queryGraph = qg1, tail = Some(pq2))
+    val pq3 = RegularPlannerQuery(queryGraph = qg3, tail = None)
+    val pq2 = RegularPlannerQuery(queryGraph = qg2, tail = Some(pq3))
+    val pq1 = RegularPlannerQuery(queryGraph = qg1, tail = Some(pq2))
 
     var seenOnPos1 = List.empty[PlannerQuery]
     var seenOnPos2 = List.empty[PlannerQuery]
@@ -51,7 +51,7 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("foldMap on single plannerQuery returns that PQ") {
 
-    val input = PlannerQuery(queryGraph = QueryGraph.empty, tail = None)
+    val input = RegularPlannerQuery(queryGraph = QueryGraph.empty, tail = None)
 
     val result = input.foldMap {
       case (pq1: PlannerQuery, pq2: PlannerQuery) =>
@@ -63,10 +63,10 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("foldMap plannerQuery with tail should change when reverseMapped") {
 
-    val tail = PlannerQuery(queryGraph = QueryGraph.empty)
+    val tail = RegularPlannerQuery(queryGraph = QueryGraph.empty)
     val firstQueryGraph = QueryGraph.empty
     val secondQueryGraph = QueryGraph(patternNodes = Set(IdName("a")))
-    val input = PlannerQuery(queryGraph = firstQueryGraph, tail = Some(tail))
+    val input = RegularPlannerQuery(queryGraph = firstQueryGraph, tail = Some(tail))
 
     val result = input.foldMap {
       case (pq1: PlannerQuery, pq2: PlannerQuery) =>
@@ -79,15 +79,15 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("should compute lazyness preference correctly for a single planner query") {
-    val noLimit = PlannerQuery(horizon = QueryProjection.empty)
+    val noLimit = RegularPlannerQuery(horizon = QueryProjection.empty)
     noLimit.preferredStrictness should equal(None)
 
     val shuffleWithLimit = QueryProjection.empty.withShuffle(QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
-    val hasLimit = PlannerQuery(horizon = shuffleWithLimit)
+    val hasLimit = RegularPlannerQuery(horizon = shuffleWithLimit)
     hasLimit.preferredStrictness should equal(Some(LazyMode))
 
     val shuffleWithLimitAndSort = QueryProjection.empty.withShuffle(QueryShuffle(sortItems = Seq(mock[SortItem]), limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
-    val hasLimitAndSort = PlannerQuery(horizon = shuffleWithLimitAndSort)
+    val hasLimitAndSort = RegularPlannerQuery(horizon = shuffleWithLimitAndSort)
     hasLimitAndSort.preferredStrictness should equal(None)
   }
 
@@ -97,9 +97,9 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
     // pq -> pqWithLimit -> pqWithLimitAndSort
 
-    val pqWithLimitAndSort: PlannerQuery = PlannerQuery(horizon = shuffleWithLimitAndSort)
-    val pqWithLimit = PlannerQuery(horizon = shuffleWithLimit, tail = Some(pqWithLimitAndSort))
-    val pq = PlannerQuery(tail = Some(pqWithLimit))
+    val pqWithLimitAndSort: PlannerQuery = RegularPlannerQuery(horizon = shuffleWithLimitAndSort)
+    val pqWithLimit = RegularPlannerQuery(horizon = shuffleWithLimit, tail = Some(pqWithLimitAndSort))
+    val pq = RegularPlannerQuery(tail = Some(pqWithLimit))
 
     pq.preferredStrictness should equal(Some(LazyMode))
     pqWithLimit.preferredStrictness should equal(Some(LazyMode))

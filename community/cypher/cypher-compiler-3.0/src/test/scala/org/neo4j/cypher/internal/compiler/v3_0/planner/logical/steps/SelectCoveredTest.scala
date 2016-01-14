@@ -89,7 +89,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // Given
     val coveredIds = Set(IdName("x"))
     val qg = QueryGraph(selections = Selections(Set(Predicate(coveredIds, SignedDecimalIntegerLiteral("1") _))))
-    val solved = CardinalityEstimation.lift(PlannerQuery(qg), 0.0)
+    val solved = CardinalityEstimation.lift(RegularPlannerQuery(qg), 0.0)
     val LogicalPlan = newMockedLogicalPlanWithProjections("x").updateSolved(solved)
 
     // When

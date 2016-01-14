@@ -39,12 +39,12 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   private def newJoinHint(): Hint = { UsingJoinHint(Seq(varFor("a")))_ }
 
-  private def newQueryWithIdxHint() = PlannerQuery(
+  private def newQueryWithIdxHint() = RegularPlannerQuery(
     QueryGraph(
       patternNodes = Set(IdName("a"), IdName("b"))
     ).addHints(Set(newIndexHint())))
 
-  private def newQueryWithJoinHint() = PlannerQuery(
+  private def newQueryWithJoinHint() = RegularPlannerQuery(
     QueryGraph(
       patternNodes = Set(IdName("a"), IdName("b"))
     ).addHints(Set(newJoinHint())))
@@ -64,7 +64,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("should throw when finding plan that does not solve all pattern nodes") {
-    val query = PlannerQuery(
+    val query = RegularPlannerQuery(
       QueryGraph(
         patternNodes = Set(IdName("a"), IdName("b"))
       )
@@ -80,7 +80,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   test("should throw when finding plan that does not solve all pattern relationships") {
     val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength.unlimited)
-    val query = PlannerQuery(
+    val query = RegularPlannerQuery(
       QueryGraph(
         patternNodes = Set(IdName("a"), IdName("b")),
         patternRelationships = Set(patternRel)
@@ -96,7 +96,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("should not throw when finding plan that does solve all pattern nodes") {
-    val query = PlannerQuery(
+    val query = RegularPlannerQuery(
       QueryGraph(
         patternNodes = Set(IdName("a"), IdName("b"))
       )

@@ -50,7 +50,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   }
 
   def planAllNodesScan(idName: IdName, argumentIds: Set[IdName])(implicit context: LogicalPlanningContext) = {
-    val solved = PlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds, patternNodes = Set(idName)))
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds, patternNodes = Set(idName)))
     AllNodesScan(idName, argumentIds)(solved)
   }
 
@@ -79,7 +79,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                                        argumentIds: Set[IdName],
                                        solvedPredicates: Seq[Expression] = Seq.empty)
                                       (implicit context: LogicalPlanningContext) = {
-    val solved = PlannerQuery(queryGraph = QueryGraph.empty
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addPredicates(solvedPredicates: _*)
       .addArgumentIds(argumentIds.toSeq)
@@ -95,7 +95,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                                          argumentIds: Set[IdName],
                                          solvedPredicates: Seq[Expression] = Seq.empty)
                                         (implicit context: LogicalPlanningContext) = {
-    val solved = PlannerQuery(queryGraph = QueryGraph.empty
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addPredicates(solvedPredicates: _*)
       .addArgumentIds(argumentIds.toSeq)
@@ -140,7 +140,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planNodeByIdSeek(idName: IdName, nodeIds: SeekableArgs,
                        solvedPredicates: Seq[Expression] = Seq.empty,
                        argumentIds: Set[IdName])(implicit context: LogicalPlanningContext) = {
-    val solved = PlannerQuery(queryGraph = QueryGraph.empty
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addArgumentIds(argumentIds.toSeq)
@@ -151,7 +151,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planNodeByLabelScan(idName: IdName, label: LabelName, solvedPredicates: Seq[Expression],
                           solvedHint: Option[UsingScanHint] = None, argumentIds: Set[IdName])
                          (implicit context: LogicalPlanningContext) = {
-    val solved = PlannerQuery(queryGraph = QueryGraph.empty
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
@@ -167,7 +167,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                         solvedPredicates: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
                         argumentIds: Set[IdName])(implicit context: LogicalPlanningContext) = {
-    val solved = PlannerQuery(queryGraph = QueryGraph.empty
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
@@ -182,7 +182,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                         solvedPredicates: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
                         argumentIds: Set[IdName])(implicit context: LogicalPlanningContext) = {
-    val solved = PlannerQuery(queryGraph = QueryGraph.empty
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
@@ -197,7 +197,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
       case n: NodeHint => Seq(IdName(n.variable.name))
       case _ => Seq.empty
     }
-    val solved = PlannerQuery(queryGraph = QueryGraph.empty
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(patternNode: _*)
       .addHints(Some(hint))
       .addArgumentIds(argumentIds.toSeq)
@@ -226,7 +226,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                               solvedPredicates: Seq[Expression] = Seq.empty,
                               solvedHint: Option[UsingIndexHint] = None,
                               argumentIds: Set[IdName])(implicit context: LogicalPlanningContext) = {
-    val solved = PlannerQuery(queryGraph = QueryGraph.empty
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
@@ -253,7 +253,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   }
 
   def planOptional(inputPlan: LogicalPlan, ids: Set[IdName])(implicit context: LogicalPlanningContext) = {
-    val solved = PlannerQuery(queryGraph = QueryGraph.empty
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .withAddedOptionalMatch(inputPlan.solved.queryGraph)
       .withArgumentIds(ids)
     )
@@ -332,7 +332,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                       other.toSeq.map((x: IdName) => x.name -> CTAny)
     val typeInfo = typeInfoSeq.toMap
 
-    val solved = PlannerQuery(queryGraph =
+    val solved = RegularPlannerQuery(queryGraph =
       QueryGraph(
         argumentIds = coveredIds,
         patternNodes = patternNodes,
@@ -360,7 +360,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
   def planCountStoreNodeAggregation(query: PlannerQuery, idName: IdName, label: Option[LabelName], argumentIds: Set[IdName])
                                    (implicit context: LogicalPlanningContext) = {
-    val solved: PlannerQuery = PlannerQuery(query.queryGraph, query.updateGraph, query.horizon)
+    val solved: PlannerQuery = RegularPlannerQuery(query.queryGraph, query.updateGraph, query.horizon)
     NodeCountFromCountStore(idName, label, argumentIds)(solved)
   }
 
@@ -368,7 +368,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                                             typeNames: LazyTypes, endLabel: Option[LabelName], bothDirections: Boolean,
                                             argumentIds: Set[IdName])
                                            (implicit context: LogicalPlanningContext) = {
-    val solved: PlannerQuery = PlannerQuery(query.queryGraph, query.updateGraph, query.horizon)
+    val solved: PlannerQuery = RegularPlannerQuery(query.queryGraph, query.updateGraph, query.horizon)
     RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, bothDirections, argumentIds)(solved)
   }
 
