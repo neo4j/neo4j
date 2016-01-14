@@ -19,14 +19,29 @@
  */
 package org.neo4j.coreedge.server.core.locks;
 
-public interface CurrentReplicatedLockState
+/**
+ * Represents a lock token by an pairing an id together with its owner. A lock token
+ * is held by a single server at any point in time and the token holder is the
+ * only one that should be using locks. It is used as an ordering primitive
+ * in the consensus machinery to mark local lock validity by using it as
+ * the cluster lock session id.
+ *
+ * The reason for calling it a token is to clarify the fact that there logically
+ * is just a single valid token at any point in time, which gets requested and
+ * logically passed around. When bound to a transaction the id gets used as a
+ * lock session id in the cluster.
+ */
+public interface LockToken
 {
-    LockSession currentLockSession();
+    int INVALID_LOCK_TOKEN_ID = -1;
 
-    interface LockSession
-    {
-        int id();
+    /**
+     * The id of the lock token.
+     */
+    int id();
 
-        boolean isMine();
-    }
+    /**
+     * The owner of this lock token.
+     */
+    Object owner();
 }

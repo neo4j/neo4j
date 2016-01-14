@@ -28,11 +28,13 @@ import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.core.locks.CurrentReplicatedLockState;
+import org.neo4j.coreedge.server.core.locks.LockTokenManager;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -132,6 +134,32 @@ public class ReplicatedTransactionStateMachineTest
         }
     }
 
+    @Test
+    public void shouldAcceptTransactionCommittedWithNoLockManager() throws Exception
+    {
+        // given
+        LocalOperationId localOperationId = new LocalOperationId( 0, 0 );
+        int txLockSessionId = Locks.Client.NO_LOCK_SESSION_ID;
+        int currentLockSessionId = 24;
+
+        ReplicatedTransaction tx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction(
+                physicalTx( txLockSessionId ), globalSession, localOperationId );
+
+        TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
+
+        CommittingTransactions committingTransactions = new CommittingTransactionsRegistry();
+        final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine(
+                localCommitProcess, globalSession, lockState( currentLockSessionId ), committingTransactions );
+
+        CommittingTransaction future = committingTransactions.register( localOperationId );
+
+        // when
+        listener.onReplicated( tx, 0 );
+
+        // then
+        future.waitUntilCommitted( 1, TimeUnit.SECONDS );
+    }
+
     public PhysicalTransactionRepresentation physicalTx( int lockSessionId )
     {
         PhysicalTransactionRepresentation physicalTx = mock( PhysicalTransactionRepresentation.class );
@@ -139,11 +167,10 @@ public class ReplicatedTransactionStateMachineTest
         return physicalTx;
     }
 
-    public CurrentReplicatedLockState lockState( int lockSessionId )
+    public LockTokenManager lockState( int lockSessionId )
     {
-        CurrentReplicatedLockState lockState = mock( CurrentReplicatedLockState.class );
-        when( lockState.currentLockSession() ).thenReturn( new StubLockSession( lockSessionId ) );
+        LockTokenManager lockState = mock( LockTokenManager.class );
+        when( lockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest<>( null, lockSessionId ) );
         return lockState;
     }
-
 }

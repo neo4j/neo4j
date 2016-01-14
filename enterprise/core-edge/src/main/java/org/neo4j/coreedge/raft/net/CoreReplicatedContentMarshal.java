@@ -36,7 +36,7 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerialize
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionSerializer;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.core.locks.ReplicatedLockRequest;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 
 public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<ByteBuf>
 {
@@ -46,7 +46,7 @@ public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<By
     private static final byte SEED_STORE_ID_TYPE = 3;
     private static final byte TOKEN_REQUEST_TYPE = 4;
     private static final byte NEW_LEADER_BARRIER_TYPE = 5;
-    private static final byte LOCK_REQUEST = 6;
+    private static final byte LOCK_TOKEN_REQUEST = 6;
 
     @Override
     public void serialize( ReplicatedContent content, ByteBuf buffer ) throws MarshallingException
@@ -80,10 +80,10 @@ public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<By
         {
             buffer.writeByte( NEW_LEADER_BARRIER_TYPE );
         }
-        else if( content instanceof ReplicatedLockRequest )
+        else if( content instanceof ReplicatedLockTokenRequest )
         {
-            buffer.writeByte( LOCK_REQUEST );
-            ReplicatedLockRequestSerializer.serialize( (ReplicatedLockRequest<CoreMember>) content, buffer );
+            buffer.writeByte( LOCK_TOKEN_REQUEST );
+            ReplicatedLockTokenSerializer.serialize( (ReplicatedLockTokenRequest<CoreMember>) content, buffer );
         }
         else
         {
@@ -121,8 +121,8 @@ public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<By
             case NEW_LEADER_BARRIER_TYPE:
                 content = new NewLeaderBarrier();
                 break;
-            case LOCK_REQUEST:
-                content = ReplicatedLockRequestSerializer.deserialize( buffer );
+            case LOCK_TOKEN_REQUEST:
+                content = ReplicatedLockTokenSerializer.deserialize( buffer );
                 break;
             default:
                 throw new MarshallingException( String.format( "Unknown content type 0x%x", type ) );

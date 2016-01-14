@@ -22,46 +22,106 @@ package org.neo4j.coreedge.server.core.locks;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderTimeoutException;
 import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.coreedge.server.core.locks.CurrentReplicatedLockState.LockSession;
+import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
- * Each member of the cluster uses its own {@link LeaderOnlyLockManager} which wraps a local {@link Locks}.
- * To prevent conflict between the local {@link Locks}, before issuing any locks, each server must first obtain a
- * replicated exclusive lock via {@link ReplicatedLockStateMachine}.
+ * Each member of the cluster uses its own {@link LeaderOnlyLockManager} which wraps a local {@link Locks} manager.
+ * The validity of local lock managers is synchronized by using a token which gets requested by each server as necessary
+ * and if the request is granted then the associated id can be used to identify a unique lock session in the cluster.
  *
- * Since replication is only allowed from the leader, this means that only the leader is able to obtain
- * a replicated lock, and therefore only the leader can issue locks.
+ * The fundamental strategy is to only allow locks on the leader. This has the benefit of minimizing the synchronization
+ * to only concern the single token but it also means that non-leaders should not even attempt to request the token or
+ * significant churn of this single resource will lead to a high level of aborted transactions.
+ *
+ * The token requests carry a candidate id and they get ordered with respect to the transactions in the consensus machinery.
+ * The latest request which gets accepted (see {@link ReplicatedTransactionStateMachine}) defines the currently valid
+ * lock session id in this ordering. Each transaction that uses locking gets marked with a lock session id that was valid
+ * at the time of acquiring it, but by the time a transaction commits it might no longer be valid, which in such case
+ * would lead to the transaction being rejected and failed.
+ *
+ * The {@link ReplicatedLockTokenStateMachine} handles the token requests and considers only one to be valid at a time.
+ * Meanwhile, {@link ReplicatedTransactionStateMachine} rejects any transactions that get committed under an
+ * invalid token.
  */
+// TODO: Fix lock exception hierarchy.
 public class LeaderOnlyLockManager<MEMBER> implements Locks
 {
-    public static final int LOCK_WAIT_TIME = 30000;
-
     private final MEMBER myself;
 
     private final Replicator replicator;
     private final LeaderLocator<MEMBER> leaderLocator;
-    private final Locks local;
-    private final ReplicatedLockStateMachine replicatedLockStateMachine;
+    private final Locks localLocks;
+    private final LockTokenManager lockTokenManager;
+    private final long leaderLockTokenTimeout;
 
-    public LeaderOnlyLockManager( MEMBER myself, Replicator replicator, LeaderLocator<MEMBER> leaderLocator, Locks local, ReplicatedLockStateMachine replicatedLockStateMachine )
+    public LeaderOnlyLockManager( MEMBER myself, Replicator replicator, LeaderLocator<MEMBER> leaderLocator,
+            Locks localLocks, LockTokenManager lockTokenManager, long leaderLockTokenTimeout )
     {
         this.myself = myself;
         this.replicator = replicator;
         this.leaderLocator = leaderLocator;
-        this.local = local;
-        this.replicatedLockStateMachine = replicatedLockStateMachine;
+        this.localLocks = localLocks;
+        this.lockTokenManager = lockTokenManager;
+        this.leaderLockTokenTimeout = leaderLockTokenTimeout;
     }
 
     @Override
-    public synchronized Client newClient()
+    public Locks.Client newClient()
     {
-        return new LeaderOnlyLockClient( local.newClient(), replicatedLockStateMachine.currentLockSession() );
+        return new LeaderOnlyLockClient( localLocks.newClient() );
     }
 
-    private void requestLock() throws InterruptedException
+    /**
+     * Acquires a valid token id owned by us or throws.
+     */
+    private synchronized int acquireTokenOrThrow()
+    {
+        LockToken currentToken = lockTokenManager.currentToken();
+        if( myself.equals( currentToken.owner() ) )
+        {
+            return currentToken.id();
+        }
+
+        /* If we are not the leader then we will not even attempt to get the token,
+           since only the leader should take locks. */
+        ensureLeader();
+
+        ReplicatedLockTokenRequest<MEMBER> lockTokenRequest = new ReplicatedLockTokenRequest<>(
+                myself, lockTokenManager.nextCandidateId() );
+
+        try
+        {
+            replicator.replicate( lockTokenRequest );
+        }
+        catch ( Replicator.ReplicationFailedException e )
+        {
+            throw new AcquireLockTimeoutException( e, "Could not acquire lock token." );
+        }
+
+        try
+        {
+            lockTokenManager.waitForTokenId( lockTokenRequest.id(), leaderLockTokenTimeout );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new AcquireLockTimeoutException( e, "Interrupted" );
+        }
+
+        currentToken = lockTokenManager.currentToken();
+
+        if ( currentToken.id() != lockTokenRequest.id() || !myself.equals( currentToken.owner() ) )
+        {
+            throw new AcquireLockTimeoutException( "Failed to acquire requested lock token." );
+        }
+
+        return currentToken.id();
+    }
+
+    private void ensureLeader()
     {
         MEMBER leader;
 
@@ -71,149 +131,120 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
         }
         catch ( NoLeaderTimeoutException e )
         {
-            throw new AcquireLockTimeoutException( e, "Could not acquire lock session." );
+            throw new AcquireLockTimeoutException( e, "Could not acquire lock token." );
         }
 
         if( !leader.equals( myself ) )
         {
-            throw new AcquireLockTimeoutException( "Should only attempt to take lock as leader." );
-        }
-
-        try
-        {
-            replicator.replicate( new ReplicatedLockRequest<>( myself, replicatedLockStateMachine.nextId() ) );
-        }
-        catch ( Replicator.ReplicationFailedException e )
-        {
-            throw new AcquireLockTimeoutException( e, "Could not acquire lock session." );
-        }
-
-        synchronized ( replicatedLockStateMachine )
-        {
-            if ( !replicatedLockStateMachine.currentLockSession().isMine() )
-            {
-                replicatedLockStateMachine.wait( LOCK_WAIT_TIME );
-            }
+            throw new AcquireLockTimeoutException( "Should only attempt to take locks when leader." );
         }
     }
 
     @Override
     public void accept( Visitor visitor )
     {
-        local.accept( visitor );
+        localLocks.accept( visitor );
     }
 
     @Override
     public void close()
     {
-        local.close();
+        localLocks.close();
     }
 
-    private class LeaderOnlyLockClient implements Client
+    /**
+     * The LeaderOnlyLockClient delegates to a local lock client for taking locks, but makes
+     * sure that it holds the cluster locking token before actually taking locks. If the token
+     * is lost during a locking session then a transaction will either fail on a subsequent
+     * local locking operation or during commit time.
+     */
+    private class LeaderOnlyLockClient implements Locks.Client
     {
-        private final Client localLocks;
-        private LockSession lockSession;
-        boolean sessionStarted = false;
+        private final Client localClient;
+        private int lockTokenId = LockToken.INVALID_LOCK_TOKEN_ID;
 
-        public LeaderOnlyLockClient( Client localLocks, LockSession lockSession )
+        public LeaderOnlyLockClient( Client localClient )
         {
-            this.localLocks = localLocks;
-            this.lockSession = lockSession;
+            this.localClient = localClient;
         }
 
-        // TODO: Simplify the ensure we are the rightful lock owner dance...
-        private void ensureHoldingReplicatedLock()
+        /**
+         * This ensures that a valid token was held at some point in time. It throws an
+         * exception if it was held but was later lost or never could be taken to
+         * begin with.
+         */
+        private void ensureHoldingToken()
         {
-            if ( !sessionStarted )
+            if ( lockTokenId == LockToken.INVALID_LOCK_TOKEN_ID )
             {
-                if ( !lockSession.isMine() )
-                {
-                    try
-                    {
-                        requestLock();
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        throw new AcquireLockTimeoutException( e, "Interrupted " );
-                    }
-                }
-
-                lockSession = replicatedLockStateMachine.currentLockSession();
-
-                if( !lockSession.isMine() )
-                {
-                    throw new AcquireLockTimeoutException( "Did not manage to acquire valid lock session ID. " + lockSession );
-                }
-
-                sessionStarted = true;
+                lockTokenId = acquireTokenOrThrow();
             }
-
-            if( !replicatedLockStateMachine.currentLockSession().isMine() )
+            else if( lockTokenId != lockTokenManager.currentToken().id() )
             {
-                throw new AcquireLockTimeoutException( "Local instance lost lock session." );
+                throw new AcquireLockTimeoutException( "Local instance lost lock token." );
             }
         }
 
         @Override
         public void acquireShared( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
         {
-            localLocks.acquireShared( resourceType, resourceId );
+            localClient.acquireShared( resourceType, resourceId );
         }
 
         @Override
         public void acquireExclusive( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
         {
-            ensureHoldingReplicatedLock();
-            localLocks.acquireExclusive( resourceType, resourceId );
+            ensureHoldingToken();
+            localClient.acquireExclusive( resourceType, resourceId );
         }
 
         @Override
         public boolean tryExclusiveLock( ResourceType resourceType, long resourceId )
         {
-            ensureHoldingReplicatedLock();
-            return localLocks.tryExclusiveLock( resourceType, resourceId );
+            ensureHoldingToken();
+            return localClient.tryExclusiveLock( resourceType, resourceId );
         }
 
         @Override
         public boolean trySharedLock( ResourceType resourceType, long resourceId )
         {
-            return localLocks.trySharedLock( resourceType, resourceId );
+            return localClient.trySharedLock( resourceType, resourceId );
         }
 
         @Override
         public void releaseShared( ResourceType resourceType, long resourceId )
         {
-            localLocks.releaseShared( resourceType, resourceId );
+            localClient.releaseShared( resourceType, resourceId );
         }
 
         @Override
         public void releaseExclusive( ResourceType resourceType, long resourceId )
         {
-            localLocks.releaseExclusive( resourceType, resourceId );
+            localClient.releaseExclusive( resourceType, resourceId );
         }
 
         @Override
         public void releaseAll()
         {
-            localLocks.releaseAll();
+            localClient.releaseAll();
         }
 
         @Override
         public void stop()
         {
-            localLocks.stop();
+            localClient.stop();
         }
 
         @Override
         public void close()
         {
-            localLocks.close();
+            localClient.close();
         }
 
         @Override
         public int getLockSessionId()
         {
-            return lockSession.id();
+            return lockTokenId;
         }
     }
 }

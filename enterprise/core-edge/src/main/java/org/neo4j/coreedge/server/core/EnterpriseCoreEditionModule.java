@@ -82,9 +82,9 @@ import org.neo4j.coreedge.server.Expiration;
 import org.neo4j.coreedge.server.ExpiryScheduler;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.SenderService;
-import org.neo4j.coreedge.server.core.locks.CurrentReplicatedLockState;
+import org.neo4j.coreedge.server.core.locks.LockTokenManager;
 import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
-import org.neo4j.coreedge.server.core.locks.ReplicatedLockStateMachine;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.coreedge.server.logging.BetterMessageLogger;
 import org.neo4j.coreedge.server.logging.MessageLogger;
 import org.neo4j.graphdb.DependencyResolver;
@@ -237,10 +237,10 @@ public class EnterpriseCoreEditionModule
 
         LocalSessionPool localSessionPool = new LocalSessionPool( myself );
 
-        ReplicatedLockStateMachine<CoreMember> replicatedLockStateMachine = new ReplicatedLockStateMachine<>( myself,
-                replicator );
+        ReplicatedLockTokenStateMachine<CoreMember> replicatedLockTokenStateMachine =
+                new ReplicatedLockTokenStateMachine<>( replicator );
 
-        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, replicatedLockStateMachine,
+        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, replicatedLockTokenStateMachine,
                 dependencies, logging );
 
         final IdAllocationState idAllocationState;
@@ -255,10 +255,8 @@ public class EnterpriseCoreEditionModule
             throw new RuntimeException( e );
         }
 
-
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( myself,
                 idAllocationState );
-
 
         replicator.subscribe( idAllocationStateMachine );
 
@@ -313,8 +311,9 @@ public class EnterpriseCoreEditionModule
                 channelInitializer ) );
         channelInitializer.setOwner( coreToCoreClient );
 
+        long leaderLockTokenTimeout = config.get( CoreEdgeClusterSettings.leader_lock_token_timeout );
         lockManager = dependencies.satisfyDependency( createLockManager( config, logging, replicator, myself,
-                replicatedLockStateMachine, raft ) );
+                replicatedLockTokenStateMachine, raft, leaderLockTokenTimeout ) );
 
         CatchupServer catchupServer = new CatchupServer( logProvider,
                 new StoreIdSupplier( platformModule ),
@@ -358,7 +357,7 @@ public class EnterpriseCoreEditionModule
 
     public static CommitProcessFactory createCommitProcessFactory( final Replicator replicator,
                                                                    final LocalSessionPool localSessionPool,
-                                                                   final CurrentReplicatedLockState
+                                                                   final LockTokenManager
                                                                            currentReplicatedLockState,
                                                                    final Dependencies dependencies,
                                                                    final LogService logging )
@@ -410,7 +409,6 @@ public class EnterpriseCoreEditionModule
         Integer expectedClusterSize = config.get( CoreEdgeClusterSettings.expected_core_cluster_size );
 
         CoreMemberSetBuilder memberSetBuilder = new CoreMemberSetBuilder();
-
 
         Replicator localReplicator = new LeaderOnlyReplicator<>( myself, myself.getRaftAddress(), outbound );
 
@@ -475,12 +473,12 @@ public class EnterpriseCoreEditionModule
     }
 
     protected Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,
-                                       CoreMember myself, ReplicatedLockStateMachine<CoreMember>
-                                               replicatedLockStateMachine, LeaderLocator<CoreMember> leaderLocator )
+            CoreMember myself, LockTokenManager lockTokenManager,
+            LeaderLocator<CoreMember> leaderLocator, long leaderLockTokenTimeout )
     {
         Locks local = CommunityEditionModule.createLockManager( config, logging );
 
-        return new LeaderOnlyLockManager<>( myself, replicator, leaderLocator, local, replicatedLockStateMachine );
+        return new LeaderOnlyLockManager<>( myself, replicator, leaderLocator, local, lockTokenManager, leaderLockTokenTimeout );
     }
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()

@@ -26,10 +26,11 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTracker;
-import org.neo4j.coreedge.server.core.locks.CurrentReplicatedLockState;
+import org.neo4j.coreedge.server.core.locks.LockTokenManager;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -41,19 +42,19 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
 {
     private final GlobalSessionTracker sessionTracker;
     private final GlobalSession myGlobalSession;
-    private final CurrentReplicatedLockState currentReplicatedLockState;
+    private final LockTokenManager lockTokenManager;
     private final TransactionCommitProcess commitProcess;
     private final CommittingTransactions transactionFutures;
     private long lastCommittedIndex = -1;
 
     public ReplicatedTransactionStateMachine( TransactionCommitProcess commitProcess,
                                               GlobalSession myGlobalSession,
-                                              CurrentReplicatedLockState currentReplicatedLockState,
+                                              LockTokenManager lockTokenManager,
                                               CommittingTransactions transactionFutures )
     {
         this.commitProcess = commitProcess;
         this.myGlobalSession = myGlobalSession;
-        this.currentReplicatedLockState = currentReplicatedLockState;
+        this.lockTokenManager = lockTokenManager;
         this.transactionFutures = transactionFutures;
         this.sessionTracker = new GlobalSessionTracker();
     }
@@ -94,14 +95,15 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
                 Optional.ofNullable( transactionFutures.retrieve( replicatedTx.localOperationId() ) ) :
                 Optional.<CommittingTransaction>empty();
 
-        int currentLockSessionId = currentReplicatedLockState.currentLockSession().id();
+        int currentTokenId = lockTokenManager.currentToken().id();
         int txLockSessionId = tx.getLockSessionId();
-        if ( currentLockSessionId != txLockSessionId )
+
+        if ( currentTokenId != txLockSessionId && txLockSessionId != Locks.Client.NO_LOCK_SESSION_ID )
         {
             future.ifPresent( txFuture -> txFuture.notifyCommitFailed( new TransactionFailureException( LockSessionInvalid,
                     "The lock session in the cluster has changed: " +
                             "[current lock session id:%d, tx lock session id:%d]",
-                    currentLockSessionId, txLockSessionId ) ) );
+                    currentTokenId, txLockSessionId ) ) );
             return;
         }
 
