@@ -31,6 +31,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.proc.Procedure.Key.key;
 import static org.neo4j.proc.ProcedureSignature.procedureSignature;
 
 public class ProceduresTest
@@ -42,7 +43,7 @@ public class ProceduresTest
     private final Procedure procedure = new Procedure.BasicProcedure(signature)
     {
         @Override
-        public Stream<Object[]> apply( Object[] input )
+        public Stream<Object[]> apply( Context ctx, Object[] input )
         {
             return Stream.<Object[]>of( input );
         }
@@ -65,7 +66,9 @@ public class ProceduresTest
         procs.register( procedure );
 
         // When
-        Stream<Object[]> result = procs.call( signature.name(), new Object[]{1337} );
+        Stream<Object[]> result = procs.call( new Procedure.BasicContext()
+        {
+        }, signature.name(), new Object[]{1337} );
 
         // Then
         assertThat( result.collect( toList() ), contains( equalTo( new Object[]{1337} ) ) );
@@ -80,7 +83,9 @@ public class ProceduresTest
                                  "procedure name correctly and that the procedure is properly deployed." );
 
         // When
-        procs.call( signature.name(), new Object[]{1337} );
+        procs.call( new Procedure.BasicContext()
+        {
+        }, signature.name(), new Object[]{1337} );
     }
 
     @Test
@@ -107,5 +112,30 @@ public class ProceduresTest
 
         // When
         procs.get( signature.name() );
+    }
+
+    @Test
+    public void shouldMakeContextAvailable() throws Throwable
+    {
+        // Given
+        Procedure.Key<String> someKey = key("someKey", String.class);
+
+        procs.register( new Procedure.BasicProcedure(signature)
+        {
+            @Override
+            public Stream<Object[]> apply( Context ctx, Object[] input ) throws ProcedureException
+            {
+                return Stream.<Object[]>of( new Object[]{ctx.get( someKey )} );
+            }
+        } );
+
+        Procedure.BasicContext ctx = new Procedure.BasicContext();
+        ctx.put( someKey, "hello, world" );
+
+        // When
+        Stream<Object[]> result = procs.call( ctx, signature.name(), new Object[0] );
+
+        // Then
+        assertThat( result.collect( toList() ), contains( equalTo( new Object[]{ "hello, world" } ) ) );
     }
 }

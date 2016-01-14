@@ -440,7 +440,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("works fine with index") {
     // given
-    executeWithRulePlanner("create index on :Person(name)")
+    updateWithBothPlanners("create index on :Person(name)")
 
     // when
     val result = updateWithBothPlanners("MERGE (person:Person {name:'Lasse'}) RETURN person.name")
@@ -451,7 +451,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("works with index and constraint") {
     // given
-    executeWithRulePlanner("create index on :Person(name)")
+    updateWithBothPlanners("create index on :Person(name)")
     graph.createConstraint("Person", "id")
 
     // when
@@ -463,7 +463,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("works with indexed and unindexed property") {
     // given
-    executeWithRulePlanner("create index on :Person(name)")
+    updateWithBothPlanners("create index on :Person(name)")
 
     // when
     val result = updateWithBothPlanners("MERGE (person:Person {name:'Lasse', id:42}) RETURN person.name")
@@ -474,8 +474,8 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("works with two indexed properties") {
     // given
-    executeWithRulePlanner("create index on :Person(name)")
-    executeWithRulePlanner("create index on :Person(id)")
+    updateWithBothPlanners("create index on :Person(name)")
+    updateWithBothPlanners("create index on :Person(id)")
 
     // when
     val result = updateWithBothPlanners("MERGE (person:Person {name:'Lasse', id:42}) RETURN person.name")

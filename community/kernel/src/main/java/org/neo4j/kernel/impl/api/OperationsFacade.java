@@ -31,6 +31,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndexHits;
+import org.neo4j.kernel.api.ProcedureRead;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
@@ -74,6 +75,7 @@ import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.proc.Procedure;
 import org.neo4j.proc.Procedures;
 import org.neo4j.proc.ProcedureSignature;
 import org.neo4j.proc.ProcedureSignature.ProcedureName;
@@ -646,7 +648,9 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public Stream<Object[]> procedureCallRead( ProcedureName name, Object[] input ) throws ProcedureException
     {
         statement.assertOpen();
-        return procedures.call( name, input );
+        Procedure.BasicContext ctx = new Procedure.BasicContext();
+        ctx.put( ProcedureRead.readStatement, this );
+        return procedures.call( ctx, name, input );
     }
 
     @Override

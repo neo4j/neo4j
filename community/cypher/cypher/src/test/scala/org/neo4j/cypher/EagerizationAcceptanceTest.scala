@@ -1194,7 +1194,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   }
 
   test("matching property via index and writing same property should not be eager") {
-    executeWithRulePlanner("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
+    updateWithBothPlanners("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
     updateWithBothPlanners("CREATE (b:Book {isbn : '123'})")
 
     val query = "MATCH (b :Book {isbn : '123'}) SET b.isbn = '456'"
@@ -1203,7 +1203,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   }
 
   test("matching property via index and writing same property should be eager") {
-    executeWithRulePlanner("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
+    updateWithBothPlanners("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
     updateWithBothPlanners("CREATE (b:Book {isbn : '123'})")
 
     val query = "MATCH (a), (b :Book {isbn : '123'}) SET a.isbn = '456' RETURN count(*)"

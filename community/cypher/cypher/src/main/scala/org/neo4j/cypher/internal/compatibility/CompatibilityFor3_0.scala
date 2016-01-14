@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.compatibility
 
 import java.io.PrintWriter
-import java.util
+import java.{lang, util}
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v3_0
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => ExecutionPlan_v3_0, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => ExecutionPlan_v3_0, InternalExecutionResult, READ_ONLY, READ_WRITE, SCHEMA_WRITE, WRITE}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, DPPlannerName, ExplainMode => ExplainModev3_0, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev3_0, PlannerName, ProfileMode => ProfileModev3_0, _}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
@@ -36,9 +37,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.{CypherException => InternalCyphe
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
-import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, QueryExecutionType, ResourceIterator}
+import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, Node, Path, QueryExecutionType, Relationship, ResourceIterator}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
@@ -301,7 +302,19 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
     CompatibilityPlanDescriptionFor3_0(i, CypherVersion.v3_0, planner, runtime)
   }
 
-  def executionType: QueryExecutionType = exceptionHandlerFor3_0.runSafely {inner.executionType}
+  def executionType: QueryExecutionType = {
+    val qt = inner.executionType match {
+      case READ_ONLY => QueryExecutionType.QueryType.READ_ONLY
+      case READ_WRITE => QueryExecutionType.QueryType.READ_WRITE
+      case WRITE => QueryExecutionType.QueryType.WRITE
+      case SCHEMA_WRITE => QueryExecutionType.QueryType.SCHEMA_WRITE
+    }
+    inner.executionMode match {
+      case ExplainModev3_0 => QueryExecutionType.explained(qt)
+      case ProfileModev3_0 => QueryExecutionType.profiled(qt)
+      case NormalModev3_0 => QueryExecutionType.query(qt)
+    }
+  }
 
   def notifications = inner.notifications.map(asKernelNotification)
 
@@ -337,8 +350,29 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor3_0.runSafely {
-    inner.accept(visitor)
+    inner.accept(wrapVisitor(visitor))
     endQueryExecution()
+  }
+
+  private def wrapVisitor[EX <: Exception](visitor: ResultVisitor[EX]) = new InternalResultVisitor[EX] {
+    override def visit(row: InternalResultRow) = visitor.visit(unwrapResultRow(row))
+  }
+
+  private def unwrapResultRow(row: InternalResultRow): ResultRow = new ResultRow {
+
+    override def getRelationship(key: String): Relationship = row.getRelationship(key)
+
+    override def get(key: String): AnyRef = row.get(key)
+
+    override def getBoolean(key: String): lang.Boolean = row.getBoolean(key)
+
+    override def getPath(key: String): Path = row.getPath(key)
+
+    override def getNode(key: String): Node = row.getNode(key)
+
+    override def getNumber(key: String): Number = row.getNumber(key)
+
+    override def getString(key: String): String = row.getString(key)
   }
 
   override def toString() = {

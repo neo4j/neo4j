@@ -25,6 +25,8 @@ import org.junit.rules.ExpectedException;
 
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.api.ProcedureRead;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.proc.Procedure;
 import org.neo4j.proc.ProcedureSignature;
 
@@ -32,6 +34,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.junit.Assert.assertNotNull;
 import static org.neo4j.proc.Neo4jTypes.NTString;
 import static org.neo4j.proc.ProcedureSignature.procedureSignature;
 
@@ -47,7 +50,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     private final Procedure.BasicProcedure procedure = new Procedure.BasicProcedure( signature )
     {
         @Override
-        public Stream<Object[]> apply( Object[] input )
+        public Stream<Object[]> apply( Context ctx, Object[] input )
         {
             return Stream.<Object[]>of( input );
         }
@@ -79,5 +82,25 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // Then
         assertThat( found.collect( toList() ), contains( equalTo( new Object[]{1337} ) ) );
+    }
+
+    @Test
+    public void registeredProcedureShouldGetReadOperations() throws Throwable
+    {
+        // Given
+        kernel.registerProcedure( new Procedure.BasicProcedure( signature )
+        {
+            @Override
+            public Stream<Object[]> apply( Context ctx, Object[] input ) throws ProcedureException
+            {
+                return Stream.<Object[]>of( new Object[]{ ctx.get( ProcedureRead.readStatement ) } );
+            }
+        } );
+
+        // When
+        Stream<Object[]> stream = readOperationsInNewTransaction().procedureCallRead( signature.name(), new Object[]{""} );
+
+        // Then
+        assertNotNull( stream.collect( toList() ).get( 0 )[0] );
     }
 }

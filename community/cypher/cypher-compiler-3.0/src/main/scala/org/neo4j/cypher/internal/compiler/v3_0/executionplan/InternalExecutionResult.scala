@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.internal.compiler.v3_0.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_0.spi.InternalResultVisitor
+import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
-import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
+import org.neo4j.graphdb.ResourceIterator
 
 trait InternalExecutionResult extends Iterator[Map[String, Any]] {
   def columns: List[String]
@@ -39,9 +39,11 @@ trait InternalExecutionResult extends Iterator[Map[String, Any]] {
   def executionPlanDescription(): InternalPlanDescription
   def close()
   def planDescriptionRequested: Boolean
-  def executionType: QueryExecutionType
+  def executionType: InternalQueryType
+  def executionMode: ExecutionMode
   def notifications: Iterable[InternalNotification]
-  //todo this should not depend on external visitor
   @throws(classOf[Exception])
-  def accept[EX <: Exception](visitor: ResultVisitor[EX])
+  def accept[EX <: Exception](visitor: InternalResultVisitor[EX])
 }
+
+

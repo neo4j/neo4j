@@ -23,9 +23,9 @@ import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, NormalMode, TaskCloser}
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.helpers.collection.Iterables._
 
 import scala.collection.JavaConverters._
@@ -120,14 +120,11 @@ class CompiledExecutionResultTest extends CypherFunSuite {
     })
 
     // when
-    result.accept(new ResultVisitor[Exception] {
-      override def visit(row: ResultRow): Boolean = {
+    result.accept(new InternalResultVisitor[Exception] {
+      override def visit(row: InternalResultRow): Boolean = {
         false
       }
     })
-
-    // also then
-    intercept[IllegalStateException](result.javaIterator.hasNext)
   }
 
   test("close should work after result is consumed") {
@@ -135,8 +132,8 @@ class CompiledExecutionResultTest extends CypherFunSuite {
     val result = newCompiledExecutionResult(javaMap("a" -> "1", "b" -> "2"))
 
     // when
-    result.accept(new ResultVisitor[Exception] {
-      override def visit(row: ResultRow): Boolean = {
+    result.accept(new InternalResultVisitor[Exception] {
+      override def visit(row: InternalResultRow): Boolean = {
         true
       }
     })
@@ -154,7 +151,7 @@ class CompiledExecutionResultTest extends CypherFunSuite {
       override def setSuccessfulCloseable(closeable: SuccessfulCloseable){}
       override def javaColumns(): util.List[String] = new util.ArrayList(row.keySet())
       override def executionMode(): ExecutionMode = NormalMode
-      override def accept[E <: Exception](visitor: ResultVisitor[E]): Unit = {
+      override def accept[E <: Exception](visitor: InternalResultVisitor[E]): Unit = {
         try {
           val rowImpl = new ResultRowImpl()
           row.asScala.foreach { case (k, v) => rowImpl.set(k, v) }

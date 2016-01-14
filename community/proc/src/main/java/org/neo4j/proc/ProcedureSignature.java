@@ -20,6 +20,7 @@
 package org.neo4j.proc;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -140,7 +141,7 @@ public class ProcedureSignature
 
     public ProcedureSignature( ProcedureName name )
     {
-        this( name, null, null );
+        this( name, Collections.emptyList(), Collections.emptyList() );
     }
 
     public ProcedureName name()
@@ -224,9 +225,19 @@ public class ProcedureSignature
         return procedureSignature( namespace, name );
     }
 
+    public static Builder procedureSignature( ProcedureName name )
+    {
+        return new Builder( name.namespace, name.name );
+    }
+
     public static Builder procedureSignature(String[] namespace, String name)
     {
         return new Builder(namespace, name);
+    }
+
+    public static ProcedureName procedureName( String ... namespaceAndName)
+    {
+        return procedureSignature( namespaceAndName ).build().name();
     }
 
     private static List<AnyType> typesOf( List<FieldSignature> namedSig )

@@ -20,11 +20,9 @@
 package org.neo4j.cypher
 
 import java.io.{File, PrintWriter}
-import java.util
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.PathImpl
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
@@ -33,7 +31,7 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.{NeoStoreDataSource, TopLevelTransaction}
-import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory}
+import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -722,7 +720,7 @@ order by a.COL1""")
     val propertyKeys = Seq("name")
 
     // WHEN
-    executeWithRulePlanner(s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")
+    updateWithBothPlanners(s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")
 
     // THEN
     graph.inTx {

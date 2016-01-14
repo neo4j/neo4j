@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, ParameterNotFoundException, SemanticDirection, symbols}
@@ -96,7 +96,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       clazz.generate(Templates.JAVA_COLUMNS)
 
       using(clazz.generate(MethodDeclaration.method(typeRef[Unit], "accept",
-        Parameter.param(parameterizedType(classOf[ResultVisitor[_]], typeParameter("E")), "visitor")).
+        Parameter.param(parameterizedType(classOf[InternalResultVisitor[_]], typeParameter("E")), "visitor")).
         parameterizedWith("E", extending(typeRef[Exception])).
         throwsException(typeParameter("E")))) { method =>
         using(method.tryBlock()) { body =>

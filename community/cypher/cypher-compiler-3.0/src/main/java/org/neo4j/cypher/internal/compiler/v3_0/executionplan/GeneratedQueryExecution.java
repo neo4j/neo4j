@@ -23,13 +23,13 @@ import java.util.List;
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionMode;
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription;
-import org.neo4j.graphdb.Result;
+import org.neo4j.cypher.internal.compiler.v3_0.spi.InternalResultVisitor;
 
 public interface GeneratedQueryExecution
 {
     List<String> javaColumns();
 
-    <E extends Exception> void accept( final Result.ResultVisitor<E> visitor ) throws E;
+    <E extends Exception> void accept( final InternalResultVisitor<E> visitor ) throws E;
 
     ExecutionMode executionMode();
 

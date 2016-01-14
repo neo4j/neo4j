@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
+import scala.collection.Iterator
+
 class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   protected def singleDbHit[A](value: A): A = value
@@ -170,6 +172,8 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
                                pathPredicate: KernelPredicate[Path],
                                filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
+
+  override def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]) = inner.callReadOnlyProcedure(signature, args)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

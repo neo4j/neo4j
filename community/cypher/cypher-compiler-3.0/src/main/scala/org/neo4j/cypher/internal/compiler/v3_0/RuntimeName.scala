@@ -32,6 +32,10 @@ case object CompiledRuntimeName extends RuntimeName {
   override val name = "COMPILED"
 }
 
+case object ProcedureRuntimeName extends RuntimeName {
+  override val name = "PROCEDURE"
+}
+
 object RuntimeName {
 
   def apply(name: String): RuntimeName = name.toUpperCase match {

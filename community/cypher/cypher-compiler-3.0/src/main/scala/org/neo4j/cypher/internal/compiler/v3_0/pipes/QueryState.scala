@@ -34,12 +34,12 @@ import scala.collection.mutable
 class QueryState(val query: QueryContext,
                  val resources: ExternalResource,
                  val params: Map[String, Any],
-                 val decorator: PipeDecorator,
+                 val decorator: PipeDecorator = NullPipeDecorator,
                  val timeReader: TimeReader = new TimeReader,
                  var initialContext: Option[ExecutionContext] = None,
                  val queryId: AnyRef = UUID.randomUUID().toString,
-                 val triadicState: mutable.Map[String, PrimitiveLongSet],
-                 val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]]) {
+                 val triadicState: mutable.Map[String, PrimitiveLongSet] = mutable.Map.empty,
+                 val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty) {
   private var _pathValueBuilder: PathValueBuilder = null
 
   def clearPathValueBuilder = {

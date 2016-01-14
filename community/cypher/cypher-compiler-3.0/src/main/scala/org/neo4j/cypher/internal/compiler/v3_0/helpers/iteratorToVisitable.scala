@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.helpers
 
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
-import org.neo4j.graphdb.{Path, Relationship, Node}
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.{Node, Path, Relationship}
 
-import scala.collection.Map
 import scala.collection.JavaConverters._
+import scala.collection.Map
 
 object iteratorToVisitable {
 
-  def accept[EX <: Exception](iterator: Iterator[Map[String, Any]], visitor: ResultVisitor[EX]) = {
+  def accept[EX <: Exception](iterator: Iterator[Map[String, Any]], visitor: InternalResultVisitor[EX]) = {
     val row = new MapResultRow()
     var continue = true
     while (continue && iterator.hasNext) {
@@ -37,7 +37,7 @@ object iteratorToVisitable {
     }
   }
 
-  private class MapResultRow extends ResultRow {
+  private class MapResultRow extends InternalResultRow {
 
     var map: Map[String, Any] = Map.empty
 

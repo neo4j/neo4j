@@ -27,13 +27,12 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilde
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, InternalResultRow, InternalResultVisitor, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
@@ -92,8 +91,8 @@ trait CodeGenSugar extends MockitoSugar {
   def evaluate(result: InternalExecutionResult): List[Map[String, Object]] = {
     var rows = List.empty[Map[String, Object]]
     val columns: List[String] = result.columns
-    result.accept(new ResultVisitor[RuntimeException] {
-      override def visit(row: ResultRow): Boolean = {
+    result.accept(new InternalResultVisitor[RuntimeException] {
+      override def visit(row: InternalResultRow): Boolean = {
         rows = rows :+ columns.map(key => (key, row.get(key))).toMap
         true
       }

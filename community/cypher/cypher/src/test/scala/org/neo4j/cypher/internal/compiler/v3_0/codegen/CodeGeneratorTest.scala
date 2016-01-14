@@ -28,13 +28,12 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilde
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{ParameterNotFoundException, SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.ReadOperations
@@ -748,8 +747,8 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     verifyZeroInteractions(closer)
-    val visitor = mock[ResultVisitor[RuntimeException]]
-    when(visitor.visit(any[ResultRow])).thenReturn(true)
+    val visitor = mock[InternalResultVisitor[RuntimeException]]
+    when(visitor.visit(any[InternalResultRow])).thenReturn(true)
     compiled.accept(visitor)
     verify(closer).close(success = true)
   }
@@ -764,8 +763,8 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     verifyZeroInteractions(closer)
-    val visitor = mock[ResultVisitor[RuntimeException]]
-    when(visitor.visit(any[ResultRow])).thenReturn(false)
+    val visitor = mock[InternalResultVisitor[RuntimeException]]
+    when(visitor.visit(any[InternalResultRow])).thenReturn(false)
     compiled.accept(visitor)
     verify(closer).close(success = true)
   }
@@ -780,9 +779,9 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     verifyZeroInteractions(closer)
-    val visitor = mock[ResultVisitor[RuntimeException]]
+    val visitor = mock[InternalResultVisitor[RuntimeException]]
     val exception = new scala.RuntimeException()
-    when(visitor.visit(any[ResultRow])).thenThrow(exception)
+    when(visitor.visit(any[InternalResultRow])).thenThrow(exception)
     intercept[RuntimeException] {
       compiled.accept(visitor)
 
@@ -799,9 +798,9 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val compiled = compileAndExecute( plan, taskCloser = closer )
 
     // then
-    val visitor = mock[ResultVisitor[RuntimeException]]
+    val visitor = mock[InternalResultVisitor[RuntimeException]]
     val exception = new scala.RuntimeException()
-    when(visitor.visit(any[ResultRow])).thenThrow(exception)
+    when(visitor.visit(any[InternalResultRow])).thenThrow(exception)
       try {
         compiled.accept(visitor)
         fail("should have thrown error")
@@ -1047,8 +1046,8 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def getNodesFromResult(plan: InternalExecutionResult, columns: String*) = {
     val res = Seq.newBuilder[Map[String, Node]]
 
-    plan.accept(new ResultVisitor[RuntimeException]() {
-      override def visit(element: ResultRow): Boolean = {
+    plan.accept(new InternalResultVisitor[RuntimeException]() {
+      override def visit(element: InternalResultRow): Boolean = {
         res += columns.map(col => col -> element.getNode(col)).toMap
         true
       }
@@ -1059,8 +1058,8 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def getResult(plan: InternalExecutionResult, columns: String*) = {
     val res = Seq.newBuilder[Map[String, Any]]
 
-    plan.accept(new ResultVisitor[RuntimeException]() {
-      override def visit(element: ResultRow): Boolean = {
+    plan.accept(new InternalResultVisitor[RuntimeException]() {
+      override def visit(element: InternalResultRow): Boolean = {
         res += columns.map(col => col -> element.get(col)).toMap
         true
       }

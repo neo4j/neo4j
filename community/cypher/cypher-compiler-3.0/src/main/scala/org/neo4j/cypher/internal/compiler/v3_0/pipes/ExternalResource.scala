@@ -24,3 +24,9 @@ import java.net.URL
 trait ExternalResource {
   def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]]
 }
+
+object ExternalResource {
+  def empty: ExternalResource = new ExternalResource {
+    override def getCsvIterator(url: URL, fieldTerminator: Option[String]): Iterator[Array[String]] = Iterator.empty
+  }
+}
