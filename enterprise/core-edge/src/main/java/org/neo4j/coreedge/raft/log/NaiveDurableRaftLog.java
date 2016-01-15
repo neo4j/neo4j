@@ -259,7 +259,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         try
         {
             storeCommitIndex( actualNewCommitIndex );
-            commitIndexMonitor.commitIndex(commitIndex);
+            commitIndexMonitor.commitIndex(actualNewCommitIndex);
         }
         catch ( IOException e )
         {
@@ -280,7 +280,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public long appendIndex()
     {
-        appendIndexMonitor.appendIndex( appendIndex );
         return appendIndex;
     }
 

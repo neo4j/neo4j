@@ -63,13 +63,13 @@ public class CoreEdgeMetrics extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        monitors.addMonitorListener( raftLogCommitIndexMetric, NaiveDurableRaftLog.class.getName(), COMMIT_INDEX_TAG );
-        monitors.addMonitorListener( raftLogAppendIndexMetric, NaiveDurableRaftLog.class.getName(), APPEND_INDEX_TAG );
-        monitors.addMonitorListener( raftTermMetric, NaiveDurableRaftLog.class.getName(), TERM_TAG );
+        monitors.addMonitorListener( raftLogCommitIndexMetric );
+        monitors.addMonitorListener( raftLogAppendIndexMetric );
+        monitors.addMonitorListener( raftTermMetric );
 
-        registry.register( COMMIT_INDEX, (Gauge<Long>) () -> raftLogCommitIndexMetric.commitIndex() );
-        registry.register( APPEND_INDEX, (Gauge<Long>) () -> raftLogAppendIndexMetric.appendIndex() );
-        registry.register( TERM, (Gauge<Long>) () -> raftTermMetric.term() );
+        registry.register( COMMIT_INDEX, (Gauge<Long>) raftLogCommitIndexMetric::commitIndex );
+        registry.register( APPEND_INDEX, (Gauge<Long>) raftLogAppendIndexMetric::appendIndex );
+        registry.register( TERM, (Gauge<Long>) raftTermMetric::term );
     }
 
     @Override

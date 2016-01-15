@@ -32,15 +32,24 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiPredicate;
 
+import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.replication.RaftContentSerializer;
+import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.metrics.source.CoreEdgeMetrics;
 import org.neo4j.metrics.source.db.CheckPointingMetrics;
 import org.neo4j.metrics.source.db.CypherMetrics;
 import org.neo4j.metrics.source.db.TransactionMetrics;
@@ -52,6 +61,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
+import static org.neo4j.kernel.IdType.RELATIONSHIP_TYPE_TOKEN;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
@@ -161,6 +171,47 @@ public class MetricsKernelExtensionFactoryIT
         cluster.stop();
 
         readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue > 0 );
+    }
+
+    @Test
+    public void shouldLogCoreEdgeMetrics() throws Throwable
+    {
+        createCluster( "10m", "100ms" );
+
+        Monitors monitors = db.getDependencyResolver().resolveDependency( Monitors.class );
+
+        NaiveDurableRaftLog log = new NaiveDurableRaftLog( new DefaultFileSystemAbstraction(), db.getStoreDirectory(),
+                new RaftContentSerializer(), monitors );
+
+        CoreMember owner = new CoreMember( new AdvertisedSocketAddress( "localhost:7001" ), new
+                AdvertisedSocketAddress( "localhost:6001" ) );
+        log.append( new RaftLogEntry( 8, allocation( owner, 0 ) ) );
+        log.append( new RaftLogEntry( 8, allocation( owner, 1024 ) ) );
+        log.append( new RaftLogEntry( 8, allocation( owner, 2048 ) ) );
+        log.commit( 2 );
+
+
+        File appenIndexMetricsFile = new File( outputPath, CoreEdgeMetrics.APPEND_INDEX + ".csv" );
+        while ( !appenIndexMetricsFile.exists() )
+        {
+            Thread.sleep( 10 );
+        }
+
+        File commitIndexMetricsFile = new File( outputPath, CoreEdgeMetrics.COMMIT_INDEX + ".csv" );
+        while ( !commitIndexMetricsFile.exists() )
+        {
+            Thread.sleep( 10 );
+        }
+
+        cluster.stop();
+
+        readLongValueAndAssert( appenIndexMetricsFile, ( newValue, currentValue ) -> newValue > 0 );
+        readLongValueAndAssert( commitIndexMetricsFile, ( newValue, currentValue ) -> newValue > 0 );
+    }
+
+    private ReplicatedIdAllocationRequest allocation( CoreMember owner, int start )
+    {
+        return new ReplicatedIdAllocationRequest( owner, RELATIONSHIP_TYPE_TOKEN, start, 1024 );
     }
 
     private void addNodes( int numberOfNodes )
