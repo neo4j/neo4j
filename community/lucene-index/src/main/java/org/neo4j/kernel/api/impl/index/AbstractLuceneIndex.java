@@ -168,10 +168,6 @@ public abstract class AbstractLuceneIndex implements Closeable
 
     public void flush() throws IOException
     {
-        if (!open)
-        {
-            return;
-        }
         commitCloseLock.lock();
         try
         {

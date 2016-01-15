@@ -108,7 +108,10 @@ public class LuceneLabelScanStore implements LabelScanStore
     {
         try
         {
-            luceneIndex.flush();
+            if ( luceneIndex.isOpen() )
+            {
+                luceneIndex.flush();
+            }
         }
         catch ( IOException e )
         {

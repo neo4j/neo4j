@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -45,9 +46,8 @@ import static java.lang.String.format;
 public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
 {
 
-    // TODO: Integer.MAX_VALUE usually used as sentinel marker in lucene, test can we use it as max partition size ?
     private final Integer MAXIMUM_PARTITION_SIZE =
-            Integer.getInteger( "labelScanStore.maxPartitionSize", Integer.MAX_VALUE );
+            Integer.getInteger( "labelScanStore.maxPartitionSize", IndexWriter.MAX_DOCS );
 
     private final BitmapDocumentFormat format;
 

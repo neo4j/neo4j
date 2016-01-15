@@ -31,7 +31,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -48,7 +47,8 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.DefaultFileSystemRule;
+import org.neo4j.test.TargetDirectory;
 
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
@@ -59,7 +59,10 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 public class LuceneSchemaIndexPopulatorTest
 {
     @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
     private IndexDescriptor indexDescriptor;
     private IndexStoreView indexStoreView;
     private LuceneSchemaIndexProvider provider;
@@ -76,7 +79,7 @@ public class LuceneSchemaIndexPopulatorTest
         directory = new RAMDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
-        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, new File( "/target/whatever" ) );
+        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, testDir.directory( "folder" ) );
         indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
         indexStoreView = mock( IndexStoreView.class );
         IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;

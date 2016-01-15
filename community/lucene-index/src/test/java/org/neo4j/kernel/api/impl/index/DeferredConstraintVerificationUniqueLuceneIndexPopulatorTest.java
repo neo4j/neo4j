@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.builder.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.index.populator.DeferredConstraintVerificationUniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -56,6 +58,8 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 {
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     private static final int LABEL_ID = 1;
     private static final int PROPERTY_KEY_ID = 2;
@@ -456,9 +460,9 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 
     private DeferredConstraintVerificationUniqueLuceneIndexPopulator newPopulator() throws IOException
     {
-        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystem, new File(
-                "/target/whatever" ), INDEX_IDENTIFIER );
+        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystem,
+                testDir.directory( "folder" ), INDEX_IDENTIFIER );
         LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
                 .withIndexStorage( indexStorage )
                 .build();

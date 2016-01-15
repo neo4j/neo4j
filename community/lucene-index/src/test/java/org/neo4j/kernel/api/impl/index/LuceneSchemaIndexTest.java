@@ -26,21 +26,23 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.builder.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.DefaultFileSystemRule;
+import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertTrue;
 
 public class LuceneSchemaIndexTest
 {
     @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private LuceneSchemaIndex index;
@@ -138,7 +140,7 @@ public class LuceneSchemaIndexTest
             builder = builder.uniqueIndex();
         }
         return builder
-                .withIndexRootFolder( new File( "/graph.db" ) )
+                .withIndexRootFolder( testDir.directory( "index" ) )
                 .withDirectoryFactory( dirFactory )
                 .withFileSystem( fs.get() )
                 .withIndexIdentifier( "testIndex" )
