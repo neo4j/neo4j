@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy.{GreedyQueryGraphSolver, expandsOnly, expandsOrJoins}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 
 object CostBasedPipeBuilderFactory {
@@ -40,10 +40,10 @@ object CostBasedPipeBuilderFactory {
 
     def createQueryGraphSolver(n: CostBasedPlannerName): QueryGraphSolver = n match {
       case IDPPlannerName =>
-        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor]())
+        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), solverConfig = DefaultIDPSolverConfig(iterationDuration = 1000))
 
       case DPPlannerName =>
-        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), maxTableSize = Int.MaxValue)
+        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), solverConfig = DPSolverConfig())
 
       case GreedyPlannerName =>
         new CompositeQueryGraphSolver(

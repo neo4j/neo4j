@@ -42,6 +42,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
                          registryFactory: () => IdRegistry[Solvable] = () => IdRegistry[Solvable], // maps from Set[S] to BitSet
                          tableFactory: (IdRegistry[Solvable], Seed[Solvable, Result]) => IDPTable[Result] = (registry: IdRegistry[Solvable], seed: Seed[Solvable, Result]) => IDPTable(registry, seed),
                          maxTableSize: Int, // limits computation effort by reducing result quality
+                         iterationDurationLimit: Long, // limits computation effort by reducing result quality
                          monitor: IDPSolverMonitor) {
 
   def apply(seed: Seed[Solvable, Result], initialToDo: Set[Solvable])(implicit context: Context): Iterator[(Set[Solvable], Result)] = {
@@ -53,22 +54,24 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     val goalSelector: Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](_._2, _)
 
     def generateBestCandidates(maxTableSize: Int, maxBlockSize: Int): Int = {
-      var lastStarted = 1
+      var blockSize = 1
       var keepGoing = true
+      val start = System.currentTimeMillis()
 
-      while (keepGoing && lastStarted <= maxBlockSize) {
-        lastStarted += 1
-        val goals = toDo.subsets(lastStarted)
+      while (keepGoing && blockSize <= maxBlockSize) {
+        blockSize += 1
+        val goals = toDo.subsets(blockSize)
         while (keepGoing && goals.hasNext) {
           val goal = goals.next()
           if (!table.contains(goal)) {
             val candidates = LazyIterable(generator(registry, goal, table))
             projectingSelector(candidates).foreach(table.put(goal, _))
-            keepGoing = lastStarted == 2 || table.size <= maxTableSize
+            keepGoing = blockSize == 2 ||
+              (table.size <= maxTableSize && (System.currentTimeMillis() - start) < iterationDurationLimit)
           }
         }
       }
-      lastStarted - 1
+      blockSize - 1
     }
 
     def findBestCandidateInBlock(blockSize: Int): (Goal, Result) = {

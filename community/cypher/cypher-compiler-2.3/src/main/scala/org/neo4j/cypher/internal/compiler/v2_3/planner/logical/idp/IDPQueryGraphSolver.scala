@@ -44,6 +44,60 @@ object IDPQueryGraphSolver {
   val VERBOSE = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
 }
 
+trait IDPSolverConfig {
+  def maxTableSize: Int
+  def iterationDurationLimit(queryGraph: QueryGraph): Long
+  def solvers(queryGraph: QueryGraph): Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]]
+}
+
+case class DPSolverConfig(maxTableSize: Int = Integer.MAX_VALUE, iterationDuration: Long = Long.MaxValue) extends IDPSolverConfig {
+  override def iterationDurationLimit(queryGraph: QueryGraph) = iterationDuration
+  override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_), expandSolverStep(_))
+}
+
+case class DefaultIDPSolverConfig(maxTableSize: Int = 128, iterationDuration: Long = 5000) extends IDPSolverConfig {
+  override def iterationDurationLimit(queryGraph: QueryGraph) = iterationDuration
+  override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_), expandSolverStep(_))
+}
+
+case class ExpandOnlyIDPSolverConfig(maxTableSize: Int = 128, iterationDuration: Long = 5000) extends IDPSolverConfig {
+  override def iterationDurationLimit(queryGraph: QueryGraph) = iterationDuration
+  override def solvers(queryGraph: QueryGraph) = Seq(expandSolverStep(_))
+}
+
+case class JoinOnlyIDPSolverConfig(maxTableSize: Int = 128, iterationDuration: Long = 5000) extends IDPSolverConfig {
+  override def iterationDurationLimit(queryGraph: QueryGraph) = iterationDuration
+  override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_))
+}
+
+case class ExpandOnlyWhenPatternIsLong(maxTableSize: Int = 128, iterationDuration: Long = 1000) extends IDPSolverConfig {
+  override def iterationDurationLimit(queryGraph: QueryGraph) = iterationDuration
+  override def solvers(queryGraph: QueryGraph) =
+    if(queryGraph.patternRelationships.size > 10) Seq(expandSolverStep(_))
+    else Seq(joinSolverStep(_), expandSolverStep(_))
+}
+
+case class ReducingTimeBoxPatternConfig(maxTableSize: Int = 128, patternLengthThreshold: Int = 10) extends IDPSolverConfig {
+
+  override def iterationDurationLimit(queryGraph: QueryGraph) =
+    if(queryGraph.patternRelationships.size > patternLengthThreshold * 2) 100
+    else if(queryGraph.patternRelationships.size > patternLengthThreshold) 500
+    else if(queryGraph.patternRelationships.size > patternLengthThreshold / 2) 1000
+    else 5000
+
+  override def solvers(queryGraph: QueryGraph) =
+    if(queryGraph.patternRelationships.size > 10) Seq(expandSolverStep(_))
+    else Seq(joinSolverStep(_), expandSolverStep(_))
+}
+
+case class AdaptiveChainPatternConfig(maxTableSize: Int = 256, patternLengthThreshold: Int = 10) extends IDPSolverConfig {
+
+  override def iterationDurationLimit(queryGraph: QueryGraph) = 1000
+
+  override def solvers(queryGraph: QueryGraph) =
+    Seq(AdaptiveSolverStep(_, patternLengthThreshold))
+}
+
 /**
  * This planner is based on the paper
  *
@@ -52,10 +106,9 @@ object IDPQueryGraphSolver {
  * written by Donald Kossmann and Konrad Stocker
  */
 case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
-                               maxTableSize: Int = 256,
+                               solverConfig: IDPSolverConfig = DefaultIDPSolverConfig(),
                                leafPlanFinder: LogicalLeafPlan.Finder = leafPlanOptions,
                                config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
-                               solvers: Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] = Seq(joinSolverStep(_), expandSolverStep(_)),
                                optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin))
   extends QueryGraphSolver with PatternExpressionSolving {
 
@@ -109,14 +162,15 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
     val bestPlan =
       if (qg.patternRelationships.nonEmpty) {
 
-        val generators = solvers.map(_(qg))
+        val generators = solverConfig.solvers(qg).map(_(qg))
         val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
         val generator = selectingGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, LogicalPlan, LogicalPlanningContext])(_ ++ _)
 
         val solver = new IDPSolver[PatternRelationship, LogicalPlan, LogicalPlanningContext](
           generator = generator,
           projectingSelector = kit.pickBest,
-          maxTableSize = maxTableSize,
+          maxTableSize = solverConfig.maxTableSize,
+          iterationDurationLimit = solverConfig.iterationDurationLimit(qg),
           monitor = monitor
         )
 
