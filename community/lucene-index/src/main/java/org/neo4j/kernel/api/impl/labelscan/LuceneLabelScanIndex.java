@@ -22,12 +22,12 @@ package org.neo4j.kernel.api.impl.labelscan;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
-import java.util.concurrent.locks.Lock;
 
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.impl.labelscan.reader.PartitionedLuceneLabelScanStoreReader;
 import org.neo4j.kernel.api.impl.labelscan.reader.SimpleLuceneLabelScanStoreReader;
 import org.neo4j.kernel.api.impl.labelscan.storestrategy.BitmapDocumentFormat;
 import org.neo4j.kernel.api.impl.labelscan.storestrategy.LabelScanStorageStrategy;
@@ -64,11 +64,8 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
         try
         {
             List<IndexPartition> partitions = getPartitions();
-            if ( hasSinglePartition( partitions ) )
-            {
-                return createSimpleReader( partitions );
-            }
-            throw new UnsupportedOperationException();
+            return hasSinglePartition( partitions ) ? createSimpleReader( partitions )
+                                                    : createPartitionedReader( partitions );
         }
         catch ( IOException e )
         {
@@ -80,10 +77,10 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
         }
     }
 
-    public LabelScanWriter getLabelScanWriter( Lock heldLock )
+    public LabelScanWriter getLabelScanWriter()
     {
         ensureOpen();
-        return new PartitionedLuceneLabelScanWriter( this, format, heldLock );
+        return new PartitionedLuceneLabelScanWriter( this, format );
     }
 
     /**
@@ -91,7 +88,7 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
      * <p>
      * <b>NOTE:</b>
      * There are no guarantees that reader returned from this method will see consistent documents with respect to
-     * {@link #getLabelScanReader() regular reader} and {@link #getLabelScanWriter(Lock) regular writer}.
+     * {@link #getLabelScanReader() regular reader} and {@link #getLabelScanWriter() regular writer}.
      *
      * @return the {@link AllEntriesLabelScanReader reader}.
      */
@@ -105,5 +102,11 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
         IndexPartition partition = getFirstPartition( partitions );
         PartitionSearcher searcher = partition.acquireSearcher();
         return new SimpleLuceneLabelScanStoreReader( searcher, storageStrategy );
+    }
+
+    private LabelScanReader createPartitionedReader( List<IndexPartition> partitions ) throws IOException
+    {
+        List<PartitionSearcher> searchers = acquireSearchers( partitions );
+        return new PartitionedLuceneLabelScanStoreReader(searchers, storageStrategy);
     }
 }

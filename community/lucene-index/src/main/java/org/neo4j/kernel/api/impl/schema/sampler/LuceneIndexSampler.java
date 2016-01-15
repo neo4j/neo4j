@@ -29,11 +29,11 @@ import org.neo4j.storageengine.api.schema.IndexSampler;
  * Abstract implementation of a Lucene index sampler, that can react on sampling being canceled via
  * {@link TaskCoordinator#cancel()} }.
  */
-public abstract class LuceneIndexSampler implements IndexSampler
+abstract class LuceneIndexSampler implements IndexSampler
 {
     private final TaskControl executionTicket;
 
-    public LuceneIndexSampler( TaskControl taskControl )
+    LuceneIndexSampler( TaskControl taskControl )
     {
         this.executionTicket = taskControl;
     }
@@ -65,7 +65,7 @@ public abstract class LuceneIndexSampler implements IndexSampler
      *
      * @throws IndexNotFoundKernelException if cancellation was requested.
      */
-    protected void checkCancellation() throws IndexNotFoundKernelException
+    void checkCancellation() throws IndexNotFoundKernelException
     {
         if ( executionTicket.cancellationRequested() )
         {

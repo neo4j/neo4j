@@ -24,7 +24,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -221,7 +220,7 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
     private PartitionedIndexReader createPartitionedReader( List<IndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedIndexReader( searchers );
+        return new PartitionedIndexReader( searchers, config, samplingConfig, taskCoordinator );
     }
 
     private UniquenessVerifier createPartitionedUniquenessVerifier( List<IndexPartition> partitions ) throws IOException
@@ -230,13 +229,4 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
         return new PartitionedUniquenessVerifier( searchers );
     }
 
-    private static List<PartitionSearcher> acquireSearchers( List<IndexPartition> partitions ) throws IOException
-    {
-        List<PartitionSearcher> searchers = new ArrayList<>( partitions.size() );
-        for ( IndexPartition partition : partitions )
-        {
-            searchers.add( partition.acquireSearcher() );
-        }
-        return searchers;
-    }
 }

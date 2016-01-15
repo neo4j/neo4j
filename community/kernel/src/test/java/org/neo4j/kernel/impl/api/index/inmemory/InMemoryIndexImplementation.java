@@ -49,12 +49,12 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
     }
 
     @Override
-    public final int countIndexedNodes( long nodeId, Object propertyValue )
+    public final long countIndexedNodes( long nodeId, Object propertyValue )
     {
         return doCountIndexedNodes( nodeId, encode( propertyValue ) );
     }
 
-    protected abstract int doCountIndexedNodes( long nodeId, Object encode );
+    protected abstract long doCountIndexedNodes( long nodeId, Object encode );
 
     abstract PrimitiveLongIterator doIndexSeek( Object propertyValue );
 

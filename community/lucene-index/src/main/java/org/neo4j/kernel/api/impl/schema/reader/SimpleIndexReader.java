@@ -111,7 +111,7 @@ public class SimpleIndexReader implements IndexReader
     }
 
     @Override
-    public int countIndexedNodes( long nodeId, Object propertyValue )
+    public long countIndexedNodes( long nodeId, Object propertyValue )
     {
         Query nodeIdQuery = new TermQuery( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
         Query valueQuery = LuceneDocumentStructure.newSeekQuery( propertyValue );
@@ -140,7 +140,7 @@ public class SimpleIndexReader implements IndexReader
         }
         catch ( IOException e )
         {
-            throw new IndexSearcherCloseException( e );
+            throw new IndexReaderCloseException( e );
         }
     }
 

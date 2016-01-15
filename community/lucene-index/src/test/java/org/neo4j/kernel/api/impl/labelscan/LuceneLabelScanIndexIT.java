@@ -23,13 +23,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -37,11 +38,13 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 
+@RunWith( Parameterized.class )
 public class LuceneLabelScanIndexIT
 {
 
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    private int affectedNodes;
 
     @Before
     public void before() throws Exception
@@ -55,44 +58,39 @@ public class LuceneLabelScanIndexIT
         System.setProperty( "labelScanStore.maxPartitionSize", "" );
     }
 
-    @Test
-    public void createPartitionedLabelScanIndex() throws IOException
+
+    @Parameterized.Parameters( name = "{0}" )
+    public static List<Integer> affectedNodes()
     {
-        try ( LuceneLabelScanIndex labelScanIndex = LuceneLabelScanIndexBuilder.create()
-                .withIndexIdentifier( "partitionedIndex" )
-                .withIndexRootFolder( testDir.directory( "partitionedIndexFolder" ) )
-                .build() )
-        {
-            labelScanIndex.open();
+        return Arrays.asList( 7, 110, 250, 380, 1400, 2000, 3500, 5800 );
+    }
 
-            generateLabelChanges( labelScanIndex, 1500 );
-
-            assertEquals( 5, labelScanIndex.getPartitions().size() );
-        }
+    public LuceneLabelScanIndexIT( int affectedNodes )
+    {
+        this.affectedNodes = affectedNodes;
     }
 
     @Test
-    public void readFromSinglePartitionedIndex() throws IOException
+    public void readFromPartitionedIndex() throws IOException
     {
         try ( LuceneLabelScanIndex labelScanIndex = LuceneLabelScanIndexBuilder.create()
-                .withIndexIdentifier( "partitionedIndex" )
-                .withIndexRootFolder( testDir.directory( "partitionedIndexFolder" ) )
+                .withIndexIdentifier( "partitionedIndex" + affectedNodes )
+                .withIndexRootFolder( testDir.directory( "partitionedIndexFolder" + affectedNodes ) )
                 .build() )
         {
             labelScanIndex.open();
-            int numberOfUpdates = 100;
-            generateLabelChanges( labelScanIndex, numberOfUpdates );
+            generateLabelChanges( labelScanIndex, affectedNodes );
 
             try ( LabelScanReader labelScanReader = labelScanIndex.getLabelScanReader() )
             {
-                for ( int i = 0; i < numberOfUpdates; i++ )
+                for ( int i = 0; i < affectedNodes; i++ )
                 {
-                    List<Long> labels = Iterables.toList( labelScanReader.labelsForNode( i ) );
-                    assertEquals( "Should have only one label", 1, labels.size() );
-                    assertEquals( "Label id should be equal to node id", i, labels.get( 0 ).intValue() );
+                    long[] labels = PrimitiveLongCollections.asArray( labelScanReader.labelsForNode( i ) );
+                    assertEquals( "Should have only one label", 1, labels.length );
+                    assertEquals( "Label id should be equal to node id", i, labels[0] );
                 }
 
-                for ( int i = 0; i < numberOfUpdates; i++ )
+                for ( int i = 0; i < affectedNodes; i++ )
                 {
                     long[] nodes = PrimitiveLongCollections.asArray( labelScanReader.nodesWithLabel( i ) );
                     assertEquals( "Should have only one node for each label", 1, nodes.length );
@@ -112,9 +110,7 @@ public class LuceneLabelScanIndexIT
 
     private void generateLabelChanges( LuceneLabelScanIndex labelScanIndex, int numberOfUpdates ) throws IOException
     {
-        ReentrantLock lock = new ReentrantLock();
-        lock.lock();
-        try ( LabelScanWriter scanWriter = labelScanIndex.getLabelScanWriter( lock ) )
+        try ( LabelScanWriter scanWriter = labelScanIndex.getLabelScanWriter() )
         {
             generateLabelChanges( scanWriter, numberOfUpdates );
         }

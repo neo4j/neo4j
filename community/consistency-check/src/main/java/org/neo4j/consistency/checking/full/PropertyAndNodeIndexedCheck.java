@@ -168,15 +168,12 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             IndexRule indexRule,
             IndexReader reader )
     {
-        int count = reader.countIndexedNodes( nodeId, propertyValue );
+        long count = reader.countIndexedNodes( nodeId, propertyValue );
         if ( count == 0 )
         {
             engine.report().notIndexed( indexRule, propertyValue );
         }
-        else if ( count == 1 )
-        {   // Nothing to report, all good
-        }
-        else
+        else if ( count != 1 )
         {
             engine.report().indexedMultipleTimes( indexRule, propertyValue, count );
         }

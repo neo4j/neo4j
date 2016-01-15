@@ -577,7 +577,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public int nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         statement.assertOpen();

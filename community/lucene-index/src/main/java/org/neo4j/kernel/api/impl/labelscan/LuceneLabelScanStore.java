@@ -44,7 +44,6 @@ public class LuceneLabelScanStore implements LabelScanStore
     private final Log log;
     private final Monitor monitor;
     private boolean needsRebuild;
-    private final Lock lock = new ReentrantLock( true );
 
     public interface Monitor
     {
@@ -207,10 +206,6 @@ public class LuceneLabelScanStore implements LabelScanStore
     @Override
     public LabelScanWriter newWriter()
     {
-        // Only a single writer is allowed at any point in time. For that this lock is used and passed
-        // onto the writer to release in its close()
-        // TODO:
-        lock.lock();
-        return luceneIndex.getLabelScanWriter(lock);
+        return luceneIndex.getLabelScanWriter();
     }
 }

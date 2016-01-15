@@ -35,17 +35,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
-import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -115,43 +110,6 @@ public class LuceneSchemaIndexIT
             try ( ResourceIterator<File> snapshotIterator = indexAccessor.snapshotFiles() )
             {
                 assertThat( asUniqueSetOfNames( snapshotIterator ), equalTo( emptySetOf( String.class ) ) );
-            }
-        }
-    }
-
-    @Test
-    public void singlePartitionUniqueIndex() throws Exception
-    {
-        try ( LuceneSchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create().uniqueIndex()
-                .withIndexRootFolder( testDir.directory( "singlePartitionIndex" ) )
-                .withIndexIdentifier( "uniqueSingle" )
-                .build() )
-        {
-            uniqueIndex.open();
-
-            // index is empty and not yet exist
-            assertEquals( 0, uniqueIndex.allDocumentsReader().maxCount() );
-            assertFalse( uniqueIndex.exists() );
-
-            try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex ) )
-            {
-                int affectedNodes = 7;
-                generateUpdates( indexAccessor, affectedNodes );
-                indexAccessor.force();
-
-                // now index is online and should contain updates data
-                assertTrue( uniqueIndex.isOnline() );
-                try ( IndexReader indexReader = indexAccessor.newReader() )
-                {
-                    long[] nodes = PrimitiveLongCollections.asArray( indexReader.scan() );
-                    assertEquals( affectedNodes, nodes.length );
-
-                    IndexSampler indexSampler = indexReader.createSampler();
-                    Register.DoubleLongRegister sampleRegister = Registers.newDoubleLongRegister();
-                    assertEquals( affectedNodes, indexSampler.sampleIndex( sampleRegister ) );
-                    assertEquals( affectedNodes, sampleRegister.readFirst() );
-                    assertEquals( affectedNodes, sampleRegister.readSecond() );
-                }
             }
         }
     }
@@ -306,9 +264,12 @@ public class LuceneSchemaIndexIT
     private void generateUpdates( LuceneIndexAccessor indexAccessor, int nodesToUpdate )
             throws IOException, IndexEntryConflictException
     {
-        for ( int nodeId = 0; nodeId < nodesToUpdate; nodeId++ )
+        try ( IndexUpdater updater = indexAccessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
-            updateAndCommit( indexAccessor, add( nodeId, nodeId ) );
+            for ( int nodeId = 0; nodeId < nodesToUpdate; nodeId++ )
+            {
+                updater.process( add( nodeId, nodeId ) );
+            }
         }
     }
 
@@ -317,12 +278,4 @@ public class LuceneSchemaIndexIT
         return NodePropertyUpdate.add( nodeId, 0, value, new long[0] );
     }
 
-    private void updateAndCommit( LuceneIndexAccessor indexAccessor, NodePropertyUpdate nodePropertyUpdate )
-            throws IOException, IndexEntryConflictException
-    {
-        try ( IndexUpdater updater = indexAccessor.newUpdater( IndexUpdateMode.ONLINE ) )
-        {
-            updater.process( nodePropertyUpdate );
-        }
-    }
 }

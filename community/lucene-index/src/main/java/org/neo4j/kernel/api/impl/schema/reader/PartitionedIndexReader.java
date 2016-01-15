@@ -19,18 +19,21 @@
  */
 package org.neo4j.kernel.api.impl.schema.reader;
 
-import org.apache.lucene.search.IndexSearcher;
-
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
+import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
+import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Index reader that is able to read/sample multiple partitions of a partitioned Lucene index.
@@ -41,70 +44,90 @@ import static java.util.stream.Collectors.toList;
 public class PartitionedIndexReader implements IndexReader
 {
 
-    private List<PartitionSearcher> partitionSearchers;
+    private final List<SimpleIndexReader> indexReaders;
 
-    public PartitionedIndexReader( List<PartitionSearcher> partitionSearchers )
+    public PartitionedIndexReader( List<PartitionSearcher> partitionSearchers,
+            IndexConfiguration indexConfiguration,
+            IndexSamplingConfig samplingConfig,
+            TaskCoordinator taskCoordinator )
     {
-        this.partitionSearchers = partitionSearchers;
+        this( partitionSearchers.stream()
+                .map( partitionSearcher -> new SimpleIndexReader( partitionSearcher, indexConfiguration,
+                        samplingConfig, taskCoordinator ) )
+                .collect( Collectors.toList() ) );
+    }
+
+    PartitionedIndexReader( List<SimpleIndexReader> readers )
+    {
+        this.indexReaders = readers;
     }
 
     @Override
     public PrimitiveLongIterator seek( Object value )
     {
-        return null;
+        return partitionedOperation( reader -> reader.seek( value ) );
     }
 
     @Override
     public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
-        return null;
+        return partitionedOperation( reader -> reader.rangeSeekByNumberInclusive( lower, upper ) );
     }
 
     @Override
     public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower, String upper,
             boolean includeUpper )
     {
-        return null;
+        return partitionedOperation( reader -> reader.rangeSeekByString( lower, includeLower, upper, includeUpper ) );
     }
 
     @Override
     public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
-        return null;
+        return partitionedOperation( reader -> reader.rangeSeekByPrefix( prefix ) );
     }
 
     @Override
     public PrimitiveLongIterator scan()
     {
-        return null;
+        return partitionedOperation( SimpleIndexReader::scan );
     }
 
     @Override
-    public int countIndexedNodes( long nodeId, Object propertyValue )
+    public long countIndexedNodes( long nodeId, Object propertyValue )
     {
-        return 0;
+        return indexReaders.parallelStream()
+                .mapToLong( reader -> reader.countIndexedNodes( nodeId, propertyValue ) )
+                .sum();
     }
 
     @Override
     public IndexSampler createSampler()
     {
-        return null;
+        List<IndexSampler> indexSamplers = indexReaders.parallelStream()
+                .map( SimpleIndexReader::createSampler )
+                .collect( Collectors.toList() );
+        return new AggregatingIndexSampler( indexSamplers );
     }
 
+    @Override
     public void close()
     {
         try
         {
-            IOUtils.closeAll( partitionSearchers );
+            IOUtils.closeAll( indexReaders );
         }
         catch ( IOException e )
         {
-            throw new IndexSearcherCloseException( e );
+            throw new IndexReaderCloseException( e );
         }
     }
 
-    public List<IndexSearcher> getIndexSearchers()
+    private PrimitiveLongIterator partitionedOperation(
+            Function<SimpleIndexReader,PrimitiveLongIterator> readerFunction )
     {
-        return partitionSearchers.stream().map( PartitionSearcher::getIndexSearcher ).collect( toList() );
+        return PrimitiveLongCollections.concat( indexReaders.parallelStream()
+                .map( readerFunction::apply )
+                .collect( Collectors.toList() ) );
     }
 }

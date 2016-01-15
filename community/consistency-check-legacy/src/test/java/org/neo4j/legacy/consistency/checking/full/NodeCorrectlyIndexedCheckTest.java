@@ -253,7 +253,7 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
-                public int countIndexedNodes( long nodeId, Object propertyValue )
+                public long countIndexedNodes( long nodeId, Object propertyValue )
                 {
                     long[] candidates = entries.get( propertyValue );
                     if ( candidates == null )

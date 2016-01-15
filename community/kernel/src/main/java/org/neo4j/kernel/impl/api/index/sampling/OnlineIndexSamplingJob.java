@@ -43,9 +43,9 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     private final String indexUserDescription;
 
     public OnlineIndexSamplingJob( IndexProxy indexProxy,
-                                   IndexStoreView storeView,
-                                   String indexUserDescription,
-                                   LogProvider logProvider )
+            IndexStoreView storeView,
+            String indexUserDescription,
+            LogProvider logProvider )
     {
         this.indexDescriptor = indexProxy.getDescriptor();
         this.indexProxy = indexProxy;
@@ -63,13 +63,13 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     @Override
     public void run()
     {
-        try( DurationLogger durationLogger = new DurationLogger( log, "Sampling index " + indexUserDescription ) )
+        try ( DurationLogger durationLogger = new DurationLogger( log, "Sampling index " + indexUserDescription ) )
         {
             try
             {
                 try ( IndexReader reader = indexProxy.newReader() )
                 {
-                    Register.DoubleLongRegister sample = Registers.newDoubleLongRegister();
+                    Register.DoubleLongRegister sample = Registers.newDoubleLongRegister( 0, 0 );
                     IndexSampler sampler = reader.createSampler();
                     long indexSize = sampler.sampleIndex( sample );
 
@@ -81,9 +81,9 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
                         storeView.replaceIndexCounts( indexDescriptor, unique, sampleSize, indexSize );
                         durationLogger.markAsFinished();
                         log.info(
-                            format( "Sampled index %s with %d unique values in sample of avg size %d taken from " +
-                                    "index containing %d entries",
-                                    indexUserDescription, unique, sampleSize, indexSize ) );
+                                format( "Sampled index %s with %d unique values in sample of avg size %d taken from " +
+                                        "index containing %d entries",
+                                        indexUserDescription, unique, sampleSize, indexSize ) );
                     }
                     else
                     {

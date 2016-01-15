@@ -35,10 +35,10 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.impl.index.collector.FirstHitCollector;
@@ -101,7 +101,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         when( searcher.search( new TermQuery( format.rangeTerm( 0 ) ), 1 ) ).thenReturn( emptyTopDocs() );
         when( searcher.search( new TermQuery( format.rangeTerm( 1 ) ), 1 ) ).thenReturn( null );
 
-        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format, mock( Lock.class ) );
+        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
 
         // when
         writer.write( labelChanges( 0, labels(), labels( 6, 7 ) ) );
@@ -145,9 +145,9 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         IndexWriter indexWriter = mock( IndexWriter.class );
         IndexPartition partition = newIndexPartitionMock( indexWriter, givenDoc );
         when( index.getFirstPartition( anyList() ) ).thenReturn( partition );
-        when( index.getPartitions() ).thenReturn( Arrays.asList( partition ) );
+        when( index.getPartitions() ).thenReturn( Collections.singletonList( partition ) );
 
-        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format, mock( Lock.class ) );
+        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
 
         // when
         writer.write( labelChanges( 0, labels(), labels( 7, 8 ) ) );
@@ -171,7 +171,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 
         LuceneLabelScanIndex index = buildLuceneIndex( partition );
 
-        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format, mock( Lock.class ) );
+        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
 
         // when
         writer.write( labelChanges( 0, labels( 7, 8 ), labels( 8 ) ) );
@@ -194,7 +194,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 
         LuceneLabelScanIndex index = buildLuceneIndex( partition );
 
-        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format, mock( Lock.class ) );
+        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
 
         // when
         writer.write( labelChanges( 0, labels( 7 ), labels() ) );
@@ -214,7 +214,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 
         LuceneLabelScanIndex index = buildLuceneIndex( partition );
 
-        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format, mock( Lock.class ) );
+        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
 
         // when
         writer.write( labelChanges( 0, labels( 7 ), labels( 7, 8 ) ) );
@@ -241,7 +241,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 
             LuceneLabelScanIndex index = buildLuceneIndex( partition );
 
-            LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format, mock( Lock.class ) );
+            LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
 
             // when
             writer.write( labelChanges( i, labels(), labels( 7 ) ) );
@@ -255,24 +255,6 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         }
     }
 
-
-    @Test
-    public void shouldUnlockInClose() throws Exception
-    {
-        // GIVEN
-        IndexPartition partition = newIndexPartitionMock( mock( IndexWriter.class ) );
-        Lock lock = mock( Lock.class );
-
-        LuceneLabelScanIndex index = buildLuceneIndex( partition );
-
-        PartitionedLuceneLabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format, lock );
-
-        // WHEN
-        writer.close();
-
-        // THEN
-        verify( lock ).unlock();
-    }
 
     private IndexPartition newIndexPartitionMock( IndexWriter indexWriter, Document... documents ) throws IOException
     {

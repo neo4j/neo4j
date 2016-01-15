@@ -237,7 +237,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    protected int doCountIndexedNodes( long nodeId, Object propertyValue )
+    protected long doCountIndexedNodes( long nodeId, Object propertyValue )
     {
         Set<Long> candidates = data().get( propertyValue );
         return candidates != null && candidates.contains( nodeId ) ? 1 : 0;

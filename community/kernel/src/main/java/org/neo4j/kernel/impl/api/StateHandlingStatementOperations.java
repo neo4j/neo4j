@@ -831,7 +831,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public int nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         IndexReader reader = statement.getStoreStatement().getIndexReader( index );
