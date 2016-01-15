@@ -62,7 +62,7 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
         LogVersionedStoreChannel channel = this.channel;
         try
         {
-            channel.write( buffer );
+            channel.writeAll( buffer );
         }
         catch ( ClosedChannelException e )
         {
