@@ -20,7 +20,7 @@ or read the full Cypher documentation in the
 For live graph models using Cypher check out <a href="http://gist.neo4j.org" target="_blank">GraphGist</a>.</p></div>
 ++++
 
-The Cypher Refcard is also link:{docs-home}/pdf/neo4j-cypher-refcard-{neo4j-version}.pdf[available as PDF].
+The Cypher Refcard is also link:{docs-home}/pdf/neo4j-cypher-refcard-{neo4j-version}.pdf[available in PDF format].
 
 Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameters, which is the best practice for applications.
 Neo4j properties can be strings, numbers, booleans or arrays thereof.
