@@ -27,10 +27,10 @@ import java.util.Collection;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.proc.Procedures;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
-import org.neo4j.proc.Procedures;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -217,7 +217,6 @@ public class KernelTransactionsTest
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
-        when( storageEngine.neoStores() ).thenReturn( neoStores );
         when( storageEngine.metaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.integrityValidator() ).thenReturn( integrityValidator );
         doAnswer( new Answer<Void>()

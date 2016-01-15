@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.proc.Procedures;
 import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
@@ -97,7 +98,6 @@ import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogFileRecoverer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -153,7 +153,6 @@ import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
-import org.neo4j.proc.Procedures;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
@@ -258,7 +257,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
         protected NeoStores neoStores( StorageEngine storageEngine )
         {
-            return (NeoStores) storageEngine.neoStores();
+            return storageEngine.neoStores();
         }
 
         @Override
@@ -468,16 +467,16 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                             indexProviders.values(), storageEngine, logEntryReader );
 
             buildRecovery( fs,
-                    (NeoStores) storageEngine.neoStores(),
+                    storageEngine.neoStores(),
                     monitors.newMonitor( RecoveryVisitor.Monitor.class ), monitors.newMonitor( Recovery.Monitor.class ),
                     transactionLogModule.logFiles(), transactionLogModule.storeFlusher(), startupStatistics,
                     storageEngine, logEntryReader );
 
             KernelModule kernelModule = buildKernel(
                     transactionLogModule.transactionAppender(),
-                    (IndexingService) storageEngine.indexingService(),
+                    storageEngine.indexingService(),
                     storageEngine.storeReadLayer(),
-                    updateableSchemaState, (LabelScanStore) storageEngine.labelScanStore(),
+                    updateableSchemaState, storageEngine.labelScanStore(),
                     storageEngine );
 
 
@@ -511,7 +510,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 // Close the neostore, so that locks are released properly
                 if ( storageEngine != null )
                 {
-                    ((NeoStores)storageEngine.neoStores()).close();
+                    storageEngine.neoStores().close();
                 }
             }
             catch ( Exception closeException )
@@ -534,7 +533,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             {
                 life.shutdown();
                 // Close the neostore, so that locks are released properly
-                ((NeoStores)storageEngine.neoStores()).close();
+                storageEngine.neoStores().close();
             }
             catch ( Exception closeException )
             {
@@ -600,12 +599,12 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 fileSystemAbstraction );
 
         final IdOrderingQueue legacyIndexTransactionOrdering =
-                (IdOrderingQueue) storageEngine.legacyIndexTransactionOrdering();
+                storageEngine.legacyIndexTransactionOrdering();
 
-        TransactionIdStore transactionIdStore = (TransactionIdStore) storageEngine.transactionIdStore();
+        TransactionIdStore transactionIdStore = storageEngine.transactionIdStore();
         final PhysicalLogFile logFile = life.add( new PhysicalLogFile( fileSystemAbstraction, logFiles,
                 config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), transactionIdStore,
-                (LogVersionRepository) storageEngine.logVersionRepository(), physicalLogMonitor, transactionMetadataCache ) );
+                storageEngine.logVersionRepository(), physicalLogMonitor, transactionMetadataCache ) );
 
         final PhysicalLogFileInformation.LogVersionToTimestamp
                 logInformation = new PhysicalLogFileInformation.LogVersionToTimestamp()
@@ -793,7 +792,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 new ConstraintIndexCreator( kernelProvider, indexingService );
 
         LegacyIndexStore legacyIndexStore = new LegacyIndexStore( config,
-                (IndexConfigStore) storageEngine.indexConfigStore(), kernelProvider, legacyIndexProviderLookup );
+                storageEngine.indexConfigStore(), kernelProvider, legacyIndexProviderLookup );
 
         LegacyPropertyTrackers legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
                 nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
@@ -807,7 +806,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( locks, constraintIndexCreator,
                 statementOperations, schemaWriteGuard, transactionHeaderInformationFactory,
-                transactionCommitProcess, (IndexConfigStore) storageEngine.indexConfigStore(),
+                transactionCommitProcess, storageEngine.indexConfigStore(),
                 legacyIndexProviderLookup, hooks, transactionMonitor, life, tracers, storageEngine, procedures ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures );
@@ -872,17 +871,17 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     // Only public for testing purpose
     public NeoStores getNeoStores()
     {
-        return (NeoStores) storageEngine.neoStores();
+        return storageEngine.neoStores();
     }
 
     public IndexingService getIndexService()
     {
-        return (IndexingService) storageEngine.indexingService();
+        return storageEngine.indexingService();
     }
 
     public LabelScanStore getLabelScanStore()
     {
-        return (LabelScanStore) storageEngine.labelScanStore();
+        return storageEngine.labelScanStore();
     }
 
     @Override
@@ -936,7 +935,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             life.shutdown();
 
             // Close the NeoStores
-            ((NeoStores)storageEngine.neoStores()).close();
+            storageEngine.neoStores().close();
             msgLog.info( "NeoStores closed" );
         }
         // After we've released the logFile monitor there might be transactions that wants to commit, but had
@@ -948,7 +947,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     {
         // Only wait for committed transactions to be applied if the kernel is healthy (i.e. no panic)
         // otherwise if there has been a panic transactions will not be applied properly anyway.
-        TransactionIdStore txIdStore = ((NeoStores) storageEngine.neoStores()).getMetaDataStore();
+        TransactionIdStore txIdStore = storageEngine.neoStores().getMetaDataStore();
         while ( databaseHealth.isHealthy() &&
                 !txIdStore.closedTransactionIdIsOnParWithOpenedTransactionId() )
         {
@@ -1016,7 +1015,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     @Override
     public NeoStores get()
     {
-        return (NeoStores) storageEngine.neoStores();
+        return storageEngine.neoStores();
     }
 
     public StoreReadLayer getStoreLayer()

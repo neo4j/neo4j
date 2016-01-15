@@ -24,9 +24,9 @@ import java.util.stream.Stream
 import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite, InvalidArgumentException}
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
-import org.neo4j.proc.Procedure.{BasicProcedure, Context}
-import org.neo4j.proc.ProcedureSignature.procedureSignature
-import org.neo4j.proc.{Neo4jTypes, ProcedureSignature => KernelSignature}
+import org.neo4j.kernel.api.proc.Procedure.Context;
+import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelSignature}
 
 class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
 

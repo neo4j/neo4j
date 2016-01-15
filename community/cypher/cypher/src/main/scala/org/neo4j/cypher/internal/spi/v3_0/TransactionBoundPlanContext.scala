@@ -32,8 +32,8 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
-import org.neo4j.proc.Neo4jTypes.AnyType
-import org.neo4j.proc.{Neo4jTypes, ProcedureSignature => KernelProcedureSignature}
+import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
+import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProcedureSignature}
 
 import scala.collection.JavaConverters._
 

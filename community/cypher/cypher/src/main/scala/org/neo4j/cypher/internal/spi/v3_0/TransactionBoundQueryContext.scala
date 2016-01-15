@@ -49,7 +49,7 @@ import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.api.{KernelStatement => InternalKernelStatement}
 import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.locking.ResourceTypes
-import org.neo4j.proc
+import org.neo4j.kernel.api.proc
 import org.neo4j.graphdb.security.URLAccessValidationError
 
 import scala.collection.Iterator

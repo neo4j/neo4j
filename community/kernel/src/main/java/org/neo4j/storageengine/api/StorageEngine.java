@@ -25,6 +25,18 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
+import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -91,40 +103,40 @@ public interface StorageEngine
     // creating this API, take little notice to them, as they will go away
     // ====================================================================
     @Deprecated
-    Object transactionIdStore();
+    TransactionIdStore transactionIdStore();
 
     @Deprecated
-    Object logVersionRepository();
+    LogVersionRepository logVersionRepository();
 
     @Deprecated
-    Object neoStores();
+    NeoStores neoStores();
 
     @Deprecated
-    Object metaDataStore();
+    MetaDataStore metaDataStore();
 
     @Deprecated
-    Object indexingService();
+    IndexingService indexingService();
 
     @Deprecated
-    Object labelScanStore();
+    LabelScanStore labelScanStore();
 
     @Deprecated
-    Object integrityValidator();
+    IntegrityValidator integrityValidator();
 
     @Deprecated
-    Object schemaIndexProviderMap();
+    SchemaIndexProviderMap schemaIndexProviderMap();
 
     @Deprecated
-    Object cacheAccess();
+    CacheAccessBackDoor cacheAccess();
 
     @Deprecated
-    Object legacyIndexApplierLookup();
+    LegacyIndexApplierLookup legacyIndexApplierLookup();
 
     @Deprecated
-    Object indexConfigStore();
+    IndexConfigStore indexConfigStore();
 
     @Deprecated
-    Object legacyIndexTransactionOrdering();
+    IdOrderingQueue legacyIndexTransactionOrdering();
 
     @Deprecated
     void loadSchemaCache();

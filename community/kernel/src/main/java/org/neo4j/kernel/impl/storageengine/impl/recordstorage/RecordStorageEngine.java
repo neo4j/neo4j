@@ -204,7 +204,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
 
-            this.commandReaderFactory = new RecordStorageCommandReaderFactory();
+            commandReaderFactory = new RecordStorageCommandReaderFactory();
             indexUpdatesSync = new WorkSync<>( indexingService );
         }
         catch ( Throwable failure )

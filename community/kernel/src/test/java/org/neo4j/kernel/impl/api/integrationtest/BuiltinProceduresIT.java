@@ -28,10 +28,12 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.DataWriteOperations;
 
 import static java.util.stream.Collectors.toList;
+
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.proc.ProcedureSignature.procedureName;
 
 public class BuiltinProceduresIT extends KernelIntegrationTest
 {

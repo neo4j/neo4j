@@ -22,12 +22,12 @@ package org.neo4j.kernel.builtinprocs;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.proc.Neo4jTypes;
-import org.neo4j.proc.Procedure;
-import org.neo4j.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
 
-import static org.neo4j.proc.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.ReadOperations.readStatement;
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ListPropertyKeysProcedure extends Procedure.BasicProcedure
 {

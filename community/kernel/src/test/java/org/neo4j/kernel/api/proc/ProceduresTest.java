@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.proc;
+package org.neo4j.kernel.api.proc;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,12 +27,14 @@ import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.proc.Procedure.Key.key;
-import static org.neo4j.proc.ProcedureSignature.procedureSignature;
+
+import static java.util.stream.Collectors.toList;
+
+import static org.neo4j.kernel.api.proc.Procedure.Key.key;
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ProceduresTest
 {

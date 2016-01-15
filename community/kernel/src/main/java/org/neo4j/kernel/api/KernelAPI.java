@@ -21,7 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.proc.Procedure;
+import org.neo4j.kernel.api.proc.Procedure;
 
 /**
  * The main API through which access to the Neo4j kernel is made, both read
