@@ -42,10 +42,9 @@ import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEF
 public abstract class ProcessorStep<T> extends AbstractStep<T>
 {
     private TaskExecutor<Sender> executor;
-    private final int workAheadSize;
-    private final int initialProcessorCount = 1;
-    // zero for unlimited
+    // max processors for this step, zero means unlimited, or rather config.maxNumberOfProcessors()
     private final int maxProcessors;
+    private final Configuration config;
     private final LongPredicate catchUp = new LongPredicate()
     {
         @Override
@@ -72,7 +71,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
             StatsProvider... additionalStatsProviders )
     {
         super( control, name, config, additionalStatsProviders );
-        this.workAheadSize = config.workAheadSize();
+        this.config = config;
         this.maxProcessors = maxProcessors;
     }
 
@@ -80,7 +79,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     public void start( int orderingGuarantees )
     {
         super.start( orderingGuarantees );
-        this.executor = new DynamicTaskExecutor<>( initialProcessorCount, maxProcessors, workAheadSize,
+        this.executor = new DynamicTaskExecutor<>( 1, maxProcessors, theoreticalMaxProcessors(),
                 DEFAULT_PARK_STRATEGY, name(), new Supplier<Sender>()
                 {
                     @Override
@@ -91,11 +90,16 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
                 } );
     }
 
+    private int theoreticalMaxProcessors()
+    {
+        return maxProcessors == 0 ? config.maxNumberOfProcessors() : maxProcessors;
+    }
+
     @Override
     public long receive( final long ticket, final T batch )
     {
         // Don't go too far ahead
-        long idleTime = await( catchUp, workAheadSize );
+        long idleTime = await( catchUp, executor.numberOfProcessors() );
         incrementQueue();
 
         executor.submit( new Task<Sender>()

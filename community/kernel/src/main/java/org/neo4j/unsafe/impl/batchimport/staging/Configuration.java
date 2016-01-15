@@ -31,16 +31,24 @@ public interface Configuration
     int batchSize();
 
     /**
-     * Number of batches that a {@link Step} can queue up before awaiting the downstream step to catch up.
-     */
-    int workAheadSize();
-
-    /**
      * For statistics the average processing time is based on total processing time divided by
      * number of batches processed. A total average is probably not that interesting so this configuration
      * option specifies how many of the latest processed batches counts in the equation above.
      */
     int movingAverageSize();
+
+    /**
+     * Rough max number of processors (CPU cores) simultaneously used in total by importer at any given time.
+     * This value should be set while taking the necessary IO threads into account; the page cache and the operating
+     * system will require a couple of threads between them, to handle the IO workload the importer generates.
+     * Defaults to the value provided by the {@link Runtime#availableProcessors() jvm}. There's a discrete
+     * number of threads that needs to be used just to get the very basics of the import working,
+     * so for that reason there's no lower bound to this value.
+     *   "Processor" in the context of the batch importer is different from "thread" since when discovering
+     * how many processors are fully in use there's a calculation where one thread takes up 0 < fraction <= 1
+     * of a processor.
+     */
+    int maxNumberOfProcessors();
 
     class Default implements Configuration
     {
@@ -51,15 +59,15 @@ public interface Configuration
         }
 
         @Override
-        public int workAheadSize()
-        {
-            return 20;
-        }
-
-        @Override
         public int movingAverageSize()
         {
             return 1000;
+        }
+
+        @Override
+        public int maxNumberOfProcessors()
+        {
+            return Runtime.getRuntime().availableProcessors();
         }
     }
 
@@ -81,47 +89,15 @@ public interface Configuration
         }
 
         @Override
-        public int workAheadSize()
-        {
-            return defaults.workAheadSize();
-        }
-
-        @Override
         public int movingAverageSize()
         {
             return defaults.movingAverageSize();
         }
-    }
-
-    class Explicit implements Configuration
-    {
-        private final int batchSize;
-        private final int workAheadSize;
-        private final int movingAverageSize;
-
-        public Explicit( int batchSize, int workAheadSize, int movingAverageSize )
-        {
-            this.batchSize = batchSize;
-            this.workAheadSize = workAheadSize;
-            this.movingAverageSize = movingAverageSize;
-        }
 
         @Override
-        public int batchSize()
+        public int maxNumberOfProcessors()
         {
-            return batchSize;
-        }
-
-        @Override
-        public int workAheadSize()
-        {
-            return workAheadSize;
-        }
-
-        @Override
-        public int movingAverageSize()
-        {
-            return movingAverageSize;
+            return defaults.maxNumberOfProcessors();
         }
     }
 }

@@ -44,12 +44,6 @@ public class StageTest
             {
                 return 10;
             }
-
-            @Override
-            public int workAheadSize()
-            {
-                return 20;
-            }
         };
         Stage stage = new Stage( "Test stage", config, ORDER_SEND_DOWNSTREAM );
         long batches = 1000;

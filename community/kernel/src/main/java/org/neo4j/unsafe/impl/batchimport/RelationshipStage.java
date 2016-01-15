@@ -54,5 +54,6 @@ public class RelationshipStage extends Stage
                 neoStore.getRelationshipTypeRepository(), cache, specificIds ) );
         add( new EntityStoreUpdaterStep<>( control(), config,
                 relationshipStore, propertyStore, writeMonitor, storeUpdateMonitor ) );
+        add( new StoreFlusherStep( control(), config, relationshipStore, propertyStore ) );
     }
 }
