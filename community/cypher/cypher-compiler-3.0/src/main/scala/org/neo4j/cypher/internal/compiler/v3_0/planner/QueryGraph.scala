@@ -203,14 +203,10 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   private def connectedComponentFor(startNode: IdName, visited: mutable.Set[IdName]): QueryGraph = {
     val queue = mutable.Queue(startNode)
-    val nodesSolvedByArguments = patternNodes intersect argumentIds
-    queue.enqueue(nodesSolvedByArguments.toSeq:_*)
-    var qg = QueryGraph.empty.withArgumentIds(argumentIds)
+    var qg = QueryGraph.empty
     while (queue.nonEmpty) {
       val node = queue.dequeue()
-      qg = if (visited(node)) {
-        qg
-      } else {
+      if (!visited(node)) {
         visited += node
 
         val filteredPatterns = patternRelationships.filter { rel =>
@@ -219,13 +215,30 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
         queue.enqueue(filteredPatterns.toSeq.map(_.otherSide(node)): _*)
 
-        qg
+        qg = qg
           .addPatternNodes(node)
           .addPatternRelationships(filteredPatterns.toSeq)
+
+        val alreadyHaveArguments = qg.argumentIds.nonEmpty
+
+        if (!alreadyHaveArguments && (relationshipPullsInArguments(qg.coveredIds) || predicatePullsInArguments(node))) {
+          qg = qg.withArgumentIds(argumentIds)
+          val nodesSolvedByArguments = patternNodes intersect qg.argumentIds
+          queue.enqueue(nodesSolvedByArguments.toSeq: _*)
+        }
       }
     }
     qg
   }
+
+  private def relationshipPullsInArguments(coveredIds: Set[IdName]) = (argumentIds intersect coveredIds).nonEmpty
+
+  private def predicatePullsInArguments(node: IdName) = selections.flatPredicates.exists {
+    case p =>
+      val deps = p.dependencies.map(IdName.fromVariable)
+      deps(node) && (deps intersect argumentIds).nonEmpty
+  }
+
 
   // This is here to stop usage of copy from the outside
   private def copy(patternRelationships: Set[PatternRelationship] = patternRelationships,
