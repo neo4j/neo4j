@@ -21,7 +21,7 @@ package org.neo4j.coreedge.server.core.locks;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.replication.StubReplicator;
+import org.neo4j.coreedge.raft.replication.DirectReplicator;
 
 import static org.junit.Assert.assertEquals;
 
@@ -33,8 +33,8 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldStartWithInvalidTokenId() throws Exception
     {
         // given
-        StubReplicator replicator = new StubReplicator();
-        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
+        DirectReplicator replicator = new DirectReplicator();
+        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
 
         // when
         int initialTokenId = stateMachine.currentToken().id();
@@ -47,7 +47,7 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldIssueNextLockTokenCandidateId() throws Exception
     {
         // given
-        StubReplicator replicator = new StubReplicator();
+        DirectReplicator replicator = new DirectReplicator();
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
         int firstCandidateId = stateMachine.nextCandidateId();
 
@@ -62,7 +62,7 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldKeepTrackOfCurrentLockTokenId() throws Exception
     {
         // given
-        StubReplicator replicator = new StubReplicator();
+        DirectReplicator replicator = new DirectReplicator();
         LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
         int firstCandidateId = stateMachine.nextCandidateId();
 
@@ -83,7 +83,7 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldKeepTrackOfLockTokenOwner() throws Exception
     {
         // given
-        StubReplicator replicator = new StubReplicator();
+        DirectReplicator replicator = new DirectReplicator();
         LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
         int firstCandidateId = stateMachine.nextCandidateId();
 
@@ -104,7 +104,7 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldAcceptOnlyFirstRequestWithSameId() throws Exception
     {
         // given
-        StubReplicator replicator = new StubReplicator();
+        DirectReplicator replicator = new DirectReplicator();
         LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
         int firstCandidateId = stateMachine.nextCandidateId();
 
@@ -129,7 +129,7 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldOnlyAcceptNextImmediateId() throws Exception
     {
         // given
-        StubReplicator replicator = new StubReplicator();
+        DirectReplicator replicator = new DirectReplicator();
         LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
         int firstCandidateId = stateMachine.nextCandidateId();
 

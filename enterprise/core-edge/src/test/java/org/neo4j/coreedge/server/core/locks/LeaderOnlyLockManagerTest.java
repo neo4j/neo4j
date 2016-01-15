@@ -22,7 +22,7 @@ package org.neo4j.coreedge.server.core.locks;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.LeaderLocator;
-import org.neo4j.coreedge.raft.replication.StubReplicator;
+import org.neo4j.coreedge.raft.replication.DirectReplicator;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -43,7 +43,7 @@ public class LeaderOnlyLockManagerTest
     {
         // given
         RaftTestMember me = member( 0 );
-        StubReplicator replicator = new StubReplicator();
+        DirectReplicator replicator = new DirectReplicator();
         ReplicatedLockTokenStateMachine<RaftTestMember> replicatedLockStateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
         LeaderLocator<RaftTestMember> leaderLocator = mock( LeaderLocator.class );
         when(leaderLocator.getLeader()).thenReturn( me );
@@ -65,7 +65,7 @@ public class LeaderOnlyLockManagerTest
         // given
         RaftTestMember me = member( 0 );
         RaftTestMember leader = member( 1 );
-        StubReplicator replicator = new StubReplicator();
+        DirectReplicator replicator = new DirectReplicator();
         ReplicatedLockTokenStateMachine<RaftTestMember> replicatedLockStateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
         LeaderLocator<RaftTestMember> leaderLocator = mock( LeaderLocator.class );
         when(leaderLocator.getLeader()).thenReturn( leader );

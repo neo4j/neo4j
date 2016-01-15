@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft.replication;
 import java.util.HashSet;
 import java.util.Set;
 
-public class StubReplicator implements Replicator
+public class DirectReplicator implements Replicator
 {
     private final Set<ReplicatedContentListener> listeners = new HashSet<>();
     private long logIndex = 0;
