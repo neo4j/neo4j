@@ -1,1 +1,0 @@
-/* Modernizr 2.6.2 | MIT & BSD */

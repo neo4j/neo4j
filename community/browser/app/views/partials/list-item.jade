@@ -1,6 +1,0 @@
-.list-item(ng-click="editor.loadDocument(document.id)", ng-class="{loaded: editor.document.id == document.id}")
-  a.fa.icon(ng-click='playDocument(document.content);$event.stopPropagation()', ng-class='{"icon-loaded fa-play-circle": editor.document.id == document.id, "fa-circle-thin": editor.document.id != document.id}')
-  a.fa.fa-play-circle.icon-inactive(ng-click='playDocument(document.content);$event.stopPropagation()')
-  a.fa.fa-trash-o('ng-click'="removeDocument(document);$event.stopPropagation()")
-  .contents
-    a {{document.content | autotitle}}
