@@ -97,7 +97,7 @@ public class PersistedStateIT
                         FileSystemAbstraction.class.getMethod( "create", File.class ) ),
                 normalFSA );
         SelectiveFileSystemAbstraction combinedFSA = new SelectiveFileSystemAbstraction(
-                new File( testDir.directory(), "long.A" ), breakingFSA, normalFSA );
+                new File( testDir.directory(), "long.a" ), breakingFSA, normalFSA );
 
         LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 );
         long lastValue = 0;
@@ -139,7 +139,7 @@ public class PersistedStateIT
                         StoreChannel.class.getMethod( "force", boolean.class ) ),
                 normalFSA );
         SelectiveFileSystemAbstraction combinedFSA = new SelectiveFileSystemAbstraction(
-                new File( testDir.directory(), "long.A" ), breakingFSA, normalFSA );
+                new File( testDir.directory(), "long.a" ), breakingFSA, normalFSA );
 
         LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 );
         long lastValue = 0;
@@ -209,7 +209,7 @@ public class PersistedStateIT
                         StoreChannel.class.getMethod( "close" ) ),
                 normalFSA );
         SelectiveFileSystemAbstraction combinedFSA = new SelectiveFileSystemAbstraction(
-                new File( testDir.directory(), "long.A" ), breakingFSA, normalFSA );
+                new File( testDir.directory(), "long.a" ), breakingFSA, normalFSA );
 
         LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 );
         long lastValue = 0;

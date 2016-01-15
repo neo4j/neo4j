@@ -118,8 +118,6 @@ public class CoreServerReplicationIT
                 tx.success();
             }
         }
-
-        fail();
     }
 
     @Test

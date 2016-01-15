@@ -34,5 +34,4 @@ public interface ClusterTopology
     Set<CoreMember> getMembers();
 
     boolean bootstrappable();
-
 }
