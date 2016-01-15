@@ -190,4 +190,15 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toSet should equal(Set(Map("nestedMap.foo.bar" -> "baz")))
   }
 
+  test("connected components after WITH") {
+    val n = createLabeledNode("A")
+    val m = createLabeledNode("B")
+    val x = createNode()
+    relate(n, x)
+
+    val result = executeWithAllPlanners("MATCH (n:A) WITH n LIMIT 1 MATCH (m:B), (n)-->(x) RETURN *")
+
+    result.toList should equal(List(Map("m" -> m, "n" -> n, "x" -> x)))
+  }
+
 }
