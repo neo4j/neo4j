@@ -19,16 +19,16 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.After;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.coreedge.discovery.Cluster;
@@ -50,11 +50,13 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.cluster.ClusterSettings.server_id;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
@@ -116,6 +118,8 @@ public class CoreServerReplicationIT
                 tx.success();
             }
         }
+
+        fail();
     }
 
     @Test

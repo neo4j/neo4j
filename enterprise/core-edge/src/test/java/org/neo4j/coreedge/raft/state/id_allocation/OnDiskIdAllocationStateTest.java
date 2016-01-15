@@ -144,11 +144,11 @@ public class OnDiskIdAllocationStateTest
 
         // then
         assertEquals( 3 * NUMBER_OF_BYTES_PER_WRITE,
-                fsa.getFileSize( new File( testDir.directory(), "id.allocation.A" ) ) );
+                fsa.getFileSize( new File( testDir.directory(), "id.allocation.a" ) ) );
 
 
         assertEquals( NUMBER_OF_BYTES_PER_WRITE,
-                fsa.getFileSize( new File( testDir.directory(), "id.allocation.B" ) ) );
+                fsa.getFileSize( new File( testDir.directory(), "id.allocation.b" ) ) );
     }
 
     @Test
@@ -191,6 +191,6 @@ public class OnDiskIdAllocationStateTest
 
     private File stateFileA()
     {
-        return new File( testDir.directory(), FILENAME + "A" );
+        return new File( testDir.directory(), FILENAME + "a" );
     }
 }

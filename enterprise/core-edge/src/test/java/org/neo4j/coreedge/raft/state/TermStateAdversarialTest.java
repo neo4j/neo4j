@@ -65,7 +65,7 @@ public class TermStateAdversarialTest
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         FileSystemAbstraction fileSystem = new SelectiveFileSystemAbstraction( new File( testDir.directory(),
-                "term.A" ), new AdversarialFileSystemAbstraction( adversary, fs ), fs );
+                "term.a" ), new AdversarialFileSystemAbstraction( adversary, fs ), fs );
         TermState log = createTermStore( fileSystem );
 
         log.update( 21 );

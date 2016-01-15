@@ -62,9 +62,9 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedLabelTokenHolder;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedPropertyKeyTokenHolder;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedRelationshipTypeTokenHolder;
 import org.neo4j.coreedge.raft.replication.tx.CommittingTransactions;
+import org.neo4j.coreedge.raft.replication.tx.CommittingTransactionsRegistry;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionCommitProcess;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
-import org.neo4j.coreedge.raft.replication.tx.CommittingTransactionsRegistry;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.id_allocation.OnDiskIdAllocationState;
 import org.neo4j.coreedge.raft.state.membership.OnDiskRaftMembershipState;
@@ -130,6 +130,7 @@ import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 public class EnterpriseCoreEditionModule
         extends EditionModule
 {
+    public static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
     private final RaftInstance<CoreMember> raft;
 
     public RaftInstance<CoreMember> raft()
@@ -140,13 +141,14 @@ public class EnterpriseCoreEditionModule
     public EnterpriseCoreEditionModule( final PlatformModule platformModule,
                                         DiscoveryServiceFactory discoveryServiceFactory )
     {
-        org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
-        Config config = platformModule.config;
-        LogService logging = platformModule.logging;
-        FileSystemAbstraction fileSystem = platformModule.fileSystem;
-        File storeDir = platformModule.storeDir;
-        LifeSupport life = platformModule.life;
-        GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
+        final org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
+        final Config config = platformModule.config;
+        final LogService logging = platformModule.logging;
+        final FileSystemAbstraction fileSystem = platformModule.fileSystem;
+        final File storeDir = platformModule.storeDir;
+        final File clusterStateDirectory = createClusterStateDirectory( storeDir, fileSystem );
+        final LifeSupport life = platformModule.life;
+        final GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
         LogProvider logProvider = logging.getInternalLogProvider();
 
@@ -178,14 +180,15 @@ public class EnterpriseCoreEditionModule
         final DelayedRenewableTimeoutService raftTimeoutService =
                 new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK, logProvider );
 
-        File raftLogsDirectory = createRaftLogsDirectory( platformModule.storeDir, fileSystem );
-        NaiveDurableRaftLog raftLog = life.add( new NaiveDurableRaftLog( fileSystem, raftLogsDirectory,
+        NaiveDurableRaftLog raftLog = life.add( new NaiveDurableRaftLog( fileSystem,
+                new File( clusterStateDirectory, NaiveDurableRaftLog.DIRECTORY_NAME ),
                 new RaftContentSerializer(), platformModule.monitors ) );
 
         TermState termState;
         try
         {
-            termState = life.add( new OnDiskTermState( fileSystem, raftLogsDirectory,
+            termState = life.add( new OnDiskTermState( fileSystem,
+                    new File( clusterStateDirectory, OnDiskTermState.DIRECTORY_NAME ),
                     config.get( CoreEdgeClusterSettings.term_state_size ), databaseHealthSupplier ) );
         }
         catch ( IOException e )
@@ -196,7 +199,8 @@ public class EnterpriseCoreEditionModule
         VoteState<CoreMember> voteState;
         try
         {
-            voteState = life.add( new OnDiskVoteState<>( fileSystem, raftLogsDirectory,
+            voteState = life.add( new OnDiskVoteState<>( fileSystem,
+                    new File( clusterStateDirectory, OnDiskVoteState.DIRECTORY_NAME ),
                     config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
                     new CoreMember.CoreMemberMarshal() ) );
         }
@@ -209,8 +213,9 @@ public class EnterpriseCoreEditionModule
         RaftMembershipState<CoreMember> raftMembershipState;
         try
         {
-            raftMembershipState = life.add( new OnDiskRaftMembershipState<>(
-                    fileSystem, storeDir, config.get( CoreEdgeClusterSettings.raft_membership_state_size ),
+            raftMembershipState = life.add( new OnDiskRaftMembershipState<>( fileSystem,
+                    new File( clusterStateDirectory, OnDiskRaftMembershipState.DIRECTORY_NAME ),
+                    config.get( CoreEdgeClusterSettings.raft_membership_state_size ),
                     databaseHealthSupplier, new CoreMember.CoreMemberMarshal() ) );
         }
         catch ( IOException e )
@@ -236,9 +241,9 @@ public class EnterpriseCoreEditionModule
         final IdAllocationState idAllocationState;
         try
         {
-            idAllocationState = life.add( new OnDiskIdAllocationState( fileSystem, new File(
-                    storeDir, "id-alloc-store" ), config.get(
-                    CoreEdgeClusterSettings.id_alloc_state_size ), databaseHealthSupplier ) );
+            idAllocationState = life.add( new OnDiskIdAllocationState( fileSystem,
+                    new File( clusterStateDirectory, OnDiskIdAllocationState.DIRECTORY_NAME ),
+                    config.get( CoreEdgeClusterSettings.id_alloc_state_size ), databaseHealthSupplier ) );
         }
         catch ( IOException e )
         {
@@ -330,9 +335,9 @@ public class EnterpriseCoreEditionModule
         return raft.currentRole() == Role.LEADER;
     }
 
-    private File createRaftLogsDirectory( File dir, FileSystemAbstraction fileSystem )
+    private File createClusterStateDirectory( File dir, FileSystemAbstraction fileSystem )
     {
-        File raftLogDir = new File( dir, "raft-logs" );
+        File raftLogDir = new File( dir, CLUSTER_STATE_DIRECTORY_NAME );
 
         try
         {
@@ -360,7 +365,8 @@ public class EnterpriseCoreEditionModule
 
             CommittingTransactions committingTransactions = new CommittingTransactionsRegistry();
             ReplicatedTransactionStateMachine replicatedTxStateMachine = new ReplicatedTransactionStateMachine(
-                    localCommit, localSessionPool.getGlobalSession(), currentReplicatedLockState, committingTransactions );
+                    localCommit, localSessionPool.getGlobalSession(), currentReplicatedLockState,
+                    committingTransactions );
 
             dependencies.satisfyDependencies( replicatedTxStateMachine );
 
@@ -464,8 +470,8 @@ public class EnterpriseCoreEditionModule
     }
 
     protected Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,
-            CoreMember myself, ReplicatedLockStateMachine<CoreMember>
-            replicatedLockStateMachine, LeaderLocator<CoreMember> leaderLocator )
+                                       CoreMember myself, ReplicatedLockStateMachine<CoreMember>
+                                               replicatedLockStateMachine, LeaderLocator<CoreMember> leaderLocator )
     {
         Locks local = CommunityEditionModule.createLockManager( config, logging );
 

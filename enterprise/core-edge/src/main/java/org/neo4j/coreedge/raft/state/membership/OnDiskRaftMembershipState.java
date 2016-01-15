@@ -35,6 +35,7 @@ public class OnDiskRaftMembershipState<MEMBER> extends LifecycleAdapter implemen
 {
     public static final int MAX_SIZE_OF_ADDRESS_STATE_ON_DISK = 2_000_000;
     private static final String FILENAME = "membership.state.";
+    public static final String DIRECTORY_NAME = "membership-state";
 
     private final StatePersister<InMemoryRaftMembershipState<MEMBER>> statePersister;
 
@@ -50,8 +51,8 @@ public class OnDiskRaftMembershipState<MEMBER> extends LifecycleAdapter implemen
         InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<MEMBER> marshal = new InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<>(
                 memberMarshal );
 
-        File fileA = new File( storeDir, FILENAME + "A" );
-        File fileB = new File( storeDir, FILENAME + "B" );
+        File fileA = new File( storeDir, FILENAME + "a" );
+        File fileB = new File( storeDir, FILENAME + "b" );
 
         RaftMembershipStateRecoveryManager<MEMBER> recoveryManager = new RaftMembershipStateRecoveryManager<>(
                 fileSystemAbstraction, marshal );

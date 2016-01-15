@@ -19,11 +19,6 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
@@ -31,6 +26,7 @@ import java.nio.ByteBuffer;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.MethodGuardedAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
@@ -45,6 +41,11 @@ import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.TargetDirectory;
+
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class PersistedStateIT
 {
@@ -250,11 +251,11 @@ public class PersistedStateIT
         private final StatePersister<Long> statePersister;
         private long theState = -1;
 
-        public LongState( FileSystemAbstraction fileSystemAbstraction, File storeDir,
+        public LongState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
                           int numberOfEntriesBeforeRotation ) throws IOException
         {
-            File fileA = new File( storeDir, FILENAME + "A" );
-            File fileB = new File( storeDir, FILENAME + "B" );
+            File fileA = new File( stateDir, FILENAME + "a" );
+            File fileB = new File( stateDir, FILENAME + "b" );
 
             ByteBuffer workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateMarshal
                     .NUMBER_OF_BYTES_PER_VOTE );

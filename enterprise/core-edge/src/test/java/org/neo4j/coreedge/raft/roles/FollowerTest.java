@@ -599,7 +599,7 @@ public class FollowerTest
     public void shouldIncludeLatestAppendedInResponse() throws Exception
     {
         // given: just a single appended entry at follower
-        RaftLogEntry entryA = new RaftLogEntry( 1, ReplicatedString.valueOf( "A" ) );
+        RaftLogEntry entryA = new RaftLogEntry( 1, ReplicatedString.valueOf( "b" ) );
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( entryA );
@@ -612,7 +612,7 @@ public class FollowerTest
 
         Follower follower = new Follower();
 
-        RaftLogEntry entryB = new RaftLogEntry( 1, ReplicatedString.valueOf( "B" ) );
+        RaftLogEntry entryB = new RaftLogEntry( 1, ReplicatedString.valueOf( "b" ) );
 
         // when: append request for item way forward (index=10, term=2)
         Outcome<RaftTestMember> outcome = follower.handle(

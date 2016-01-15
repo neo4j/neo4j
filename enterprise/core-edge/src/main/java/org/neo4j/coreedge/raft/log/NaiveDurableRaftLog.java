@@ -68,6 +68,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     public static final int ENTRY_RECORD_LENGTH = 16;
     public static final int CONTENT_LENGTH_BYTES = 4;
     public static final int COMMIT_INDEX_BYTES = 8;
+    public static final String DIRECTORY_NAME = "raft-log";
 
     private final Set<Listener> listeners = new CopyOnWriteArraySet<>();
 
@@ -92,6 +93,8 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
                 .APPEND_INDEX_TAG );
         this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass(), RaftLog
                 .COMMIT_INDEX_TAG );
+
+        directory.mkdirs();
 
         try
         {
