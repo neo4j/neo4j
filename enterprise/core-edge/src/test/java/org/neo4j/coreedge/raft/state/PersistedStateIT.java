@@ -59,7 +59,7 @@ public class PersistedStateIT
         EphemeralFileSystemAbstraction delegate = new EphemeralFileSystemAbstraction();
         AdversarialFileSystemAbstraction fsa = new AdversarialFileSystemAbstraction(
                 new MethodGuardedAdversary( new CountingAdversary( 100, true ),
-                        StoreChannel.class.getMethod( "write", ByteBuffer.class ) ),
+                        StoreChannel.class.getMethod( "writeAll", ByteBuffer.class ) ),
                 delegate );
 
         LongState persistedState = new LongState( fsa, testDir.directory(), 14 );
@@ -76,7 +76,7 @@ public class PersistedStateIT
         }
         catch ( Exception expected )
         {
-            ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "write" );
+            ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "writeAll" );
         }
 
         LongState restoredState = new LongState( delegate, testDir.directory(), 4 );
