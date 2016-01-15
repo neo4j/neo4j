@@ -38,7 +38,6 @@ public class OnDiskTermState extends LifecycleAdapter implements TermState
     public static final String FILENAME = "term.";
     public static final String DIRECTORY_NAME = "term-state";
 
-    private final ByteBuffer workingBuffer;
     private InMemoryTermState inMemoryTermState;
 
     private final StatePersister<InMemoryTermState> statePersister;
@@ -50,19 +49,13 @@ public class OnDiskTermState extends LifecycleAdapter implements TermState
         File fileA = new File( stateDir, FILENAME + "a" );
         File fileB = new File( stateDir, FILENAME + "b" );
 
-        workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateChannelMarshal
-                .NUMBER_OF_BYTES_PER_VOTE );
-
-
         TermStateRecoveryManager recoveryManager =
                 new TermStateRecoveryManager( fileSystemAbstraction, new InMemoryTermStateChannelMarshal() );
 
         final StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
 
-
         this.inMemoryTermState = recoveryManager.readLastEntryFrom( fileSystemAbstraction, recoveryStatus
                 .previouslyActive() );
-
 
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
                 new InMemoryTermStateChannelMarshal(), recoveryStatus.previouslyInactive(),

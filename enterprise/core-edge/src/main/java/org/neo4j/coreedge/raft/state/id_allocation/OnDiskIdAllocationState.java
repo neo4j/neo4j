@@ -49,7 +49,6 @@ public class OnDiskIdAllocationState extends LifecycleAdapter implements IdAlloc
     private final InMemoryIdAllocationState inMemoryIdAllocationState;
 
     private final StatePersister<InMemoryIdAllocationState> statePersister;
-    private final ByteBuffer workingBuffer;
     private final InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal marshal;
 
     public OnDiskIdAllocationState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
@@ -58,8 +57,6 @@ public class OnDiskIdAllocationState extends LifecycleAdapter implements IdAlloc
     {
         File fileA = new File( stateDir, FILENAME + "a" );
         File fileB = new File( stateDir, FILENAME + "b" );
-
-        this.workingBuffer = ByteBuffer.allocate( NUMBER_OF_BYTES_PER_WRITE );
 
         IdAllocationStateRecoveryManager recoveryManager =
                 new IdAllocationStateRecoveryManager( fileSystemAbstraction,
