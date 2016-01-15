@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.CommandStream;
 
@@ -61,7 +62,7 @@ public interface TransactionRepresentation extends CommandStream
     long getTimeCommitted();
 
     /**
-     * @return the identifier for the lock session associated with this transaction, or {-1} if none.
+     * @return the identifier for the lock session associated with this transaction, or {@value Locks.Client#NO_LOCK_SESSION_ID} if none.
      * This is only used for slave commits.
      */
     int getLockSessionId();
