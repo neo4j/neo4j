@@ -47,7 +47,7 @@ public class CharacterConverterTest
     {
         for ( char expected = 0; expected < Character.MAX_VALUE; expected++ )
         {
-            assertCorrectConversion( expected, "\\" + (int)expected );
+            assertCorrectConversion( expected, "\\" + (int) expected );
         }
     }
 

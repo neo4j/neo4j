@@ -24,8 +24,8 @@ import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 
 /**
- * Converts a string expression into a character to be used as delimiter, array delimiter, or quote character.
- * Can be normal characters as well as for example: '\t', '\123', and "TAB".
+ * Converts a string expression into a character to be used as delimiter, array delimiter, or quote character. Can be
+ * normal characters as well as for example: '\t', '\123', and "TAB".
  */
 class CharacterConverter implements Function<String,Character>
 {
@@ -55,7 +55,9 @@ class CharacterConverter implements Function<String,Character>
         else if ( value.equals( "TAB" ) )
         {
             return Configuration.TABS.delimiter();
-        } else if ( value.length() == 1) {
+        }
+        else if ( value.length() == 1 )
+        {
             return value.charAt( 0 );
         }
 

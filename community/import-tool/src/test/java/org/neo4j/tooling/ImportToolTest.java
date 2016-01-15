@@ -1033,7 +1033,6 @@ public class ImportToolTest
             assertTrue( names.isEmpty() );
             tx.success();
         }
-
     }
 
     private File data( String... lines ) throws Exception
