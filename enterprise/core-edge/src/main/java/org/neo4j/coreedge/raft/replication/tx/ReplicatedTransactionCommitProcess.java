@@ -98,7 +98,7 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
                         throw new TransactionFailureException( CouldNotCommit, "Failed to replicate transaction", e );
                     }
                     log.warn( "Transaction replication failed, but a previous attempt may have succeeded," +
-                            "so commit process must keep waiting for possible success." );
+                            "so commit process must keep waiting for possible success.", e );
                 }
 
                 try

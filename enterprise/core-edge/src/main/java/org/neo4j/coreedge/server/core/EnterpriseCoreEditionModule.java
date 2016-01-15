@@ -34,6 +34,7 @@ import org.neo4j.coreedge.discovery.CoreDiscoveryService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
+import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
@@ -79,6 +80,9 @@ import org.neo4j.coreedge.server.Expiration;
 import org.neo4j.coreedge.server.ExpiryScheduler;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.SenderService;
+import org.neo4j.coreedge.server.core.locks.CurrentReplicatedLockState;
+import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockStateMachine;
 import org.neo4j.coreedge.server.logging.BetterMessageLogger;
 import org.neo4j.coreedge.server.logging.MessageLogger;
 import org.neo4j.graphdb.DependencyResolver;
@@ -300,7 +304,7 @@ public class EnterpriseCoreEditionModule
         channelInitializer.setOwner( coreToCoreClient );
 
         lockManager = dependencies.satisfyDependency( createLockManager( config, logging, replicator, myself,
-                replicatedLockStateMachine ) );
+                replicatedLockStateMachine, raft ) );
 
         CatchupServer catchupServer = new CatchupServer( logProvider,
                 new StoreIdSupplier( platformModule ),
@@ -460,12 +464,12 @@ public class EnterpriseCoreEditionModule
     }
 
     protected Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,
-                                       CoreMember myself, ReplicatedLockStateMachine<CoreMember>
-                                               replicatedLockStateMachine )
+            CoreMember myself, ReplicatedLockStateMachine<CoreMember>
+            replicatedLockStateMachine, LeaderLocator<CoreMember> leaderLocator )
     {
         Locks local = CommunityEditionModule.createLockManager( config, logging );
 
-        return new LeaderOnlyLockManager<>( myself, replicator, local, replicatedLockStateMachine );
+        return new LeaderOnlyLockManager<>( myself, replicator, leaderLocator, local, replicatedLockStateMachine );
     }
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()
