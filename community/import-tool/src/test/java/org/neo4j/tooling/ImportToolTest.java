@@ -988,14 +988,14 @@ public class ImportToolTest
         {
             importTool(
                     "--into", dbRule.getStoreDirAbsolutePath(),
-                    "--nodes", nodeDataWithMissingQuote( 2*unbalancedStartLine, unbalancedStartLine )
+                    "--nodes", nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine )
                             .getAbsolutePath() );
             fail( "Should have failed" );
         }
         catch ( InputException e )
         {
             // THEN
-            assertThat( e.getMessage(), containsString( String.format( "See line %d", unbalancedStartLine) ) );
+            assertThat( e.getMessage(), containsString( String.format( "See line %d", unbalancedStartLine ) ) );
         }
     }
 
@@ -1010,14 +1010,13 @@ public class ImportToolTest
         {
             importTool(
                     "--into", dbRule.getStoreDirAbsolutePath(),
-                    "--nodes", nodeDataWithMissingQuote( unbalancedStartLine, unbalancedStartLine )
-                            .getAbsolutePath() );
+                    "--nodes", nodeDataWithMissingQuote( unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() );
             fail( "Should have failed" );
         }
         catch ( InputException e )
         {
             // THEN
-            assertThat( e.getMessage(), containsString( String.format( "See line %d", unbalancedStartLine) ) );
+            assertThat( e.getMessage(), containsString( String.format( "See line %d", unbalancedStartLine ) ) );
         }
     }
 
@@ -1033,18 +1032,16 @@ public class ImportToolTest
             importTool(
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--multiline-fields", "true",
-                    "--nodes", nodeDataWithMissingQuote( 2*unbalancedStartLine, unbalancedStartLine )
-                            .getAbsolutePath() );
+                    "--nodes",
+                    nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() );
             fail( "Should have failed" );
         }
         catch ( InputException e )
         {
             // THEN
-            assertThat( e.getMessage(),
-                    containsString( String.format( "started on line %d", unbalancedStartLine ) ) );
+            assertThat( e.getMessage(), containsString( String.format( "started on line %d", unbalancedStartLine ) ) );
             // make sure end was reached
-            assertThat( e.getMessage(),
-                    containsString( String.format( "line:%d", 2 * unbalancedStartLine + 1 ) ) );
+            assertThat( e.getMessage(), containsString( String.format( "line:%d", 2 * unbalancedStartLine + 1 ) ) );
         }
     }
 
