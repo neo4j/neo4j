@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
@@ -52,7 +51,6 @@ public class KernelTransactionFactory
         long lastTransactionIdWhenStarted = 0;
 
         StorageEngine storageEngine = mock( StorageEngine.class );
-        when( storageEngine.neoStores() ).thenReturn( mock( NeoStores.class ) );
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.acquireStatement() ).thenReturn( mock( StorageStatement.class ) );
         when( storageEngine.storeReadLayer() ).thenReturn( storeReadLayer );

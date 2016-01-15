@@ -33,10 +33,10 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -60,7 +60,7 @@ public class CheckPointerImplTest
 
     private final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
     private final CheckPointThreshold threshold = mock( CheckPointThreshold.class );
-    private final StoreFlusher flusher = mock( StoreFlusher.class );
+    private final StorageEngine storageEngine = mock( StorageEngine.class );
     private final LogPruning logPruning = mock( LogPruning.class );
     private final TransactionAppender appender = mock( TransactionAppender.class );
     private final DatabaseHealth health = mock( DatabaseHealth.class );
@@ -69,7 +69,6 @@ public class CheckPointerImplTest
     private final long initialTransactionId = 2l;
     private final long transactionId = 42l;
     private final LogPosition logPosition = new LogPosition( 16l, 233l );
-
 
     @Test
     public void shouldNotFlushIfItIsNotNeeded() throws Throwable
@@ -85,7 +84,7 @@ public class CheckPointerImplTest
 
         // Then
         assertEquals( -1, txId );
-        verifyZeroInteractions( flusher );
+        verifyZeroInteractions( storageEngine );
         verifyZeroInteractions( tracer );
         verifyZeroInteractions( appender );
     }
@@ -105,7 +104,7 @@ public class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( flusher, times( 1 ) ).forceEverything();
+        verify( storageEngine, times( 1 ) ).flushAndForce();
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold, times( 1 ) ).initialize( initialTransactionId );
@@ -113,7 +112,7 @@ public class CheckPointerImplTest
         verify( threshold, times( 1 ) ).isCheckPointingNeeded( transactionId, INFO );
         verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
         verify( tracer, times( 1 ) ).beginCheckPoint();
-        verifyNoMoreInteractions( flusher, health, appender, threshold, tracer );
+        verifyNoMoreInteractions( storageEngine, health, appender, threshold, tracer );
     }
 
     @Test
@@ -131,7 +130,7 @@ public class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( flusher, times( 1 ) ).forceEverything();
+        verify( storageEngine, times( 1 ) ).flushAndForce();
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold, times( 1 ) ).initialize( initialTransactionId );
@@ -139,7 +138,7 @@ public class CheckPointerImplTest
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
         verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
         verifyZeroInteractions( tracer );
-        verifyNoMoreInteractions( flusher, health, appender, threshold, tracer );
+        verifyNoMoreInteractions( storageEngine, health, appender, threshold, tracer );
     }
 
     @Test
@@ -157,7 +156,7 @@ public class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( flusher, times( 1 ) ).forceEverything();
+        verify( storageEngine, times( 1 ) ).flushAndForce();
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold, times( 1 ) ).initialize( initialTransactionId );
@@ -165,7 +164,7 @@ public class CheckPointerImplTest
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
         verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
         verifyZeroInteractions( tracer );
-        verifyNoMoreInteractions( flusher, health, appender, threshold, tracer );
+        verifyNoMoreInteractions( storageEngine, health, appender, threshold, tracer );
     }
 
     @Test
@@ -248,7 +247,7 @@ public class CheckPointerImplTest
 
     private CheckPointerImpl checkPointer( Lock lock )
     {
-        return new CheckPointerImpl( txIdStore, threshold, flusher, logPruning, appender, health,
+        return new CheckPointerImpl( txIdStore, threshold, storageEngine, logPruning, appender, health,
                 NullLogProvider.getInstance(), tracer, lock );
     }
 
@@ -267,8 +266,8 @@ public class CheckPointerImplTest
     private static class CheckPointerThread extends Thread
     {
         private final CheckPointerImpl checkPointing;
-        private CountDownLatch startSignal;
-        private CountDownLatch completed;
+        private final CountDownLatch startSignal;
+        private final CountDownLatch completed;
 
         public CheckPointerThread( CheckPointerImpl checkPointing, CountDownLatch startSignal,
                 CountDownLatch completed )

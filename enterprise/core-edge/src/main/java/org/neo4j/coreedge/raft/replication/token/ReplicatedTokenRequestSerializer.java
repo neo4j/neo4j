@@ -19,19 +19,18 @@
  */
 package org.neo4j.coreedge.raft.replication.token;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-
 import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.raft.replication.StringMarshal;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -62,7 +61,7 @@ public class ReplicatedTokenRequestSerializer
         return new ReplicatedTokenRequest( type, tokenName, commandBytes );
     }
 
-    public static byte[] createCommandBytes( Collection<Command> commands )
+    public static byte[] createCommandBytes( Collection<StorageCommand> commands )
     {
         ByteBuf commandBuffer = Unpooled.buffer();
         NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( commandBuffer );

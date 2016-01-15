@@ -42,7 +42,9 @@ import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -55,6 +57,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -65,6 +68,8 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
+
+import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
 {
@@ -82,11 +87,13 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
             StoreAccess nativeStores = new StoreAccess( fileSystem, pageCache, directory ).initialize();
+            IndexStoreView indexStoreView =
+                    new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores() );
             directStoreAccess = new DirectStoreAccess(
                     nativeStores,
                     new LuceneLabelScanStoreBuilder(
                             directory,
-                            nativeStores.getRawNeoStores(),
+                            fullStoreLabelUpdateStream( () -> indexStoreView ),
                             fileSystem,
                             FormattedLogProvider.toOutputStream( System.out )
                     ).build(),
@@ -354,7 +361,8 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                             dependencyResolver.resolveDependency( StorageEngine.class ) );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
-            NodeStore nodes = database.getDependencyResolver().resolveDependency( NeoStores.class ).getNodeStore();
+            NodeStore nodes = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                    .testAccessNeoStores().getNodeStore();
             TransactionRepresentation representation = transaction.representation( idGenerator(), masterId(), myId(),
                     transactionIdStore.getLastCommittedTransactionId(), nodes );
             commitProcess.commit( new TransactionToApply( representation ), CommitEvent.NULL,
@@ -386,7 +394,8 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         try
         {
             generateInitialData( graphDb );
-            StoreAccess stores = new StoreAccess( graphDb ).initialize();
+            StoreAccess stores = new StoreAccess( graphDb.getDependencyResolver()
+                    .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores() ).initialize();
             schemaId = stores.getSchemaStore().getHighId();
             nodeId = stores.getNodeStore().getHighId();
             labelId = (int) stores.getLabelTokenStore().getHighId();

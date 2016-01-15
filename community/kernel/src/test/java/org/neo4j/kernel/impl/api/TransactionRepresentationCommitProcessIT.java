@@ -33,6 +33,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.index.DummyIndexExtensionFactory;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -111,7 +112,8 @@ public class TransactionRepresentationCommitProcessIT
         done.set( true );
         workers.awaitAndThrowOnError( RuntimeException.class );
 
-        NeoStores neoStores = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( NeoStores.class );
+        NeoStores neoStores = ((GraphDatabaseAPI)db).getDependencyResolver()
+                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         assertEquals( "NeoStore last closed transaction id should be equal to count store transaction id.",
                 neoStores.getMetaDataStore().getLastClosedTransactionId(),
                 neoStores.getCounts().txId());

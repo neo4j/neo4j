@@ -25,33 +25,30 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
+import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.tryOpenForVersion;
 
 public class DefaultRecoverySPI implements Recovery.SPI
 {
-    private final StoreFlusher storeFlusher;
-    private final NeoStores neoStores;
     private final Visitor<LogVersionedStoreChannel,Exception> logFileRecoverer;
     private final PhysicalLogFiles logFiles;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final LogVersionRepository logVersionRepository;
     private final PositionToRecoverFrom positionToRecoverFrom;
+    private final StorageEngine storageEngine;
 
     public DefaultRecoverySPI(
-            StoreFlusher storeFlusher, NeoStores neoStores,
+            StorageEngine storageEngine,
             Visitor<LogVersionedStoreChannel,Exception> logFileRecoverer,
             PhysicalLogFiles logFiles, FileSystemAbstraction fileSystemAbstraction,
             LogVersionRepository logVersionRepository, LatestCheckPointFinder checkPointFinder )
     {
-        this.storeFlusher = storeFlusher;
-        this.neoStores = neoStores;
+        this.storageEngine = storageEngine;
         this.logFileRecoverer = logFileRecoverer;
         this.logFiles = logFiles;
         this.fileSystemAbstraction = fileSystemAbstraction;
@@ -62,7 +59,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
     @Override
     public void forceEverything()
     {
-        storeFlusher.forceEverything();
+        storageEngine.flushAndForce();
     }
 
     @Override
@@ -113,7 +110,6 @@ public class DefaultRecoverySPI implements Recovery.SPI
         return positionToRecoverFrom.apply( logVersionRepository.getCurrentLogVersion() );
     }
 
-
     @Override
     public void recoveryRequired()
     {
@@ -121,6 +117,6 @@ public class DefaultRecoverySPI implements Recovery.SPI
         // each store is aware that recovery will be performed. At this point all the stores have
         // already started btw.
         // Go and read more at {@link CommonAbstractStore#deleteIdGenerator()}
-        neoStores.deleteIdGenerators();
+        storageEngine.prepareForRecoveryRequired();
     }
 }

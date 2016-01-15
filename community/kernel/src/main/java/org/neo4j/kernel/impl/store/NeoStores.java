@@ -33,12 +33,13 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.NeoStoresDiagnostics;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.counts.ReadOnlyCountsTracker;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.logging.Log;
@@ -577,5 +578,10 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createMetadataStore()
     {
         return initialize( new MetaDataStore( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider ) );
+    }
+
+    public void registerDiagnostics( DiagnosticsManager diagnosticsManager )
+    {
+        diagnosticsManager.registerAll( NeoStoresDiagnostics.class, this );
     }
 }

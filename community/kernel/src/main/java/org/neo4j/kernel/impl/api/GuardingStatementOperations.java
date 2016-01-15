@@ -29,12 +29,9 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
@@ -275,13 +272,6 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursor( TxStateHolder txStateHolder, StoreStatement statement, long nodeId )
-    {
-        guard.check();
-        return entityReadDelegate.nodeCursor( txStateHolder, statement, nodeId );
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
             throws EntityNotFoundException
     {
@@ -294,15 +284,6 @@ public class GuardingStatementOperations implements
     {
         guard.check();
         return entityReadDelegate.relationshipCursor( statement, relId );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipCursor( TxStateHolder txStateHolder,
-            StoreStatement statement,
-            long relId )
-    {
-        guard.check();
-        return entityReadDelegate.relationshipCursor( txStateHolder, statement, relId );
     }
 
     @Override
@@ -393,35 +374,17 @@ public class GuardingStatementOperations implements
         return entityReadDelegate.nodeCursorGetFromUniqueIndexSeek( statement, index, value );
     }
 
-    private static class GuardedRelationshipIterator implements RelationshipIterator
+    @Override
+    public long nodesGetCount( KernelStatement statement )
     {
-        private final Guard guard;
-        private final RelationshipIterator iterator;
+        guard.check();
+        return entityReadDelegate.nodesGetCount( statement );
+    }
 
-        public GuardedRelationshipIterator( Guard guard, RelationshipIterator iterator )
-        {
-            this.guard = guard;
-            this.iterator = iterator;
-        }
-
-        @Override
-        public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
-                RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
-        {
-            guard.check();
-            return iterator.relationshipVisit( relationshipId, visitor );
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return iterator.hasNext();
-        }
-
-        @Override
-        public long next()
-        {
-            return iterator.next();
-        }
+    @Override
+    public long relationshipsGetCount( KernelStatement statement )
+    {
+        guard.check();
+        return entityReadDelegate.relationshipsGetCount( statement );
     }
 }

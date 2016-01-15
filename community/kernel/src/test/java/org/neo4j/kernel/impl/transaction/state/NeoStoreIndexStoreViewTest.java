@@ -47,8 +47,8 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
@@ -87,7 +87,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-            storeView.visitNodes( new int[] { labelId }, new int[] { propertyKeyId }, visitor, labelVisitor );
+            storeView.visitNodes( (id) -> id == labelId, (id) -> id == propertyKeyId, visitor, labelVisitor );
 
         // when
         storeScan.run();
@@ -110,7 +110,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-                storeView.visitNodes( new int[] { labelId }, new int[] { propertyKeyId }, visitor, labelVisitor );
+                storeView.visitNodes( (id) -> id == labelId, (id) -> id == propertyKeyId, visitor, labelVisitor );
 
         // when
         storeScan.run();
@@ -126,9 +126,8 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings("unchecked")
         Visitor<NodePropertyUpdate, Exception> visitor = mock( Visitor.class );
         StoreScan<Exception> storeScan = storeView.visitNodes(
-                new int[] {labelId},
-                new int[] {propertyKeyId},
-                visitor );
+                (id) -> id == labelId, (id) -> id == propertyKeyId,
+                visitor, null );
 
         // when
         storeScan.run();
@@ -164,7 +163,7 @@ public class NeoStoreIndexStoreViewTest
         createAlistairAndStefanNodes();
         getOrCreateIds();
 
-        neoStores = new StoreAccess( graphDb ).getRawNeoStores();
+        neoStores = graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         counts = neoStores.getCounts();
         locks = mock( LockService.class, new Answer()
         {

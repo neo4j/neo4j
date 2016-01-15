@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.proc.Procedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.Token;
@@ -73,6 +74,9 @@ public interface ReadOperations
     /** Returns the label name for the given label id. */
     String labelGetName( int labelId ) throws LabelNotFoundKernelException;
 
+    /** Returns the labels currently stored in the database * */
+    Iterator<Token> labelsGetAllTokens(); // TODO: Token is a store level concern, should not make it this far up the stack
+
     /**
      * Returns a property key id for the given property key. If the property key doesn't exist,
      * {@link StatementConstants#NO_SUCH_PROPERTY_KEY} will be returned.
@@ -85,15 +89,18 @@ public interface ReadOperations
     /** Returns the property keys currently stored in the database */
     Iterator<Token> propertyKeyGetAllTokens();
 
-    /** Returns the labels currently stored in the database * */
-    Iterator<Token> labelsGetAllTokens(); // TODO: Token is a store level concern, should not make it this far up the stack
+    int relationshipTypeGetForName( String relationshipTypeName );
+
+    String relationshipTypeGetName( int relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException;
 
     /** Returns the relationship types currently stored in the database */
     Iterator<Token> relationshipTypesGetAllTokens();
 
-    int relationshipTypeGetForName( String relationshipTypeName );
+    int labelCount();
 
-    String relationshipTypeGetName( int relationshipTypeId ) throws RelationshipTypeIdNotFoundKernelException;
+    int propertyKeyCount();
+
+    int relationshipTypeCount();
 
     //===========================================
     //== DATA OPERATIONS ========================
@@ -220,6 +227,10 @@ public interface ReadOperations
 
     <EXCEPTION extends Exception> void relationshipVisit( long relId, RelationshipVisitor<EXCEPTION> visitor )
             throws EntityNotFoundException, EXCEPTION;
+
+    long nodesGetCount();
+
+    long relationshipsGetCount();
 
     //===========================================
     //== CURSOR ACCESS OPERATIONS ===============
@@ -526,6 +537,12 @@ public interface ReadOperations
      * @return the number of matching relationships in the graph.
      */
     long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId );
+
+    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
+            throws IndexNotFoundKernelException;
+
+    DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
+            throws IndexNotFoundKernelException;
 
     //===========================================
     //== PRECEDURE OPERATIONS ===================

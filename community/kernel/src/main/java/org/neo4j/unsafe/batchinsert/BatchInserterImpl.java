@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.LongFunction;
-
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
@@ -74,7 +74,6 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
-import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -94,7 +93,6 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
-import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
@@ -133,7 +131,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
 import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
@@ -193,7 +190,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private boolean isShutdown = false;
 
-    private FlushStrategy flushStrategy;
+    private final FlushStrategy flushStrategy;
     // Helper structure for setNodeProperty
     private final RelationshipCreator relationshipCreator;
     private final DirectRecordAccessSet recordAccess;
@@ -201,16 +198,18 @@ public class BatchInserterImpl implements BatchInserter
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeletor;
 
-    private NodeStore nodeStore;
-    private RelationshipStore relationshipStore;
-    private RelationshipTypeTokenStore relationshipTypeTokenStore;
-    private PropertyKeyTokenStore propertyKeyTokenStore;
-    private PropertyStore propertyStore;
-    private RelationshipGroupStore relationshipGroupStore;
-    private SchemaStore schemaStore;
+    private final NodeStore nodeStore;
+    private final RelationshipStore relationshipStore;
+    private final RelationshipTypeTokenStore relationshipTypeTokenStore;
+    private final PropertyKeyTokenStore propertyKeyTokenStore;
+    private final PropertyStore propertyStore;
+    private final RelationshipGroupStore relationshipGroupStore;
+    private final SchemaStore schemaStore;
+    private final NeoStoreIndexStoreView indexStoreView;
 
-    private LabelTokenStore labelTokenStore;
+    private final LabelTokenStore labelTokenStore;
     private final Locks.Client noopLockClient = new NoOpClient();
+
 
     /**
      * @deprecated use {@link #BatchInserterImpl(File, Map)} instead
@@ -297,9 +296,10 @@ public class BatchInserterImpl implements BatchInserter
         relationshipTypeTokens = new BatchTokenHolder( types );
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
         schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaStore );
+        indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
 
         Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fileSystem, config, logService, (NeoStoresSupplier) () -> neoStores );
+        deps.satisfyDependencies( fileSystem, config, logService, indexStoreView );
 
         KernelExtensions extensions = life.add( new KernelExtensions(
                 new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN ),
@@ -496,8 +496,6 @@ public class BatchInserterImpl implements BatchInserter
         final IndexRule[] rules = getIndexesNeedingPopulation();
         final IndexPopulator[] populators = new IndexPopulator[rules.length];
         // the store is uncontended at this point, so creating a local LockService is safe.
-        LockService locks = new ReentrantLockService();
-        IndexStoreView storeView = new NeoStoreIndexStoreView( locks, neoStores );
 
         final int[] labelIds = new int[rules.length];
         final int[] propertyKeyIds = new int[rules.length];
@@ -548,13 +546,15 @@ public class BatchInserterImpl implements BatchInserter
         };
 
         InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor();
-        StoreScan<IOException> storeScan = storeView.visitNodes( labelIds, propertyKeyIds,
+        StoreScan<IOException> storeScan = indexStoreView.visitNodes(
+                (labelId) -> PrimitiveIntCollections.contains( labelIds, labelId ),
+                (propertyKeyId) -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
                 propertyUpdateVisitor, labelUpdateVisitor );
         storeScan.run();
 
         for ( IndexPopulator populator : populators )
         {
-            populator.verifyDeferredConstraints( storeView );
+            populator.verifyDeferredConstraints( indexStoreView );
             populator.close( true );
         }
         labelUpdateVisitor.close();

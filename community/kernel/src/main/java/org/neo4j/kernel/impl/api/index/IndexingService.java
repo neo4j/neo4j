@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -571,12 +570,10 @@ public class IndexingService extends LifecycleAdapter
         final List<NodePropertyUpdate> recoveredUpdates = new ArrayList<>();
         recoveredNodeIds.visitKeys( new PrimitiveLongVisitor<RuntimeException>()
         {
-            private final NodeRecord nodeRecord = new NodeRecord( -1 );
-
             @Override
             public boolean visited( long nodeId )
             {
-                storeView.nodeAsUpdates( nodeId, nodeRecord, recoveredUpdates );
+                storeView.nodeAsUpdates( nodeId, recoveredUpdates );
                 return false;
             }
         } );

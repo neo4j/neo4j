@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension.NoDependen
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -87,7 +88,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -96,7 +96,6 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.lang.Integer.parseInt;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
@@ -113,6 +112,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.lang.Integer.parseInt;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -905,7 +907,8 @@ public class BatchInsertTest
         GraphDatabaseAPI graphdb = (GraphDatabaseAPI) switchToEmbeddedGraphDatabaseService( inserter );
         try
         {
-            NeoStores neoStores = graphdb.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
+            NeoStores neoStores = graphdb.getDependencyResolver()
+                    .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             SchemaStore store = neoStores.getSchemaStore();
             SchemaStorage storage = new SchemaStorage( store );
             List<Long> inUse = new ArrayList<>();
@@ -1328,8 +1331,8 @@ public class BatchInsertTest
         try
         {
             DependencyResolver dependencyResolver = db.getDependencyResolver();
-            NeoStoresSupplier neoStoresSupplier = dependencyResolver.resolveDependency( NeoStoresSupplier.class );
-            NeoStores neoStores = neoStoresSupplier.get();
+            NeoStores neoStores = dependencyResolver
+                    .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             NodeStore nodeStore = neoStores.getNodeStore();
             NodeRecord record = nodeStore.getRecord( 1 );
             assertTrue( "Node " + record + " should have been dense", record.isDense() );

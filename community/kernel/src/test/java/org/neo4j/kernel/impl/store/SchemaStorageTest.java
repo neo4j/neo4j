@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.EntitySchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
@@ -77,7 +78,8 @@ public class SchemaStorageTest
     @Before
     public void initStorage() throws Exception
     {
-        storage = new SchemaStorage( dependencyResolver().resolveDependency( NeoStores.class ).getSchemaStore() );
+        storage = new SchemaStorage( dependencyResolver().resolveDependency( RecordStorageEngine.class )
+                .testAccessNeoStores().getSchemaStore() );
     }
 
     @Test

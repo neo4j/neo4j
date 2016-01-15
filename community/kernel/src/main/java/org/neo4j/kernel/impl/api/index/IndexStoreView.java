@@ -20,13 +20,18 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.Collection;
+import java.util.function.IntPredicate;
+
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView extends PropertyAccessor
@@ -38,28 +43,19 @@ public interface IndexStoreView extends PropertyAccessor
      *
      * @return a {@link StoreScan} to start and to stop the scan.
      */
-    <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, int[] propertyKeyIds,
+    <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
+            IntPredicate labelIdFilter, IntPredicate propertyKeyIdFilter,
             Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor,
             Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor );
-
-    /**
-     * Retrieve all nodes in the database which has got one or more of the given labels AND
-     * one or more of the given property key ids.
-     *
-     * @return a {@link StoreScan} to start and to stop the scan.
-     */
-    <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, int[] propertyKeyIds,
-            Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor );
 
     /**
      * Produces {@link NodePropertyUpdate} objects from reading node {@code nodeId}, its labels and properties
      * and puts those updates into {@code target}.
      *
      * @param nodeId id of node to load.
-     * @param reusableRecord {@link NodeRecord} to load node record into.
      * @param target {@link Collection} to add updates into.
      */
-    void nodeAsUpdates( long nodeId, NodeRecord reusableRecord, Collection<NodePropertyUpdate> target );
+    void nodeAsUpdates( long nodeId, Collection<NodePropertyUpdate> target );
 
     DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister output );
 
@@ -68,4 +64,69 @@ public interface IndexStoreView extends PropertyAccessor
     void replaceIndexCounts( IndexDescriptor descriptor, long uniqueElements, long maxUniqueElements, long indexSize );
 
     void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta );
+
+    StoreScan EMPTY_SCAN = new StoreScan()
+    {
+        @Override
+        public void run() throws Exception
+        {
+        }
+
+        @Override
+        public void stop()
+        {
+        }
+
+        @Override
+        public PopulationProgress getProgress()
+        {
+            return PopulationProgress.DONE;
+        }
+    };
+
+    IndexStoreView EMPTY = new IndexStoreView()
+    {
+        @Override
+        public Property getProperty( long nodeId, int propertyKeyId )
+                throws EntityNotFoundException, PropertyNotFoundException
+        {
+            return Property.noNodeProperty( nodeId, propertyKeyId );
+        }
+
+        @Override
+        public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( IntPredicate labelIdFilter,
+                IntPredicate propertyKeyIdFilter, Visitor<NodePropertyUpdate,FAILURE> propertyUpdateVisitor,
+                Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
+        {
+            return EMPTY_SCAN;
+        }
+
+        @Override
+        public void replaceIndexCounts( IndexDescriptor descriptor, long uniqueElements, long maxUniqueElements,
+                long indexSize )
+        {
+        }
+
+        @Override
+        public void nodeAsUpdates( long nodeId, Collection<NodePropertyUpdate> target )
+        {
+        }
+
+        @Override
+        public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister output )
+        {
+            return output;
+        }
+
+        @Override
+        public DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister output )
+        {
+            return output;
+        }
+
+        @Override
+        public void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta )
+        {
+        }
+    };
 }

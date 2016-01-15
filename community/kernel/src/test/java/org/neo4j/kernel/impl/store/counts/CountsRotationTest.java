@@ -47,8 +47,8 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
@@ -179,7 +179,8 @@ public class CountsRotationTest
         }
 
         // on the other hand the tracker should read the correct value by merging data on disk and data in memory
-        final CountsTracker tracker = db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+        final CountsTracker tracker = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                .testAccessNeoStores().getCounts();
         assertEquals( 1 + 1, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
 
         final LabelTokenHolder holder = db.getDependencyResolver().resolveDependency( LabelTokenHolder.class );

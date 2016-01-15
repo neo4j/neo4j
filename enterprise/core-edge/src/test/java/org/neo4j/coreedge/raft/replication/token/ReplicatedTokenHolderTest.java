@@ -45,9 +45,13 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -56,6 +60,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer.createCommandBytes;
@@ -96,6 +103,8 @@ public class ReplicatedTokenHolderTest
         Replicator replicator = new StubReplicator();
         when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) )
                 .thenReturn( mock( TransactionRepresentationCommitProcess.class ) );
+        StorageEngine storageEngine = mockedStorageEngine();
+        when( dependencies.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
@@ -123,6 +132,8 @@ public class ReplicatedTokenHolderTest
         Replicator replicator = new DropAllTheThingsReplicator();
         when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) )
                 .thenReturn( mock( TransactionRepresentationCommitProcess.class ) );
+        StorageEngine storageEngine = mockedStorageEngine();
+        when( dependencies.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies, 10 );
@@ -156,6 +167,8 @@ public class ReplicatedTokenHolderTest
         StubTransactionCommitProcess commitProcess = new StubTransactionCommitProcess( null, null );
         when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) ).thenReturn(
                 commitProcess );
+        StorageEngine storageEngine = mockedStorageEngine();
+        when( dependencies.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder(
                 new StubReplicator(), idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
@@ -242,6 +255,9 @@ public class ReplicatedTokenHolderTest
 
         when( idGeneratorFactory.get( any( IdType.class ) ) ).thenReturn( idGenerator );
 
+        StorageEngine storageEngine = mockedStorageEngine();
+        when( dependencies.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
+
         RaceConditionSimulatingReplicator replicator = new RaceConditionSimulatingReplicator();
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
@@ -269,6 +285,9 @@ public class ReplicatedTokenHolderTest
 
         when( idGeneratorFactory.get( any( IdType.class ) ) ).thenReturn( idGenerator );
 
+        StorageEngine storageEngine = mockedStorageEngine();
+        when( dependencies.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
+
         RaceConditionSimulatingReplicator replicator = new RaceConditionSimulatingReplicator();
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
@@ -286,9 +305,9 @@ public class ReplicatedTokenHolderTest
         assertEquals( EXPECTED_TOKEN_ID, tokenId );
     }
 
-    private List<Command> createCommands( int tokenId )
+    private List<StorageCommand> createCommands( int tokenId )
     {
-        List<Command> commands = new ArrayList<>();
+        List<StorageCommand> commands = new ArrayList<>();
         commands.add(
                 new Command.LabelTokenCommand( new LabelTokenRecord( tokenId ), new LabelTokenRecord( tokenId ) ) );
         return commands;
@@ -394,5 +413,28 @@ public class ReplicatedTokenHolderTest
             transactionsToApply.add( batch.transactionRepresentation() );
             return -1;
         }
+    }
+
+    private StorageEngine mockedStorageEngine() throws Exception
+    {
+        StorageEngine storageEngine = mock( StorageEngine.class );
+        doAnswer( invocation -> {
+            Collection<StorageCommand> target = invocation.getArgumentAt( 0, Collection.class );
+            ReadableTransactionState txState = invocation.getArgumentAt( 1, ReadableTransactionState.class );
+            txState.accept( new TxStateVisitor.Adapter()
+            {
+                @Override
+                public void visitCreatedLabelToken( String name, int id )
+                {
+                    LabelTokenRecord before = new LabelTokenRecord( id );
+                    LabelTokenRecord after = before.clone();
+                    after.setInUse( true );
+                    target.add( new Command.LabelTokenCommand( before, after ) );
+                }
+            } );
+            return null;
+        } ).when( storageEngine ).createCommands( anyCollection(), any( ReadableTransactionState.class ),
+                any( ResourceLocker.class ), anyLong() );
+        return storageEngine;
     }
 }

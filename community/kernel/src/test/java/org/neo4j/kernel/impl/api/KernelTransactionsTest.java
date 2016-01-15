@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -207,7 +206,6 @@ public class KernelTransactionsTest
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
         MetaDataStore metaDataStore = mock( MetaDataStore.class );
-        IntegrityValidator integrityValidator = mock( IntegrityValidator.class );
         NeoStores neoStores = mock( NeoStores.class );
 
         StoreStatement storeStatement = new StoreStatement( neoStores, new ReentrantLockService(),
@@ -217,8 +215,6 @@ public class KernelTransactionsTest
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
-        when( storageEngine.metaDataStore() ).thenReturn( metaDataStore );
-        when( storageEngine.integrityValidator() ).thenReturn( integrityValidator );
         doAnswer( new Answer<Void>()
         {
             @Override
@@ -239,7 +235,7 @@ public class KernelTransactionsTest
                 null, null, null, TransactionHeaderInformationFactory.DEFAULT,
                 commitProcess, null,
                 null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                tracers, storageEngine, new Procedures() );
+                tracers, storageEngine, new Procedures(), metaDataStore );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )

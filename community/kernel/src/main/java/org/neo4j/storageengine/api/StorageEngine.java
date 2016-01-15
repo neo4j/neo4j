@@ -25,18 +25,8 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.impl.util.DependencySatisfier;
+import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -98,46 +88,49 @@ public interface StorageEngine
      */
     CommandReaderFactory commandReaderFactory();
 
+    /**
+     * Flushes and forces all changes down to underlying storage. This is a blocking call and when it returns
+     * all changes applied to this storage engine will be durable.
+     */
+    void flushAndForce();
+
+    /**
+     * Registers diagnostics about the storage onto {@link DiagnosticsManager}.
+     *
+     * @param diagnosticsManager {@link DiagnosticsManager} to register diagnostics at.
+     */
+    void registerDiagnostics( DiagnosticsManager diagnosticsManager );
+
+    /**
+     * Force close all opened resources. This may be called during startup if there's a failure
+     * during recovery or similar.
+     */
+    void forceClose();
+
+    /**
+     * Startup process have reached the conclusion that recovery is required. Make the necessary
+     * preparations to be ready for recovering transactions.
+     */
+    void prepareForRecoveryRequired();
+
     // ====================================================================
     // All these methods below are temporary while in the process of
     // creating this API, take little notice to them, as they will go away
     // ====================================================================
-    @Deprecated
-    TransactionIdStore transactionIdStore();
-
-    @Deprecated
-    LogVersionRepository logVersionRepository();
-
-    @Deprecated
-    NeoStores neoStores();
-
-    @Deprecated
-    MetaDataStore metaDataStore();
-
-    @Deprecated
-    IndexingService indexingService();
-
-    @Deprecated
-    LabelScanStore labelScanStore();
-
-    @Deprecated
-    IntegrityValidator integrityValidator();
-
-    @Deprecated
-    SchemaIndexProviderMap schemaIndexProviderMap();
-
-    @Deprecated
-    CacheAccessBackDoor cacheAccess();
-
-    @Deprecated
-    LegacyIndexApplierLookup legacyIndexApplierLookup();
-
-    @Deprecated
-    IndexConfigStore indexConfigStore();
-
-    @Deprecated
-    IdOrderingQueue legacyIndexTransactionOrdering();
 
     @Deprecated
     void loadSchemaCache();
+
+    /**
+     * TEMPORARY method as this potentially exposes internal services which shouldn't really be accessible
+     * outside the boundaries of this API. This is here as a transitional method while there still
+     * exists abstraction leaks.
+     *
+     * @param satisfier {@link DependencySatisfier} to satisfy with internal service which still are needed
+     * outside this interface.
+     * @deprecated since accessing internal services like this shouldn't be required if all abstractions
+     * are correct and doesn't leak.
+     */
+    @Deprecated
+    void satisfyDependencies( DependencySatisfier satisfier );
 }

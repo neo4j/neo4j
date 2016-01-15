@@ -22,8 +22,8 @@ package org.neo4j.coreedge.raft.replication.token;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -47,11 +47,12 @@ public class ReplicatedLabelTokenHolder extends ReplicatedTokenHolder<Token,Labe
     }
 
     @Override
-    protected TokenStore<LabelTokenRecord,Token> resolveStore()
+    protected void createToken( TransactionState txState, String tokenName, int tokenId )
     {
-        return dependencies.resolveDependency( NeoStores.class ).getLabelTokenStore();
+        txState.labelDoCreateForName( tokenName, tokenId );
     }
 
+    @Override
     protected Command.TokenCommand<LabelTokenRecord> createCommand( LabelTokenRecord before, LabelTokenRecord after )
     {
         return new Command.LabelTokenCommand( before, after );

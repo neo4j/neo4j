@@ -87,4 +87,9 @@ public class InMemoryTokenCache<TOKEN extends Token>
     {
         return idToToken.values();
     }
+
+    public int size()
+    {
+        return nameToId.size();
+    }
 }

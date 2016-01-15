@@ -28,6 +28,8 @@ import javax.management.ObjectName;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 public class KernelBean extends Neo4jMBean implements Kernel
@@ -116,10 +118,12 @@ public class KernelBean extends Neo4jMBean implements Kernel
         @Override
         public void registered( NeoStoreDataSource ds )
         {
-            storeCreationDate = ds.getCreationTime();
-            storeLogVersion = ds.getCurrentLogVersion();
+            StoreId id = ds.getStoreId();
+            storeLogVersion =
+                    ds.getDependencyResolver().resolveDependency( LogVersionRepository.class ).getCurrentLogVersion();
+            storeCreationDate = id.getCreationTime();
             isReadOnly = ds.isReadOnly();
-            storeId = ds.getRandomIdentifier();
+            storeId = id.getRandomId();
 
             try
             {

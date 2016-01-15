@@ -26,10 +26,8 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
@@ -122,14 +120,10 @@ public interface EntityReadOperations
 
     Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId );
 
-    Cursor<NodeItem> nodeCursor( TxStateHolder txStateHolder, StoreStatement statement, long nodeId );
-
     Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
             throws EntityNotFoundException;
 
     Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId );
-
-    Cursor<RelationshipItem> relationshipCursor( TxStateHolder txStateHolder, StoreStatement statement, long relId );
 
     Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement );
 
@@ -172,4 +166,7 @@ public interface EntityReadOperations
             IndexDescriptor index,
             Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException;
 
+    long nodesGetCount( KernelStatement statement );
+
+    long relationshipsGetCount( KernelStatement statement );
 }

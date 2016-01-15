@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.Visitor;
@@ -47,6 +48,7 @@ import org.neo4j.register.Registers;
 
 import static java.lang.String.format;
 
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -145,7 +147,12 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     public StoreScan<IndexPopulationFailedKernelException> indexAllNodes()
     {
-        return storeView.visitNodes( labelIds(), propertyKeyIds(), new NodePopulationVisitor() );
+        int[] labelIds = labelIds();
+        int[] propertyKeyIds = propertyKeyIds();
+        IntPredicate labelIdFilter = (labelId) -> contains( labelIds, labelId );
+        IntPredicate propertyKeyIdFilter = (propertyKeyId) -> contains( propertyKeyIds, propertyKeyId );
+
+        return storeView.visitNodes( labelIdFilter, propertyKeyIdFilter, new NodePopulationVisitor(), null );
     }
 
     /**

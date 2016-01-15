@@ -24,9 +24,8 @@ import java.util.Collection;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
@@ -79,9 +78,9 @@ public class LogEntryWriter
         tx.accept( serializer );
     }
 
-    public void serialize( Collection<Command> commands ) throws IOException
+    public void serialize( Collection<StorageCommand> commands ) throws IOException
     {
-        for ( Command command : commands )
+        for ( StorageCommand command : commands )
         {
             serializer.visit( command );
         }

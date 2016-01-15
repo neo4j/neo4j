@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Map;
 
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -39,15 +38,11 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
@@ -113,11 +108,6 @@ public class StoreMigratorFrom21IT
         database = builder.newGraphDatabase();
         // Upgrade is now completed. Verify the contents:
         DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
-        NeoStoresSupplier supplier = dependencyResolver.resolveDependency( NeoStoresSupplier.class );
-        NeoStores store = supplier.get();
-        NodeStore nodeStore = store.getNodeStore();
-        RelationshipStore relStore = store.getRelationshipStore();
-        PropertyStore propertyStore = store.getPropertyStore();
 
         // Verify that the properties appear correct to the outside world:
         try ( Transaction ignore = database.beginTx() )
@@ -167,38 +157,17 @@ public class StoreMigratorFrom21IT
 
         // Verify that there are no two properties on the entities, that have the same key:
         // (This is important because the verification above cannot tell if we have two keys with the same value)
-        verifyNoDuplicatePropertyKeys( propertyStore, nodeStore.getRecord( 0 ).getNextProp() );
-        verifyNoDuplicatePropertyKeys( propertyStore, nodeStore.getRecord( 1 ).getNextProp() );
-        verifyNoDuplicatePropertyKeys( propertyStore, nodeStore.getRecord( 2 ).getNextProp() );
-        verifyNoDuplicatePropertyKeys( propertyStore, relStore.getRecord( 0 ).getNextProp() );
-        verifyNoDuplicatePropertyKeys( propertyStore, relStore.getRecord( 1 ).getNextProp() );
+        KernelAPI kernel = dependencyResolver.resolveDependency( KernelAPI.class );
+        try ( KernelTransaction tx = kernel.newTransaction(); Statement statement = tx.acquireStatement() )
+        {
+            IteratorUtil.asUniqueSet( statement.readOperations().nodeGetPropertyKeys( 0 ) );
+            IteratorUtil.asUniqueSet( statement.readOperations().nodeGetPropertyKeys( 1 ) );
+            IteratorUtil.asUniqueSet( statement.readOperations().nodeGetPropertyKeys( 2 ) );
+            IteratorUtil.asUniqueSet( statement.readOperations().relationshipGetPropertyKeys( 0 ) );
+            IteratorUtil.asUniqueSet( statement.readOperations().relationshipGetPropertyKeys( 1 ) );
+        }
 
         database.shutdown();
-    }
-
-    private void verifyNoDuplicatePropertyKeys( PropertyStore propertyStore, long firstPropertyId )
-    {
-        HashSet<Integer> propertiesInUse = new HashSet<>();
-        long nextPropertyId = firstPropertyId;
-        while ( nextPropertyId != -1 )
-        {
-            PropertyRecord propertyRecord = propertyStore.getRecord( nextPropertyId );
-            nextPropertyId = propertyRecord.getNextProp();
-            if ( !propertyRecord.inUse() )
-            {
-                continue;
-            }
-
-            for ( PropertyBlock propertyBlock : propertyRecord )
-            {
-                if ( !propertiesInUse.add( propertyBlock.getKeyIndexId() ) )
-                {
-                    throw new AssertionError( String.format(
-                            "Found a duplicate property in use: %s", propertyBlock.getKeyIndexId()
-                    ) );
-                }
-            }
-        }
     }
 
     private void verifyPropertiesEqual( PropertyContainer entity, Pair<String,String>... expectedProperties )

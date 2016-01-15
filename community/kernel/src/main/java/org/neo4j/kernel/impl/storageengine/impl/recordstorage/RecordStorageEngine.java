@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplierFacade;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
@@ -67,7 +66,6 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -77,19 +75,19 @@ import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexUpdatesWork;
 import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
+import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.CommandsToApply;
@@ -105,10 +103,10 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
@@ -132,7 +130,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final IntegrityValidator integrityValidator;
     private final CacheAccessBackDoor cacheAccess;
     private final LabelScanStore labelScanStore;
-    private final DefaultSchemaIndexProviderMap providerMap;
+    private final DefaultSchemaIndexProviderMap schemaIndexProviderMap;
     private final LegacyIndexApplierLookup legacyIndexApplierLookup;
     private final Runnable schemaStateChangeCallback;
     private final SchemaStorage schemaStorage;
@@ -142,6 +140,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
     private final CommandReaderFactory commandReaderFactory;
     private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync;
+    private final NeoStoreIndexStoreView indexStoreView;
+    private final LegacyIndexProviderLookup legacyIndexProviderLookup;
 
     public RecordStorageEngine(
             File storeDir,
@@ -163,7 +163,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             DatabaseHealth databaseHealth,
             LabelScanStoreProvider labelScanStoreProvider,
             LegacyIndexProviderLookup legacyIndexProviderLookup,
-            IndexConfigStore indexConfigStore )
+            IndexConfigStore indexConfigStore,
+            IdOrderingQueue legacyIndexTransactionOrdering )
     {
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
@@ -171,8 +172,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.schemaStateChangeCallback = schemaStateChangeCallback;
         this.lockService = lockService;
         this.databaseHealth = databaseHealth;
+        this.legacyIndexProviderLookup = legacyIndexProviderLookup;
         this.indexConfigStore = indexConfigStore;
         this.constraintSemantics = constraintSemantics;
+        this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
 
         final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
         neoStores = storeFactory.openAllNeoStores( true );
@@ -182,10 +185,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             schemaCache = new SchemaCache( constraintSemantics, Collections.<SchemaRule>emptyList() );
             schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
 
-            providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
+            schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( indexProvider );
+            indexStoreView = new NeoStoreIndexStoreView( lockService, neoStores );
             indexingService = IndexingServiceFactory.createIndexingService(
-                    new IndexSamplingConfig( config ), scheduler, providerMap,
-                    new NeoStoreIndexStoreView( lockService, neoStores ), tokenNameLookup,
+                    new IndexSamplingConfig( config ), scheduler, schemaIndexProviderMap,
+                    indexStoreView, tokenNameLookup,
                     toList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() ), logProvider,
                     indexingServiceMonitor, schemaStateChangeCallback );
 
@@ -200,7 +204,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     storeStatementSupplier( neoStores, config, lockService ) );
             storeLayer = new CacheLayer( diskLayer, schemaCache );
             legacyIndexApplierLookup = new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup );
-            legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
 
             labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
 
@@ -256,7 +259,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState,
-                    schemaStateChangeCallback, schemaStorage, constraintSemantics, providerMap );
+                    schemaStateChangeCallback, schemaStorage, constraintSemantics, schemaIndexProviderMap );
             CountsRecordState countsRecordState = new CountsRecordState();
             txStateVisitor = constraintSemantics.decorateTxStateVisitor(
                     storeLayer,
@@ -340,75 +343,18 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public TransactionIdStore transactionIdStore()
+    public void satisfyDependencies( DependencySatisfier satisfier )
     {
-        return neoStores.getMetaDataStore();
-    }
-
-    @Override
-    public LogVersionRepository logVersionRepository()
-    {
-        return neoStores.getMetaDataStore();
-    }
-
-    @Override
-    public NeoStores neoStores()
-    {
-        return neoStores;
-    }
-
-    @Override
-    public MetaDataStore metaDataStore()
-    {
-        return neoStores.getMetaDataStore();
-    }
-
-    @Override
-    public IndexingService indexingService()
-    {
-        return indexingService;
-    }
-
-    @Override
-    public LabelScanStore labelScanStore()
-    {
-        return labelScanStore;
-    }
-
-    @Override
-    public IntegrityValidator integrityValidator()
-    {
-        return integrityValidator;
-    }
-
-    @Override
-    public SchemaIndexProviderMap schemaIndexProviderMap()
-    {
-        return providerMap;
-    }
-
-    @Override
-    public CacheAccessBackDoor cacheAccess()
-    {
-        return cacheAccess;
-    }
-
-    @Override
-    public LegacyIndexApplierLookup legacyIndexApplierLookup()
-    {
-        return legacyIndexApplierLookup;
-    }
-
-    @Override
-    public IndexConfigStore indexConfigStore()
-    {
-        return indexConfigStore;
-    }
-
-    @Override
-    public IdOrderingQueue legacyIndexTransactionOrdering()
-    {
-        return legacyIndexTransactionOrdering;
+        satisfier.satisfyDependency( legacyIndexApplierLookup );
+        satisfier.satisfyDependency( cacheAccess );
+        satisfier.satisfyDependency( indexStoreView );
+        satisfier.satisfyDependency( schemaIndexProviderMap );
+        satisfier.satisfyDependency( integrityValidator );
+        satisfier.satisfyDependency( labelScanStore );
+        satisfier.satisfyDependency( indexingService );
+        // providing TransactionIdStore, LogVersionRepository
+        satisfier.satisfyDependency( neoStores.getMetaDataStore() );
+        satisfier.satisfyDependency( indexStoreView );
     }
 
     @Override
@@ -456,5 +402,54 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         labelScanStore.shutdown();
         indexingService.shutdown();
         neoStores.close();
+    }
+
+    @Override
+    public void flushAndForce()
+    {
+        indexingService.forceAll();
+        labelScanStore.force();
+        for ( IndexImplementation index : legacyIndexProviderLookup.all() )
+        {
+            index.force();
+        }
+        neoStores.flush();
+    }
+
+    @Override
+    public void registerDiagnostics( DiagnosticsManager diagnosticsManager )
+    {
+        neoStores.registerDiagnostics( diagnosticsManager );
+        diagnosticsManager.register( new TransactionRangeDiagnostics( null ), neoStores );
+    }
+
+    @Override
+    public void forceClose()
+    {
+        try
+        {
+            shutdown();
+        }
+        catch ( Throwable e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    @Override
+    public void prepareForRecoveryRequired()
+    {
+        neoStores.deleteIdGenerators();
+    }
+
+    /**
+     * @return the underlying {@link NeoStores} which should <strong>ONLY</strong> be accessed by tests
+     * until all tests are properly converted to not rely on access to {@link NeoStores}. Currently there
+     * are important tests which asserts details about the neo stores that are very important to test,
+     * but to convert all those tests might be a bigger piece of work.
+     */
+    public NeoStores testAccessNeoStores()
+    {
+        return neoStores;
     }
 }

@@ -28,33 +28,36 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.core.InMemoryTokenCache;
 import org.neo4j.kernel.impl.core.NonUniqueTokenException;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
-import org.neo4j.kernel.impl.transaction.state.RecordChanges;
-import org.neo4j.kernel.impl.transaction.state.TokenCreator;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
-import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.TokenFactory;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
 
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 
@@ -69,7 +72,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
     private final IdType tokenIdType;
     private final TokenFactory<TOKEN> tokenFactory;
     private final TokenType type;
-    private long timeoutMillis;
+    private final long timeoutMillis;
 
     private final TokenFutures tokenFutures = new TokenFutures();
     private long lastCommittedIndex = Long.MAX_VALUE;
@@ -150,23 +153,24 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
 
     private byte[] createCommands( String tokenName )
     {
-        long tokenId = idGeneratorFactory.get( tokenIdType ).nextId();
-
-        TokenStore<RECORD,TOKEN> tokenStore = resolveStore();
-        RecordAccess.Loader<Integer,RECORD,Void> recordLoader = resolveLoader( tokenStore );
-
-        RecordChanges<Integer,RECORD,Void> recordAccess = new RecordChanges<>( recordLoader, new IntCounter() );
-        TokenCreator<RECORD,TOKEN> tokenCreator = new TokenCreator<>( tokenStore );
-        tokenCreator.createToken( tokenName, (int) tokenId, recordAccess );
-
-        Collection<Command> commands = new ArrayList<>();
-        for ( RecordAccess.RecordProxy<Integer,RECORD, Void> record : recordAccess.changes() )
+        StorageEngine storageEngine = dependencies.resolveDependency( StorageEngine.class );
+        Collection<StorageCommand> commands = new ArrayList<>();
+        TransactionState txState = new TxState();
+        int tokenId = Math.toIntExact( idGeneratorFactory.get( tokenIdType ).nextId() );
+        createToken( txState, tokenName, tokenId );
+        try
         {
-            commands.add( createCommand( record.getBefore(), record.forReadingLinkage() ) );
+            storageEngine.createCommands( commands, txState, ResourceLocker.NONE, Long.MAX_VALUE );
+        }
+        catch ( CreateConstraintFailureException | TransactionFailureException | ConstraintValidationKernelException e )
+        {
+            throw new RuntimeException( "Unable to create token '" + tokenName + "'", e );
         }
 
         return ReplicatedTokenRequestSerializer.createCommandBytes( commands );
     }
+
+    protected abstract void createToken( TransactionState txState, String tokenName, int tokenId );
 
     @Override
     public TOKEN getTokenById( int id ) throws TokenNotFoundException
@@ -271,12 +275,16 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
 
     protected abstract RecordAccess.Loader<Integer,RECORD,Void> resolveLoader( TokenStore<RECORD,TOKEN> tokenStore );
 
-    protected abstract TokenStore<RECORD,TOKEN> resolveStore();
-
     protected abstract Command.TokenCommand<RECORD> createCommand( RECORD before, RECORD after );
 
     public void setLastCommittedIndex( long lastCommittedIndex )
     {
         this.lastCommittedIndex = lastCommittedIndex;
+    }
+
+    @Override
+    public int size()
+    {
+        return tokenCache.size();
     }
 }

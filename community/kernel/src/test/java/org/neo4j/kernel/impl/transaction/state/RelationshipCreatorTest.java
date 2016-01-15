@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -83,7 +84,7 @@ public class RelationshipCreatorTest
     private NeoStores flipToNeoStores()
     {
         return dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency(
-                NeoStoresSupplier.class ).get();
+                RecordStorageEngine.class ).testAccessNeoStores();
     }
 
     private long createNodeWithRelationships( int count )

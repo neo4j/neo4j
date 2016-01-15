@@ -39,6 +39,7 @@ public class GetAllDocIT extends AbstractPluginTestBase
     private static final String GET_ALL_RELATIONSHIPS = "getAllRelationships";
     private static final String GET_ALL_NODES = "get_all_nodes";
 
+    @Override
     protected String getDocumentationSectionName()
     {
         return "rest-api";
@@ -78,7 +79,7 @@ public class GetAllDocIT extends AbstractPluginTestBase
     @Test
     public void shouldReturnAllRelationshipsOnPost() throws JsonParseException
     {
-        int numberOfRelationships = helper.getNumberOfRelationships();
+        int numberOfRelationships = Math.toIntExact( helper.getNumberOfRelationships() );
         helper.createRelationship( "test" );
 
         String uri = (String) getDatabaseLevelPluginMetadata( GetAll.class ).get( GET_ALL_RELATIONSHIPS );

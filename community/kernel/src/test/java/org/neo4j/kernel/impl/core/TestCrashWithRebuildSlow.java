@@ -43,9 +43,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -199,7 +199,7 @@ public class TestCrashWithRebuildSlow
     {
         final Map<IdType,Long> highIds = new HashMap<>();
         NeoStores neoStores = db.getDependencyResolver().resolveDependency(
-                DataSourceManager.class ).getDataSource().getNeoStores();
+                RecordStorageEngine.class ).testAccessNeoStores();
         Visitor<CommonAbstractStore,RuntimeException> visitor = new Visitor<CommonAbstractStore,RuntimeException>()
         {
             @Override

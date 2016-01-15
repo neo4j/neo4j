@@ -78,6 +78,7 @@ import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.Token;
@@ -312,7 +313,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int[] relTypes )
+    public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int... relTypes )
             throws EntityNotFoundException
     {
         statement.assertOpen();
@@ -468,6 +469,20 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         dataRead().relationshipVisit( statement, relId, visitor );
+    }
+
+    @Override
+    public long nodesGetCount()
+    {
+        statement.assertOpen();
+        return dataRead().nodesGetCount( statement );
+    }
+
+    @Override
+    public long relationshipsGetCount()
+    {
+        statement.assertOpen();
+        return dataRead().relationshipsGetCount( statement );
     }
 
     // </DataRead>
@@ -794,6 +809,28 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         return tokenRead().relationshipTypeGetName( statement, relationshipTypeId );
     }
+
+    @Override
+    public int labelCount()
+    {
+        statement.assertOpen();
+        return tokenRead().labelCount( statement );
+    }
+
+    @Override
+    public int propertyKeyCount()
+    {
+        statement.assertOpen();
+        return tokenRead().propertyKeyCount( statement );
+    }
+
+    @Override
+    public int relationshipTypeCount()
+    {
+        statement.assertOpen();
+        return tokenRead().relationshipTypeCount( statement );
+    }
+
     // </TokenRead>
 
     // <TokenWrite>
@@ -1297,6 +1334,22 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         return counting().countsForRelationshipWithoutTxState( statement, startLabelId, typeId, endLabelId );
+    }
+
+    @Override
+    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
+            throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return counting().indexUpdatesAndSize( statement, index, target );
+    }
+
+    @Override
+    public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
+            throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return counting().indexSample( statement, index, target );
     }
 
     // </Counts>

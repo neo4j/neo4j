@@ -49,6 +49,8 @@ import org.neo4j.perftest.enterprise.util.Parameters;
 import org.neo4j.perftest.enterprise.util.Setting;
 
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
+import static org.neo4j.kernel.impl.api.index.IndexStoreView.EMPTY;
+import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
 import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
 import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
@@ -147,7 +149,8 @@ public class ConsistencyPerformanceCheck
                 DirectoryFactory.PERSISTENT,
                 storeDir );
         return new DirectStoreAccess( new StoreAccess( neoStores ).initialize(),
-                new LuceneLabelScanStoreBuilder( storeDir, neoStores, fileSystem, NullLogProvider.getInstance() ).build(), indexes );
+                new LuceneLabelScanStoreBuilder( storeDir, fullStoreLabelUpdateStream( () -> EMPTY ), fileSystem,
+                        NullLogProvider.getInstance() ).build(), indexes );
     }
 
     private static Config buildTuningConfiguration( Configuration configuration )

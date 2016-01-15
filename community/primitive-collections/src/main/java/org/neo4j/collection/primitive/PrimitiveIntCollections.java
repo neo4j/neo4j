@@ -750,4 +750,16 @@ public class PrimitiveIntCollections
         }
         return set;
     }
+
+    public static boolean contains( int[] values, int candidate )
+    {
+        for ( int i = 0; i < values.length; i++ )
+        {
+            if ( values[i] == candidate )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }

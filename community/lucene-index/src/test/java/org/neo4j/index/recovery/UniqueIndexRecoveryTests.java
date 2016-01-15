@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -254,6 +254,6 @@ public class UniqueIndexRecoveryTests
 
     private void flushAll()
     {
-        db.getDependencyResolver().resolveDependency( StoreFlusher.class ).forceEverything();
+        db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce();
     }
 }

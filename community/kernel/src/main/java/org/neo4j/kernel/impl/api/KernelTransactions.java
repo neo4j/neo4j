@@ -34,9 +34,9 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -69,6 +69,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     private final Tracers tracers;
     private final StorageEngine storageEngine;
     private final Procedures procedures;
+    private final TransactionIdStore transactionIdStore;
 
     private final Set<KernelTransaction> allTransactions = newSetFromMap( new ConcurrentHashMap<>() );
 
@@ -85,7 +86,8 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                                LifeSupport dataSourceLife,
                                Tracers tracers,
                                StorageEngine storageEngine,
-                               Procedures procedures )
+                               Procedures procedures,
+                               TransactionIdStore transactionIdStore )
     {
         this.locks = locks;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -101,6 +103,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         this.tracers = tracers;
         this.storageEngine = storageEngine;
         this.procedures = procedures;
+        this.transactionIdStore = transactionIdStore;
     }
 
     @Override
@@ -112,7 +115,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         LegacyIndexTransactionState legacyIndexTransactionState =
                 new LegacyIndexTransactionStateImpl( indexConfigStore, legacyIndexProviderLookup );
 
-        long lastTransactionIdWhenStarted = ((MetaDataStore)storageEngine.metaDataStore()).getLastCommittedTransactionId();
+        long lastTransactionIdWhenStarted = transactionIdStore.getLastCommittedTransactionId();
 
         KernelTransactionImplementation tx = new KernelTransactionImplementation( statementOperations, schemaWriteGuard,
                 locksClient, hooks, constraintIndexCreator, procedures, transactionHeaderInformationFactory,

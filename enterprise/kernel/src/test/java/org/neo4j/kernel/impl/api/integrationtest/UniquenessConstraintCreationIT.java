@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -256,7 +257,7 @@ public class UniquenessConstraintCreationIT extends AbstractConstraintCreationIT
 
     private NeoStores neoStores()
     {
-        return db.getDependencyResolver().resolveDependency( NeoStores.class );
+        return db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
     }
 
     @Test
