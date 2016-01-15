@@ -31,32 +31,27 @@ import scala.collection.GenTraversableOnce
 case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[IdName])
 
 case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
-                               updateGraph: UpdateGraph = UpdateGraph.empty,
                                horizon: QueryHorizon = QueryProjection.empty,
                                tail: Option[PlannerQuery] = None) extends PlannerQuery {
   // This is here to stop usage of copy from the outside
   override protected def copy(queryGraph: QueryGraph = queryGraph,
-                              updateGraph: UpdateGraph = updateGraph,
                               horizon: QueryHorizon = horizon,
                               tail: Option[PlannerQuery] = tail) =
-    RegularPlannerQuery(queryGraph, updateGraph, horizon, tail)
+    RegularPlannerQuery(queryGraph, horizon, tail)
 }
 
 case class MergePlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
-                             updateGraph: UpdateGraph = UpdateGraph.empty,
                              horizon: QueryHorizon = QueryProjection.empty,
                              tail: Option[PlannerQuery] = None) extends PlannerQuery {
   // This is here to stop usage of copy from the outside
   override protected def copy(queryGraph: QueryGraph = queryGraph,
-                              updateGraph: UpdateGraph = updateGraph,
                               horizon: QueryHorizon = horizon,
                               tail: Option[PlannerQuery] = tail) =
-    MergePlannerQuery(queryGraph, updateGraph, horizon, tail)
+    MergePlannerQuery(queryGraph, horizon, tail)
 }
 
 sealed trait PlannerQuery extends PageDocFormatting {
   val queryGraph: QueryGraph
-  val updateGraph: UpdateGraph
   val horizon: QueryHorizon
   val tail: Option[PlannerQuery]
 
@@ -71,7 +66,6 @@ sealed trait PlannerQuery extends PageDocFormatting {
   def last: PlannerQuery = tail.map(_.last).getOrElse(this)
 
   def lastQueryGraph: QueryGraph = last.queryGraph
-  def lastUpdateGraph: UpdateGraph = last.updateGraph
   def lastQueryHorizon: QueryHorizon = last.horizon
 
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
@@ -79,29 +73,11 @@ sealed trait PlannerQuery extends PageDocFormatting {
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
-  def readOnly: Boolean = {
-    val a: Boolean = updateGraph.isEmpty
-    val c: Boolean = tail.map(_.readOnly).getOrElse(true)
-    a && c
-  }
-
-  def writeOnly: Boolean = queryGraph.isEmpty && updateGraph.nonEmpty && tail.map(_.writeOnly).getOrElse(true)
-
-  def writes: Boolean = exists(_.updateGraph.nonEmpty) || tail.exists(_.writes)
-
-  def createsNodes: Boolean = exists(_.updateGraph.createNodePatterns.nonEmpty) || tail.exists(_.createsNodes)
-
-  def updatesNodes: Boolean = exists(_.updateGraph.updatesNodes) || tail.exists(_.updatesNodes)
-
-  def writesRelationships: Boolean = exists(_.updateGraph.createRelationshipPatterns.nonEmpty) || tail.exists(_.writesRelationships)
-
   def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]) = copy(queryGraph = queryGraph.withoutHints(hintsToIgnore))
 
   def withHorizon(horizon: QueryHorizon): PlannerQuery = copy(horizon = horizon)
 
   def withQueryGraph(queryGraph: QueryGraph): PlannerQuery = copy(queryGraph = queryGraph)
-
-  def withUpdateGraph(updateGraph: UpdateGraph) = copy(updateGraph = updateGraph)
 
   def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
 
@@ -116,8 +92,6 @@ sealed trait PlannerQuery extends PageDocFormatting {
   }
 
   def amendQueryGraph(f: QueryGraph => QueryGraph): PlannerQuery = withQueryGraph(f(queryGraph))
-
-  def amendUpdateGraph(f: UpdateGraph => UpdateGraph): PlannerQuery = withUpdateGraph(f(updateGraph))
 
   def updateHorizon(f: QueryHorizon => QueryHorizon): PlannerQuery = withHorizon(f(horizon))
 
@@ -139,13 +113,14 @@ sealed trait PlannerQuery extends PageDocFormatting {
   def exists(f: PlannerQuery => Boolean): Boolean =
     f(this) || tail.exists(_.exists(f))
 
+  def all(f: PlannerQuery => Boolean): Boolean = !exists(x => !f(x))
+
   def ++(other: PlannerQuery): PlannerQuery = {
     (this.horizon, other.horizon) match {
       case (a: RegularQueryProjection, b: RegularQueryProjection) =>
         RegularPlannerQuery(
           horizon = a ++ b,
           queryGraph = queryGraph ++ other.queryGraph,
-          updateGraph = updateGraph ++ other.updateGraph,
           tail = either(tail, other.tail)
         )
 
@@ -162,7 +137,6 @@ sealed trait PlannerQuery extends PageDocFormatting {
 
   // This is here to stop usage of copy from the outside
   protected def copy(queryGraph: QueryGraph = queryGraph,
-                     updateGraph: UpdateGraph = updateGraph,
                      horizon: QueryHorizon = horizon,
                      tail: Option[PlannerQuery] = tail): PlannerQuery
 
@@ -191,10 +165,6 @@ sealed trait PlannerQuery extends PageDocFormatting {
   //Returns a list of query graphs from this plannerquery and all of its tails
   def allQueryGraphs: Seq[QueryGraph] = allPlannerQueries.map(_.queryGraph)
 
-  //Returns a list of update graphs from this plannerquery and all of its tails
-  def allUpdateGraphs: Seq[UpdateGraph] = allPlannerQueries.map(_.updateGraph)
-
-
   //Returns list of planner query and all of its tails
   def allPlannerQueries: Seq[PlannerQuery] = {
     @tailrec
@@ -218,8 +188,8 @@ object PlannerQuery {
   }
 
   def asMergePlannerQuery(plannerQuery: PlannerQuery) = plannerQuery match {
-    case RegularPlannerQuery(queryGraph, updateGraph, horizon, tail) =>
-      MergePlannerQuery(queryGraph, updateGraph, horizon, tail)
+    case RegularPlannerQuery(queryGraph, horizon, tail) =>
+      MergePlannerQuery(queryGraph, horizon, tail)
     case _: MergePlannerQuery =>
       plannerQuery
   }
@@ -235,13 +205,13 @@ object CardinalityEstimation {
 
   def lift(plannerQuery: PlannerQuery, cardinality: Cardinality) = plannerQuery match {
     case _: RegularPlannerQuery =>
-      new RegularPlannerQuery(plannerQuery.queryGraph, plannerQuery.updateGraph, plannerQuery.horizon,
-                              plannerQuery.tail) with CardinalityEstimation {
+      new RegularPlannerQuery(plannerQuery.queryGraph, plannerQuery.horizon, plannerQuery.tail)
+        with CardinalityEstimation {
         val estimatedCardinality = cardinality
       }
     case _: MergePlannerQuery =>
-      new MergePlannerQuery(plannerQuery.queryGraph, plannerQuery.updateGraph, plannerQuery.horizon,
-                            plannerQuery.tail) with CardinalityEstimation {
+      new MergePlannerQuery(plannerQuery.queryGraph, plannerQuery.horizon, plannerQuery.tail)
+        with CardinalityEstimation {
         val estimatedCardinality = cardinality
       }
   }

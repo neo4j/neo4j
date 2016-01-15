@@ -38,7 +38,7 @@ case object countStorePlanner {
 
           query.queryGraph match {
 
-            case QueryGraph(patternRelationships, patternNodes, argumentIds, selections, Seq(), hints, shortestPathPatterns)
+            case QueryGraph(patternRelationships, patternNodes, argumentIds, selections, Seq(), hints, shortestPathPatterns, _)
               if hints.isEmpty && shortestPathPatterns.isEmpty =>
                 if (patternNodes.size == 1 && patternRelationships.isEmpty && patternNodes.head.name == countName && noWrongPredicates(Set(patternNodes.head), selections)) {
                   // MATCH (n), MATCH (n:A)

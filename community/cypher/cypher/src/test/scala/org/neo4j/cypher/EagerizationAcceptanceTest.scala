@@ -685,7 +685,6 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
-
   test("matching reversed directional relationship, deleting relationship and labeled nodes should not be eager") {
     relate(createLabeledNode("A"), createLabeledNode("B"), "T")
     relate(createLabeledNode("A"), createLabeledNode("B"), "T")

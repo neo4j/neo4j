@@ -48,22 +48,22 @@ object Eagerness {
 
   @tailrec
   private def headConflicts(head: PlannerQuery, tail: PlannerQuery, unstableLeaves: Seq[IdName]): Boolean = {
-    val conflict = if (tail.updateGraph.isEmpty) false
+    val conflict = if (tail.queryGraph.readOnly) false
     else {
       //if we have unsafe rels we need to check relation overlap and delete
       //overlap immediately
       (hasUnsafeRelationships(head.queryGraph) &&
-        (tail.updateGraph.relationshipOverlap(head.queryGraph) ||
-          tail.updateGraph.deleteOverlap(head.queryGraph) ||
-          tail.updateGraph.setPropertyOverlap(head.queryGraph))
+        (tail.queryGraph.relationshipOverlap(head.queryGraph) ||
+          tail.queryGraph.deleteOverlap(head.queryGraph) ||
+          tail.queryGraph.setPropertyOverlap(head.queryGraph))
         ) ||
         //otherwise only do checks if we have more that one leaf
         unstableLeaves.exists(
           nodeOverlap(_, head.queryGraph, tail) ||
-            tail.updateGraph.relationshipOverlap(head.queryGraph) ||
-            tail.updateGraph.setLabelOverlap(head.queryGraph) || // TODO:H Verify. Pontus did this a bit differently
-            tail.updateGraph.setPropertyOverlap(head.queryGraph) ||
-            tail.updateGraph.deleteOverlap(head.queryGraph))
+            tail.queryGraph.relationshipOverlap(head.queryGraph) ||
+            tail.queryGraph.setLabelOverlap(head.queryGraph) || // TODO:H Verify. Pontus did this a bit differently
+            tail.queryGraph.setPropertyOverlap(head.queryGraph) ||
+            tail.queryGraph.deleteOverlap(head.queryGraph))
     }
     if (conflict)
       true
@@ -81,8 +81,8 @@ object Eagerness {
     */
   @tailrec
   def conflictInTail(head: PlannerQuery, tail: PlannerQuery): Boolean = {
-    val conflict = if (tail.updateGraph.isEmpty) false
-    else tail.updateGraph overlaps head.queryGraph
+    val conflict = if (tail.queryGraph.readOnly) false
+    else tail.queryGraph overlaps head.queryGraph
     if (conflict)
       true
     else if (tail.tail.isEmpty)
@@ -99,12 +99,12 @@ object Eagerness {
   private def nodeOverlap(currentNode: IdName, headQueryGraph: QueryGraph, tail: PlannerQuery): Boolean = {
     val labelsOnCurrentNode = headQueryGraph.allKnownLabelsOnNode(currentNode).toSet
     val propertiesOnCurrentNode = headQueryGraph.allKnownPropertiesOnIdentifier(currentNode).map(_.propertyKey)
-    val labelsToCreate = tail.updateGraph.createLabels
-    val propertiesToCreate = tail.updateGraph.createNodeProperties
-    val labelsToRemove = tail.updateGraph.labelsToRemoveFromOtherNodes(currentNode)
+    val labelsToCreate = tail.queryGraph.createLabels
+    val propertiesToCreate = tail.queryGraph.createNodeProperties
+    val labelsToRemove = tail.queryGraph.labelsToRemoveFromOtherNodes(currentNode)
 
-    tail.updatesNodes &&
-      (labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tail.createsNodes || //MATCH () CREATE (...)?
+    tail.queryGraph.updatesNodes &&
+      (labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tail.exists(_.queryGraph.createNodePatterns.nonEmpty) || //MATCH () CREATE (...)?
         (labelsOnCurrentNode intersect labelsToCreate).nonEmpty || //MATCH (:A) CREATE (:A)?
         propertiesOnCurrentNode.exists(propertiesToCreate.overlaps) || //MATCH ({prop:42}) CREATE ({prop:...})
 

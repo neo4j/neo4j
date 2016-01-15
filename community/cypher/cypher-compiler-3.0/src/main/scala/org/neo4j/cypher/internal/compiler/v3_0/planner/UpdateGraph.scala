@@ -24,13 +24,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast._
 
 import scala.annotation.tailrec
 
-case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
+trait UpdateGraph {
 
-  def ++(other: UpdateGraph) = copy(mutatingPatterns = mutatingPatterns ++ other.mutatingPatterns)
+  def mutatingPatterns: Seq[MutatingPattern]
 
-  def isEmpty = this == UpdateGraph.empty
-
-  def nonEmpty = !isEmpty
+  def readOnly = mutatingPatterns.isEmpty
+  def containsUpdates = !readOnly
 
   //def allAvailableVariables: Set[IdName] =
     //  createNodePatterns.map(_.)
@@ -128,12 +127,12 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
    * and what is being written here
    */
   def overlaps(qg: QueryGraph) =
-      nonEmpty &&
+      containsUpdates &&
       (createNodeOverlap(qg) || relationshipOverlap(qg) ||
         deleteOverlap(qg) || removeLabelOverlap(qg) || setLabelOverlap(qg) || setPropertyOverlap(qg)
         || deleteOverlapWithMergeIn(this))
 
-  def overlaps(ug: UpdateGraph) = deleteOverlapWithMergeIn(ug)
+  def overlapsXXX(ug: UpdateGraph) = deleteOverlapWithMergeIn(ug)
 
   /*
    * Checks for overlap between nodes being read in the query graph
@@ -230,9 +229,6 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     (identifiersToRead intersect identifiersToDelete).nonEmpty
   }
 
-  def addMutatingPatterns(patterns: MutatingPattern *) =
-    copy(mutatingPatterns = this.mutatingPatterns ++ patterns)
-
   private def removeLabelOverlap(qg: QueryGraph) = {
     removeLabelPatterns.exists {
       case RemoveLabelPattern(removeId, labelsToRemove) =>
@@ -324,13 +320,4 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     case p: SetNodePropertyPattern => p
     case p: SetNodePropertiesFromMapPattern => p
   }
-
-  private def setRelationshipPropertyPatterns = mutatingPatterns.collect {
-    case p: SetRelationshipPropertyPattern => p
-    case p: SetRelationshipPropertiesFromMapPattern => p
-  }
-}
-
-object UpdateGraph {
-  val empty = UpdateGraph()
 }

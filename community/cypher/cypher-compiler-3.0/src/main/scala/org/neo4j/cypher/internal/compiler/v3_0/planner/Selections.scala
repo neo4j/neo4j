@@ -138,4 +138,6 @@ case class Selections(predicates: Set[Predicate] = Set.empty) extends PageDocFor
   }.toSet
 
   def ++(expressions: Expression*): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
+
+  def nonEmpty: Boolean = !isEmpty
 }

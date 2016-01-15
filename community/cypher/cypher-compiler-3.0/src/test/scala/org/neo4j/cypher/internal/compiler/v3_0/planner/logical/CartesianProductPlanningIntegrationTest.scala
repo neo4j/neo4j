@@ -42,7 +42,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         case (_: NodeByLabelScan, _) => 20.0
       }
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _,  _, _) if queryGraph.selections.predicates.size == 1 => 10
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.selections.predicates.size == 1 => 10
       }
     } planFor "MATCH (n), (m) WHERE n.prop = 12 AND m:Label RETURN n, m").plan should beLike {
       case CartesianProduct(_: Selection, _: NodeByLabelScan) => ()

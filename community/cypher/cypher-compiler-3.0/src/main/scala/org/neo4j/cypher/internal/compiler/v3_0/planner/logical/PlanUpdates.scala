@@ -31,18 +31,21 @@ case object PlanUpdates
   extends LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] {
 
   override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
-    query.updateGraph.mutatingPatterns.foldLeft(plan)((plan, pattern) => planUpdate(query, plan, pattern))
+    query.queryGraph.mutatingPatterns.foldLeft(plan) {
+      case (acc, pattern) => planUpdate(query, acc, pattern)
+    }
 
   private def planUpdate(query: PlannerQuery, source: LogicalPlan, pattern: MutatingPattern)(implicit context: LogicalPlanningContext): LogicalPlan = {
     def solvedMergePattern = {
       val solved = PlannerQuery.asMergePlannerQuery(
         source.solved
           .amendQueryGraph(q => q.addPatternNodes(q.optionalMatches.head.patternNodes.toSeq: _*)
-              .addPatternRelationships(q.optionalMatches.head.patternRelationships.toSeq)
-              .withOptionalMatches(Seq.empty)
-              .withArgumentIds(query.queryGraph.argumentIds)
-              .withSelections(query.queryGraph.selections))
-          .amendUpdateGraph(u => u.addMutatingPatterns(pattern)))
+            .addPatternRelationships(q.optionalMatches.head.patternRelationships.toSeq)
+            .withOptionalMatches(Seq.empty)
+            .withArgumentIds(query.queryGraph.argumentIds)
+            .withSelections(query.queryGraph.selections)
+            .addMutatingPatterns(pattern)
+          ))
       val solvedWithEstimate = context.logicalPlanProducer.estimatePlannerQuery(solved)
       solvedWithEstimate
     }

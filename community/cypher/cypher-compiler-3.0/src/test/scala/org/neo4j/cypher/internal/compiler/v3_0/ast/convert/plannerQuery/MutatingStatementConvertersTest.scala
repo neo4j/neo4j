@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{SimplePatternLength, PatternRelationship, IdName}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Null, SignedDecimalIntegerLiteral, PropertyKeyName}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{RelTypeName, Null, SignedDecimalIntegerLiteral, PropertyKeyName}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -34,7 +35,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     ))
 
     query.queryGraph.patternNodes should equal(Set(IdName("n")))
-    query.updateGraph.mutatingPatterns should equal(List(
+    query.queryGraph.mutatingPatterns should equal(List(
       SetNodePropertyPattern(IdName("n"), PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("42")(pos))
     ))
   }
@@ -46,7 +47,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     ))
 
     query.queryGraph.patternNodes should equal(Set(IdName("n")))
-    query.updateGraph.mutatingPatterns should equal(List(
+    query.queryGraph.mutatingPatterns should equal(List(
       SetNodePropertyPattern(IdName("n"), PropertyKeyName("prop")(pos), Null()(pos))
     ))
   }
@@ -60,7 +61,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     query.queryGraph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, List(), SimplePatternLength)
     ))
-    query.updateGraph.mutatingPatterns should equal(List(
+    query.queryGraph.mutatingPatterns should equal(List(
       SetRelationshipPropertyPattern(IdName("r"), PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("42")(pos))
     ))
   }
@@ -74,9 +75,23 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     query.queryGraph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, List(), SimplePatternLength)
     ))
-    query.updateGraph.mutatingPatterns should equal(List(
+    query.queryGraph.mutatingPatterns should equal(List(
       SetRelationshipPropertyPattern(IdName("r"), PropertyKeyName("prop")(pos), Null()(pos))
     ))
   }
 
+  test("Query with single CREATE clause") {
+    val query = buildPlannerQuery("CREATE (a), (b), (a)-[r:X]->(b) RETURN a, r, b")
+    query.horizon should equal(RegularQueryProjection(
+      projections = Map("a" -> varFor("a"), "r" -> varFor("r"), "b" -> varFor("b"))
+    ))
+
+    query.queryGraph.mutatingPatterns should equal(Seq(
+      CreateNodePattern(IdName("a"), Seq.empty, None),
+      CreateNodePattern(IdName("b"), Seq.empty, None),
+      CreateRelationshipPattern(IdName("r"), IdName("a"), RelTypeName("X")(pos), IdName("b"), None, SemanticDirection.OUTGOING)
+    ))
+
+    query.queryGraph.containsReads should be (false)
+  }
 }

@@ -69,17 +69,12 @@ case object planPart extends ((PlannerQuery, LogicalPlanningContext, Option[Logi
     }
     query match {
       case _: MergePlannerQuery =>
-        val leaf: LogicalPlan = ctx.logicalPlanProducer.planSingleRow()(context)
-        query.updateGraph.mutatingPatterns.foldLeft(leaf)((plan, pattern) => pattern match {
-          case p: MergeNodePattern =>
-            PlanUpdates.planMergeReadPart(plan, p.matchGraph)(context)
-
-          case p: MergeRelationshipPattern =>
-            PlanUpdates.planMergeReadPart(plan, p.matchGraph)(context)
-
-          case p =>
-            plan
-        })
+        val leaf: LogicalPlan = leafPlan.getOrElse(ctx.logicalPlanProducer.planSingleRow()(context))
+        query.queryGraph.mutatingPatterns.foldLeft(leaf) {
+          case (plan, pattern: MergeNodePattern) => PlanUpdates.planMergeReadPart(plan, pattern.matchGraph)(context)
+          case (plan, pattern: MergeRelationshipPattern) => PlanUpdates.planMergeReadPart(plan, pattern.matchGraph)(context)
+          case (p, _) => p
+        }
       case _: RegularPlannerQuery =>
         ctx.strategy.plan(query.queryGraph)(ctx, leafPlan)
     }

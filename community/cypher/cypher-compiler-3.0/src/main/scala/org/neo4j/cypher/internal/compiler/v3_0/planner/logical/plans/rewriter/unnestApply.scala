@@ -57,6 +57,10 @@ case object unnestApply extends Rewriter {
     case original@Apply(lhs, Apply(_: Argument, rhs)) =>
       Apply(lhs, rhs)(original.solved)
 
+    // L Ax (Arg Ax R) => L Ax R
+    case original@AntiConditionalApply(lhs, Apply(_: Argument, rhs), _) =>
+      original.copy(lhs, rhs)(original.solved)
+
     // L Ax (σ R) => σ(L Ax R)
     case o@Apply(lhs, sel@Selection(predicates, rhs)) =>
       Selection(predicates, Apply(lhs, rhs)(o.solved))(o.solved)

@@ -38,7 +38,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
     val expand = Expand(nodeByLabelScan, aId, SemanticDirection.OUTGOING, Seq(RelTypeName("R")(pos)), bId, rId)(solved)
 
     val optional = Optional(expand)(solved)
-    val argument = Argument(Set.empty)(solved)(Map.empty)
+    val argument = SingleRow()(solved)
     val createNodeA = MergeCreateNode(argument, aId, Seq(LabelName("A")(pos)), None)(solved)
     val createNodeB = MergeCreateNode(createNodeA, bId, Seq.empty, None)(solved)
 

@@ -214,6 +214,35 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )(solved))
   }
 
+  test("AntiConditionalApply on apply on optional should be OK") {
+    /*
+                            ACA                  ACA
+                         LHS   Apply       =>  LHS Optional
+                             Arg1  Optional             Expand
+                                     Expand                Arg
+                                       Arg2
+     */
+
+    // Given
+    val lhs: LogicalPlan = newMockedLogicalPlan("a")
+    val arg1: LogicalPlan = Argument(Set(IdName("a")))(solved)()
+    val arg2: LogicalPlan = Argument(Set(IdName("a")))(solved)()
+    val expand: LogicalPlan = Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
+    val optional: LogicalPlan = Optional(expand)(solved)
+    val apply2: LogicalPlan = Apply(arg1, optional)(solved)
+    val apply: LogicalPlan = Apply(lhs, apply2)(solved)
+
+    // When
+    val result = rewrite(apply)
+
+    // Then
+    result should equal(Apply(
+      lhs,
+      Optional(
+        Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))(solved)
+    )(solved))
+  }
+
   private def rewrite(p: LogicalPlan): LogicalPlan =
     iterateUntilConverged((p: LogicalPlan) => p.endoRewrite(unnestApply))(p)
 }

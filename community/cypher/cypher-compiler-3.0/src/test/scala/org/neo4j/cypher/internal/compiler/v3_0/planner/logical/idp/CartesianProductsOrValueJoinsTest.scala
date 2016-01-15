@@ -57,10 +57,10 @@ class CartesianProductsOrValueJoinsTest
         PlannedComponent(QueryGraph(patternNodes = Set("b")), planB),
         PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
       expectedPlan = CartesianProduct(
-        planA,
+        planC,
         CartesianProduct(
           planB,
-          planC
+          planA
         )(solved)
       )(solved))
   }
@@ -93,17 +93,17 @@ class CartesianProductsOrValueJoinsTest
         PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
       expectedPlan =
         Selection(Seq(eq3),
-          ValueHashJoin(planC,
-            ValueHashJoin(planB, planA, eq1)(solved), eq2.switchSides)(solved))(solved))
+          ValueHashJoin(planA,
+            ValueHashJoin(planB, planC, eq2)(solved), eq1.switchSides)(solved))(solved))
   }
 
   private def testThis(graph: QueryGraph, input: Set[PlannedComponent], expectedPlan: LogicalPlan) = {
     new given {
       qg = graph
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set(IdName("a")) => 1000.0
-        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set(IdName("b")) => 2000.0
-        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set(IdName("c")) => 3000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("a")) => 1000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("b")) => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("c")) => 3000.0
         case _ => 100.0
       }
     }.withLogicalPlanningContext { (cfg, ctx) =>

@@ -72,10 +72,10 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
         CartesianProduct(
-          allNodeScanA,
+          allNodeScanC,
           CartesianProduct(
             allNodeScanB,
-            allNodeScanC
+            allNodeScanA
           )(solved)
         )(solved)
       )

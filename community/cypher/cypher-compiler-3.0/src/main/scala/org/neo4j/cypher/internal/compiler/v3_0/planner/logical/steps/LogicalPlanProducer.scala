@@ -339,7 +339,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
         patternRelationships = Set.empty
       ))
 
-    Argument(coveredIds)(solved)(typeInfo)
+    if(coveredIds.isEmpty) SingleRow()(solved) else Argument(coveredIds)(solved)(typeInfo)
   }
 
   def planSingleRow()(implicit context: LogicalPlanningContext) =
@@ -360,7 +360,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
   def planCountStoreNodeAggregation(query: PlannerQuery, idName: IdName, label: Option[LabelName], argumentIds: Set[IdName])
                                    (implicit context: LogicalPlanningContext) = {
-    val solved: PlannerQuery = RegularPlannerQuery(query.queryGraph, query.updateGraph, query.horizon)
+    val solved: PlannerQuery = RegularPlannerQuery(query.queryGraph, query.horizon)
     NodeCountFromCountStore(idName, label, argumentIds)(solved)
   }
 
@@ -368,7 +368,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                                             typeNames: LazyTypes, endLabel: Option[LabelName], bothDirections: Boolean,
                                             argumentIds: Set[IdName])
                                            (implicit context: LogicalPlanningContext) = {
-    val solved: PlannerQuery = RegularPlannerQuery(query.queryGraph, query.updateGraph, query.horizon)
+    val solved: PlannerQuery = RegularPlannerQuery(query.queryGraph, query.horizon)
     RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, bothDirections, argumentIds)(solved)
   }
 
@@ -435,14 +435,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planCreateNode(inner: LogicalPlan, pattern: CreateNodePattern)
                      (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
     CreateNode(inner, pattern.nodeName, pattern.labels, pattern.properties)(solved)
   }
 
   def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNodePattern)(implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
     MergeCreateNode(inner, pattern.nodeName, pattern.labels, pattern.properties)(solved)
   }
@@ -450,7 +450,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planCreateRelationship(inner: LogicalPlan, pattern: CreateRelationshipPattern)
                     (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
     CreateRelationship(inner, pattern.relName, pattern.startNode, pattern.relType,
       pattern.endNode, pattern.properties)(solved)
@@ -459,7 +459,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planMergeCreateRelationship(inner: LogicalPlan, pattern: CreateRelationshipPattern)
                             (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
     MergeCreateRelationship(inner, pattern.relName, pattern.startNode, LazyType(pattern.relType)(context.semanticTable),
       pattern.endNode, pattern.properties)(solved)
@@ -482,7 +482,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression)
                             (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(delete))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(delete))
 
     if (delete.forced) DetachDeleteNode(inner, delete.expression)(solved)
     else DeleteNode(inner, delete.expression)(solved)
@@ -491,7 +491,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planDeleteRelationship(inner: LogicalPlan, delete: DeleteExpression)
                     (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(delete))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(delete))
 
     DeleteRelationship(inner, delete.expression)(solved)
   }
@@ -499,7 +499,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planDeletePath(inner: LogicalPlan, delete: DeleteExpression)
                             (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(delete))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(delete))
 
     if (delete.forced) DetachDeletePath(inner, delete.expression)(solved)
     else DeletePath(inner, delete.expression)(solved)
@@ -507,7 +507,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
   def planDeleteExpression(inner: LogicalPlan, delete: DeleteExpression)
                           (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(delete))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(delete))
 
     if (delete.forced) DetachDeleteExpression(inner, delete.expression)(solved)
     else DeleteExpressionPlan(inner, delete.expression)(solved)
@@ -516,7 +516,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planSetLabel(inner: LogicalPlan, pattern: SetLabelPattern)
                     (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
     SetLabels(inner, pattern.idName, pattern.labels)(solved)
   }
@@ -524,7 +524,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planSetNodeProperty(inner: LogicalPlan, pattern: SetNodePropertyPattern)
                   (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
     SetNodeProperty(inner, pattern.idName, pattern.propertyKey, pattern.expression)(solved)
   }
@@ -533,7 +533,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                                           pattern: SetNodePropertiesFromMapPattern)
                          (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
     SetNodePropertiesFromMap(inner, pattern.idName, pattern.expression, pattern.removeOtherProps)(solved)
   }
@@ -541,7 +541,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planSetRelationshipProperty(inner: LogicalPlan, pattern: SetRelationshipPropertyPattern)
                          (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
     SetRelationshipPropery(inner, pattern.idName, pattern.propertyKey, pattern.expression)(solved)
   }
@@ -550,7 +550,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                                                   pattern: SetRelationshipPropertiesFromMapPattern)
                                  (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
     SetRelationshipPropertiesFromMap(inner, pattern.idName, pattern.expression, pattern.removeOtherProps)(solved)
   }
@@ -558,7 +558,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planRemoveLabel(inner: LogicalPlan, pattern: RemoveLabelPattern)
                   (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
     RemoveLabels(inner, pattern.idName, pattern.labels)(solved)
   }
@@ -569,7 +569,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     RepeatableRead(inner)(inner.solved)
   }
 
-  def planEager(inner: LogicalPlan) = Eager(inner)(inner.solved)
+  def planEager(inner: LogicalPlan) =
+    Eager(inner)(inner.solved)
 
   implicit def estimatePlannerQuery(plannerQuery: PlannerQuery)(implicit context: LogicalPlanningContext): PlannerQuery with CardinalityEstimation = {
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)

@@ -140,7 +140,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         resultPlans should beLike {
           case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
             plan.solved should beLike {
-              case RegularPlannerQuery(scanQG, _, _, _) =>
+              case RegularPlannerQuery(scanQG, _, _) =>
                 scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, startsWithPredicate)))
             }
         }
@@ -161,7 +161,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         resultPlans should beLike {
           case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
             plan.solved should beLike {
-              case RegularPlannerQuery(scanQG, _, _, _) =>
+              case RegularPlannerQuery(scanQG, _, _) =>
                 scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, ltPredicate)))
             }
         }
@@ -182,7 +182,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         resultPlans should beLike {
           case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
             plan.solved should beLike {
-              case RegularPlannerQuery(scanQG, _, _, _) =>
+              case RegularPlannerQuery(scanQG, _, _) =>
                 scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, neqPredicate)))
             }
         }
@@ -203,7 +203,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         resultPlans should beLike {
           case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
             plan.solved should beLike {
-              case RegularPlannerQuery(scanQG, _, _, _) =>
+              case RegularPlannerQuery(scanQG, _, _) =>
                 scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, eqPredicate)))
             }
         }
@@ -224,7 +224,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         resultPlans should beLike {
           case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
             plan.solved should beLike {
-              case RegularPlannerQuery(scanQG, _, _, _) =>
+              case RegularPlannerQuery(scanQG, _, _) =>
                 scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, regexPredicate)))
             }
         }

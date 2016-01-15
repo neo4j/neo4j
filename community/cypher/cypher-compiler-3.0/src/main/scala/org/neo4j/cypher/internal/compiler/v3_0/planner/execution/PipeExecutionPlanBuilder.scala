@@ -55,7 +55,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors, pipeBuilderFact
         None
     }
 
-    PipeInfo(topLevelPipe, plan.solved.writes, None, fingerprint, context.plannerName)
+    PipeInfo(topLevelPipe, plan.solved.exists(_.queryGraph.containsUpdates), None, fingerprint, context.plannerName)
   }
 
   /*
@@ -78,7 +78,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors, pipeBuilderFact
    build the pipe for 'a'. Thanks for reading this far - I didn't think we would make it!
    */
   private def buildPipe(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): RonjaPipe = {
-    val pipeBuilder = pipeBuilderFactory(monitors, p => buildPipe(p), plan.solved.readOnly)
+    val pipeBuilder = pipeBuilderFactory(monitors = monitors, recurse = p => buildPipe(p), readOnly = plan.solved.all(_.queryGraph.readOnly))
 
     val planStack = new mutable.Stack[LogicalPlan]()
     val pipeStack = new mutable.Stack[RonjaPipe]()

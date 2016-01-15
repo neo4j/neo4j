@@ -198,7 +198,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def buildPlannerQuery(query: String) = {
-    buildPlannerUnionQuery(query).queries.head
+    val queries: Seq[PlannerQuery] = buildPlannerUnionQuery(query).queries
+    queries.head
   }
 
   def buildPlannerUnionQuery(query: String) = {
