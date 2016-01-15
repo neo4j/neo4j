@@ -38,9 +38,15 @@ import java.nio.ByteBuffer;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
+import org.neo4j.coreedge.raft.log.monitoring.RaftLogAppendIndexMonitor;
+import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.coreedge.raft.log.RaftLog.APPEND_INDEX_TAG;
+import static org.neo4j.coreedge.raft.log.RaftLog.COMMIT_INDEX_TAG;
 
 public class NaiveDurableRaftLogTest
 {
@@ -63,8 +69,7 @@ public class NaiveDurableRaftLogTest
         when( fsa.open( Matchers.eq( contentFile ), anyString() ) ).thenReturn( contentChannel );
         when( fsa.open( Matchers.eq( commitFile ), anyString() ) ).thenReturn( commitChannel );
 
-        NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(), new
-                Monitors() );
+        NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer());
 
         // When
         log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );
@@ -102,8 +107,7 @@ public class NaiveDurableRaftLogTest
         when( fsa.open( Matchers.eq( contentFile ), anyString() ) ).thenReturn( contentChannel );
         when( fsa.open( Matchers.eq( commitFile ), anyString() ) ).thenReturn( commitChannel );
 
-        NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(), new
-                Monitors() );
+        NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer());
 
         // When
         log.shutdown();
@@ -144,8 +148,7 @@ public class NaiveDurableRaftLogTest
         when( fsa.open( Matchers.eq( contentFile ), anyString() ) ).thenReturn( contentChannel );
         when( fsa.open( Matchers.eq( commitFile ), anyString() ) ).thenReturn( commitChannel );
 
-        NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(), new
-                Monitors() );
+        NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer());
 
         // When
         try

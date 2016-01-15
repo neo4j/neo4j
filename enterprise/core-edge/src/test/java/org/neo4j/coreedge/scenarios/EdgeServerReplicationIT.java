@@ -187,7 +187,7 @@ public class EdgeServerReplicationIT
         dir.mkdirs();
 
         GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabase( Cluster.edgeSeverStoreDirectory( dir, 1966 ) );
+                .newEmbeddedDatabase( Cluster.edgeServerStoreDirectory( dir, 1966 ) );
 
         try ( Transaction tx = db.beginTx() )
         {

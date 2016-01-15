@@ -49,7 +49,7 @@ public class ReplayRaftLog
         File logDirectory = new File( from );
         System.out.println( "logDirectory = " + logDirectory );
         NaiveDurableRaftLog log = new NaiveDurableRaftLog( new DefaultFileSystemAbstraction(),
-                logDirectory, new RaftContentSerializer(), new Monitors() );
+                logDirectory, new RaftContentSerializer() );
 
         long totalCommittedEntries = log.commitIndex();
 

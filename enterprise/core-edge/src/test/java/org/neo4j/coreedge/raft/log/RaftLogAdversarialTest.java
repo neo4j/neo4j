@@ -43,7 +43,7 @@ public class RaftLogAdversarialTest
     {
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
-        return new NaiveDurableRaftLog( fileSystem, directory, new DummyRaftableContentSerializer(), new Monitors() );
+        return new NaiveDurableRaftLog( fileSystem, directory, new DummyRaftableContentSerializer());
     }
 
     @Test
