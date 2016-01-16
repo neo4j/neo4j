@@ -597,7 +597,6 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = executeWithAllPlanners(
       """
-        |CYPHER PLANNER=COST
         |MATCH p = (:A)-[:T*]-(:A)
         |WITH p WHERE length(p) > 1
         |UNWIND nodes(p)[1..-1] as n
@@ -609,7 +608,6 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     result.close()
   }
-
 
   def shortestPathModel(): Map[String, Node] = {
     val nodes = Map[String, Node](
