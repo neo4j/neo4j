@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, ProcedureName, ProcedureSignature}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.frontend.v3_0.{Foldable, PropertyKeyId, SemanticTable, _}
@@ -173,7 +174,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphSolverInput.empty)
           val plannerQuery = unionQuery.queries.head
           val resultPlan = planner.internalPlan(plannerQuery)(context)
-          SemanticPlan(resultPlan.endoRewrite(repeat(unnestApply)), newTable)
+          SemanticPlan(resultPlan.endoRewrite(fixedPoint(unnestApply)), newTable)
       }
     }
 

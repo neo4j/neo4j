@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0
 
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class RepeatTest extends CypherFunSuite {
@@ -37,7 +38,7 @@ class RepeatTest extends CypherFunSuite {
     count = 0
 
     // when
-    val output = repeat(mockedRewriter)(result)
+    val output = fixedPoint(mockedRewriter)(result)
 
     // then
     output should equal(result)
@@ -49,7 +50,7 @@ class RepeatTest extends CypherFunSuite {
     count = 0
 
     // when
-    val output = repeat(mockedRewriter)(new Object)
+    val output = fixedPoint(mockedRewriter)(new Object)
 
     // then
     output should equal(result)
