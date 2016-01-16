@@ -41,7 +41,8 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
       val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, kit.projectAllEndpoints)
       val leafPlanCandidateListsWithSelections = kit.select(leafPlanCandidateLists, queryGraph).iterator
       val bestLeafPlans: Iterator[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(kit.pickBest(_))
-      val startTable: GreedyPlanTable = leafPlan.foldLeft(GreedyPlanTable.empty)(_ + _)
+      val leafPlanWithSelections = leafPlan.map(kit.select.apply(_, queryGraph))
+      val startTable: GreedyPlanTable = leafPlanWithSelections.foldLeft(GreedyPlanTable.empty)(_ + _)
       bestLeafPlans.foldLeft(startTable)(_ + _)
     }
 
