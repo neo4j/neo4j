@@ -31,7 +31,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndexHits;
-import org.neo4j.kernel.api.ProcedureRead;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
@@ -649,7 +648,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         Procedure.BasicContext ctx = new Procedure.BasicContext();
-        ctx.put( ProcedureRead.readStatement, this );
+        ctx.put( ReadOperations.readStatement, this );
         return procedures.call( ctx, name, input );
     }
 

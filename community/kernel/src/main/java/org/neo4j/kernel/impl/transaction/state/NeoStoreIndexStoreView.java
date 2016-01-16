@@ -51,7 +51,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.register.Registers;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;
+import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;

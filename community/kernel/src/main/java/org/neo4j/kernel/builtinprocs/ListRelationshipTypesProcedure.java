@@ -26,8 +26,8 @@ import org.neo4j.proc.Neo4jTypes;
 import org.neo4j.proc.Procedure;
 import org.neo4j.proc.ProcedureSignature;
 
-import static org.neo4j.kernel.api.ProcedureRead.readStatement;
 import static org.neo4j.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.kernel.api.ReadOperations.readStatement;
 
 public class ListRelationshipTypesProcedure extends Procedure.BasicProcedure
 {
