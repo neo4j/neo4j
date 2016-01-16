@@ -22,6 +22,8 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.unsafe.batchimport.api.Group;
+
 /**
  * Mapping from name to {@link Group}. Assigns proper {@link Group#id() ids} to created groups.
  */

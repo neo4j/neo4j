@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.kernel.impl.store.RelationshipTypeToken;
+
 public interface RelationshipTypeTokenHolder extends TokenHolder<RelationshipTypeToken>
 {
 }

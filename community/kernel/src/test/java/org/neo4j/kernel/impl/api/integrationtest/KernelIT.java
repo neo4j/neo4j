@@ -26,7 +26,9 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -50,6 +52,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
+
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.asJavaSet;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -167,7 +171,11 @@ public class KernelIT extends KernelIntegrationTest
         {
             // Yay!
         }
-
+        finally
+        {
+            statement.close();
+            tx.close();
+        }
     }
 
     @Test
@@ -233,7 +241,7 @@ public class KernelIT extends KernelIntegrationTest
         // THEN
         tx = db.beginTx();
         statement = statementContextSupplier.get();
-        assertEquals( asSet( labelId1 ), asSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
+        assertEquals( asSet( labelId1 ), asJavaSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
         tx.close();
 
     }
@@ -254,7 +262,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertFalse( statement.readOperations().nodeHasLabel( node.getId(), labelId2 ) );
-        assertEquals( asSet( labelId1 ), asSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
+        assertEquals( asSet( labelId1 ), asJavaSet( statement.readOperations().nodeGetLabels( node.getId() ) ) );
 
         statement.close();
         tx.success();
@@ -285,7 +293,7 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         PrimitiveIntIterator labelsIterator = statement.readOperations().nodeGetLabels( node.getId() );
-        Set<Integer> labels = asSet( labelsIterator );
+        Set<Integer> labels = PrimitiveIntCollections.asJavaSet( labelsIterator );
         assertFalse( statement.readOperations().nodeHasLabel( node.getId(), labelId2 ) );
         assertEquals( asSet( labelId1 ), labels );
         statement.close();
@@ -324,7 +332,7 @@ public class KernelIT extends KernelIntegrationTest
         tx.success();
         tx.close();
 
-        assertThat( asSet( labels ), equalTo( Collections.<Integer>emptySet() ) );
+        assertThat( asJavaSet( labels ), equalTo( Collections.<Integer>emptySet() ) );
     }
 
     @Test
@@ -455,7 +463,7 @@ public class KernelIT extends KernelIntegrationTest
             // Ok
         }
 
-        Set<Long> nodes = asSet( statement.readOperations().nodesGetForLabel( labelId ) );
+        Set<Long> nodes = PrimitiveLongCollections.asJavaSet( statement.readOperations().nodesGetForLabel( labelId ) );
 
         statement.close();
 
@@ -486,7 +494,7 @@ public class KernelIT extends KernelIntegrationTest
         Statement statement = statementContextSupplier.get();
         int labelId = statement.readOperations().labelGetForName( label.name() );
         PrimitiveLongIterator nodes = statement.readOperations().nodesGetForLabel( labelId );
-        Set<Long> nodeSet = asSet( nodes );
+        Set<Long> nodeSet = PrimitiveLongCollections.asJavaSet( nodes );
         tx.success();
         tx.close();
 

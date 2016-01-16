@@ -28,9 +28,9 @@ import java.util.function.Supplier;
 
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.Readables;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.UpdateBehaviour;
+import org.neo4j.unsafe.batchimport.api.InputEntity;
+import org.neo4j.unsafe.batchimport.api.InputNode;
+import org.neo4j.unsafe.batchimport.api.UpdateBehaviour;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.Overriden;
 
 import static org.junit.Assert.assertArrayEquals;

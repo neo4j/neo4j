@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.stresstests.transaction.checkpoint;
 
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
+import org.neo4j.unsafe.batchimport.api.Collector;
+import org.neo4j.unsafe.batchimport.api.IdGenerator;
+import org.neo4j.unsafe.batchimport.api.IdMapper;
+import org.neo4j.unsafe.batchimport.api.Input;
+import org.neo4j.unsafe.batchimport.api.InputIterable;
+import org.neo4j.unsafe.batchimport.api.InputIterator;
+import org.neo4j.unsafe.batchimport.api.InputNode;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
-import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
 public class NodeCountInputs implements Input
 {

@@ -36,12 +36,12 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.unsafe.batchimport.api.InputEntity;
+import org.neo4j.unsafe.batchimport.api.InputNode;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 

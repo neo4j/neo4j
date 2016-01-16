@@ -19,14 +19,17 @@
  */
 package org.neo4j.collection.primitive;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.base.Empty;
-
 import static java.util.Arrays.copyOf;
 import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
 
@@ -747,6 +750,43 @@ public class PrimitiveIntCollections
         for ( int value : values )
         {
             set.add( value );
+        }
+        return set;
+    }
+
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
+     * @param iterator the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<Integer>> C addToCollection( PrimitiveIntIterator iterator, C collection )
+    {
+        while ( iterator.hasNext() )
+        {
+            collection.add( iterator.next() );
+        }
+        return collection;
+    }
+
+    public static List<Integer> asList( PrimitiveIntIterator iterator )
+    {
+        List<Integer> out = new ArrayList<>();
+        while(iterator.hasNext())
+        {
+            out.add(iterator.next());
+        }
+        return out;
+    }
+
+    public static Set<Integer> asJavaSet( PrimitiveIntIterator iterator )
+    {
+        Set<Integer> set = new HashSet<>();
+        while ( iterator.hasNext() )
+        {
+            set.add( iterator.next() );
         }
         return set;
     }

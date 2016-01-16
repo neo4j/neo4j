@@ -30,7 +30,9 @@ import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.batchimport.api.Group;
+import org.neo4j.unsafe.batchimport.api.InputEntity;
+import org.neo4j.unsafe.batchimport.api.InputIterator;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_ENTITIES;

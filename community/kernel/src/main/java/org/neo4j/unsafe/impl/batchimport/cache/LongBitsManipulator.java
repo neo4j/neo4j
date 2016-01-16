@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.helpers.Bits;
 
 /**
  * Turns a long into 64 bits of memory where variables can be allocated in, for example:

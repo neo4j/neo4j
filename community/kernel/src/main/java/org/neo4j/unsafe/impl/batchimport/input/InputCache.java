@@ -27,8 +27,12 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.batchimport.api.Input;
+import org.neo4j.unsafe.batchimport.api.InputEntity;
+import org.neo4j.unsafe.batchimport.api.InputIterable;
+import org.neo4j.unsafe.batchimport.api.InputIterator;
+import org.neo4j.unsafe.batchimport.api.InputNode;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 
 /**

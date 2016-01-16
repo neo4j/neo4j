@@ -23,10 +23,10 @@ import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.collection.primitive.PrimitiveLongStack;
+import org.neo4j.collection.primitive.array.LongArray;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
-import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.clearCollision;
 

@@ -29,7 +29,8 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.batchimport.api.InputIterable;
+import org.neo4j.unsafe.batchimport.api.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -38,8 +39,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
+import static org.neo4j.unsafe.batchimport.api.InputEntity.NO_LABELS;
+import static org.neo4j.unsafe.batchimport.api.InputEntity.NO_PROPERTIES;
 
 public class UtilsTest
 {

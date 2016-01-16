@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 import java.util.function.Function;
 
 import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.batchimport.api.InputEntity;
 
 /**
  * Produces a {@link CharSeeker} that can seek and extract values from a csv/tsv style data stream.

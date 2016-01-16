@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.List;
 
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsRecordState;
-import org.neo4j.kernel.impl.api.CountsVisitor;
+import org.neo4j.kernel.impl.store.counts.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.counts.CountsVisitor;
 import org.neo4j.register.Register;
 
 import static org.junit.Assert.assertEquals;

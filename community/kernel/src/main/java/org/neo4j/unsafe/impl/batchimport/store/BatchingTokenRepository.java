@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
+import org.neo4j.kernel.impl.store.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;

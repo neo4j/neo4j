@@ -43,7 +43,7 @@ import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.fs.Files.createOrOpenAsOuputStream;
 
 @Service.Implementation( KernelExtensionFactory.class )
 public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLoggerKernelExtension.Dependencies>

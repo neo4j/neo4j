@@ -31,12 +31,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.counts.CountsVisitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -44,7 +44,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 public class CountsStoreRecoveryTest
 {
@@ -106,7 +105,7 @@ public class CountsStoreRecoveryTest
 
     private void crashAndRestart()
     {
-        FileSystemAbstraction uncleanFs = fsRule.snapshot( shutdownDbAction( db ) );
+        FileSystemAbstraction uncleanFs = fsRule.snapshot( () -> db.shutdown() );
         db = databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
     }
 

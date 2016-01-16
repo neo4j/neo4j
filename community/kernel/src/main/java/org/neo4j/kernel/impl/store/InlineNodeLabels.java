@@ -23,18 +23,17 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.neo4j.helpers.Bits;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.util.Bits;
 
 import static java.lang.Long.highestOneBit;
 import static java.lang.String.format;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.store.LabelIdArray.concatAndSort;
 import static org.neo4j.kernel.impl.store.LabelIdArray.filter;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsBody;
-import static org.neo4j.kernel.impl.util.Bits.bits;
-import static org.neo4j.kernel.impl.util.Bits.bitsFromLongs;
 
 public class InlineNodeLabels implements NodeLabels
 {
@@ -111,7 +110,7 @@ public class InlineNodeLabels implements NodeLabels
         }
 
         byte bitsPerLabel = (byte) (ids.length > 0 ? (LABEL_BITS / ids.length) : LABEL_BITS);
-        Bits bits = bits( 5 );
+        Bits bits = Bits.bits( 5 );
         if ( !inlineValues( ids, bitsPerLabel, bits ) )
         {
             return false;
@@ -148,7 +147,7 @@ public class InlineNodeLabels implements NodeLabels
 
         long existingLabelsField = parseLabelsBody( labelField );
         byte bitsPerLabel = (byte) (LABEL_BITS / numberOfLabels);
-        Bits bits = bitsFromLongs( new long[]{existingLabelsField} );
+        Bits bits = Bits.bitsFromLongs( new long[]{existingLabelsField} );
         long[] result = new long[numberOfLabels];
         for ( int i = 0; i < result.length; i++ )
         {

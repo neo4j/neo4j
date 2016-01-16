@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.NullLog;
@@ -429,7 +430,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         try
         {
             generateInitialData( graphDb );
-            StoreAccess stores = new StoreAccess( graphDb ).initialize();
+            StoreAccess stores = new StoreAccess( graphDb.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get() ).initialize();
             schemaId = stores.getSchemaStore().getHighId();
             nodeId = stores.getNodeStore().getHighId();
             labelId = (int) stores.getLabelTokenStore().getHighId();

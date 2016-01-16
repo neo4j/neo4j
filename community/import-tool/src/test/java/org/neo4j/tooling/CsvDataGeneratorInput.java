@@ -19,16 +19,16 @@
  */
 package org.neo4j.tooling;
 
-import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.batchimport.api.BatchImporter;
+import org.neo4j.unsafe.batchimport.api.Collector;
+import org.neo4j.unsafe.batchimport.api.IdGenerator;
+import org.neo4j.unsafe.batchimport.api.IdMapper;
+import org.neo4j.unsafe.batchimport.api.Input;
+import org.neo4j.unsafe.batchimport.api.InputIterable;
+import org.neo4j.unsafe.batchimport.api.InputIterator;
+import org.neo4j.unsafe.batchimport.api.InputNode;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
-import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;

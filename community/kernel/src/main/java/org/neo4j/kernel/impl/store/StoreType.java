@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.IOException;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.id.IdType;
 
 public enum StoreType
 {
@@ -33,7 +32,7 @@ public enum StoreType
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
                     return neoStores.createDynamicArrayStore( getStoreName(), IdType.NODE_LABELS,
-                            GraphDatabaseSettings.label_block_size );
+                            StoreSettings.label_block_size );
                 }
             },
     NODE( StoreFactory.NODE_STORE_NAME )
@@ -67,7 +66,7 @@ public enum StoreType
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
                     return neoStores.createDynamicStringStore( getStoreName(), IdType.STRING_BLOCK,
-                            GraphDatabaseSettings.string_block_size );
+                            StoreSettings.string_block_size );
                 }
             },
     PROPERTY_ARRAY( StoreFactory.PROPERTY_ARRAYS_STORE_NAME )
@@ -76,7 +75,7 @@ public enum StoreType
                 public CommonAbstractStore open( NeoStores neoStores )
                 {
                     return neoStores.createDynamicArrayStore( getStoreName(), IdType.ARRAY_BLOCK,
-                            GraphDatabaseSettings.array_block_size );
+                            StoreSettings.array_block_size );
                 }
             },
     PROPERTY( StoreFactory.PROPERTY_STORE_NAME )

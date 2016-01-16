@@ -23,6 +23,9 @@ import java.util.function.Function;
 
 import org.neo4j.function.Functions;
 import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.unsafe.batchimport.api.InputEntity;
+import org.neo4j.unsafe.batchimport.api.InputNode;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 
 /**
  * Common {@link InputEntity} decorators, able to provide defaults or overrides.

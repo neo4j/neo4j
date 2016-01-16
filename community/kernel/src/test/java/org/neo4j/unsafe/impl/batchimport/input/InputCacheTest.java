@@ -34,7 +34,11 @@ import org.neo4j.test.RandomRule;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.batchimport.api.Group;
+import org.neo4j.unsafe.batchimport.api.InputEntity;
+import org.neo4j.unsafe.batchimport.api.InputIterator;
+import org.neo4j.unsafe.batchimport.api.InputNode;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 
 import static java.lang.Math.abs;
 import static org.junit.Assert.assertArrayEquals;
@@ -42,8 +46,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
+import static org.neo4j.unsafe.batchimport.api.InputEntity.NO_LABELS;
+import static org.neo4j.unsafe.batchimport.api.InputEntity.NO_PROPERTIES;
 
 public class InputCacheTest
 {

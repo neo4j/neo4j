@@ -69,7 +69,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.consistency.ConsistencyCheckTool.USE_LEGACY_CHECKER;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.ArrayUtil.concat;
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 @RunWith( Parameterized.class )
 public class ConsistencyCheckToolTest
@@ -277,7 +276,7 @@ public class ConsistencyCheckToolTest
             tx.success();
         }
 
-        fs.snapshot( shutdownDbAction( db ) );
+        fs.snapshot( () -> db.shutdown() );
     }
 
     private void runConsistencyCheckToolWith( Monitors monitors, FileSystemAbstraction fileSystem, String... args )

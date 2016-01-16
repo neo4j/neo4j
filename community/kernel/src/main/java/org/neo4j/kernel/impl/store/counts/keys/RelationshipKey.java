@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.counts.keys;
 
-import org.neo4j.kernel.impl.api.CountsVisitor;
-
-import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
-import static org.neo4j.kernel.impl.util.IdPrettyPrinter.relationshipType;
+import org.neo4j.kernel.impl.store.counts.CountsVisitor;
 
 public final class RelationshipKey implements CountsKey
 {
@@ -56,7 +53,7 @@ public final class RelationshipKey implements CountsKey
     public String toString()
     {
         return String.format( "RelationshipKey[(%s)-%s->(%s)]",
-                              label( startLabelId ), relationshipType( typeId ), label( endLabelId ) );
+                              "label=" + startLabelId, "relationshipType=" + typeId, "label=" + endLabelId );
     }
 
     @Override

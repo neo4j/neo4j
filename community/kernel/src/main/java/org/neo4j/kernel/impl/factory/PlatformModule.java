@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.neo4j.diagnostics.DiagnosticsManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -51,7 +52,6 @@ import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;

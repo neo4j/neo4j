@@ -24,8 +24,6 @@ import java.util.Arrays;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
-
 public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
 {
     private final int[] propertyKeyIds;
@@ -86,7 +84,7 @@ public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
         int[] keys = new int[buffer.get()];
         for ( int i = 0; i < keys.length; i++ )
         {
-            keys[i] = safeCastLongToInt( buffer.getLong() );
+            keys[i] = Math.toIntExact( buffer.getLong() );
         }
         return keys;
     }

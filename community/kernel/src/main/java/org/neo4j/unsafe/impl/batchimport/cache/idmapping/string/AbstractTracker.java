@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArray;
+import org.neo4j.collection.MemoryStatsVisitor;
+import org.neo4j.collection.primitive.array.NumberArray;
 
 /**
  * Base implementation of {@link Tracker} over a {@link NumberArray}.

@@ -26,6 +26,9 @@ import org.neo4j.io.fs.StoreChannel;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_TYPE;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SPECIFIC_ID;
+
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
+
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_TYPE_ID;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.UNSPECIFIED_ID;
 

@@ -31,9 +31,11 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.asJavaSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.impl.api.index.NodePropertyUpdate.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -64,7 +66,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.seek( "value1" );
-            assertEquals( asSet( 1l, 2l ), asSet( nodes ) );
+            assertEquals( asSet( 1l, 2l ), asJavaSet( nodes ) );
         }
         accessor.close();
     }
@@ -155,7 +157,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.seek( propertyValue );
-            assertEquals( asSet( 1l ), asSet( nodes ) );
+            assertEquals( asSet( 1l ), asJavaSet( nodes ) );
         }
         accessor.close();
     }

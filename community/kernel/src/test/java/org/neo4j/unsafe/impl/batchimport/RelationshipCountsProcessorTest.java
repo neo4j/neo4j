@@ -22,9 +22,9 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
-import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.collection.primitive.array.NumberArrayFactory;
+import org.neo4j.kernel.impl.store.counts.CountsAccessor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;

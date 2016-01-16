@@ -19,17 +19,15 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.collection.primitive.array.NumberArrayFactory;
+import org.neo4j.kernel.impl.store.counts.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.NodeCountsStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipCountsStage;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
-import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
+import org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors;
 
 public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
 {
@@ -75,12 +73,12 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
         try
         {
             // Count nodes
-            superviseDynamicExecution(
+            ExecutionSupervisors.superviseDynamicExecution(
                     new NodeCountsStage( Configuration.DEFAULT, cache, nodes, highLabelId, countsUpdater ) );
             // Count relationships
-            superviseDynamicExecution(
+            ExecutionSupervisors.superviseDynamicExecution(
                     new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships, highLabelId,
-                            highRelationshipTypeId, countsUpdater, AUTO ) );
+                            highRelationshipTypeId, countsUpdater, NumberArrayFactory.AUTO ) );
         }
         finally
         {

@@ -19,8 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.kernel.impl.util.Bits.numbersToBitString;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -31,6 +29,8 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
+
+import static org.neo4j.helpers.Bits.numbersToBitString;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBufferFactory;

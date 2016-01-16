@@ -23,13 +23,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.LogProvider;
 
@@ -46,7 +46,7 @@ public abstract class AbstractStore extends CommonAbstractStore
 {
     public AbstractStore(
             File fileName,
-            Config conf,
+            Configuration conf,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
@@ -60,6 +60,7 @@ public abstract class AbstractStore extends CommonAbstractStore
      *
      * @return The record size
      */
+    @Override
     public abstract int getRecordSize();
 
     @Override

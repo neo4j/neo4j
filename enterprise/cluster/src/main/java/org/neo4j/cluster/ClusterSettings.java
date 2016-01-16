@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.Description;
 
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;

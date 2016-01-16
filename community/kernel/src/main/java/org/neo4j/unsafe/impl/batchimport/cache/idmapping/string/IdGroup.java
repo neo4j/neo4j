@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.batchimport.api.Group;
 
 /**
  * A {@link Group} with additional metadata managed by {@link EncodingIdMapper}.

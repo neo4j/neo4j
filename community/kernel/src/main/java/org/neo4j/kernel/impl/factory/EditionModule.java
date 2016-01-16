@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import org.neo4j.diagnostics.DiagnosticsManager;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelDiagnostics;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -30,8 +30,8 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.info.DiagnosticsManager;
 
 /**
  * Edition module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. Implementations of this class

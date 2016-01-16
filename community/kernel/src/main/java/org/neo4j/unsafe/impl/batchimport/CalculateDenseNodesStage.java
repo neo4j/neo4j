@@ -21,11 +21,12 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
 
+import org.neo4j.unsafe.batchimport.api.Collector;
+import org.neo4j.unsafe.batchimport.api.IdMapper;
+import org.neo4j.unsafe.batchimport.api.InputIterable;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
 /**

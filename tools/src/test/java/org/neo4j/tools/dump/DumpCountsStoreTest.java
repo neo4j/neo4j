@@ -27,10 +27,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
+import org.neo4j.kernel.impl.store.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer;
 import org.neo4j.kernel.impl.store.kvstore.HeaderField;

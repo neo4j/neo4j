@@ -25,7 +25,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 
-import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.BASE_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 public class ThresholdBasedPruneStrategy implements LogPruneStrategy
@@ -47,7 +47,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
     @Override
     public void prune( long upToLogVersion )
     {
-        if ( upToLogVersion == INITIAL_LOG_VERSION )
+        if ( upToLogVersion == BASE_LOG_VERSION )
         {
             return;
         }

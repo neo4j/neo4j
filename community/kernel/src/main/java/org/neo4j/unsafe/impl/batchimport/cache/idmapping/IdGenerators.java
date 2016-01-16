@@ -19,7 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.batchimport.api.IdGenerator;
+import org.neo4j.unsafe.batchimport.api.InputNode;
 
 /**
  * Common {@link IdGenerator} implementations.

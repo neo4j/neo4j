@@ -26,18 +26,20 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.counts.CountsAccessor;
 import org.neo4j.logging.Log;
+import org.neo4j.unsafe.batchimport.api.BatchImporter;
+import org.neo4j.unsafe.batchimport.api.Collector;
+import org.neo4j.unsafe.batchimport.api.IdGenerator;
+import org.neo4j.unsafe.batchimport.api.IdMapper;
+import org.neo4j.unsafe.batchimport.api.Input;
+import org.neo4j.unsafe.batchimport.api.InputIterable;
+import org.neo4j.unsafe.batchimport.api.InputNode;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
-import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.DynamicProcessorAssigner;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
@@ -47,8 +49,8 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.System.currentTimeMillis;
 
+import static org.neo4j.collection.primitive.array.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 

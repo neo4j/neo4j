@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -29,6 +26,10 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -41,12 +42,12 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
-import static java.util.Collections.singletonMap;
-
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+
+import static java.util.Collections.singletonMap;
 
 public class PropertyStoreTest
 {
@@ -73,7 +74,7 @@ public class PropertyStoreTest
         // given
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
         Config config =
-                new Config( singletonMap( PropertyStore.Configuration.rebuild_idgenerators_fast.name(), "true" ));
+                new Config( singletonMap( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "true" ));
 
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 

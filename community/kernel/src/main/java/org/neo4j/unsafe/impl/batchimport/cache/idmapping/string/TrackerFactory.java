@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
+import org.neo4j.collection.primitive.array.NumberArrayFactory;
 
 /**
  * Factory for {@link Tracker} instances.

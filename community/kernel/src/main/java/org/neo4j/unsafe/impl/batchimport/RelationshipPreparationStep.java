@@ -22,8 +22,8 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.Arrays;
 
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.batchimport.api.IdMapper;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;

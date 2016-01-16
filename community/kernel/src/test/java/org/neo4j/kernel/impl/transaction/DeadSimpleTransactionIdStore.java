@@ -23,7 +23,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.TransactionId;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.TransactionId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
@@ -43,7 +44,7 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
 
     public DeadSimpleTransactionIdStore()
     {
-        this( BASE_TX_ID, 0, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
+        this( BASE_TX_ID, 0, LogVersionRepository.BASE_LOG_VERSION, LogVersionRepository.BASE_LOG_BYTE_OFFSET );
     }
 
     public DeadSimpleTransactionIdStore( long previouslyCommittedTxId, long checksum,

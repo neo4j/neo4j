@@ -42,6 +42,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -254,7 +255,7 @@ public class LuceneLabelScanStoreTest
 
         // when
         LabelScanReader reader = store.newReader();
-        Set<Long> nodesWithLabel = asSet( reader.nodesWithLabel( (int) labelId ) );
+        Set<Long> nodesWithLabel = PrimitiveLongCollections.asJavaSet( reader.nodesWithLabel( (int) labelId ) );
 
         // then
         for ( long i = 0; i < 34; i++ )
@@ -283,7 +284,7 @@ public class LuceneLabelScanStoreTest
 
         // then
         LabelScanReader reader = store.newReader();
-        Set<Long> nodesWithLabel0 = asSet( reader.nodesWithLabel( (int) label0Id ) );
+        Set<Long> nodesWithLabel0 = PrimitiveLongCollections.asJavaSet( reader.nodesWithLabel( (int) label0Id ) );
         for ( long i = 0; i < 34; i++ )
         {
             assertThat( nodesWithLabel0, hasItem( i ) );

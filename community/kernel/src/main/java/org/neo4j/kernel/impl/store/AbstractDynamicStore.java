@@ -34,10 +34,9 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.LogProvider;
@@ -81,7 +80,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
 
     public AbstractDynamicStore(
             File fileName,
-            Config conf,
+            org.neo4j.graphdb.config.Configuration conf,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,

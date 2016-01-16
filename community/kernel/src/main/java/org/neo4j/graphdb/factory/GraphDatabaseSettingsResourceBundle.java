@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.factory;
 
+import org.neo4j.kernel.configuration.SettingsResourceBundle;
+
 /**
  * Default ResourceBundle for GraphDatabaseSettings.
  */

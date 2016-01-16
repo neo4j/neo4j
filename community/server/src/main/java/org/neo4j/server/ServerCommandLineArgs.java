@@ -23,8 +23,8 @@ import java.io.File;
 import java.util.Collection;
 
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.Converters;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.impl.util.Converters;
 
 import static org.neo4j.helpers.collection.Pair.pair;
 

@@ -64,12 +64,12 @@ the relevant Commercial Agreement.
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-resource</artifactId>
+      <artifactId>neo4j-collections</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-collections</artifactId>
+      <artifactId>neo4j-primitive-collections</artifactId>
       <version>${project.version}</version>
     </dependency>
 

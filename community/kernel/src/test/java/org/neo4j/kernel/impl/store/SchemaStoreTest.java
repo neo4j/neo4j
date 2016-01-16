@@ -29,8 +29,8 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -40,8 +40,10 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
-import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
+
+import static java.nio.ByteBuffer.wrap;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;

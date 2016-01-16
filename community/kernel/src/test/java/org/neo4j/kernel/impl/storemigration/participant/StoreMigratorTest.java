@@ -51,14 +51,14 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.storemigration.participant.StoreMigrator.readLastTxLogPosition;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 
 @RunWith( Parameterized.class )
 public class StoreMigratorTest
@@ -81,15 +81,17 @@ public class StoreMigratorTest
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> versions()
     {
+        long logVersion = LogVersionRepository.BASE_LOG_VERSION;
+        int offset = LogVersionRepository.BASE_LOG_BYTE_OFFSET;
         return Arrays.asList(
                 new Object[]{
-                        Legacy19Store.LEGACY_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
+                        Legacy19Store.LEGACY_VERSION, new LogPosition( logVersion, offset )},
                 new Object[]{
-                        Legacy20Store.LEGACY_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
+                        Legacy20Store.LEGACY_VERSION, new LogPosition( logVersion, offset )},
                 new Object[]{
-                        Legacy21Store.LEGACY_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
+                        Legacy21Store.LEGACY_VERSION, new LogPosition( logVersion, offset )},
                 new Object[]{
-                        Legacy22Store.LEGACY_VERSION, new LogPosition( 2, BASE_TX_LOG_BYTE_OFFSET )},
+                        Legacy22Store.LEGACY_VERSION, new LogPosition( 2, offset )},
                 new Object[]{Legacy23Store.LEGACY_VERSION, new LogPosition( 3, 169 )}
         );
     }

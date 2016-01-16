@@ -23,13 +23,15 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.unsafe.batchimport.api.Group;
+import org.neo4j.unsafe.batchimport.api.InputNode;
 
+import static org.neo4j.unsafe.batchimport.api.InputEntity.NO_LABELS;
+import static org.neo4j.unsafe.batchimport.api.InputEntity.NO_PROPERTIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_LABEL_CHANGES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_LABEL_FIELD;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_ADDITION;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_REMOVAL;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
 /**
  * Reads cached {@link InputNode} previously stored using {@link InputNodeCacher}.

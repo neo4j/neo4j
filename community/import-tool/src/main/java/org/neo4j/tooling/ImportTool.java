@@ -29,14 +29,18 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
+import org.neo4j.diagnostics.OsBeanUtil;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
 import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.helpers.Converters;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Strings;
+import org.neo4j.helpers.Validators;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -44,21 +48,18 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.kernel.impl.util.Converters;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
-import org.neo4j.kernel.impl.util.Validator;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.unsafe.impl.batchimport.BatchImporter;
+import org.neo4j.unsafe.batchimport.api.BatchImporter;
+import org.neo4j.unsafe.batchimport.api.Collector;
+import org.neo4j.unsafe.batchimport.api.Input;
+import org.neo4j.unsafe.batchimport.api.InputNode;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
-import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
@@ -67,10 +68,10 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.nio.charset.Charset.defaultCharset;
-import static org.neo4j.helpers.Exceptions.launderedException;
+
+import static org.neo4j.helpers.Converters.withDefault;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
-import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
@@ -306,7 +307,7 @@ public class ImportTool
         try
         {
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.<File>mandatory(),
-                    Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
+                    Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, CONTAINS_NO_EXISTING_DATABASE );
 
             File badFile = new File( storeDir, BAD_FILE_NAME );
             OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
@@ -525,7 +526,7 @@ public class ImportTool
         // a specific exit code. On the other hand It's very inconvenient to have any System.exit
         // call in code that is tested.
         Thread.currentThread().setUncaughtExceptionHandler( ( t, e1 ) -> { /* Shhhh */ } );
-        return launderedException( e ); // throw in order to have process exit with !0
+        return Exceptions.launderedException( e ); // throw in order to have process exit with !0
     }
 
     private static void printErrorMessage( String string, Exception e, boolean stackTrace )
@@ -682,7 +683,7 @@ public class ImportTool
 
     private static final Function<String,Character> DELIMITER_CONVERTER = new DelimiterConverter();
 
-    static final Validator<File[]> FILES_EXISTS = files -> {
+    static final Consumer<File[]> FILES_EXISTS = files -> {
         for ( File file : files )
         {
             if ( file.getName().startsWith( ":" ) )
@@ -691,7 +692,7 @@ public class ImportTool
                       file.getName() + "). Please put such directly on the key, f.ex. " +
                       Options.NODE_DATA.argument() + ":MyLabel" );
             }
-            Validators.REGEX_FILE_EXISTS.validate( file );
+            Validators.REGEX_FILE_EXISTS.accept( file );
         }
     };
 
@@ -734,4 +735,17 @@ public class ImportTool
             this.anchor = anchor;
         }
     }
+
+    public static final Consumer<File> CONTAINS_NO_EXISTING_DATABASE = new Consumer<File>()
+    {
+        @Override
+        public void accept( File value )
+        {
+            if ( new DefaultFileSystemAbstraction()
+                    .fileExists( new File( value, StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) ) ) )
+            {
+                throw new IllegalArgumentException( "Directory '" + value + "' already contains a database" );
+            }
+        }
+    };
 }

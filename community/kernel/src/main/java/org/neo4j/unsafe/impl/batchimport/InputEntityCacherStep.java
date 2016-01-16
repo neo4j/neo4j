@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.batchimport.api.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.Receiver;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;

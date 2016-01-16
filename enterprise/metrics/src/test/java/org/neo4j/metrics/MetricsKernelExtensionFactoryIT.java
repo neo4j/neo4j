@@ -59,9 +59,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
-import static org.neo4j.kernel.IdType.RELATIONSHIP_TYPE_TOKEN;
+import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP_TYPE_TOKEN;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvPath;

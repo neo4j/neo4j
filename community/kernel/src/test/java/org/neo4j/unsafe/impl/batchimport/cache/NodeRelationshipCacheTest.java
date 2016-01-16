@@ -25,6 +25,7 @@ import org.mockito.InOrder;
 
 import java.util.Random;
 
+import org.neo4j.collection.primitive.array.NumberArrayFactory;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.GroupVisitor;
 

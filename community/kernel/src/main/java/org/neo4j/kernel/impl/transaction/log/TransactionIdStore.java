@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.kernel.impl.store.TransactionId;
-
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-
 /**
  * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
  * {@code closed transaction id}. The committed transaction id is for writing into a log before making
@@ -46,8 +42,6 @@ public interface TransactionIdStore
     // Tx id counting starting from this value (this value means no transaction ever committed)
     long BASE_TX_ID = 1;
     long BASE_TX_CHECKSUM = 0;
-    long BASE_TX_LOG_VERSION = 0;
-    long BASE_TX_LOG_BYTE_OFFSET = LOG_HEADER_SIZE;
 
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented

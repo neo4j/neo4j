@@ -29,8 +29,6 @@ import java.util.concurrent.Future;
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
@@ -41,7 +39,6 @@ import org.neo4j.register.Registers;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.ThreadingRule;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
@@ -49,6 +46,9 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.kernel.impl.store.kvstore.Resources.InitialLifecycle.STARTED;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
 

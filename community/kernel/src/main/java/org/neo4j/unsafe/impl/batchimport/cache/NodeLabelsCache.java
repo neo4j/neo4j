@@ -19,12 +19,15 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.collection.MemoryStatsVisitor;
+import org.neo4j.collection.primitive.array.LongArray;
+import org.neo4j.collection.primitive.array.NumberArrayFactory;
+import org.neo4j.helpers.Bits;
 
 import static java.lang.Integer.numberOfLeadingZeros;
 import static java.lang.Math.max;
 
-import static org.neo4j.kernel.impl.util.Bits.bitsFromLongs;
+import static org.neo4j.helpers.Bits.bitsFromLongs;
 
 /**
  * Caches labels for each node. Tries to keep memory as 8b (a long) per node. If a particular node has many labels

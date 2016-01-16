@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.function.Function;
 
+import org.neo4j.unsafe.batchimport.api.Collector;
+
 /**
  * Common implementations of {@link Collector}
  */

@@ -19,18 +19,19 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
+import org.neo4j.collection.MemoryStatsVisitor;
+import org.neo4j.collection.primitive.array.NumberArrayFactory;
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
+import org.neo4j.unsafe.batchimport.api.Collector;
+import org.neo4j.unsafe.batchimport.api.Group;
+import org.neo4j.unsafe.batchimport.api.IdMapper;
+import org.neo4j.unsafe.batchimport.api.InputIterable;
+import org.neo4j.unsafe.batchimport.api.InputNode;
+import org.neo4j.unsafe.batchimport.api.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.LongEncoder;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Radix;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringEncoder;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
-import org.neo4j.unsafe.impl.batchimport.input.Group;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.TrackerFactories.dynamic;

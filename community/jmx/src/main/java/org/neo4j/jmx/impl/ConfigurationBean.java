@@ -67,7 +67,7 @@ public final class ConfigurationBean extends Neo4jMBean
             {
                 if ( Modifier.isStatic( field.getModifiers() ) && Modifier.isFinal( field.getModifiers() ) )
                 {
-                    final org.neo4j.graphdb.factory.Description documentation = field.getAnnotation( org.neo4j.graphdb.factory.Description.class );
+                    final org.neo4j.kernel.configuration.Description documentation = field.getAnnotation( org.neo4j.kernel.configuration.Description.class );
                     if ( documentation == null || !Setting.class.isAssignableFrom(field.getType()) ) continue;
                     try
                     {

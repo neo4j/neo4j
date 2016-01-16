@@ -31,19 +31,26 @@
   </scm>
 
   <modules>
+    <module>fs</module>
     <module>resource</module>
     <module>collections</module>
+    <module>lifecycle</module>
+    <module>diagnostics</module>
     <module>primitive-collections</module>
     <module>graphdb-api</module>
     <module>unsafe</module>
+    <module>concurrent</module>
     <module>function</module>
     <module>io</module>
     <module>csv</module>
     <module>logging</module>
     <module>neo4j-slf4j</module>
     <module>codegen</module>
+    <module>batch-import-api</module>
     <module>storage-engine-api</module>
     <module>proc</module>
+    <module>helpers</module>
+    <module>configuration</module>
     <module>kernel</module>
     <module>jmx</module>
     <module>udc</module>

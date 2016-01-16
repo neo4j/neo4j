@@ -96,7 +96,6 @@ import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
@@ -785,11 +784,11 @@ public class StateHandlingStatementOperations implements
          * close the IndexReader when done iterating over the lookup result. This is because we get
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
-        PrimitiveLongResourceIterator committed = resourceIterator( reader.seek( value ), reader );
+        PrimitiveLongResourceIterator committed = PrimitiveLongCollections.resourceIterator( reader.seek( value ), reader );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
         PrimitiveLongIterator changesFiltered = filterIndexStateChangesForScanOrSeek( state, index, value,
                 exactMatches );
-        return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
+        return single( PrimitiveLongCollections.resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
     }
 
     @Override

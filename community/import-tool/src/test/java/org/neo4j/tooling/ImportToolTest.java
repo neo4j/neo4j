@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
@@ -45,13 +46,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Validators;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.Version;
-import org.neo4j.kernel.impl.util.Validator;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.SuppressOutput;
@@ -992,8 +992,8 @@ public class ImportToolTest
     }
 
     private void verifyData(
-            Validator<Node> nodeAdditionalValidation,
-            Validator<Relationship> relationshipAdditionalValidation )
+            Consumer<Node> nodeAdditionalValidation,
+            Consumer<Relationship> relationshipAdditionalValidation )
     {
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try ( Transaction tx = db.beginTx() )
@@ -1002,14 +1002,14 @@ public class ImportToolTest
             for ( Node node : db.getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
-                nodeAdditionalValidation.validate( node );
+                nodeAdditionalValidation.accept( node );
                 nodeCount++;
             }
             assertEquals( NODE_COUNT, nodeCount );
             for ( Relationship relationship : db.getAllRelationships() )
             {
                 assertTrue( relationship.hasProperty( "created" ) );
-                relationshipAdditionalValidation.validate( relationship );
+                relationshipAdditionalValidation.accept( relationship );
                 relationshipCount++;
             }
             assertEquals( RELATIONSHIP_COUNT, relationshipCount );

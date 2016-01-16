@@ -23,7 +23,8 @@ import java.io.IOException;
 
 public interface LogVersionRepository
 {
-    long INITIAL_LOG_VERSION = 0;
+    long BASE_LOG_VERSION = 0;
+    int BASE_LOG_BYTE_OFFSET = 16;
 
 	/**
 	 * Returns the current log version. It is non blocking.

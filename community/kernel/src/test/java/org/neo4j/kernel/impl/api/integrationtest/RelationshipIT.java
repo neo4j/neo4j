@@ -29,6 +29,7 @@ import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Transaction;
@@ -49,7 +50,6 @@ import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.toJavaIterator;
 
 public class RelationshipIT extends KernelIntegrationTest
 {
@@ -282,7 +282,7 @@ public class RelationshipIT extends KernelIntegrationTest
 
             // Then both the small rel group, the remaining rels in the iterator should work
             assertRels( stmt.nodeGetRelationships( refNode, Direction.BOTH, new int[]{smallGroupType} ) );
-            assertThat( count( toJavaIterator( iter ) ), equalTo(2) );
+            assertThat( count( PrimitiveLongCollections.toJavaIterator( iter ) ), equalTo(2) );
             assertRels( stmt.nodeGetRelationships( refNode, Direction.BOTH, new int[]{largeGroupType} ), largeRelGroup );
         }
     }
@@ -312,7 +312,7 @@ public class RelationshipIT extends KernelIntegrationTest
             all.add(hasItem(element));
         }
 
-        List<Long> list = asList( it );
+        List<Long> list = PrimitiveLongCollections.asList( it );
         assertThat( list, allOf(all));
     }
 }

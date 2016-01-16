@@ -41,10 +41,10 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
@@ -60,7 +60,6 @@ import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 /**
  * Test for making sure that slow id generator rebuild is exercised
@@ -86,7 +85,7 @@ public class TestCrashWithRebuildSlow
 
         assertThat( checksumBefore, Matchers.equalTo( checksumBefore2 ) );
 
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDbAction( db ) );
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( () -> db.shutdown() );
 
         long snapshotChecksum = snapshot.checksum();
         if ( snapshotChecksum != checksumBefore )

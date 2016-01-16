@@ -25,8 +25,8 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
 
 public class UpdateCountingIndexUpdater implements IndexUpdater
 {

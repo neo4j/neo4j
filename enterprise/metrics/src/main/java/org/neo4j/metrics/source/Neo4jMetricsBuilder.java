@@ -23,11 +23,11 @@ import com.codahale.metrics.MetricRegistry;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;

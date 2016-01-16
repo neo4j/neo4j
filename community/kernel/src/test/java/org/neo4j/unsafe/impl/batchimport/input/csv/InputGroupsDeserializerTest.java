@@ -28,7 +28,7 @@ import java.util.function.Function;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.function.Suppliers;
-import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.batchimport.api.InputNode;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;

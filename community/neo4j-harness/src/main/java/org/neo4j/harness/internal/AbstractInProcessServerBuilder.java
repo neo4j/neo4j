@@ -45,7 +45,7 @@ import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.fs.Files.createOrOpenAsOuputStream;
 import static org.neo4j.test.Digests.md5Hex;
 
 public abstract class AbstractInProcessServerBuilder implements TestServerBuilder

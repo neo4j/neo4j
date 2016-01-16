@@ -22,8 +22,8 @@ package org.neo4j.metrics;
 import java.io.File;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.Description;
 import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.kernel.configuration.Settings.setting;

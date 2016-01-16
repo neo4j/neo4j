@@ -24,8 +24,8 @@ import java.util.function.Function;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.helpers.collection.NestingIterator;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.batchimport.api.InputEntity;
+import org.neo4j.unsafe.batchimport.api.InputIterator;
 
 /**
  * Able to deserialize one input group. An input group is a list of one or more input files containing

@@ -26,11 +26,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.store.IdGeneratorContractTest;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;

@@ -57,12 +57,13 @@ the relevant Commercial Agreement.
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-primitive-collections</artifactId>
+      <artifactId>neo4j-fs</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-primitive-collections</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <!-- Test dependencies -->
@@ -89,6 +90,13 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-unsafe</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-fs</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

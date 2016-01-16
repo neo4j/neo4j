@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.test.TargetDirectory;
 

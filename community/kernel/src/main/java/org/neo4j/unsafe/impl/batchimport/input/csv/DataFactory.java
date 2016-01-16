@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.batchimport.api.Input;
+import org.neo4j.unsafe.batchimport.api.InputEntity;
 
 /**
  * Factory for the {@link Data data} provided by an {@link Input}.

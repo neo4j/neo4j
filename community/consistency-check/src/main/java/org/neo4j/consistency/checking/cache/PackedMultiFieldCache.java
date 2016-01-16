@@ -19,12 +19,12 @@
  */
 package org.neo4j.consistency.checking.cache;
 
+import org.neo4j.collection.primitive.array.LongArray;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 
+import static org.neo4j.collection.primitive.array.NumberArrayFactory.AUTO;
 import static org.neo4j.consistency.checking.cache.CacheSlots.ID_SLOT_SIZE;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 
 /**
  * Simply combining a {@link LongArray} with {@link LongBitsManipulator}, so that each long can be split up into

@@ -28,6 +28,8 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.unsafe.batchimport.api.Group;
+import org.neo4j.unsafe.batchimport.api.InputEntity;
 
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToShort;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_ENTITIES;

@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.batchimport.api.InputIterator;
 
 /**
  * Takes an Iterator and chops it up into array batches downstream.

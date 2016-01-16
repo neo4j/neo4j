@@ -28,11 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
@@ -158,7 +158,7 @@ public class NonUniqueIndexTests
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, indexConfig, samplingConfig );
               IndexReader reader = accessor.newReader() )
         {
-            return IteratorUtil.asList( reader.seek( value ) );
+            return PrimitiveLongCollections.asList( reader.seek( value ) );
         }
     }
 }

@@ -20,7 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.batchimport.api.InputIterator;
 
 /**
  * Crude implementation of an {@link InputIterator}.

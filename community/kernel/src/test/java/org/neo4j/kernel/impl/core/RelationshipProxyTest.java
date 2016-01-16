@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
+import org.neo4j.kernel.impl.store.RelationshipTypeToken;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyInt;

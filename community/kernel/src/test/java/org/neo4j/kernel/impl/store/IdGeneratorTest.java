@@ -41,10 +41,10 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -516,7 +516,7 @@ public class IdGeneratorTest
             }
             closeIdGenerator( idGenerator );
             idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, IdType.PROPERTY_KEY_TOKEN.getMaxValue(), false, 0 );
-            assertEquals( IdType.PROPERTY_KEY_TOKEN.getMaxValue() + 1, idGenerator.getHighId() );
+                        assertEquals( IdType.PROPERTY_KEY_TOKEN.getMaxValue() + 1, idGenerator.getHighId() );
             id = idGenerator.nextId();
             assertEquals( IdType.PROPERTY_KEY_TOKEN.getMaxValue() - 1, id );
             try

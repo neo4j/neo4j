@@ -28,6 +28,7 @@ import java.util.List;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
+import org.neo4j.kernel.configuration.Description;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
