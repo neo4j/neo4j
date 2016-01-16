@@ -585,6 +585,32 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.toList should equal(List(Map("l" -> 16)))
   }
 
+  test("shortest path and unwind should work together") {
+    val a1 = createLabeledNode("A")
+    val a2 = createLabeledNode("A")
+    val a3 = createLabeledNode("A")
+    val a4 = createLabeledNode("A")
+
+    relate(a1, a2, "T")
+    relate(a2, a3, "T")
+    relate(a3, a4, "T")
+
+    val result = executeWithAllPlanners(
+      """
+        |CYPHER PLANNER=COST
+        |MATCH p = (:A)-[:T*]-(:A)
+        |WITH p WHERE length(p) > 1
+        |UNWIND nodes(p)[1..-1] as n
+        |RETURN id(n) as n, count(*) as c""".stripMargin)
+
+    result.toList should equal(List(
+      Map("n" -> 5, "c" -> 4), Map("n" -> 6, "c" -> 4)
+    ))
+
+    result.close()
+  }
+
+
   def shortestPathModel(): Map[String, Node] = {
     val nodes = Map[String, Node](
       "source" -> createLabeledNode(Map("name" -> "x"), "X"),
