@@ -620,12 +620,12 @@ public class ImportTool
     private static Configuration csvConfiguration( Args args, final boolean defaultSettingsSuitableForTests )
     {
         final Configuration defaultConfiguration = COMMAS;
-        final Character specificDelimiter =
-                args.interpretOption( Options.DELIMITER.key(), Converters.<Character>optional(), DELIMITER_CONVERTER );
-        final Character specificArrayDelimiter =
-                args.interpretOption( Options.ARRAY_DELIMITER.key(), Converters.<Character>optional(), DELIMITER_CONVERTER );
-        final Character specificQuote =
-                args.interpretOption( Options.QUOTE.key(), Converters.<Character>optional(), Converters.toCharacter() );
+        final Character specificDelimiter = args.interpretOption( Options.DELIMITER.key(),
+                Converters.<Character>optional(), CHARACTER_CONVERTER );
+        final Character specificArrayDelimiter = args.interpretOption( Options.ARRAY_DELIMITER.key(),
+                Converters.<Character>optional(), CHARACTER_CONVERTER );
+        final Character specificQuote = args.interpretOption( Options.QUOTE.key(), Converters.<Character>optional(),
+                CHARACTER_CONVERTER );
         final Boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), null );
         final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );
         return new Configuration.Default()
@@ -680,7 +680,7 @@ public class ImportTool
 
     private static final Function<String,IdType> TO_ID_TYPE = from -> IdType.valueOf( from.toUpperCase() );
 
-    private static final Function<String,Character> DELIMITER_CONVERTER = new DelimiterConverter();
+    private static final Function<String,Character> CHARACTER_CONVERTER = new CharacterConverter();
 
     static final Validator<File[]> FILES_EXISTS = files -> {
         for ( File file : files )
