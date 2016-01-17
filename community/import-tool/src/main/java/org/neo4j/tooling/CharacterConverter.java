@@ -24,12 +24,11 @@ import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 
 /**
- * Converts a delimiter configuration into a character used as delimiter. Configuration can be normal characters
- * as well as examples like: '\t', '\123', "TAB" and more.
+ * Converts a string expression into a character to be used as delimiter, array delimiter, or quote character. Can be
+ * normal characters as well as for example: '\t', '\123', and "TAB".
  */
-class DelimiterConverter implements Function<String,Character>
+class CharacterConverter implements Function<String,Character>
 {
-    private final Function<String,Character> fallback = Converters.toCharacter();
 
     @Override
     public Character apply( String value ) throws RuntimeException
@@ -50,7 +49,6 @@ class DelimiterConverter implements Function<String,Character>
                 {
                     return Configuration.TABS.delimiter();
                 }
-                throw new IllegalArgumentException( "Invalid delimiter character '" + value + "'" );
             }
         }
         // hard coded TAB --> tab character
@@ -58,7 +56,11 @@ class DelimiterConverter implements Function<String,Character>
         {
             return Configuration.TABS.delimiter();
         }
-        // default to just returning the configured character
-        return fallback.apply( value );
+        else if ( value.length() == 1 )
+        {
+            return value.charAt( 0 );
+        }
+
+        throw new IllegalArgumentException( "Unsupported character '" + value + "'" );
     }
 }
