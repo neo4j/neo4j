@@ -977,6 +977,98 @@ public class ImportToolTest
         }
     }
 
+    @Test
+    public void shouldFailAndReportStartingLineForUnbalancedQuoteInMiddle() throws Exception
+    {
+        // GIVEN
+        int unbalancedStartLine = 10;
+
+        // WHEN
+        try
+        {
+            importTool(
+                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--nodes", nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine )
+                            .getAbsolutePath() );
+            fail( "Should have failed" );
+        }
+        catch ( InputException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( String.format( "See line %d", unbalancedStartLine ) ) );
+        }
+    }
+
+    @Test
+    public void shouldFailAndReportStartingLineForUnbalancedQuoteAtEnd() throws Exception
+    {
+        // GIVEN
+        int unbalancedStartLine = 10;
+
+        // WHEN
+        try
+        {
+            importTool(
+                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--nodes", nodeDataWithMissingQuote( unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() );
+            fail( "Should have failed" );
+        }
+        catch ( InputException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( String.format( "See line %d", unbalancedStartLine ) ) );
+        }
+    }
+
+    @Test
+    public void shouldFailAndReportStartingLineForUnbalancedQuoteWithMultilinesEnabled() throws Exception
+    {
+        // GIVEN
+        int unbalancedStartLine = 10;
+
+        // WHEN
+        try
+        {
+            importTool(
+                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--multiline-fields", "true",
+                    "--nodes",
+                    nodeDataWithMissingQuote( 2 * unbalancedStartLine, unbalancedStartLine ).getAbsolutePath() );
+            fail( "Should have failed" );
+        }
+        catch ( InputException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( String.format( "started on line %d", unbalancedStartLine ) ) );
+            // make sure end was reached
+            assertThat( e.getMessage(), containsString( String.format( "line:%d", 2 * unbalancedStartLine + 1 ) ) );
+        }
+    }
+
+    private File nodeDataWithMissingQuote( int totalLines, int unbalancedStartLine ) throws Exception
+    {
+        String[] lines = new String[totalLines + 1];
+
+        lines[0] = "ID,:LABEL";
+
+        for ( int i = 1; i <= totalLines; i++ )
+        {
+            StringBuilder line = new StringBuilder( String.format( "%d,", i ) );
+            if ( i == unbalancedStartLine )
+            {
+                // Missing the end quote
+                line.append( "\"Secret Agent" );
+            }
+            else
+            {
+                line.append( "Agent" );
+            }
+            lines[i] = line.toString();
+        }
+
+        return data( lines );
+    }
+
     private File data( String... lines ) throws Exception
     {
         File file = file( fileName( "data.csv" ) );
