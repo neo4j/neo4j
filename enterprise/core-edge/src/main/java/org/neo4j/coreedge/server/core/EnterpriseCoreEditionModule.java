@@ -37,6 +37,7 @@ import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
+import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
@@ -69,6 +70,7 @@ import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.id_allocation.OnDiskIdAllocationState;
 import org.neo4j.coreedge.raft.state.membership.OnDiskRaftMembershipState;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
+import org.neo4j.coreedge.raft.state.term.MonitoredTermState;
 import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
@@ -182,14 +184,17 @@ public class EnterpriseCoreEditionModule
 
         NaiveDurableRaftLog raftLog = life.add( new NaiveDurableRaftLog( fileSystem,
                 new File( clusterStateDirectory, NaiveDurableRaftLog.DIRECTORY_NAME ),
-                new RaftContentSerializer(), platformModule.monitors ) );
+                new RaftContentSerializer() ) );
+
+        MonitoredRaftLog monitoredRaftLog = new MonitoredRaftLog( raftLog, platformModule.monitors) ;
 
         TermState termState;
         try
         {
-            termState = life.add( new OnDiskTermState( fileSystem,
+            OnDiskTermState onDiskTermState = life.add( new OnDiskTermState( fileSystem,
                     new File( clusterStateDirectory, OnDiskTermState.DIRECTORY_NAME ),
                     config.get( CoreEdgeClusterSettings.term_state_size ), databaseHealthSupplier ) );
+            termState = new MonitoredTermState( onDiskTermState, platformModule.monitors );
         }
         catch ( IOException e )
         {
@@ -223,7 +228,7 @@ public class EnterpriseCoreEditionModule
             throw new RuntimeException( e );
         }
 
-        raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
+        raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, monitoredRaftLog,
                 termState, voteState, myself, logProvider, raftServer, raftTimeoutService,
                 databaseHealthSupplier, raftMembershipState );
 
@@ -261,7 +266,7 @@ public class EnterpriseCoreEditionModule
         ReplicatedIdRangeAcquirer idRangeAcquirer = new ReplicatedIdRangeAcquirer( replicator,
                 idAllocationStateMachine, 1024, 1000, myself, logProvider );
 
-        raftLog.registerListener( replicator );
+        monitoredRaftLog.registerListener( replicator );
 
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
         MembershipWaiter<CoreMember> membershipWaiter =
@@ -320,7 +325,7 @@ public class EnterpriseCoreEditionModule
                 config.get( CoreEdgeClusterSettings.transaction_listen_address ) );
 
         life.add( CoreServerStartupProcess.createLifeSupport(
-                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, new RaftLogReplay( raftLog,
+                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, new RaftLogReplay( monitoredRaftLog,
                         logProvider ), raftServer,
                 catchupServer, raftTimeoutService, membershipWaiter,
                 config.get( CoreEdgeClusterSettings.join_catch_up_timeout ),

@@ -36,7 +36,7 @@ public class DumpRaftLog
             File logDirectory = new File( arg );
             System.out.println( "logDirectory = " + logDirectory );
             NaiveDurableRaftLog log = new NaiveDurableRaftLog( new DefaultFileSystemAbstraction(),
-                    logDirectory, new RaftContentSerializer(), new Monitors() );
+                    logDirectory, new RaftContentSerializer() );
 
             new LogPrinter( log ).print( System.out );
             System.out.println();

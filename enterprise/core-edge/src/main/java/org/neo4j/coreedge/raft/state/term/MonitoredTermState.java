@@ -17,24 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.log;
+package org.neo4j.coreedge.raft.state.term;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.coreedge.raft.log.RaftStorageException;
+import org.neo4j.coreedge.raft.log.monitoring.RaftTermMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-public class NaiveDurableRaftLogContractTest extends RaftLogContractTest
+public class MonitoredTermState implements TermState
 {
-    @Override
-    public RaftLog createRaftLog() throws IOException
-    {
-        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        File directory = new File( "raft-log" );
-        fileSystem.mkdir( directory );
+    private final TermState delegate;
+    private final RaftTermMonitor termMonitor;
 
-        return new NaiveDurableRaftLog( fileSystem, directory, new DummyRaftableContentSerializer() );
+    public MonitoredTermState( TermState delegate, Monitors monitors )
+    {
+        this.delegate = delegate;
+
+        this.termMonitor = monitors.newMonitor( RaftTermMonitor.class, getClass(), TERM_TAG );
+
+    }
+
+    @Override
+    public long currentTerm()
+    {
+        return delegate.currentTerm();
+    }
+
+    @Override
+    public void update( long newTerm ) throws RaftStorageException
+    {
+        delegate.update( newTerm );
+        termMonitor.term( newTerm );
     }
 }
