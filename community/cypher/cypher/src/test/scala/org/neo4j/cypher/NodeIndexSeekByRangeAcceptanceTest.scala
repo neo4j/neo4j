@@ -1023,8 +1023,6 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val query = "MATCH (a)-->(b:Label) WHERE b.prop > a.prop RETURN count(a) as c"
     val result = executeWithAllPlanners(query)
 
-    println(result.executionPlanDescription())
-
     // Then
     result should evaluateTo(List(Map("c" -> size/2)))
     result shouldNot use("NodeIndexSeekByRange")

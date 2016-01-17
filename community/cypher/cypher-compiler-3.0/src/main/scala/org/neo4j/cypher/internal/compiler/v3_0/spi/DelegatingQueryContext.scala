@@ -108,6 +108,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def indexScan(index: IndexDescriptor): Iterator[Node] = manyDbHits(inner.indexScan(index))
 
+  override def indexSeekByContains(index: IndexDescriptor, value: String): scala.Iterator[Node] =
+    manyDbHits(inner.indexSeekByContains(index, value))
+
   override def getNodesByLabel(id: Int): Iterator[Node] = manyDbHits(inner.getNodesByLabel(id))
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =

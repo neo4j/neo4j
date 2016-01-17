@@ -288,6 +288,9 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   override def indexScan(index: IndexDescriptor) =
     mapToScalaENFXSafe(_statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
+  override def indexSeekByContains(index: IndexDescriptor, value: String) =
+    mapToScalaENFXSafe(_statement.readOperations().nodesGetFromIndexContainsScan(index, value))(nodeOps.getById)
+
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
     val nodeId = _statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
