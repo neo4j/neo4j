@@ -928,6 +928,113 @@ public class ImportToolTest
         }
     }
 
+    @Test
+    public void shouldAcceptRawEscapedAsciiCodeAsQuoteConfiguration() throws Exception
+    {
+        // GIVEN
+        char weirdDelimiter = 1; // not '1', just the character represented with code 1, which seems to be SOH
+        String name1 = weirdDelimiter + "Weird" + weirdDelimiter;
+        String name2 = "Start " + weirdDelimiter + "middle thing" + weirdDelimiter + " end!";
+        File data = data(
+                ":ID,name",
+                "1," + name1,
+                "2," + name2 );
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", data.getAbsolutePath(),
+                "--quote", "\\1" );
+
+        // THEN
+        Set<String> names = asSet( "Weird", name2 );
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Node node : at( db ).getAllNodes() )
+            {
+                String name = (String) node.getProperty( "name" );
+                assertTrue( "Didn't expect node with name '" + name + "'", names.remove( name ) );
+            }
+            assertTrue( names.isEmpty() );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldBeEquivalentToUseRawAsciiOrCharacterAsQuoteConfiguration1() throws Exception
+    {
+        // GIVEN
+        char weirdDelimiter = 126; // 126 ~ (tilde)
+        String weirdStringDelimiter = "\\126";
+        String name1 = weirdDelimiter + "Weird" + weirdDelimiter;
+        String name2 = "Start " + weirdDelimiter + "middle thing" + weirdDelimiter + " end!";
+        File data = data(
+                ":ID,name",
+                "1," + name1,
+                "2," + name2 );
+
+        // WHEN given as raw ascii
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", data.getAbsolutePath(),
+                "--quote", weirdStringDelimiter );
+
+        // THEN
+        assertEquals( "~", "" + weirdDelimiter );
+        assertEquals( "~".charAt( 0 ), weirdDelimiter );
+
+        Set<String> names = asSet( "Weird", name2 );
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Node node : at( db ).getAllNodes() )
+            {
+                String name = (String) node.getProperty( "name" );
+                assertTrue( "Didn't expect node with name '" + name + "'", names.remove( name ) );
+            }
+            assertTrue( names.isEmpty() );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldBeEquivalentToUseRawAsciiOrCharacterAsQuoteConfiguration2() throws Exception
+    {
+        // GIVEN
+        char weirdDelimiter = 126; // 126 ~ (tilde)
+        String weirdStringDelimiter = "~";
+        String name1 = weirdDelimiter + "Weird" + weirdDelimiter;
+        String name2 = "Start " + weirdDelimiter + "middle thing" + weirdDelimiter + " end!";
+        File data = data(
+                ":ID,name",
+                "1," + name1,
+                "2," + name2 );
+
+        // WHEN given as string
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", data.getAbsolutePath(),
+                "--quote", weirdStringDelimiter );
+
+        // THEN
+        assertEquals( weirdStringDelimiter, "" + weirdDelimiter );
+        assertEquals( weirdStringDelimiter.charAt( 0 ), weirdDelimiter );
+
+        Set<String> names = asSet( "Weird", name2 );
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Node node : at( db ).getAllNodes() )
+            {
+                String name = (String) node.getProperty( "name" );
+                assertTrue( "Didn't expect node with name '" + name + "'", names.remove( name ) );
+            }
+            assertTrue( names.isEmpty() );
+            tx.success();
+        }
+    }
+
     private File data( String... lines ) throws Exception
     {
         File file = file( fileName( "data.csv" ) );
