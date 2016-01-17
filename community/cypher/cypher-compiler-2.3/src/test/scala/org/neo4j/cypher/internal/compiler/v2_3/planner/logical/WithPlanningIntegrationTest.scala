@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.frontend.v2_3.ast.{Expression, SignedDecimalIntegerLiteral, UnsignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, Projection, Limit}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, Limit, Projection}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{Expression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -46,21 +46,21 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     resultText should equal(
       // oh perty where art thou!?
-      "Limit(Expand(Apply(Limit(AllNodesScan(IdName(a),Set()),SignedDecimalIntegerLiteral(1)),Argument(Set(IdName(a)))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll),SignedDecimalIntegerLiteral(1))")
+      "Limit(Expand(Limit(AllNodesScan(IdName(a),Set()),SignedDecimalIntegerLiteral(1)),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll),SignedDecimalIntegerLiteral(1))")
   }
 
   test("should build plans with WITH and selections") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1").plan
 
     result.toString should equal(
-      "Selection(Vector(In(Property(Identifier(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42))))),Apply(Limit(AllNodesScan(IdName(a),Set()),SignedDecimalIntegerLiteral(1)),Expand(Argument(Set(IdName(a))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll)))")
+      "Selection(Vector(In(Property(Identifier(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42))))),Expand(Limit(AllNodesScan(IdName(a),Set()),SignedDecimalIntegerLiteral(1)),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll))")
   }
 
   test("should build plans for two matches separated by WITH") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b").plan
 
     result.toString should equal(
-      "Expand(Apply(Limit(AllNodesScan(IdName(a),Set()),SignedDecimalIntegerLiteral(1)),Argument(Set(IdName(a)))),IdName(a),OUTGOING,List(),IdName(b),IdName(r),ExpandAll)")
+      "Expand(Limit(AllNodesScan(IdName(a),Set()),SignedDecimalIntegerLiteral(1)),IdName(a),OUTGOING,List(),IdName(b),IdName(r),ExpandAll)")
   }
 
   test("should build plans that project endpoints of re-matched directed relationship arguments") {
