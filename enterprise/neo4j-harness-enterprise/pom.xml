@@ -89,7 +89,7 @@
             <artifactId>neo4j-kernel</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-            <type>test-jar</type>
+            <classifier>tests</classifier>
         </dependency>
 
         <dependency>
@@ -97,7 +97,7 @@
             <artifactId>neo4j-io</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-            <type>test-jar</type>
+            <classifier>tests</classifier>
         </dependency>
 
         <dependency>
@@ -105,7 +105,7 @@
             <artifactId>neo4j-server</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-            <type>test-jar</type>
+            <classifier>tests</classifier>
         </dependency>
     </dependencies>
 </project>

@@ -37,13 +37,13 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <type>test-jar</type>
+      <classifier>tests</classifier>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-fs</artifactId>
-      <type>test-jar</type>
+      <classifier>tests</classifier>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -54,7 +54,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher</artifactId>
-      <type>test-jar</type>
+      <classifier>tests</classifier>
       <scope>compile</scope>
     </dependency>
 

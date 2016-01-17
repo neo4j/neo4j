@@ -94,7 +94,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
-      <type>test-jar</type>
+      <classifier>tests</classifier>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -102,7 +102,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <type>test-jar</type>
+      <classifier>tests</classifier>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -185,7 +185,7 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-fs</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
+      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
 
@@ -193,7 +193,7 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-helpers</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
+      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
 

@@ -84,22 +84,22 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
+      <classifier>tests</classifier>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-fs</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
+      <classifier>tests</classifier>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-logging</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
+      <classifier>tests</classifier>
     </dependency>
   </dependencies>
 </project>

@@ -89,13 +89,13 @@
       <artifactId>neo4j-cypher</artifactId>
       <groupId>org.neo4j</groupId>
       <version>${neo4j.version}</version>
-      <type>test-jar</type>
+      <classifier>tests</classifier>
     </dependency>
     <dependency>
       <artifactId>neo4j-cypher-docs</artifactId>
       <groupId>org.neo4j.doc</groupId>
       <version>${neo4j.version}</version>
-      <type>test-jar</type>
+      <classifier>tests</classifier>
     </dependency>
     <dependency>
       <artifactId>neo4j-cypher-docs</artifactId>
@@ -109,14 +109,14 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
       <version>${neo4j.version}</version>
-      <type>test-jar</type>
+      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
+      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -129,7 +129,7 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-enterprise-kernel</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
+      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -61,24 +61,24 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
+      <classifier>tests</classifier>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
+      <classifier>tests</classifier>
     </dependency>
-      <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-fs</artifactId>
-          <version>${project.version}</version>
-          <type>test-jar</type>
-          <scope>test</scope>
-      </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-fs</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <classifier>tests</classifier>
+    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
