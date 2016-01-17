@@ -253,6 +253,21 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     )
   }
 
+  @Test def nodeIndexContainsScan() {
+    executePreparationQueries((0 to 250).map { i =>
+      "CREATE (:Location)"
+    }.toList)
+    profileQuery(title = "Node index contains scan",
+                 text = """
+                          |An index contains scan goes through all values stored in an index, and searches for entries
+                          | containing a specific string. This is slower than an index seek, since all entries need to be
+                          | examined, but still faster than the indirection needed by a label scan and then a property store
+                          | filter.""".stripMargin,
+                 queryText = "MATCH (l:Location) WHERE l.name CONTAINS 'al' RETURN l",
+                 assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexContainsScan"))
+    )
+  }
+
   @Test def nodeByIdSeek() {
     profileQuery(
       title = "Node by Id seek",
