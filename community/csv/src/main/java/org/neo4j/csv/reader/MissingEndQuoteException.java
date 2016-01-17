@@ -19,12 +19,11 @@
  */
 package org.neo4j.csv.reader;
 
-public class IllegalMultilineFieldException extends FormatException
+public class MissingEndQuoteException extends FormatException
 {
-    public IllegalMultilineFieldException( SourceTraceability source )
+    public MissingEndQuoteException( SourceTraceability source, int startingLine, char quoteChar )
     {
-        super( source, "Multi-line fields are illegal in this context and so this might suggest that " +
-                String.format( "there's a field with a start quote, but a missing end quote. See line %d.",
-                        source.lineNumber() ) );
+        super( source, "Missing end for quote (" + quoteChar + ") which started on line " +
+                startingLine );
     }
 }
