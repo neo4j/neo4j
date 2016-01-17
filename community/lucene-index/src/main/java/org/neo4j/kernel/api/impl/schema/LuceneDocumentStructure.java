@@ -29,6 +29,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -38,6 +39,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.search.WildcardQuery;
 
 import java.io.IOException;
 import java.util.EnumMap;
@@ -138,6 +140,14 @@ public class LuceneDocumentStructure
             return builder.build();
         }
         return termRangeQuery;
+    }
+
+    public static Query newWildCardStringQuery( String searchFor )
+    {
+        String searchTerm = QueryParser.escape( searchFor );
+        Term term = new Term( ValueEncoding.String.key(), "*" + searchTerm + "*" );
+
+        return new WildcardQuery( term );
     }
 
     public static PrefixQuery newRangeSeekByPrefixQuery( String prefix )

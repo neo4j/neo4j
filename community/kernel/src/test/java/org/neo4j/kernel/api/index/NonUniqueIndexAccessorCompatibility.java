@@ -120,4 +120,19 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
         assertThat( getAllNodesFromIndexSeekByPrefix( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
         assertThat( getAllNodesFromIndexSeekByPrefix( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
     }
+
+    @Test
+    public void testIndexFullSearchWithDuplicates() throws Exception
+    {
+        updateAndCommit( asList(
+                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
+                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "A", new long[]{1000} ),
+                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
+                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
+                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "apalong", new long[]{1000} ) ) );
+
+        assertThat( getAllNodesFromIndexSeekByContains( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromIndexSeekByContains( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromIndexSeekByContains( "apa*" ), equalTo( asList() ) );
+    }
 }

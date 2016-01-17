@@ -75,6 +75,14 @@ public interface IndexReader extends Resource
     PrimitiveLongIterator scan();
 
     /**
+     * Searches this index for string values containing the exact search string.
+     *
+     * @param exactTerm the exact string to search for in the index
+     * @return ids of matching nodes.
+     */
+    PrimitiveLongIterator containsString( String exactTerm );
+
+    /**
      * @param nodeId node if to match.
      * @param propertyValue property value to match.
      * @return number of index entries for the given {@code nodeId} and {@code propertyValue}.
@@ -112,6 +120,12 @@ public interface IndexReader extends Resource
 
         @Override
         public PrimitiveLongIterator scan()
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
+        public PrimitiveLongIterator containsString( String exactTerm )
         {
             return PrimitiveLongCollections.emptyIterator();
         }

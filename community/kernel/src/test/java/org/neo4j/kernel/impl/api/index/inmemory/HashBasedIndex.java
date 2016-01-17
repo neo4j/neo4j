@@ -163,6 +163,24 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
+    public PrimitiveLongIterator containsString( String exactTerm )
+    {
+        Set<Long> nodeIds = new HashSet<>();
+        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        {
+            Object key = entry.getKey();
+            if ( key instanceof String )
+            {
+                if ( key.toString().contains( exactTerm ) )
+                {
+                    nodeIds.addAll( entry.getValue() );
+                }
+            }
+        }
+        return toPrimitiveIterator( nodeIds.iterator() );
+    }
+
+    @Override
     boolean doAdd( Object propertyValue, long nodeId, boolean applyIdempotently )
     {
         Set<Long> nodes = data().get( propertyValue );

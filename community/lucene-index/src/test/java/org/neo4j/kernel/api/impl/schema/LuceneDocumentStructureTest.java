@@ -26,6 +26,7 @@ import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertNull;
@@ -174,6 +175,16 @@ public class LuceneDocumentStructureTest
         assertEquals( false, query.includesLower() );
         assertEquals( null, query.getUpperTerm() );
         assertEquals( true, query.includesUpper() );
+    }
+
+    @Test
+    public void shouldBuildWildcardQueries() throws Exception
+    {
+        // given
+        WildcardQuery query = (WildcardQuery) LuceneDocumentStructure.newWildCardStringQuery( "foo" );
+
+        // then
+        assertEquals( "string", query.getField() );
     }
 
     @Test

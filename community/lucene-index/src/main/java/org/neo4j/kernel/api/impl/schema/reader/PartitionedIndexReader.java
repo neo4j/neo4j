@@ -94,6 +94,13 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
+    public PrimitiveLongIterator containsString( String exactTerm )
+    {
+        // TODO: Implement once index partitioning work is merged
+        return null;
+    }
+
+    @Override
     public long countIndexedNodes( long nodeId, Object propertyValue )
     {
         return indexReaders.parallelStream()

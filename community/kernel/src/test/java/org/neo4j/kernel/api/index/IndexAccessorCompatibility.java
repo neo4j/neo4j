@@ -194,6 +194,20 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         }
     }
 
+    protected List<Long> getAllNodesFromIndexSeekByContains( String term ) throws IOException
+    {
+        try ( IndexReader reader = accessor.newReader() )
+        {
+            List<Long> list = new LinkedList<>();
+            for ( PrimitiveLongIterator iterator = reader.containsString( term ); iterator.hasNext(); )
+            {
+                list.add( iterator.next() );
+            }
+            Collections.sort( list );
+            return list;
+        }
+    }
+
     protected List<Long> getAllNodes() throws IOException
     {
         try ( IndexReader reader = accessor.newReader() )
