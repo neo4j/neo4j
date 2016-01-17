@@ -351,6 +351,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public PrimitiveLongIterator nodesGetFromIndexContainsScan( KernelStatement state, IndexDescriptor index,
+            String term ) throws IndexNotFoundKernelException
+    {
+        return entityReadOperations.nodesGetFromIndexContainsScan( state, index, term );
+    }
+
+    @Override
     public boolean graphHasProperty( KernelStatement state, int propertyKeyId )
     {
         return entityReadOperations.graphHasProperty( state, propertyKeyId );
