@@ -124,7 +124,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
                 NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "b", new long[]{1000} ) ) );
 
         assertThat( getAllNodesFromIndexSeekByPrefix( "a" ), equalTo( asList( 1L, 3L, 4L ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "A" ), equalTo( asList( 2L ) ) );
+        assertThat( getAllNodesFromIndexSeekByPrefix( "A" ), equalTo( Collections.singletonList( 2L ) ) );
         assertThat( getAllNodesFromIndexSeekByPrefix( "ba" ), equalTo( EMPTY_LIST ) );
         assertThat( getAllNodesFromIndexSeekByPrefix( "" ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
     }

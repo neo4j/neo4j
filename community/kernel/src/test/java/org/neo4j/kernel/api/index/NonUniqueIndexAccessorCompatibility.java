@@ -22,6 +22,8 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Collections;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
@@ -133,6 +135,6 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
 
         assertThat( getAllNodesFromIndexSeekByContains( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
         assertThat( getAllNodesFromIndexSeekByContains( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromIndexSeekByContains( "apa*" ), equalTo( asList() ) );
+        assertThat( getAllNodesFromIndexSeekByContains( "apa*" ), equalTo( Collections.emptyList() ) );
     }
 }

@@ -105,8 +105,8 @@ class HashBasedIndex extends InMemoryIndexImplementation
             Object key = entry.getKey();
             if ( STRING.isSuperTypeOf( key ) )
             {
-                boolean lowerFilter = false;
-                boolean upperFilter = false;
+                boolean lowerFilter;
+                boolean upperFilter;
 
                 if ( lower == null )
                 {
