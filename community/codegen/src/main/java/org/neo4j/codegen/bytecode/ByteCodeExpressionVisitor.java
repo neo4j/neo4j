@@ -123,7 +123,6 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     @Override
     public void constant( Object value )
     {
-        //TODO do type checking here
         methodVisitor.visitLdcInsn( value );
     }
 
@@ -144,8 +143,6 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     public void newInstance( TypeReference type )
     {
         methodVisitor.visitTypeInsn( Opcodes.NEW, byteCodeName( type ) );
-        // TODO: is this always true? typical use case is that you call the constructor directly
-        // which pops the item of the stack so you need DUP in order to do stuff with it
         methodVisitor.visitInsn( Opcodes.DUP );
     }
 

@@ -359,6 +359,8 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     public void throwException( Expression exception )
     {
         callSuperIfNecessary();
+        exception.accept( expressionVisitor );
+        methodVisitor.visitInsn( ATHROW );
     }
 
     @Override
