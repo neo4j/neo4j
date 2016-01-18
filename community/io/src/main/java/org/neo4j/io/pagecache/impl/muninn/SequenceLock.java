@@ -22,9 +22,9 @@ package org.neo4j.io.pagecache.impl.muninn;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
- * OptiLock is a sequence-based lock like StampedLock, but with the ability to take optimistic write-locks.
+ * SequenceLock is a sequence-based lock like StampedLock, but with the ability to take optimistic write-locks.
  * <p>
- * The OptiLock supports non-blocking optimistic concurrent read locks, non-blocking concurrent write locks,
+ * The SequenceLock supports non-blocking optimistic concurrent read locks, non-blocking concurrent write locks,
  * and a pessimistic non-blocking exclusive lock.
  * <p>
  * The optimistic read lock works through validation, so at the end of the critical section, the read lock has to be
@@ -40,25 +40,30 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
  * The exclusive lock will also invalidate the optimistic read locks, but not the write locks. The exclusive lock is
  * try-lock only, and will never block.
  */
-public class OptiLock
+public class SequenceLock
 {
-    private static final long CNT_BITS = 17; // Bits for counting concurrent write-locks
+    // Bits for counting concurrent write-locks. We use 17 bits because our pages are most likely 8192 bytes, and
+    // 2^17 = 131.072, which is far more than our page size, so makes it highly unlikely that we are going to overflow
+    // our concurrent write lock counter. Meanwhile, it's also small enough that we have a very large (2^46) number
+    // space for our sequence.
+    private static final long CNT_BITS = 17;
 
-    private static final long SEQ_BITS = 64 - 1 - CNT_BITS;
+    private static final long BITS_IN_LONG = 64;
+    private static final long SEQ_BITS = BITS_IN_LONG - 1 - CNT_BITS;
     private static final long CNT_UNIT = 1L << SEQ_BITS;
     private static final long SEQ_MASK = CNT_UNIT - 1L;
     private static final long SEQ_IMSK = ~SEQ_MASK;
     private static final long CNT_MASK = ((1L << CNT_BITS) - 1L) << SEQ_BITS;
     private static final long EXCL_MASK = (1L << CNT_BITS + SEQ_BITS);
 
-    private static final long STATE = UnsafeUtil.getFieldOffset( OptiLock.class, "state" );
+    private static final long STATE = UnsafeUtil.getFieldOffset( SequenceLock.class, "state" );
 
     @SuppressWarnings( "unused" ) // accessed via unsafe
     private volatile long state;
 
     private long getState()
     {
-        return UnsafeUtil.getLongVolatile( this, STATE );
+        return state;
     }
 
     private boolean compareAndSetState( long expect, long update )
@@ -221,9 +226,9 @@ public class OptiLock
         long excl = s >>> CNT_BITS + SEQ_BITS;
         long cnt = (s & CNT_MASK) >> SEQ_BITS;
         long seq = s & SEQ_MASK;
-        StringBuilder sb = new StringBuilder( "OptiLock[E:" ).append( excl );
-        sb.append( ", W:" ).append( Long.toBinaryString( cnt ) ).append( ':' ).append( cnt );
-        sb.append( ", S:" ).append( Long.toBinaryString( seq ) ).append( ':' ).append( seq ).append( ']' );
+        StringBuilder sb = new StringBuilder( "SequenceLock[Excl: " ).append( excl );
+        sb.append( ", Ws: " ).append( cnt ).append( " (" ).append( Long.toBinaryString( cnt ) );
+        sb.append( "), S: " ).append( seq ).append( " (" ).append( Long.toBinaryString( seq )  ).append( ")]" );
         return sb.toString();
     }
 }

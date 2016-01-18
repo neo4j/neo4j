@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.test.RepeatRule;
 
-public class OptiLockStressIT
+public class SequenceLockStressIT
 {
     private static final ExecutorService executor = Executors.newCachedThreadPool(new DaemonThreadFactory());
 
@@ -47,7 +47,7 @@ public class OptiLockStressIT
     @Rule
     public RepeatRule repeatRule = new RepeatRule();
 
-    private OptiLock lock = new OptiLock();
+    private SequenceLock lock = new SequenceLock();
 
     @RepeatRule.Repeat( times = 20 )
     @Test
@@ -210,11 +210,11 @@ public class OptiLockStressIT
     @Test
     public void thoroughlyEnsureAtomicityOfUnlockExclusiveAndTakeWriteLock() throws Exception
     {
-        OptiLockTest test = new OptiLockTest();
+        SequenceLockTest test = new SequenceLockTest();
         for ( int i = 0; i < 30000; i++ )
         {
             test.unlockExclusiveAndTakeWriteLockMustBeAtomic();
-            test.lock = new OptiLock();
+            test.lock = new SequenceLock();
         }
 
     }

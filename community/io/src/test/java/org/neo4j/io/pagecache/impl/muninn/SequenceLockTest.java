@@ -35,7 +35,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class OptiLockTest
+public class SequenceLockTest
 {
     private static final long TIMEOUT = 5000;
     private static final ExecutorService executor = Executors.newCachedThreadPool(new DaemonThreadFactory());
@@ -46,7 +46,7 @@ public class OptiLockTest
         executor.shutdown();
     }
 
-    OptiLock lock = new OptiLock();
+    SequenceLock lock = new SequenceLock();
 
     @Test
     public void uncontendedOptimisticLockMustValidate() throws Exception
@@ -341,10 +341,10 @@ public class OptiLockTest
     @Test
     public void toStringMustDescribeState() throws Exception
     {
-        assertThat( lock.toString(), is( "OptiLock[E:0, W:0:0, S:0:0]" ) );
+        assertThat( lock.toString(), is( "SequenceLock[Excl: 0, Ws: 0 (0), S: 0 (0)]" ) );
         lock.tryWriteLock();
-        assertThat( lock.toString(), is( "OptiLock[E:0, W:1:1, S:0:0]" ) );
+        assertThat( lock.toString(), is( "SequenceLock[Excl: 0, Ws: 1 (1), S: 0 (0)]" ) );
         lock.unlockWrite();
-        assertThat( lock.toString(), is( "OptiLock[E:0, W:0:0, S:1:1]" ) );
+        assertThat( lock.toString(), is( "SequenceLock[Excl: 0, Ws: 0 (0), S: 1 (1)]" ) );
     }
 }

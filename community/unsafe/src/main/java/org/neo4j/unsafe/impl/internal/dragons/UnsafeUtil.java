@@ -226,6 +226,9 @@ public final class UnsafeUtil
         return unsafe.getAndAddInt( obj, offset, delta );
     }
 
+    /**
+     * Orders loads before the fence, with loads and stores after the fence.
+     */
     public static void loadFence()
     {
         unsafe.loadFence();
