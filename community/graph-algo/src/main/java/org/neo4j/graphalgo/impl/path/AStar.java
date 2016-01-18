@@ -73,16 +73,26 @@ public class AStar implements PathFinder<WeightedPath>
             {
                 // Hit, return path
                 double weight = iterator.visitData.get( node.getId() ).wayLength;
-                LinkedList<Relationship> rels = new LinkedList<Relationship>();
-                Relationship rel = graphDb.getRelationshipById( iterator.visitData.get( node.getId() ).cameFromRelationship );
-                while ( rel != null )
+                final Path path;
+                if ( start.getId() == end.getId() )
                 {
-                    rels.addFirst( rel );
-                    node = rel.getOtherNode( node );
-                    long nextRelId = iterator.visitData.get( node.getId() ).cameFromRelationship;
-                    rel = nextRelId == -1 ? null : graphDb.getRelationshipById( nextRelId );
+                    // Nothing to iterate over
+                    path = PathImpl.singular( start );
                 }
-                Path path = toPath( start, rels );
+                else
+                {
+                    LinkedList<Relationship> rels = new LinkedList<Relationship>();
+                    Relationship rel = graphDb.getRelationshipById(
+                            iterator.visitData.get( node.getId() ).cameFromRelationship );
+                    while ( rel != null )
+                    {
+                        rels.addFirst( rel );
+                        node = rel.getOtherNode( node );
+                        long nextRelId = iterator.visitData.get( node.getId() ).cameFromRelationship;
+                        rel = nextRelId == -1 ? null : graphDb.getRelationshipById( nextRelId );
+                    }
+                    path = toPath( start, rels );
+                }
                 lastMetadata.paths++;
                 return new WeightedPathImpl( weight, path );
             }
