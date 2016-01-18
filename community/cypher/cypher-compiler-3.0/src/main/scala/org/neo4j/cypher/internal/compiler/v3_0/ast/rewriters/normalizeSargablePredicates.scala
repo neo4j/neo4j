@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Exists
 
 case object normalizeSargablePredicates extends Rewriter {
 
-  override def apply(that: AnyRef): AnyRef = topDown(instance)(that)
+  override def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = topDown(Rewriter.lift {
 
     // turn n.prop IS NOT NULL into exists(n.prop)
     case predicate@IsNotNull(property@Property(_, _)) =>
@@ -36,5 +36,5 @@ case object normalizeSargablePredicates extends Rewriter {
     // remove not from inequality expressions by negating them
     case Not(inequality: InequalityExpression) =>
       inequality.negated
-  }
+  })
 }

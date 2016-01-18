@@ -86,7 +86,7 @@ case class PredicateSplitter(rewrites: Map[Ref[Clause], Seq[Clause]]) {
   }
 
   object statementRewriter extends Rewriter {
-    val instance = topDown(Rewriter.lift {
+    private val instance = topDown(Rewriter.lift {
       case query: SingleQuery =>
         val oldClauses = query.clauses
         val newClauses = oldClauses.flatMap {
@@ -96,9 +96,6 @@ case class PredicateSplitter(rewrites: Map[Ref[Clause], Seq[Clause]]) {
         query.copy(clauses = newClauses)(query.position)
     })
 
-    override def apply(in: AnyRef): AnyRef = {
-      val result = instance(in)
-      result
-    }
+    override def apply(in: AnyRef): AnyRef = instance(in)
   }
 }

@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, topDown}
 
 case object normalizeComparisons extends Rewriter {
 
-  override def apply(that: AnyRef): AnyRef = topDown(instance)(that)
+  override def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = topDown(Rewriter.lift {
     case c@NotEquals(lhs, rhs) =>
       NotEquals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
     case c@Equals(lhs, rhs) =>
@@ -41,5 +41,5 @@ case object normalizeComparisons extends Rewriter {
       GreaterThanOrEqual(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
     case c@InvalidNotEquals(lhs, rhs) =>
       InvalidNotEquals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-  }
+  })
 }
