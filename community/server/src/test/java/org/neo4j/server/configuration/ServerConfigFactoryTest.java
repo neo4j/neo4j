@@ -30,14 +30,13 @@ import java.util.List;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
-import org.neo4j.test.SuppressOutput;
 import org.neo4j.logging.NullLog;
+import org.neo4j.test.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.SuppressOutput.suppressAll;
-
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.server.configuration.ServerConfigFactory.loadConfig;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class ServerConfigFactoryTest
 {
@@ -108,7 +107,6 @@ public class ServerConfigFactoryTest
         assertEquals( "/extension1", thirdpartyJaxRsPackages.get( 0 ).getMountPoint() );
         assertEquals( "/extension2", thirdpartyJaxRsPackages.get( 1 ).getMountPoint() );
         assertEquals( "/extension3", thirdpartyJaxRsPackages.get( 2 ).getMountPoint() );
-
     }
 
     @Test

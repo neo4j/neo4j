@@ -151,7 +151,7 @@ public class CommunityServerBuilder
         return this;
     }
 
-    private void createPropertiesFile( File temporaryConfigFile )
+    private void createPropertiesFile( File temporaryConfigFile ) throws IOException
     {
         Map<String, String> properties = MapUtil.stringMap(
                 Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
@@ -211,6 +211,7 @@ public class CommunityServerBuilder
             }
         }
 
+        properties.put( ServerInternalSettings.neo4j_base_dir.name(), tmpDir() );
         properties.put( ServerSettings.auth_enabled.name(), "false" );
         properties.put( ServerInternalSettings.auth_store.name(), "neo4j-home/data/dbms/authorization" );
         properties.put( ServerInternalSettings.rrd_store.name(), "neo4j-home/data/rrd/" );
@@ -221,6 +222,16 @@ public class CommunityServerBuilder
         }
 
         ServerTestUtils.writePropertiesToFile( properties, temporaryConfigFile );
+    }
+
+    private String tmpDir() throws IOException
+    {
+        File file = File.createTempFile( "neo4j", "test" );
+        boolean delete = file.delete();
+        assert delete;
+        boolean mkdir = file.mkdir();
+        assert mkdir;
+        return file.getAbsolutePath();
     }
 
     public static final Map<String, String> good_tuning_file_properties =

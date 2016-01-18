@@ -66,8 +66,8 @@ public class ServerSettingsTest
         config.setLogger( logging.getLog( "config" ) );
 
         // Then
-        assertEquals( "cert", config.get( ServerSettings.tls_certificate_file ).getPath() );
-        assertEquals( "key", config.get( ServerSettings.tls_key_file ).getPath() );
+        assertEquals( "./cert", config.get( ServerSettings.tls_certificate_file ).getPath() );
+        assertEquals( "./key", config.get( ServerSettings.tls_key_file ).getPath() );
         logging.assertContainsMessageContaining(
                 "The TLS certificate configuration you are using, 'org.neo4j.server.webserver.https.cert.location' " +
                 "is deprecated. Please use 'dbms.security.tls_certificate_file' instead." );

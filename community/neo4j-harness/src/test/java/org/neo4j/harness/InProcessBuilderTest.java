@@ -229,7 +229,21 @@ public class InProcessBuilderTest
             assertTrue( cause instanceof IOException);
             assertTrue( cause.getMessage().contains( "exists but is not a directory" ));
         }
+    }
 
+    @Test
+    public void shouldPutServerFilesInTempDir() throws Throwable
+    {
+        // Given
+        File workingDirectory = new File( "." );
+        String[] originalFilesInWorkingDir = workingDirectory.list();
+
+        // When I start a server in an explicit test directory
+        try(ServerControls firstServer = newInProcessBuilder( testDir.directory() ).newServer())
+        {
+            // Then no files in the my regular working directory should change
+            assertThat( workingDirectory.list(), equalTo( originalFilesInWorkingDir ));
+        }
     }
 
     private void assertDBConfig( ServerControls server, String expected, String key ) throws JsonParseException
