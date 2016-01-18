@@ -162,7 +162,15 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     @Override
     public void ternary( Expression test, Expression onTrue, Expression onFalse )
     {
-
+        test.accept( this );
+        Label l0 = new Label();
+        methodVisitor.visitJumpInsn( IFEQ, l0 );
+        onTrue.accept( this );
+        Label l1 = new Label();
+        methodVisitor.visitJumpInsn( GOTO, l1 );
+        methodVisitor.visitLabel( l0 );
+        onFalse.accept( this );
+        methodVisitor.visitLabel( l1 );
     }
 
     @Override

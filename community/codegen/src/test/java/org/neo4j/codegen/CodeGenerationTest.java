@@ -60,6 +60,7 @@ import static org.neo4j.codegen.Expression.newArray;
 import static org.neo4j.codegen.Expression.newInstance;
 import static org.neo4j.codegen.Expression.not;
 import static org.neo4j.codegen.Expression.or;
+import static org.neo4j.codegen.Expression.ternary;
 import static org.neo4j.codegen.ExpressionTemplate.cast;
 import static org.neo4j.codegen.ExpressionTemplate.load;
 import static org.neo4j.codegen.ExpressionTemplate.self;
@@ -644,7 +645,6 @@ public class CodeGenerationTest
             handle = simple.handle();
         }
 
-
         // when
         MethodHandle conditional =
                 instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class);
@@ -657,7 +657,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateMethodUsingNot() throws Throwable
+    public void shouldHandleNot() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -672,7 +672,6 @@ public class CodeGenerationTest
             handle = simple.handle();
         }
 
-
         // when
         MethodHandle conditional =
                 instanceMethod( handle.newInstance(), "conditional", boolean.class);
@@ -680,6 +679,62 @@ public class CodeGenerationTest
         // then
         assertThat(conditional.invoke( true), equalTo(false));
         assertThat(conditional.invoke( false), equalTo(true));
+    }
+
+    @Test
+    public void shouldHandleTernaryOperator() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( String.class, "ternary",
+                    param( boolean.class, "test"), param( TernaryChecker.class, "check" )) )
+            {
+                conditional.returns(
+                        ternary( conditional.load( "test" ),
+                            invoke( conditional.load("check"), methodReference( TernaryChecker.class, String.class, "onTrue" ) ),
+                            invoke( conditional.load("check"), methodReference( TernaryChecker.class, String.class, "onFalse" ) )));
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle ternary =
+                instanceMethod( handle.newInstance(), "ternary", boolean.class, TernaryChecker.class);
+
+        // then
+        TernaryChecker checker1 = new TernaryChecker();
+        assertThat(ternary.invoke( true, checker1), equalTo("on true"));
+        assertTrue(checker1.ranOnTrue);
+        assertFalse(checker1.ranOnFalse);
+
+
+        TernaryChecker checker2 = new TernaryChecker();
+        assertThat(ternary.invoke( false, checker2), equalTo("on false"));
+        assertFalse(checker2.ranOnTrue);
+        assertTrue(checker2.ranOnFalse);
+    }
+
+    public static class TernaryChecker
+    {
+        private boolean ranOnTrue = false;
+        private boolean ranOnFalse = false;
+
+        public String onTrue()
+        {
+            ranOnTrue = true;
+            return "on true";
+        }
+
+        public String onFalse()
+        {
+            ranOnFalse = true;
+            return "on false";
+        }
+
+
     }
 
 
