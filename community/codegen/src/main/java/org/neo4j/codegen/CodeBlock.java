@@ -19,9 +19,11 @@
  */
 package org.neo4j.codegen;
 
+import java.util.Iterator;
 import java.util.function.Consumer;
 
 import static org.neo4j.codegen.LocalVariables.copy;
+import static org.neo4j.codegen.MethodReference.methodReference;
 import static org.neo4j.codegen.Resource.withResource;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
@@ -139,10 +141,30 @@ public class CodeBlock implements AutoCloseable
         return Expression.load( local( name ) );
     }
 
+    /*
+     * Foreach is just syntactic sugar for a while loop.
+     *
+     */
     public CodeBlock forEach( Parameter local, Expression iterable )
     {
-        emit( e -> e.beginForEach( local, iterable ) );
-        return new CodeBlock( this );
+        String iteratorName = local.name() + "Iter";
+
+        try
+        {
+            assign( Iterator.class, iteratorName, Expression.invoke( iterable,
+                    MethodReference.methodReference( Iterable.class, Iterator.class, "iterator" ) ));
+            CodeBlock block = whileLoop( Expression
+                    .invoke( load( iteratorName ), methodReference( Iterator.class, boolean.class, "hasNext" ) ) );
+            block.assign( local.type(), local.name(),
+                    Expression.cast(local.type(), Expression.invoke( block.load( iteratorName ),
+                            methodReference( Iterator.class, Object.class, "next" ))) );
+
+            return block;
+        }
+        catch ( NoSuchMethodException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public CodeBlock whileLoop( Expression test )

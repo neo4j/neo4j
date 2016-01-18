@@ -519,6 +519,42 @@ public class CodeGenerationTest
     }
 
     @Test
+    public void shouldGenerateForEachLoop() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock callEach = simple.generateMethod( void.class, "callEach",
+                    param( TypeReference.parameterizedType( Iterable.class, Runnable.class ), "targets" ) ) )
+            {
+                try ( CodeBlock loop = callEach.forEach( param(Runnable.class, "runner"), callEach.load( "targets" )) )
+                {
+                    loop.expression(
+                            invoke(loop.load("runner"),
+                                    methodReference( Runnable.class, void.class, "run" ) ) );
+                }
+            }
+
+            handle = simple.handle();
+        }
+        Runnable a = mock( Runnable.class );
+        Runnable b = mock( Runnable.class );
+        Runnable c = mock( Runnable.class );
+
+        // when
+        MethodHandle callEach = instanceMethod( handle.newInstance(), "callEach", Iterable.class );
+        callEach.invoke( Arrays.asList( a, b, c ) );
+
+        // then
+        InOrder order = inOrder( a, b, c );
+        order.verify( a ).run();
+        order.verify( b ).run();
+        order.verify( c ).run();
+        verifyNoMoreInteractions( a, b, c );
+    }
+
+    @Test
     public void shouldGenerateIfStatement() throws Throwable
     {
         // given

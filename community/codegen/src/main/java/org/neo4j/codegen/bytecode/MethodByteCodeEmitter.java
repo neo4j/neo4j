@@ -398,6 +398,13 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     public void beginForEach( Parameter local, Expression iterable )
     {
         callSuperIfNecessary();
+
+        //TODO foreach is just sugar for a while loop using iterator
+
+        iterable.accept( expressionVisitor );
+        methodVisitor.visitMethodInsn( INVOKEINTERFACE, "java/lang/Iterable", "iterator", "()Ljava/util/Iterator;", true );
+
+
     }
 
     /*
