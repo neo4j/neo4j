@@ -336,7 +336,7 @@ object ClauseConverters {
     Handles: ... WITH * [WHERE <predicate>] ...
      */
     case With(false, ri, None, None, None, where)
-      if !builder.currentQueryGraph.hasOptionalPatterns
+      if !(builder.currentQueryGraph.hasOptionalPatterns || builder.currentQueryGraph.containsUpdates)
         && ri.items.forall(item => !containsAggregate(item.expression))
         && ri.items.forall {
         case item: AliasedReturnItem => item.expression == item.variable

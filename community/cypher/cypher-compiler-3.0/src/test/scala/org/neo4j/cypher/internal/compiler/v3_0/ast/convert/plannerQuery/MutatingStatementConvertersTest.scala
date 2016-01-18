@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{SimplePatt
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{RelTypeName, Null, SignedDecimalIntegerLiteral, PropertyKeyName}
+import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -93,5 +93,36 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     ))
 
     query.queryGraph.containsReads should be (false)
+  }
+
+  test("Read write and read again") {
+    val query = buildPlannerQuery("MATCH (n) CREATE (m) WITH * MATCH (o) RETURN *")
+    query.horizon should equal(RegularQueryProjection(
+      projections = Map("n" -> varFor("n"), "m" -> varFor("m"))
+    ))
+
+    query.queryGraph.patternNodes should equal(Set(IdName("n")))
+    query.queryGraph.mutatingPatterns should equal(Seq(CreateNodePattern(IdName("m"), Seq.empty, None)))
+
+    val next = query.tail.get
+
+    next.queryGraph.patternNodes should equal(Set(IdName("o")))
+    next.queryGraph.readOnly should be(true)
+  }
+
+  test("Unwind, read write and read again") {
+    val query = buildPlannerQuery("UNWIND [1] as i MATCH (n) CREATE (m) WITH * MATCH (o) RETURN *")
+    query.horizon should equal(UnwindProjection(IdName("i"), Collection(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)))
+    query.queryGraph shouldBe 'isEmpty
+
+    val second = query.tail.get
+
+    second.queryGraph.patternNodes should equal(Set(IdName("n")))
+    second.queryGraph.mutatingPatterns should equal(Seq(CreateNodePattern(IdName("m"), Seq.empty, None)))
+
+    val third = second.tail.get
+
+    third.queryGraph.patternNodes should equal(Set(IdName("o")))
+    third.queryGraph.readOnly should be(true)
   }
 }
