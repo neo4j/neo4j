@@ -43,6 +43,7 @@
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
     <neo4j.version>${project.version}</neo4j.version>
+    <neo4j-browser.version>0.1.0</neo4j-browser.version>
     <windows-wrapper.version>5</windows-wrapper.version>
     <windows-wrapper.filename>windows-service-wrapper-${windows-wrapper.version}.jar</windows-wrapper.filename>
 
@@ -162,7 +163,7 @@
           <failIfMissing>true</failIfMissing>
           <plainTextReport>true</plainTextReport>
           <prependText>notice-agpl-prefix.txt</prependText>
-          <excludedGroups>^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.browser){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
+          <excludedGroups>^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
         </configuration>
         <executions>
           <execution>
