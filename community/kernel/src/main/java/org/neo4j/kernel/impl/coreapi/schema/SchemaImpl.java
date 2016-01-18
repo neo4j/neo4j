@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.InvalidTransactionTypeException;
@@ -78,10 +79,10 @@ import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class SchemaImpl implements Schema
 {
-    private final ThreadToStatementContextBridge statementContextSupplier;
+    private final Supplier<Statement> statementContextSupplier;
     private final InternalSchemaActions actions;
 
-    public SchemaImpl( ThreadToStatementContextBridge statementContextSupplier )
+    public SchemaImpl( Supplier<Statement> statementContextSupplier )
     {
         this.statementContextSupplier = statementContextSupplier;
         this.actions = new GDBSchemaActions( statementContextSupplier );
@@ -90,16 +91,12 @@ public class SchemaImpl implements Schema
     @Override
     public IndexCreator indexFor( Label label )
     {
-        assertInUnterminatedTransaction();
-
         return new IndexCreatorImpl( actions, label );
     }
 
     @Override
     public Iterable<IndexDefinition> getIndexes( final Label label )
     {
-        assertInUnterminatedTransaction();
-
         try ( Statement statement = statementContextSupplier.get() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
@@ -117,8 +114,6 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<IndexDefinition> getIndexes()
     {
-        assertInUnterminatedTransaction();
-
         try ( Statement statement = statementContextSupplier.get() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
@@ -148,8 +143,7 @@ public class SchemaImpl implements Schema
     @Override
     public void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )
     {
-        assertInUnterminatedTransaction();
-
+        actions.assertInOpenTransaction();
         long timeout = System.currentTimeMillis() + unit.toMillis( duration );
         do
         {
@@ -177,8 +171,7 @@ public class SchemaImpl implements Schema
     @Override
     public void awaitIndexesOnline( long duration, TimeUnit unit )
     {
-        assertInUnterminatedTransaction();
-
+        actions.assertInOpenTransaction();
         long millisLeft = TimeUnit.MILLISECONDS.convert( duration, unit );
         Collection<IndexDefinition> onlineIndexes = new ArrayList<>();
 
@@ -203,8 +196,7 @@ public class SchemaImpl implements Schema
     @Override
     public IndexState getIndexState( final IndexDefinition index )
     {
-        assertInUnterminatedTransaction();
-
+        actions.assertInOpenTransaction();
         String propertyKey = single( index.getPropertyKeys() );
         try ( Statement statement = statementContextSupplier.get() )
         {
@@ -245,8 +237,7 @@ public class SchemaImpl implements Schema
     @Override
     public IndexPopulationProgress getIndexPopulationProgress( IndexDefinition index )
     {
-        assertInUnterminatedTransaction();
-
+        actions.assertInOpenTransaction();
         String propertyKey = single( index.getPropertyKeys() );
         try ( Statement statement = statementContextSupplier.get() )
         {
@@ -278,8 +269,7 @@ public class SchemaImpl implements Schema
     @Override
     public String getIndexFailure( IndexDefinition index )
     {
-        assertInUnterminatedTransaction();
-
+        actions.assertInOpenTransaction();
         String propertyKey = single( index.getPropertyKeys() );
         try ( Statement statement = statementContextSupplier.get() )
         {
@@ -309,16 +299,14 @@ public class SchemaImpl implements Schema
     @Override
     public ConstraintCreator constraintFor( Label label )
     {
-        assertInUnterminatedTransaction();
-
+        actions.assertInOpenTransaction();
         return new BaseNodeConstraintCreator( actions, label );
     }
 
     @Override
     public Iterable<ConstraintDefinition> getConstraints()
     {
-        assertInUnterminatedTransaction();
-
+        actions.assertInOpenTransaction();
         try ( Statement statement = statementContextSupplier.get() )
         {
             Iterator<PropertyConstraint> constraints = statement.readOperations().constraintsGetAll();
@@ -329,7 +317,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints( final Label label )
     {
-        assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
 
         try ( Statement statement = statementContextSupplier.get() )
         {
@@ -346,8 +334,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints( RelationshipType type )
     {
-        assertInUnterminatedTransaction();
-
+        actions.assertInOpenTransaction();
         try ( Statement statement = statementContextSupplier.get() )
         {
             int typeId = statement.readOperations().relationshipTypeGetForName( type.name() );
@@ -410,8 +397,8 @@ public class SchemaImpl implements Schema
 
     private static class GDBSchemaActions implements InternalSchemaActions
     {
-        private final ThreadToStatementContextBridge ctxSupplier;
-        public GDBSchemaActions( ThreadToStatementContextBridge ctxSupplier )
+        private final Supplier<Statement> ctxSupplier;
+        public GDBSchemaActions( Supplier<Statement> ctxSupplier )
         {
             this.ctxSupplier = ctxSupplier;
         }
@@ -654,14 +641,9 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public void assertInUnterminatedTransaction()
+        public void assertInOpenTransaction()
         {
-            ctxSupplier.assertInUnterminatedTransaction();
+            ctxSupplier.get();
         }
-    }
-
-    private void assertInUnterminatedTransaction()
-    {
-        statementContextSupplier.assertInUnterminatedTransaction();
     }
 }

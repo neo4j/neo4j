@@ -21,8 +21,9 @@ package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
 
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -52,7 +53,7 @@ public class Begin extends NonTransactionProvidingApp
             return Continuation.INPUT_COMPLETE;
         }
 
-        TopLevelTransaction tx = currentTransaction( getServer() );
+        KernelTransaction tx = currentTransaction( getServer() );
 
         // This is a "begin" app so it will leave a transaction open. Don't close it in here
         getServer().getDb().beginTx();
@@ -95,7 +96,7 @@ public class Begin extends NonTransactionProvidingApp
         return substring.equals( line.toUpperCase() );
     }
 
-    public static TopLevelTransaction currentTransaction( GraphDatabaseShellServer server )
+    public static KernelTransaction currentTransaction( GraphDatabaseShellServer server )
     {
         return server.getDb().getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
                 .getTopLevelTransactionBoundToThisThread( false );

@@ -206,7 +206,7 @@ public class AvailabilityGuard
         }
     }
 
-    private static enum Availability
+    private enum Availability
     {
         AVAILABLE,
         UNAVAILABLE,
@@ -221,6 +221,15 @@ public class AvailabilityGuard
     public boolean isAvailable()
     {
         return availability() == Availability.AVAILABLE;
+    }
+
+
+    /**
+     * Check if the database has been shut down.
+     */
+    public boolean isShutdown()
+    {
+        return availability() == Availability.SHUTDOWN;
     }
 
     /**

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.coreapi;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Node;
@@ -34,17 +35,15 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 public class IndexManagerImpl implements IndexManager
 {
-
-    private final ThreadToStatementContextBridge transactionBridge;
+    private final Supplier<Statement> transactionBridge;
     private final IndexProvider provider;
     private final AutoIndexer<Node> nodeAutoIndexer;
     private final RelationshipAutoIndexer relAutoIndexer;
 
-    public IndexManagerImpl( ThreadToStatementContextBridge bridge,
+    public IndexManagerImpl( Supplier<Statement> bridge,
                              IndexProvider provider,
                              AutoIndexer<Node> nodeAutoIndexer,
                              RelationshipAutoIndexer relAutoIndexer )

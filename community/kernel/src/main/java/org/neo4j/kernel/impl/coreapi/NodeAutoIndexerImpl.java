@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import java.util.Collection;
+
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 /**
  * Implementation of an AutoIndexer for Node primitives. It
@@ -34,55 +33,23 @@ import org.neo4j.kernel.impl.core.NodeManager;
  */
 public class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
 {
-    public static abstract class Configuration
-    {
-        public static final Setting<Boolean> node_auto_indexing = GraphDatabaseSettings.node_auto_indexing;
-        public static final Setting<String> node_keys_indexable = GraphDatabaseSettings.node_keys_indexable;
-    }
-
     static final String NODE_AUTO_INDEX = "node_auto_index";
-    private Config config;
-    private IndexProvider indexProvider;
-    private NodeManager nodeManager;
+    private final IndexProvider indexProvider;
+    private final GraphDatabaseFacade.SPI spi;
 
-    public NodeAutoIndexerImpl( Config config, IndexProvider indexProvider, NodeManager nodeManager )
+    public NodeAutoIndexerImpl( boolean enabled, Collection<String> propertiesToIndex, IndexProvider indexProvider, GraphDatabaseFacade.SPI spi )
     {
         super();
-        this.config = config;
         this.indexProvider = indexProvider;
-        this.nodeManager = nodeManager;
-    }
-
-    @Override
-    public void init()
-            throws Throwable
-    {
-    }
-
-    @Override
-    public void start()
-    {
-        setEnabled( config.get( Configuration.node_auto_indexing ) );
-        propertyKeysToInclude.addAll( parseConfigList( config.get( Configuration.node_keys_indexable ) ) );
-    }
-
-    @Override
-    public void stop()
-            throws Throwable
-    {
-    }
-
-    @Override
-    public void shutdown()
-            throws Throwable
-    {
+        this.spi = spi;
+        setEnabled( enabled );
+        propertyKeysToInclude.addAll( propertiesToIndex );
     }
 
     @Override
     protected Index<Node> getIndexInternal()
     {
-        return indexProvider.getOrCreateNodeIndex(
-                NODE_AUTO_INDEX, null );
+        return indexProvider.getOrCreateNodeIndex( NODE_AUTO_INDEX, null );
     }
 
     @Override
@@ -91,13 +58,11 @@ public class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
         super.setEnabled( enabled );
         if ( enabled )
         {
-            nodeManager.addNodePropertyTracker(
-                    this );
+            spi.addNodePropertyTracker( this );
         }
         else
         {
-            nodeManager.removeNodePropertyTracker(
-                    this );
+            spi.removeNodePropertyTracker( this );
         }
     }
 }

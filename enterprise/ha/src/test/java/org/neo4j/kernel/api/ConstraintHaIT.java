@@ -40,7 +40,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.api.ConstraintHaIT.NodePropertyExistenceConstraintHaIT;
 import org.neo4j.kernel.api.ConstraintHaIT.RelationshipPropertyExistenceConstraintHaIT;
 import org.neo4j.kernel.api.ConstraintHaIT.UniquenessConstraintHaIT;
@@ -416,7 +416,7 @@ public class ConstraintHaIT
             // And given that I begin a transaction that will create a constraint violation
             slave.beginTx();
             createConstraintViolation( slave, type, key, "Foo" );
-            TopLevelTransaction slaveTx = txBridge.getTopLevelTransactionBoundToThisThread( true );
+            KernelTransaction slaveTx = txBridge.getTopLevelTransactionBoundToThisThread( true );
             txBridge.unbindTransactionFromCurrentThread();
 
             // When I create a constraint

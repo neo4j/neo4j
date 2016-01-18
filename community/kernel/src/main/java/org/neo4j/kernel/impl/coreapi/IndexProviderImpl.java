@@ -20,23 +20,24 @@
 package org.neo4j.kernel.impl.coreapi;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 public class IndexProviderImpl implements IndexProvider
 {
-    private final LegacyIndexProxy.Lookup lookup;
-    private final ThreadToStatementContextBridge transactionBridge;
+    private final Supplier<Statement> transactionBridge;
+    private final GraphDatabaseService gds;
 
-    public IndexProviderImpl( LegacyIndexProxy.Lookup lookup, ThreadToStatementContextBridge transactionBridge )
+    public IndexProviderImpl( GraphDatabaseService gds, Supplier<Statement> transactionBridge )
     {
-        this.lookup = lookup;
+        this.gds = gds;
         this.transactionBridge = transactionBridge;
     }
 
@@ -49,7 +50,7 @@ public class IndexProviderImpl implements IndexProvider
             // and the index will itself share the same IndexConfigStore as us and pick up and use
             // that. We should pass along config somehow with calls.
             statement.dataWriteOperations().nodeLegacyIndexCreateLazily( indexName, customConfiguration );
-            return new LegacyIndexProxy<>( indexName, LegacyIndexProxy.Type.NODE, lookup, transactionBridge );
+            return new LegacyIndexProxy<>( indexName, LegacyIndexProxy.Type.NODE, gds, transactionBridge );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -67,7 +68,7 @@ public class IndexProviderImpl implements IndexProvider
             // and the index will itself share the same IndexConfigStore as us and pick up and use
             // that. We should pass along config somehow with calls.
             statement.dataWriteOperations().relationshipLegacyIndexCreateLazily( indexName, customConfiguration );
-            return new RelationshipLegacyIndexProxy( indexName, lookup, transactionBridge );
+            return new RelationshipLegacyIndexProxy( indexName, gds, transactionBridge );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {

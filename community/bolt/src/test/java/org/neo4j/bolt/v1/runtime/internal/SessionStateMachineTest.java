@@ -31,7 +31,8 @@ import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -53,6 +54,7 @@ public class SessionStateMachineTest
     private final GraphDatabaseService db = mock( GraphDatabaseService.class );
     private final ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
     private final Transaction tx = mock( TopLevelTransaction.class );
+    private final KernelTransaction ktx = mock( KernelTransaction.class );
     private final UsageData usageData = new UsageData();
     private final StatementRunner runner = mock( StatementRunner.class );
     private final SessionStateMachine machine = new SessionStateMachine(
@@ -82,8 +84,8 @@ public class SessionStateMachineTest
 
         // Then
         assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.ERROR ) );
-        verify( tx ).failure();
-        verify( tx ).close();
+        verify( ktx ).failure();
+        verify( ktx ).close();
 
         // And when
         machine.reset( null, Session.Callback.NO_OP );
@@ -109,8 +111,8 @@ public class SessionStateMachineTest
 
         // Then
         assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
-        verify(tx).failure();
-        verify(tx).close();
+        verify( ktx ).failure();
+        verify( ktx ).close();
 
         // And when
         machine.reset( null, Session.Callback.NO_OP );
@@ -130,7 +132,7 @@ public class SessionStateMachineTest
         // Then
         assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.STOPPED ) );
         verify( db ).beginTx();
-        verify( tx ).close();
+        verify( ktx ).close();
     }
 
     @Test
@@ -236,6 +238,7 @@ public class SessionStateMachineTest
     public void setup()
     {
         when( db.beginTx() ).thenReturn( tx );
+        when( txBridge.getKernelTransactionBoundToThisThread( false ) ).thenReturn( ktx );
     }
 
     static class TestCallback<V> extends Session.Callback.Adapter<V, Object>

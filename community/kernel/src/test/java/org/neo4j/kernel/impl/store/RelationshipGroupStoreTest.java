@@ -128,7 +128,7 @@ public class RelationshipGroupStoreTest
     private void newDb( int denseNodeThreshold )
     {
         db = new ImpermanentGraphDatabase( MapUtil.stringMap( "dense_node_threshold", "" + denseNodeThreshold ) );
-        fs = db.platformModule.fileSystem;
+        fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
     }
 
     private void createAndVerify( Integer customThreshold )

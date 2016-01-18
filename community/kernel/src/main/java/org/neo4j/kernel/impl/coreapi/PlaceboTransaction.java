@@ -17,36 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.coreapi;
+
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 
-/**
- * @deprecated This will be moved to internal packages in the next major release.
- */
-@Deprecated
 public class PlaceboTransaction implements Transaction
 {
-    private final TopLevelTransaction parentTransaction;
+    private final static PropertyContainerLocker locker = new PropertyContainerLocker();
+    private final Supplier<Statement> stmt;
+    private final Supplier<KernelTransaction> currentTransaction;
     private boolean success;
 
-    public PlaceboTransaction( TopLevelTransaction parentTransaction )
+    public PlaceboTransaction( Supplier<KernelTransaction> currentTransaction, Supplier<Statement> stmt )
     {
-        this.parentTransaction = parentTransaction;
+        this.stmt = stmt;
+        this.currentTransaction = currentTransaction;
     }
 
     @Override
     public void terminate()
     {
-        parentTransaction.terminate();
+        currentTransaction.get().markForTermination();
     }
 
     @Override
     public void failure()
     {
-    	parentTransaction.failure();
+    	currentTransaction.get().failure();
     }
 
     @Override
@@ -58,9 +61,9 @@ public class PlaceboTransaction implements Transaction
     @Override
     public void close()
     {
-        if ( !success && !parentTransaction.failureCalled() )
+        if ( !success )
         {
-            parentTransaction.failure();
+            currentTransaction.get().failure();
         }
     }
 
@@ -73,12 +76,12 @@ public class PlaceboTransaction implements Transaction
 	@Override
 	public Lock acquireWriteLock( PropertyContainer entity )
 	{
-		return parentTransaction.acquireWriteLock( entity );
+		return locker.exclusiveLock( stmt, entity );
 	}
 
 	@Override
 	public Lock acquireReadLock( PropertyContainer entity )
 	{
-		return parentTransaction.acquireReadLock( entity );
+		return locker.sharedLock( stmt, entity );
 	}
 }

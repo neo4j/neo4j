@@ -129,7 +129,7 @@ public class ShortestPath implements PathFinder<Path>
             GraphDatabaseService service = node.getGraphDatabase();
             if ( service instanceof GraphDatabaseFacade )
             {
-                Monitors monitors = ((GraphDatabaseFacade) service).platformModule.monitors;
+                Monitors monitors = ((GraphDatabaseFacade) service).getDependencyResolver().resolveDependency( Monitors.class );
                 dataMonitor = monitors.newMonitor( DataMonitor.class );
             }
         }

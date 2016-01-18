@@ -22,21 +22,13 @@ package org.neo4j.kernel.ha;
 import java.io.File;
 import java.util.Map;
 
-import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
+import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
-import org.neo4j.kernel.ha.factory.HighlyAvailableEditionModule;
 import org.neo4j.kernel.ha.factory.HighlyAvailableFacadeFactory;
-import org.neo4j.kernel.impl.factory.DataSourceModule;
-import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 
 /**
  * This has all the functionality of an embedded database, with the addition of services
@@ -44,50 +36,19 @@ import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
  */
 public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
 {
-    private HighlyAvailableEditionModule highlyAvailableEditionModule;
-
-    public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params,
-                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                         Monitors monitors )
-    {
-        this( storeDir, params, newDependencies()
-                .settingsClasses( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class )
-                .kernelExtensions( kernelExtensions ).monitors( monitors ) );
-    }
-
-    public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params,
-                                         Iterable<KernelExtensionFactory<?>> kernelExtensions )
-    {
-        this( storeDir, params, newDependencies()
-                .settingsClasses( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class )
-                .kernelExtensions( kernelExtensions ) );
-    }
-
     public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        newHighlyAvailableFacadeFactory().newFacade( storeDir, params, dependencies, this );
-    }
-
-    protected HighlyAvailableFacadeFactory newHighlyAvailableFacadeFactory()
-    {
-        return new HighlyAvailableFacadeFactory();
-    }
-
-    @Override
-    public void init( PlatformModule platformModule, EditionModule editionModule, DataSourceModule dataSourceModule )
-    {
-        super.init( platformModule, editionModule, dataSourceModule );
-        this.highlyAvailableEditionModule = (HighlyAvailableEditionModule) editionModule;
+        new HighlyAvailableFacadeFactory().newFacade( storeDir, params, dependencies, this );
     }
 
     public HighAvailabilityMemberState getInstanceState()
     {
-        return highlyAvailableEditionModule.memberStateMachine.getCurrentState();
+        return getDependencyResolver().resolveDependency( HighAvailabilityMemberStateMachine.class ).getCurrentState();
     }
 
     public String role()
     {
-        return highlyAvailableEditionModule.members.getCurrentMemberRole();
+        return getDependencyResolver().resolveDependency( ClusterMembers.class ).getCurrentMemberRole();
     }
 
     public boolean isMaster()
@@ -97,6 +58,6 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
 
     public File getStoreDirectory()
     {
-        return storeDir;
+        return new File( getStoreDir() );
     }
 }

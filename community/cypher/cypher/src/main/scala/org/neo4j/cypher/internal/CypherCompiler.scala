@@ -25,7 +25,9 @@ import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Clock
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
@@ -132,29 +134,30 @@ class CypherCompiler(graph: GraphDatabaseService,
     }
   }
 
-  private def getQueryCacheSize : Int =
-    optGraphAs[GraphDatabaseFacade]
-      .andThen(_.platformModule.config.get(GraphDatabaseSettings.query_cache_size).intValue())
-      .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_QUERY_CACHE_SIZE)
-
-
-  private def getStatisticsDivergenceThreshold : Double =
-    optGraphAs[GraphDatabaseFacade]
-      .andThen(_.platformModule.config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue())
-      .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD)
-
-  private def getNonIndexedLabelWarningThreshold: Long =
-    optGraphAs[GraphDatabaseFacade]
-      .andThen(_.platformModule.config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue())
-      .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD)
-
-  private def getMinimumTimeBeforeReplanning: Long = {
-    optGraphAs[GraphDatabaseFacade]
-      .andThen(_.platformModule.config.get(GraphDatabaseSettings.cypher_min_replan_interval).longValue())
-      .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_QUERY_PLAN_TTL)
+  private def getQueryCacheSize : Int = {
+    val setting: (Config) => Int = config => config.get(GraphDatabaseSettings.query_cache_size).intValue()
+    getSetting(graph, setting, DEFAULT_QUERY_CACHE_SIZE)
   }
 
-  private def optGraphAs[T <: GraphDatabaseService : Manifest]: PartialFunction[GraphDatabaseService, T] = {
-    case (db: T) => db
+
+  private def getStatisticsDivergenceThreshold : Double = {
+    val setting: (Config) => Double = config => config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue()
+    getSetting(graph, setting, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD)
+  }
+
+  private def getNonIndexedLabelWarningThreshold: Long = {
+    val setting: (Config) => Long = config => config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue()
+    getSetting(graph, setting, DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD)
+  }
+
+  private def getMinimumTimeBeforeReplanning: Long = {
+    val setting: (Config) => Long = config => config.get(GraphDatabaseSettings.cypher_min_replan_interval).longValue()
+    getSetting(graph, setting, DEFAULT_QUERY_PLAN_TTL)
+  }
+
+  private def getSetting[A](gds: GraphDatabaseService, configLookup: Config => A, default: A): A = gds match {
+    // TODO: Cypher should not be pulling out components from casted interfaces, it should ask for Config as a dep
+    case (gdbApi:GraphDatabaseAPI) => configLookup(gdbApi.getDependencyResolver.resolveDependency(classOf[Config]))
+    case _ => default
   }
 }

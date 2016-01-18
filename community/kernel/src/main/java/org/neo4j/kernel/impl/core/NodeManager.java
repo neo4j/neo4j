@@ -29,10 +29,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static java.lang.System.currentTimeMillis;
 
 public class NodeManager extends LifecycleAdapter implements EntityFactory
 {
@@ -43,7 +40,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
 
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
-    private long epoch;
     private final GraphDatabaseService graphDatabaseService;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
 
@@ -64,17 +60,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     }
 
     @Override
-    public void init()
-    {   // Nothing to initialize
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-        epoch = currentTimeMillis();
-    }
-
-    @Override
     public NodeProxy newNodeProxyById( long id )
     {
         return new NodeProxy( nodeActions, id );
@@ -85,21 +70,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     public RelationshipProxy newRelationshipProxyById( long id )
     {
         return new RelationshipProxy( relationshipActions, id );
-    }
-
-    /** Returns a fully initialized proxy. */
-    public RelationshipProxy newRelationshipProxy( long id )
-    {
-        try ( Statement statement = threadToTransactionBridge.get() )
-        {
-            RelationshipProxy proxy = new RelationshipProxy( relationshipActions, id );
-            statement.readOperations().relationshipVisit( id, proxy );
-            return proxy;
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( e );
-        }
     }
 
     /** Returns a fully initialized proxy. */
@@ -169,18 +139,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         public void failTransaction()
         {
             threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).failure();
-        }
-
-        @Override
-        public Relationship lazyRelationshipProxy( long id )
-        {
-            return NodeManager.this.newRelationshipProxyById( id );
-        }
-
-        @Override
-        public Relationship newRelationshipProxy( long id )
-        {
-            return NodeManager.this.newRelationshipProxy( id );
         }
 
         @Override

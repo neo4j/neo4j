@@ -26,7 +26,8 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -80,7 +81,8 @@ public class SessionStateMachine implements Session, SessionState
                     {
                         assert ctx.currentTransaction == null;
                         ctx.implicitTransaction = false;
-                        ctx.currentTransaction = ctx.db.beginTx();
+                        ctx.db.beginTx();
+                        ctx.currentTransaction = ctx.txBridge.getKernelTransactionBoundToThisThread( false );
                         return IN_TRANSACTION;
                     }
 
@@ -104,7 +106,8 @@ public class SessionStateMachine implements Session, SessionState
                     {
                         assert ctx.currentTransaction == null;
                         ctx.implicitTransaction = true;
-                        ctx.currentTransaction = ctx.db.beginTx();
+                        ctx.db.beginTx();
+                        ctx.currentTransaction = ctx.txBridge.getKernelTransactionBoundToThisThread( false );
                         return IN_TRANSACTION;
                     }
 
@@ -153,7 +156,7 @@ public class SessionStateMachine implements Session, SessionState
                     {
                         try
                         {
-                            Transaction tx = ctx.currentTransaction;
+                            KernelTransaction tx = ctx.currentTransaction;
                             ctx.currentTransaction = null;
 
                             tx.failure();
@@ -427,7 +430,7 @@ public class SessionStateMachine implements Session, SessionState
     private RecordStream currentResult;
 
     /** The current transaction, if present */
-    private Transaction currentTransaction;
+    private KernelTransaction currentTransaction;
 
     /** Callback poised to receive the next response */
     private Callback currentCallback;
@@ -584,7 +587,7 @@ public class SessionStateMachine implements Session, SessionState
     {
         if ( hasTransaction() )
         {
-            txBridge.bindTransactionToCurrentThread( (TopLevelTransaction) currentTransaction );
+            txBridge.bindTransactionToCurrentThread( currentTransaction );
         }
         assert this.currentCallback == null;
         assert this.currentAttachment == null;

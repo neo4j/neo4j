@@ -119,14 +119,14 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
             end = db.createNode();
             relationship = start.createRelationshipTo( end, type );
             tx.success();
+
+            // WHEN
+            String toString = relationship.toString();
+
+            // THEN
+            assertEquals( "(" + start.getId() + ")-[" + type + "," + relationship.getId() + "]->(" + end.getId() + ")",
+                    toString );
         }
-
-        // WHEN
-        String toString = relationship.toString();
-
-        // THEN
-        assertEquals( "(" + start.getId() + ")-[" + type + "," + relationship.getId() + "]->(" + end.getId() + ")",
-                toString );
     }
 
     private void verifyIds( RelationshipActions actions, long relationshipId, long nodeId1, int typeId, long nodeId2 )

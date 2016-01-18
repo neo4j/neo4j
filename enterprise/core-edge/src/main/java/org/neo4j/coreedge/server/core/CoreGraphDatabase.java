@@ -22,25 +22,27 @@ package org.neo4j.coreedge.server.core;
 import java.io.File;
 import java.util.Map;
 
-import org.neo4j.coreedge.server.EnterpriseCoreFacadeFactory;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.kernel.impl.factory.DataSourceModule;
-import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.EnterpriseCoreFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 
 public class CoreGraphDatabase extends GraphDatabaseFacade
 {
-    private EnterpriseCoreEditionModule coreEditionModule;
+    private RaftInstance<CoreMember> raft;
 
     public CoreGraphDatabase( File storeDir, Map<String, String> params,
                               GraphDatabaseFacadeFactory.Dependencies dependencies, DiscoveryServiceFactory
                                       discoveryServiceFactory )
     {
         new EnterpriseCoreFacadeFactory( discoveryServiceFactory ).newFacade( storeDir, params, dependencies, this );
+
+        // See same thing in HighlyAvailableGraphDatabase for details
+        raft = getDependencyResolver().resolveDependency( RaftInstance.class );
     }
 
     public CoreGraphDatabase( File storeDir, Map<String, String> params,
@@ -49,15 +51,8 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
         this( storeDir, params, dependencies, new HazelcastDiscoveryServiceFactory() );
     }
 
-    @Override
-    public void init( PlatformModule platformModule, EditionModule editionModule, DataSourceModule dataSourceModule )
-    {
-        super.init( platformModule, editionModule, dataSourceModule );
-        this.coreEditionModule = (EnterpriseCoreEditionModule) editionModule;
-    }
-
     public Role getRole()
     {
-        return coreEditionModule.raft().currentRole();
+        return raft.currentRole();
     }
 }

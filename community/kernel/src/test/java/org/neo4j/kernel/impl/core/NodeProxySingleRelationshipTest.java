@@ -105,14 +105,6 @@ public class NodeProxySingleRelationshipTest
     {
         NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
         final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
-        when( nodeActions.newRelationshipProxy( anyLong() ) ).thenAnswer( new Answer<RelationshipProxy>()
-        {
-            @Override
-            public RelationshipProxy answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new RelationshipProxy( relActions, (Long)invocation.getArguments()[0] );
-            }
-        } );
         when( nodeActions.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) ).then(
                 new Answer<Relationship>()
                 {

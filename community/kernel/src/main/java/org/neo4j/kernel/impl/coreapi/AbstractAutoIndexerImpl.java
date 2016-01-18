@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.coreapi;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.StringTokenizer;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.AutoIndexer;
@@ -30,7 +30,6 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.kernel.PropertyTracker;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Default implementation of the AutoIndexer, binding to the beforeCommit hook
@@ -39,9 +38,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  * @param <T> The database primitive type auto indexed/**
  */
 abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
-        PropertyTracker<T>, AutoIndexer<T>, Lifecycle
+        PropertyTracker<T>, AutoIndexer<T>
 {
-    protected final Set<String> propertyKeysToInclude = new HashSet<String>();
+    protected final Set<String> propertyKeysToInclude = new HashSet<>();
 
     private volatile boolean enabled;
 
@@ -123,27 +122,6 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
      * @return The Index used by this AutoIndexer
      */
     protected abstract Index<T> getIndexInternal();
-
-    protected Set<String> parseConfigList(String list)
-    {
-        if ( list == null )
-        {
-            return Collections.emptySet();
-        }
-
-        Set<String> toReturn = new HashSet<String>();
-        StringTokenizer tokenizer = new StringTokenizer(list, "," );
-        String currentToken;
-        while ( tokenizer.hasMoreTokens() )
-        {
-            currentToken = tokenizer.nextToken();
-            if ( ( currentToken = currentToken.trim() ).length() > 0 )
-            {
-                toReturn.add( currentToken );
-            }
-        }
-        return toReturn;
-    }
 
     /**
      * Simple implementation of the AutoIndex interface, as a wrapper around a

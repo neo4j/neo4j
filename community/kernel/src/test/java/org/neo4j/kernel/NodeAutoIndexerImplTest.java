@@ -21,11 +21,12 @@ package org.neo4j.kernel;
 
 import org.junit.Test;
 
+import java.util.Collections;
+
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.coreapi.IndexProvider;
 import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
@@ -33,16 +34,16 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class NodeAutoIndexerImplTest
 {
+
+    private final IndexProvider indexProvider = mock( IndexProvider.class, RETURNS_MOCKS );
+    private final NodeAutoIndexerImpl index = new NodeAutoIndexerImpl( true, Collections.emptyList(), indexProvider, mock( GraphDatabaseFacade.SPI.class ) );
+
     @Test
     public void shouldNotRemoveFromIndexForNonAutoIndexedProperty() throws Exception
     {
         // Given
         String indexedPropertyName = "someProperty";
         String nonIndexedPropertyName = "someOtherProperty";
-
-        IndexProvider indexProvider = mock( IndexProvider.class, RETURNS_MOCKS );
-        NodeAutoIndexerImpl index = new NodeAutoIndexerImpl( mock( Config.class ), indexProvider,
-                mock( NodeManager.class ) );
         index.startAutoIndexingProperty( indexedPropertyName );
 
         // When
@@ -58,10 +59,6 @@ public class NodeAutoIndexerImplTest
         // Given
         String indexedPropertyName = "someProperty";
         String nonIndexedPropertyName = "someOtherProperty";
-
-        IndexProvider indexProvider = mock( IndexProvider.class, RETURNS_MOCKS );
-        NodeAutoIndexerImpl index = new NodeAutoIndexerImpl( mock( Config.class ), indexProvider,
-                mock( NodeManager.class ) );
         index.startAutoIndexingProperty( indexedPropertyName );
 
         // When
@@ -77,10 +74,6 @@ public class NodeAutoIndexerImplTest
         // Given
         String indexedPropertyName = "someProperty";
         String nonIndexedPropertyName = "someOtherProperty";
-
-        IndexProvider indexProvider = mock( IndexProvider.class, RETURNS_MOCKS );
-        NodeAutoIndexerImpl index = new NodeAutoIndexerImpl( mock( Config.class ), indexProvider,
-                mock( NodeManager.class ) );
         index.startAutoIndexingProperty( indexedPropertyName );
 
         // When

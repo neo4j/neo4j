@@ -64,6 +64,6 @@ abstract class PropertyConstraintDefinition implements ConstraintDefinition
 
     protected void assertInUnterminatedTransaction()
     {
-        actions.assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
     }
 }

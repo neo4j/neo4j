@@ -28,9 +28,11 @@ import java.util.Map;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.Statement;
@@ -477,8 +479,18 @@ public class RelationshipProxy
     @Override
     public String toString()
     {
-        return format( "(%d)-[%s,%d]->(%d)",
-                sourceId(), actions.getRelationshipTypeById( typeId() ).name(), getId(), targetId() );
+        String relType;
+        try
+        {
+            relType = actions.getRelationshipTypeById( typeId() ).name();
+        }
+        catch( NotInTransactionException | DatabaseShutdownException e )
+        {
+            // We don't keep the rel-name lookup if the database is shut down. However, failing on toString would be uncomfortably evil, so we fall
+            // back to noting the relationship type id.
+            relType = "RELTYPE(" + typeId() + ")";
+        }
+        return format( "(%d)-[%s,%d]->(%d)", sourceId(), relType, getId(), targetId() );
     }
 
     private void assertInUnterminatedTransaction()

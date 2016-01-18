@@ -47,6 +47,7 @@ import static org.neo4j.kernel.configuration.Settings.LONG;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.list;
@@ -200,7 +201,7 @@ public abstract class GraphDatabaseSettings
             "only.")
     @Internal
     @Deprecated
-    public static final Setting<String> node_keys_indexable = setting("node_keys_indexable", STRING, NO_DEFAULT, illegalValueMessage( "must be a comma-separated list of keys to be indexed", matches( ANY ) ) );
+    public static final Setting<List<String>> node_keys_indexable = setting("node_keys_indexable", STRING_LIST, "" );
 
     @Description("Controls the auto indexing feature for relationships. Setting it to `false` shuts it down, " +
             "while `true` enables it by default for properties "
@@ -214,7 +215,7 @@ public abstract class GraphDatabaseSettings
             "_relationships_ only." )
     @Internal
     @Deprecated
-    public static final Setting<String> relationship_keys_indexable = setting("relationship_keys_indexable", STRING, NO_DEFAULT, illegalValueMessage( "must be a comma-separated list of keys to be indexed", matches( ANY ) ) );
+    public static final Setting<List<String>> relationship_keys_indexable = setting("relationship_keys_indexable", STRING_LIST, "" );
 
     // Index sampling
     @Description("Enable or disable background index sampling")
