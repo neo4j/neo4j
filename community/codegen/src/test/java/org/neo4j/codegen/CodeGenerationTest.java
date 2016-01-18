@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.BiFunction;
 
 import org.neo4j.codegen.source.Configuration;
 import org.neo4j.codegen.source.SourceCode;
@@ -688,13 +689,13 @@ public class CodeGenerationTest
         ClassHandle handle;
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
-            try ( CodeBlock conditional = simple.generateMethod( String.class, "ternary",
+            try ( CodeBlock ternaryBlock = simple.generateMethod( String.class, "ternary",
                     param( boolean.class, "test"), param( TernaryChecker.class, "check" )) )
             {
-                conditional.returns(
-                        ternary( conditional.load( "test" ),
-                            invoke( conditional.load("check"), methodReference( TernaryChecker.class, String.class, "onTrue" ) ),
-                            invoke( conditional.load("check"), methodReference( TernaryChecker.class, String.class, "onFalse" ) )));
+                ternaryBlock.returns(
+                        ternary( ternaryBlock.load( "test" ),
+                            invoke( ternaryBlock.load("check"), methodReference( TernaryChecker.class, String.class, "onTrue" ) ),
+                            invoke( ternaryBlock.load("check"), methodReference( TernaryChecker.class, String.class, "onFalse" ) )));
             }
 
             handle = simple.handle();
@@ -715,6 +716,125 @@ public class CodeGenerationTest
         assertThat(ternary.invoke( false, checker2), equalTo("on false"));
         assertFalse(checker2.ranOnTrue);
         assertTrue(checker2.ranOnFalse);
+    }
+
+    @Test
+    public void shouldHandleEquality() throws Throwable
+    {
+        // boolean
+        assertTrue( compareForType( boolean.class, true, true, Expression::eq ) );
+        assertTrue( compareForType( boolean.class, false, false, Expression::eq ) );
+        assertFalse( compareForType( boolean.class, true, false, Expression::eq ) );
+        assertFalse( compareForType( boolean.class, false, true, Expression::eq ) );
+
+        // byte
+        assertTrue( compareForType( byte.class, (byte) 42, (byte) 42, Expression::eq ) );
+        assertFalse( compareForType( byte.class, (byte) 43, (byte) 42, Expression::eq ) );
+        assertFalse( compareForType( byte.class, (byte) 42, (byte) 43, Expression::eq ) );
+
+        // short
+        assertTrue( compareForType( short.class, (short) 42, (short) 42, Expression::eq ) );
+        assertFalse( compareForType( short.class, (short) 43, (short) 42, Expression::eq ) );
+        assertFalse( compareForType( short.class, (short) 42, (short) 43, Expression::eq ) );
+
+        // char
+        assertTrue( compareForType( char.class, (char) 42, (char) 42, Expression::eq ) );
+        assertFalse( compareForType( char.class, (char) 43, (char) 42, Expression::eq ) );
+        assertFalse( compareForType( char.class, (char) 42, (char) 43, Expression::eq ) );
+
+        //int
+        assertTrue( compareForType( int.class, 42, 42, Expression::eq ) );
+        assertFalse( compareForType( int.class, 43, 42, Expression::eq ) );
+        assertFalse( compareForType( int.class, 42, 43, Expression::eq ) );
+
+        //long
+        assertTrue( compareForType( long.class, 42L, 42L, Expression::eq ) );
+        assertFalse( compareForType( long.class, 43L, 42L, Expression::eq ) );
+        assertFalse( compareForType( long.class, 42L, 43L, Expression::eq ) );
+
+        //float
+        assertTrue( compareForType( float.class, 42F, 42F, Expression::eq ) );
+        assertFalse( compareForType( float.class, 43F, 42F, Expression::eq ) );
+        assertFalse( compareForType( float.class, 42F, 43F, Expression::eq ) );
+
+        //double
+        assertTrue( compareForType( double.class, 42D, 42D, Expression::eq ) );
+        assertFalse( compareForType( double.class, 43D, 42D, Expression::eq ) );
+        assertFalse( compareForType( double.class, 42D, 43D, Expression::eq ) );
+
+        //reference
+        Object a = new Object();
+        Object b = new Object();
+        assertTrue( compareForType( Object.class, a, a, Expression::eq ) );
+        assertFalse( compareForType( Object.class, a, b, Expression::eq ) );
+        assertFalse( compareForType( Object.class, b, a, Expression::eq ) );
+    }
+
+    @Test
+    public void shouldHandleGreaterThan() throws Throwable
+    {
+        assertTrue( compareForType( float.class, 43F, 42F, Expression::gt ) );
+        assertTrue( compareForType( long.class, 43L, 42L, Expression::gt ) );
+
+        // byte
+        assertTrue( compareForType( byte.class, (byte) 43, (byte) 42, Expression::gt ) );
+        assertFalse( compareForType( byte.class, (byte) 42, (byte) 42, Expression::gt ) );
+        assertFalse( compareForType( byte.class, (byte) 42, (byte) 43, Expression::gt ) );
+
+        // short
+        assertTrue( compareForType( short.class, (short) 43, (short) 42, Expression::gt ) );
+        assertFalse( compareForType( short.class, (short) 42, (short) 42, Expression::gt ) );
+        assertFalse( compareForType( short.class, (short) 42, (short) 43, Expression::gt ) );
+
+        // char
+        assertTrue( compareForType( char.class, (char) 43, (char) 42, Expression::gt ) );
+        assertFalse( compareForType( char.class, (char) 42, (char) 42, Expression::gt ) );
+        assertFalse( compareForType( char.class, (char) 42, (char) 43, Expression::gt ) );
+
+        //int
+        assertTrue( compareForType( int.class, 43, 42, Expression::gt ) );
+        assertFalse( compareForType( int.class, 42, 42, Expression::gt ) );
+        assertFalse( compareForType( int.class, 42, 43, Expression::gt ) );
+
+        //long
+        assertTrue( compareForType( long.class, 43L, 42L, Expression::gt ) );
+        assertFalse( compareForType( long.class, 42L, 42L, Expression::gt ) );
+        assertFalse( compareForType( long.class, 42L, 43L, Expression::gt ) );
+
+        //float
+        assertTrue( compareForType( float.class, 43F, 42F, Expression::gt ) );
+        assertFalse( compareForType( float.class, 42F, 42F, Expression::gt ) );
+        assertFalse( compareForType( float.class, 42F, 43F, Expression::gt ) );
+
+        //double
+        assertTrue( compareForType( double.class, 43D, 42D, Expression::gt ) );
+        assertFalse( compareForType( double.class, 42D, 42D, Expression::gt ) );
+        assertFalse( compareForType( double.class, 42D, 43D, Expression::gt ) );
+    }
+
+    private <T> boolean compareForType( Class<T> clazz, T lhs, T rhs,
+            BiFunction<Expression,Expression,Expression> compare ) throws Throwable
+    {
+        // given
+        createGenerator();
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock block = simple.generateMethod( boolean.class, "equal",
+                    param( clazz, "a" ), param( clazz, "b" ) ) )
+            {
+                block.returns( compare.apply( block.load( "a" ), block.load( "b" ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle equal =
+                instanceMethod( handle.newInstance(), "equal", clazz, clazz );
+
+        // then
+        return (boolean) equal.invoke( lhs, rhs );
     }
 
     public static class TernaryChecker
