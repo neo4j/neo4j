@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
@@ -71,7 +72,7 @@ public class CommitProcessStateMachineCollaborationTest
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
                 replicator, sessionPool, stateMachine, 100,
-                NullLogService.getInstance(), txFutures );
+                NullLogService.getInstance(), txFutures, new Monitors() );
 
         // when
         commitProcess.commit( tx(), NULL, INTERNAL );
@@ -100,7 +101,7 @@ public class CommitProcessStateMachineCollaborationTest
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
                 replicator, sessionPool, stateMachine, 1,
-                NullLogService.getInstance(), txFutures );
+                NullLogService.getInstance(), txFutures, new Monitors() );
 
         // when
         try

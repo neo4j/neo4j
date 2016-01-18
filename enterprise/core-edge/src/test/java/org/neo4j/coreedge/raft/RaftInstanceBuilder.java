@@ -36,6 +36,7 @@ import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -69,6 +70,7 @@ public class RaftInstanceBuilder<MEMBER>
     private int maxAllowedShippingLag = 256;
     private Supplier<DatabaseHealth> databaseHealthSupplier;
     private InMemoryRaftMembershipState<MEMBER> raftMembership = new InMemoryRaftMembershipState<>();
+    private Monitors monitors  = new Monitors();
 
     public RaftInstanceBuilder( MEMBER member, int expectedClusterSize, RaftGroup.Builder<MEMBER> memberSetBuilder )
     {
@@ -89,7 +91,7 @@ public class RaftInstanceBuilder<MEMBER>
 
         return new RaftInstance<>( member, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
                 renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider, membershipManager,
-                logShipping, databaseHealthSupplier, clock );
+                logShipping, databaseHealthSupplier, clock, monitors );
     }
 
     public RaftInstanceBuilder<MEMBER> leaderWaitTimeout( long leaderWaitTimeout )
@@ -131,6 +133,12 @@ public class RaftInstanceBuilder<MEMBER>
     public RaftInstanceBuilder<MEMBER> clock( Clock clock )
     {
         this.clock = clock;
+        return this;
+    }
+
+    public RaftInstanceBuilder<MEMBER> monitors( Monitors monitors )
+    {
+        this.monitors = monitors;
         return this;
     }
 }

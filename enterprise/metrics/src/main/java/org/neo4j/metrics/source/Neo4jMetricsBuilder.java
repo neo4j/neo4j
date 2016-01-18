@@ -19,10 +19,12 @@
  */
 package org.neo4j.metrics.source;
 
-import com.codahale.metrics.MetricRegistry;
-
 import java.util.function.Supplier;
 
+import com.codahale.metrics.MetricRegistry;
+
+
+import org.neo4j.coreedge.raft.CoreMetaData;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
@@ -78,6 +80,8 @@ public class Neo4jMetricsBuilder
         StoreEntityCounters entityCountStats();
 
         Supplier<ClusterMembers> clusterMembers();
+
+        Supplier<CoreMetaData> raft();
     }
 
     public Neo4jMetricsBuilder( MetricRegistry registry, EventReporter reporter, Config config, LogService logService,
@@ -180,8 +184,17 @@ public class Neo4jMetricsBuilder
 
         if ( config.get( MetricsSettings.coreEdgeEnabled ) )
         {
-            life.add( new CoreEdgeMetrics( dependencies.monitors(), registry ) );
-            result = true;
+            OperationalMode mode = kernelContext.databaseInfo().operationalMode;
+            if ( mode == OperationalMode.core)
+            {
+                life.add( new CoreMetrics( dependencies.monitors(), registry, dependencies.raft() ) );
+                result = true;
+            }
+            else
+            {
+                logService.getUserLog( getClass() )
+                        .warn( "Core Edge metrics was enabled but the graph database is not in Core/Edge mode." );
+            }
         }
 
         return result;

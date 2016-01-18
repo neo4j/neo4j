@@ -21,22 +21,23 @@ package org.neo4j.metrics.source;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.coreedge.catchup.tx.core.TxPullRequestsMonitor;
 import org.neo4j.coreedge.raft.LeaderNotFoundMonitor;
-import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
 
-public class RaftLogCommitIndexMetric implements RaftLogCommitIndexMonitor
+
+public class TxPullRequestsMetric implements TxPullRequestsMonitor
 {
-    private AtomicLong commitIndex = new AtomicLong( 0 );
+    private AtomicLong count = new AtomicLong( 0 );
 
     @Override
-    public long commitIndex()
+    public long txPullRequestsReceived()
     {
-        return commitIndex.get();
+        return count.get();
     }
 
     @Override
-    public void commitIndex( long commitIndex )
+    public void increment()
     {
-        this.commitIndex.set( commitIndex );
+        count.incrementAndGet();
     }
 }

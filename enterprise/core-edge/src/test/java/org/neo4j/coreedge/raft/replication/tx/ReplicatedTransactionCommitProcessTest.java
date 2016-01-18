@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -75,7 +76,7 @@ public class ReplicatedTransactionCommitProcessTest
 
         // when
         new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ),
-                transactionStateMachine, 1, NullLogService.getInstance(), txFutures )
+                transactionStateMachine, 1, NullLogService.getInstance(), txFutures, new Monitors() )
                 .commit( tx(), NULL, INTERNAL );
 
         // then
@@ -100,7 +101,7 @@ public class ReplicatedTransactionCommitProcessTest
 
         // when
         new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ),
-                transactionStateMachine, 1, NullLogService.getInstance(), txFutures )
+                transactionStateMachine, 1, NullLogService.getInstance(), txFutures, new Monitors() )
                 .commit( tx(), NULL, INTERNAL );
 
         // then
@@ -114,7 +115,9 @@ public class ReplicatedTransactionCommitProcessTest
         Replicator replicator = mock( Replicator.class );
         doThrow( Replicator.ReplicationFailedException.class ).when( replicator ).replicate( any( ReplicatedContent.class) );
 
-        TransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ), mock( Replicator.ReplicatedContentListener.class), 0, NullLogService.getInstance(), mock(CommittingTransactions.class) );
+        TransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess( replicator,
+                new LocalSessionPool( coreMember ), mock( Replicator.ReplicatedContentListener.class),
+                0, NullLogService.getInstance(), mock(CommittingTransactions.class), new Monitors() );
 
         // when
         try

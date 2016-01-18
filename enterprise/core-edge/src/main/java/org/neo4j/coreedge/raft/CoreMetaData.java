@@ -17,26 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metrics.source;
+package org.neo4j.coreedge.raft;
 
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.neo4j.coreedge.raft.LeaderNotFoundMonitor;
-import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
-
-public class RaftLogCommitIndexMetric implements RaftLogCommitIndexMonitor
+public interface CoreMetaData
 {
-    private AtomicLong commitIndex = new AtomicLong( 0 );
-
-    @Override
-    public long commitIndex()
-    {
-        return commitIndex.get();
-    }
-
-    @Override
-    public void commitIndex( long commitIndex )
-    {
-        this.commitIndex.set( commitIndex );
-    }
+    boolean isLeader();
 }

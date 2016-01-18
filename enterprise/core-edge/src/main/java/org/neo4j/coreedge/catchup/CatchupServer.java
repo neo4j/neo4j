@@ -51,12 +51,14 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 public class CatchupServer extends LifecycleAdapter
 {
     private final LogProvider logProvider;
+    private Monitors monitors;
 
     private final Supplier<StoreId> storeIdSupplier;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
@@ -77,13 +79,14 @@ public class CatchupServer extends LifecycleAdapter
                           Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
                           Supplier<NeoStoreDataSource> dataSourceSupplier,
                           Supplier<CheckPointer> checkPointerSupplier,
-                          ListenSocketAddress listenAddress )
+                          ListenSocketAddress listenAddress, Monitors monitors )
     {
         this.listenAddress = listenAddress;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.storeIdSupplier = storeIdSupplier;
         this.logicalTransactionStoreSupplier = logicalTransactionStoreSupplier;
         this.logProvider = logProvider;
+        this.monitors = monitors;
         this.log = logProvider.getLog( getClass() );
         this.dataSourceSupplier = dataSourceSupplier;
         this.checkPointerSupplier = checkPointerSupplier;
@@ -125,7 +128,8 @@ public class CatchupServer extends LifecycleAdapter
 
                         pipeline.addLast( new TxPullRequestDecoder( protocol ) );
                         pipeline.addLast( new TxPullRequestHandler( protocol, storeIdSupplier,
-                                transactionIdStoreSupplier, logicalTransactionStoreSupplier ) );
+                                transactionIdStoreSupplier, logicalTransactionStoreSupplier,
+                                monitors) );
 
                         pipeline.addLast( new ChunkedWriteHandler() );
                         pipeline.addLast( new GetStoreRequestDecoder( protocol ) );
