@@ -70,7 +70,7 @@ public class OnDiskTermStateTest
         state.update( 100L );
 
         // Then
-        verify( channel ).write( any( ByteBuffer.class ) );
+        verify( channel ).writeAll( any( ByteBuffer.class ) );
         verify( channel ).flush();
     }
 
@@ -82,7 +82,7 @@ public class OnDiskTermStateTest
         when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
-        doThrow( new IOException() ).when( channel ).write( any( ByteBuffer.class ) );
+        doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ) );
 
         OnDiskTermState store = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
 

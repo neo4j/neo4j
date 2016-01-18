@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.stubbing.Stubber;
 
 import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
@@ -40,6 +41,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -70,7 +72,7 @@ public class OnDiskVoteStateTest
         state.votedFor( member, 0 );
 
         // Then
-        verify( channel ).write( any( ByteBuffer.class ) );
+        verify( channel ).writeAll( any( ByteBuffer.class ) );
         verify( channel ).flush();
     }
 
@@ -83,8 +85,10 @@ public class OnDiskVoteStateTest
 
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
-        // Mock the first call to succeed, so we can first store a proper value
-        when( channel.write( any( ByteBuffer.class ) ) ).thenReturn( 99 ).thenThrow( new IOException() );
+
+        final Stubber stubber = doNothing();
+        stubber.when( channel ).writeAll( any( ByteBuffer.class ) );
+        stubber.doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ) );
 
         final Supplier databaseHealthSupplier = mock( Supplier.class );
         when( databaseHealthSupplier.get() ).thenReturn( mock( DatabaseHealth.class ) );
