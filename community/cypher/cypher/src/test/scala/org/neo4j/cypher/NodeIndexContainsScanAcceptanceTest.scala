@@ -66,4 +66,44 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
 
     result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
   }
+
+  test("should return nothing when invoked with a null value") {
+    createLabeledNode(Map("name" -> "London"), "Location")
+    createLabeledNode(Map("name" -> "LONDON"), "Location")
+    graph.inTx {
+      (1 to 100).foreach { _ =>
+        createLabeledNode("Location")
+      }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("name" -> i.toString), "Location")
+      }
+    }
+
+    graph.createConstraint("Location", "name")
+
+    val query = "MATCH (l:Location) WHERE l.name CONTAINS {param} RETURN l"
+
+    val result = executeWithAllPlanners(query, "param" -> null)
+
+    result should (use("NodeIndexContainsScan") and evaluateTo(List.empty))
+  }
+
+  test("throws appropiate type error") {
+    createLabeledNode(Map("name" -> "London"), "Location")
+    createLabeledNode(Map("name" -> "LONDON"), "Location")
+    graph.inTx {
+      (1 to 100).foreach { _ =>
+        createLabeledNode("Location")
+      }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("name" -> i.toString), "Location")
+      }
+    }
+
+    graph.createConstraint("Location", "name")
+
+    val query = "MATCH (l:Location) WHERE l.name CONTAINS {param} RETURN l"
+
+    intercept[CypherTypeException](executeWithAllPlanners(query, "param" -> 42))
+  }
 }

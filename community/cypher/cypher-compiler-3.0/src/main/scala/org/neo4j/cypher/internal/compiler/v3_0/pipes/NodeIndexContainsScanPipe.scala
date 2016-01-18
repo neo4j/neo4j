@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.CastSupport.castOrFail
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{Index, LegacyExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CTNode
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -45,8 +46,18 @@ case class NodeIndexContainsScanPipe(ident: String,
 
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
     val value = valueExpr(baseContext)(state)
-    val resultNodes = state.query.indexSeekByContains(descriptor, castOrFail[String](value))
-    resultNodes.map(node => baseContext.newWith1(ident, node))
+
+    val resultNodes = value match {
+      case value: String =>
+        state.query.
+          indexSeekByContains(descriptor, value).
+          map(node => baseContext.newWith1(ident, node))
+      case null =>
+        Iterator.empty
+      case x => throw new CypherTypeException(s"Expected a string value, but got $x")
+    }
+
+    resultNodes
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
