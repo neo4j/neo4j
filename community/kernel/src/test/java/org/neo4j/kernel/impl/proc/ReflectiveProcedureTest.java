@@ -235,6 +235,6 @@ public class ReflectiveProcedureTest
 
     private List<Procedure> compile( Class<?> clazz ) throws KernelException
     {
-        return new ReflectiveProcedureCompiler( new TypeMappers() ).compile( clazz );
+        return new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry() ).compile( clazz );
     }
 }

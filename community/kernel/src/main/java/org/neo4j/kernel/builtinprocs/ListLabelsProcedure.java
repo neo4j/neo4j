@@ -24,6 +24,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.Procedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
+import org.neo4j.storageengine.api.Token;
 
 import static org.neo4j.kernel.api.ReadOperations.readStatement;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
@@ -34,12 +35,13 @@ public class ListLabelsProcedure extends Procedure.BasicProcedure
 {
     public ListLabelsProcedure( ProcedureName name )
     {
-        super( procedureSignature( name ).out(  "label", Neo4jTypes.NTString ).build());
+        super( procedureSignature( name ).out( "label", Neo4jTypes.NTString ).build() );
     }
 
     @Override
     public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        return map( (t) -> new Object[]{t.name()}, asRawIterator( ctx.get( readStatement ).labelsGetAllTokens() ) );
+        RawIterator<Token,ProcedureException> tokens = asRawIterator( ctx.get( readStatement ).labelsGetAllTokens() );
+        return map(  ( token ) -> new Object[]{ token.name() }, tokens );
     }
 }

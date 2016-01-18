@@ -29,6 +29,10 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
 
+/**
+ * Given a java method, figures out a valid {@link org.neo4j.kernel.api.proc.ProcedureSignature} field signature.
+ * Basically, it takes the java signature and spits out the same signature described as Neo4j types.
+ */
 public class MethodSignatureCompiler
 {
     private final TypeMappers typeMappers;

@@ -49,11 +49,13 @@ public class ReflectiveProcedureCompiler
     private final MethodHandles.Lookup lookup = MethodHandles.lookup();
     private final OutputMappers outputMappers;
     private final MethodSignatureCompiler inputSignatureDeterminer;
+    private final FieldInjections fieldInjections;
 
-    public ReflectiveProcedureCompiler( TypeMappers typeMappers )
+    public ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry components )
     {
         inputSignatureDeterminer = new MethodSignatureCompiler(typeMappers);
         outputMappers = new OutputMappers( typeMappers );
+        this.fieldInjections = new FieldInjections( components );
     }
 
     public List<Procedure> compile( Class<?> procDefinition ) throws KernelException
@@ -98,10 +100,11 @@ public class ReflectiveProcedureCompiler
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         OutputMapper outputMapper = outputMappers.mapper( method );
         MethodHandle procedureMethod = lookup.unreflect( method );
+        List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
         ProcedureSignature signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature() );
 
-        return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper );
+        return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
 
     private MethodHandle constructor( Class<?> procDefinition ) throws ProcedureException
@@ -132,15 +135,18 @@ public class ReflectiveProcedureCompiler
         private final MethodHandle constructor;
         private final MethodHandle procedureMethod;
         private final OutputMapper outputMapper;
+        private final List<FieldInjections.FieldSetter> fieldSetters;
 
 
         public ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
-                                    MethodHandle procedureMethod, OutputMapper outputMapper )
+                                    MethodHandle procedureMethod, OutputMapper outputMapper,
+                List<FieldInjections.FieldSetter> fieldSetters )
         {
             this.signature = signature;
             this.constructor = constructor;
             this.procedureMethod = procedureMethod;
             this.outputMapper = outputMapper;
+            this.fieldSetters = fieldSetters;
         }
 
         @Override
@@ -157,7 +163,11 @@ public class ReflectiveProcedureCompiler
             try
             {
                 Object cls = constructor.invoke();
-
+                //API injection
+                for ( FieldInjections.FieldSetter setter : fieldSetters )
+                {
+                    setter.apply( ctx, cls );
+                }
                 Object[] args = new Object[signature.inputSignature().size() + 1];
                 args[0] = cls;
                 System.arraycopy( input, 0, args, 1, input.length );

@@ -24,6 +24,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.Procedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.storageengine.api.Token;
 
 import static org.neo4j.kernel.api.ReadOperations.readStatement;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
@@ -40,6 +41,7 @@ public class ListPropertyKeysProcedure extends Procedure.BasicProcedure
     @Override
     public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        return map( (t) -> new Object[]{t.name()}, asRawIterator( ctx.get( readStatement ).propertyKeyGetAllTokens() ) );
+        RawIterator<Token,ProcedureException> tokens = asRawIterator( ctx.get( readStatement ).propertyKeyGetAllTokens() );
+        return map(  ( token ) -> new Object[]{ token.name() }, tokens );
     }
 }

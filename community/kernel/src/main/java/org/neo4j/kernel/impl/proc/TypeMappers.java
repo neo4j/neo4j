@@ -24,7 +24,6 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -123,40 +122,6 @@ public class TypeMappers
     public void registerType( Class<?> javaClass, NeoValueConverter toNeo )
     {
         javaToNeo.put( javaClass, toNeo );
-    }
-
-    public static class ToNeoTypeMapper implements NeoValueConverter
-    {
-        private final AnyType type;
-        private final Function<Object,Object> mapper;
-
-        public ToNeoTypeMapper( AnyType type, Function<Object,Object> mapper )
-        {
-            this.type = type;
-            this.mapper = mapper;
-        }
-
-        @Override
-        public AnyType type()
-        {
-            return type;
-        }
-
-        @Override
-        public Object toNeoValue( Object javaValue ) throws ProcedureException
-        {
-            if( javaValue == null )
-            {
-                return null;
-            }
-
-            Object out = mapper.apply( javaValue );
-            if( out != null )
-            {
-                return out;
-            }
-            throw javaToNeoMappingError( javaValue.getClass(), type() );
-        }
     }
 
     private final NeoValueConverter TO_ANY = new SimpleConverter( NTAny, Object.class );

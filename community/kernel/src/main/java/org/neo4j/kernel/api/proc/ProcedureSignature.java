@@ -21,10 +21,10 @@ package org.neo4j.kernel.api.proc;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
 
 import static java.util.Arrays.asList;
@@ -36,21 +36,6 @@ import static java.util.Collections.unmodifiableList;
  */
 public class ProcedureSignature
 {
-    private static String iterableToString( Iterable<?> values, String separator )
-    {
-        Iterator<?> it = values.iterator();
-        StringBuilder sb = new StringBuilder();
-        while(it.hasNext())
-        {
-            sb.append( it.next().toString() );
-            if(it.hasNext())
-            {
-                sb.append( separator );
-            }
-        }
-        return sb.toString();
-    }
-
     public static class ProcedureName
     {
         private final String[] namespace;
@@ -80,7 +65,7 @@ public class ProcedureSignature
         @Override
         public String toString()
         {
-            String strNamespace = namespace.length > 0 ? iterableToString( asList( namespace ), "." ) + "." : "";
+            String strNamespace = namespace.length > 0 ? Iterables.toString( asList( namespace ), "." ) + "." : "";
             return String.format("%s%s", strNamespace, name);
         }
 
@@ -202,8 +187,8 @@ public class ProcedureSignature
     @Override
     public String toString()
     {
-        String strInSig = inputSignature == null ? "..." : iterableToString( inputSignature, ", " );
-        String strOutSig = outputSignature == null ? "..." : iterableToString( outputSignature, ", " );
+        String strInSig = inputSignature == null ? "..." : Iterables.toString( inputSignature, ", " );
+        String strOutSig = outputSignature == null ? "..." : Iterables.toString( outputSignature, ", " );
         return String.format( "%s(%s) :: (%s)", name, strInSig, strOutSig );
     }
 
