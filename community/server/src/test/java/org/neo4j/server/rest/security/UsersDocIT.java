@@ -25,12 +25,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import javax.ws.rs.core.HttpHeaders;
 
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
@@ -38,7 +39,6 @@ import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
@@ -50,7 +50,6 @@ import static org.junit.Assert.assertThat;
 public class UsersDocIT extends ExclusiveServerTestBase
 {
     public @Rule TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
-    public @Rule TemporaryFolder tmpDir = new TemporaryFolder();
     private CommunityNeoServer server;
 
     @Before
@@ -153,9 +152,9 @@ public class UsersDocIT extends ExclusiveServerTestBase
 
     public void startServer(boolean authEnabled) throws IOException
     {
-        server = CommunityServerBuilder.server()
-                .withProperty( ServerSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
-                .withProperty( ServerInternalSettings.neo4j_base_dir.name(), tmpDir.getRoot().getAbsolutePath() ).build();
+        FileUtils.deleteFile( new File( "neo4j-home/data/dbms/authorization" ) ); // TODO: Implement a common component for managing Neo4j file structure and use that here
+        server = CommunityServerBuilder.server().withProperty( ServerSettings.auth_enabled.name(),
+                Boolean.toString( authEnabled ) ).build();
         server.start();
     }
 
