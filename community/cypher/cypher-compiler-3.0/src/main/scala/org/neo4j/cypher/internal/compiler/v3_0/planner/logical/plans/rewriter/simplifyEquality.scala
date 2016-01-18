@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 case object simplifyEquality extends Rewriter {
-  def apply(input: AnyRef) = bottomUp(instance).apply(input)
+  override def apply(input: AnyRef) = instance.apply(input)
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
     case in@In(exp, Collection(values@Seq(idValueExpr))) if values.size == 1 =>
       Equals(exp, idValueExpr)(in.position)
-  }
+  })
 }

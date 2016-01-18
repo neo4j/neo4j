@@ -452,7 +452,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
   implicit val table: SemanticTable = context.semanticTable
 
   private object buildPipeExpressions extends Rewriter {
-    val instance = Rewriter.lift {
+    private val instance = bottomUp(Rewriter.lift {
       case compilerAst.NestedPlanExpression(patternPlan, pattern) =>
         val pos = pattern.position
         val pipe = recurse(patternPlan)
@@ -461,9 +461,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         val pathExpression: PathExpression = ast.PathExpression(step)(pos)
         val result = compilerAst.NestedPipeExpression(pipe, pathExpression)(pos)
         result
-    }
+    })
 
-    def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
+    override def apply(that: AnyRef): AnyRef = instance.apply(that)
   }
 
   private def buildExpression(expr: ast.Expression)(implicit planContext: PlanContext): CommandExpression = {

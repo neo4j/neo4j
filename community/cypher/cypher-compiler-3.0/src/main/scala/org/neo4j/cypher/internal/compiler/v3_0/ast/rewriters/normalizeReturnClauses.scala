@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast._
  */
 case class normalizeReturnClauses(mkException: (String, InputPosition) => CypherException) extends Rewriter {
 
-  def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
+  def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
     case clause @ Return(_, ri, None, _, _) =>
@@ -87,8 +87,8 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
       Seq(clause)
   }
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
     case query @ SingleQuery(clauses) =>
       query.copy(clauses = clauses.flatMap(clauseRewriter))(query.position)
-  }
+  })
 }

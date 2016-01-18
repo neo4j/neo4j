@@ -26,12 +26,12 @@ object literalReplacement {
   type LiteralReplacements = IdentityMap[Literal, Parameter]
 
   case class ExtractParameterRewriter(replaceableLiterals: LiteralReplacements) extends Rewriter {
-    def apply(that: AnyRef): AnyRef = bottomUp(rewriter).apply(that)
+    def apply(that: AnyRef): AnyRef = rewriter.apply(that)
 
-    private val rewriter: Rewriter = Rewriter.lift {
+    private val rewriter: Rewriter = bottomUp(Rewriter.lift {
       case l: Literal =>
         replaceableLiterals.getOrElse(l, l)
-    }
+    })
   }
 
   private val literalMatcher: PartialFunction[Any, (LiteralReplacements, LiteralReplacements => LiteralReplacements) => LiteralReplacements] = {

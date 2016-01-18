@@ -26,14 +26,14 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 case object nameAllPatternElements extends Rewriter {
 
-  override def apply(in: AnyRef): AnyRef = bottomUp(namingRewriter).apply(in)
+  override def apply(in: AnyRef): AnyRef = namingRewriter.apply(in)
 
   val namingRewriter: Rewriter = bottomUp(Rewriter.lift {
-    case pattern: NodePattern if !pattern.variable.isDefined =>
+    case pattern: NodePattern if pattern.variable.isEmpty =>
       val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
       pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
 
-    case pattern: RelationshipPattern if !pattern.variable.isDefined  =>
+    case pattern: RelationshipPattern if pattern.variable.isEmpty  =>
       val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
       pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
   })
@@ -41,11 +41,11 @@ case object nameAllPatternElements extends Rewriter {
 
 case object namePatternPredicatePatternElements extends Rewriter {
 
-  override def apply(in: AnyRef): AnyRef = bottomUp(instance).apply(in)
+  override def apply(in: AnyRef): AnyRef = instance.apply(in)
 
-  val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
     case expr: PatternExpression =>
       val (rewrittenExpr, _) = PatternExpressionPatternElementNamer(expr)
       rewrittenExpr
-  }
+  })
 }

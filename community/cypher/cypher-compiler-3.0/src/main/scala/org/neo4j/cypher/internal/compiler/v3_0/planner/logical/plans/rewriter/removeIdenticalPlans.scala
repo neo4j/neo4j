@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
  */
 case object removeIdenticalPlans extends Rewriter {
 
-  def apply(input: AnyRef) = {
+  override def apply(input: AnyRef) = {
     var seenPlans = IdentitySet.empty[LogicalPlan]
 
     val rewriter: BottomUpRewriter = bottomUp(Rewriter.lift {

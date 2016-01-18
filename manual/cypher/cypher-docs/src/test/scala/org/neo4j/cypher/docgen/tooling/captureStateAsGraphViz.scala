@@ -54,9 +54,9 @@ object captureStateAsGraphViz extends GraphIcing {
 }
 
 case class replaceSingleObject(from: Content, to: Content) extends Rewriter {
-  def apply(input: AnyRef) = bottomUp(instance).apply(input)
+  override def apply(input: AnyRef) = instance.apply(input)
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
     case x if x == from => to
-  }
+  })
 }

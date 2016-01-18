@@ -30,11 +30,11 @@ These can later be turned into index lookups or node-by-id ops
  */
 case object collapseInCollections extends Rewriter {
 
-  override def apply(that: AnyRef) = bottomUp(instance)(that)
+  override def apply(that: AnyRef) = instance(that)
 
   case class InValue(lhs: Expression, expr: Expression)
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
     case predicate@Ors(exprs) =>
       // Find all the expressions we want to rewrite
       val (const: List[Expression], nonRewritable: List[Expression]) = exprs.toList.partition {
@@ -61,5 +61,5 @@ case object collapseInCollections extends Rewriter {
         case head :: Nil => head
         case l => Ors(l.toSet)(predicate.position)
       }
-  }
+  })
 }
