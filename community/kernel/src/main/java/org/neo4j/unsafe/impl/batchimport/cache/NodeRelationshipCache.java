@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.Direction;
 
@@ -191,7 +191,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         private static final int INDEX_LOOP = 3;
 
         private LongArray array;
-        private final AtomicInteger nextFreeId = new AtomicInteger();
+        private final AtomicLong nextFreeId = new AtomicLong();
 
         RelGroupCache( NumberArrayFactory arrayFactory, long chunkSize )
         {
@@ -216,7 +216,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             array.set( index, IdFieldManipulator.cleanId( array.get( index ) ) );
         }
 
-        private int nextFreeId()
+        private long nextFreeId()
         {
             return nextFreeId.getAndIncrement();
         }
