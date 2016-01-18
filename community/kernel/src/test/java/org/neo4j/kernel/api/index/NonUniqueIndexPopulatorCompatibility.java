@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
@@ -64,7 +65,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.seek( "value1" );
-            assertEquals( asSet( 1l, 2l ), asSet( nodes ) );
+            assertEquals( asSet( 1l, 2l ), PrimitiveLongCollections.toSet( nodes ) );
         }
         accessor.close();
     }
@@ -155,7 +156,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.seek( propertyValue );
-            assertEquals( asSet( 1l ), asSet( nodes ) );
+            assertEquals( asSet( 1l ), PrimitiveLongCollections.toSet( nodes ) );
         }
         accessor.close();
     }

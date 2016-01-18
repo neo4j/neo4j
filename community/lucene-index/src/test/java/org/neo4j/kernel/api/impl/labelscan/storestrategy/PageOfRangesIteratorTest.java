@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.impl.index.IndexReaderStub;
@@ -51,7 +52,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.concat;
-import static org.neo4j.helpers.collection.IteratorUtil.primitivesList;
 
 @RunWith( Parameterized.class )
 public class PageOfRangesIteratorTest
@@ -104,7 +104,7 @@ public class PageOfRangesIteratorTest
                 new PageOfRangesIterator( format, searcher, pageSize, query, labelId ) );
 
         // when
-        List<Long> longs = primitivesList( iterator );
+        List<Long> longs = PrimitiveLongCollections.asList( iterator );
 
         // then
         assertEquals( asList(

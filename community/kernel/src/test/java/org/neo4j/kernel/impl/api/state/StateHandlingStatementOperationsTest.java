@@ -30,7 +30,6 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -213,7 +212,7 @@ public class StateHandlingStatementOperationsTest
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         IndexReader indexReader = addMockedIndexReader( statement );
         when( indexReader.scan() ).thenReturn(
-                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
+                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
         );
 
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
@@ -222,7 +221,7 @@ public class StateHandlingStatementOperationsTest
         PrimitiveLongIterator results = context.nodesGetFromIndexScan( statement, index );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
     }
 
     @Test
@@ -244,7 +243,7 @@ public class StateHandlingStatementOperationsTest
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         IndexReader indexReader = addMockedIndexReader( statement );
         when( indexReader.seek( "value" ) ).thenReturn(
-                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
+                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
 
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
@@ -252,7 +251,7 @@ public class StateHandlingStatementOperationsTest
         PrimitiveLongIterator results = context.nodesGetFromIndexSeek( statement, index, "value" );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
     }
 
     @Test
@@ -274,7 +273,7 @@ public class StateHandlingStatementOperationsTest
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         IndexReader indexReader = addMockedIndexReader( statement );
         when( indexReader.rangeSeekByPrefix( "prefix" ) )
-                .thenReturn( IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
+                .thenReturn( PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
 
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
@@ -282,7 +281,7 @@ public class StateHandlingStatementOperationsTest
         PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByPrefix( statement, index, "prefix" );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -323,7 +322,7 @@ public class StateHandlingStatementOperationsTest
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         IndexReader indexReader = addMockedIndexReader( storageStatement );
         when( indexReader.rangeSeekByNumberInclusive( lower, upper ) ).thenReturn(
-                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
+                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
         );
         when( storageStatement.acquireSingleNodeCursor( anyLong() ) ).thenAnswer(
                 new Answer<Cursor<NodeItem>>()
@@ -344,7 +343,7 @@ public class StateHandlingStatementOperationsTest
                 upper, false );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
     }
 
     @Test
@@ -366,7 +365,7 @@ public class StateHandlingStatementOperationsTest
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         IndexReader indexReader = addMockedIndexReader( statement );
         when( indexReader.rangeSeekByString( "Anne", true, "Bill", false ) ) .thenReturn(
-                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
+                PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
         );
 
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
@@ -375,7 +374,7 @@ public class StateHandlingStatementOperationsTest
         PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByString( statement, index, "Anne", true, "Bill", false );
 
         // Then
-        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+        assertEquals( asSet( 42L, 43L ), PrimitiveLongCollections.toSet( results ) );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )
