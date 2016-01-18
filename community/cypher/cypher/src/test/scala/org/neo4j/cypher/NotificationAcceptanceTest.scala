@@ -279,7 +279,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("should warn for load csv + eager") {
-    val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH () CREATE () RETURN line")
+    val result = innerExecute("EXPLAIN MATCH (n) DELETE n WITH * LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE () RETURN line")
 
     result should use("LoadCSV", "Eager")
     result.notifications should contain(EagerLoadCsvNotification)
@@ -309,28 +309,28 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("should warn for large label scans combined with load csv") {
     1 to 11 foreach { _ => createLabeledNode("A") }
     val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *")
-    result should use("LoadCSV", "NodeByLabel")
+    result should use("LoadCSV", "NodeByLabelScan")
     result.notifications should contain(LargeLabelWithLoadCsvNotification)
   }
 
   test("should warn for large label scans with merge combined with load csv") {
     1 to 11 foreach { _ => createLabeledNode("A") }
     val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *")
-    result should use("LoadCSV", "UpdateGraph")
+    result should use("LoadCSV", "AntiConditionalApply")
     result.notifications should contain(LargeLabelWithLoadCsvNotification)
   }
 
   test("should not warn for small label scans combined with load csv") {
     createLabeledNode("A")
     val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *")
-    result should use("LoadCSV", "NodeByLabel")
+    result should use("LoadCSV", "NodeByLabelScan")
     result.notifications should not contain LargeLabelWithLoadCsvNotification
   }
 
   test("should not warn for small label scans with merge combined with load csv") {
     createLabeledNode("A")
     val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *")
-    result should use("LoadCSV", "UpdateGraph")
+    result should use("LoadCSV", "AntiConditionalApply")
     result.notifications should not contain LargeLabelWithLoadCsvNotification
   }
 

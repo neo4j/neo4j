@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyType, LazyTypes}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyType, LazyTypes, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{SortDescription, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, SortDescription}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast, symbols}
@@ -375,6 +375,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planSkip(inner: LogicalPlan, count: Expression)(implicit context: LogicalPlanningContext) = {
     val solved = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSkipExpression(count))))
     SkipPlan(inner, count)(solved)
+  }
+
+  def planLoadCSV(inner: LogicalPlan, variableName: IdName, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral])
+                 (implicit context: LogicalPlanningContext) = {
+    val solved = inner.solved.updateTailOrSelf(_.withHorizon(LoadCSVProjection(variableName, url, format, fieldTerminator)))
+    LoadCSVPlan(inner, url, variableName, format, fieldTerminator.map(_.value))(solved)
   }
 
   def planUnwind(inner: LogicalPlan, name: IdName, expression: Expression)(implicit context: LogicalPlanningContext) = {

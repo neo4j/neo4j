@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters._
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{NoHeaders, HasHeaders}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
@@ -41,9 +42,19 @@ object ClauseConverters {
     case c: Delete => addDeleteToLogicalPlanInput(acc, c)
     case c: Remove => addRemoveToLogicalPlanInput(acc, c)
     case c: Merge => addMergeToLogicalPlanInput(acc, c)
+    case c: LoadCSV => addLoadCSVToLogicalPlanInput(acc, c)
 
     case x => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
   }
+
+  private def addLoadCSVToLogicalPlanInput(acc: PlannerQueryBuilder, clause: LoadCSV): PlannerQueryBuilder =
+    acc.withHorizon(
+      LoadCSVProjection(
+        variable = IdName.fromVariable(clause.variable),
+        url = clause.urlString,
+        format = if (clause.withHeaders) HasHeaders else NoHeaders,
+        clause.fieldTerminator)
+    ).withTail(PlannerQuery.empty)
 
   private def asSelections(optWhere: Option[Where]) = Selections(optWhere.
     map(_.expression.asPredicates).

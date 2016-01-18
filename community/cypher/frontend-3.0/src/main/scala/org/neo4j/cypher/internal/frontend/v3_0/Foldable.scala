@@ -53,6 +53,9 @@ object Foldable {
     def treeFold[R](init: R)(f: PartialFunction[Any, (R, R => R) => R]): R =
       treeFoldAcc(mutable.ArrayStack(that), init, f.lift)
 
+    def reverseTreeFold[R](init: R)(f: PartialFunction[Any, (R, R => R) => R]): R =
+      reverseTreeFoldAcc(mutable.ArrayStack(that), init, f.lift)
+
     def exists(f: PartialFunction[Any, Boolean]) =
       existsAcc(mutable.ArrayStack(that), f.lift)
 
@@ -80,6 +83,20 @@ object Foldable {
           treeFoldAcc(remaining ++= that.reverseChildren, acc, f)
         case Some(pf) =>
           treeFoldAcc(remaining, pf(acc, treeFoldAcc(mutable.ArrayStack() ++= that.reverseChildren, _, f)), f)
+      }
+    }
+
+  // partially tail-recursive (recursion is unavoidable for partial function matches)
+  private def reverseTreeFoldAcc[R](remaining: mutable.ArrayStack[Any], acc: R, f: Any => Option[(R, R => R) => R]): R =
+    if (remaining.isEmpty) {
+      acc
+    } else {
+      val that = remaining.pop()
+      f(that) match {
+        case None =>
+          reverseTreeFoldAcc(remaining ++= that.children, acc, f)
+        case Some(pf) =>
+          reverseTreeFoldAcc(remaining, pf(acc, reverseTreeFoldAcc(mutable.ArrayStack() ++= that.children, _, f)), f)
       }
     }
 

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_0.mutation.{PlainMergeNodeProducer, MergeNodeAction, UpdateAction}
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExecuteUpdateCommandsPipe, LoadCSVPipe, NodeByLabelEntityProducer, NodeStartPipe, Pipe}
+import org.neo4j.cypher.internal.compiler.v3_0.mutation.{MergeNodeAction, PlainMergeNodeProducer, UpdateAction}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_0.LabelId
@@ -39,12 +39,14 @@ case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonInde
     case object LargeLabelWithLoadCsvFound extends SearchState
 
     // Walk over the pipe tree and check if a large label scan is to be executed after a LoadCsv
-    val resultState = pipe.treeFold[SearchState](NoneFound) {
+    val resultState = pipe.reverseTreeFold[SearchState](NoneFound) {
       case _: LoadCSVPipe => (acc, children) =>
         acc match {
           case LargeLabelFound => children(LargeLabelWithLoadCsvFound)
           case e => e
         }
+      case NodeByLabelScanPipe(_, label) if cardinality(label.id(planContext)) > threshold =>
+        (acc, children) => children(LargeLabelFound)
       case NodeStartPipe(_, _, NodeByLabelEntityProducer(_, id), _) if cardinality(id) > threshold =>
         (acc, children) => children(LargeLabelFound)
       case ExecuteUpdateCommandsPipe(_, commands) if hasMergeOnLargeLabel(commands) =>
