@@ -27,12 +27,12 @@ import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
-import org.neo4j.coreedge.raft.net.NetworkReadableLogChannelNetty4;
-import org.neo4j.coreedge.raft.net.NetworkWritableLogChannelNetty4;
+import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
+import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.raft.replication.StringMarshal;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -65,7 +65,7 @@ public class ReplicatedTokenRequestSerializer
     public static byte[] createCommandBytes( Collection<Command> commands )
     {
         ByteBuf commandBuffer = Unpooled.buffer();
-        NetworkWritableLogChannelNetty4 channel = new NetworkWritableLogChannelNetty4( commandBuffer );
+        NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( commandBuffer );
 
         try
         {
@@ -85,9 +85,9 @@ public class ReplicatedTokenRequestSerializer
     public static Collection<StorageCommand> extractCommands( byte[] commandBytes )
     {
         ByteBuf txBuffer = Unpooled.wrappedBuffer( commandBytes );
-        NetworkReadableLogChannelNetty4 channel = new NetworkReadableLogChannelNetty4( txBuffer );
+        NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( txBuffer );
 
-        LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
+        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory() );
 
         LogEntryCommand entryRead;

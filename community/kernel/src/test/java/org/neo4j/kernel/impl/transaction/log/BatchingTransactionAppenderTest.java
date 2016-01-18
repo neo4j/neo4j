@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.io.Flushable;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.io.Flushable;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.CleanupRule;
@@ -76,7 +77,7 @@ public class BatchingTransactionAppenderTest
     @Rule
     public final LifeRule life = new LifeRule( true );
 
-    private final InMemoryVersionableLogChannel channel = new InMemoryVersionableLogChannel();
+    private final InMemoryVersionableReadableClosablePositionAwareChannel channel = new InMemoryVersionableReadableClosablePositionAwareChannel();
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
     private final LogFile logFile = mock( LogFile.class );
@@ -100,9 +101,9 @@ public class BatchingTransactionAppenderTest
         appender.append( new TransactionToApply( transaction ), logAppendEvent );
 
         // THEN
-        final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+        final LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory() );
-        try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
+        try ( PhysicalTransactionCursor<ReadableLogChannel> reader =
                       new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
             reader.next();
@@ -171,9 +172,9 @@ public class BatchingTransactionAppenderTest
                 logAppendEvent );
 
         // THEN
-        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+        LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory() );
-        try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
+        try ( PhysicalTransactionCursor<ReadableLogChannel> reader =
                       new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
             reader.next();
@@ -191,7 +192,7 @@ public class BatchingTransactionAppenderTest
     public void shouldNotAppendCommittedTransactionsWhenTooFarAhead() throws Exception
     {
         // GIVEN
-        InMemoryLogChannel channel = new InMemoryLogChannel();
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
         when( logFile.getWriter() ).thenReturn( channel );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
                 transactionIdStore, BYPASS, databaseHealth ) );
@@ -231,7 +232,7 @@ public class BatchingTransactionAppenderTest
         // GIVEN
         long txId = 3;
         String failureMessage = "Forces a failure";
-        WritableLogChannel channel = spy( new InMemoryLogChannel() );
+        FlushablePositionAwareChannel channel = spy( new InMemoryClosableChannel() );
         IOException failure = new IOException( failureMessage );
         when( channel.putInt( anyInt() ) ).thenThrow( failure );
         when( logFile.getWriter() ).thenReturn( channel );
@@ -264,7 +265,7 @@ public class BatchingTransactionAppenderTest
         // GIVEN
         long txId = 3;
         String failureMessage = "Forces a failure";
-        WritableLogChannel channel = spy( new InMemoryLogChannel() );
+        FlushablePositionAwareChannel channel = spy( new InMemoryClosableChannel() );
         IOException failure = new IOException( failureMessage );
         final Flushable flushable = mock( Flushable.class );
         doAnswer( new Answer<Flushable>()
@@ -275,7 +276,7 @@ public class BatchingTransactionAppenderTest
                 invocation.callRealMethod();
                 return flushable;
             }
-        } ).when( channel ).emptyBufferIntoChannelAndClearIt();
+        } ).when( channel ).prepareForFlush();
         doThrow( failure ).when( flushable ).flush();
         LogFile logFile = mock( LogFile.class );
         when( logFile.getWriter() ).thenReturn( channel );
@@ -308,9 +309,9 @@ public class BatchingTransactionAppenderTest
     public void shouldBeAbleToWriteACheckPoint() throws Throwable
     {
         // Given
-        WritableLogChannel channel = mock( WritableLogChannel.class, RETURNS_MOCKS );
+        FlushablePositionAwareChannel channel = mock( FlushablePositionAwareChannel.class, RETURNS_MOCKS );
         Flushable flushable = mock( Flushable.class );
-        when( channel.emptyBufferIntoChannelAndClearIt() ).thenReturn( flushable );
+        when( channel.prepareForFlush() ).thenReturn( flushable );
         when( channel.putLong( anyLong() ) ).thenReturn( channel );
         when( logFile.getWriter() ).thenReturn( channel );
         BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
@@ -322,7 +323,7 @@ public class BatchingTransactionAppenderTest
         // Then
         verify( channel, times( 1 ) ).putLong( 1l );
         verify( channel, times( 1 ) ).putLong( 2l );
-        verify( channel, times( 1 ) ).emptyBufferIntoChannelAndClearIt();
+        verify( channel, times( 1 ) ).prepareForFlush();
         verify( flushable, times( 1 ) ).flush();
         verifyZeroInteractions( databaseHealth );
     }
@@ -332,7 +333,7 @@ public class BatchingTransactionAppenderTest
     {
         // Given
         IOException ioex = new IOException( "boom!" );
-        WritableLogChannel channel = mock( WritableLogChannel.class, RETURNS_MOCKS );
+        FlushablePositionAwareChannel channel = mock( FlushablePositionAwareChannel.class, RETURNS_MOCKS );
         when (channel.put( anyByte() ) ).thenReturn( channel );
         when( channel.putLong( anyLong() ) ).thenThrow( ioex );
         when( channel.put( anyByte() ) ).thenThrow( ioex );

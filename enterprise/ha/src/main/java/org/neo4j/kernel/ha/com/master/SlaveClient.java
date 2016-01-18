@@ -34,7 +34,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
@@ -52,7 +52,7 @@ public class SlaveClient extends Client<Slave> implements Slave
     public SlaveClient( InstanceId machineId, String hostNameOrIp, int port, LogProvider logProvider,
                         StoreId storeId, int maxConcurrentChannels, int chunkSize,
                         ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor,
-                        LogEntryReader<ReadableLogChannel> entryReader )
+                        LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
         super( hostNameOrIp, port, logProvider, storeId, Protocol.DEFAULT_FRAME_LENGTH,
                 new ProtocolVersion( SlaveServer.APPLICATION_PROTOCOL_VERSION, INTERNAL_PROTOCOL_VERSION ),

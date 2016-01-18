@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.InOrder;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.InOrder;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
@@ -43,12 +43,12 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -139,7 +139,7 @@ public class RecoveryTest
         try
         {
             StoreFlusher flusher = mock( StoreFlusher.class );
-            final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
+            final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
                     LogEntryVersion.CURRENT.byteCode(), new RecordStorageCommandReaderFactory() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
@@ -154,7 +154,7 @@ public class RecoveryTest
                         @Override
                         public boolean visit( LogVersionedStoreChannel element ) throws IOException
                         {
-                            try ( ReadableVersionableLogChannel channel = new ReadAheadLogChannel( element,
+                            try ( ReadableLogChannel channel = new ReadAheadLogChannel( element,
                                     NO_MORE_CHANNELS ) )
                             {
                                 assertEquals( lastCommittedTxStartEntry, reader.readLogEntry( channel ) );
@@ -228,7 +228,7 @@ public class RecoveryTest
         try
         {
             StoreFlusher flusher = mock( StoreFlusher.class );
-            final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
+            final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
                     LogEntryVersion.CURRENT.byteCode(), new RecordStorageCommandReaderFactory() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
@@ -266,7 +266,7 @@ public class RecoveryTest
 
         try (  LogVersionedStoreChannel versionedStoreChannel =
                        new PhysicalLogVersionedStoreChannel( fs.open( file, "rw" ), logVersion, CURRENT_LOG_VERSION );
-              final PhysicalWritableLogChannel writableLogChannel = new PhysicalWritableLogChannel( versionedStoreChannel ) )
+              final PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel( versionedStoreChannel ) )
         {
             writeLogHeader( writableLogChannel, logVersion, 2l );
 

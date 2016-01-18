@@ -26,7 +26,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
@@ -37,10 +37,10 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURREN
 
 public class LogEntryWriter
 {
-    private final WritableLogChannel channel;
+    private final FlushableChannel channel;
     private final Visitor<StorageCommand,IOException> serializer;
 
-    public LogEntryWriter( WritableLogChannel channel )
+    public LogEntryWriter( FlushableChannel channel )
     {
         this.channel = channel;
         this.serializer = new Visitor<StorageCommand,IOException>()

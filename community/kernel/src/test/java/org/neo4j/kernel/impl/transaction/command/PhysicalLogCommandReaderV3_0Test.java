@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 
 import static org.junit.Assert.assertEquals;
@@ -37,7 +37,7 @@ public class PhysicalLogCommandReaderV3_0Test
     public void shouldReadRelationshipCommand() throws Throwable
     {
         // Given
-        InMemoryLogChannel channel = new InMemoryLogChannel();
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42, -1, -1, -1 );
         RelationshipRecord after = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
         new Command.RelationshipCommand( before, after ).serialize( channel );
@@ -58,7 +58,7 @@ public class PhysicalLogCommandReaderV3_0Test
     public void shouldReadRelationshipGroupCommand() throws Throwable
     {
         // Given
-        InMemoryLogChannel channel = new InMemoryLogChannel();
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 3 );
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
         after.setCreated();
@@ -81,7 +81,7 @@ public class PhysicalLogCommandReaderV3_0Test
     public void shouldReadNeoStoreCommand() throws Throwable
     {
         // Given
-        InMemoryLogChannel channel = new InMemoryLogChannel();
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
         NeoStoreRecord before = new NeoStoreRecord();
         NeoStoreRecord after = new NeoStoreRecord();
         after.setNextProp( 42 );
@@ -104,7 +104,7 @@ public class PhysicalLogCommandReaderV3_0Test
     public void shouldReadSomeCommands() throws Exception
     {
         // GIVEN
-        InMemoryLogChannel channel = new InMemoryLogChannel();
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
         Commands.createNode( 0 ).serialize( channel );
         Commands.createNode( 1 ).serialize( channel );
         Commands.createRelationshipTypeToken( 0, 0 ).serialize( channel );

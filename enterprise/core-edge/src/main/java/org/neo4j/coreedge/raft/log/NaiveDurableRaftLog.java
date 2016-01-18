@@ -73,6 +73,11 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     public static final int COMMIT_INDEX_BYTES = 8;
     public static final String DIRECTORY_NAME = "raft-log";
 
+    private final ByteBuffer entryRecordBuffer = ByteBuffer.allocate( ENTRY_RECORD_LENGTH );
+    private final ByteBuffer contentLengthBuffer = ByteBuffer.allocate( CONTENT_LENGTH_BYTES );
+    private final ByteBuffer commitIndexBuffer = ByteBuffer.allocate( COMMIT_INDEX_BYTES );
+
+
     private final Set<Listener> listeners = new CopyOnWriteArraySet<>();
 
     private final StoreChannel entriesChannel;
@@ -340,12 +345,12 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
 
     private void writeEntry( Entry entry ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocate( ENTRY_RECORD_LENGTH );
-        buffer.putLong( entry.term );
-        buffer.putLong( entry.contentPointer );
-        buffer.flip();
+        entryRecordBuffer.clear();
+        entryRecordBuffer.putLong( entry.term );
+        entryRecordBuffer.putLong( entry.contentPointer );
+        entryRecordBuffer.flip();
 
-        entriesChannel.writeAll( buffer, (appendIndex + 1) * ENTRY_RECORD_LENGTH );
+        entriesChannel.writeAll( entryRecordBuffer, (appendIndex + 1) * ENTRY_RECORD_LENGTH );
         entriesChannel.force( false );
     }
 
@@ -356,11 +361,11 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             return new Entry( -1, -1 );
         }
 
-        ByteBuffer buffer = ByteBuffer.allocate( ENTRY_RECORD_LENGTH );
-        entriesChannel.read( buffer, logIndex * ENTRY_RECORD_LENGTH );
-        buffer.flip();
-        long term = buffer.getLong();
-        long contentPointer = buffer.getLong();
+        entryRecordBuffer.clear();
+        entriesChannel.read( entryRecordBuffer, logIndex * ENTRY_RECORD_LENGTH );
+        entryRecordBuffer.flip();
+        long term = entryRecordBuffer.getLong();
+        long contentPointer = entryRecordBuffer.getLong();
         return new Entry( term, contentPointer );
     }
 
@@ -369,7 +374,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         ByteBuffer contentBuffer = serializer.serialize( logEntry.content() );
         int length = CONTENT_LENGTH_BYTES + contentBuffer.remaining();
 
-        ByteBuffer contentLengthBuffer = ByteBuffer.allocate( CONTENT_LENGTH_BYTES );
+        contentLengthBuffer.clear();
         contentLengthBuffer.putInt( length );
         contentLengthBuffer.flip();
         contentChannel.writeAll( contentLengthBuffer, contentOffset );
@@ -381,10 +386,10 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
 
     private ReplicatedContent readContentFrom( long contentPointer ) throws IOException, MarshallingException
     {
-        ByteBuffer lengthBuffer = ByteBuffer.allocate( CONTENT_LENGTH_BYTES );
-        contentChannel.read( lengthBuffer, contentPointer );
-        lengthBuffer.flip();
-        int contentLength = lengthBuffer.getInt();
+        contentLengthBuffer.clear();
+        contentChannel.read( contentLengthBuffer, contentPointer );
+        contentLengthBuffer.flip();
+        int contentLength = contentLengthBuffer.getInt();
 
         ByteBuffer contentBuffer = ByteBuffer.allocate( contentLength - CONTENT_LENGTH_BYTES );
         contentChannel.read( contentBuffer, contentPointer + CONTENT_LENGTH_BYTES );
@@ -394,10 +399,10 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
 
     private void storeCommitIndex( long commitIndex ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocate( COMMIT_INDEX_BYTES );
-        buffer.putLong( commitIndex );
-        buffer.flip();
-        commitChannel.writeAll( buffer, 0 );
+        commitIndexBuffer.clear();
+        commitIndexBuffer.putLong( commitIndex );
+        commitIndexBuffer.flip();
+        commitChannel.writeAll( commitIndexBuffer, 0 );
         commitChannel.force( false );
     }
 
@@ -407,9 +412,9 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         {
             return -1;
         }
-        ByteBuffer buffer = ByteBuffer.allocate( COMMIT_INDEX_BYTES );
-        commitChannel.read( buffer, 0 );
-        buffer.flip();
-        return buffer.getLong();
+        commitIndexBuffer.clear();
+        commitChannel.read( commitIndexBuffer, 0 );
+        commitIndexBuffer.flip();
+        return commitIndexBuffer.getLong();
     }
 }

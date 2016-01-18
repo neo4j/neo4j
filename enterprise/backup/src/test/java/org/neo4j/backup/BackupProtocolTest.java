@@ -30,7 +30,7 @@ import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -76,7 +76,7 @@ public class BackupProtocolTest
         int port = BackupServer.DEFAULT_PORT;
         LifeSupport life = new LifeSupport();
 
-        LogEntryReader<ReadableLogChannel> reader =
+        LogEntryReader<ReadableClosablePositionAwareChannel> reader =
                 new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
         BackupClient client = life.add( new BackupClient( host, port, NullLogProvider.getInstance(), storeId, 1000,
                 mock( ResponseUnpacker.class ), mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ), reader ) );

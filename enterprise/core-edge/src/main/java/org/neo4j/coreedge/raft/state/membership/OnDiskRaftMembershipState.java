@@ -21,10 +21,10 @@ package org.neo4j.coreedge.raft.state.membership;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.StatePersister;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,10 +46,11 @@ public class OnDiskRaftMembershipState<MEMBER> extends LifecycleAdapter implemen
                                       File storeDir,
                                       int numberOfEntriesBeforeRotation,
                                       Supplier<DatabaseHealth> databaseHealthSupplier,
-                                      Marshal<MEMBER> memberMarshal ) throws IOException
+                                      ChannelMarshal<MEMBER> channelMarshal ) throws IOException
     {
-        InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<MEMBER> marshal = new InMemoryRaftMembershipState.InMemoryRaftMembershipStateMarshal<>(
-                memberMarshal );
+
+        final InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal<MEMBER> marshal =
+                new InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal<>( channelMarshal );
 
         File fileA = new File( storeDir, FILENAME + "a" );
         File fileB = new File( storeDir, FILENAME + "b" );
@@ -62,7 +63,7 @@ public class OnDiskRaftMembershipState<MEMBER> extends LifecycleAdapter implemen
         inMemoryRaftMembershipState = recoveryManager.readLastEntryFrom( recoveryStatus.previouslyActive() );
 
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
-                ByteBuffer.allocate( MAX_SIZE_OF_ADDRESS_STATE_ON_DISK ), marshal,
+                marshal,
                 recoveryStatus.previouslyInactive(),
                 databaseHealthSupplier );
     }

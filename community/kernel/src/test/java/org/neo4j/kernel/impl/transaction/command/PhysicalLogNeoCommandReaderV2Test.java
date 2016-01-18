@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 import static org.junit.Assert.assertEquals;
 
@@ -41,7 +41,7 @@ public class PhysicalLogNeoCommandReaderV2Test
 
         // GIVEN
         PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4();
-        InMemoryLogChannel data = new InMemoryLogChannel();
+        InMemoryClosableChannel data = new InMemoryClosableChannel();
         AddRelationshipCommand command = new AddRelationshipCommand();
         byte indexNameId = (byte)12;
         long entityId = 123;
@@ -77,7 +77,7 @@ public class PhysicalLogNeoCommandReaderV2Test
 
         // GIVEN
         PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4();
-        InMemoryLogChannel data = new InMemoryLogChannel();
+        InMemoryClosableChannel data = new InMemoryClosableChannel();
         // Here we take advantage of the fact that all index commands have the same header written out
         AddRelationshipCommand command = new AddRelationshipCommand();
         long entityId = 123;

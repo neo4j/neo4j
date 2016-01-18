@@ -22,19 +22,18 @@ package org.neo4j.kernel.ha.com.master;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 public class MasterServerTest
 {
@@ -43,7 +42,7 @@ public class MasterServerTest
     {
         Master master = mock( Master.class );
         ConversationManager conversationManager = mock( ConversationManager.class );
-        LogEntryReader<ReadableLogChannel> logEntryReader =
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
                 new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
         MasterServer masterServer = new MasterServer( master, mock( LogProvider.class ),
                 mock(Server.Configuration.class ), mock( TxChecksumVerifier.class ),

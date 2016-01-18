@@ -621,7 +621,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         public Visitor<CommittedTransactionRepresentation,Exception> transactions()
         {
             targetBuffer.writeByte( 1 );
-            return new CommittedTransactionSerializer( new NetworkWritableLogChannel(  targetBuffer ) );
+            return new CommittedTransactionSerializer( new NetworkFlushableChannel(  targetBuffer ) );
         }
     }
 

@@ -30,17 +30,16 @@ import org.junit.Test;
 import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.coreedge.server.CoreMember.CoreMemberMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -51,23 +50,11 @@ public class OnDiskVoteStateTest
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     @Test
-    public void shouldRoundTripVoteToDisk() throws Exception
-    {
-        // given
-        OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( new EphemeralFileSystemAbstraction(), testDir.directory(), 100,
-                mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
-
-        // when
-        state.votedFor(  );
-
-        // then
-    }
-
-    @Test
-    public void shouldCallWriteAllAndForceOnVoteUpdate() throws Exception
+    public void shouldCallWriteAndFlushOnVoteUpdate() throws Exception
     {
         // Given
         StoreFileChannel channel = mock( StoreFileChannel.class );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
 
@@ -75,15 +62,16 @@ public class OnDiskVoteStateTest
         AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "localhost:" + 1234 );
         CoreMember member = new CoreMember( localhost, localhost );
 
-        OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
-                mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
+        OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( fsa,
+                new File( testDir.directory(), "on.disk.state" ), 100, mock( Supplier.class ),
+                new CoreMemberMarshal() );
 
         // When
         state.votedFor( member, 0 );
 
         // Then
-        verify( channel ).writeAll( any( ByteBuffer.class ) );
-        verify( channel ).force( anyBoolean() );
+        verify( channel ).write( any( ByteBuffer.class ) );
+        verify( channel ).flush();
     }
 
     @Test
@@ -91,13 +79,19 @@ public class OnDiskVoteStateTest
     {
         // Given
         StoreFileChannel channel = mock( StoreFileChannel.class );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
+
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
         // Mock the first call to succeed, so we can first store a proper value
-        doNothing().doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ) );
+        when( channel.write( any( ByteBuffer.class ) ) ).thenReturn( 99 ).thenThrow( new IOException() );
 
-        OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
-                mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
+        final Supplier databaseHealthSupplier = mock( Supplier.class );
+        when( databaseHealthSupplier.get() ).thenReturn( mock( DatabaseHealth.class ) );
+
+        OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( fsa,
+                new File( testDir.directory(), "on.disk.state" ), 100, databaseHealthSupplier,
+                new CoreMemberMarshal() );
 
         // This has to be real because it will be serialized
         AdvertisedSocketAddress firstLocalhost = new AdvertisedSocketAddress( "localhost:" + 1234 );
@@ -130,21 +124,24 @@ public class OnDiskVoteStateTest
     }
 
     @Test
-    public void shouldForceAndCloseOnShutdown() throws Throwable
+    public void shouldFlushAndCloseOnShutdown() throws Throwable
     {
         // Given
         StoreFileChannel channel = mock( StoreFileChannel.class );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
+
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
 
-        OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( fsa, new File( testDir.directory(), "on.disk.state" ), 100,
-                mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
+        OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( fsa,
+                new File( testDir.directory(), "on.disk.state" ), 100, mock( Supplier.class ),
+                new CoreMemberMarshal() );
 
         // When
         state.shutdown();
 
         // Then
-        verify( channel ).force( false );
+        verify( channel ).flush();
         verify( channel ).close();
     }
 }

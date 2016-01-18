@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -55,9 +55,10 @@ class TransactionStream
     private final FileSystemAbstraction fs;
     private final boolean isContiguous;
     private final LogFile firstFile;
-    private final LogEntryReader<ReadableLogChannel> logEntryReader;
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
 
-    public TransactionStream( FileSystemAbstraction fs, File path, LogEntryReader<ReadableLogChannel> logEntryReader )
+    public TransactionStream( FileSystemAbstraction fs, File path,
+                              LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
             throws IOException
     {
         this.fs = fs;
@@ -201,9 +202,9 @@ class TransactionStream
                     PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(
                             commands );
                     transaction.setHeader( start.getAdditionalHeader(), start.getMasterId(),
-                                           start.getLocalId(), start.getTimeWritten(),
-                                           start.getLastCommittedTxWhenTransactionStarted(),
-                                           commit.getTimeWritten(), -1 );
+                            start.getLocalId(), start.getTimeWritten(),
+                            start.getLastCommittedTxWhenTransactionStarted(),
+                            commit.getTimeWritten(), -1 );
                     return new CommittedTransactionRepresentation( start, transaction, commit );
                 }
                 else
@@ -223,7 +224,7 @@ class TransactionStream
         long cap = Long.MAX_VALUE;
 
         LogFile( FileSystemAbstraction fs, File file, ByteBuffer buffer,
-                LogEntryReader<ReadableLogChannel> logEntryReader ) throws IOException
+                 LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader ) throws IOException
         {
             this.file = file;
             try ( StoreChannel channel = fs.open( file, "r" ) )
@@ -287,7 +288,7 @@ class TransactionStream
         StringBuilder rangeString( StringBuilder target )
         {
             return target.append( ']' ).append( header.lastCommittedTxId )
-                         .append( ", " ).append( lastTxId ).append( ']' );
+                    .append( ", " ).append( lastTxId ).append( ']' );
         }
     }
 
@@ -309,7 +310,8 @@ class TransactionStream
         return logEntryCursor( logEntryReader, channel, file.header );
     }
 
-    private static IOCursor<LogEntry> logEntryCursor( LogEntryReader<ReadableLogChannel> logEntryReader,
+    private static IOCursor<LogEntry> logEntryCursor(
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
             StoreChannel channel, LogHeader header ) throws IOException
     {
         return new LogEntryCursor( logEntryReader, new ReadAheadLogChannel(

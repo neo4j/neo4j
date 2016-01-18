@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 
-public class StringMarshalTest
+public class StringByteBufferMarshalTest
 {
     @Test
     public void shouldSerializeAndDeserializeString()

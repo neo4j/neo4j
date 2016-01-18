@@ -19,10 +19,12 @@
  */
 package org.neo4j.coreedge.raft.state.term;
 
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
+import java.io.IOException;
 
-import org.neo4j.coreedge.raft.state.membership.Marshal;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 public class InMemoryTermState implements TermState
 {
@@ -68,22 +70,22 @@ public class InMemoryTermState implements TermState
         }
     }
 
-    public static class InMemoryTermStateMarshal implements Marshal<InMemoryTermState>
+    public static class InMemoryTermStateChannelMarshal implements ChannelMarshal<InMemoryTermState>
     {
         @Override
-        public void marshal( InMemoryTermState inMemoryTermState, ByteBuffer buffer )
+        public void marshal( InMemoryTermState inMemoryTermState, WritableChannel channel ) throws IOException
         {
-            buffer.putLong( inMemoryTermState.currentTerm() );
+            channel.putLong( inMemoryTermState.currentTerm() );
         }
 
         @Override
-        public InMemoryTermState unmarshal( ByteBuffer source )
+        public InMemoryTermState unmarshal( ReadableChannel source ) throws IOException
         {
             try
             {
                 return new InMemoryTermState( source.getLong() );
             }
-            catch ( BufferUnderflowException ex )
+            catch ( ReadPastEndException ex )
             {
                 return null;
             }

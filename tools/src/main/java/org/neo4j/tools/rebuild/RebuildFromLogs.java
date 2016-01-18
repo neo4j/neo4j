@@ -61,9 +61,9 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -188,12 +188,12 @@ class RebuildFromLogs
 
     private long findLastTransactionId( PhysicalLogFiles logFiles, long highestVersion ) throws IOException
     {
-        ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel(
+        ReadableLogChannel logChannel = new ReadAheadLogChannel(
                 PhysicalLogFile.openForVersion( logFiles, fs, highestVersion ), NO_MORE_CHANNELS );
 
         long lastTransactionId = -1;
 
-        LogEntryReader<ReadableLogChannel> entryReader =
+        LogEntryReader<ReadableClosablePositionAwareChannel> entryReader =
                 new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
                 new PhysicalTransactionCursor<>( logChannel, entryReader ) )
@@ -238,11 +238,11 @@ class RebuildFromLogs
             int startVersion = 0;
             ReaderLogVersionBridge versionBridge = new ReaderLogVersionBridge( fs, logFiles );
             PhysicalLogVersionedStoreChannel startingChannel = openForVersion( logFiles, fs, startVersion );
-            ReadableVersionableLogChannel channel = new ReadAheadLogChannel( startingChannel, versionBridge );
+            ReadableLogChannel channel = new ReadAheadLogChannel( startingChannel, versionBridge );
             long txId = BASE_TX_ID;
             TransactionQueue queue = new TransactionQueue( 10_000,
                     (tx) -> {commitProcess.commit( tx, NULL, EXTERNAL );} );
-            LogEntryReader<ReadableLogChannel> entryReader =
+            LogEntryReader<ReadableClosablePositionAwareChannel> entryReader =
                     new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
                     new PhysicalTransactionCursor<>( channel, entryReader ) )

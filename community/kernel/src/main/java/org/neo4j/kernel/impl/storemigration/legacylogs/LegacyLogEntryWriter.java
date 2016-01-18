@@ -28,11 +28,11 @@ import java.util.function.Function;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -47,18 +47,18 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 
 class LegacyLogEntryWriter
 {
-    private static final Function<WritableLogChannel, LogEntryWriter> defaultLogEntryWriterFactory =
-            channel -> new LogEntryWriter( channel );
+    private static final Function<FlushableChannel, LogEntryWriter> defaultLogEntryWriterFactory =
+            LogEntryWriter::new;
 
     private final FileSystemAbstraction fs;
-    private final Function<WritableLogChannel, LogEntryWriter> factory;
+    private final Function<FlushableChannel, LogEntryWriter> factory;
 
     LegacyLogEntryWriter( FileSystemAbstraction fs )
     {
         this( fs, defaultLogEntryWriterFactory );
     }
 
-    LegacyLogEntryWriter( FileSystemAbstraction fs, Function<WritableLogChannel, LogEntryWriter> factory )
+    LegacyLogEntryWriter( FileSystemAbstraction fs, Function<FlushableChannel, LogEntryWriter> factory )
     {
         this.fs = fs;
         this.factory = factory;
@@ -78,7 +78,7 @@ class LegacyLogEntryWriter
 
     public void writeAllLogEntries( LogVersionedStoreChannel channel, IOCursor<LogEntry> cursor ) throws IOException
     {
-        try ( PhysicalWritableLogChannel writable = new PhysicalWritableLogChannel( channel ) )
+        try ( PositionAwarePhysicalFlushableChannel writable = new PositionAwarePhysicalFlushableChannel( channel ) )
         {
             final LogEntryWriter writer = factory.apply( writable );
             List<StorageCommand> commands = new ArrayList<>();

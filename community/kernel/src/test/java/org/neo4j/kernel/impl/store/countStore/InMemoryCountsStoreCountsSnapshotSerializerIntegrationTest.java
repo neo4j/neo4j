@@ -19,38 +19,40 @@
  */
 package org.neo4j.kernel.impl.store.countStore;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
-import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
+import org.neo4j.test.TargetDirectory;
 
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotDeserializer.deserialize;
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
 /**
  * Serializes and deserialize count stores to test that they produce the same count stores.
  */
 public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
 {
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void smallWorkloadOnInMemoryLogTest() throws IOException
     {
         //GIVEN
-        InMemoryLogChannel tempChannel = new InMemoryLogChannel();
+        InMemoryClosableChannel tempChannel = new InMemoryClosableChannel();
         Map<CountsKey,long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 1 );
         CountsSnapshot countsSnapshot = new CountsSnapshot( 1, map );
 
@@ -60,69 +62,57 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
 
         //THEN
         Assert.assertEquals( countsSnapshot.getTxId(), recovered.getTxId() );
-        for ( Map.Entry<CountsKey,long[]> pair : countsSnapshot.getMap().entrySet() )
+        for ( Map.Entry<CountsKey, long[]> pair : countsSnapshot.getMap().entrySet() )
         {
             long[] value = recovered.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
             Assert.assertArrayEquals( value, pair.getValue() );
         }
 
-        for ( Map.Entry<CountsKey,long[]> pair : recovered.getMap().entrySet() )
+        for ( Map.Entry<CountsKey, long[]> pair : recovered.getMap().entrySet() )
         {
             long[] value = countsSnapshot.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
             Assert.assertArrayEquals( value, pair.getValue() );
         }
     }
-
 
     @Test
     public void largeWorkloadOnPhysicalLogTest() throws IOException
     {
         //GIVEN
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        File tempFile = File.createTempFile( "temp", "tmp" );
+        File tempFile = new File( testDir.directory(), "temp" );
         StoreChannel rawChannel = fs.create( tempFile );
-        final LogHeader header = new LogHeader( CURRENT_LOG_VERSION, 1, 42l );
-        PhysicalLogVersionedStoreChannel physicalLogVersionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( rawChannel, header.logVersion, header.logFormatVersion );
 
-        Map<CountsKey,long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 100000 );
+        Map<CountsKey, long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 100000 );
         CountsSnapshot countsSnapshot = new CountsSnapshot( 1, map );
         CountsSnapshot recovered;
 
         //WHEN
-        try ( PhysicalWritableLogChannel tempChannel = new PhysicalWritableLogChannel(
-                physicalLogVersionedStoreChannel ) )
+        try( FlushableChannel tempChannel = new PhysicalFlushableChannel( rawChannel ) )
         {
-
             serialize( tempChannel, countsSnapshot );
-        }
+        } // close() here is necessary to flush the temp buffer into the channel so we can read it next
 
-        physicalLogVersionedStoreChannel.position( 0 );
-
-        try ( ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( physicalLogVersionedStoreChannel,
-                LogVersionBridge.NO_MORE_CHANNELS ) )
-        {
-            recovered = deserialize( readAheadLogChannel );
-        }
+        rawChannel = fs.open( tempFile, "r" ); // The try-with-resources closes the channel, need to reopen
+        ReadAheadChannel<StoreChannel> readAheadChannel = new ReadAheadChannel<>( rawChannel );
+        recovered = deserialize( readAheadChannel );
 
         //THEN
         Assert.assertEquals( countsSnapshot.getTxId(), recovered.getTxId() );
-        for ( Map.Entry<CountsKey,long[]> pair : countsSnapshot.getMap().entrySet() )
+        for ( Map.Entry<CountsKey, long[]> pair : countsSnapshot.getMap().entrySet() )
         {
             long[] value = recovered.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
             Assert.assertArrayEquals( value, pair.getValue() );
         }
 
-        for ( Map.Entry<CountsKey,long[]> pair : recovered.getMap().entrySet() )
+        for ( Map.Entry<CountsKey, long[]> pair : recovered.getMap().entrySet() )
         {
             long[] value = countsSnapshot.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
             Assert.assertArrayEquals( value, pair.getValue() );
         }
     }
-
-
 }

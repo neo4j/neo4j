@@ -21,6 +21,7 @@ package org.neo4j.coreedge.raft.state.id_allocation;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.junit.Rule;
@@ -38,8 +39,10 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal.NUMBER_OF_BYTES_PER_WRITE;
+import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState
+        .InMemoryIdAllocationStateChannelMarshal.NUMBER_OF_BYTES_PER_WRITE;
 import static org.neo4j.coreedge.raft.state.id_allocation.OnDiskIdAllocationState.FILENAME;
 
 public class OnDiskIdAllocationStateTest
@@ -184,7 +187,8 @@ public class OnDiskIdAllocationStateTest
         public synchronized StoreChannel open( File fileName, String mode ) throws IOException
         {
             final StoreChannel mock = mock( StoreChannel.class );
-            doThrow( new IOException( "boom!" ) ).when( mock ).force( false );
+            when( mock.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
+            doThrow( new IOException( "boom!" ) ).when( mock ).flush();
             return mock;
         }
     }

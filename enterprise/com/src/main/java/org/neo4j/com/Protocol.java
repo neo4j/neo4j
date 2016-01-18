@@ -19,17 +19,17 @@
  */
 package org.neo4j.com;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.List;
 
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Visitor;
@@ -39,7 +39,8 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -54,15 +55,7 @@ public abstract class Protocol
 {
     public static final int MEGA = 1024 * 1024;
     public static final int DEFAULT_FRAME_LENGTH = 16 * MEGA;
-    public static final ObjectSerializer<Integer> INTEGER_SERIALIZER = new ObjectSerializer<Integer>()
-    {
-        @Override
-        @SuppressWarnings( "boxing" )
-        public void write( Integer responseObject, ChannelBuffer result ) throws IOException
-        {
-            result.writeInt( responseObject );
-        }
-    };
+    public static final ObjectSerializer<Integer> INTEGER_SERIALIZER = ( responseObject, result ) -> result.writeInt( responseObject );
     public static final ObjectSerializer<Long> LONG_SERIALIZER = new ObjectSerializer<Long>()
     {
         @Override
@@ -104,9 +97,9 @@ public abstract class Protocol
     };
     public static class TransactionRepresentationDeserializer implements Deserializer<TransactionRepresentation>
     {
-        private final LogEntryReader<ReadableLogChannel> reader;
+        private final LogEntryReader<ReadableClosablePositionAwareChannel> reader;
 
-        public TransactionRepresentationDeserializer( LogEntryReader<ReadableLogChannel> reader )
+        public TransactionRepresentationDeserializer( LogEntryReader<ReadableClosablePositionAwareChannel> reader )
         {
             this.reader = reader;
         }
@@ -115,7 +108,7 @@ public abstract class Protocol
         public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
                 throws IOException
         {
-            NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
+            NetworkReadableClosableChannel channel = new NetworkReadableClosableChannel( buffer );
 
             int authorId = channel.getInt();
             int masterId = channel.getInt();
@@ -232,7 +225,7 @@ public abstract class Protocol
             ByteBuffer input, long timeout,
             Deserializer<PAYLOAD> payloadDeserializer,
             ResourceReleaser channelReleaser,
-            final LogEntryReader<ReadableLogChannel> entryReader ) throws IOException
+            final LogEntryReader<ReadableClosablePositionAwareChannel> entryReader ) throws IOException
     {
         final DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, timeout,
                 internalProtocolVersion, applicationProtocolVersion );
@@ -257,9 +250,10 @@ public abstract class Protocol
             @Override
             public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
             {
-                NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
+                NetworkReadableClosableChannel channel = new NetworkReadableClosableChannel( dechunkingBuffer );
 
-                try ( PhysicalTransactionCursor cursor = new PhysicalTransactionCursor( channel, entryReader ) )
+                try ( PhysicalTransactionCursor<ReadableClosablePositionAwareChannel> cursor =
+                              new PhysicalTransactionCursor<>( channel, entryReader ) )
                 {
                     while ( cursor.next() && !visitor.visit( cursor.get() ) )
                     {
@@ -319,7 +313,7 @@ public abstract class Protocol
         @Override
         public void write( ChannelBuffer buffer ) throws IOException
         {
-            NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
+            NetworkFlushableChannel channel = new NetworkFlushableChannel( buffer );
 
             writeString( buffer, NeoStoreDataSource.DEFAULT_DATA_SOURCE_NAME );
             channel.putInt( tx.getAuthorId() );

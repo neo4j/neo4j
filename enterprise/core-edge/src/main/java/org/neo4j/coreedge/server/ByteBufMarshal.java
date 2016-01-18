@@ -17,24 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state.membership;
+package org.neo4j.coreedge.server;
 
-import java.nio.ByteBuffer;
+import io.netty.buffer.ByteBuf;
 
-/**
- * This interface defines the ability of a class to marshal instances of another class to and from a ByteBuffer.
- * @param <TARGET> The class being marshaled.
- */
-public interface Marshal<TARGET>
+public interface ByteBufMarshal<TARGET>
 {
-    /**
-     * Marshals the target into buffer. The buffer is expected to be large enough to hold the result.
-     */
-    void marshal( TARGET target, ByteBuffer buffer );
+    void marshal( TARGET member, ByteBuf buffer );
 
-    /**
-     * Unmarshals an instance of TARGET from source. If the source does not have enough bytes to fully read an instance,
-     * null will be returned.
-     */
-    TARGET unmarshal( ByteBuffer source );
+    TARGET unmarshal( ByteBuf buffer );
 }

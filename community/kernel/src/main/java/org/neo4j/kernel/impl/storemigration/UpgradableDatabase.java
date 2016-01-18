@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder;
@@ -140,7 +140,7 @@ public class UpgradableDatabase
             }
 
             PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, fs );
-            LogEntryReader<ReadableLogChannel> logEntryReader =
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
                     new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
             LatestCheckPointFinder latestCheckPointFinder =
                     new LatestCheckPointFinder( logFiles, fs, logEntryReader );

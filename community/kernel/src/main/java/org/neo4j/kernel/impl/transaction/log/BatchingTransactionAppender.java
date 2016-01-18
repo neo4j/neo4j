@@ -66,7 +66,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     private final DatabaseHealth databaseHealth;
     private final Lock forceLock = new ReentrantLock();
 
-    private WritableLogChannel writer;
+    private FlushablePositionAwareChannel writer;
     private TransactionLogWriter transactionLogWriter;
     private IndexCommandDetector indexCommandDetector;
 
@@ -323,7 +323,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         Flushable flushable;
         synchronized ( logFile )
         {
-            flushable = writer.emptyBufferIntoChannelAndClearIt();
+            flushable = writer.prepareForFlush();
         }
         // Force the writer outside of the lock.
         // This allows other threads access to the buffer while the writer is being forced.

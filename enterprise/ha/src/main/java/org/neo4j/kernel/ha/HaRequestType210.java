@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
 import java.io.IOException;
+
+import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.ObjectSerializer;
@@ -38,7 +38,7 @@ import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -52,7 +52,7 @@ import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
 
 public class HaRequestType210 extends AbstractHaRequestTypes
 {
-    public HaRequestType210( LogEntryReader<ReadableLogChannel> entryReader )
+    public HaRequestType210( LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
         register( Type.ALLOCATE_IDS, new TargetCaller<Master, IdAllocation>()
         {

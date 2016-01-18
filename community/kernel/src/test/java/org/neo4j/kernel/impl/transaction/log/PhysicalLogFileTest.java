@@ -19,19 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.LogFile.LogFileVisitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
@@ -42,12 +40,18 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 public class PhysicalLogFileTest
 {
+    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
+    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0, 0, 0 );
+
+
     @Test
     public void shouldOpenInFreshDirectoryAndFinallyAddHeader() throws Exception
     {
@@ -89,17 +93,17 @@ public class PhysicalLogFileTest
         {
             life.start();
 
-            WritableLogChannel writer = logFile.getWriter();
+            FlushablePositionAwareChannel writer = logFile.getWriter();
             LogPositionMarker positionMarker = new LogPositionMarker();
             writer.getCurrentPosition( positionMarker );
             int intValue = 45;
             long longValue = 4854587;
             writer.putInt( intValue );
             writer.putLong( longValue );
-            writer.emptyBufferIntoChannelAndClearIt().flush();
+            writer.prepareForFlush().flush();
 
             // THEN
-            try ( ReadableLogChannel reader = logFile.getReader( positionMarker.newPosition() ) )
+            try ( ReadableClosableChannel reader = logFile.getReader( positionMarker.newPosition() ) )
             {
                 assertEquals( intValue, reader.getInt() );
                 assertEquals( longValue, reader.getLong() );
@@ -127,7 +131,7 @@ public class PhysicalLogFileTest
         life.start();
         try
         {
-            WritableLogChannel writer = logFile.getWriter();
+            FlushablePositionAwareChannel writer = logFile.getWriter();
             LogPositionMarker positionMarker = new LogPositionMarker();
             writer.getCurrentPosition( positionMarker );
             LogPosition position1 = positionMarker.newPosition();
@@ -137,22 +141,22 @@ public class PhysicalLogFileTest
             writer.putInt( intValue );
             writer.putLong( longValue );
             writer.put( someBytes, someBytes.length );
-            writer.emptyBufferIntoChannelAndClearIt().flush();
+            writer.prepareForFlush().flush();
             writer.getCurrentPosition( positionMarker );
             LogPosition position2 = positionMarker.newPosition();
             long longValue2 = 123456789L;
             writer.putLong( longValue2 );
             writer.put( someBytes, someBytes.length );
-            writer.emptyBufferIntoChannelAndClearIt().flush();
+            writer.prepareForFlush().flush();
 
             // THEN
-            try ( ReadableLogChannel reader = logFile.getReader( position1 ) )
+            try ( ReadableClosableChannel reader = logFile.getReader( position1 ) )
             {
                 assertEquals( intValue, reader.getInt() );
                 assertEquals( longValue, reader.getLong() );
                 assertArrayEquals( someBytes, readBytes( reader, 40 ) );
             }
-            try ( ReadableLogChannel reader = logFile.getReader( position2 ) )
+            try ( ReadableClosableChannel reader = logFile.getReader( position2 ) )
             {
                 assertEquals( longValue2, reader.getLong() );
                 assertArrayEquals( someBytes, readBytes( reader, 40 ) );
@@ -176,35 +180,30 @@ public class PhysicalLogFileTest
                 transactionIdStore, logVersionRepository, mock( Monitor.class ),
                 new TransactionMetadataCache( 10, 100 )) );
         life.start();
-        WritableLogChannel writer = logFile.getWriter();
+        FlushablePositionAwareChannel writer = logFile.getWriter();
         LogPositionMarker mark = new LogPositionMarker();
         writer.getCurrentPosition( mark );
         for ( int i = 0; i < 5; i++ )
         {
             writer.put( (byte)i );
         }
-        writer.emptyBufferIntoChannelAndClearIt();
+        writer.prepareForFlush();
 
         // WHEN/THEN
         final AtomicBoolean called = new AtomicBoolean();
-        logFile.accept( new LogFileVisitor()
-        {
-            @Override
-            public boolean visit( LogPosition position, ReadableLogChannel channel ) throws IOException
+        logFile.accept( ( position, channel ) -> {
+            for ( int i = 0; i < 5; i++ )
             {
-                for ( int i = 0; i < 5; i++ )
-                {
-                    assertEquals( (byte)i, channel.get() );
-                }
-                called.set( true );
-                return true;
+                assertEquals( (byte)i, channel.get() );
             }
+            called.set( true );
+            return true;
         }, mark.newPosition() );
         assertTrue( called.get() );
         life.shutdown();
     }
 
-    private byte[] readBytes( ReadableLogChannel reader, int length ) throws IOException
+    private byte[] readBytes( ReadableClosableChannel reader, int length ) throws IOException
     {
         byte[] result = new byte[length];
         reader.get( result, length );
@@ -220,19 +219,4 @@ public class PhysicalLogFileTest
         }
         return result;
     }
-
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
-    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0, 0, 0 );
-    private static final Visitor<ReadableVersionableLogChannel, IOException> NO_RECOVERY_EXPECTED =
-            new Visitor<ReadableVersionableLogChannel, IOException>()
-            {
-        @Override
-        public boolean visit( ReadableVersionableLogChannel element ) throws IOException
-        {
-            fail( "No recovery expected" );
-            return false;
-        }
-    };
 }

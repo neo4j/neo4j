@@ -17,39 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server;
+package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.neo4j.coreedge.raft.state.ByteBufferMarshal;
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class RaftTestMarshal implements ByteBufferMarshal<RaftTestMember>, ChannelMarshal<RaftTestMember>
+public interface ChannelMarshal<STATE>
 {
-    @Override
-    public void marshal( RaftTestMember raftTestMember, ByteBuffer target )
-    {
-        target.putLong( raftTestMember.getId() );
-    }
+    void marshal( STATE target, WritableChannel channel ) throws IOException;
 
-    @Override
-    public RaftTestMember unmarshal( ByteBuffer source )
-    {
-        return RaftTestMember.member( source.getLong() );
-    }
-
-    @Override
-    public void marshal( RaftTestMember target, WritableChannel channel ) throws IOException
-    {
-        channel.putLong( target.getId() );
-    }
-
-    @Override
-    public RaftTestMember unmarshal( ReadableChannel source ) throws IOException
-    {
-        return RaftTestMember.member( source.getLong() );
-    }
+    STATE unmarshal( ReadableChannel source ) throws IOException;
 }

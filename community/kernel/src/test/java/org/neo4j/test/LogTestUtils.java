@@ -34,11 +34,8 @@ import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -48,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -138,7 +136,7 @@ public class LogTestUtils
 
             PhysicalLogVersionedStoreChannel logVersionedChannel = new PhysicalLogVersionedStoreChannel( channel,
                     header.logVersion, header.logFormatVersion );
-            ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( logVersionedChannel,
+            ReadableLogChannel logChannel = new ReadAheadLogChannel( logVersionedChannel,
                     LogVersionBridge.NO_MORE_CHANNELS );
 
             return new LogEntryCursor( new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() ),
@@ -195,7 +193,6 @@ public class LogTestUtils
             LogHeader logHeader = transferLogicalLogHeader( in, out, ByteBuffer.allocate( LOG_HEADER_SIZE ) );
             PhysicalLogVersionedStoreChannel outChannel =
                     new PhysicalLogVersionedStoreChannel( out, logHeader.logVersion, logHeader.logFormatVersion );
-            final WritableLogChannel outBuffer = new PhysicalWritableLogChannel( outChannel );
 
             PhysicalLogVersionedStoreChannel inChannel =
                     new PhysicalLogVersionedStoreChannel( in, logHeader.logVersion, logHeader.logFormatVersion );

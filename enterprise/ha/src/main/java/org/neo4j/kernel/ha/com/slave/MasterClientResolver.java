@@ -33,13 +33,14 @@ import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class MasterClientResolver implements MasterClientFactory, ComExceptionHandler
 {
@@ -49,7 +50,7 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
     private final Log log;
     private final ResponseUnpacker responseUnpacker;
     private final InvalidEpochExceptionHandler invalidEpochHandler;
-    private final Supplier<LogEntryReader<ReadableLogChannel>> logEntryReader;
+    private final Supplier<LogEntryReader<ReadableClosablePositionAwareChannel>> logEntryReader;
 
     @Override
     public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors,
@@ -68,7 +69,7 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
     public MasterClientResolver( LogProvider logProvider, ResponseUnpacker responseUnpacker,
             InvalidEpochExceptionHandler invalidEpochHandler,
             int readTimeout, int lockReadTimeout, int channels, int chunkSize,
-            Supplier<LogEntryReader<ReadableLogChannel>> logEntryReader )
+            Supplier<LogEntryReader<ReadableClosablePositionAwareChannel>> logEntryReader )
     {
         this.logEntryReader = logEntryReader;
         this.log = logProvider.getLog( getClass() );
