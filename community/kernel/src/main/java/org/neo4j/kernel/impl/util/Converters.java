@@ -87,18 +87,6 @@ public class Converters
         };
     }
 
-    public static Function<String,Character> toCharacter()
-    {
-        return value -> {
-            if ( value.length() > 1 )
-            {
-                throw new IllegalArgumentException( "Invalid delimiter '" +
-                        value + "', expected one character" );
-            }
-            return value.charAt( 0 );
-        };
-    }
-
     public static Function<String,Integer> toInt()
     {
         return Integer::new;

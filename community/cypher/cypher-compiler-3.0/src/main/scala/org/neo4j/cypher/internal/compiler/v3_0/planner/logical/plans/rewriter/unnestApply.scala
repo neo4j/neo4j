@@ -40,7 +40,7 @@ case object unnestApply extends Rewriter {
     CN : CreateNode
    */
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
     // SR Ax R => R iff Arg0 introduces no arguments
     case Apply(_: SingleRow, rhs) =>
       rhs
@@ -86,7 +86,7 @@ case object unnestApply extends Rewriter {
     // L Ax (CN R) => CN Ax (L R)
     case apply@Apply(lhs, create@CreateNode(rhs, name, labels, props)) =>
       CreateNode(Apply(lhs, rhs)(apply.solved), name, labels, props)(apply.solved)
-  }
+  })
 
-  override def apply(input: AnyRef) = bottomUp(instance).apply(input)
+  override def apply(input: AnyRef) = instance.apply(input)
 }

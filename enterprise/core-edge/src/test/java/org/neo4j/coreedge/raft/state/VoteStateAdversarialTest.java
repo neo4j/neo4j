@@ -59,7 +59,7 @@ public class VoteStateAdversarialTest
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         FileSystemAbstraction fileSystem = new SelectiveFileSystemAbstraction(
-                new File( testDir.directory(), "vote.A" ), new AdversarialFileSystemAbstraction( adversary, fs ), fs );
+                new File( testDir.directory(), "vote.a" ), new AdversarialFileSystemAbstraction( adversary, fs ), fs );
         VoteState<CoreMember> store = createVoteStore( fileSystem );
 
         final CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),

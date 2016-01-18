@@ -17,16 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.core;
+package org.neo4j.coreedge.raft.state.term;
 
-public interface CurrentReplicatedLockState
+import org.neo4j.coreedge.raft.log.RaftStorageException;
+import org.neo4j.coreedge.raft.log.monitoring.RaftTermMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
+
+public class MonitoredTermState implements TermState
 {
-    LockSession currentLockSession();
+    private final TermState delegate;
+    private final RaftTermMonitor termMonitor;
 
-    interface LockSession
+    public MonitoredTermState( TermState delegate, Monitors monitors )
     {
-        int id();
+        this.delegate = delegate;
 
-        boolean isMine();
+        this.termMonitor = monitors.newMonitor( RaftTermMonitor.class, getClass(), TERM_TAG );
+
+    }
+
+    @Override
+    public long currentTerm()
+    {
+        return delegate.currentTerm();
+    }
+
+    @Override
+    public void update( long newTerm ) throws RaftStorageException
+    {
+        delegate.update( newTerm );
+        termMonitor.term( newTerm );
     }
 }

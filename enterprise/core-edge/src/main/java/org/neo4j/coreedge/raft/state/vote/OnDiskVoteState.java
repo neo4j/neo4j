@@ -35,17 +35,18 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class OnDiskVoteState<MEMBER> extends LifecycleAdapter implements VoteState<MEMBER>
 {
     public static final String FILENAME = "vote.";
+    public static final String DIRECTORY_NAME = "vote-state";
 
     private final StatePersister<InMemoryVoteState<MEMBER>> statePersister;
 
     private InMemoryVoteState<MEMBER> inMemoryVoteState;
 
-    public OnDiskVoteState( FileSystemAbstraction fileSystemAbstraction, File storeDir,
+    public OnDiskVoteState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
                             int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier,
                             ChannelMarshal<MEMBER> memberByteBufferMarshal ) throws IOException
     {
-        File fileA = new File( storeDir, FILENAME + "A" );
-        File fileB = new File( storeDir, FILENAME + "B" );
+        File fileA = new File( stateDir, FILENAME + "a" );
+        File fileB = new File( stateDir, FILENAME + "b" );
 
         InMemoryVoteState.InMemoryVoteStateChannelMarshal<MEMBER> marshal =
                 new InMemoryVoteState.InMemoryVoteStateChannelMarshal<>( memberByteBufferMarshal );

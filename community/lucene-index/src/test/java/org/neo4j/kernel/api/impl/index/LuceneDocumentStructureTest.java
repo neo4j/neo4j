@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PrefixQuery;
@@ -28,6 +30,7 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
 import static junit.framework.TestCase.assertEquals;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding.Array;
@@ -40,14 +43,38 @@ public class LuceneDocumentStructureTest
     private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
 
     @Test
+    public void tooLongStringShouldBeSkipped()
+    {
+        String string = RandomStringUtils.randomAscii( 358749 );
+        Document document = documentStructure.documentRepresentingProperty( 123, string );
+        assertNull( document.getField( String.key() ) );
+    }
+
+    @Test
+    public void tooLongArrayShouldBeSkipped()
+    {
+        byte[] bytes = RandomStringUtils.randomAscii( IndexWriter.MAX_TERM_LENGTH  + 10).getBytes();
+        Document document = documentStructure.documentRepresentingProperty( 123, bytes );
+        assertNull( document.getField( Array.key() ) );
+    }
+
+    @Test
+    public void stringWithMaximumLengthShouldBeAllowed()
+    {
+        String longestString = RandomStringUtils.randomAscii( IndexWriter.MAX_TERM_LENGTH );
+        Document document = documentStructure.documentRepresentingProperty( 123, longestString );
+        assertEquals( longestString, document.getField( String.key() ).stringValue() );
+    }
+
+    @Test
     public void shouldBuildDocumentRepresentingStringProperty() throws Exception
     {
         // given
         Document document = documentStructure.documentRepresentingProperty( 123, "hello" );
 
         // then
-        assertEquals("123", document.get( NODE_ID_KEY ));
-        assertEquals("hello", document.get( String.key() ));
+        assertEquals( "123", document.get( NODE_ID_KEY ) );
+        assertEquals( "hello", document.get( String.key() ) );
     }
 
     @Test
@@ -57,8 +84,8 @@ public class LuceneDocumentStructureTest
         Document document = documentStructure.documentRepresentingProperty( 123, true );
 
         // then
-        assertEquals("123", document.get( NODE_ID_KEY ));
-        assertEquals("true", document.get( Bool.key() ));
+        assertEquals( "123", document.get( NODE_ID_KEY ) );
+        assertEquals( "true", document.get( Bool.key() ) );
     }
 
     @Test
@@ -68,7 +95,7 @@ public class LuceneDocumentStructureTest
         Document document = documentStructure.documentRepresentingProperty( 123, 12 );
 
         // then
-        assertEquals("123", document.get( NODE_ID_KEY ));
+        assertEquals( "123", document.get( NODE_ID_KEY ) );
         assertEquals( 12.0, document.getField( Number.key() ).numericValue().doubleValue() );
     }
 
@@ -79,8 +106,8 @@ public class LuceneDocumentStructureTest
         Document document = documentStructure.documentRepresentingProperty( 123, new Integer[]{1, 2, 3} );
 
         // then
-        assertEquals("123", document.get( NODE_ID_KEY ));
-        assertEquals("D1.0|2.0|3.0|", document.get( Array.key() ));
+        assertEquals( "123", document.get( NODE_ID_KEY ) );
+        assertEquals( "D1.0|2.0|3.0|", document.get( Array.key() ) );
     }
 
     @Test
@@ -103,7 +130,7 @@ public class LuceneDocumentStructureTest
         assertEquals( "Characters", query.getTerm().text() );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldBuildQueryRepresentingNumberProperty() throws Exception
     {
@@ -133,7 +160,7 @@ public class LuceneDocumentStructureTest
 
         // then
         assertEquals( "number", query.getField() );
-        assertEquals( 12.0 , query.getMin() );
+        assertEquals( 12.0, query.getMin() );
         assertEquals( true, query.includesMin() );
         assertEquals( null, query.getMax() );
         assertEquals( true, query.includesMax() );
@@ -147,7 +174,7 @@ public class LuceneDocumentStructureTest
 
         // then
         assertEquals( "string", query.getField() );
-        assertEquals( "foo" , query.getLowerTerm().utf8ToString() );
+        assertEquals( "foo", query.getLowerTerm().utf8ToString() );
         assertEquals( false, query.includesLower() );
         assertEquals( null, query.getUpperTerm() );
         assertEquals( true, query.includesUpper() );

@@ -171,7 +171,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                         new StoreFiles( new DefaultFileSystemAbstraction() ),
                         dependencies.provideDependency( NeoStoreDataSource.class ), platformModule.dependencies
                         .provideDependency( TransactionIdStore.class ) ),
-                txPollingClient, discoveryService, platformModule.dataSourceManager ) );
+                txPollingClient, platformModule.dataSourceManager, new ConnectToRandomCoreServer( discoveryService ) ) );
     }
 
     private void publishEditionInfo( UsageData sysInfo )

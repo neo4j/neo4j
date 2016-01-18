@@ -98,7 +98,7 @@ public class PersistedStateIT
                         FileSystemAbstraction.class.getMethod( "create", File.class ) ),
                 normalFSA );
         SelectiveFileSystemAbstraction combinedFSA = new SelectiveFileSystemAbstraction(
-                new File( testDir.directory(), "long.A" ), breakingFSA, normalFSA );
+                new File( testDir.directory(), "long.a" ), breakingFSA, normalFSA );
 
         LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 );
         long lastValue = 0;
@@ -140,7 +140,7 @@ public class PersistedStateIT
                         StoreChannel.class.getMethod( "force", boolean.class ) ),
                 normalFSA );
         SelectiveFileSystemAbstraction combinedFSA = new SelectiveFileSystemAbstraction(
-                new File( testDir.directory(), "long.A" ), breakingFSA, normalFSA );
+                new File( testDir.directory(), "long.a" ), breakingFSA, normalFSA );
 
         LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 );
         long lastValue = 0;
@@ -210,7 +210,7 @@ public class PersistedStateIT
                         StoreChannel.class.getMethod( "close" ) ),
                 normalFSA );
         SelectiveFileSystemAbstraction combinedFSA = new SelectiveFileSystemAbstraction(
-                new File( testDir.directory(), "long.A" ), breakingFSA, normalFSA );
+                new File( testDir.directory(), "long.a" ), breakingFSA, normalFSA );
 
         LongState persistedState = new LongState( combinedFSA, testDir.directory(), 14 );
         long lastValue = 0;
@@ -252,11 +252,11 @@ public class PersistedStateIT
         private final StatePersister<Long> statePersister;
         private long theState = -1;
 
-        public LongState( FileSystemAbstraction fileSystemAbstraction, File storeDir,
+        public LongState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
                           int numberOfEntriesBeforeRotation ) throws IOException
         {
-            File fileA = new File( storeDir, FILENAME + "A" );
-            File fileB = new File( storeDir, FILENAME + "B" );
+            File fileA = new File( stateDir, FILENAME + "a" );
+            File fileB = new File( stateDir, FILENAME + "b" );
 
             ChannelMarshal<Long> byteBufferMarshal = new ChannelMarshal<Long>()
             {

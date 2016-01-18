@@ -35,6 +35,9 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.coreedge.raft.log.RaftLog.*;
+
+
 /**
  * Writes a raft log to disk using 3 files:
  * <p>
@@ -68,6 +71,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     public static final int ENTRY_RECORD_LENGTH = 16;
     public static final int CONTENT_LENGTH_BYTES = 4;
     public static final int COMMIT_INDEX_BYTES = 8;
+    public static final String DIRECTORY_NAME = "raft-log";
 
     private final ByteBuffer entryRecordBuffer = ByteBuffer.allocate( ENTRY_RECORD_LENGTH );
     private final ByteBuffer contentLengthBuffer = ByteBuffer.allocate( CONTENT_LENGTH_BYTES );
@@ -86,17 +90,11 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     private long commitIndex = -1;
     private long term = -1;
 
-    private final RaftLogAppendIndexMonitor appendIndexMonitor;
-    private final RaftLogCommitIndexMonitor commitIndexMonitor;
-
-    public NaiveDurableRaftLog( FileSystemAbstraction fileSystem, File directory, Serializer serializer,
-                                Monitors monitors )
+    public NaiveDurableRaftLog( FileSystemAbstraction fileSystem, File directory, Serializer serializer)
     {
         this.serializer = serializer;
-        this.appendIndexMonitor = monitors.newMonitor( RaftLogAppendIndexMonitor.class, getClass(), RaftLog
-                .APPEND_INDEX_TAG );
-        this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass(), RaftLog
-                .COMMIT_INDEX_TAG );
+
+        directory.mkdirs();
 
         try
         {
@@ -200,7 +198,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             writeEntry( new Entry( logEntry.term(), contentOffset ) );
             contentOffset += length;
             appendIndex++;
-            appendIndexMonitor.appendIndex( appendIndex );
             for ( Listener listener : listeners )
             {
                 listener.onAppended( logEntry.content(), appendIndex );
@@ -264,7 +261,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         try
         {
             storeCommitIndex( actualNewCommitIndex );
-            commitIndexMonitor.commitIndex( actualNewCommitIndex );
         }
         catch ( IOException e )
         {
@@ -291,7 +287,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public long commitIndex()
     {
-        commitIndexMonitor.commitIndex( commitIndex );
         return commitIndex;
     }
 

@@ -36,17 +36,18 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class OnDiskTermState extends LifecycleAdapter implements TermState
 {
     public static final String FILENAME = "term.";
+    public static final String DIRECTORY_NAME = "term-state";
 
     private InMemoryTermState inMemoryTermState;
 
     private final StatePersister<InMemoryTermState> statePersister;
 
-    public OnDiskTermState( FileSystemAbstraction fileSystemAbstraction, File storeDir,
+    public OnDiskTermState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
                             int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier )
             throws IOException
     {
-        File fileA = new File( storeDir, FILENAME + "A" );
-        File fileB = new File( storeDir, FILENAME + "B" );
+        File fileA = new File( stateDir, FILENAME + "a" );
+        File fileB = new File( stateDir, FILENAME + "b" );
 
         TermStateRecoveryManager recoveryManager =
                 new TermStateRecoveryManager( fileSystemAbstraction, new InMemoryTermStateChannelMarshal() );

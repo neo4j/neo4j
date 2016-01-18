@@ -90,6 +90,7 @@ public class BufferedCharSeeker implements CharSeeker
         int endOffset = 1;
         int skippedChars = 0;
         int quoteDepth = 0;
+        int quoteStartLine = 0;
         boolean isQuoted = false;
 
         while ( !eof )
@@ -101,6 +102,7 @@ public class BufferedCharSeeker implements CharSeeker
                 {   // We found a quote, which was the first of the value, skip it and switch mode
                     quoteDepth++;
                     seekStartPos++;
+                    quoteStartLine = lineNumber;
                     continue;
                 }
                 else if ( isNewLine( ch ) )
@@ -162,6 +164,11 @@ public class BufferedCharSeeker implements CharSeeker
                     {   // Found a slash encoded quote
                         repositionChar( bufferPos++, ++skippedChars );
                     }
+                }
+                else if ( eof )
+                {
+                    // We have an open quote but have reached the end of the file, this is a formatting error
+                    throw new MissingEndQuoteException( this, quoteStartLine, quoteChar );
                 }
             }
         }

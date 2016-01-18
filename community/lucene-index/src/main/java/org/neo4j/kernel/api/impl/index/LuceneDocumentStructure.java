@@ -25,6 +25,7 @@ import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -35,12 +36,10 @@ import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.util.BytesRef;
 
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 
 import org.neo4j.kernel.api.index.ArrayEncoder;
 
@@ -51,6 +50,12 @@ import static org.apache.lucene.document.Field.Store.YES;
 public class LuceneDocumentStructure
 {
     static final String NODE_ID_KEY = "id";
+
+    //  Absolute hard maximum length for a term, in bytes once
+    //  encoded as UTF8.  If a term arrives from the analyzer
+    //  longer than this length, an IllegalArgumentException
+    //  when lucene writer trying to add or update document
+    private static final int MAX_FIELD_LENGTH = IndexWriter.MAX_TERM_LENGTH;
 
     private final ThreadLocal<DocWithId> perThreadDocument = new ThreadLocal<DocWithId>()
     {
@@ -368,7 +373,28 @@ public class LuceneDocumentStructure
         {
             removeAllValueFields();
             Field reusableField = getFieldWithValue( encoding, value );
-            document.add( reusableField );
+            if ( isArrayOrString( reusableField ) )
+            {
+                if ( isShorterThenMaximum( reusableField ) )
+                {
+                    document.add( reusableField );
+                }
+            }
+            else
+            {
+                document.add( reusableField );
+            }
+        }
+
+        private boolean isShorterThenMaximum( Field reusableField )
+        {
+            return reusableField.stringValue().getBytes().length <= MAX_FIELD_LENGTH;
+        }
+
+        private boolean isArrayOrString( Field reusableField )
+        {
+            return ValueEncoding.Array.key().equals( reusableField.name() ) ||
+                   ValueEncoding.String.key().equals( reusableField.name() );
         }
 
         private void removeAllValueFields()

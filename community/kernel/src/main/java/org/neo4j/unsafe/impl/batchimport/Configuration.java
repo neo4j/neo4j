@@ -45,19 +45,6 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
      */
     int denseNodeThreshold();
 
-    /**
-     * Rough max number of processors (CPU cores) simultaneously used in total by importer at any given time.
-     * This value should be set while taking the necessary IO threads into account; the page cache and the operating
-     * system will require a couple of threads between them, to handle the IO workload the importer generates.
-     * Defaults to the value provided by the {@link Runtime#availableProcessors() jvm}. There's a discrete
-     * number of threads that needs to be used just to get the very basics of the import working,
-     * so for that reason there's no lower bound to this value.
-     *   "Processor" in the context of the batch importer is different from "thread" since when discovering
-     * how many processors are fully in use there's a calculation where one thread takes up 0 < fraction <= 1
-     * of a processor.
-     */
-    int maxNumberOfProcessors();
-
     class Default
             extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Default
             implements Configuration
@@ -91,21 +78,9 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         }
 
         @Override
-        public int workAheadSize()
-        {
-            return 20;
-        }
-
-        @Override
         public int denseNodeThreshold()
         {
             return Integer.parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
-        }
-
-        @Override
-        public int maxNumberOfProcessors()
-        {
-            return Runtime.getRuntime().availableProcessors();
         }
 
         @Override
@@ -146,12 +121,6 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         public int denseNodeThreshold()
         {
             return config.get( GraphDatabaseSettings.dense_node_threshold );
-        }
-
-        @Override
-        public int maxNumberOfProcessors()
-        {
-            return defaults.maxNumberOfProcessors();
         }
 
         @Override

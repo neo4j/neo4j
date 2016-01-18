@@ -61,17 +61,18 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
 
         if ( transactionIdStore.getLastCommittedTransactionId() > startTxId )
         {
-            IOCursor<CommittedTransactionRepresentation> cursor =
-                    logicalTransactionStore.getTransactions( startTxId + 1 );
-
-            while ( cursor.next() )
+            try ( IOCursor<CommittedTransactionRepresentation> cursor =
+                    logicalTransactionStore.getTransactions( startTxId + 1 ) )
             {
-                ctx.write( ResponseMessageType.TX );
-                CommittedTransactionRepresentation tx = cursor.get();
-                endTxId = tx.getCommitEntry().getTxId();
-                ctx.write( new TxPullResponse( storeId, tx ) );
+                while ( cursor.next() )
+                {
+                    ctx.write( ResponseMessageType.TX );
+                    CommittedTransactionRepresentation tx = cursor.get();
+                    endTxId = tx.getCommitEntry().getTxId();
+                    ctx.write( new TxPullResponse( storeId, tx ) );
+                }
+                ctx.flush();
             }
-            ctx.flush();
         }
 
         ctx.write( ResponseMessageType.TX_STREAM_FINISHED );

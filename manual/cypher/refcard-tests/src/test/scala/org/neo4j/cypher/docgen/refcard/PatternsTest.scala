@@ -172,7 +172,7 @@ WHERE id(n) = %A% AND id(m) = %B%
 
 RETURN n, m###
 
-Variable lenth path of any number of relationships from `n` to `m`.
+Variable length path of any number of relationships from `n` to `m`.
 (Please see the performance tips.)
 
 ###assertion=create parameters=aname
@@ -183,7 +183,7 @@ CREATE UNIQUE
 
 RETURN m###
 
-A relationship of type `KNOWS` from `n` to an `m` having the declared property.
+A relationship of type `KNOWS` from a node `n` to a node `m` with the declared property.
 
 ###assertion=empty
 MATCH p =

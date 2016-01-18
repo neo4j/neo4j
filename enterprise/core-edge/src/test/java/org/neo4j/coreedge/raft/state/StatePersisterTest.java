@@ -147,11 +147,11 @@ public class StatePersisterTest
 
     private File stateFileA()
     {
-        return new File( testDir.directory(), FILENAME + "A" );
+        return new File( testDir.directory(), FILENAME + "a" );
     }
 
     private File stateFileB()
     {
-        return new File( testDir.directory(), FILENAME + "B" );
+        return new File( testDir.directory(), FILENAME + "b" );
     }
 }

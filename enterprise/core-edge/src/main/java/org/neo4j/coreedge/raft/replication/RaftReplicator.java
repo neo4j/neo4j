@@ -57,12 +57,7 @@ public class RaftReplicator<MEMBER> implements Replicator, RaftLog.Listener
             throw new ReplicationFailedException( e );
         }
 
-        if ( !leader.equals( me ) )
-        {
-            throw new ReplicationFailedException( "Only leader is allowed to replicate" );
-        }
-
-        outbound.send( me, new RaftMessages.NewEntry.Request<>( me, content ) );
+        outbound.send( leader, new RaftMessages.NewEntry.Request<>( me, content ) );
     }
 
     @Override
@@ -70,7 +65,7 @@ public class RaftReplicator<MEMBER> implements Replicator, RaftLog.Listener
     {
         if ( contentHasStarted )
         {
-            System.out.println( "WARNING: Late subscription: " + listener );
+            throw new IllegalStateException( "Late subscription: " + listener );
         }
         listeners.add( listener );
     }

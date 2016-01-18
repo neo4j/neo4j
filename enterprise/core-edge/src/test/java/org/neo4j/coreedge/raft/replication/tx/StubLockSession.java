@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
-import org.neo4j.coreedge.server.core.CurrentReplicatedLockState;
+import org.neo4j.coreedge.server.core.locks.CurrentReplicatedLockState;
 
 class StubLockSession implements CurrentReplicatedLockState.LockSession
 {

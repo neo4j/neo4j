@@ -45,10 +45,11 @@ public class EdgeServerStartupProcessTest
 
         AdvertisedSocketAddress coreServerAddress = new AdvertisedSocketAddress( "localhost:1999" );
         CoreDiscoveryService hazelcastTopology = mock( CoreDiscoveryService.class );
-        HazelcastClusterTopology clusterTopology = mock( HazelcastClusterTopology.class );
-        when( clusterTopology.firstTransactionServer() ).thenReturn( coreServerAddress );
 
+        HazelcastClusterTopology clusterTopology = mock( HazelcastClusterTopology.class );
         when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
+
+        when( clusterTopology.firstTransactionServer() ).thenReturn( coreServerAddress );
         when( localDatabase.isEmpty() ).thenReturn( true );
 
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );

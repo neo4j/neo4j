@@ -173,47 +173,6 @@ public class MetricsKernelExtensionFactoryIT
         readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue > 0 );
     }
 
-    @Test
-    public void shouldLogCoreEdgeMetrics() throws Throwable
-    {
-        createCluster( "10m", "100ms" );
-
-        Monitors monitors = db.getDependencyResolver().resolveDependency( Monitors.class );
-
-        NaiveDurableRaftLog log = new NaiveDurableRaftLog( new DefaultFileSystemAbstraction(), db.getStoreDirectory(),
-                new RaftContentSerializer(), monitors );
-
-        CoreMember owner = new CoreMember( new AdvertisedSocketAddress( "localhost:7001" ), new
-                AdvertisedSocketAddress( "localhost:6001" ) );
-        log.append( new RaftLogEntry( 8, allocation( owner, 0 ) ) );
-        log.append( new RaftLogEntry( 8, allocation( owner, 1024 ) ) );
-        log.append( new RaftLogEntry( 8, allocation( owner, 2048 ) ) );
-        log.commit( 2 );
-
-
-        File appenIndexMetricsFile = new File( outputPath, CoreEdgeMetrics.APPEND_INDEX + ".csv" );
-        while ( !appenIndexMetricsFile.exists() )
-        {
-            Thread.sleep( 10 );
-        }
-
-        File commitIndexMetricsFile = new File( outputPath, CoreEdgeMetrics.COMMIT_INDEX + ".csv" );
-        while ( !commitIndexMetricsFile.exists() )
-        {
-            Thread.sleep( 10 );
-        }
-
-        cluster.stop();
-
-        readLongValueAndAssert( appenIndexMetricsFile, ( newValue, currentValue ) -> newValue > 0 );
-        readLongValueAndAssert( commitIndexMetricsFile, ( newValue, currentValue ) -> newValue > 0 );
-    }
-
-    private ReplicatedIdAllocationRequest allocation( CoreMember owner, int start )
-    {
-        return new ReplicatedIdAllocationRequest( owner, RELATIONSHIP_TYPE_TOKEN, start, 1024 );
-    }
-
     private void addNodes( int numberOfNodes )
     {
         for ( int i = 0; i < numberOfNodes; i++ )

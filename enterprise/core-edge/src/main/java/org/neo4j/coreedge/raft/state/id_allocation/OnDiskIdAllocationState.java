@@ -43,6 +43,7 @@ import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationSt
  */
 public class OnDiskIdAllocationState extends LifecycleAdapter implements IdAllocationState
 {
+    public static final String DIRECTORY_NAME = "id-allocation-state";
     public static final String FILENAME = "id.allocation.";
 
     private final InMemoryIdAllocationState inMemoryIdAllocationState;
@@ -50,12 +51,12 @@ public class OnDiskIdAllocationState extends LifecycleAdapter implements IdAlloc
     private final StatePersister<InMemoryIdAllocationState> statePersister;
     private final InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal marshal;
 
-    public OnDiskIdAllocationState( FileSystemAbstraction fileSystemAbstraction, File storeDir,
+    public OnDiskIdAllocationState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
                                     int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier )
             throws IOException
     {
-        File fileA = new File( storeDir, FILENAME + "A" );
-        File fileB = new File( storeDir, FILENAME + "B" );
+        File fileA = new File( stateDir, FILENAME + "a" );
+        File fileB = new File( stateDir, FILENAME + "b" );
 
         IdAllocationStateRecoveryManager recoveryManager =
                 new IdAllocationStateRecoveryManager( fileSystemAbstraction,
