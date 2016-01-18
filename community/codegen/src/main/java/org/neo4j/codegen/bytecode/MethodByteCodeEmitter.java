@@ -104,7 +104,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
         value.accept( expressionVisitor );
         methodVisitor
                 .visitFieldInsn( PUTFIELD, byteCodeName( field.owner() ), field.name(), typeName( field.type() ) );
-
     }
 
     @Override
@@ -392,19 +391,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     {
         //these are equivalent when it comes to bytecode
         assign( local, value );
-    }
-
-    @Override
-    public void beginForEach( Parameter local, Expression iterable )
-    {
-        callSuperIfNecessary();
-
-        //TODO foreach is just sugar for a while loop using iterator
-
-        iterable.accept( expressionVisitor );
-        methodVisitor.visitMethodInsn( INVOKEINTERFACE, "java/lang/Iterable", "iterator", "()Ljava/util/Iterator;", true );
-
-
     }
 
     /*

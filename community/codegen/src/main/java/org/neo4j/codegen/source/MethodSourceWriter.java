@@ -130,16 +130,6 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void beginForEach( Parameter local, Expression iterable )
-    {
-        indent().append( "for ( " ).append( local.type().name() ).append( " " ).append( local.name() ).append( " : " );
-        iterable.accept( this );
-        append( " )\n" );
-        indent().append( "{\n" );
-        level.push( LEVEL );
-    }
-
-    @Override
     public void assign( LocalVariable variable, Expression value )
     {
         indent().append( variable.type().name() ).append( ' ' ).append( variable.name() ).append( " = " );

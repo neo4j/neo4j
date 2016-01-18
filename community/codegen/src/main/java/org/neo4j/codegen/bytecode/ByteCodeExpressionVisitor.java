@@ -117,7 +117,6 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
         target.accept( this );
         methodVisitor
                 .visitFieldInsn( Opcodes.GETFIELD, byteCodeName( field.owner() ), field.name(), typeName( field.type() ) );
-
     }
 
     @Override
@@ -149,7 +148,15 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     @Override
     public void not( Expression expression )
     {
-
+        expression.accept( this );
+        Label l0 = new Label();
+        methodVisitor.visitJumpInsn( IFNE, l0 );
+        methodVisitor.visitInsn( ICONST_1 );
+        Label l1 = new Label();
+        methodVisitor.visitJumpInsn( GOTO, l1 );
+        methodVisitor.visitLabel( l0 );
+        methodVisitor.visitInsn( ICONST_0 );
+        methodVisitor.visitLabel( l1 );
     }
 
     @Override

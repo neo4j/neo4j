@@ -52,6 +52,4 @@ public interface MethodEmitter
     void declare( LocalVariable local );
 
     void assignVariableInScope( LocalVariable local, Expression value );
-
-    void beginForEach( Parameter local, Expression iterable );
 }

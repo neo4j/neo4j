@@ -132,9 +132,4 @@ class InvalidState implements MethodEmitter
         throw new IllegalStateException( reason );
     }
 
-    @Override
-    public void beginForEach( Parameter local, Expression iterable )
-    {
-        throw new IllegalStateException( reason );
-    }
 }

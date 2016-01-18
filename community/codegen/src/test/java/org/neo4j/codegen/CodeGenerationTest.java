@@ -58,6 +58,7 @@ import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.invoke;
 import static org.neo4j.codegen.Expression.newArray;
 import static org.neo4j.codegen.Expression.newInstance;
+import static org.neo4j.codegen.Expression.not;
 import static org.neo4j.codegen.Expression.or;
 import static org.neo4j.codegen.ExpressionTemplate.cast;
 import static org.neo4j.codegen.ExpressionTemplate.load;
@@ -653,6 +654,32 @@ public class CodeGenerationTest
         assertThat(conditional.invoke( true, false), equalTo(true));
         assertThat(conditional.invoke( false, true), equalTo(true));
         assertThat(conditional.invoke( false, false), equalTo(false));
+    }
+
+    @Test
+    public void shouldGenerateMethodUsingNot() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( boolean.class, "conditional",
+                    param( boolean.class, "test" )) )
+            {
+                conditional.returns( not( conditional.load( "test" ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+
+        // when
+        MethodHandle conditional =
+                instanceMethod( handle.newInstance(), "conditional", boolean.class);
+
+        // then
+        assertThat(conditional.invoke( true), equalTo(false));
+        assertThat(conditional.invoke( false), equalTo(true));
     }
 
 
