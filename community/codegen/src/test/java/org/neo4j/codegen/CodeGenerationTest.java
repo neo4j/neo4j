@@ -447,6 +447,39 @@ public class CodeGenerationTest
     }
 
     @Test
+    public void shouldDeclareAndAssignLocalVariable() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock create = simple.generateMethod( SomeBean.class, "createBean",
+                    param( String.class, "foo" ), param( String.class, "bar" ) ) )
+            {
+                LocalVariable localVariable = create.declare( typeReference( SomeBean.class ), "bean" );
+                create.assign( localVariable, invoke(
+                        newInstance( SomeBean.class ), constructorReference( SomeBean.class ) ) );
+                create.expression( invoke( create.load( "bean" ),
+                        methodReference( SomeBean.class, void.class, "setFoo", String.class ),
+                        create.load( "foo" ) ) );
+                create.expression( invoke( create.load( "bean" ),
+                        methodReference( SomeBean.class, void.class, "setBar", String.class ),
+                        create.load( "bar" ) ) );
+                create.returns( create.load( "bean" ) );
+            }
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle method = instanceMethod( handle.newInstance(), "createBean", String.class, String.class );
+        SomeBean bean = (SomeBean) method.invoke( "hello", "world" );
+
+        // then
+        assertEquals( "hello", bean.foo );
+        assertEquals( "world", bean.bar );
+    }
+
+    @Test
     public void shouldGenerateWhileLoop() throws Throwable
     {
         // given

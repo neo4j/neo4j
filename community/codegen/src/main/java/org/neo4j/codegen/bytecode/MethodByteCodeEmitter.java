@@ -214,11 +214,21 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
             List<Consumer<MethodEmitter>> finalClauses, LocalVariables localVariables, Resource... resources )
     {
         callSuperIfNecessary();
-        //Note we are not giving the same gurantee as built in try-with-resources
-        //we are essentially rewriting to:
-        //Resource resource = ...
-        //try...
-        //finally { ... resource.close}
+        //Note we are not giving the same guarantee as built in try-with-resources where it also suppress
+        //exceptions in the finally block. For now this is sufficient but we could revisit in the future.
+        //Here we are essentially rewriting to:
+        //
+        //  Resource resource = ...
+        //  try
+        //  {
+        //      ...
+        //  }
+        //  finally
+        //  {
+        //      ...
+        //      resource.close();
+        //  }
+        //
         List<Consumer<MethodEmitter>> updatedFinalClauses = resources.length == 0 ?
                                                             finalClauses : new ArrayList<>( finalClauses );
         for ( Resource resource : resources )
@@ -241,6 +251,9 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
         }
     }
 
+    /*
+     * Handle try-block with no catch clause
+     */
     private void tryFinally(List<Consumer<MethodEmitter>> body,
             List<Consumer<MethodEmitter>> finalClauses, LocalVariables localVariables)
     {
@@ -270,6 +283,9 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
         methodVisitor.visitLabel( continueLabel );
     }
 
+    /*
+     * Handle a full try-catch-finally block.
+     */
     private void tryCatchFinally(List<Consumer<MethodEmitter>> body, List<CatchClause> catchClauses,
             List<Consumer<MethodEmitter>> finalClauses, LocalVariables localVariables)
     {
@@ -367,12 +383,15 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     public void declare( LocalVariable local )
     {
         callSuperIfNecessary();
+
+        //declare is a noop bytecode wise
     }
 
     @Override
     public void assignVariableInScope( LocalVariable local, Expression value )
     {
-        callSuperIfNecessary();
+        //these are equivalent when it comes to bytecode
+        assign( local, value );
     }
 
     @Override
