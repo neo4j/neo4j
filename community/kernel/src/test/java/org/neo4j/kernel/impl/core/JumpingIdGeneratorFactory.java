@@ -24,8 +24,8 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdRange;

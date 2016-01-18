@@ -22,7 +22,7 @@ package org.neo4j.metrics.source.db;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -47,9 +47,9 @@ public class PageCacheMetrics extends LifecycleAdapter
     public static final String PC_PAGE_FAULTS = name( PAGE_CACHE_PREFIX, "page_faults" );
 
     private final MetricRegistry registry;
-    private final PageCacheMonitor pageCacheCounters;
+    private final PageCacheCounters pageCacheCounters;
 
-    public PageCacheMetrics( MetricRegistry registry, PageCacheMonitor pageCacheCounters )
+    public PageCacheMetrics( MetricRegistry registry, PageCacheCounters pageCacheCounters )
     {
         this.registry = registry;
         this.pageCacheCounters = pageCacheCounters;
@@ -58,12 +58,12 @@ public class PageCacheMetrics extends LifecycleAdapter
     @Override
     public void start()
     {
-        registry.register( PC_PAGE_FAULTS, (Gauge<Long>) pageCacheCounters::countFaults );
-        registry.register( PC_EVICTIONS, (Gauge<Long>) pageCacheCounters::countEvictions );
-        registry.register( PC_PINS, (Gauge<Long>) pageCacheCounters::countPins );
-        registry.register( PC_UNPINS, (Gauge<Long>) pageCacheCounters::countUnpins );
-        registry.register( PC_FLUSHES, (Gauge<Long>) pageCacheCounters::countFlushes );
-        registry.register( PC_EVICTION_EXCEPTIONS, (Gauge<Long>) pageCacheCounters::countEvictionExceptions );
+        registry.register( PC_PAGE_FAULTS, (Gauge<Long>) pageCacheCounters::faults );
+        registry.register( PC_EVICTIONS, (Gauge<Long>) pageCacheCounters::evictions );
+        registry.register( PC_PINS, (Gauge<Long>) pageCacheCounters::pins );
+        registry.register( PC_UNPINS, (Gauge<Long>) pageCacheCounters::unpins );
+        registry.register( PC_FLUSHES, (Gauge<Long>) pageCacheCounters::flushes );
+        registry.register( PC_EVICTION_EXCEPTIONS, (Gauge<Long>) pageCacheCounters::evictionExceptions );
     }
 
     @Override

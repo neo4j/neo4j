@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -80,7 +80,7 @@ public class KernelTest
                 @Override
                 protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                 {
-                    return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
+                    return new ImpermanentPlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade );
                 }
 
                 @Override

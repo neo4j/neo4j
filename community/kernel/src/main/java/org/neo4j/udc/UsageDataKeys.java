@@ -22,6 +22,8 @@ package org.neo4j.udc;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.RecentK;
+import org.neo4j.kernel.impl.factory.Edition;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 
 import static org.neo4j.udc.UsageDataKey.key;
 
@@ -51,21 +53,4 @@ public class UsageDataKeys
     /** Cluster server ID */
     public static final UsageDataKey<String> serverId = key( "neo4j.serverId" );
 
-    public enum OperationalMode
-    {
-        // Note, these are sent verbatim via UDC if UDC is enabled
-        unknown,
-        single,
-        ha,
-        core,
-        edge
-    }
-    public enum Edition
-    {
-        // Note, these are sent verbatum via UDC if UDC is enabled
-        unknown,
-        community,
-        advanced,
-        enterprise
-    }
 }

@@ -22,8 +22,8 @@ package org.neo4j.coreedge.raft.replication.id;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 

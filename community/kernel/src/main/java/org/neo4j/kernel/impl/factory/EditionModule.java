@@ -20,18 +20,24 @@
 package org.neo4j.kernel.impl.factory;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelDiagnostics;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.udc.UsageData;
+import org.neo4j.udc.UsageDataKeys;
+
+import static java.util.Collections.singletonMap;
 
 /**
  * Edition module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. Implementations of this class
@@ -59,14 +65,21 @@ public abstract class EditionModule
 
     public ConstraintSemantics constraintSemantics;
 
-    protected void doAfterRecoveryAndStartup( String editionName, DependencyResolver dependencyResolver)
+    protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver)
     {
         DiagnosticsManager diagnosticsManager = dependencyResolver.resolveDependency( DiagnosticsManager.class );
         NeoStoreDataSource neoStoreDataSource = dependencyResolver.resolveDependency( NeoStoreDataSource.class );
 
         diagnosticsManager.prependProvider( new KernelDiagnostics.Versions(
-                editionName, neoStoreDataSource.get().getMetaDataStore().getStoreId() ) );
+                databaseInfo, neoStoreDataSource.get().getMetaDataStore().getStoreId() ) );
         neoStoreDataSource.registerDiagnosticsWith( diagnosticsManager );
         diagnosticsManager.appendProvider( new KernelDiagnostics.StoreFiles( neoStoreDataSource.getStoreDir() ) );
+    }
+
+    protected void publishEditionInfo( UsageData sysInfo, DatabaseInfo databaseInfo, Config config )
+    {
+        sysInfo.set( UsageDataKeys.edition, databaseInfo.edition );
+        sysInfo.set( UsageDataKeys.operationalMode, databaseInfo.operationalMode );
+        config.augment( singletonMap( Configuration.editionName.name(), databaseInfo.edition.toString() ) );
     }
 }

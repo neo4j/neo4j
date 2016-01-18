@@ -27,7 +27,8 @@ import java.util.Timer;
 
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.StartupStatistics;
@@ -67,13 +68,14 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
     }
 
     @Override
-    public Class getSettingsClass()
+    public Class<UdcSettings> getSettingsClass()
     {
         return UdcSettings.class;
     }
 
     @Override
-    public Lifecycle newKernelExtension( UdcKernelExtensionFactory.Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext kernelContext, UdcKernelExtensionFactory.Dependencies dependencies )
+            throws Throwable
     {
         return new UdcKernelExtension(
                 loadConfig( dependencies.config() ),

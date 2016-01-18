@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -185,7 +187,8 @@ public class StartClient
 
         if ( version )
         {
-            out.printf( "Neo4j %s, version %s", factory.getEdition(), Version.getKernelVersion() );
+            String edition = StringUtils.capitalize( factory.getEdition().toLowerCase() );
+            out.printf( "Neo4j %s, version %s", edition, Version.getKernelVersion() );
         }
         else if ( (path != null && (port != null || name != null || host != null || pid != null))
              || (pid != null && host != null) )

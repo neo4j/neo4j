@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.TimeZone;
 
 import org.neo4j.helpers.Format;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
@@ -42,19 +43,19 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
 {
     public static class Versions extends KernelDiagnostics
     {
-        private final String edition;
+        private final DatabaseInfo databaseInfo;
         private final StoreId storeId;
 
-        public Versions( String edition, StoreId storeId )
+        public Versions( DatabaseInfo databaseInfo, StoreId storeId )
         {
-            this.edition = edition;
+            this.databaseInfo = databaseInfo;
             this.storeId = storeId;
         }
 
         @Override
         void dump( Logger logger )
         {
-            logger.log( "Graph Database: " + edition + " " + storeId );
+            logger.log( "Graph Database: " + databaseInfo + " " + storeId );
             logger.log( "Kernel version: " + Version.getKernelVersion() );
         }
     }

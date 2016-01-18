@@ -22,14 +22,14 @@ package org.neo4j.io.pagecache.tracing;
 import java.io.File;
 
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 
 /**
  * A PageCacheTracer receives a steady stream of events and data about what
  * the page cache is doing. Implementations of this interface should be as
  * efficient as possible, lest they severely slow down the page cache.
  */
-public interface PageCacheTracer extends PageCacheMonitor
+public interface PageCacheTracer extends PageCacheCounters
 {
     /**
      * A PageCacheTracer that does nothing other than return the NULL variants of the companion interfaces.
@@ -71,61 +71,61 @@ public interface PageCacheTracer extends PageCacheMonitor
         }
 
         @Override
-        public long countFaults()
+        public long faults()
         {
             return 0;
         }
 
         @Override
-        public long countEvictions()
+        public long evictions()
         {
             return 0;
         }
 
         @Override
-        public long countPins()
+        public long pins()
         {
             return 0;
         }
 
         @Override
-        public long countUnpins()
+        public long unpins()
         {
             return 0;
         }
 
         @Override
-        public long countFlushes()
+        public long flushes()
         {
             return 0;
         }
 
         @Override
-        public long countBytesRead()
+        public long bytesRead()
         {
             return 0;
         }
 
         @Override
-        public long countBytesWritten()
+        public long bytesWritten()
         {
             return 0;
         }
 
         @Override
-        public long countFilesMapped()
+        public long filesMapped()
         {
             return 0;
         }
 
         @Override
-        public long countFilesUnmapped()
+        public long filesUnmapped()
         {
             return 0;
         }
 
         @Override
-        public long countEvictionExceptions()
+        public long evictionExceptions()
         {
             return 0;
         }
@@ -149,7 +149,7 @@ public interface PageCacheTracer extends PageCacheMonitor
 
     /**
      * A background eviction has begun. Called from the background eviction thread.
-     * 
+     *
      * This call will be paired with a following PageCacheTracer#endPageEviction call.
      *
      * The method returns an EvictionRunEvent to represent the event of this eviction run.

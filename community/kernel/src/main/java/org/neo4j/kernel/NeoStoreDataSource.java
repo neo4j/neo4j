@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.DataIntegrityValidatingStatementOperations;

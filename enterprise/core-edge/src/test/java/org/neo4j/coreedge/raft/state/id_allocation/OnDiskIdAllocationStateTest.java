@@ -19,16 +19,16 @@
  */
 package org.neo4j.coreedge.raft.state.id_allocation;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.test.TargetDirectory;
 
@@ -38,7 +38,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal.NUMBER_OF_BYTES_PER_WRITE;
 import static org.neo4j.coreedge.raft.state.id_allocation.OnDiskIdAllocationState.FILENAME;
 

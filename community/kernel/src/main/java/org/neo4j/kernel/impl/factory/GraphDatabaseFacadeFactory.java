@@ -24,13 +24,13 @@ import java.util.Map;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
@@ -92,16 +92,17 @@ public abstract class GraphDatabaseFacadeFactory
         public static final Setting<String> tracer =
                 setting( "dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
 
-        public static final Setting<String> editionName = setting( "edition", Settings.STRING, "Community" );
+        public static final Setting<String> editionName = setting( "edition", Settings.STRING,
+                Edition.unknown.toString() );
     }
 
     /**
      * Instantiate a graph database given configuration and dependencies.
      *
-     * @param storeDir
-     * @param params
-     * @param dependencies
-     * @return
+     * @param storeDir the directory where the Neo4j data store is located
+     * @param params configuration parameters
+     * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
+     * @return the newly constructed {@link GraphDatabaseFacade}
      */
     public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, final Dependencies dependencies )
     {
@@ -112,11 +113,11 @@ public abstract class GraphDatabaseFacadeFactory
      * Instantiate a graph database given configuration, dependencies, and a custom implementation of {@link org
      * .neo4j.kernel.impl.factory.GraphDatabaseFacade}.
      *
-     * @param storeDir
-     * @param params
-     * @param dependencies
-     * @param graphDatabaseFacade
-     * @return
+     * @param storeDir the directory where the Neo4j data store is located
+     * @param params configuration parameters
+     * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
+     * @param graphDatabaseFacade the already created facade which needs initialisation
+     * @return the initialised {@link GraphDatabaseFacade}
      */
     public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, final Dependencies dependencies,
                                           final GraphDatabaseFacade graphDatabaseFacade )
@@ -169,34 +170,21 @@ public abstract class GraphDatabaseFacadeFactory
 
     /**
      * Create the platform module. Override to replace with custom module.
-     *
-     * @param params
-     * @param dependencies
-     * @param graphDatabaseFacade
-     * @return
      */
     protected PlatformModule createPlatform( File storeDir, Map<String, String> params, final Dependencies dependencies,
                                              final GraphDatabaseFacade graphDatabaseFacade )
     {
-        return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
+        return new PlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade );
     }
 
     /**
      * Create the edition module. Implement to provide the edition services specified by the public fields in {@link
      * org.neo4j.kernel.impl.factory.EditionModule}.
-     *
-     * @param platformModule
-     * @return
      */
     protected abstract EditionModule createEdition( PlatformModule platformModule );
 
     /**
      * Create the datasource module. Override to replace with custom module.
-     *
-     * @param dependencies
-     * @param platformModule
-     * @param editionModule
-     * @return
      */
     protected DataSourceModule createDataSource( final Dependencies dependencies,
                                                  final PlatformModule platformModule, EditionModule editionModule )
@@ -221,4 +209,6 @@ public abstract class GraphDatabaseFacadeFactory
             }
         } );
     }
+
+    protected abstract DatabaseInfo databaseInfo();
 }

@@ -17,22 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.store.stats;
 
-import java.io.File;
-
-import org.neo4j.kernel.impl.store.id.IdGenerator;
-
-/**
- * @deprecated This will be moved to internal packages in the next major release.
- */
-// TODO 3.0: Move to org.neo4j.kernel.impl.store.id package
-@Deprecated
-public interface IdGeneratorFactory
+public interface StoreEntityCounters
 {
-    IdGenerator open( File filename, int grabSize, IdType idType, long highId );
+    long nodes();
 
-    void create( File filename, long highId, boolean throwIfFileExists );
+    long relationships();
 
-    IdGenerator get( IdType idType );
+    long properties();
+
+    long relationshipTypes();
 }

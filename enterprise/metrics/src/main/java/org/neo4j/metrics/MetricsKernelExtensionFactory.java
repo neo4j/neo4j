@@ -33,8 +33,6 @@ public class MetricsKernelExtensionFactory extends KernelExtensionFactory<Metric
         Config configuration();
 
         LogService logService();
-
-        KernelContext kernelContext();
     }
 
     public MetricsKernelExtensionFactory()
@@ -43,13 +41,13 @@ public class MetricsKernelExtensionFactory extends KernelExtensionFactory<Metric
     }
 
     @Override
-    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        return new MetricsExtension( dependencies );
+        return new MetricsExtension( context, dependencies );
     }
 
     @Override
-    public Class getSettingsClass()
+    public Class<MetricsSettings> getSettingsClass()
     {
         return MetricsSettings.class;
     }

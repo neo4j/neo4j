@@ -71,8 +71,10 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
+import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension.NoDependencies;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -1670,7 +1672,7 @@ public class BatchInsertTest
         }
     }
 
-    private static class ControlledLabelScanStore extends KernelExtensionFactory<InMemoryLabelScanStoreExtension.NoDependencies>
+    private static class ControlledLabelScanStore extends KernelExtensionFactory<NoDependencies>
     {
         private final LabelScanStore labelScanStore;
 
@@ -1681,7 +1683,7 @@ public class BatchInsertTest
         }
 
         @Override
-        public Lifecycle newKernelExtension( InMemoryLabelScanStoreExtension.NoDependencies dependencies ) throws Throwable
+        public Lifecycle newInstance( KernelContext context, NoDependencies dependencies ) throws Throwable
         {
             return new LabelScanStoreProvider( labelScanStore, 100 );
         }

@@ -28,6 +28,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -69,13 +70,13 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     }
 
     @Override
-    public Class getSettingsClass()
+    public Class<OnlineBackupSettings> getSettingsClass()
     {
         return OnlineBackupSettings.class;
     }
 
     @Override
-    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
                 dependencies.logService().getInternalLogProvider(), dependencies.monitors(),

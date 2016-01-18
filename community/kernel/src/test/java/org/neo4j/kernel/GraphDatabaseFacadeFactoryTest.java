@@ -32,6 +32,7 @@ import java.util.Map;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -129,7 +130,7 @@ public class GraphDatabaseFacadeFactoryTest
                 } ).when( lifeMock ).add( any( Lifecycle.class ) );
 
 
-                return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade )
                 {
                     @Override
                     public LifeSupport createLife()
@@ -150,6 +151,12 @@ public class GraphDatabaseFacadeFactoryTest
                     Dependencies dependencies, PlatformModule platformModule, EditionModule editionModule )
             {
                 return null;
+            }
+
+            @Override
+            protected DatabaseInfo databaseInfo()
+            {
+                return DatabaseInfo.UNKNOWN;
             }
         };
     }

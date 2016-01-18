@@ -35,8 +35,8 @@ import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.StartupStatistics;
@@ -72,7 +72,6 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 {
     private final Config config;
     private final UsageData usageData;
-    @SuppressWarnings("deprecation")
     private final IdGeneratorFactory idGeneratorFactory;
 
     private String storeId;

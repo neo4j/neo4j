@@ -20,6 +20,7 @@
 package org.neo4j.metrics.output;
 
 import com.codahale.metrics.MetricRegistry;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -27,9 +28,10 @@ import java.io.File;
 import java.nio.file.Files;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLog;
 import org.neo4j.metrics.MetricsSettings;
@@ -47,17 +49,26 @@ public class CsvOutputTest
     @Rule
     public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
+    private File storeDir;
+    private KernelContext kernelContext;
+
+    @Before
+    public void setup()
+    {
+        storeDir = directory.directory();
+        kernelContext = new SimpleKernelContext( new DefaultFileSystemAbstraction(), storeDir, DatabaseInfo.UNKNOWN );
+    }
+
     @Test
     public void shouldHaveMetricsCsvPathEndUpRelativeToGraphDbDirectoryIfRelativePathSpecified() throws Exception
     {
         // GIVEN
-        File storeDir = directory.directory();
         String name = "metrics.csv";
-        CsvOutput output = life.add( new CsvOutput( config(
+        Config config = config(
                 MetricsSettings.csvEnabled.name(), "true",
                 MetricsSettings.csvInterval.name(), "10ms",
-                MetricsSettings.csvPath.name(), name ),
-                new MetricRegistry(), NullLog.getInstance(), kerneContext( storeDir ) ) );
+                MetricsSettings.csvPath.name(), name );
+        life.add( new CsvOutput( config, new MetricRegistry(), NullLog.getInstance(), kernelContext ) );
 
         // WHEN
         life.start();
@@ -70,12 +81,11 @@ public class CsvOutputTest
     public void shouldHaveRelativeMetricsCsvPathBeRelativeToGraphDbDirectory() throws Exception
     {
         // GIVEN
-        File storeDir = directory.directory();
-        CsvOutput output = life.add( new CsvOutput( config(
+        Config config = config(
                 MetricsSettings.csvEnabled.name(), "true",
                 MetricsSettings.csvInterval.name(), "10ms",
-                MetricsSettings.csvPath.name(), "test.csv" ),
-                new MetricRegistry(), NullLog.getInstance(), kerneContext( storeDir ) ) );
+                MetricsSettings.csvPath.name(), "test.csv" );
+        life.add( new CsvOutput( config, new MetricRegistry(), NullLog.getInstance(), kernelContext ) );
 
         // WHEN
         life.start();
@@ -88,37 +98,18 @@ public class CsvOutputTest
     public void shouldHaveAbsoluteMetricsCsvPathBeAbsolute() throws Exception
     {
         // GIVEN
-        File storeDir = directory.directory();
         File outputFPath = Files.createTempDirectory( "output" ).toFile();
-        CsvOutput output = life.add( new CsvOutput( config(
+        Config config = config(
                 MetricsSettings.csvEnabled.name(), "true",
                 MetricsSettings.csvInterval.name(), "10ms",
-                MetricsSettings.csvPath.name(), outputFPath.getAbsolutePath() ),
-                new MetricRegistry(), NullLog.getInstance(), kerneContext( storeDir ) ) );
+                MetricsSettings.csvPath.name(), outputFPath.getAbsolutePath() );
+        life.add( new CsvOutput( config, new MetricRegistry(), NullLog.getInstance(), kernelContext ) );
 
         // WHEN
         life.start();
 
         // THEN
         waitForFileToAppear( outputFPath );
-    }
-
-    private KernelContext kerneContext( final File storeDir )
-    {
-        return new KernelContext()
-        {
-            @Override
-            public File storeDir()
-            {
-                return storeDir;
-            }
-
-            @Override
-            public FileSystemAbstraction fileSystem()
-            {
-                return new DefaultFileSystemAbstraction();
-            }
-        };
     }
 
     private Config config( String... keysValues )
