@@ -278,8 +278,15 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.notifications shouldBe empty
   }
 
-  test("should warn for load csv + eager") {
+  test("should not warn for eager before load csv") {
     val result = innerExecute("EXPLAIN MATCH (n) DELETE n WITH * LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE () RETURN line")
+
+    result should use("LoadCSV", "Eager")
+    result.notifications should not contain EagerLoadCsvNotification
+  }
+
+  test("should warn for eager after load csv") {
+    val result = innerExecute("EXPLAIN MATCH (n) LOAD CSV FROM 'file:///ignore/ignore.csv' AS line WITH * DELETE n MERGE () RETURN line")
 
     result should use("LoadCSV", "Eager")
     result.notifications should contain(EagerLoadCsvNotification)

@@ -149,7 +149,7 @@ object Eagerness {
       U : Unwind
      */
 
-    private val instance: Rewriter = Rewriter.lift {
+    private val instance: Rewriter = fixedPoint(bottomUp(Rewriter.lift {
 
       // L Ax (E R) => E Ax (L R)
       case apply@Apply(lhs, eager@Eager(inner)) =>
@@ -187,8 +187,8 @@ object Eagerness {
       case apply@Apply(lhs, remove@RemoveLabels(rhs, idName, labelNames)) =>
         remove.copy(source = Apply(lhs, rhs)(apply.solved), idName, labelNames)(apply.solved)
 
-    }
+    }))
 
-    override def apply(input: AnyRef) = fixedPoint(bottomUp(instance)).apply(input)
+    override def apply(input: AnyRef) = instance.apply(input)
   }
 }

@@ -20,12 +20,19 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
 import org.neo4j.graphdb.Node
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.util.matching.Regex
 
-class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrivenPropertyChecks with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class EagerizationAcceptanceTest
+  extends ExecutionEngineFunSuite
+  with TableDrivenPropertyChecks
+  with QueryStatisticsTestSupport
+  with NewPlannerTestSupport
+  with CreateTempFileTestSupport {
+
   val VERBOSE = false
   val VERBOSE_INCLUDE_PLAN_DESCRIPTION = true
 
@@ -1266,7 +1273,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
-  test("should not be eager when merging on already bound variables") {
+  ignore("should not be eager when merging on already bound variables") {
     val query = "MERGE (city:City) MERGE (country:Country) MERGE (city)-[:IN]->(country) RETURN count(*)"
 
     val result = updateWithBothPlanners(query)
@@ -1908,12 +1915,85 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 2)
   }
 
-  // OTHER TESTS
+  // LOAD CSV
 
   test("should not be eager for LOAD CSV followed by MERGE") {
     val query = "LOAD CSV FROM 'file:///something' AS line MERGE (b:B {p:line[0]}) RETURN b"
 
     assertNumberOfEagerness(query, 0)
+  }
+
+  test("eagerness should work with match - load csv - delete") {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b, "T")
+
+    val url = createCSVTempFileURL {
+      writer =>
+        writer.println("something")
+    }
+
+    val query = s"MATCH (a)-[t:T]-(b) LOAD CSV FROM '$url' AS line DELETE t RETURN count(*) as count"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Int]("count").next should equal(2)
+    assertStats(result, relationshipsDeleted = 1)
+    // this assertion depends on unnestApply and cleanUpEager
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("eagerness should work with match - load csv - delete with preceding projection") {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b, "T")
+
+    val url = createCSVTempFileURL {
+      writer =>
+        writer.println("something")
+    }
+
+    val query = s"CREATE () WITH * MATCH (a)-[t:T]-(b) LOAD CSV FROM '$url' AS line DELETE t RETURN count(*) as count"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Int]("count").next should equal(2)
+    assertStats(result, nodesCreated = 1, relationshipsDeleted = 1)
+    // this assertion depends on unnestApply and cleanUpEager
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager between conflicting read/write separated by LOAD CSV between reads and writes -- MATCH") {
+    createNode()
+    createNode()
+
+    val url = createCSVTempFileURL {
+      writer =>
+        writer.println("something")
+    }
+
+    val query = s"MATCH () LOAD CSV FROM '$url' AS i MATCH () UNWIND [0] as j CREATE () RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next() should equal(4)
+    assertStats(result, nodesCreated = 4)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager between conflicting read/write separated by LOAD CSV between reads and writes -- MERGE") {
+    createNode()
+    createNode()
+
+    val url = createCSVTempFileURL {
+      writer =>
+        writer.println("something")
+    }
+
+    val query = s"MERGE () WITH * LOAD CSV FROM '$url' AS line MATCH () LOAD CSV FROM '$url' AS line2 CREATE () RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next() should equal(4)
+    assertStats(result, nodesCreated = 4)
+    //TODO:M We should be able to only be eager once
+    assertNumberOfEagerness(query, 2)
   }
 
   private def assertNumberOfEagerness(query: String, expectedEagerCount: Int) {

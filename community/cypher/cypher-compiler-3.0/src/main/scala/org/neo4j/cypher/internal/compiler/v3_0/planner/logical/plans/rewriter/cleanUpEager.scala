@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 case object cleanUpEager extends Rewriter {
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
 
     // E E L => E L
     case eager@Eager(Eager(source)) =>
@@ -33,7 +33,11 @@ case object cleanUpEager extends Rewriter {
     // E U => U E
     case eager@Eager(unwind@UnwindCollection(source, _, _)) =>
       unwind.copy(left = eager.copy(inner = source)(eager.solved))(eager.solved)
-  }
 
-  override def apply(input: AnyRef) = bottomUp(instance).apply(input)
+    // E LCSV => LCSV E
+    case eager@Eager(loadCSV@LoadCSV(source, _, _, _, _)) =>
+      loadCSV.copy(source = eager.copy(inner = source)(eager.solved))(eager.solved)
+  })
+
+  override def apply(input: AnyRef) = instance.apply(input)
 }
