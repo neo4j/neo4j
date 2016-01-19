@@ -76,6 +76,31 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 1)
   }
 
+  test("should plan eagerness for delete on paths") {
+    val node0 = createLabeledNode("L")
+    val node1 = createLabeledNode("L")
+    relate(node0, node1)
+
+    val query = "MATCH p=(:L)-[*]-() DELETE p"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should plan eagerness for detach delete on paths") {
+    val node0 = createLabeledNode("L")
+    val node1 = createLabeledNode("L")
+    relate(node0, node1)
+
+    val query = "MATCH p=(:L)-[*]-() DETACH DELETE p"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("github issue ##5653") {
+    assertNumberOfEagerness(
+      "MATCH (p1:Person {name:'Michal'})-[r:FRIEND_OF {since:2007}]->(p2:Person {name:'Daniela'}) DELETE r, p1, p2", 1)
+  }
+
   test("should not introduce eagerness between MATCH and CREATE relationships with overlapping relationship types when directed") {
     val a = createNode()
     val b = createNode()

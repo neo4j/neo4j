@@ -27,6 +27,14 @@ import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
+  test("fails on incorrect unicode literal") {
+    expectSyntaxError(
+      "RETURN '\\uH'",
+      "Invalid input 'H': expected four hexadecimal digits specifying a unicode character (line 1, column 11 (offset: 10))",
+      10
+    )
+  }
+
   test("fails when merging relationship with null property") {
     expectError("create (a) create (b) merge (a)-[r:X {p: null}]->(b) return r",
       "Cannot merge relationship using null property value for p")

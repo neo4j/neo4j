@@ -28,6 +28,20 @@ import scala.util.Random
 
 class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
 
+  test("should choke on an invalid unicode literal") {
+    val query = "RETURN '\\uH' AS a"
+
+    a [SyntaxException] should be thrownBy executeWithAllPlanners(query)
+  }
+
+  test("should accept a valid unicode literal") {
+    val query = "RETURN '\\uf123' AS a"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("a" -> "\uF123")))
+  }
+
   test("limit 0 should return an empty result") {
     createNode()
     createNode()
