@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.transaction.command.IndexUpdatesWork;
 import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -161,7 +161,7 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
 
         SchemaRuleCommand command = new SchemaRuleCommand( beforeRecords, afterRecords, rule );
-        InMemoryLogChannel buffer = new InMemoryLogChannel();
+        InMemoryClosableChannel buffer = new InMemoryClosableChannel();
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
@@ -183,7 +183,7 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
 
         SchemaRuleCommand command = new SchemaRuleCommand( beforeRecords, afterRecords, rule );
-        InMemoryLogChannel buffer = new InMemoryLogChannel();
+        InMemoryClosableChannel buffer = new InMemoryClosableChannel();
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN

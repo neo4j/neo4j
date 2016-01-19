@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.guard.Guard;
@@ -81,8 +82,6 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
-import org.neo4j.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -106,8 +105,8 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
@@ -154,6 +153,7 @@ import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.proc.Procedures;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
@@ -460,7 +460,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             storageEngine = buildStorageEngine(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
                     indexConfigStore,  updateableSchemaState::clear );
-            LogEntryReader<ReadableLogChannel> logEntryReader =
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
                     new VersionAwareLogEntryReader<>( storageEngine.commandReaderFactory() );
 
             TransactionLogModule transactionLogModule =
@@ -593,7 +593,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             JobScheduler scheduler,
             FileSystemAbstraction fileSystemAbstraction,
             Iterable<IndexImplementation> indexProviders,
-            StorageEngine storageEngine, LogEntryReader<ReadableLogChannel> logEntryReader )
+            StorageEngine storageEngine, LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1000, 100_000 );
         final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, PhysicalLogFile.DEFAULT_NAME,
@@ -614,7 +614,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             public long getTimestampForVersion( long version ) throws IOException
             {
                 LogPosition position = LogPosition.start( version );
-                try ( ReadableVersionableLogChannel channel = logFile.getReader( position ) )
+                try ( ReadableLogChannel channel = logFile.getReader( position ) )
                 {
                     LogEntry entry;
                     while ( (entry = logEntryReader.readLogEntry( channel )) != null )
@@ -739,7 +739,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             final StoreFlusher storeFlusher,
             final StartupStatisticsProvider startupStatistics,
             StorageEngine storageEngine,
-            LogEntryReader<ReadableLogChannel> logEntryReader )
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
     {
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         RecoveryVisitor recoveryVisitor = new RecoveryVisitor( metaDataStore, storageEngine, recoveryVisitorMonitor );

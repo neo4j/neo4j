@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageComma
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -48,7 +48,7 @@ public class LogEntryParserDispatcherV6Test
     {
         // given
         final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, 4, new byte[]{5}, position );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putInt( start.getMasterId() );
         channel.putInt( start.getLocalId() );
@@ -73,7 +73,7 @@ public class LogEntryParserDispatcherV6Test
     {
         // given
         final LogEntryCommit commit = new OnePhaseCommit( version, 42, 21 );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong( commit.getTxId() );
         channel.putLong( commit.getTimeWritten() );
@@ -98,7 +98,7 @@ public class LogEntryParserDispatcherV6Test
         Command.NodeCommand nodeCommand = new Command.NodeCommand( theRecord, theRecord );
 
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.put( NeoCommandType.NODE_COMMAND );
         channel.putLong( theRecord.getLongId() );
@@ -126,7 +126,7 @@ public class LogEntryParserDispatcherV6Test
     {
         // when
         final LogEntryParser parser = version.entryParser( LogEntryByteCodes.EMPTY );
-        final LogEntry logEntry = parser.parse( version, new InMemoryLogChannel(), marker, commandReader );
+        final LogEntry logEntry = parser.parse( version, new InMemoryClosableChannel(), marker, commandReader );
 
         // then
         assertNull( logEntry );
@@ -138,7 +138,7 @@ public class LogEntryParserDispatcherV6Test
     {
         // given
         final CheckPoint checkPoint = new CheckPoint( new LogPosition( 43, 44 ) );
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong( checkPoint.getLogPosition().getLogVersion() );
         channel.putLong( checkPoint.getLogPosition().getByteOffset() );

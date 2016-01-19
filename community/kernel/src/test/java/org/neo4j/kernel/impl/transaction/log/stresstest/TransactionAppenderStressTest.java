@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log.stresstest;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -48,6 +48,7 @@ import org.neo4j.test.TargetDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertEquals;
 
 public class TransactionAppenderStressTest

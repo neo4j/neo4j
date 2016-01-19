@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.Test;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.Test;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -36,9 +36,9 @@ import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -51,9 +51,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -63,8 +63,10 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
+
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
 /**
@@ -73,8 +75,8 @@ import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
  */
 public class LogTruncationTest
 {
-    private final InMemoryLogChannel inMemoryChannel = new InMemoryLogChannel();
-    private final LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+    private final InMemoryClosableChannel inMemoryChannel = new InMemoryClosableChannel();
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
             new RecordStorageCommandReaderFactory() );
     private final LogEntryWriter writer = new LogEntryWriter( inMemoryChannel );
     /** Stores all known commands, and an arbitrary set of different permutations for them */
@@ -221,7 +223,7 @@ public class LogTruncationTest
     @Test
     public void testInMemoryLogChannel() throws Exception
     {
-        InMemoryLogChannel channel = new InMemoryLogChannel();
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
         for ( int i = 0; i < 25; i++ )
         {
             channel.putInt( i );

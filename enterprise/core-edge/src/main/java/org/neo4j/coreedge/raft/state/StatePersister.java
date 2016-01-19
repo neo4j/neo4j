@@ -21,12 +21,10 @@ package org.neo4j.coreedge.raft.state;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.raft.state.membership.Marshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.internal.DatabaseHealth;
 
 public class StatePersister<STATE>
@@ -34,18 +32,17 @@ public class StatePersister<STATE>
     private final File fileA;
     private final File fileB;
     private final FileSystemAbstraction fileSystemAbstraction;
-    private final Marshal<STATE> marshal;
-    private final ByteBuffer buffer;
+    private final ChannelMarshal<STATE> marshal;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final int numberOfEntriesBeforeRotation;
 
     private int numberOfEntriesWrittenInActiveFile;
     private File currentStoreFile;
-    private StoreChannel currentStoreChannel;
+
+    private PhysicalFlushableChannel currentStoreChannel;
 
     public StatePersister( File fileA, File fileB, FileSystemAbstraction fileSystemAbstraction,
-                           int numberOfEntriesBeforeRotation, ByteBuffer buffer,
-                           Marshal<STATE> marshal,
+                           int numberOfEntriesBeforeRotation, ChannelMarshal<STATE> marshal,
                            File currentStoreFile, Supplier<DatabaseHealth> databaseHealthSupplier )
             throws IOException
     {
@@ -53,10 +50,9 @@ public class StatePersister<STATE>
         this.fileB = fileB;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.numberOfEntriesBeforeRotation = numberOfEntriesBeforeRotation;
-        this.buffer = buffer;
         this.marshal = marshal;
         this.currentStoreFile = currentStoreFile;
-        this.currentStoreChannel = fileSystemAbstraction.open( currentStoreFile, "rw" );
+        this.currentStoreChannel = new PhysicalFlushableChannel( fileSystemAbstraction.open( currentStoreFile, "rw" ) );
         this.databaseHealthSupplier = databaseHealthSupplier;
     }
 
@@ -70,11 +66,9 @@ public class StatePersister<STATE>
                 numberOfEntriesWrittenInActiveFile = 0;
             }
 
-            buffer.clear();
-            marshal.marshal( state, buffer );
-            buffer.flip();
-            currentStoreChannel.writeAll( buffer );
-            currentStoreChannel.force( false );
+            marshal.marshal( state, currentStoreChannel );
+            currentStoreChannel.prepareForFlush().flush();
+
             numberOfEntriesWrittenInActiveFile++;
         }
         catch ( IOException e )
@@ -100,18 +94,17 @@ public class StatePersister<STATE>
         }
     }
 
-    public StoreChannel initialiseStoreFile( File nextStore ) throws IOException
+    public PhysicalFlushableChannel initialiseStoreFile( File nextStore ) throws IOException
     {
         if ( fileSystemAbstraction.fileExists( nextStore ) )
         {
             fileSystemAbstraction.deleteFile( nextStore );
         }
-        return fileSystemAbstraction.create( nextStore );
+        return new PhysicalFlushableChannel( fileSystemAbstraction.create( nextStore ) );
     }
 
-    public void close() throws IOException
+    public synchronized void close() throws IOException
     {
-        currentStoreChannel.force( false );
         currentStoreChannel.close();
         currentStoreChannel = null;
     }

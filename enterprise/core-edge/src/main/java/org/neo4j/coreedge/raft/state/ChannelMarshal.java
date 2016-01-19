@@ -17,24 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state.membership;
+package org.neo4j.coreedge.raft.state;
 
-import java.nio.ByteBuffer;
+import java.io.IOException;
+
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 /**
- * This interface defines the ability of a class to marshal instances of another class to and from a ByteBuffer.
- * @param <TARGET> The class being marshaled.
+ * Implementations of this class perform marshalling (encoding/decoding) of instances of {@link STATE} into/from a
+ * {@link WritableChannel}/{@link ReadableChannel} respectively.
+ * @param <STATE> The class of objects supported by this marshal
  */
-public interface Marshal<TARGET>
+public interface ChannelMarshal<STATE>
 {
     /**
-     * Marshals the target into buffer. The buffer is expected to be large enough to hold the result.
+     * Marshals the state into the channel.
      */
-    void marshal( TARGET target, ByteBuffer buffer );
+    void marshal( STATE state, WritableChannel channel ) throws IOException;
 
     /**
-     * Unmarshals an instance of TARGET from source. If the source does not have enough bytes to fully read an instance,
-     * null will be returned.
+     * Unmarshals an instance of {@link STATE} from source. If the source does not have enough bytes to fully read an
+     * instance, null must be returned.
      */
-    TARGET unmarshal( ByteBuffer source );
+    STATE unmarshal( ReadableChannel source ) throws IOException;
 }

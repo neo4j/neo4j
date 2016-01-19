@@ -25,22 +25,27 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.StoreChannel;
 
 import static java.lang.Math.min;
 
-public class PhysicalWritableLogChannel implements WritableLogChannel
+/**
+ * The main implementation of {@link FlushableChannel}. This class provides buffering over a simple {@link StoreChannel}
+ * and, as a side effect, allows control of the flushing of that buffer to disk.
+ */
+public class PhysicalFlushableChannel implements FlushableChannel
 {
-    private final ByteBuffer buffer;
-
     private volatile boolean closed;
-    private LogVersionedStoreChannel channel;
 
-    public PhysicalWritableLogChannel( LogVersionedStoreChannel channel )
+    protected final ByteBuffer buffer;
+    protected StoreChannel channel;
+
+    public PhysicalFlushableChannel( StoreChannel channel )
     {
         this( channel, (int) ByteUnit.kibiBytes( 512 ) );
     }
 
-    public PhysicalWritableLogChannel( LogVersionedStoreChannel channel, int bufferSize )
+    public PhysicalFlushableChannel( StoreChannel channel, int bufferSize )
     {
         this.channel = channel;
         this.buffer = ByteBuffer.allocate( bufferSize );
@@ -56,10 +61,10 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
      * Currently that's done by acquiring the PhysicalLogFile monitor.
      */
     @Override
-    public Flushable emptyBufferIntoChannelAndClearIt() throws IOException
+    public Flushable prepareForFlush() throws IOException
     {
         buffer.flip();
-        LogVersionedStoreChannel channel = this.channel;
+        StoreChannel channel = this.channel;
         try
         {
             channel.writeAll( buffer );
@@ -88,49 +93,49 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
     }
 
     @Override
-    public WritableLogChannel put( byte value ) throws IOException
+    public FlushableChannel put( byte value ) throws IOException
     {
         bufferWithGuaranteedSpace( 1 ).put( value );
         return this;
     }
 
     @Override
-    public WritableLogChannel putShort( short value ) throws IOException
+    public FlushableChannel putShort( short value ) throws IOException
     {
         bufferWithGuaranteedSpace( 2 ).putShort( value );
         return this;
     }
 
     @Override
-    public WritableLogChannel putInt( int value ) throws IOException
+    public FlushableChannel putInt( int value ) throws IOException
     {
         bufferWithGuaranteedSpace( 4 ).putInt( value );
         return this;
     }
 
     @Override
-    public WritableLogChannel putLong( long value ) throws IOException
+    public FlushableChannel putLong( long value ) throws IOException
     {
         bufferWithGuaranteedSpace( 8 ).putLong( value );
         return this;
     }
 
     @Override
-    public WritableLogChannel putFloat( float value ) throws IOException
+    public FlushableChannel putFloat( float value ) throws IOException
     {
         bufferWithGuaranteedSpace( 4 ).putFloat( value );
         return this;
     }
 
     @Override
-    public WritableLogChannel putDouble( double value ) throws IOException
+    public FlushableChannel putDouble( double value ) throws IOException
     {
         bufferWithGuaranteedSpace( 8 ).putDouble( value );
         return this;
     }
 
     @Override
-    public WritableLogChannel put( byte[] value, int length ) throws IOException
+    public FlushableChannel put( byte[] value, int length ) throws IOException
     {
         int offset = 0;
         while ( offset < length )
@@ -143,19 +148,12 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
         return this;
     }
 
-    @Override
-    public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
-    {
-        positionMarker.mark( channel.getVersion(), channel.position() + buffer.position() );
-        return positionMarker;
-    }
-
     private ByteBuffer bufferWithGuaranteedSpace( int spaceInBytes ) throws IOException
     {
         assert spaceInBytes < buffer.capacity();
         if ( buffer.remaining() < spaceInBytes )
         {
-            emptyBufferIntoChannelAndClearIt();
+            prepareForFlush();
         }
         return buffer;
     }
@@ -167,7 +165,13 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
     @Override
     public void close() throws IOException
     {
-        emptyBufferIntoChannelAndClearIt();
+        prepareForFlush().flush();
         closed = true;
+        channel.close();
+    }
+
+    public long position() throws IOException
+    {
+        return channel.position() + buffer.position();
     }
 }

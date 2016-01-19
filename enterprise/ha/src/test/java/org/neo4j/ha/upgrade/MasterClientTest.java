@@ -54,7 +54,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
@@ -92,7 +92,7 @@ public class MasterClientTest
     @Rule
     public final LifeRule life = new LifeRule( true );
     private final Monitors monitors = new Monitors();
-    private final LogEntryReader<ReadableLogChannel> logEntryReader =
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
             new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
 
     @Test( expected = MismatchingStoreIdException.class )

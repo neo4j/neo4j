@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -35,7 +35,7 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     EMPTY
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
@@ -58,7 +58,7 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     TX_PREPARE
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
@@ -86,7 +86,7 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     TX_START
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
@@ -127,7 +127,7 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     COMMAND
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
@@ -154,7 +154,7 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     DONE
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
@@ -180,7 +180,7 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     TX_1P_COMMIT
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {
@@ -205,7 +205,7 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
     TX_2P_COMMIT
             {
                 @Override
-                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableLogChannel channel,
+                public IdentifiableLogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
 
                 {

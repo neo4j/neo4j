@@ -36,7 +36,6 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -61,6 +60,7 @@ public class OnDiskTermStateTest
     {
         // Given
         StoreFileChannel channel = mock( StoreFileChannel.class );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
 
@@ -71,7 +71,7 @@ public class OnDiskTermStateTest
 
         // Then
         verify( channel ).writeAll( any( ByteBuffer.class ) );
-        verify( channel ).force( anyBoolean() );
+        verify( channel ).flush();
     }
 
     @Test
@@ -79,6 +79,7 @@ public class OnDiskTermStateTest
     {
         // Given
         StoreFileChannel channel = mock( StoreFileChannel.class );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
         doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ) );
@@ -104,10 +105,11 @@ public class OnDiskTermStateTest
     }
 
     @Test
-    public void shouldForceAndCloseOnShutdown() throws Throwable
+    public void shouldFlushAndCloseOnShutdown() throws Throwable
     {
         // Given
         StoreFileChannel channel = mock( StoreFileChannel.class );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
         FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
         when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
 
@@ -118,7 +120,7 @@ public class OnDiskTermStateTest
         store.shutdown();
 
         // Then
-        verify( channel ).force( false );
+        verify( channel ).flush( );
         verify( channel ).close();
     }
 }

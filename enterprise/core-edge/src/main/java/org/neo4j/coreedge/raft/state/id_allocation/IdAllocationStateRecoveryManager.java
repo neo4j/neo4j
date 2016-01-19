@@ -21,18 +21,19 @@ package org.neo4j.coreedge.raft.state.id_allocation;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
+import org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
+import org.neo4j.storageengine.api.ReadableChannel;
 
 public class IdAllocationStateRecoveryManager extends StateRecoveryManager
 {
-    private final InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal marshal;
+    private final InMemoryIdAllocationStateChannelMarshal marshal;
 
     public IdAllocationStateRecoveryManager( FileSystemAbstraction fileSystem,
-                                             InMemoryIdAllocationState.InMemoryIdAllocationStateMarshal marshal )
+                                             InMemoryIdAllocationStateChannelMarshal marshal )
     {
         super( fileSystem );
         this.marshal = marshal;
@@ -47,16 +48,12 @@ public class IdAllocationStateRecoveryManager extends StateRecoveryManager
     public InMemoryIdAllocationState readLastEntryFrom( FileSystemAbstraction fileSystemAbstraction, File file )
             throws IOException
     {
-        final ByteBuffer workingBuffer = ByteBuffer.allocate( (int) fileSystemAbstraction.getFileSize( file ) );
-
-        final StoreChannel channel = fileSystemAbstraction.open( file, "r" );
-        channel.read( workingBuffer );
-        workingBuffer.flip();
+        final ReadableChannel channel = new ReadAheadChannel<>( fileSystemAbstraction.open( file, "r" ) );
 
         InMemoryIdAllocationState result = new InMemoryIdAllocationState();
         InMemoryIdAllocationState lastRead;
 
-        while ( (lastRead = marshal.unmarshal( workingBuffer )) != null )
+        while ( (lastRead = marshal.unmarshal( channel)) != null )
         {
             result = lastRead;
         }

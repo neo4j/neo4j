@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.state;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -27,8 +28,9 @@ import java.util.function.Supplier;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.state.membership.Marshal;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -50,7 +52,7 @@ public class StatePersisterTest
 
 
         StatePersister<AtomicInteger> statePersister = new StatePersister<>( stateFileA(), stateFileB(), fsa, 100,
-                ByteBuffer.allocate( 10_000 ), new AtomicIntegerMarshal(), stateFileA(),
+                new AtomicIntegerMarshal(), stateFileA(),
                 mock( Supplier.class ) );
 
         // when
@@ -70,7 +72,7 @@ public class StatePersisterTest
         final int numberOfEntriesBeforeRotation = 100;
         StatePersister<AtomicInteger> statePersister = new StatePersister<>( stateFileA(), stateFileB(), fsa,
                 numberOfEntriesBeforeRotation,
-                ByteBuffer.allocate( 10_000 ), new AtomicIntegerMarshal(), stateFileA(),
+                new AtomicIntegerMarshal(), stateFileA(),
                 mock( Supplier.class ) );
 
 
@@ -98,7 +100,7 @@ public class StatePersisterTest
         final int numberOfEntriesBeforeRotation = 100;
         StatePersister<AtomicInteger> statePersister = new StatePersister<>( stateFileA(), stateFileB(), fsa,
                 numberOfEntriesBeforeRotation,
-                ByteBuffer.allocate( 10_000 ), new AtomicIntegerMarshal(), stateFileA(),
+                new AtomicIntegerMarshal(), stateFileA(),
                 mock( Supplier.class ) );
 
 
@@ -116,7 +118,7 @@ public class StatePersisterTest
         assertEquals( numberOfEntriesBeforeRotation * 4, fsa.getFileSize( stateFileB() ) );
     }
 
-    private static class AtomicIntegerMarshal implements Marshal<AtomicInteger>
+    private static class AtomicIntegerMarshal implements ByteBufferMarshal<AtomicInteger>, ChannelMarshal<AtomicInteger>
     {
         @Override
         public void marshal( AtomicInteger atomicInteger, ByteBuffer buffer )
@@ -126,6 +128,18 @@ public class StatePersisterTest
 
         @Override
         public AtomicInteger unmarshal( ByteBuffer source )
+        {
+            return new AtomicInteger( source.getInt() );
+        }
+
+        @Override
+        public void marshal( AtomicInteger state, WritableChannel channel ) throws IOException
+        {
+            channel.putInt( state.intValue() );
+        }
+
+        @Override
+        public AtomicInteger unmarshal( ReadableChannel source ) throws IOException
         {
             return new AtomicInteger( source.getInt() );
         }

@@ -53,10 +53,10 @@ public class TxPullResponseDecoder extends MessageToMessageDecoder<ByteBuf>
         {
             StoreId storeId = new StoreIdDecoder().decode( msg );
 
-            NetworkReadableLogByteBuf logChannel = new NetworkReadableLogByteBuf( msg );
-            LogEntryReader<NetworkReadableLogByteBuf> reader = new VersionAwareLogEntryReader<>(
+            NetworkReadableClosableByteBuf logChannel = new NetworkReadableClosableByteBuf( msg );
+            LogEntryReader<NetworkReadableClosableByteBuf> reader = new VersionAwareLogEntryReader<>(
                     new RecordStorageCommandReaderFactory() );
-            PhysicalTransactionCursor<NetworkReadableLogByteBuf> transactionCursor =
+            PhysicalTransactionCursor<NetworkReadableClosableByteBuf> transactionCursor =
                     new PhysicalTransactionCursor<>( logChannel, reader );
 
             transactionCursor.next();

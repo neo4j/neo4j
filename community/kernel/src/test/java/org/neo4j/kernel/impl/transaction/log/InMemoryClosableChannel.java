@@ -27,26 +27,20 @@ import java.util.Arrays;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
-public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChannel
+public class InMemoryClosableChannel implements ReadableClosablePositionAwareChannel, FlushablePositionAwareChannel
 {
-    private static final Flushable NO_OP_FLUSHABLE = new Flushable()
-    {
-        @Override
-        public void flush() throws IOException
-        {
-        }
-    };
+    private static final Flushable NO_OP_FLUSHABLE = () -> { };
 
     private final byte[] bytes;
     private final ByteBuffer asWriter;
     private final ByteBuffer asReader;
 
-    public InMemoryLogChannel()
+    public InMemoryClosableChannel()
     {
         this( new byte[1000] );
     }
 
-    public InMemoryLogChannel( byte[] bytes )
+    public InMemoryClosableChannel( byte[] bytes )
     {
         this.bytes = bytes;
         this.asWriter = ByteBuffer.wrap( this.bytes );
@@ -61,49 +55,49 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     }
 
     @Override
-    public InMemoryLogChannel put( byte b ) throws IOException
+    public InMemoryClosableChannel put( byte b ) throws IOException
     {
         asWriter.put( b );
         return this;
     }
 
     @Override
-    public InMemoryLogChannel putShort( short s ) throws IOException
+    public InMemoryClosableChannel putShort( short s ) throws IOException
     {
         asWriter.putShort( s );
         return this;
     }
 
     @Override
-    public InMemoryLogChannel putInt( int i ) throws IOException
+    public InMemoryClosableChannel putInt( int i ) throws IOException
     {
         asWriter.putInt( i );
         return this;
     }
 
     @Override
-    public InMemoryLogChannel putLong( long l ) throws IOException
+    public InMemoryClosableChannel putLong( long l ) throws IOException
     {
         asWriter.putLong( l );
         return this;
     }
 
     @Override
-    public InMemoryLogChannel putFloat( float f ) throws IOException
+    public InMemoryClosableChannel putFloat( float f ) throws IOException
     {
         asWriter.putFloat( f );
         return this;
     }
 
     @Override
-    public InMemoryLogChannel putDouble( double d ) throws IOException
+    public InMemoryClosableChannel putDouble( double d ) throws IOException
     {
         asWriter.putDouble( d );
         return this;
     }
 
     @Override
-    public InMemoryLogChannel put( byte[] bytes, int length ) throws IOException
+    public InMemoryClosableChannel put( byte[] bytes, int length ) throws IOException
     {
         asWriter.put( bytes, 0, length );
         return this;
@@ -125,7 +119,7 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     }
 
     @Override
-    public Flushable emptyBufferIntoChannelAndClearIt()
+    public Flushable prepareForFlush()
     {
         return NO_OP_FLUSHABLE;
     }
@@ -238,4 +232,5 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     {
         return asWriter.remaining();
     }
+
 }

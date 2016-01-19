@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 
 /**
  * Utility for reading and writing property values from/into a channel. Supports neo4j property types,
@@ -43,13 +43,13 @@ public abstract class ValueType
         add( new ValueType( Boolean.TYPE, Boolean.class )
         {
             @Override
-            public Object read( ReadableLogChannel from ) throws IOException
+            public Object read( ReadableClosableChannel from ) throws IOException
             {
                 return from.get() == 0 ? Boolean.FALSE : Boolean.TRUE;
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.put( (Boolean)value ? (byte)1 : (byte)0 );
             }
@@ -57,13 +57,13 @@ public abstract class ValueType
         add( new ValueType( Byte.TYPE, Byte.class )
         {
             @Override
-            public Object read( ReadableLogChannel from ) throws IOException
+            public Object read( ReadableClosableChannel from ) throws IOException
             {
                 return from.get();
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.put( (Byte)value );
             }
@@ -71,13 +71,13 @@ public abstract class ValueType
         add( new ValueType( Short.TYPE, Short.class )
         {
             @Override
-            public Object read( ReadableLogChannel from ) throws IOException
+            public Object read( ReadableClosableChannel from ) throws IOException
             {
                 return from.getShort();
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putShort( (Short)value );
             }
@@ -85,13 +85,13 @@ public abstract class ValueType
         add( new ValueType( Character.TYPE, Character.class )
         {
             @Override
-            public Object read( ReadableLogChannel from ) throws IOException
+            public Object read( ReadableClosableChannel from ) throws IOException
             {
                 return (char)from.getInt();
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putInt( (Character)value );
             }
@@ -99,13 +99,13 @@ public abstract class ValueType
         add( new ValueType( Integer.TYPE, Integer.class )
         {
             @Override
-            public Object read( ReadableLogChannel from ) throws IOException
+            public Object read( ReadableClosableChannel from ) throws IOException
             {
                 return from.getInt();
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putInt( (Integer) value );
             }
@@ -113,13 +113,13 @@ public abstract class ValueType
         add( new ValueType( Long.TYPE, Long.class )
         {
             @Override
-            public Object read( ReadableLogChannel from ) throws IOException
+            public Object read( ReadableClosableChannel from ) throws IOException
             {
                 return from.getLong();
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putLong( (Long)value );
             }
@@ -127,13 +127,13 @@ public abstract class ValueType
         add( new ValueType( Float.TYPE, Float.class )
         {
             @Override
-            public Object read( ReadableLogChannel from ) throws IOException
+            public Object read( ReadableClosableChannel from ) throws IOException
             {
                 return from.getFloat();
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putFloat( (Float)value );
             }
@@ -141,7 +141,7 @@ public abstract class ValueType
         add( stringType = new ValueType( String.class )
         {
             @Override
-            public Object read( ReadableLogChannel from ) throws IOException
+            public Object read( ReadableClosableChannel from ) throws IOException
             {
                 int length = from.getInt();
                 byte[] bytes = new byte[length]; // TODO wasteful
@@ -150,7 +150,7 @@ public abstract class ValueType
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 byte[] bytes = UTF8.encode( (String)value );
                 into.putInt( bytes.length ).put( bytes, bytes.length );
@@ -159,13 +159,13 @@ public abstract class ValueType
         add( new ValueType( Double.class, Double.TYPE )
         {
             @Override
-            public Object read( ReadableLogChannel from ) throws IOException
+            public Object read( ReadableClosableChannel from ) throws IOException
             {
                 return from.getDouble();
             }
 
             @Override
-            public void write( Object value, WritableLogChannel into ) throws IOException
+            public void write( Object value, FlushableChannel into ) throws IOException
             {
                 into.putDouble( (Double)value );
             }
@@ -174,7 +174,7 @@ public abstract class ValueType
     private static final ValueType arrayType = new ValueType()
     {
         @Override
-        public Object read( ReadableLogChannel from ) throws IOException
+        public Object read( ReadableClosableChannel from ) throws IOException
         {
             ValueType componentType = typeOf( from.get() );
             int length = from.getInt();
@@ -187,7 +187,7 @@ public abstract class ValueType
         }
 
         @Override
-        public void write( Object value, WritableLogChannel into ) throws IOException
+        public void write( Object value, FlushableChannel into ) throws IOException
         {
             ValueType componentType = typeOf( value.getClass().getComponentType() );
             into.put( componentType.id() );
@@ -261,7 +261,7 @@ public abstract class ValueType
         return id;
     }
 
-    public abstract Object read( ReadableLogChannel from ) throws IOException;
+    public abstract Object read( ReadableClosableChannel from ) throws IOException;
 
-    public abstract void write( Object value, WritableLogChannel into ) throws IOException;
+    public abstract void write( Object value, FlushableChannel into ) throws IOException;
 }

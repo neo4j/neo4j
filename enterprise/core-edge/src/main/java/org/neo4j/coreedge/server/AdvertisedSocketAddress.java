@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.server;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
@@ -27,7 +28,10 @@ import java.util.Objects;
 import io.netty.buffer.ByteBuf;
 
 import org.neo4j.coreedge.raft.replication.StringMarshal;
-import org.neo4j.coreedge.raft.state.membership.Marshal;
+import org.neo4j.coreedge.raft.state.ByteBufferMarshal;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 public class AdvertisedSocketAddress
 {
@@ -70,7 +74,7 @@ public class AdvertisedSocketAddress
         return new InetSocketAddress( split[0], Integer.valueOf( split[1] ) );
     }
 
-    public static class AdvertisedSocketAddressMarshal implements Marshal<AdvertisedSocketAddress>
+    public static class AdvertisedSocketAddressByteBufferMarshal implements ByteBufferMarshal<AdvertisedSocketAddress>
     {
         public void marshal( AdvertisedSocketAddress address, ByteBuf buffer )
         {
@@ -87,6 +91,45 @@ public class AdvertisedSocketAddress
             try
             {
                 String host = StringMarshal.unmarshal( buffer );
+                return new AdvertisedSocketAddress( host );
+            }
+            catch( IndexOutOfBoundsException notEnoughBytes )
+            {
+                return null;
+            }
+        }
+
+        public AdvertisedSocketAddress unmarshal( ByteBuffer buffer )
+        {
+            try
+            {
+                String host = StringMarshal.unmarshal( buffer );
+                return new AdvertisedSocketAddress( host );
+            }
+            catch( BufferUnderflowException notEnoughBytes )
+            {
+                return null;
+            }
+        }
+    }
+
+    public static class AdvertisedSocketAddressChannelMarshal implements ChannelMarshal<AdvertisedSocketAddress>
+    {
+        public void marshal( AdvertisedSocketAddress address, WritableChannel channel) throws IOException
+        {
+            StringMarshal.marshal( channel, address.address );
+        }
+
+        public void marshal( AdvertisedSocketAddress address, ByteBuffer buffer )
+        {
+            StringMarshal.marshal( buffer, address.address );
+        }
+
+        public AdvertisedSocketAddress unmarshal( ReadableChannel channel ) throws IOException
+        {
+            try
+            {
+                String host = StringMarshal.unmarshal( channel );
                 return new AdvertisedSocketAddress( host );
             }
             catch( IndexOutOfBoundsException notEnoughBytes )

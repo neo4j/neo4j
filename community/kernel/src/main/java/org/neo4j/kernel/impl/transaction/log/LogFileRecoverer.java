@@ -29,10 +29,10 @@ import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHA
 
 public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,Exception>
 {
-    private final LogEntryReader<ReadableLogChannel> logEntryReader;
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
     private final CloseableVisitor<RecoverableTransaction,Exception> visitor;
 
-    public LogFileRecoverer( LogEntryReader<ReadableLogChannel> logEntryReader,
+    public LogFileRecoverer( LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
             CloseableVisitor<RecoverableTransaction,Exception> visitor )
     {
         this.logEntryReader = logEntryReader;
@@ -42,9 +42,9 @@ public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,Except
     @Override
     public boolean visit( LogVersionedStoreChannel channel ) throws Exception
     {
-        final ReadableVersionableLogChannel recoveredDataChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
+        final ReadableLogChannel recoveredDataChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
 
-        try ( final PhysicalTransactionCursor<ReadableLogChannel> physicalTransactionCursor =
+        try ( final PhysicalTransactionCursor<ReadableClosablePositionAwareChannel> physicalTransactionCursor =
                       new PhysicalTransactionCursor<>( recoveredDataChannel, logEntryReader ) )
         {
             RecoverableTransaction recoverableTransaction = new RecoverableTransaction()

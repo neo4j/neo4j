@@ -19,10 +19,12 @@
  */
 package org.neo4j.coreedge.raft.state.vote;
 
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
+import java.io.IOException;
 
-import org.neo4j.coreedge.raft.state.membership.Marshal;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 public class InMemoryVoteState<MEMBER> implements VoteState<MEMBER>
 {
@@ -86,32 +88,32 @@ public class InMemoryVoteState<MEMBER> implements VoteState<MEMBER>
         return term;
     }
 
-    public static class InMemoryVoteStateMarshal<CoreMember>
-            implements Marshal<InMemoryVoteState<CoreMember>>
+    public static class InMemoryVoteStateChannelMarshal<CoreMember>
+            implements ChannelMarshal<InMemoryVoteState<CoreMember>>
 
     {
         public static final int NUMBER_OF_BYTES_PER_VOTE = 100_000; // 100kB URI max
-        private final Marshal<CoreMember> marshal;
+        private final ChannelMarshal<CoreMember> memberMarshal;
 
-        public InMemoryVoteStateMarshal( Marshal<CoreMember> marshal )
+        public InMemoryVoteStateChannelMarshal( ChannelMarshal<CoreMember> memberMarshal )
         {
-            this.marshal = marshal;
+            this.memberMarshal = memberMarshal;
         }
 
         @Override
-        public void marshal( InMemoryVoteState<CoreMember> state, ByteBuffer buffer )
+        public void marshal( InMemoryVoteState<CoreMember> state, WritableChannel channel ) throws IOException
         {
-            buffer.putLong( state.term );
-            marshal.marshal( state.votedFor(), buffer );
+            channel.putLong( state.term );
+            memberMarshal.marshal( state.votedFor(), channel );
         }
 
         @Override
-        public InMemoryVoteState<CoreMember> unmarshal( ByteBuffer source )
+        public InMemoryVoteState<CoreMember> unmarshal( ReadableChannel source ) throws IOException
         {
             try
             {
                 final long term = source.getLong();
-                final CoreMember member = marshal.unmarshal( source );
+                final CoreMember member = memberMarshal.unmarshal( source );
 
                 if ( member == null )
                 {
@@ -120,7 +122,7 @@ public class InMemoryVoteState<MEMBER> implements VoteState<MEMBER>
 
                 return new InMemoryVoteState<>( member, term );
             }
-            catch ( BufferUnderflowException ex )
+            catch ( ReadPastEndException notEnoughBytes )
             {
                 return null;
             }

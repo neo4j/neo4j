@@ -25,9 +25,9 @@ import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.raft.log.RaftStorageException;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.StatePersister;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
-import org.neo4j.coreedge.raft.state.membership.Marshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -43,15 +43,13 @@ public class OnDiskVoteState<MEMBER> extends LifecycleAdapter implements VoteSta
 
     public OnDiskVoteState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
                             int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier,
-                            Marshal<MEMBER> memberMarshal ) throws IOException
+                            ChannelMarshal<MEMBER> memberByteBufferMarshal ) throws IOException
     {
         File fileA = new File( stateDir, FILENAME + "a" );
         File fileB = new File( stateDir, FILENAME + "b" );
 
-        ByteBuffer workingBuffer = ByteBuffer.allocate( InMemoryVoteState.InMemoryVoteStateMarshal
-                .NUMBER_OF_BYTES_PER_VOTE );
-
-        InMemoryVoteState.InMemoryVoteStateMarshal<MEMBER> marshal = new InMemoryVoteState.InMemoryVoteStateMarshal<>( memberMarshal );
+        InMemoryVoteState.InMemoryVoteStateChannelMarshal<MEMBER> marshal =
+                new InMemoryVoteState.InMemoryVoteStateChannelMarshal<>( memberByteBufferMarshal );
 
         VoteStateRecoveryManager<MEMBER> recoveryManager =
                 new VoteStateRecoveryManager<>( fileSystemAbstraction, marshal );
@@ -64,7 +62,7 @@ public class OnDiskVoteState<MEMBER> extends LifecycleAdapter implements VoteSta
 
 
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
-                workingBuffer, marshal, recoveryStatus.previouslyInactive(), databaseHealthSupplier );
+                marshal, recoveryStatus.previouslyInactive(), databaseHealthSupplier );
     }
 
     @Override

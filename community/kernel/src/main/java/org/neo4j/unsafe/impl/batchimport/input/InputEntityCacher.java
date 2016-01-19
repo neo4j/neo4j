@@ -25,9 +25,9 @@ import java.util.Map;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToShort;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_ENTITIES;
@@ -42,8 +42,8 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.TOKEN;
  */
 abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver<ENTITY[],IOException>
 {
-    protected final WritableLogChannel channel;
-    private final WritableLogChannel header;
+    protected final FlushableChannel channel;
+    private final FlushableChannel header;
     private final StoreChannel storeChannel;
     private final StoreChannel headerChannel;
     private final int[] previousGroupIds;
@@ -63,9 +63,9 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
         }
         // We don't really care about versions, it's just that apart from that the WritableLogChannel
         // does precisely what we want and there's certainly value in not duplicating that functionality.
-        this.channel = new PhysicalWritableLogChannel(
+        this.channel = new PositionAwarePhysicalFlushableChannel(
                 new PhysicalLogVersionedStoreChannel( channel, 0, (byte)0 ), bufferSize );
-        this.header = new PhysicalWritableLogChannel(
+        this.header = new PositionAwarePhysicalFlushableChannel(
                 new PhysicalLogVersionedStoreChannel( header, 0, (byte)0 ), (int) ByteUnit.kibiBytes( 8 ) );
     }
 

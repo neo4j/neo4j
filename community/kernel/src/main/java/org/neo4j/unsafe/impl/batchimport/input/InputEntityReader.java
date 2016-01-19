@@ -29,6 +29,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 
@@ -70,7 +71,7 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
 
     private void readHeader( StoreChannel header ) throws IOException
     {
-        try ( ReadableLogChannel reader = reader( header, (int) ByteUnit.kibiBytes( 8 ) ) )
+        try ( ReadableClosableChannel reader = reader( header, (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             for ( short id = 0; reader.get() == TOKEN; id++ )
             {

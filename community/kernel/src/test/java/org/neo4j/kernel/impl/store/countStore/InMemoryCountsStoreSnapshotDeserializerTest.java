@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.store.countStore;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
@@ -35,11 +35,12 @@ import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
 import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
 import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
 import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotDeserializer.deserialize;
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_NODE;
@@ -50,7 +51,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.INDEX_STATIS
 
 public class InMemoryCountsStoreSnapshotDeserializerTest
 {
-    InMemoryLogChannel logChannel;
+    InMemoryClosableChannel logChannel;
     CountsSnapshot countsSnapshot;
     ByteBuffer expectedBytes;
     ByteBuffer serializedBytes;
@@ -58,7 +59,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     @Before
     public void setup() throws IOException
     {
-        logChannel = new InMemoryLogChannel();
+        logChannel = new InMemoryClosableChannel();
         countsSnapshot = new CountsSnapshot( 1, new ConcurrentHashMap<>() );
     }
 
@@ -73,7 +74,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     {
         //GIVEN
         serializedBytes = ByteBuffer.allocate( 1000 );
-        InMemoryLogChannel logChannel = new InMemoryLogChannel( serializedBytes.array() );
+        InMemoryClosableChannel logChannel = new InMemoryClosableChannel( serializedBytes.array() );
         logChannel.putLong( 72 );
         logChannel.putInt( 0 );
 
@@ -95,7 +96,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
         updates.put( CountsKeyFactory.nodeKey( 3 ), new long[]{1} );
         countStore.updateAll( 1, updates );
         serializedBytes = ByteBuffer.allocate( 1000 );
-        InMemoryLogChannel logChannel = new InMemoryLogChannel( serializedBytes.array() );
+        InMemoryClosableChannel logChannel = new InMemoryClosableChannel( serializedBytes.array() );
         serialize( logChannel, countStore.snapshot( 1 ) );
 
         //WHEN
@@ -112,7 +113,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     {
         //GIVEN
         serializedBytes = ByteBuffer.allocate( 1000 );
-        InMemoryLogChannel logChannel = new InMemoryLogChannel( serializedBytes.array() );
+        InMemoryClosableChannel logChannel = new InMemoryClosableChannel( serializedBytes.array() );
         writeSimpleHeader( logChannel );
         logChannel.put( ENTITY_NODE.code );
         logChannel.putInt( 1 );
@@ -133,7 +134,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     {
         //GIVEN
         serializedBytes = ByteBuffer.allocate( 1000 );
-        InMemoryLogChannel logChannel = new InMemoryLogChannel( serializedBytes.array() );
+        InMemoryClosableChannel logChannel = new InMemoryClosableChannel( serializedBytes.array() );
         writeSimpleHeader( logChannel );
         logChannel.put( ENTITY_RELATIONSHIP.code );
         logChannel.putInt( 1 );
@@ -155,7 +156,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     {
         //GIVEN
         serializedBytes = ByteBuffer.allocate( 1000 );
-        InMemoryLogChannel logChannel = new InMemoryLogChannel( serializedBytes.array() );
+        InMemoryClosableChannel logChannel = new InMemoryClosableChannel( serializedBytes.array() );
         writeSimpleHeader( logChannel );
         logChannel.put( INDEX_SAMPLE.code );
         logChannel.putInt( 1 );
@@ -177,7 +178,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     {
         //GIVEN
         serializedBytes = ByteBuffer.allocate( 1000 );
-        InMemoryLogChannel logChannel = new InMemoryLogChannel( serializedBytes.array() );
+        InMemoryClosableChannel logChannel = new InMemoryClosableChannel( serializedBytes.array() );
         writeSimpleHeader( logChannel );
         logChannel.put( INDEX_STATISTICS.code );
         logChannel.putInt( 1 );
@@ -202,7 +203,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
         writeExpectedCountStoreSize( expectedBytes, 1 );
     }
 
-    private void writeSimpleHeader( InMemoryLogChannel logChannel ) throws IOException
+    private void writeSimpleHeader( InMemoryClosableChannel logChannel ) throws IOException
     {
         logChannel.putLong( 1 );
         logChannel.putInt( 1 );

@@ -139,7 +139,8 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -339,7 +340,7 @@ public class HighlyAvailableEditionModule
         // but merely provide a way to get access to it. That's why this is a Supplier and will be asked
         // later, after the data source module and all that have started.
         @SuppressWarnings( {"deprecation", "unchecked"} )
-        Supplier<LogEntryReader<ReadableLogChannel>> logEntryReader =
+        Supplier<LogEntryReader<ReadableClosablePositionAwareChannel>> logEntryReader =
                 (Supplier) dependencies.provideDependency( LogEntryReader.class );
 
         MasterClientResolver masterClientResolver = new MasterClientResolver( logging.getInternalLogProvider(),
@@ -523,7 +524,7 @@ public class HighlyAvailableEditionModule
             Monitors monitors, Config config, LifeSupport paxosLife, ClusterClient clusterClient,
             ClusterMembers members, JobScheduler jobScheduler, Master master,
             RequestContextFactory requestContextFactory, ComponentSwitcherContainer componentSwitcherContainer,
-            Supplier<LogEntryReader<ReadableLogChannel>> logEntryReader )
+            Supplier<LogEntryReader<ReadableClosablePositionAwareChannel>> logEntryReader )
     {
         DefaultSlaveFactory slaveFactory = dependencies.satisfyDependency( new DefaultSlaveFactory(
                 logging.getInternalLogProvider(), monitors, config.get( HaSettings.com_chunk_size ).intValue(),

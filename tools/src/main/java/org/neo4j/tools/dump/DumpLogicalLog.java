@@ -40,8 +40,8 @@ import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -96,8 +96,8 @@ public class DumpLogicalLog
 
             PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
                     fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
-            ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
-            LogEntryReader<ReadableLogChannel> entryReader =
+            ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
+            LogEntryReader<ReadableClosablePositionAwareChannel> entryReader =
                     new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
 
             try ( IOCursor<LogEntry> cursor = new LogEntryCursor( entryReader, logChannel ) )

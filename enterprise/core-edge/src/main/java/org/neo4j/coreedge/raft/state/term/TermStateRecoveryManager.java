@@ -21,18 +21,18 @@ package org.neo4j.coreedge.raft.state.term;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
+import org.neo4j.storageengine.api.ReadableChannel;
 
 public class TermStateRecoveryManager extends StateRecoveryManager
 {
-    private final InMemoryTermState.InMemoryTermStateMarshal marshal;
+    private final InMemoryTermState.InMemoryTermStateChannelMarshal marshal;
 
     public TermStateRecoveryManager( FileSystemAbstraction fileSystem,
-                                     InMemoryTermState.InMemoryTermStateMarshal marshal )
+                                     InMemoryTermState.InMemoryTermStateChannelMarshal marshal )
     {
         super( fileSystem );
         this.marshal = marshal;
@@ -47,16 +47,12 @@ public class TermStateRecoveryManager extends StateRecoveryManager
     public InMemoryTermState readLastEntryFrom( FileSystemAbstraction fileSystemAbstraction, File file )
             throws IOException
     {
-        final ByteBuffer workingBuffer = ByteBuffer.allocate( (int) fileSystemAbstraction.getFileSize( file ) );
-
-        final StoreChannel channel = fileSystemAbstraction.open( file, "rw" );
-        channel.read( workingBuffer );
-        workingBuffer.flip();
+        final ReadableChannel channel = new ReadAheadChannel<>(fileSystemAbstraction.open( file, "rw" ));
 
         InMemoryTermState result = new InMemoryTermState();
         InMemoryTermState lastRead;
 
-        while ( (lastRead = marshal.unmarshal( workingBuffer )) != null )
+        while ( (lastRead = marshal.unmarshal( channel )) != null )
         {
             result = lastRead;
         }

@@ -31,7 +31,7 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -52,7 +52,7 @@ public class LogHeaderReaderTest
     public void shouldReadALogHeaderFromALogChannel() throws IOException
     {
         // given
-        final InMemoryLogChannel channel = new InMemoryLogChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong( encodeLogVersion( expectedLogVersion ) );
         channel.putLong( expectedTxId );

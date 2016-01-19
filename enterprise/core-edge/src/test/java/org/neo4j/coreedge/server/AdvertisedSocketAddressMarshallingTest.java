@@ -37,8 +37,7 @@ public class AdvertisedSocketAddressMarshallingTest
         // given
         ByteBuffer buffer = ByteBuffer.allocate( 2_000 );
         AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressMarshal marshal = new AdvertisedSocketAddress
-                .AdvertisedSocketAddressMarshal();
+        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
 
         // when
         marshal.marshal( sent, buffer );
@@ -56,8 +55,7 @@ public class AdvertisedSocketAddressMarshallingTest
         // given
         ByteBuf buffer = Unpooled.buffer();
         AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressMarshal marshal = new AdvertisedSocketAddress
-                .AdvertisedSocketAddressMarshal();
+        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
 
         // when
         marshal.marshal( sent, buffer );
@@ -74,8 +72,7 @@ public class AdvertisedSocketAddressMarshallingTest
         // given
         ByteBuffer buffer = ByteBuffer.allocate( 2_000 );
         AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressMarshal marshal = new AdvertisedSocketAddress
-                .AdvertisedSocketAddressMarshal();
+        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
 
         // when
         marshal.marshal( sent, buffer );
@@ -93,8 +90,7 @@ public class AdvertisedSocketAddressMarshallingTest
         // given
         ByteBuf buffer = Unpooled.buffer();
         AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressMarshal marshal = new AdvertisedSocketAddress
-                .AdvertisedSocketAddressMarshal();
+        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
 
         // when
         marshal.marshal( sent, buffer );

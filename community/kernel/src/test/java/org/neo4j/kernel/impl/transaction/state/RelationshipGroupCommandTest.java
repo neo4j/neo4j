@@ -26,7 +26,7 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -61,7 +61,7 @@ public class RelationshipGroupCommandTest
 
     private void assertSerializationWorksFor( Command.RelationshipGroupCommand cmd ) throws IOException
     {
-        InMemoryLogChannel channel = new InMemoryLogChannel();
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
         cmd.serialize( channel );
 
         CommandReader commandReader = new PhysicalLogCommandReaderV2_2();

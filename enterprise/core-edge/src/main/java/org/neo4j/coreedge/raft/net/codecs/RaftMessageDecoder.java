@@ -132,8 +132,8 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
 
     private CoreMember retrieveMember( ByteBuf buffer ) throws UnsupportedEncodingException
     {
-        AdvertisedSocketAddress.AdvertisedSocketAddressMarshal marshal =
-                new AdvertisedSocketAddress.AdvertisedSocketAddressMarshal();
+        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal =
+                new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
 
         AdvertisedSocketAddress coreAddress = marshal.unmarshal( buffer );
         AdvertisedSocketAddress raftAddress = marshal.unmarshal( buffer );

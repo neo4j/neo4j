@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -29,9 +26,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Random;
 
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class PhysicalWritableLogChannelTest
+public class PhysicalFlushableChannelTest
 {
     @Test
     public void shouldBeAbleToWriteSmallNumberOfBytes() throws IOException
@@ -48,7 +48,7 @@ public class PhysicalWritableLogChannelTest
         StoreChannel storeChannel = fs.open( firstFile, "rw" );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
-        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
+        PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel );
 
         int length = 26_145;
         byte[] bytes = generateBytes( length );
@@ -69,7 +69,7 @@ public class PhysicalWritableLogChannelTest
         StoreChannel storeChannel = fs.open( firstFile, "rw" );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
-        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
+        PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel );
 
         int length = 262_145;
         byte[] bytes = generateBytes( length );
@@ -90,7 +90,7 @@ public class PhysicalWritableLogChannelTest
         StoreChannel storeChannel = fs.open( firstFile, "rw" );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
-        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
+        PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel );
 
         int length = 1_000_000;
         byte[] bytes = generateBytes( length );
@@ -125,7 +125,7 @@ public class PhysicalWritableLogChannelTest
         StoreChannel storeChannel = fs.open( firstFile, "rw" );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
-        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
+        PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel );
 
         // WHEN writing a transaction, of sorts
         byte byteValue = (byte) 4;
@@ -140,7 +140,7 @@ public class PhysicalWritableLogChannelTest
         channel.putShort( shortValue );
         channel.putInt( intValue );
         channel.putLong( longValue );
-        channel.emptyBufferIntoChannelAndClearIt().flush();
+        channel.prepareForFlush().flush();
 
         // "Rotate" and continue
         storeChannel = fs.open( secondFile, "rw" );
@@ -173,7 +173,7 @@ public class PhysicalWritableLogChannelTest
         StoreChannel storeChannel = fs.open( file, "rw" );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
-        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
+        PositionAwarePhysicalFlushableChannel channel = new PositionAwarePhysicalFlushableChannel( versionedStoreChannel );
         LogPositionMarker positionMarker = new LogPositionMarker();
         LogPosition initialPosition = channel.getCurrentPosition( positionMarker ).newPosition();
 
@@ -194,7 +194,7 @@ public class PhysicalWritableLogChannelTest
         StoreChannel storeChannel = fs.open( file, "rw" );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
-        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
+        PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel );
 
         // closing the WritableLogChannel, then the underlying channel is what PhysicalLogFile does
         channel.close();
@@ -205,7 +205,7 @@ public class PhysicalWritableLogChannelTest
         // and wanting to empty that into the channel
         try
         {
-            channel.emptyBufferIntoChannelAndClearIt();
+            channel.prepareForFlush();
             fail( "Should have thrown exception" );
         }
         catch ( IllegalStateException e )
@@ -222,7 +222,7 @@ public class PhysicalWritableLogChannelTest
         StoreChannel storeChannel = fs.open( file, "rw" );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
-        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
+        PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel );
 
         // just close the underlying channel
         storeChannel.close();
@@ -232,7 +232,7 @@ public class PhysicalWritableLogChannelTest
         // and wanting to empty that into the channel
         try
         {
-            channel.emptyBufferIntoChannelAndClearIt();
+            channel.prepareForFlush();
             fail( "Should have thrown exception" );
         }
         catch ( ClosedChannelException e )

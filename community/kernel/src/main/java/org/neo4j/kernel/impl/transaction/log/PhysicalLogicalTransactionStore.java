@@ -39,10 +39,10 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 {
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
-    private final LogEntryReader<ReadableLogChannel> logEntryReader;
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
 
     public PhysicalLogicalTransactionStore( LogFile logFile, TransactionMetadataCache transactionMetadataCache,
-            LogEntryReader<ReadableLogChannel> logEntryReader )
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
     {
         this.logFile = logFile;
         this.transactionMetadataCache = transactionMetadataCache;
@@ -125,18 +125,18 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     public static class TransactionPositionLocator implements LogFile.LogFileVisitor
     {
         private final long startTransactionId;
-        private final LogEntryReader<ReadableLogChannel> logEntryReader;
+        private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
         private LogEntryStart startEntryForFoundTransaction;
 
         public TransactionPositionLocator( long startTransactionId,
-                LogEntryReader<ReadableLogChannel> logEntryReader )
+                LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
         {
             this.startTransactionId = startTransactionId;
             this.logEntryReader = logEntryReader;
         }
 
         @Override
-        public boolean visit( LogPosition position, ReadableLogChannel channel ) throws IOException
+        public boolean visit( LogPosition position, ReadableClosablePositionAwareChannel channel ) throws IOException
         {
             LogEntry logEntry;
             LogEntryStart startEntry = null;
