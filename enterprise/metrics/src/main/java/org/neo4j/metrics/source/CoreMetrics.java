@@ -20,23 +20,20 @@
 package org.neo4j.metrics.source;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
+import org.neo4j.coreedge.raft.CoreMetaData;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-import static org.neo4j.coreedge.raft.log.RaftLog.APPEND_INDEX_TAG;
-import static org.neo4j.coreedge.raft.log.RaftLog.COMMIT_INDEX_TAG;
-import static org.neo4j.coreedge.raft.state.term.TermState.TERM_TAG;
-
 @Documented(".Core Edge Metrics")
-public class CoreEdgeMetrics extends LifecycleAdapter
+public class CoreMetrics extends LifecycleAdapter
 {
     private static final String CORE_EDGE_PREFIX = "neo4j.core_edge";
 
@@ -46,18 +43,31 @@ public class CoreEdgeMetrics extends LifecycleAdapter
     public static final String COMMIT_INDEX = name( CORE_EDGE_PREFIX, "commit_index" );
     @Documented("RAFT Term of this server")
     public static final String TERM = name( CORE_EDGE_PREFIX, "term" );
+    @Documented("Leader was not found while attempting to commit a transaction")
+    public static final String LEADER_NOT_FOUND = name( CORE_EDGE_PREFIX, "leader_not_found" );
+    @Documented("TX pull requests received from edge servers")
+    public static final String TX_PULL_REQUESTS_RECEIVED = name( CORE_EDGE_PREFIX, "tx_pull_requests_received" );
+    @Documented("Transaction retries")
+    public static final String TX_RETRIES = name( CORE_EDGE_PREFIX, "tx_retries" );
+    @Documented("Is this server the leader?")
+    public static final String IS_LEADER = name( CORE_EDGE_PREFIX, "is_leader" );
 
     private Monitors monitors;
     private MetricRegistry registry;
+    private Supplier<CoreMetaData> coreMetaData;
 
     private final RaftLogCommitIndexMetric raftLogCommitIndexMetric = new RaftLogCommitIndexMetric();
     private final RaftLogAppendIndexMetric raftLogAppendIndexMetric = new RaftLogAppendIndexMetric();
     private final RaftTermMetric raftTermMetric = new RaftTermMetric();
+    private final LeaderNotFoundMetric leaderNotFoundMetric = new LeaderNotFoundMetric();
+    private final TxPullRequestsMetric txPullRequestsMetric = new TxPullRequestsMetric();
+    private final TxRetryMetric txRetryMetric = new TxRetryMetric();
 
-    public CoreEdgeMetrics( Monitors monitors, MetricRegistry registry )
+    public CoreMetrics( Monitors monitors, MetricRegistry registry, Supplier<CoreMetaData> coreMetaData )
     {
         this.monitors = monitors;
         this.registry = registry;
+        this.coreMetaData = coreMetaData;
     }
 
     @Override
@@ -66,10 +76,17 @@ public class CoreEdgeMetrics extends LifecycleAdapter
         monitors.addMonitorListener( raftLogCommitIndexMetric );
         monitors.addMonitorListener( raftLogAppendIndexMetric );
         monitors.addMonitorListener( raftTermMetric );
+        monitors.addMonitorListener( leaderNotFoundMetric );
+        monitors.addMonitorListener( txPullRequestsMetric );
+        monitors.addMonitorListener( txRetryMetric );
 
         registry.register( COMMIT_INDEX, (Gauge<Long>) raftLogCommitIndexMetric::commitIndex );
         registry.register( APPEND_INDEX, (Gauge<Long>) raftLogAppendIndexMetric::appendIndex );
         registry.register( TERM, (Gauge<Long>) raftTermMetric::term );
+        registry.register( LEADER_NOT_FOUND, (Gauge<Long>) leaderNotFoundMetric::leaderNotFoundExceptions );
+        registry.register( TX_PULL_REQUESTS_RECEIVED, (Gauge<Long>) txPullRequestsMetric::txPullRequestsReceived );
+        registry.register( TX_RETRIES, (Gauge<Long>) txRetryMetric::transactionsRetries );
+        registry.register( IS_LEADER, new LeaderGauge() );
     }
 
     @Override
@@ -78,9 +95,25 @@ public class CoreEdgeMetrics extends LifecycleAdapter
         registry.remove( COMMIT_INDEX );
         registry.remove( APPEND_INDEX );
         registry.remove( TERM );
+        registry.remove( LEADER_NOT_FOUND );
+        registry.remove( TX_PULL_REQUESTS_RECEIVED );
+        registry.remove( TX_RETRIES );
+        registry.remove( IS_LEADER );
 
         monitors.removeMonitorListener( raftLogCommitIndexMetric );
         monitors.removeMonitorListener( raftLogAppendIndexMetric );
         monitors.removeMonitorListener( raftTermMetric );
+        monitors.removeMonitorListener( leaderNotFoundMetric );
+        monitors.removeMonitorListener( txPullRequestsMetric );
+        monitors.removeMonitorListener( txRetryMetric );
+    }
+
+    private class LeaderGauge implements Gauge<Integer>
+    {
+        @Override
+        public Integer getValue()
+        {
+            return coreMetaData.get().isLeader() ? 1 : 0;
+        }
     }
 }

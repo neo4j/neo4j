@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequest>
 {
@@ -41,16 +42,19 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     private final StoreId storeId;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
+    private final TxPullRequestsMonitor monitor;
 
     public TxPullRequestHandler( CatchupServerProtocol protocol,
                                  Supplier<StoreId> storeIdSupplier,
                                  Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                                 Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier )
+                                 Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier, 
+                                 Monitors monitors )
     {
         this.protocol = protocol;
         this.storeId = storeIdSupplier.get();
         this.transactionIdStore = transactionIdStoreSupplier.get();
         this.logicalTransactionStore = logicalTransactionStoreSupplier.get();
+        this.monitor = monitors.newMonitor( TxPullRequestsMonitor.class );
     }
 
     @Override
@@ -79,6 +83,7 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
         ctx.write( new TxStreamFinishedResponse( endTxId ) );
         ctx.flush();
 
+        monitor.increment();
         protocol.expect( NextMessage.MESSAGE_TYPE );
     }
 

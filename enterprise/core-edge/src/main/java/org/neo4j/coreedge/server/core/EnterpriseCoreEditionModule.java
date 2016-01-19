@@ -98,6 +98,7 @@ import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -120,6 +121,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 
@@ -230,7 +232,11 @@ public class EnterpriseCoreEditionModule
 
         raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, monitoredRaftLog,
                 termState, voteState, myself, logProvider, raftServer, raftTimeoutService,
-                databaseHealthSupplier, raftMembershipState );
+                databaseHealthSupplier, raftMembershipState, platformModule.monitors );
+
+        dependencies.satisfyDependency( raft );
+
+        dependencies.satisfyDependency( raft );
 
         RaftReplicator<CoreMember> replicator = new RaftReplicator<>( raft, myself,
                 new RaftOutbound( loggingOutbound ) );
@@ -241,7 +247,7 @@ public class EnterpriseCoreEditionModule
                 new ReplicatedLockTokenStateMachine<>( replicator );
 
         commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, replicatedLockTokenStateMachine,
-                dependencies, logging );
+                dependencies, logging, platformModule.monitors );
 
         final IdAllocationState idAllocationState;
         try
@@ -322,7 +328,8 @@ public class EnterpriseCoreEditionModule
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
                 new DataSourceSupplier( platformModule ),
                 new CheckpointerSupplier( platformModule.dependencies ),
-                config.get( CoreEdgeClusterSettings.transaction_listen_address ) );
+                config.get( CoreEdgeClusterSettings.transaction_listen_address ),
+                platformModule.monitors);
 
         life.add( CoreServerStartupProcess.createLifeSupport(
                 platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, new RaftLogReplay( monitoredRaftLog,
@@ -361,7 +368,7 @@ public class EnterpriseCoreEditionModule
                                                                    final LockTokenManager
                                                                            currentReplicatedLockState,
                                                                    final Dependencies dependencies,
-                                                                   final LogService logging )
+                                                                   final LogService logging, Monitors monitors )
     {
         return ( appender, applier, config ) -> {
             TransactionRepresentationCommitProcess localCommit =
@@ -380,7 +387,7 @@ public class EnterpriseCoreEditionModule
             return new ReplicatedTransactionCommitProcess( replicator, localSessionPool,
                     replicatedTxStateMachine,
                     config.get( CoreEdgeClusterSettings.tx_replication_retry_interval ),
-                    logging, committingTransactions
+                    logging, committingTransactions, monitors
             );
         };
     }
@@ -398,7 +405,8 @@ public class EnterpriseCoreEditionModule
                                                         RaftServer<CoreMember> raftServer,
                                                         DelayedRenewableTimeoutService raftTimeoutService,
                                                         Supplier<DatabaseHealth> databaseHealthSupplier,
-                                                        RaftMembershipState<CoreMember> raftMembershipState )
+                                                        RaftMembershipState<CoreMember> raftMembershipState, Monitors
+                                                                monitors )
     {
         LoggingInbound loggingRaftInbound = new LoggingInbound( raftServer, messageLogger, myself.getRaftAddress() );
 
@@ -427,7 +435,7 @@ public class EnterpriseCoreEditionModule
                 myself, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
                 raftTimeoutService, loggingRaftInbound,
                 new RaftOutbound( outbound ), leaderWaitTimeout, logProvider,
-                raftMembershipManager, logShipping, databaseHealthSupplier, Clock.SYSTEM_CLOCK );
+                raftMembershipManager, logShipping, databaseHealthSupplier, Clock.SYSTEM_CLOCK, monitors );
 
         life.add( new RaftDiscoveryServiceConnector( discoveryService, raftInstance ) );
 

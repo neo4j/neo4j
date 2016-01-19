@@ -38,6 +38,7 @@ import org.neo4j.helpers.TickingClock;
 import org.neo4j.kernel.KernelEventHandlers;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -458,6 +459,44 @@ public class RaftInstanceTest
         assertTrue( databaseHealth.hasPanicked() );
     }
 
+    @Test
+    public void shouldMonitorLeaderNotFound() throws Exception
+    {
+        // Given
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+
+        int leaderWaitTimeout = 10000;
+        Clock clock = new TickingClock( 0, leaderWaitTimeout + 1, TimeUnit.MILLISECONDS );
+
+        Monitors monitors = new Monitors();
+        LeaderNotFoundMonitor leaderNotFoundMonitor = new StubLeaderNotFoundMonitor();
+        monitors.addMonitorListener( leaderNotFoundMonitor );
+
+
+        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .timeoutService( timeouts )
+                .clock( clock )
+                .leaderWaitTimeout( leaderWaitTimeout )
+                .monitors(monitors)
+                .build();
+
+        raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
+
+        try
+        {
+            // When
+            // There is no leader
+            raft.getLeader();
+            fail( "Should have thrown exception" );
+        }
+        // Then
+        catch ( NoLeaderTimeoutException e )
+        {
+            // expected
+            assertEquals(1, leaderNotFoundMonitor.leaderNotFoundExceptions());
+        }
+    }
+
     private static class ExplodingRaftLog implements RaftLog
     {
         private boolean startExploding = false;
@@ -562,6 +601,23 @@ public class RaftInstanceTest
         public boolean hasPanicked()
         {
             return hasPanicked;
+        }
+    }
+
+    private class StubLeaderNotFoundMonitor implements LeaderNotFoundMonitor
+    {
+        long count = 0;
+
+        @Override
+        public long leaderNotFoundExceptions()
+        {
+            return count;
+        }
+
+        @Override
+        public void increment()
+        {
+            count++;
         }
     }
 }

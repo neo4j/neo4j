@@ -28,19 +28,23 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
+import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.metrics.source.CoreEdgeMetrics;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.metrics.source.CoreMetrics;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
@@ -58,11 +62,11 @@ public class CoreEdgeMetricsIT
     public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
 
     @Test
-    public void shouldReplicateTransactionToCoreServers() throws Exception
+    public void shouldMonitorCoreEdge() throws Exception
     {
         // given
         File dbDir = dir.directory();
-        Cluster cluster = Cluster.start( dbDir, 3, 0 );
+        Cluster cluster = Cluster.start( dbDir, 3, 1 );
 
         // when
         GraphDatabaseService coreDB = cluster.findLeader( 5000 );
@@ -77,34 +81,56 @@ public class CoreEdgeMetricsIT
         // then
         for ( final CoreGraphDatabase db : cluster.coreServers() )
         {
-            try ( Transaction tx = db.beginTx() )
-            {
-                ThrowingSupplier<Long, Exception> nodeCount = () -> count( db.getAllNodes() );
-
-                Config config = db.getDependencyResolver().resolveDependency( Config.class );
-
-                assertEventually( "node to appear on core server " + config.get( raft_advertised_address ), nodeCount,
-                        greaterThan(  0L ), 15, SECONDS );
-
-                for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
-                {
-                    assertEquals( "baz_bat", node.getProperty( "foobar" ) );
-                }
-
-                tx.success();
-            }
+            assertAllNodesVisible(db);
         }
 
-        File appendMetrics = metricsCsv( dbDir, CoreEdgeMetrics.APPEND_INDEX );
+        for ( final EdgeGraphDatabase db : cluster.edgeServers() )
+        {
+            assertAllNodesVisible( db );
+        }
+
+        File appendMetrics = metricsCsv( dbDir, CoreMetrics.APPEND_INDEX );
         assertThat( readLastValue( appendMetrics ), greaterThan( 0L ) );
 
-        File commitMetrics = metricsCsv( dbDir, CoreEdgeMetrics.COMMIT_INDEX );
+        File commitMetrics = metricsCsv( dbDir, CoreMetrics.COMMIT_INDEX );
         assertThat( readLastValue( commitMetrics ), greaterThan( 0L ) );
 
-        File termMetrics = metricsCsv( dbDir, CoreEdgeMetrics.TERM );
+        File termMetrics = metricsCsv( dbDir, CoreMetrics.TERM );
         assertThat( readLastValue( termMetrics ), greaterThan( 0L ) );
 
+        File leaderNotFoundMetrics = metricsCsv( dbDir, CoreMetrics.LEADER_NOT_FOUND );
+        assertThat( readLastValue( leaderNotFoundMetrics ), equalTo( 0L ) );
+
+        File txPullRequestsMetrics = metricsCsv( dbDir, CoreMetrics.TX_PULL_REQUESTS_RECEIVED );
+        assertThat( readLastValue( txPullRequestsMetrics ), greaterThan( 0L ) );
+
+        File txRetryMetrics = metricsCsv( dbDir, CoreMetrics.TX_RETRIES );
+        assertThat( readLastValue( txRetryMetrics ), equalTo( 0L ) );
+
+        File isLeaderMetrics = metricsCsv( dbDir, CoreMetrics.IS_LEADER );
+        assertThat( readLastValue( isLeaderMetrics ), greaterThanOrEqualTo ( 0L ) );
+
         cluster.shutdown();
+    }
+
+    private void assertAllNodesVisible( GraphDatabaseFacade db ) throws Exception
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ThrowingSupplier<Long, Exception> nodeCount = () -> count( db.getAllNodes() );
+
+            Config config = db.getDependencyResolver().resolveDependency( Config.class );
+
+            assertEventually( "node to appear on core server " + config.get( raft_advertised_address ), nodeCount,
+                    greaterThan(  0L ), 15, SECONDS );
+
+            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            {
+                assertEquals( "baz_bat", node.getProperty( "foobar" ) );
+            }
+
+            tx.success();
+        }
     }
 
     private File metricsCsv( File dbDir, String metric )

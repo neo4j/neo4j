@@ -19,6 +19,17 @@
  */
 package org.neo4j.coreedge.raft.log;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import org.junit.Test;
+import org.mockito.Matchers;
+
+import org.neo4j.coreedge.raft.ReplicatedInteger;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreFileChannel;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -30,23 +41,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.neo4j.coreedge.raft.ReplicatedInteger;
-import org.neo4j.coreedge.raft.log.monitoring.RaftLogAppendIndexMonitor;
-import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.coreedge.raft.log.RaftLog.APPEND_INDEX_TAG;
-import static org.neo4j.coreedge.raft.log.RaftLog.COMMIT_INDEX_TAG;
 
 public class NaiveDurableRaftLogTest
 {

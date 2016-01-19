@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.coreedge.catchup.tx.core.TxRetryMonitor;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.Replicator.ReplicationFailedException;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
@@ -33,6 +34,7 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
@@ -47,11 +49,12 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
     private final LocalSessionPool sessionPool;
     private final Log log;
     private final CommittingTransactions txFutures;
+    private final TxRetryMonitor txRetryMonitor;
 
     public ReplicatedTransactionCommitProcess( Replicator replicator, LocalSessionPool sessionPool,
                                                Replicator.ReplicatedContentListener replicatedTxListener,
                                                long retryIntervalMillis, LogService logging,
-                                               CommittingTransactions txFutures )
+                                               CommittingTransactions txFutures, Monitors monitors)
     {
         this.sessionPool = sessionPool;
         this.replicatedTxListener = replicatedTxListener;
@@ -59,6 +62,7 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
         this.retryIntervalMillis = retryIntervalMillis;
         this.log = logging.getInternalLog( getClass() );
         this.txFutures = txFutures;
+        txRetryMonitor = monitors.newMonitor( TxRetryMonitor.class );
         replicator.subscribe( this.replicatedTxListener );
     }
 
@@ -99,6 +103,7 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
                     }
                     log.warn( "Transaction replication failed, but a previous attempt may have succeeded," +
                             "so commit process must keep waiting for possible success.", e );
+                    txRetryMonitor.retry();
                 }
 
                 try
@@ -112,11 +117,13 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
                 {
                     interrupted = true;
                     log.info( "Replication of %s was interrupted; retrying.", operationContext );
+                    txRetryMonitor.retry();
                 }
                 catch ( TimeoutException e )
                 {
                     log.info( "Replication of %s timed out after %d %s; retrying.",
                             operationContext, retryIntervalMillis, TimeUnit.MILLISECONDS );
+                    txRetryMonitor.retry();
                 }
             }
         }

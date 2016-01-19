@@ -40,6 +40,7 @@ import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -68,8 +69,11 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
  *
  * @param <MEMBER> The membership type.
  */
-public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.MessageHandler
+public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.MessageHandler, CoreMetaData
 {
+
+    private final LeaderNotFoundMonitor leaderNotFoundMonitor;
+
     public enum Timeouts implements RenewableTimeoutService.TimeoutName
     {
         ELECTION, HEARTBEAT
@@ -103,7 +107,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
                          LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
                          RaftLogShippingManager<MEMBER> logShipping,
                          Supplier<DatabaseHealth> databaseHealthSupplier,
-                         Clock clock )
+                         Clock clock, Monitors monitors )
 
     {
         this.myself = myself;
@@ -123,6 +127,8 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         this.membershipManager = membershipManager;
 
         this.state = new RaftState<>( myself, termState, membershipManager, entryLog, voteState );
+
+        leaderNotFoundMonitor = monitors.newMonitor( LeaderNotFoundMonitor.class );
 
         initTimers();
 
@@ -191,6 +197,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
         if ( state.leader() == null )
         {
+            leaderNotFoundMonitor.increment();
             throw new NoLeaderTimeoutException();
         }
 
@@ -270,6 +277,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         }
     }
 
+    @Override
     public boolean isLeader()
     {
         return currentRole == LEADER;
