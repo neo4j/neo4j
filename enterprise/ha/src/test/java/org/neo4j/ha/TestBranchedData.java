@@ -21,6 +21,7 @@ package org.neo4j.ha;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,8 +62,12 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 public class TestBranchedData
 {
-    public final @Rule LifeRule life = new LifeRule( true );
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final LifeRule life = new LifeRule( true );
+    private final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+
+    @Rule
+    public final RuleChain ruleChain = RuleChain.outerRule( directory )
+            .around( life );
 
     @Test
     public void migrationOfBranchedDataDirectories() throws Exception

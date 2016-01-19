@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
@@ -49,12 +50,15 @@ import static org.mockito.Mockito.when;
 
 public class RecordStorageEngineTest
 {
+
+    private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
+    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+
     @Rule
-    public final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    public RuleChain ruleChain = RuleChain.outerRule( fsRule )
+            .around( pageCacheRule )
+            .around( storageEngineRule );
 
     @Test( timeout = 30_000 )
     public void shutdownRecordStorageEngineAfterFailedTransaction() throws Throwable

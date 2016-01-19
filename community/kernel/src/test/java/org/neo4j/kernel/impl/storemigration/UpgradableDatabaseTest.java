@@ -71,14 +71,14 @@ public class UpgradableDatabaseTest
         private File workingDirectory;
 
         @Parameterized.Parameters( name = "{0}" )
-        public static Collection<Object[]> versions()
+        public static Collection<String> versions()
         {
             return Arrays.asList(
-                    new Object[]{Legacy19Store.LEGACY_VERSION},
-                    new Object[]{Legacy20Store.LEGACY_VERSION},
-                    new Object[]{Legacy21Store.LEGACY_VERSION},
-                    new Object[]{Legacy22Store.LEGACY_VERSION},
-                    new Object[]{Legacy23Store.LEGACY_VERSION}
+                    Legacy19Store.LEGACY_VERSION,
+                    Legacy20Store.LEGACY_VERSION,
+                    Legacy21Store.LEGACY_VERSION,
+                    Legacy22Store.LEGACY_VERSION,
+                    Legacy23Store.LEGACY_VERSION
             );
         }
 
@@ -195,12 +195,9 @@ public class UpgradableDatabaseTest
         private static final String neostoreFilename = "neostore";
 
         @Parameterized.Parameters( name = "{0}" )
-        public static Collection<Object[]> versions()
+        public static Collection<String> versions()
         {
-            return Arrays.asList(
-                    new Object[]{"v0.9.5"},
-                    new Object[]{"v0.A.4"}
-            );
+            return Arrays.asList( "v0.9.5", "v0.A.4" );
         }
 
         @Rule

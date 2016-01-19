@@ -24,33 +24,24 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.helpers.ArrayUtil;
-
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.unsafe.impl.batchimport.stats.Keys.done_batches;
 
 @RunWith( Parameterized.class )
 public class CoarseBoundedProgressExecutionMonitorTest
 {
     @Parameterized.Parameters(name = "{0}")
-    public static Iterable<Object[]> parameters()
+    public static Iterable<Integer> parameters()
     {
-        List<Object[]> result = new ArrayList<>();
-        result.add( ArrayUtil.<Object>array( 1 ) );
-        result.add( ArrayUtil.<Object>array( 10 ) );
-        result.add( ArrayUtil.<Object>array( 123 ) );
-        return result;
+        return Arrays.asList(1, 10, 123);
     }
 
-    @Parameter( 0 )
+    @Parameter
     public int batchSize;
 
     @Test

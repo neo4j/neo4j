@@ -24,6 +24,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -90,8 +91,10 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NeoStoresTest
 {
-    @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule();
+
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final ExpectedException exception = ExpectedException.none();
+
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule
@@ -99,7 +102,7 @@ public class NeoStoresTest
     @Rule
     public NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
     @Rule
-    public final ExpectedException exception = ExpectedException.none();
+    public RuleChain ruleChain = RuleChain.outerRule( exception ).around( pageCacheRule );
 
     private PageCache pageCache;
     private File storeDir;

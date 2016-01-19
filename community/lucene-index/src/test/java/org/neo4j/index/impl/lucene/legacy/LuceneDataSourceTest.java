@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexWriterAccessor;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.util.Map;
 
@@ -46,10 +47,13 @@ import static org.junit.Assert.assertTrue;
 
 public class LuceneDataSourceTest
 {
+    private final LifeRule life = new LifeRule( true );
+    private final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+
     @Rule
-    public final LifeRule life = new LifeRule( true );
-    @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final RuleChain ruleChain = RuleChain.outerRule( directory )
+            .around( life );
+
     private IndexConfigStore indexStore;
     private LuceneDataSource dataSource;
 
