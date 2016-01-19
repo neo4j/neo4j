@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -31,20 +32,25 @@ public class ApplyPulledTransactions implements TxPullResponseListener
     private final Supplier<TransactionApplier> transactionApplierSupplier;
     private final Log log;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
+    private final PullRequestMonitor monitor;
 
     public ApplyPulledTransactions( LogProvider logProvider,
                                     Supplier<TransactionApplier> transactionApplierSupplier,
-                                    Supplier<TransactionIdStore> transactionIdStoreSupplier )
+                                    Supplier<TransactionIdStore> transactionIdStoreSupplier,
+                                    Monitors monitors)
     {
         this.transactionApplierSupplier = transactionApplierSupplier;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.log = logProvider.getLog( getClass() );
+        this.monitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 
     @Override
     public void onTxReceived( TxPullResponse tx )
     {
-        if ( tx.tx().getCommitEntry().getTxId() <= transactionIdStoreSupplier.get().getLastCommittedTransactionId() )
+        long receivedTxId = tx.tx().getCommitEntry().getTxId();
+        monitor.txPullResponse( receivedTxId );
+        if ( receivedTxId <= transactionIdStoreSupplier.get().getLastCommittedTransactionId() )
         {
             return;
         }

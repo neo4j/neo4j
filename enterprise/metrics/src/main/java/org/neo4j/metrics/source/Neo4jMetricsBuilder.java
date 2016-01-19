@@ -190,6 +190,11 @@ public class Neo4jMetricsBuilder
                 life.add( new CoreMetrics( dependencies.monitors(), registry, dependencies.raft() ) );
                 result = true;
             }
+            else if ( mode == OperationalMode.edge)
+            {
+                life.add( new EdgeMetrics( dependencies.monitors(), registry) );
+                result = true;
+            }
             else
             {
                 logService.getUserLog( getClass() )

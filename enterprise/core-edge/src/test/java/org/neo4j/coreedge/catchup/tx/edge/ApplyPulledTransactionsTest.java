@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -61,7 +62,7 @@ public class ApplyPulledTransactionsTest
 
         // when
         ApplyPulledTransactions handler = new ApplyPulledTransactions(
-                NullLogProvider.getInstance(), singleton( transactionApplier ), singleton(transactionIdStore) );
+                NullLogProvider.getInstance(), singleton( transactionApplier ), singleton(transactionIdStore), new Monitors() );
         handler.onTxReceived( new TxPullResponse( storeId, tx ) );
 
         // then
@@ -93,7 +94,7 @@ public class ApplyPulledTransactionsTest
 
         // when
         ApplyPulledTransactions handler = new ApplyPulledTransactions(
-                logProvider, singleton( transactionApplier ), singleton(transactionIdStore) );
+                logProvider, singleton( transactionApplier ), singleton(transactionIdStore), new Monitors() );
         handler.onTxReceived( new TxPullResponse( storeId, tx ) );
 
         // then
@@ -118,7 +119,8 @@ public class ApplyPulledTransactionsTest
 
         // when
         ApplyPulledTransactions handler = new ApplyPulledTransactions(
-                NullLogProvider.getInstance(), singleton( transactionApplier ), singleton(transactionIdStore) );
+                NullLogProvider.getInstance(), singleton( transactionApplier ), singleton(transactionIdStore),
+                new Monitors());
 
         handler.onTxReceived( new TxPullResponse( storeId, alreadyAppliedTx ) );
 

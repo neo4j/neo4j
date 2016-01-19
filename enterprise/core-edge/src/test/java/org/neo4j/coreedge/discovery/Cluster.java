@@ -246,6 +246,18 @@ public class Cluster
         return null;
     }
 
+    public EdgeGraphDatabase getEdgeServerById( int serverId )
+    {
+        for ( EdgeGraphDatabase edgeServer : edgeServers )
+        {
+            if ( serverIdFor( edgeServer ).toIntegerIndex() == serverId )
+            {
+                return edgeServer;
+            }
+        }
+        return null;
+    }
+
     public void removeCoreServerWithServerId( int serverId )
     {
         CoreGraphDatabase serverToRemove = getCoreServerById( serverId );

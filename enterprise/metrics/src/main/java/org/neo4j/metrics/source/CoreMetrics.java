@@ -32,10 +32,10 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-@Documented(".Core Edge Metrics")
+@Documented(".Core Metrics")
 public class CoreMetrics extends LifecycleAdapter
 {
-    private static final String CORE_EDGE_PREFIX = "neo4j.core_edge";
+    private static final String CORE_EDGE_PREFIX = "neo4j.core_edge.core";
 
     @Documented("Append index of the RAFT log")
     public static final String APPEND_INDEX = name( CORE_EDGE_PREFIX, "append_index" );
