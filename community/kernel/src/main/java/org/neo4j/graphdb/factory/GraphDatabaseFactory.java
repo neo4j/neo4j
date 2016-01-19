@@ -26,6 +26,7 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -131,7 +132,7 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
-     * 
+     *
      * @return kernel extensions
      */
     @Deprecated
@@ -142,7 +143,7 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
-     * 
+     *
      * @param newKernelExtensions New kernel extensions to add
      * @return the factory
      */
@@ -155,7 +156,7 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
-     * 
+     *
      * @param newKernelExtension New kernel extension too add
      * @return the factory
      */
@@ -169,7 +170,7 @@ public class GraphDatabaseFactory
 
     /**
      * @deprecated Manipulating kernel extensions is deprecated and will be moved to internal components.
-     * 
+     *
      * @param newKernelExtensions New kernel extensions to set
      * @return the factory
      */
@@ -200,6 +201,6 @@ public class GraphDatabaseFactory
 
     public String getEdition()
     {
-        return "Community";
+        return Edition.community.toString();
     }
 }

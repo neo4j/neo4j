@@ -24,6 +24,7 @@ import com.codahale.metrics.MetricRegistry;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
@@ -52,9 +53,9 @@ public class ClusterMetrics extends LifecycleAdapter
     private final Monitors monitors;
     private final MetricRegistry registry;
     private final SlaveUpdatePullerMonitor monitor = new SlaveUpdatePullerMonitor();
-    private final ClusterMembers clusterMembers;
+    private final Supplier<ClusterMembers> clusterMembers;
 
-    public ClusterMetrics( Monitors monitors, MetricRegistry registry, ClusterMembers clusterMembers )
+    public ClusterMetrics( Monitors monitors, MetricRegistry registry, Supplier<ClusterMembers> clusterMembers )
     {
         this.monitors = monitors;
         this.registry = registry;
@@ -109,12 +110,8 @@ public class ClusterMetrics extends LifecycleAdapter
 
         public Integer getValue()
         {
-            int value = 0;
-            if ( clusterMembers != null )
-            {
-                value = rolePredicate.test( clusterMembers.getCurrentMemberRole() ) ? 1 : 0;
-            }
-            return value;
+            ClusterMembers clusterMembers = ClusterMetrics.this.clusterMembers.get();
+            return clusterMembers != null && rolePredicate.test( clusterMembers.getCurrentMemberRole() ) ? 1 : 0;
         }
     }
 }

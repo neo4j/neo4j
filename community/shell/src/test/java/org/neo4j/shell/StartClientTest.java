@@ -190,7 +190,7 @@ public class StartClientTest
 
         // then
         assertEquals( 0, err.size() );
-        assertThat( out.toString(), containsString( "\"edition\": \"Community\"" ) );
+        assertThat( out.toString(), containsString( "\"edition\": \"community\"" ) );
     }
 
     @Test

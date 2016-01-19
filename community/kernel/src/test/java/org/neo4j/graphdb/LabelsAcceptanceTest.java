@@ -35,8 +35,8 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -646,7 +646,7 @@ public class LabelsAcceptanceTest
                                     @Override
                                     protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                                     {
-                                        return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
+                                        return new ImpermanentPlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade );
                                     }
                                 }.newFacade( storeDir, params, dependencies, this );
                             }

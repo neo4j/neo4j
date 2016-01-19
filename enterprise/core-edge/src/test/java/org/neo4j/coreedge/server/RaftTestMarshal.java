@@ -42,9 +42,9 @@ public class RaftTestMarshal implements ByteBufferMarshal<RaftTestMember>, Chann
     }
 
     @Override
-    public void marshal( RaftTestMember target, WritableChannel channel ) throws IOException
+    public void marshal( RaftTestMember state, WritableChannel channel ) throws IOException
     {
-        channel.putLong( target.getId() );
+        channel.putLong( state.getId() );
     }
 
     @Override

@@ -29,6 +29,10 @@ import org.neo4j.io.fs.StoreChannel;
 
 import static java.lang.Math.min;
 
+/**
+ * The main implementation of {@link FlushableChannel}. This class provides buffering over a simple {@link StoreChannel}
+ * and, as a side effect, allows control of the flushing of that buffer to disk.
+ */
 public class PhysicalFlushableChannel implements FlushableChannel
 {
     private volatile boolean closed;

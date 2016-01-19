@@ -21,7 +21,10 @@ package org.neo4j.coreedge.server;
 
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 
 public class EnterpriseCoreFacadeFactory extends EnterpriseCoreEdgeFacadeFactory
@@ -38,5 +41,11 @@ public class EnterpriseCoreFacadeFactory extends EnterpriseCoreEdgeFacadeFactory
     {
         makeHazelcastQuiet( platformModule );
         return new EnterpriseCoreEditionModule( platformModule, discoveryServiceFactory );
+    }
+
+    @Override
+    protected DatabaseInfo databaseInfo()
+    {
+        return new DatabaseInfo( Edition.enterprise, OperationalMode.core );
     }
 }

@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.impl.factory.Edition;
 
 public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
 {
@@ -46,6 +47,6 @@ public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
     @Override
     public String getEdition()
     {
-        return "Enterprise";
+        return Edition.enterprise.toString();
     }
 }

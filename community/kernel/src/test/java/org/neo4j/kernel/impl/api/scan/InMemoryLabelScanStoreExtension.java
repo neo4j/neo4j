@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.api.scan;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.spi.KernelContext;
 
 @Service.Implementation( KernelExtensionFactory.class )
-public class InMemoryLabelScanStoreExtension extends KernelExtensionFactory<InMemoryLabelScanStoreExtension.NoDependencies>
+public class InMemoryLabelScanStoreExtension extends
+        KernelExtensionFactory<InMemoryLabelScanStoreExtension.NoDependencies>
 {
     public interface NoDependencies
     {   // No dependencies
@@ -35,7 +37,7 @@ public class InMemoryLabelScanStoreExtension extends KernelExtensionFactory<InMe
     }
 
     @Override
-    public LabelScanStoreProvider newKernelExtension( NoDependencies dependencies ) throws Throwable
+    public LabelScanStoreProvider newInstance( KernelContext context, NoDependencies dependencies ) throws Throwable
     {
         return new LabelScanStoreProvider( new InMemoryLabelScanStore(), 2 );
     }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.shell;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 import org.neo4j.test.TargetDirectory;
 
@@ -72,6 +72,6 @@ public class EnterpriseVersionTest
 
         // then
         assertEquals( 0, err.size() );
-        assertThat( out.toString(), containsString( "\"edition\": \"Enterprise\"" ) );
+        assertThat( out.toString(), containsString( "\"edition\": \"enterprise\"" ) );
     }
 }

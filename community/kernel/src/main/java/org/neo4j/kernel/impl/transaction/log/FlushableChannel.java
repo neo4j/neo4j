@@ -25,11 +25,19 @@ import java.io.IOException;
 
 import org.neo4j.storageengine.api.WritableChannel;
 
+/**
+ * Provides flush semantics over a {@link WritableChannel}. Essentially, this interface implies the existence of a
+ * buffer over a {@link WritableChannel}, allowing for batching of writes, controlled via the {@link #prepareForFlush}
+ * call.
+ */
 public interface FlushableChannel extends WritableChannel, Closeable
 {
     /**
-    * Writes any changes not present in the channel yet and clears the buffer.
-    */
+     * Ensures that all written content will be present in the file channel. This method does not flush, it prepares for
+     * it, by returning a handle for flushing at a later time.
+     * The returned handle guarantees that the writes that happened before its creation will be flushed. Implementations
+     * may choose to flush content that was written after a call to this method was made.
+     */
     Flushable prepareForFlush() throws IOException;
 
     @Override

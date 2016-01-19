@@ -140,10 +140,10 @@ public class CoreMember
         }
 
         @Override
-        public CoreMember unmarshal( ByteBuf buffer )
+        public CoreMember unmarshal( ByteBuf source )
         {
-            AdvertisedSocketAddress coreAddress = byteBufMarshal.unmarshal( buffer );
-            AdvertisedSocketAddress raftAddress = byteBufMarshal.unmarshal( buffer );
+            AdvertisedSocketAddress coreAddress = byteBufMarshal.unmarshal( source );
+            AdvertisedSocketAddress raftAddress = byteBufMarshal.unmarshal( source );
             return dealWithPossibleNullAddress( coreAddress, raftAddress );
         }
 

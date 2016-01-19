@@ -101,10 +101,10 @@ public class InMemoryVoteState<MEMBER> implements VoteState<MEMBER>
         }
 
         @Override
-        public void marshal( InMemoryVoteState<CoreMember> target, WritableChannel channel ) throws IOException
+        public void marshal( InMemoryVoteState<CoreMember> state, WritableChannel channel ) throws IOException
         {
-            channel.putLong( target.term );
-            memberMarshal.marshal( target.votedFor(), channel );
+            channel.putLong( state.term );
+            memberMarshal.marshal( state.votedFor(), channel );
         }
 
         @Override

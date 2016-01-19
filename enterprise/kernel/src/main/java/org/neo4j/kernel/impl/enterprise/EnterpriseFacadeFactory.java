@@ -22,9 +22,12 @@ package org.neo4j.kernel.impl.enterprise;
 import java.io.File;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 
 /**
@@ -36,7 +39,6 @@ public class EnterpriseFacadeFactory extends GraphDatabaseFacadeFactory
     public GraphDatabaseFacade newFacade( File storeDir, Map<String,String> params, Dependencies dependencies,
             GraphDatabaseFacade graphDatabaseFacade )
     {
-        params.put( Configuration.editionName.name(), "Enterprise" );
         return super.newFacade( storeDir, params, dependencies, graphDatabaseFacade );
     }
 
@@ -44,5 +46,11 @@ public class EnterpriseFacadeFactory extends GraphDatabaseFacadeFactory
     protected EditionModule createEdition( PlatformModule platformModule )
     {
         return new EnterpriseEditionModule( platformModule );
+    }
+
+    @Override
+    protected DatabaseInfo databaseInfo()
+    {
+        return new DatabaseInfo( Edition.enterprise, OperationalMode.single );
     }
 }

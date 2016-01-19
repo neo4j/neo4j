@@ -22,6 +22,13 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.Flushable;
 import java.io.IOException;
 
+import org.neo4j.io.fs.StoreChannel;
+
+/**
+ * Decorator around a {@link LogVersionedStoreChannel} making it expose {@link FlushablePositionAwareChannel}. This
+ * implementation uses a {@link PhysicalFlushableChannel}, which provides buffering for write operations over the
+ * decorated channel.
+ */
 public class PositionAwarePhysicalFlushableChannel implements FlushablePositionAwareChannel
 {
     private LogVersionedStoreChannel logVersionedStoreChannel;

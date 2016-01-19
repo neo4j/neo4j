@@ -173,7 +173,8 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                     @Override
                     protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                     {
-                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, databaseInfo(),
+                                dependencies, graphDatabaseFacade )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()

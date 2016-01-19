@@ -24,10 +24,10 @@ import java.io.Serializable;
 
 import org.neo4j.coreedge.raft.replication.id.IdAllocationState;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.kernel.IdType;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
+import org.neo4j.kernel.impl.store.id.IdType;
 
 /**
  * An in-memory representation of the IDs allocated to this core instance.

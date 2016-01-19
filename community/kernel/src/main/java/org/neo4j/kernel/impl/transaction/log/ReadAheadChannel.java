@@ -28,6 +28,11 @@ import org.neo4j.storageengine.api.ReadPastEndException;
 import static java.lang.Math.min;
 import static java.lang.System.arraycopy;
 
+/**
+ * A buffering implementation of {@link ReadableClosableChannel}. This class also allows subclasses to read content
+ * spanning more than one file, by properly implementing {@link #next(StoreChannel)}.
+ * @param <T> The type of StoreChannel wrapped
+ */
 public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosableChannel
 {
     public static final int DEFAULT_READ_AHEAD_SIZE = 1024 * 4;
@@ -150,6 +155,13 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
         aheadBuffer.flip();
     }
 
+    /**
+     * Hook for allowing subclasses to read content spanning a sequence of files. This method is called when the current
+     * file channel is exhausted and a new channel is required for reading. The default implementation returns the
+     * argument, which is the condition for indicating no more content, resulting in a {@link ReadPastEndException} being
+     * thrown.
+     * @param channel The channel that has just been exhausted.
+     */
     protected T next( T channel ) throws IOException
     {
         return channel;
@@ -160,11 +172,16 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
         return channel.position() - aheadBuffer.remaining();
     }
 
+    /*
+     * Moves bytes between aheadBuffer.position() and aheadBuffer.capacity() to the beginning of aheadBuffer. At the
+     * end of this call the aheadBuffer is positioned in end of that moved content.
+     * This is to be used in preparation of reading more content in from the channel without having exhausted all
+     * previous bytes.
+     */
     private void compactToBeginningOfBuffer( int remaining )
     {
         arraycopy( aheadBuffer.array(), aheadBuffer.position(), aheadBuffer.array(), 0, remaining );
         aheadBuffer.clear();
-
         aheadBuffer.position( remaining );
     }
 }

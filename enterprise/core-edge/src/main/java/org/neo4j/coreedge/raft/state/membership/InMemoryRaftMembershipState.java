@@ -135,11 +135,11 @@ public class InMemoryRaftMembershipState<MEMBER> implements RaftMembershipState<
         }
 
         @Override
-        public void marshal( InMemoryRaftMembershipState<MEMBER> target, WritableChannel channel ) throws IOException
+        public void marshal( InMemoryRaftMembershipState<MEMBER> state, WritableChannel channel ) throws IOException
         {
-            channel.putLong( target.logIndex );
-            channel.putInt( target.votingMembers.size() );
-            for ( MEMBER votingMember : target.votingMembers )
+            channel.putLong( state.logIndex );
+            channel.putInt( state.votingMembers.size() );
+            for ( MEMBER votingMember : state.votingMembers )
             {
                 memberMarshal.marshal( votingMember, channel );
             }

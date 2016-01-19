@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.impl.spi;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-
 import java.io.File;
+
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 
 public interface KernelContext
 {
     FileSystemAbstraction fileSystem();
 
     File storeDir();
+
+    DatabaseInfo databaseInfo();
 }

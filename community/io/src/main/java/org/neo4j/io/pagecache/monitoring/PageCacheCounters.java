@@ -20,58 +20,58 @@
 package org.neo4j.io.pagecache.monitoring;
 
 /**
- * The PageCacheMonitor exposes internal counters from the page cache.
+ * The PageCacheCounters exposes internal counters from the page cache.
  * The data for these counters is sourced through the PageCacheTracer API.
  */
-public interface PageCacheMonitor
+public interface PageCacheCounters
 {
     /**
      * @return The number of page faults observed thus far.
      */
-    public long countFaults();
+    long faults();
 
     /**
      * @return The number of page evictions observed thus far.
      */
-    public long countEvictions();
+    long evictions();
 
     /**
      * @return The number of page pins observed thus far.
      */
-    public long countPins();
+    long pins();
 
     /**
      * @return The number of page unpins observed thus far.
      */
-    public long countUnpins();
+     long unpins();
 
     /**
      * @return The number of page flushes observed thus far.
      */
-    public long countFlushes();
+    long flushes();
 
     /**
      * @return The sum total of bytes read in through page faults thus far.
      */
-    public long countBytesRead();
+    long bytesRead();
 
     /**
      * @return The sum total of bytes written through flushes thus far.
      */
-    public long countBytesWritten();
+    long bytesWritten();
 
     /**
      * @return The number of file mappings observed thus far.
      */
-    public long countFilesMapped();
+    long filesMapped();
 
     /**
      * @return The number of file unmappings observed thus far.
      */
-    public long countFilesUnmapped();
+    long filesUnmapped();
 
     /**
      * @return The number of page evictions that have thrown exceptions thus far.
      */
-    public long countEvictionExceptions();
+    long evictionExceptions();
 }

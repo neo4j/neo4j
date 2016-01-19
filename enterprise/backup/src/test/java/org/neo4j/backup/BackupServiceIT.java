@@ -52,6 +52,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -85,6 +87,7 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -94,9 +97,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpired;
 
 public class BackupServiceIT
@@ -605,25 +605,23 @@ public class BackupServiceIT
         Dependencies dependencies = new Dependencies( resolver );
         dependencies.satisfyDependencies( defaultConfig, monitors, NullLogProvider.getInstance() );
 
-        OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension) new OnlineBackupExtensionFactory().newKernelExtension(
-                DependenciesProxy.dependencies(dependencies, OnlineBackupExtensionFactory.Dependencies.class));
+        OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension)
+                new OnlineBackupExtensionFactory().newInstance(
+                        new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN ),
+                        DependenciesProxy.dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies.class )
+                );
         backup.start();
 
         // when
         BackupService backupService = backupService();
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                barrier.awaitUninterruptibly();
+        executor.execute( () -> {
+            barrier.awaitUninterruptibly();
 
-                createAndIndexNode( db, 1 );
-                resolver.resolveDependency( NeoStoresSupplier.class ).get().flush();
+            createAndIndexNode( db, 1 );
+            resolver.resolveDependency( NeoStoresSupplier.class ).get().flush();
 
-                barrier.release();
-            }
+            barrier.release();
         } );
 
         BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( BACKUP_HOST, backupPort,

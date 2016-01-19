@@ -43,7 +43,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -60,11 +59,13 @@ import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -75,7 +76,6 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.udc.UsageData;
-import org.neo4j.udc.UsageDataKeys;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
@@ -102,6 +102,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         lockManager = dependencies.satisfyDependency( createLockManager( config, logging ) );
 
         idGeneratorFactory = dependencies.satisfyDependency( new DefaultIdGeneratorFactory( fileSystem ) );
+        dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
         propertyKeyTokenHolder = life.add( dependencies.satisfyDependency(
                 new DelegatingPropertyKeyTokenHolder( new ReadOnlyTokenCreator() ) ) );
@@ -127,9 +128,9 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         constraintSemantics = new StandardConstraintSemantics();
 
-        registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ), life, dependencies );
+        registerRecovery( platformModule.databaseInfo, life, dependencies );
 
-        publishEditionInfo( dependencies.resolveDependency( UsageData.class ) );
+        publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
         commitProcessFactory = readOnly();
 
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
@@ -174,13 +175,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 txPollingClient, platformModule.dataSourceManager, new ConnectToRandomCoreServer( discoveryService ) ) );
     }
 
-    private void publishEditionInfo( UsageData sysInfo )
-    {
-        sysInfo.set( UsageDataKeys.edition, UsageDataKeys.Edition.enterprise );
-        sysInfo.set( UsageDataKeys.operationalMode, UsageDataKeys.OperationalMode.edge );
-    }
-
-    protected void registerRecovery( final String editionName, LifeSupport life,
+    protected void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
                                      final DependencyResolver dependencyResolver )
     {
         life.addLifecycleListener( new LifecycleListener()
@@ -190,7 +185,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
             {
                 if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
                 {
-                    doAfterRecoveryAndStartup( editionName, dependencyResolver );
+                    doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
                 }
             }
         } );

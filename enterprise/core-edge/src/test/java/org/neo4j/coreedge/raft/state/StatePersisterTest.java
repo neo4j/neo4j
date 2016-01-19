@@ -133,9 +133,9 @@ public class StatePersisterTest
         }
 
         @Override
-        public void marshal( AtomicInteger target, WritableChannel channel ) throws IOException
+        public void marshal( AtomicInteger state, WritableChannel channel ) throws IOException
         {
-            channel.putInt( target.intValue() );
+            channel.putInt( state.intValue() );
         }
 
         @Override

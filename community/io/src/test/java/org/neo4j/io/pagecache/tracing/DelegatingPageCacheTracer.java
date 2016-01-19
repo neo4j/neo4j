@@ -42,9 +42,9 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
         delegate.mappedFile( file );
     }
 
-    public long countBytesRead()
+    public long bytesRead()
     {
-        return delegate.countBytesRead();
+        return delegate.bytesRead();
     }
 
     public MajorFlushEvent beginFileFlush( PageSwapper swapper )
@@ -57,9 +57,9 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
         return delegate.beginPageEvictions( pageCountToEvict );
     }
 
-    public long countUnpins()
+    public long unpins()
     {
-        return delegate.countUnpins();
+        return delegate.unpins();
     }
 
     public MajorFlushEvent beginCacheFlush()
@@ -67,19 +67,19 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
         return delegate.beginCacheFlush();
     }
 
-    public long countBytesWritten()
+    public long bytesWritten()
     {
-        return delegate.countBytesWritten();
+        return delegate.bytesWritten();
     }
 
-    public long countPins()
+    public long pins()
     {
-        return delegate.countPins();
+        return delegate.pins();
     }
 
-    public long countFilesUnmapped()
+    public long filesUnmapped()
     {
-        return delegate.countFilesUnmapped();
+        return delegate.filesUnmapped();
     }
 
     public PinEvent beginPin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
@@ -92,28 +92,28 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
         delegate.unmappedFile( file );
     }
 
-    public long countEvictionExceptions()
+    public long evictionExceptions()
     {
-        return delegate.countEvictionExceptions();
+        return delegate.evictionExceptions();
     }
 
-    public long countFilesMapped()
+    public long filesMapped()
     {
-        return delegate.countFilesMapped();
+        return delegate.filesMapped();
     }
 
-    public long countFlushes()
+    public long flushes()
     {
-        return delegate.countFlushes();
+        return delegate.flushes();
     }
 
-    public long countFaults()
+    public long faults()
     {
-        return delegate.countFaults();
+        return delegate.faults();
     }
 
-    public long countEvictions()
+    public long evictions()
     {
-        return delegate.countEvictions();
+        return delegate.evictions();
     }
 }

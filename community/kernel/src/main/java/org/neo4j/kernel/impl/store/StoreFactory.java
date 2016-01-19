@@ -26,8 +26,8 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
@@ -60,7 +60,6 @@ public class StoreFactory
     public static final String COUNTS_STORE = ".counts.db";
 
     private Config config;
-    @SuppressWarnings( "deprecation" )
     private IdGeneratorFactory idGeneratorFactory;
     private FileSystemAbstraction fileSystemAbstraction;
     private LogProvider logProvider;
@@ -78,7 +77,7 @@ public class StoreFactory
     }
 
     public StoreFactory( File storeDir, Config config,
-            @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+            IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider )
     {
         this.config = config;

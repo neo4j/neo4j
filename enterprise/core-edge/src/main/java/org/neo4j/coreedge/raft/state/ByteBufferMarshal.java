@@ -22,19 +22,20 @@ package org.neo4j.coreedge.raft.state;
 import java.nio.ByteBuffer;
 
 /**
- * This interface defines the ability of a class to marshal instances of another class to and from a ByteBuffer.
- * @param <TARGET> The class being marshaled.
+ * Implementations of this class perform marshalling (encoding/decoding) of instances of {@link STATE} into/from a
+ * {@link ByteBuffer}.
+ * @param <STATE> The class of objects supported by this marshal
  */
-public interface ByteBufferMarshal<TARGET>
+public interface ByteBufferMarshal<STATE>
 {
     /**
      * Marshals the target into buffer. The buffer is expected to be large enough to hold the result.
      */
-    void marshal( TARGET target, ByteBuffer buffer );
+    void marshal( STATE state, ByteBuffer buffer );
 
     /**
-     * Unmarshals an instance of TARGET from source. If the source does not have enough bytes to fully read an instance,
-     * null must be returned.
+     * Unmarshals an instance of {@link STATE} from source. If the source does not have enough bytes to fully read an
+     * instance, null must be returned.
      */
-    TARGET unmarshal( ByteBuffer source );
+    STATE unmarshal( ByteBuffer source );
 }

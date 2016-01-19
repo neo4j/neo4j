@@ -21,13 +21,16 @@ package org.neo4j.metrics.source;
 
 import com.codahale.metrics.MetricRegistry;
 
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
-import org.neo4j.kernel.IdGeneratorFactory;
+import java.util.function.Supplier;
+
+import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -55,7 +58,8 @@ public class Neo4jMetricsBuilder
     private final EventReporter reporter;
     private final Config config;
     private final LogService logService;
-    private final Dependencies deps;
+    private final KernelContext kernelContext;
+    private final Dependencies dependencies;
 
     public interface Dependencies
     {
@@ -65,26 +69,26 @@ public class Neo4jMetricsBuilder
 
         TransactionCounters transactionCounters();
 
-        PageCacheMonitor pageCacheCounters();
+        PageCacheCounters pageCacheCounters();
 
         CheckPointerMonitor checkPointerMonitor();
 
         LogRotationMonitor logRotationMonitor();
 
-        @SuppressWarnings( "deprecation" )
-        IdGeneratorFactory idGeneratorFactory();
+        StoreEntityCounters entityCountStats();
 
-        DependencyResolver getDependencyResolver();
+        Supplier<ClusterMembers> clusterMembers();
     }
 
     public Neo4jMetricsBuilder( MetricRegistry registry, EventReporter reporter, Config config, LogService logService,
-            Dependencies deps, LifeSupport life )
+            KernelContext kernelContext, Dependencies dependencies, LifeSupport life )
     {
         this.registry = registry;
         this.reporter = reporter;
         this.config = config;
         this.logService = logService;
-        this.deps = deps;
+        this.kernelContext = kernelContext;
+        this.dependencies = dependencies;
         this.life = life;
     }
 
@@ -93,57 +97,60 @@ public class Neo4jMetricsBuilder
         boolean result = false;
         if ( config.get( MetricsSettings.neoTxEnabled ) )
         {
-            life.add( new TransactionMetrics( registry, deps.dataSourceManager(), deps.transactionCounters() ) );
+            life.add( new TransactionMetrics( registry,
+                    dependencies.dataSourceManager(), dependencies.transactionCounters() ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoPageCacheEnabled ) )
         {
-
-            life.add( new PageCacheMetrics( registry, deps.pageCacheCounters() ) );
+            life.add( new PageCacheMetrics( registry, dependencies.pageCacheCounters() ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoCheckPointingEnabled ) )
         {
             life.add( new CheckPointingMetrics( reporter, registry,
-                    deps.monitors(), deps.checkPointerMonitor() ) );
+                    dependencies.monitors(), dependencies.checkPointerMonitor() ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoLogRotationEnabled ) )
         {
             life.add( new LogRotationMetrics( reporter, registry,
-                    deps.monitors(), deps.logRotationMonitor() ) );
+                    dependencies.monitors(), dependencies.logRotationMonitor() ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoCountsEnabled ) )
         {
-            life.add( new EntityCountMetrics( registry, deps.idGeneratorFactory() ) );
+            life.add( new EntityCountMetrics( registry, dependencies.entityCountStats() ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoNetworkEnabled ) )
         {
-            life.add( new NetworkMetrics( registry, deps.monitors() ) );
+            life.add( new NetworkMetrics( registry, dependencies.monitors() ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoClusterEnabled ) )
         {
-            final ClusterMembers clusterMembers =
-                    resolveClusterMembersOrNull( deps.getDependencyResolver(), logService );
-            if ( clusterMembers != null )
+            if ( kernelContext.databaseInfo().operationalMode == OperationalMode.ha )
             {
-                life.add( new ClusterMetrics( deps.monitors(), registry, clusterMembers ) );
+                life.add( new ClusterMetrics( dependencies.monitors(), registry, dependencies.clusterMembers() ) );
                 result = true;
+            }
+            else
+            {
+                logService.getUserLog( getClass() )
+                        .warn( "Cluster metrics was enabled but the graph database is not in HA mode." );
             }
         }
 
         if ( config.get( MetricsSettings.cypherPlanningEnabled ) )
         {
-            life.add( new CypherMetrics( registry, deps.monitors() ) );
+            life.add( new CypherMetrics( registry, dependencies.monitors() ) );
             result = true;
         }
 
@@ -173,25 +180,10 @@ public class Neo4jMetricsBuilder
 
         if ( config.get( MetricsSettings.coreEdgeEnabled ) )
         {
-            life.add( new CoreEdgeMetrics( deps.monitors(), registry ) );
+            life.add( new CoreEdgeMetrics( dependencies.monitors(), registry ) );
             result = true;
         }
 
-
         return result;
-    }
-
-    private ClusterMembers resolveClusterMembersOrNull( DependencyResolver dependencyResolver, LogService logService )
-    {
-        try
-        {
-            return dependencyResolver.resolveDependency( ClusterMembers.class );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            logService.getUserLog( getClass() )
-                    .warn( "Cluster metrics was enabled but the graph database is not in HA mode." );
-            return null;
-        }
     }
 }

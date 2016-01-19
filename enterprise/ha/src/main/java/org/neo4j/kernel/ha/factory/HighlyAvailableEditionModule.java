@@ -58,7 +58,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
@@ -129,13 +128,15 @@ import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
@@ -326,6 +327,7 @@ public class HighlyAvailableEditionModule
 
         idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory(
                 masterDelegateInvocationHandler, logging.getInternalLogProvider(), requestContextFactory, fs ) );
+        dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
         // TODO There's a cyclical dependency here that should be fixed
         final AtomicReference<HighAvailabilityModeSwitcher> exceptionHandlerRef = new AtomicReference<>();
@@ -488,22 +490,21 @@ public class HighlyAvailableEditionModule
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
-        registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ), dependencies, logging );
+        registerRecovery( platformModule.databaseInfo, dependencies, logging );
 
-        publishEditionInfo( config, dependencies.resolveDependency( UsageData.class ) );
+        UsageData usageData = dependencies.resolveDependency( UsageData.class );
+        publishEditionInfo( usageData, platformModule.databaseInfo, config );
+        publishServerId( config, usageData );
 
         // Ordering of lifecycles is important. Clustering infrastructure should start before paxos components
         life.add( clusteringLife );
         life.add( paxosLife );
     }
 
-    private void publishEditionInfo( Config config, UsageData sysInfo )
+    private void publishServerId( Config config, UsageData sysInfo )
     {
-        sysInfo.set( UsageDataKeys.edition, UsageDataKeys.Edition.enterprise );
-        sysInfo.set( UsageDataKeys.operationalMode, UsageDataKeys.OperationalMode.ha );
         sysInfo.set( UsageDataKeys.serverId, config.get( ClusterSettings.server_id ).toString() );
     }
-
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory(
             final HighAvailabilityMemberContext memberContext )
@@ -663,7 +664,7 @@ public class HighlyAvailableEditionModule
         return life.add( new HighlyAvailableKernelData( graphDb, members, databaseInfo, fs, pageCache, storeDir, config ) );
     }
 
-    protected void registerRecovery( final String editionName, final DependencyResolver dependencyResolver,
+    protected void registerRecovery( final DatabaseInfo databaseInfo, final DependencyResolver dependencyResolver,
                                      final LogService logging )
     {
         memberStateMachine.addHighAvailabilityMemberListener( new HighAvailabilityMemberListener()
@@ -702,7 +703,7 @@ public class HighlyAvailableEditionModule
             {
                 try
                 {
-                    HighlyAvailableEditionModule.this.doAfterRecoveryAndStartup( editionName, dependencyResolver, isMaster );
+                    HighlyAvailableEditionModule.this.doAfterRecoveryAndStartup( databaseInfo, dependencyResolver, isMaster );
                 }
                 catch ( Throwable throwable )
                 {
@@ -729,9 +730,9 @@ public class HighlyAvailableEditionModule
         } );
     }
 
-    protected void doAfterRecoveryAndStartup( String editionName, DependencyResolver resolver, boolean isMaster )
+    protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver resolver, boolean isMaster )
     {
-        super.doAfterRecoveryAndStartup( editionName, resolver );
+        super.doAfterRecoveryAndStartup( databaseInfo, resolver );
 
         if ( isMaster )
         {
