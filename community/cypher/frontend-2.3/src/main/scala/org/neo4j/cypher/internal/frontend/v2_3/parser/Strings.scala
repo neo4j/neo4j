@@ -51,7 +51,7 @@ trait Strings extends Base {
 
   protected def UTF16 = rule { ch('u') ~ group(HexDigit ~ HexDigit ~ HexDigit ~ HexDigit) ~> (java.lang.Integer.parseInt(_, 16)) }
   protected def UTF32 = rule { ch('U') ~ group(HexDigit ~ HexDigit ~ HexDigit ~ HexDigit ~ HexDigit ~ HexDigit ~ HexDigit ~ HexDigit) ~> (java.lang.Integer.parseInt(_, 16)) }
-  private def HexDigit = rule { "0" - "9" | "a" - "f" | "A" - "F" }
+  private def HexDigit = rule ("four hexadecimal digits specifying a unicode character") { "0" - "9" | "a" - "f" | "A" - "F" }
 
   protected def appendToStringBuilder(c: Any): Context[Any] => Unit = ctx =>
     ctx.getValueStack.peek.asInstanceOf[java.lang.StringBuilder].append(c)
