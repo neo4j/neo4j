@@ -176,12 +176,9 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("create_node_from_map_values") {
-    execute("create (n {a}) return n", "a" -> Map("name" -> "Andres", "age" -> 66))
-    val n = graph.createdNodes.dequeue()
-    graph.inTx {
-      n.getProperty("name") should equal("Andres")
-      n.getProperty("age") should equal(66)
-    }
+    val result = execute("create (n {a}) return n.age, n.name", "a" -> Map("name" -> "Andres", "age" -> 66))
+
+    result.toList should equal(List(Map("n.age" -> 66, "n.name" -> "Andres")))
   }
 
 

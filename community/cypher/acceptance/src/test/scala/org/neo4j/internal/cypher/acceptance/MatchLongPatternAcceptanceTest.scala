@@ -54,7 +54,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
   def runWithConfig(m: (String, String)*)(run: (ExecutionEngine, GraphDatabaseService) => Unit) = {
     val config: util.Map[String, String] = m.toMap.asJava
 
-    val graph = new ImpermanentGraphDatabase(config) with Snitch
+    val graph = new ImpermanentGraphDatabase(config)
     try {
       val engine = new ExecutionEngine(graph)
       run(engine, graph)
@@ -71,7 +71,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
       val config = databaseConfig() + ("dbms.cypher.idp_solver_table_threshold" -> maxTableSize.toString)
       runWithConfig(config.toSeq: _*) {
         (engine, db) =>
-          graph = db.asInstanceOf[GraphDatabaseAPI with Snitch]
+          graph = db.asInstanceOf[GraphDatabaseAPI]
           makeLargeMatrixDataset(100)
           val monitor = TestIDPSolverMonitor()
           val monitors: monitoring.Monitors = graph.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
