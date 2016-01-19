@@ -67,6 +67,11 @@ public interface Locks
     interface Client extends ResourceLocker, AutoCloseable
     {
         /**
+         * Represents the fact that no lock session is used because no locks are taken.
+         */
+        int NO_LOCK_SESSION_ID = -1;
+
+        /**
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
          * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
          */

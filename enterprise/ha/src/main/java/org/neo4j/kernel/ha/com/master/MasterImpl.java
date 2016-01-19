@@ -168,7 +168,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         // not, we use a one-off lock client. The way the client signals this is via the 'eventIdentifier' in the
         // request. -1 means no locks are held, any other number means there should be a matching lock session.
 
-        if(context.getEventIdentifier() == -1)
+        if( context.getEventIdentifier() == Locks.Client.NO_LOCK_SESSION_ID )
         {
             // Client is not holding locks, use a temporary lock client
             try(Conversation conversation = conversationManager.acquire())

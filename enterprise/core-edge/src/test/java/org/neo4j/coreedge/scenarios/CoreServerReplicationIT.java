@@ -363,7 +363,15 @@ public class CoreServerReplicationIT
                         }
                         catch ( Exception e )
                         {
-                            e.printStackTrace();
+                        }
+
+                        try
+                        {
+                            Thread.sleep( 100 );
+                        }
+                        catch ( InterruptedException e )
+                        {
+                            Thread.currentThread().interrupt();
                         }
                     }
                 } );

@@ -30,7 +30,8 @@ import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.core.locks.CurrentReplicatedLockState;
+import org.neo4j.coreedge.server.core.locks.LockTokenManager;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -65,10 +66,8 @@ public class ReplicatedTransactionCommitProcessTest
         ReplicatedTransactionStateMachine transactionStateMachine = mock( ReplicatedTransactionStateMachine.class );
         CommittingTransaction future = mock( CommittingTransaction.class );
 
-        CurrentReplicatedLockState.LockSession lockSession = mock( CurrentReplicatedLockState.LockSession.class );
-        when( lockSession.id() ).thenReturn( 0 );
-        CurrentReplicatedLockState currentReplicatedLockState = mock( CurrentReplicatedLockState.class );
-        when( currentReplicatedLockState.currentLockSession() ).thenReturn( lockSession );
+        LockTokenManager currentReplicatedLockState = mock( LockTokenManager.class );
+        when( currentReplicatedLockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest<>( null, 0 ) );
 
         when( future.waitUntilCommitted( anyInt(), any( TimeUnit.class ) ) ).thenReturn( 23l );
         CommittingTransactions txFutures = mock( CommittingTransactionsRegistry.class );
@@ -91,10 +90,8 @@ public class ReplicatedTransactionCommitProcessTest
         ReplicatedTransactionStateMachine transactionStateMachine = mock( ReplicatedTransactionStateMachine.class );
         CommittingTransaction future = mock( CommittingTransaction.class );
 
-        CurrentReplicatedLockState.LockSession lockSession = mock( CurrentReplicatedLockState.LockSession.class );
-        when( lockSession.id() ).thenReturn( 0 );
-        CurrentReplicatedLockState currentReplicatedLockState = mock( CurrentReplicatedLockState.class );
-        when( currentReplicatedLockState.currentLockSession() ).thenReturn( lockSession );
+        LockTokenManager currentReplicatedLockState = mock( LockTokenManager.class );
+        when( currentReplicatedLockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest<>( null, 0 ) );
 
         CommittingTransactions txFutures = mock( CommittingTransactionsRegistry.class );
         when( txFutures.register( any( LocalOperationId.class ) ) ).thenReturn( future );

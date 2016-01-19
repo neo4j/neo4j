@@ -17,16 +17,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.core.locks;
+package org.neo4j.coreedge.raft.replication;
 
-public interface CurrentReplicatedLockState
+import java.util.HashSet;
+import java.util.Set;
+
+public class DirectReplicator implements Replicator
 {
-    LockSession currentLockSession();
+    private final Set<ReplicatedContentListener> listeners = new HashSet<>();
+    private long logIndex = 0;
 
-    interface LockSession
+    @Override
+    public void replicate( ReplicatedContent content ) throws ReplicationFailedException
     {
-        int id();
+        for ( ReplicatedContentListener listener : listeners )
+        {
+            listener.onReplicated( content, logIndex++ );
+        }
+    }
 
-        boolean isMine();
+    @Override
+    public void subscribe( ReplicatedContentListener listener )
+    {
+        listeners.add( listener );
+    }
+
+    @Override
+    public void unsubscribe( ReplicatedContentListener listener )
+    {
+        listeners.remove( listener );
     }
 }

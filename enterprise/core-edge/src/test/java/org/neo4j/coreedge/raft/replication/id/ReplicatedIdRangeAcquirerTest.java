@@ -24,7 +24,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.replication.StubReplicator;
+import org.neo4j.coreedge.raft.replication.DirectReplicator;
 import org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
@@ -39,7 +39,7 @@ public class ReplicatedIdRangeAcquirerTest
             new AdvertisedSocketAddress( "a:2" ) );
     private final CoreMember two = new CoreMember( new AdvertisedSocketAddress( "b:1" ),
             new AdvertisedSocketAddress( "b:2" ) );
-    private final StubReplicator replicator = new StubReplicator();
+    private final DirectReplicator replicator = new DirectReplicator();
 
     @Test
     public void consecutiveAllocationsFromSeparateIdGeneratorsForSameIdTypeShouldNotDuplicateWhenInitialIdIsZero()

@@ -19,11 +19,11 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
+import org.junit.Test;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.Test;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
@@ -31,7 +31,8 @@ import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.core.locks.CurrentReplicatedLockState;
+import org.neo4j.coreedge.server.core.locks.LockTokenManager;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -40,11 +41,8 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -66,7 +64,7 @@ public class CommitProcessStateMachineCollaborationTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         LocalSessionPool sessionPool = new LocalSessionPool( coreMember );
-        CurrentReplicatedLockState lockState = lockState( 0 );
+        LockTokenManager lockState = lockState( 0 );
         final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine(
                 localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures );
 
@@ -95,7 +93,7 @@ public class CommitProcessStateMachineCollaborationTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         LocalSessionPool sessionPool = new LocalSessionPool( coreMember );
-        CurrentReplicatedLockState lockState = lockState( 1 );
+        LockTokenManager lockState = lockState( 1 );
 
         final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine(
                 localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures );
@@ -116,10 +114,10 @@ public class CommitProcessStateMachineCollaborationTest
         }
     }
 
-    public CurrentReplicatedLockState lockState( int lockSessionId )
+    public LockTokenManager lockState( int lockSessionId )
     {
-        CurrentReplicatedLockState lockState = mock( CurrentReplicatedLockState.class );
-        when( lockState.currentLockSession() ).thenReturn( new StubLockSession( lockSessionId ) );
+        LockTokenManager lockState = mock( LockTokenManager.class );
+        when( lockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest<>( null, lockSessionId ) );
         return lockState;
     }
 

@@ -17,28 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.replication.tx;
+package org.neo4j.coreedge.raft.net;
 
-import org.neo4j.coreedge.server.core.locks.CurrentReplicatedLockState;
+import io.netty.buffer.ByteBuf;
 
-class StubLockSession implements CurrentReplicatedLockState.LockSession
+import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
+
+public class ReplicatedLockTokenSerializer
 {
-    private final int id;
-
-    StubLockSession( int id )
+    public static void serialize( ReplicatedLockTokenRequest<CoreMember> tokenRequest, ByteBuf buffer )
     {
-        this.id = id;
+        buffer.writeInt( tokenRequest.id() );
+        new CoreMember.CoreMemberMarshal().marshal( tokenRequest.owner(), buffer );
     }
 
-    @Override
-    public int id()
+    public static ReplicatedLockTokenRequest<CoreMember> deserialize( ByteBuf buffer )
     {
-        return id;
-    }
+        int candidateId = buffer.readInt();
+        CoreMember owner = new CoreMember.CoreMemberMarshal().unmarshal( buffer );
 
-    @Override
-    public boolean isMine()
-    {
-        return false;
+        return new ReplicatedLockTokenRequest<>( owner, candidateId );
     }
 }
