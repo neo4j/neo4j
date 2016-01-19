@@ -28,7 +28,6 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -50,6 +49,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
@@ -178,7 +178,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException, PropertyNotFoundException
+    public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         NodeRecord node = nodeStore.forceGetRecord( nodeId );
         if ( !node.inUse() )
@@ -188,7 +188,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         long firstPropertyId = node.getNextProp();
         if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
         {
-            throw new PropertyNotFoundException( propertyKeyId, EntityType.NODE, nodeId );
+            return Property.noNodeProperty( nodeId, propertyKeyId );
         }
         for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
         {
@@ -198,7 +198,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
                 return propertyBlock.newPropertyData( propertyStore );
             }
         }
-        throw new PropertyNotFoundException( propertyKeyId, EntityType.NODE, nodeId );
+        return Property.noNodeProperty( nodeId, propertyKeyId );
     }
 
     private Object valueOf( PropertyBlock property )

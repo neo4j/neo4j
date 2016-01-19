@@ -24,9 +24,9 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.function.Suppliers;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.PropertyLookup;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
-public class PropertyReader implements PropertyLookup
+public class PropertyReader implements PropertyAccessor
 {
     private final PropertyStore propertyStore;
     private final NodeStore nodeStore;
@@ -65,7 +65,7 @@ public class PropertyReader implements PropertyLookup
     }
 
     @Override
-    public Property nodeProperty( long nodeId, int propertyKeyId )
+    public Property getProperty( long nodeId, int propertyKeyId )
     {
         try
         {

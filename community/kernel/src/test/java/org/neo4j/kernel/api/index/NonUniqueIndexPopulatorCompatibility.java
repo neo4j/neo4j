@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -133,7 +132,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         PropertyAccessor propertyAccessor = new PropertyAccessor()
         {
             @Override
-            public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException, PropertyNotFoundException
+            public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
             {
                 return Property.stringProperty( propertyKeyId, propertyValue );
             }
