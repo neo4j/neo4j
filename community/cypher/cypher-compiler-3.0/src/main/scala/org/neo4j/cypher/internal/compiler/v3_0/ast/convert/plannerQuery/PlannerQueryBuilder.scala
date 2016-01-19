@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{PlannerQuery, QueryGraph, QueryHorizon, Selections, UpdateGraph}
+import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
 
 case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: SemanticTable, returns: Seq[IdName] = Seq.empty)
@@ -31,9 +31,6 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
 
   def amendQueryGraph(f: QueryGraph => QueryGraph): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.amendQueryGraph(f)))
-
-  def amendUpdateGraph(f: UpdateGraph => UpdateGraph): PlannerQueryBuilder =
-    copy(q = q.updateTailOrSelf(_.amendUpdateGraph(f)))
 
   def withHorizon(horizon: QueryHorizon): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.withHorizon(horizon)))
@@ -53,19 +50,10 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     current.queryGraph
   }
 
-  def allSeenPatternNodes: Set[IdName] = {
-    val all = q.allPlannerQueries.toSet
+  def allSeenPatternNodes: Set[IdName] =
+    q.allPlannerQueries.flatMap(_.queryGraph.allPatternNodes).toSet
 
-    all.flatMap(_.queryGraph.patternNodes) ++
-      all.flatMap { pq =>
-        val ug = pq.updateGraph
-        ug.createNodePatterns.map(_.nodeName) ++
-          ug.mergeNodePatterns.map(_.createNodePattern.nodeName) ++
-          ug.mergeRelationshipPatterns.flatMap(_.createNodePatterns.map(_.nodeName))
-      }
-  }
-
-  def readOnly: Boolean = q.updateGraph.isEmpty
+  def readOnly: Boolean = q.queryGraph.readOnly
 
   def build(): PlannerQuery = {
 
@@ -102,9 +90,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     }
 
     val withFixedArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
-    val withGroupedInequalities = groupInequalities(withFixedArgumentIds)
-
-    withGroupedInequalities.withUpdateGraph(updateGraph = q.updateGraph)
+    groupInequalities(withFixedArgumentIds)
   }
 }
 

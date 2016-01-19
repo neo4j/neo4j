@@ -55,7 +55,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors, pipeBuilderFact
         None
     }
 
-    PipeInfo(topLevelPipe, plan.solved.writes, None, fingerprint, context.plannerName)
+    PipeInfo(topLevelPipe, plan.solved.exists(_.queryGraph.containsUpdates), None, fingerprint, context.plannerName)
   }
 
   /*
@@ -78,7 +78,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors, pipeBuilderFact
    build the pipe for 'a'. Thanks for reading this far - I didn't think we would make it!
    */
   private def buildPipe(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): RonjaPipe = {
-    val pipeBuilder = pipeBuilderFactory(monitors, p => buildPipe(p), plan.solved.readOnly)
+    val pipeBuilder = pipeBuilderFactory(monitors = monitors, recurse = p => buildPipe(p), readOnly = plan.solved.all(_.queryGraph.readOnly))
 
     val planStack = new mutable.Stack[LogicalPlan]()
     val pipeStack = new mutable.Stack[RonjaPipe]()
@@ -251,8 +251,8 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       VarLengthExpandPipe(source, fromName, relName, toName, dir, projectedDir,
         LazyTypes(types), min, max, nodeInScope, predicate)()
 
-    case Optional(inner) =>
-      OptionalPipe(inner.availableSymbols.map(_.name), source)()
+    case Optional(inner, protectedSymbols) =>
+      OptionalPipe((inner.availableSymbols -- protectedSymbols).map(_.name), source)()
 
     case Sort(_, sortItems) =>
       SortPipe(source, sortItems.map(translateSortDescription))()

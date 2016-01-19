@@ -95,13 +95,13 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
     planFor("MATCH (a) CREATE (b) WITH * MATCH(c) CREATE (d)").plan should equal(
       EmptyResult(
         CreateNode(
-          Apply(
-            Eager(
-              CreateNode(
-                AllNodesScan(IdName("a"), Set.empty)(solved),
-                IdName("b"), Seq.empty, None)(solved)
-            )(solved),
-            RepeatableRead(
+          Eager(
+            Apply(
+              Eager(
+                CreateNode(
+                  AllNodesScan(IdName("a"), Set.empty)(solved),
+                  IdName("b"), Seq.empty, None)(solved)
+              )(solved),
               AllNodesScan(IdName("c"), Set(IdName("a"), IdName("b")))(solved)
             )(solved)
           )(solved),

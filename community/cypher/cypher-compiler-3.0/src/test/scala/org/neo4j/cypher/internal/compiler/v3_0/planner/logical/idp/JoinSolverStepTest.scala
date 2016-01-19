@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.Cardinali
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, LogicalPlanningContext, Metrics, QueryGraphSolver}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, LogicalPlanConstructionTestSupport, PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, LogicalPlanConstructionTestSupport, PlannerQuery, RegularPlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, SemanticTable}
@@ -55,9 +55,9 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
     val qg = QueryGraph.empty.addPatternNodes('a, 'b, 'c)
 
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
-    when(plan1.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
+    when(plan1.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
     when(plan2.availableSymbols).thenReturn(Set[IdName]('b, 'r2, 'c))
-    when(plan2.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('b, 'c)))
+    when(plan2.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('b, 'c)))
 
     table.put(register(pattern1), plan1)
     table.put(register(pattern2), plan2)
@@ -73,9 +73,9 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
     val qg = QueryGraph.empty.addPatternNodes('a, 'b, 'c, 'd)
 
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
-    when(plan1.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
+    when(plan1.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
     when(plan2.availableSymbols).thenReturn(Set[IdName]('c, 'r2, 'd))
-    when(plan2.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('c, 'd)))
+    when(plan2.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('c, 'd)))
 
     table.put(register(pattern1), plan1)
     table.put(register(pattern2), plan2)
@@ -89,9 +89,9 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
     val qg = QueryGraph.empty.addPatternNodes('a, 'b, 'c, 'd)
 
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b, 'x))
-    when(plan1.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
+    when(plan1.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
     when(plan2.availableSymbols).thenReturn(Set[IdName]('c, 'r2, 'd, 'x))
-    when(plan2.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('c, 'd)))
+    when(plan2.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('c, 'd)))
 
     table.put(register(pattern1), plan1)
     table.put(register(pattern2), plan2)
@@ -104,9 +104,9 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
     val qg = QueryGraph.empty.addPatternNodes('a, 'b, 'c, 'd).addArgumentIds(Seq('x))
 
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b, 'x))
-    when(plan1.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b, 'x).addArgumentIds(Seq('x))))
+    when(plan1.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b, 'x).addArgumentIds(Seq('x))))
     when(plan2.availableSymbols).thenReturn(Set[IdName]('c, 'r2, 'd, 'x))
-    when(plan2.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('c, 'd, 'x).addArgumentIds(Seq('x))))
+    when(plan2.solved).thenReturn(RegularPlannerQuery(QueryGraph.empty.addPatternNodes('c, 'd, 'x).addArgumentIds(Seq('x))))
 
     table.put(register(pattern1), plan1)
     table.put(register(pattern2), plan2)

@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, Cardinality}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.SingleComponentPlanner.DEFAULT_SOLVERS
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{QueryGraph, LogicalPlanningTestSupport2, Selections}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, QueryGraph, Selections}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.SingleComponentPlanner.DEFAULT_SOLVERS
 
 import scala.collection.immutable
 import scala.language.reflectiveCalls
@@ -72,10 +72,10 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
         CartesianProduct(
-          allNodeScanA,
+          allNodeScanC,
           CartesianProduct(
             allNodeScanB,
-            allNodeScanC
+            allNodeScanA
           )(solved)
         )(solved)
       )
@@ -569,7 +569,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         Apply(
           allNodeScanA,
           Optional(
-            expandAtoB
+            expandAtoB, Set("a")
           )(solved)
         )(solved)
       )

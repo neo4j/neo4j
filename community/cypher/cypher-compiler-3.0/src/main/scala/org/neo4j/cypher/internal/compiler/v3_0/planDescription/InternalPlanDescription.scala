@@ -189,7 +189,7 @@ final case class SingleRowPlanDescription(id: Id, arguments: Seq[Argument] = Seq
 
   def find(searchedName: String) = if (searchedName == name) Seq(this) else Seq.empty
 
-  def name = "Argument"
+  def name = "EmptyRow"
 
   def render(builder: StringBuilder) {}
 

@@ -214,21 +214,33 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )(solved))
   }
 
-  test("should unnest apply with a create on top of argument on rhs") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = CreateNode(Argument(Set.empty)(solved)(), IdName("a"), Seq.empty, None)(solved)
-    val input = Apply(lhs, rhs)(solved)
+  test("AntiConditionalApply on apply on optional should be OK") {
+    /*
+                            ACA                  ACA
+                         LHS   Apply       =>  LHS Optional
+                             Arg1  Optional             Expand
+                                     Expand                Arg
+                                       Arg2
+     */
 
-    rewrite(input) should equal(CreateNode(lhs, IdName("a"), Seq.empty, None)(solved))
-  }
+    // Given
+    val lhs: LogicalPlan = newMockedLogicalPlan("a")
+    val arg1: LogicalPlan = Argument(Set(IdName("a")))(solved)()
+    val arg2: LogicalPlan = Argument(Set(IdName("a")))(solved)()
+    val expand: LogicalPlan = Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
+    val optional: LogicalPlan = Optional(expand)(solved)
+    val apply2: LogicalPlan = Apply(arg1, optional)(solved)
+    val apply: LogicalPlan = Apply(lhs, apply2)(solved)
 
-  test("should unnest apply and put create node on top of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val create = CreateNode(rhs, IdName("a"), Seq.empty, None)(solved)
-    val input = Apply(lhs, create)(solved)
+    // When
+    val result = rewrite(apply)
 
-    rewrite(input) should equal(CreateNode(Apply(lhs, rhs)(solved), IdName("a"), Seq.empty, None)(solved))
+    // Then
+    result should equal(Apply(
+      lhs,
+      Optional(
+        Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))(solved)
+    )(solved))
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =

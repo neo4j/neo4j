@@ -515,12 +515,21 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("merge should handle argument properly") {
     createNode("x" -> 42)
+    createNode("x" -> "not42")
 
-    val query = """WITH 42 AS x MERGE (c:N {x: x})"""
+    val query = "WITH 42 AS x MERGE (c:N {x: x})"
 
     val result = updateWithBothPlanners(query)
 
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 1)
+  }
+
+  ignore("merge should handle arguments properly with only write clauses") {
+    val query = "CREATE (a {p: 1}) MERGE (b {v: a.p})"
+
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesCreated = 2, propertiesWritten = 2)
   }
 
   test("should be able to merge using property from match") {

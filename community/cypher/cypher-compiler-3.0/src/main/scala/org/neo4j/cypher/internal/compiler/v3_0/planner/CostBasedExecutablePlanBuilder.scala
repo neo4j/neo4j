@@ -93,7 +93,8 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     val pipeBuildContext = PipeExecutionBuilderContext(metrics.cardinality, semanticTable, plannerName)
 
     //Check for unresolved tokens for read-only queries
-    if (plan.solved.readOnly) checkForUnresolvedTokens(ast, semanticTable).foreach(notificationLogger += _)
+    // TODO:H Should this be plan.solved.all(_.queryGraph.readOnly) ?
+    if (plan.solved.queryGraph.readOnly) checkForUnresolvedTokens(ast, semanticTable).foreach(notificationLogger += _)
 
     (plan, pipeBuildContext)
   }

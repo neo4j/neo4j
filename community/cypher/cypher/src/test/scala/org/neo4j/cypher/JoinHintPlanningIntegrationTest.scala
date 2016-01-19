@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, RegularPlannerQuery}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.SingleComponentPlanner._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{cartesianProductsOrValueJoins, IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable.FoldableAny
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.scalacheck.Gen
@@ -66,7 +66,7 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
     val semanticPlan = new given {
       cardinality = mapCardinality {
         // expand - cheap
-        case PlannerQuery(queryGraph, _,  _, _) if queryGraph.patternRelationships.size == 1 => 100.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
         // everything else - expensive
         case _ => Double.MaxValue
       }

@@ -35,7 +35,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
           try {
             (1 to nodeCount) foreach {
               x =>
-                execute("MERGE (a:Label {id:{id}}) " +
+                val r = execute("MERGE (a:Label {id:{id}}) " +
                   "MERGE (b:Label {id:{id}+1}) " +
                   "MERGE (a)-[r:TYPE]->(b) " +
                   "RETURN a, b, r", "id" -> x)

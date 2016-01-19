@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{SimplePatternLength, PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticTable, SyntaxException}
 
@@ -96,41 +96,39 @@ object ClauseConverters {
     clause.items.foldLeft(acc) {
 
       case (builder, item) =>
-        builder.amendUpdateGraph(_.addMutatingPatterns(toSetPattern(acc.semanticTable)(item)))
+        builder.amendQueryGraph(_.addMutatingPatterns(toSetPattern(acc.semanticTable)(item)))
     }
 
-  private def addCreateToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Create): PlannerQueryBuilder = {
-    clause.pattern.patternParts.foldLeft(acc) {
+  private def addCreateToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Create): PlannerQueryBuilder =
+    clause.pattern.patternParts.foldLeft(builder) {
       //CREATE (n :L1:L2 {prop: 42})
-      case (builder, EveryPath(NodePattern(Some(id), labels, props))) =>
-        builder
-          .amendUpdateGraph(ug => ug.addMutatingPatterns(CreateNodePattern(IdName.fromVariable(id), labels, props)))
+      case (acc, EveryPath(NodePattern(Some(id), labels, props))) =>
+        acc
+          .amendQueryGraph(_.addMutatingPatterns(CreateNodePattern(IdName.fromVariable(id), labels, props)))
 
       //CREATE (n)-[r: R]->(m)
-      case (builder, EveryPath(pattern: RelationshipChain)) =>
+      case (acc, EveryPath(pattern: RelationshipChain)) =>
 
         val (nodes, rels) = allCreatePatterns(pattern)
         //remove duplicates from loops, (a:L)-[:ER1]->(a)
         val dedupedNodes = dedup(nodes)
 
         //create nodes that are not already matched or created
-        val nodesToCreate = dedupedNodes.filterNot(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+        val nodesToCreate = dedupedNodes.filterNot(pattern => acc.allSeenPatternNodes(pattern.nodeName))
 
         //we must check that we are not trying to set a pattern or label on any already created nodes
-        val nodesCreatedBefore = dedupedNodes.filter(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+        val nodesCreatedBefore = dedupedNodes.filter(pattern => acc.allSeenPatternNodes(pattern.nodeName))
         nodesCreatedBefore.collectFirst {
           case c if c.labels.nonEmpty || c.properties.nonEmpty =>
             throw new SyntaxException(
               s"Can't create node `${c.nodeName.name}` with labels or properties here. The variable is already declared in this context")
         }
 
-        builder
-          .amendUpdateGraph(ug => ug
-            .addMutatingPatterns(nodesToCreate ++ rels: _*))
+        acc
+          .amendQueryGraph(_.addMutatingPatterns(nodesToCreate ++ rels: _*))
 
       case _ => throw new CantHandleQueryException(s"$clause is not yet supported")
     }
-  }
 
   private def dedup(nodePatterns: Vector[CreateNodePattern]) = {
     val seen = mutable.Set.empty[IdName]
@@ -181,7 +179,7 @@ object ClauseConverters {
   }
 
   private def addDeleteToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Delete): PlannerQueryBuilder = {
-    acc.amendUpdateGraph(ug => ug.addMutatingPatterns(clause.expressions.map(DeleteExpression(_, clause.forced)): _*))
+    acc.amendQueryGraph(_.addMutatingPatterns(clause.expressions.map(DeleteExpression(_, clause.forced)): _*))
   }
 
   private def asReturnItems(current: QueryGraph, clause: ReturnItems): Seq[ReturnItem] =
@@ -263,17 +261,24 @@ object ClauseConverters {
     clause.pattern.patternParts.foldLeft(acc) {
       //MERGE (n :L1:L2 {prop: 42})
       case (builder, EveryPath(NodePattern(Some(id), labels, props))) =>
+        val currentlyAvailableVariables = acc.currentlyAvailableVariables
+        val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
+        val propertyPredicates = toPropertySelection(id, toPropertyMap(props))
+        val createNodePattern = CreateNodePattern(IdName.fromVariable(id), labels, props)
+
         val matchGraph = QueryGraph(
           patternNodes = Set(IdName.fromVariable(id)),
-          selections = Selections.from(labels.map(l => HasLabels(id, Seq(l))(id.position)) ++ toPropertySelection(id,
-            toPropertyMap(props)) :_*),
-          argumentIds = acc.currentlyAvailableVariables
+          selections = Selections.from(labelPredicates ++ propertyPredicates: _*),
+          argumentIds = currentlyAvailableVariables
         )
-      builder
-          .amendUpdateGraph(ug =>
-            ug.addMutatingPatterns(
-              MergeNodePattern(CreateNodePattern(IdName.fromVariable(id), labels, props),
-                matchGraph, onCreate, onMatch)))
+
+        val queryGraph = matchGraph.addMutatingPatterns(MergeNodePattern(createNodePattern, matchGraph, onCreate, onMatch))
+
+        builder
+          .withTail(
+            MergePlannerQuery(queryGraph = queryGraph))
+          .withTail(RegularPlannerQuery())
+
       //MERGE (n)-[r: R]->(m)
       case (builder, EveryPath(pattern: RelationshipChain)) =>
         val (nodes, rels) = allCreatePatterns(pattern)
@@ -310,9 +315,11 @@ object ClauseConverters {
           argumentIds = acc.currentlyAvailableVariables ++ nodesCreatedBefore.map(_.nodeName)
         )
 
+        val queryGraph = matchGraph.addMutatingPatterns(MergeRelationshipPattern(nodesToCreate, rels, matchGraph, onCreate, onMatch))
+
         builder
-          .amendUpdateGraph(ug => ug
-            .addMutatingPatterns(MergeRelationshipPattern(nodesToCreate, rels, matchGraph, onCreate, onMatch)))
+          .withTail(MergePlannerQuery(queryGraph = queryGraph))
+          .withTail(RegularPlannerQuery())
 
       case _ => throw new CantHandleQueryException("not supported yet")
     }
@@ -329,7 +336,7 @@ object ClauseConverters {
     Handles: ... WITH * [WHERE <predicate>] ...
      */
     case With(false, ri, None, None, None, where)
-      if !builder.currentQueryGraph.hasOptionalPatterns
+      if !(builder.currentQueryGraph.hasOptionalPatterns || builder.currentQueryGraph.containsUpdates)
         && ri.items.forall(item => !containsAggregate(item.expression))
         && ri.items.forall {
         case item: AliasedReturnItem => item.expression == item.variable
@@ -359,7 +366,7 @@ object ClauseConverters {
 
       builder.
         withHorizon(queryProjection).
-        withTail(PlannerQuery(QueryGraph(selections = selections)))
+        withTail(RegularPlannerQuery(QueryGraph(selections = selections)))
 
     case _ =>
       throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
@@ -403,17 +410,17 @@ object ClauseConverters {
     clause.items.foldLeft(acc) {
       // REMOVE n:Foo
       case (builder, RemoveLabelItem(variable, labelNames)) =>
-        builder.amendUpdateGraph(ug => ug.addMutatingPatterns(RemoveLabelPattern(IdName.fromVariable(variable), labelNames)))
+        builder.amendQueryGraph(_.addMutatingPatterns(RemoveLabelPattern(IdName.fromVariable(variable), labelNames)))
 
       // REMOVE n.prop
       case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey))) if acc.semanticTable.isNode(variable) =>
-        builder.amendUpdateGraph(ug => ug.addMutatingPatterns(
+        builder.amendQueryGraph(_.addMutatingPatterns(
           SetNodePropertyPattern(IdName.fromVariable(variable), propertyKey, Null()(propertyKey.position))
         ))
 
       // REMOVE rel.prop
       case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey))) if acc.semanticTable.isRelationship(variable) =>
-        builder.amendUpdateGraph(ug => ug.addMutatingPatterns(
+        builder.amendQueryGraph(_.addMutatingPatterns(
           SetRelationshipPropertyPattern(IdName.fromVariable(variable), propertyKey, Null()(propertyKey.position))
         ))
 

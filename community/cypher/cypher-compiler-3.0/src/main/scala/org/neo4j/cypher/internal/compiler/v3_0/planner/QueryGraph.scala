@@ -33,8 +33,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       selections: Selections = Selections(),
                       optionalMatches: Seq[QueryGraph] = Seq.empty,
                       hints: Set[Hint] = Set.empty,
-                      shortestPathPatterns: Set[ShortestPathPattern] = Set.empty)
-  extends PageDocFormatting { // with ToPrettyString[QueryGraph] {
+                      shortestPathPatterns: Set[ShortestPathPattern] = Set.empty,
+                      mutatingPatterns: Seq[MutatingPattern] = Seq.empty)
+  extends UpdateGraph with PageDocFormatting { // with ToPrettyString[QueryGraph] {
 //  def toDefaultPrettyString(formatter: DocFormatter) =
 //    toPrettyString(formatter)(InternalDocHandler.docGen)
 
@@ -65,6 +66,16 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       shortestPathPatterns = shortestPathPatterns + shortestPath
     )
   }
+
+  /*
+  Includes not only pattern nodes in the read part of the query graph, but also pattern nodes from CREATE and MERGE
+   */
+  def allPatternNodes: Set[IdName] =
+    patternNodes ++
+    optionalMatches.flatMap(_.allPatternNodes) ++
+    createNodePatterns.map(_.nodeName) ++
+    mergeNodePatterns.map(_.createNodePattern.nodeName) ++
+    mergeRelationshipPatterns.flatMap(_.createNodePatterns.map(_.nodeName))
 
   def addShortestPaths(shortestPaths: ShortestPathPattern*): QueryGraph = shortestPaths.foldLeft(this)((qg, p) => qg.addShortestPath(p))
   def addArgumentId(newId: IdName): QueryGraph = copy(argumentIds = argumentIds + newId)
@@ -122,9 +133,6 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] =
     patternRelationships.filter { r => r.left == id || r.right == id }
 
-  def allPatternNodes: Set[IdName] =
-    patternNodes ++ optionalMatches.flatMap(_.allPatternNodes)
-
   def allPatternRelationships: Set[PatternRelationship] =
     patternRelationships ++ optionalMatches.flatMap(_.allPatternRelationships)
 
@@ -151,7 +159,8 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       optionalMatches = optionalMatches ++ other.optionalMatches,
       argumentIds = argumentIds ++ other.argumentIds,
       hints = hints ++ other.hints,
-      shortestPathPatterns = shortestPathPatterns ++ other.shortestPathPatterns
+      shortestPathPatterns = shortestPathPatterns ++ other.shortestPathPatterns,
+      mutatingPatterns = mutatingPatterns ++ other.mutatingPatterns
     )
 
   def isCoveredBy(other: QueryGraph): Boolean = {
@@ -239,6 +248,18 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       deps(node) && (deps intersect argumentIds).nonEmpty
   }
 
+  def containsReads: Boolean = {
+    (patternNodes -- argumentIds).nonEmpty ||
+    patternRelationships.nonEmpty ||
+    selections.nonEmpty ||
+    shortestPathPatterns.nonEmpty ||
+    optionalMatches.nonEmpty
+  }
+
+  def writeOnly = !containsReads && containsUpdates
+
+  def addMutatingPatterns(patterns: MutatingPattern*): QueryGraph =
+    copy(mutatingPatterns = mutatingPatterns ++ patterns)
 
   // This is here to stop usage of copy from the outside
   private def copy(patternRelationships: Set[PatternRelationship] = patternRelationships,
@@ -247,8 +268,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                    selections: Selections = selections,
                    optionalMatches: Seq[QueryGraph] = optionalMatches,
                    hints: Set[Hint] = hints,
-                   shortestPathPatterns: Set[ShortestPathPattern] = shortestPathPatterns) =
-  QueryGraph(patternRelationships, patternNodes, argumentIds, selections, optionalMatches, hints, shortestPathPatterns)
+                   shortestPathPatterns: Set[ShortestPathPattern] = shortestPathPatterns,
+                   mutatingPatterns: Seq[MutatingPattern] = mutatingPatterns) =
+  QueryGraph(patternRelationships, patternNodes, argumentIds, selections, optionalMatches, hints, shortestPathPatterns, mutatingPatterns)
 }
 
 object QueryGraph {

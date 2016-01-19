@@ -468,4 +468,21 @@ return distinct center""")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, nodesDeleted = 2, relationshipsDeleted = 1)
   }
+
+  test("all nodes scan after unwind is handled correctly") {
+    createNode()
+    createNode()
+    createNode("prop" -> 42)
+    createNode("prop" -> 42)
+    val query = "UNWIND range(0, 1) as i MATCH (n) CREATE (m) WITH * MATCH (o) RETURN count(*) as count"
+
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesCreated = 8)
+    val unwind = 2
+    val firstMatch = 4
+    val secondMatch = 12 // The already existing 4 nodes, plus the now created 8
+    result.toList should equal(List(Map("count" -> unwind * firstMatch * secondMatch)))
+   }
+
 }

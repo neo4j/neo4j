@@ -28,14 +28,15 @@ case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
                        (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
-  private def notFoundExecutionContext: ExecutionContext = {
-    val context = ExecutionContext.empty
+  private def notFoundExecutionContext(initialContext: Option[ExecutionContext]): ExecutionContext = {
+    val context = initialContext.getOrElse(ExecutionContext.empty)
     nullableVariables.foreach(v => context += v -> null)
     context
   }
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    if (input.isEmpty) Iterator(notFoundExecutionContext) else input
+    if (input.isEmpty) Iterator(notFoundExecutionContext(state.initialContext))
+    else input
 
   def planDescriptionWithoutCardinality: InternalPlanDescription =
     new PlanDescriptionImpl(

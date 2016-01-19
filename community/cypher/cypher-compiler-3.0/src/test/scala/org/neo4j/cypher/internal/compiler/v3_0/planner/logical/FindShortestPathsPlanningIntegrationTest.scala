@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, RegularPlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Equals, Variable, Not}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -64,11 +63,11 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val result = (new given {
       cardinality = mapCardinality {
         // node label scan
-        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
         // all node scan
-        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
         // expand
-        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
         case _                             => Double.MaxValue
       }
     } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X), p = shortestPath((a)-[r]->(c)) RETURN p").plan

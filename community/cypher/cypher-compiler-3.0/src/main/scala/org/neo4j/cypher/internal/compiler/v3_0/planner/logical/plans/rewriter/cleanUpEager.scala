@@ -17,16 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
-case class Optional(inputPlan: LogicalPlan, protectedSymbols: Set[IdName] = Set.empty)
-                   (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
+case object cleanUpEager extends Rewriter {
 
-  val lhs = Some(inputPlan)
-  val rhs = None
+  private val instance: Rewriter = Rewriter.lift {
 
-  def availableSymbols = inputPlan.availableSymbols
+    // E E L => E L
+    case eager@Eager(Eager(source)) =>
+      eager.copy(inner = source)(eager.solved)
+
+    // E U => U E
+    case eager@Eager(unwind@UnwindCollection(source, _, _)) =>
+      unwind.copy(left = eager.copy(inner = source)(eager.solved))(eager.solved)
+  }
+
+  override def apply(input: AnyRef) = bottomUp(instance).apply(input)
 }

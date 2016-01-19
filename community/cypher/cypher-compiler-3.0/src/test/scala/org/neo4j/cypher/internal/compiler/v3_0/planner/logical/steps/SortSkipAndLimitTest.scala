@@ -122,7 +122,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     val qg = QueryGraph(patternNodes = Set(IdName("n")))
-    val query = PlannerQuery(queryGraph = qg, horizon = projection)
+    val query = RegularPlannerQuery(queryGraph = qg, horizon = projection)
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
@@ -130,7 +130,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     val plan =
       newMockedLogicalPlanWithSolved(Set(IdName("n")),
-        CardinalityEstimation.lift(PlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n"))), Cardinality(0))
+        CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n"))), Cardinality(0))
       )
 
     (query, context, plan)

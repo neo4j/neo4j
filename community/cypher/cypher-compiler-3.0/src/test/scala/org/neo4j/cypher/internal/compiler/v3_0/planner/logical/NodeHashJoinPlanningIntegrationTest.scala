@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.SingleQueryExpression
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, RegularPlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, LabelId, PropertyKeyId}
 
 class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -33,11 +31,11 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val result= (new given {
       cardinality = mapCardinality {
         // node label scan
-        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
         // all node scan
-        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
         // expand
-        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
         case _                             => Double.MaxValue
       }
 
@@ -70,9 +68,9 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val result = (new given {
       cardinality = mapCardinality {
         // node label scan
-        case PlannerQuery(queryGraph, _,  _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
         // all node scan
-        case PlannerQuery(queryGraph, _,  _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
+        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
         case _ => Double.MaxValue
       }
     } planFor cypherQuery).plan

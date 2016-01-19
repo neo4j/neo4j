@@ -23,10 +23,16 @@ import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_0.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
 
+/*
+ * Rewriters that live here are required to adhere to the contract of
+ * receiving a valid plan and producing a valid plan. It should be possible
+ * to disable any and all of these rewriters, and still produce correct behavior.
+ */
 case class LogicalPlanRewriter(rewriterSequencer: String => RewriterStepSequencer) extends Rewriter {
   val instance = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
     fuseSelections,
     unnestApply,
+    cleanUpEager,
     simplifyEquality,
     unnestOptional,
     predicateRemovalThroughJoins,

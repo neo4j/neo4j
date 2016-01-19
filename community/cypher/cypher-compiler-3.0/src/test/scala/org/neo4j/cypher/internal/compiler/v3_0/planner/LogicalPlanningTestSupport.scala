@@ -135,7 +135,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedLogicalPlanWithProjections(ids: String*): LogicalPlan = {
     val projections = RegularQueryProjection(projections = ids.map((id) => id -> varFor(id)).toMap)
-    FakePlan(ids.map(IdName(_)).toSet)(CardinalityEstimation.lift(PlannerQuery(
+    FakePlan(ids.map(IdName(_)).toSet)(CardinalityEstimation.lift(RegularPlannerQuery(
         horizon = projections,
         queryGraph = QueryGraph.empty.addPatternNodes(ids.map(IdName(_)): _*)
       ), Cardinality(0))
@@ -144,7 +144,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedLogicalPlan(idNames: Set[IdName], cardinality: Cardinality = Cardinality(1), hints: Set[Hint] = Set[Hint]()): LogicalPlan = {
     val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints)
-    FakePlan(idNames)(CardinalityEstimation.lift(PlannerQuery(qg), cardinality))
+    FakePlan(idNames)(CardinalityEstimation.lift(RegularPlannerQuery(qg), cardinality))
   }
 
   def newMockedLogicalPlan(ids: String*): LogicalPlan =
@@ -155,7 +155,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty): LogicalPlan = {
     val qg = QueryGraph.empty.addPatternNodes(ids.toSeq: _*).addPatternRelationships(patterns)
-    FakePlan(ids)(CardinalityEstimation.lift(PlannerQuery(qg), Cardinality(0)))
+    FakePlan(ids)(CardinalityEstimation.lift(RegularPlannerQuery(qg), Cardinality(0)))
   }
 
   def newPlanner(metricsFactory: MetricsFactory): CostBasedExecutablePlanBuilder = {
@@ -198,7 +198,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def buildPlannerQuery(query: String) = {
-    buildPlannerUnionQuery(query).queries.head
+    val queries: Seq[PlannerQuery] = buildPlannerUnionQuery(query).queries
+    queries.head
   }
 
   def buildPlannerUnionQuery(query: String) = {

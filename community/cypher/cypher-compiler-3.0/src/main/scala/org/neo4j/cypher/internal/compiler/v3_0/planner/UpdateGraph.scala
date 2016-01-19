@@ -24,13 +24,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast._
 
 import scala.annotation.tailrec
 
-case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
+trait UpdateGraph {
 
-  def ++(other: UpdateGraph) = copy(mutatingPatterns = mutatingPatterns ++ other.mutatingPatterns)
+  def mutatingPatterns: Seq[MutatingPattern]
 
-  def isEmpty = this == UpdateGraph.empty
-
-  def nonEmpty = !isEmpty
+  def readOnly = mutatingPatterns.isEmpty
+  def containsUpdates = !readOnly
 
   //def allAvailableVariables: Set[IdName] =
     //  createNodePatterns.map(_.)
@@ -101,8 +100,8 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   /*
    * finds all label names being removed on given node, REMOVE a:L
    */
-  def labelsToRemoveForNode(idName: IdName): Set[LabelName] = removeLabelPatterns.collect {
-    case RemoveLabelPattern(n, labels) if n == idName => labels
+  def labelsToRemoveFromOtherNodes(idName: IdName): Set[LabelName] = removeLabelPatterns.collect {
+    case RemoveLabelPattern(n, labels) if n != idName => labels
   }.flatten.toSet
 
   /*
@@ -128,10 +127,12 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
    * and what is being written here
    */
   def overlaps(qg: QueryGraph) =
-      nonEmpty &&
+      containsUpdates &&
       (createNodeOverlap(qg) || relationshipOverlap(qg) ||
         deleteOverlap(qg) || removeLabelOverlap(qg) || setLabelOverlap(qg) || setPropertyOverlap(qg)
-        || mergeDeleteOverlap)
+        || deleteOverlapWithMergeIn(this))
+
+  def overlapsXXX(ug: UpdateGraph) = deleteOverlapWithMergeIn(ug)
 
   /*
    * Checks for overlap between nodes being read in the query graph
@@ -157,7 +158,8 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   }
 
   //if we do match delete and merge we always need to be eager
-  def mergeDeleteOverlap = deleteExpressions.nonEmpty && (mergeNodePatterns.nonEmpty || mergeRelationshipPatterns.nonEmpty)
+  def deleteOverlapWithMergeIn(other: UpdateGraph) =
+    deleteExpressions.nonEmpty && (other.mergeNodePatterns.nonEmpty || other.mergeRelationshipPatterns.nonEmpty)
 
   /*
    * Checks for overlap between rels being read in the query graph
@@ -226,9 +228,6 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     val identifiersToRead = qg.patternNodes ++ qg.patternRelationships.map(_.name) ++ qg.argumentIds
     (identifiersToRead intersect identifiersToDelete).nonEmpty
   }
-
-  def addMutatingPatterns(patterns: MutatingPattern *) =
-    copy(mutatingPatterns = this.mutatingPatterns ++ patterns)
 
   private def removeLabelOverlap(qg: QueryGraph) = {
     removeLabelPatterns.exists {
@@ -321,13 +320,4 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     case p: SetNodePropertyPattern => p
     case p: SetNodePropertiesFromMapPattern => p
   }
-
-  private def setRelationshipPropertyPatterns = mutatingPatterns.collect {
-    case p: SetRelationshipPropertyPattern => p
-    case p: SetRelationshipPropertiesFromMapPattern => p
-  }
-}
-
-object UpdateGraph {
-  val empty = UpdateGraph()
 }
