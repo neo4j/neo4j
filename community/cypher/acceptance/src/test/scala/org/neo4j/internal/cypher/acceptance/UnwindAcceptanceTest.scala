@@ -19,11 +19,11 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.{QueryStatisticsTestSupport, ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.Node
 
 
-class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with QueryStatisticsTestSupport {
 
   test("unwind collection returns individual values") {
 
@@ -149,5 +149,17 @@ class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSu
         Map("X" -> 2, "Y" -> 4, "Z" -> 5, "ZS" -> List(5, 6), "YS" -> List(3, 4), "XS" -> List(1, 2)),
         Map("X" -> 2, "Y" -> 4, "Z" -> 6, "ZS" -> List(5, 6), "YS" -> List(3, 4), "XS" -> List(1, 2)))
     )
+  }
+
+  test("unwind should work with merge in GH#6057") {
+    val query = "UNWIND {props} as prop MERGE (p:Person {login: prop.login}) SET p.name = prop.name RETURN p.name, p.login"
+    val params = "props" -> Seq( Map("login" -> "login1", "name" -> "name1"),
+                                 Map("login" -> "login2", "name" -> "name2"))
+
+    val result = updateWithBothPlanners(query, params)
+
+    assertStats(result, nodesCreated = 2, propertiesWritten = 4, labelsAdded = 2)
+    result.toList should equal(List(Map("p.name" -> "name1", "p.login" -> "login1"),
+                                    Map("p.name" -> "name2", "p.login" -> "login2")))
   }
 }
