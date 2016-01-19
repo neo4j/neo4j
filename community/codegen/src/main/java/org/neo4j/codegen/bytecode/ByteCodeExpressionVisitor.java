@@ -123,7 +123,54 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     @Override
     public void constant( Object value )
     {
-        methodVisitor.visitLdcInsn( value );
+        if ( value == null )
+        {
+            methodVisitor.visitInsn( ACONST_NULL );
+        }
+        else if ( value instanceof Integer )
+        {
+            pushInteger( (Integer) value );
+           // methodVisitor
+             //       .visitMethodInsn( INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false );
+        }
+        else if ( value instanceof Byte )
+        {
+            pushInteger( (Byte) value );
+       //     methodVisitor
+         //           .visitMethodInsn( INVOKESTATIC, "java/lang/Byte", "valueOf", "(B)Ljava/lang/Byte;", false );
+        }
+        else if ( value instanceof Short )
+        {
+            pushInteger( (Short) value );
+            //methodVisitor
+              //      .visitMethodInsn( INVOKESTATIC, "java/lang/Short", "valueOf", "(S)Ljava/lang/Short;", false );
+        }
+        else if ( value instanceof Long )
+        {
+            methodVisitor.visitLdcInsn( value );
+            //methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false );
+        }
+        else if ( value instanceof Double )
+        {
+            methodVisitor.visitLdcInsn( value );
+         //   methodVisitor
+           //         .visitMethodInsn( INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false );
+        }
+        else if ( value instanceof Float )
+        {
+            methodVisitor.visitLdcInsn( value );
+           // methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false );
+        }
+        else if ( value instanceof Boolean )
+        {
+            boolean b = (boolean) value;
+            methodVisitor.visitInsn( b ? ICONST_1 : ICONST_0 );
+         //   methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false );
+        }
+        else
+        {
+            methodVisitor.visitLdcInsn( value );
+        }
     }
 
     @Override

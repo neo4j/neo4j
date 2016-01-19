@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.compiler.v3_1.codegen.{Variable, CodeGenContext
 
 // Generates the code that moves data into local variables from the iterator being consumed
 trait LoopDataGenerator {
+
+  def hasNext[E](generator: MethodStructure[E], iterVar: String): E
+
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
   def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext): Unit

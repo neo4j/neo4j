@@ -20,6 +20,7 @@
 package org.neo4j.codegen;
 
 import java.util.Collections;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -34,21 +35,25 @@ import java.util.stream.Collectors;
 public class TryBlock extends CodeBlock
 {
     private final Resource[] resources;
-    private final State tryState = newState( null );
+    private final State tryState = State.empty();
     private final List<CatchState> catchStates = new LinkedList<>();
     private State finallyState = null;
-
     private State currentState = tryState;
 
     TryBlock( CodeBlock parent, Resource... resources )
     {
         super( parent );
+        for ( Resource resource : resources )
+        {
+            localVariables.createNew( resource.type(), resource.name() );
+        }
         this.resources = resources;
     }
 
     public CodeBlock catchBlock(Parameter exception)
     {
         CatchState catchState = new CatchState( exception, currentState );
+        localVariables.createNew( exception.type(), exception.name() );
         this.currentState = catchState;
         catchStates.add( catchState );
         return this;
@@ -60,7 +65,7 @@ public class TryBlock extends CodeBlock
         {
             throw new IllegalStateException( "Cannot have more than one finally block" );
         }
-        finallyState = newState( currentState );
+        finallyState = new State(currentState);
         currentState = finallyState;
         return this;
     }
@@ -74,14 +79,42 @@ public class TryBlock extends CodeBlock
     @Override
     public void close()
     {
+        currentState.close();
         State nextState = currentState.nextState();
         if ( nextState == null )
         {
-            super.emit( ( e ) -> e.tryCatchBlock( tryActions(), catchClauses(), finallyActions(), localVariables, resources ) );
+            createTryCatchFinallyBlock();
             super.close();
         }
         currentState = nextState;
+    }
 
+    protected void createTryCatchFinallyBlock()
+    {
+        super.emit( ( e ) -> e.tryCatchBlock( tryActions(), catchClauses(), finallyActions(),
+                localVariables, resources ) );
+    }
+
+    @Override
+    public CodeBlock ifStatement( Expression test )
+    {
+        emit( e -> e.beginIf( test ) );
+        currentState.innerBlock( () -> emit( MethodEmitter::endBlock ) );
+        return this;
+    }
+
+    @Override
+    public CodeBlock whileLoop( Expression test )
+    {
+        emit( e -> e.beginWhile( test ) );
+        currentState.innerBlock( () -> emit( MethodEmitter::endBlock ) );
+        return this;
+    }
+
+    @Override
+    public TryBlock tryBlock( Resource... resources )
+    {
+        return new NestedTryBlock( this, resources );
     }
 
     @Override
@@ -90,94 +123,112 @@ public class TryBlock extends CodeBlock
         //do nothing
     }
 
-    private List<Consumer<MethodEmitter>> tryActions()
+    protected List<Consumer<MethodEmitter>> tryActions()
     {
         return tryState.actions();
     }
 
-    private List<CatchClause> catchClauses()
+    protected List<CatchClause> catchClauses()
     {
-        return catchStates.stream().map( c -> new CatchClause( c.exception, c.actions) )
+        return catchStates.stream().map( c -> new CatchClause( c.exception, c.actions()) )
                 .collect( Collectors.toList() );
     }
 
-    private List<Consumer<MethodEmitter>> finallyActions()
+    protected List<Consumer<MethodEmitter>> finallyActions()
     {
         return finallyState == null ? Collections.emptyList() : finallyState.actions();
     }
 
-    /**
-     * A Try block can be in different states depending on if we're in try, catch or finally.
-     * When nextState returns <tt>null</tt> it means we have no more blocks left and should close
-     * the underlying code block.
-     */
-    private interface State
+    private static class State
     {
-
-        void addAction( Consumer<MethodEmitter> action );
-
-        List<Consumer<MethodEmitter>> actions();
-
-        State nextState();
-    }
-
-    /**
-     * Catch states are special states that stores what kind of exception we are catching.
-     */
-    private static class CatchState implements State
-    {
-
-        private final List<Consumer<MethodEmitter>> actions = new LinkedList<>();
-        private final Parameter exception;
-        private final State parent;
-
-        CatchState( Parameter exception, State parent )
+        private final Deque<State> stack = new LinkedList<>();
+        private final Deque<Runnable> closeActions = new LinkedList<>();
+        static State empty()
         {
-            this.exception = exception;
-            this.parent = parent;
+            return new State(null);
         }
 
-        @Override
+        static State from(State parent)
+        {
+            return new State(parent);
+        }
+
+        private State( State parent )
+        {
+            if ( parent != null )
+            {
+                stack.push( parent );
+            }
+        }
+
+        private final List<Consumer<MethodEmitter>> actions = new LinkedList<>();
+
         public void addAction( Consumer<MethodEmitter> action )
         {
             actions.add( action );
         }
 
-        @Override
         public List<Consumer<MethodEmitter>> actions()
         {
             return actions;
         }
 
-        @Override
         public State nextState()
         {
-            return parent;
+            return stack.isEmpty() ? null : stack.pop();
+        }
+
+        public void innerBlock( Runnable... onCloseActions)
+        {
+            stack.push( this );
+            for ( Runnable action : onCloseActions )
+            {
+                closeActions.push(action);
+            }
+        }
+
+        public void close()
+        {
+            if ( !closeActions.isEmpty() )
+            {
+                closeActions.pop().run();
+            }
+          }
+    }
+
+    /**
+     * Catch states are special states that stores what kind of exception we are catching.
+     */
+    private static class CatchState extends State
+    {
+
+        private final Parameter exception;
+
+        CatchState( Parameter exception, State parent )
+        {
+            super(parent);
+            this.exception = exception;
         }
     }
-    private State newState( State parent )
-    {
-        return new State()
+
+    private class NestedTryBlock extends TryBlock {
+
+        NestedTryBlock( CodeBlock parent, Resource... resources )
         {
-            private final List<Consumer<MethodEmitter>> actions = new LinkedList<>();
+            super( parent, resources );
+        }
 
-            @Override
-            public void addAction( Consumer<MethodEmitter> action )
-            {
-                actions.add( action );
-            }
+//        @Override
+//        protected void emit( Consumer<MethodEmitter> emitFunction )
+//        {
+//            currentState.addAction( emitFunction );
+//        }
 
-            @Override
-            public List<Consumer<MethodEmitter>> actions()
-            {
-                return actions;
-            }
-
-            @Override
-            public State nextState()
-            {
-                return parent;
-            }
-        };
+        @Override
+        protected void createTryCatchFinallyBlock()
+        {
+            currentState.addAction( ( e ) -> e.tryCatchBlock( tryActions(), catchClauses(), finallyActions(),
+                    localVariables, resources ) );
+        }
     }
 }

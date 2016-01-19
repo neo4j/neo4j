@@ -115,7 +115,8 @@ trait MethodStructure[E] {
   def nextNode(targetVar: String, iterVar: String): Unit
   def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection, fromNodeVar: String, relVar: String): Unit
   def nextRelationship(iterVar: String, direction: SemanticDirection, relVar: String): Unit
-  def hasNext(iterVar: String): E
+  def hasNextNode(iterVar: String): E
+  def hasNextRelationship(iterVar: String): E
   def nodeGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
   def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
   def relationshipGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit

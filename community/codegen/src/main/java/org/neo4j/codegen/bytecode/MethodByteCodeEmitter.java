@@ -240,14 +240,15 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
                     Expression.invoke( Expression.load( variable ), close ) ) );
         }
 
-        if ( !catchClauses.isEmpty() )
-        {
-           tryCatchFinally( body, catchClauses, updatedFinalClauses, localVariables );
-        }
-        else
-        {
-            tryFinally( body, updatedFinalClauses, localVariables );
-        }
+        tryCatchFinally( body, catchClauses, updatedFinalClauses, localVariables );
+//        if ( !catchClauses.isEmpty() )
+//        {
+//           tryCatchFinally( body, catchClauses, updatedFinalClauses, localVariables );
+//        }
+//        else
+//        {
+//            tryFinally( body, updatedFinalClauses, localVariables );
+//        }
     }
 
     /*

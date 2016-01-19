@@ -119,5 +119,5 @@ object CodeGenerator {
     }
   }
 
-  private val packageName = "org.neo4j.cypher.internal.compiler.v3_0.generated"
+  private val packageName = "org.neo4j.cypher.internal.compiler.v3_1.generated"
 }

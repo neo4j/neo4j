@@ -50,6 +50,6 @@ object Namer {
   def apply(): Namer = new Namer(classNameCounter)
 
   def newClassName() = {
-    s"GeneratedExecutionPlan${classNameCounter.incrementAndGet()}"
+    s"GeneratedExecutionPlan${System.nanoTime()}"
   }
 }

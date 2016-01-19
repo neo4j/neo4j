@@ -179,6 +179,7 @@ public class CodeBlock implements AutoCloseable
         return new CodeBlock( this );
     }
 
+
     public TryBlock tryBlock( Class<?> resourceType, String resourceName, Expression resource )
     {
         return tryBlock( withResource( resourceType, resourceName, resource ) );

@@ -52,6 +52,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -524,6 +525,51 @@ public class CodeGenerationTest
     }
 
     @Test
+    public void shouldGenerateNestedWhileLoop() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock callEach = simple.generateMethod( void.class, "callEach",
+                    param( TypeReference.parameterizedType( Iterator.class, Runnable.class ), "targets" ) ) )
+            {
+                try ( CodeBlock loop = callEach.whileLoop( invoke( callEach.load( "targets" ),
+                        methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
+                {
+                    try ( CodeBlock inner = loop.whileLoop( invoke( callEach.load( "targets" ),
+                            methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
+                    {
+
+
+                        inner.expression( invoke(
+                                Expression.cast( Runnable.class,
+                                        invoke( callEach.load( "targets" ),
+                                                methodReference( Iterator.class, Object.class, "next" ) ) ),
+                                methodReference( Runnable.class, void.class, "run" ) ) );
+                    }
+                }
+            }
+
+            handle = simple.handle();
+        }
+        Runnable a = mock( Runnable.class );
+        Runnable b = mock( Runnable.class );
+        Runnable c = mock( Runnable.class );
+
+        // when
+        MethodHandle callEach = instanceMethod( handle.newInstance(), "callEach", Iterator.class );
+        callEach.invoke( Arrays.asList( a, b, c ).iterator() );
+
+        // then
+        InOrder order = inOrder( a, b, c );
+        order.verify( a ).run();
+        order.verify( b ).run();
+        order.verify( c ).run();
+        verifyNoMoreInteractions( a, b, c );
+    }
+
+    @Test
     public void shouldGenerateForEachLoop() throws Throwable
     {
         // given
@@ -591,6 +637,204 @@ public class CodeGenerationTest
         verify( runner1 ).run();
         verifyZeroInteractions( runner2 );
     }
+
+    @Test
+    public void shouldGenerateIfNotStatement() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
+                    param( boolean.class, "test" ), param( Runnable.class, "runner" ) ) )
+            {
+                try ( CodeBlock doStuff = conditional.ifStatement( not(conditional.load( "test" )) ) )
+                {
+                    doStuff.expression(
+                            invoke( doStuff.load( "runner" ), RUN ) );
+                }
+            }
+
+            handle = simple.handle();
+        }
+
+        Runnable runner1 = mock( Runnable.class );
+        Runnable runner2 = mock( Runnable.class );
+
+        // when
+        MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", boolean.class, Runnable.class );
+        conditional.invoke( true, runner1 );
+        conditional.invoke( false, runner2 );
+
+        // then
+        verify( runner2 ).run();
+        verifyZeroInteractions( runner1 );
+    }
+
+    @Test
+    public void shouldGenerateTryWithNestedWhileIfLoop() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock callEach = simple.generateMethod( void.class, "callEach",
+                    param( TypeReference.parameterizedType( Iterator.class, Runnable.class ), "targets" ),
+                    param( boolean.class, "test" ),
+                    param( Runnable.class, "runner" ) ) )
+            {
+                try ( TryBlock tryBlock = callEach.tryBlock() )
+                {
+
+                    try ( CodeBlock loop = tryBlock.whileLoop( invoke( callEach.load( "targets" ),
+                            methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
+                    {
+
+                        try ( CodeBlock doStuff = loop.ifStatement( not( callEach.load( "test" ) ) ) )
+                        {
+                            doStuff.expression(
+                                    invoke( doStuff.load( "runner" ), RUN ) );
+                        }
+                        loop.expression( invoke(
+                                Expression.cast( Runnable.class,
+                                        invoke( callEach.load( "targets" ),
+                                                methodReference( Iterator.class, Object.class, "next" ) ) ),
+                                methodReference( Runnable.class, void.class, "run" ) ) );
+
+                    }
+
+                    try (CodeBlock finallyBlock = tryBlock.finallyBlock()) {
+                        finallyBlock.expression(
+                                invoke( finallyBlock.load( "runner" ), RUN ) );
+                    }
+                }
+            }
+
+            handle = simple.handle();
+        }
+        Runnable a = mock( Runnable.class );
+        Runnable b = mock( Runnable.class );
+        Runnable c = mock( Runnable.class );
+
+        Runnable runner1 = mock( Runnable.class );
+        Runnable runner2 = mock( Runnable.class );
+        // when
+        MethodHandle callEach =
+                instanceMethod( handle.newInstance(), "callEach", Iterator.class, boolean.class, Runnable.class );
+
+        callEach.invoke( Arrays.asList( a, b, c ).iterator(), false, runner1 );
+        callEach.invoke( Arrays.asList( a, b, c ).iterator(), true, runner2 );
+
+        // then
+        verify( runner1, times(4) ).run();
+        verify( runner2, times(1) ).run();
+    }
+
+    @Test
+    public void shouldGenerateNestedTryBlock() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock body = simple.generateMethod( void.class, "nested",
+                    param( Runnable.class, "body" ),
+                    param( Runnable.class, "always" ),
+                    param( Runnable.class, "onError" ) ) )
+            {
+                try ( TryBlock tryBlock = body.tryBlock() )
+                {
+
+                    try ( TryBlock innerBlock = tryBlock.tryBlock() )
+                    {
+                        innerBlock.expression(
+                                invoke( innerBlock.load( "body" ), RUN ) );
+
+
+                        try ( CodeBlock innerCatch = innerBlock.catchBlock( param( RuntimeException.class, "E" ) ) )
+                        {
+                            innerCatch.expression(
+                                    invoke( innerCatch.load( "onError" ), RUN ) );
+                        }
+                    }
+
+                    try ( CodeBlock finallyBlock = tryBlock.finallyBlock() )
+                    {
+                        finallyBlock.expression(
+                                invoke( finallyBlock.load( "always" ), RUN ) );
+                    }
+                }
+            }
+
+            handle = simple.handle();
+        }
+        Runnable a = mock( Runnable.class );
+        Runnable b = mock( Runnable.class );
+        Runnable c = mock( Runnable.class );
+
+        doThrow( IllegalArgumentException.class ).when( a ).run();
+
+        // when
+        MethodHandle nested =
+                instanceMethod( handle.newInstance(), "nested", Runnable.class, Runnable.class, Runnable.class );
+
+        nested.invoke( a, b, c );
+
+        // then
+        verify( a, times( 1 ) ).run();
+        verify( b, times( 1 ) ).run();
+        verify( c, times( 1 ) ).run();
+    }
+
+    @Test
+    public void shouldGenerateWhileWithNestedIfLoop() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock callEach = simple.generateMethod( void.class, "callEach",
+                    param( TypeReference.parameterizedType( Iterator.class, Runnable.class ), "targets" ),
+                    param( boolean.class, "test" ),
+                    param( Runnable.class, "runner" ) ) )
+            {
+                try ( CodeBlock loop = callEach.whileLoop( invoke( callEach.load( "targets" ),
+                        methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
+                {
+                    try ( CodeBlock doStuff = loop.ifStatement( not( callEach.load( "test" ) ) ) )
+                    {
+                        doStuff.expression(
+                                invoke( doStuff.load( "runner" ), RUN ) );
+                    }
+                    loop.expression( invoke(
+                            Expression.cast( Runnable.class,
+                                    invoke( callEach.load( "targets" ),
+                                            methodReference( Iterator.class, Object.class, "next" ) ) ),
+                            methodReference( Runnable.class, void.class, "run" ) ) );
+                }
+            }
+
+            handle = simple.handle();
+        }
+        Runnable a = mock( Runnable.class );
+        Runnable b = mock( Runnable.class );
+        Runnable c = mock( Runnable.class );
+
+        Runnable runner1 = mock( Runnable.class );
+        Runnable runner2 = mock( Runnable.class );
+        // when
+        MethodHandle callEach =
+                instanceMethod( handle.newInstance(), "callEach", Iterator.class, boolean.class, Runnable.class );
+
+        callEach.invoke( Arrays.asList( a, b, c ).iterator(), false, runner1 );
+        callEach.invoke( Arrays.asList( a, b, c ).iterator(), true, runner2 );
+
+        // then
+        verify( runner1, times(3) ).run();
+        verify( runner2, never() ).run();
+
+    }
+
 
     @Test
     public void shouldGenerateOr() throws Throwable
@@ -923,10 +1167,7 @@ public class CodeGenerationTest
             ranOnFalse = true;
             return "on false";
         }
-
-
     }
-
 
     public static class ResourceFactory
     {
@@ -954,6 +1195,7 @@ public class CodeGenerationTest
             try ( CodeBlock arm = simple.generate( MethodDeclaration.method( void.class, "arm",
                     param( ResourceFactory.class, "factory" ) ).throwsException( Exception.class ) ) )
             {
+
                 try ( CodeBlock block = arm.tryBlock( AutoCloseable.class, "resource", invoke(
                         arm.load( "factory" ), methodReference(
                                 ResourceFactory.class, AutoCloseable.class, "resource" ) ) ) )
@@ -1021,6 +1263,45 @@ public class CodeGenerationTest
     }
 
     @Test
+    public void shouldGenerateTryCatchWithNestedBlock() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock run = simple.generateMethod( void.class, "run",
+                    param( Runnable.class, "body" ),
+                    param( Runnable.class, "catcher" ),
+                    param( boolean.class, "test" )) )
+            {
+                try ( TryBlock tryBlock = run.tryBlock() )
+                {
+                    try (CodeBlock ifBlock = tryBlock.ifStatement( run.load( "test" ) ))
+                    {
+                        ifBlock.expression( invoke( run.load( "body" ), RUN ) );
+                    }
+                    try ( CodeBlock catchBlock = tryBlock.catchBlock(param(RuntimeException.class, "E")) )
+                    {
+                        catchBlock.expression( invoke( run.load( "catcher" ), RUN ) );
+                    }
+                }
+            }
+            handle = simple.handle();
+        }
+
+        // when
+        Runnable runnable = mock( Runnable.class );
+        MethodHandle run = instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class, boolean.class );
+
+
+        // then
+        run.invoke( runnable, mock(Runnable.class), false );
+        verify( runnable, never() ).run();
+        run.invoke( runnable, mock(Runnable.class), true );
+        verify( runnable ).run();
+    }
+
+    @Test
     public void shouldGenerateTryAndMultipleCatch() throws Throwable
     {
         // given
@@ -1074,6 +1355,49 @@ public class CodeGenerationTest
 
     @Test
     public void shouldGenerateTryFinally() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock run = simple.generateMethod( void.class, "run",
+                    param( Runnable.class, "body" ),
+                    param( Runnable.class, "finalize" ) ) )
+            {
+                try ( TryBlock tryBlock = run.tryBlock() )
+                {
+                    tryBlock.expression( invoke( run.load( "body" ), RUN ) );
+                    try ( CodeBlock finallyBlock = tryBlock.finallyBlock() )
+                    {
+                        finallyBlock.expression( invoke( run.load( "finalize" ), RUN ) );
+                    }
+                }
+            }
+            handle = simple.handle();
+        }
+
+        // when
+        Runnable body = mock( Runnable.class ), finalize = mock( Runnable.class );
+        RuntimeException theFailure = new RuntimeException();
+        doThrow( theFailure ).when( body ).run();
+        MethodHandle run = instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class );
+        try
+        {
+            run.invoke( body, finalize );
+            fail( "expected exception" );
+        }
+        // then
+        catch ( RuntimeException e )
+        {
+            assertSame( theFailure, e );
+        }
+        InOrder order = inOrder( body, finalize );
+        order.verify( body ).run();
+        order.verify( finalize ).run();
+    }
+
+    @Test
+    public void shouldGenerateTryFinally2() throws Throwable
     {
         // given
         ClassHandle handle;

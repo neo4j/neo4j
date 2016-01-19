@@ -44,4 +44,6 @@ case class ExpandAllLoopDataGenerator(opName: String, fromVar: Variable, dir: Se
   override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
                              (implicit context: CodeGenContext) =
     generator.nextRelationshipAndNode(toVar.name, iterVar, dir, fromVar.name, relVar.name)
+
+  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.hasNextRelationship(iterVar)
 }

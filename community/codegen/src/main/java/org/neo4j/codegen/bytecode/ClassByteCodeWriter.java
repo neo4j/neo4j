@@ -78,7 +78,7 @@ class ClassByteCodeWriter implements ClassEmitter, Opcodes
     public void field( FieldReference field, Expression value )
     {
         //keep track of all static field->value, and initiate in <clinit> in done
-        if ( Modifier.isStatic( field.modifiers() ) )
+        if ( Modifier.isStatic( field.modifiers() ) && value != null )
         {
             staticFields.put( field, value );
         }
@@ -99,7 +99,8 @@ class ClassByteCodeWriter implements ClassEmitter, Opcodes
             for ( Map.Entry<FieldReference,Expression> entry : staticFields.entrySet() )
             {
                 FieldReference field = entry.getKey();
-                entry.getValue().accept( expressionVisitor );
+                Expression value = entry.getValue();
+                value.accept( expressionVisitor );
                 methodVisitor.visitFieldInsn( PUTSTATIC, byteCodeName( field.owner() ),
                         field.name(), typeName( field.type() ) );
             }

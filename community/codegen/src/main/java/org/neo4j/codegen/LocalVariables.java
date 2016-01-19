@@ -21,6 +21,7 @@ package org.neo4j.codegen;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -44,7 +45,12 @@ public class LocalVariables
 
     public LocalVariable get( String name )
     {
-        return localVariables.get( name );
+        LocalVariable localVariable = localVariables.get( name );
+        if (localVariable == null)
+        {
+            throw new NoSuchElementException( "No variable " + name + " in scope" );
+        }
+        return localVariable;
     }
 
     public static LocalVariables copy( LocalVariables original )

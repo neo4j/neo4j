@@ -41,6 +41,5 @@ public class While implements Block
     {
         methodVisitor.visitJumpInsn( GOTO, l0 );
         methodVisitor.visitLabel( l1 );
-        methodVisitor.visitFrame( F_SAME, 0, null, 0, null );
     }
 }
