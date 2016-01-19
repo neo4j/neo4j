@@ -53,6 +53,7 @@ public class StatePersister<STATE>
         this.marshal = marshal;
         this.currentStoreFile = currentStoreFile;
         this.currentStoreChannel = new PhysicalFlushableChannel( fileSystemAbstraction.open( currentStoreFile, "rw" ) );
+        initialiseStoreFile( currentStoreFile );
         this.databaseHealthSupplier = databaseHealthSupplier;
     }
 
@@ -98,9 +99,13 @@ public class StatePersister<STATE>
     {
         if ( fileSystemAbstraction.fileExists( nextStore ) )
         {
-            fileSystemAbstraction.deleteFile( nextStore );
+            fileSystemAbstraction.truncate( nextStore, 0 );
+            return new PhysicalFlushableChannel( fileSystemAbstraction.open( nextStore, "rw" ) );
         }
-        return new PhysicalFlushableChannel( fileSystemAbstraction.create( nextStore ) );
+        else
+        {
+            return new PhysicalFlushableChannel( fileSystemAbstraction.create( nextStore ) );
+        }
     }
 
     public synchronized void close() throws IOException
