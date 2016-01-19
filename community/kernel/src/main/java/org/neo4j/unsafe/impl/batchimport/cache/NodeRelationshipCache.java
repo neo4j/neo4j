@@ -34,13 +34,20 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
     private LongArray array;
     private final int denseNodeThreshold;
     private final RelGroupCache relGroupCache;
+    private final long base;
 
     public NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold )
+    {
+        this( arrayFactory, denseNodeThreshold, 0 );
+    }
+
+    NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold, long base )
     {
         int chunkSize = 1_000_000;
         this.array = arrayFactory.newDynamicLongArray( chunkSize, IdFieldManipulator.emptyField() );
         this.denseNodeThreshold = denseNodeThreshold;
-        this.relGroupCache = new RelGroupCache( arrayFactory, chunkSize );
+        this.base = base;
+        this.relGroupCache = new RelGroupCache( arrayFactory, chunkSize, base );
     }
 
     /**
@@ -190,13 +197,17 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         private static final int INDEX_IN = 2;
         private static final int INDEX_LOOP = 3;
 
+        // Used for testing high id values. Should always be zero in production
+        private long base;
         private LongArray array;
-        private final AtomicLong nextFreeId = new AtomicLong();
+        private final AtomicLong nextFreeId;
 
-        RelGroupCache( NumberArrayFactory arrayFactory, long chunkSize )
+        RelGroupCache( NumberArrayFactory arrayFactory, long chunkSize, long base )
         {
+            this.base = base;
             assert chunkSize > 0;
             this.array = arrayFactory.newDynamicLongArray( chunkSize, -1 );
+            this.nextFreeId = new AtomicLong( base );
         }
 
         private void clearRelationships()
@@ -213,7 +224,15 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         private void clearRelationshipId( long relGroupIndex, int fieldIndex )
         {
             long index = index( relGroupIndex, fieldIndex );
-            array.set( index, IdFieldManipulator.cleanId( array.get( index ) ) );
+            array.set( rebase( index ), IdFieldManipulator.cleanId( array.get( index ) ) );
+        }
+
+        /**
+         * Compensate for test value of index (to avoid allocating all your RAM)
+         */
+        private long rebase( long index )
+        {
+            return index - base;
         }
 
         private long nextFreeId()
@@ -268,7 +287,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 
         private long index( long relGroupIndex, int fieldIndex )
         {
-            return relGroupIndex*ENTRY_SIZE + fieldIndex;
+            return rebase( relGroupIndex ) * ENTRY_SIZE + fieldIndex;
         }
 
         public long allocate( int type, Direction direction, long relId, boolean incrementCount )
