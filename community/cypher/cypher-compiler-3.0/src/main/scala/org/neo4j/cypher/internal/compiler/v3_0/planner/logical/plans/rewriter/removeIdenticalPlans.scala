@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
+import org.neo4j.cypher.internal.frontend.v3_0.bottomUp.BottomUpRewriter
 import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 
@@ -32,18 +33,13 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 case object removeIdenticalPlans extends Rewriter {
 
   def apply(input: AnyRef) = {
-    val rewrite = findDuplicates(input)
+    var seenPlans = IdentitySet.empty[LogicalPlan]
 
-    bottomUp(Rewriter.lift {
-      case plan: LogicalPlan if rewrite(plan) => plan.copyPlan()
-    }).apply(input)
+    val rewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
+      case plan: LogicalPlan if seenPlans(plan) => plan.copyPlan()
+      case plan: LogicalPlan => seenPlans = seenPlans + plan ; plan
+    })
+
+    rewriter.apply(input)
   }
-
-  private def findDuplicates(input: AnyRef) =
-    input.treeFold((IdentitySet.empty[LogicalPlan], IdentitySet.empty[LogicalPlan])) {
-      case plan: LogicalPlan =>
-        (acc, children) =>
-          val (seen, duplicates) = acc
-          if (seen(plan)) children((seen, duplicates + plan)) else children((seen + plan, duplicates))
-    }._2
 }
