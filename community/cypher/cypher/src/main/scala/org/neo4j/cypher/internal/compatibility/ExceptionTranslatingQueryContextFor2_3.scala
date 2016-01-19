@@ -142,8 +142,8 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
   override def getRelTypeName(id: Int) =
     translateException(super.getRelTypeName(id))
 
-  override def uniqueIndexSeek(index: IndexDescriptor, value: Any) =
-    translateException(super.uniqueIndexSeek(index, value))
+  override def lockingExactUniqueIndexSearch(index: IndexDescriptor, value: Any) =
+    translateException(super.lockingExactUniqueIndexSearch(index, value))
 
   override def commitAndRestartTx() =
     translateException(super.commitAndRestartTx())
@@ -206,3 +206,4 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
     case e : KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)
   }
 }
+
