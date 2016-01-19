@@ -42,19 +42,38 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
  */
 public class SequenceLock
 {
-    // Bits for counting concurrent write-locks. We use 17 bits because our pages are most likely 8192 bytes, and
-    // 2^17 = 131.072, which is far more than our page size, so makes it highly unlikely that we are going to overflow
-    // our concurrent write lock counter. Meanwhile, it's also small enough that we have a very large (2^46) number
-    // space for our sequence.
+    /*
+     * Bits for counting concurrent write-locks. We use 17 bits because our pages are most likely 8192 bytes, and
+     * 2^17 = 131.072, which is far more than our page size, so makes it highly unlikely that we are going to overflow
+     * our concurrent write lock counter. Meanwhile, it's also small enough that we have a very large (2^45) number
+     * space for our sequence. This one value controls the layout of the lock bit-state. The rest of the layout is
+     * derived from this.
+     *
+     * With 17 writer count bits, the layout looks like this:
+     *
+     * ┏━ Freeze lock bit
+     * ┃┏━ Exclusive lock bit
+     * ┃┃    ┏━ Count of currently concurrently held write locks, 17 bits.
+     * ┃┃    ┃                  ┏━ 45 bits for the read lock sequence, incremented on write & exclusive unlock.
+     * ┃┃┏━━━┻━━━━━━━━━━━━━┓┏━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+     * FEWWWWWW WWWWWWWW WWWSSSSS SSSSSSSS SSSSSSSS SSSSSSSS SSSSSSSS SSSSSSSS
+     * 1        2        3        4        5        6        7        8        byte
+     */
     private static final long CNT_BITS = 17;
 
     private static final long BITS_IN_LONG = 64;
-    private static final long SEQ_BITS = BITS_IN_LONG - 1 - CNT_BITS;
+    private static final long EXL_LOCK_BITS = 1;
+    private static final long FRZ_LOCK_BITS = 1;
+    private static final long SEQ_BITS = BITS_IN_LONG - FRZ_LOCK_BITS - EXL_LOCK_BITS - CNT_BITS;
     private static final long CNT_UNIT = 1L << SEQ_BITS;
     private static final long SEQ_MASK = CNT_UNIT - 1L;
     private static final long SEQ_IMSK = ~SEQ_MASK;
     private static final long CNT_MASK = ((1L << CNT_BITS) - 1L) << SEQ_BITS;
-    private static final long EXCL_MASK = (1L << CNT_BITS + SEQ_BITS);
+    private static final long EXL_MASK = (1L << CNT_BITS + SEQ_BITS);
+    private static final long FRZ_MASK = (1L << CNT_BITS + SEQ_BITS + 1L);
+    private static final long FRZ_IMSK = ~FRZ_MASK;
+    private static final long FAE_MASK = FRZ_MASK + EXL_MASK; // "freeze and/or exclusive" mask
+    private static final long UNL_MASK = FAE_MASK + CNT_MASK; // unlocked mask
 
     private static final long STATE = UnsafeUtil.getFieldOffset( SequenceLock.class, "state" );
 
@@ -69,6 +88,11 @@ public class SequenceLock
     private boolean compareAndSetState( long expect, long update )
     {
         return UnsafeUtil.compareAndSwapLong( this, STATE, expect, update );
+    }
+
+    private void unconditionallySetState( long update )
+    {
+        state = update;
     }
 
     /**
@@ -93,7 +117,7 @@ public class SequenceLock
     public boolean validateReadLock( long stamp )
     {
         UnsafeUtil.loadFence();
-        return getState() == stamp;
+        return (getState() & FRZ_IMSK) == stamp;
     }
 
     /**
@@ -111,20 +135,31 @@ public class SequenceLock
         for (; ; )
         {
             s = getState();
-            if ( (s & EXCL_MASK) == EXCL_MASK )
+            boolean unwritablyLocked = (s & FAE_MASK) != 0;
+            boolean writeCountOverflow = (s & CNT_MASK) == CNT_MASK;
+
+            // bitwise-OR to reduce branching and allow more ILP
+            if ( unwritablyLocked | writeCountOverflow )
             {
-                return false;
+                return failWriteLock( s, writeCountOverflow );
             }
-            if ( (s & CNT_MASK) == CNT_MASK )
-            {
-                throwWriteLockOverflow( s );
-            }
+
             n = s + CNT_UNIT;
             if ( compareAndSetState( s, n ) )
             {
                 return true;
             }
         }
+    }
+
+    private boolean failWriteLock( long s, boolean writeCountOverflow )
+    {
+        if ( writeCountOverflow )
+        {
+            throwWriteLockOverflow( s );
+        }
+        // Otherwise it was either exclusively or freeze locked
+        return false;
     }
 
     private long throwWriteLockOverflow( long s )
@@ -172,7 +207,7 @@ public class SequenceLock
     public boolean tryExclusiveLock()
     {
         long s = getState();
-        return ((s & CNT_MASK) == 0) & ((s & EXCL_MASK) == 0) && compareAndSetState( s, s + EXCL_MASK );
+        return ((s & UNL_MASK) == 0) && compareAndSetState( s, s + EXL_MASK );
     }
 
     /**
@@ -184,8 +219,9 @@ public class SequenceLock
     public long unlockExclusive()
     {
         long s = initiateExclusiveLockRelease();
-        long n = nextSeq( s ) - EXCL_MASK;
-        compareAndSetState( s, n );
+        long n = nextSeq( s ) - EXL_MASK;
+        // Exclusive locks prevent any state modifications from write locks
+        unconditionallySetState( n );
         return n;
     }
 
@@ -195,14 +231,14 @@ public class SequenceLock
     public void unlockExclusiveAndTakeWriteLock()
     {
         long s = initiateExclusiveLockRelease();
-        long n = nextSeq( s ) - EXCL_MASK + CNT_UNIT;
-        compareAndSetState( s, n );
+        long n = nextSeq( s ) - EXL_MASK + CNT_UNIT;
+        unconditionallySetState( n );
     }
 
     private long initiateExclusiveLockRelease()
     {
         long s = getState();
-        if ( (s & EXCL_MASK) != EXCL_MASK )
+        if ( (s & EXL_MASK) != EXL_MASK )
         {
             throwUnmatchedUnlockExclusive( s );
         }
@@ -212,6 +248,30 @@ public class SequenceLock
     private void throwUnmatchedUnlockExclusive( long s )
     {
         throw new IllegalMonitorStateException( "Unmatched unlockExclusive: " + describeState( s ) );
+    }
+
+    public boolean tryFreezeLock()
+    {
+        long s = getState();
+        return ((s & UNL_MASK) == 0) && compareAndSetState( s, s + FRZ_MASK );
+    }
+
+    public void unlockFreeze()
+    {
+        long s = getState();
+        if ( (s & FRZ_MASK) != FRZ_MASK )
+        {
+            throwUnmatchedUnlockFreeze( s );
+        }
+        // We don't increment the sequence with nextSeq here, because freeze locks don't invalidate readers
+        long n = s - FRZ_MASK;
+        // Freeze locks prevent any state modifications from write and exclusive locks
+        unconditionallySetState( n );
+    }
+
+    private void throwUnmatchedUnlockFreeze( long s )
+    {
+        throw new IllegalMonitorStateException( "Unmatched unlockFreeze: " + describeState( s ) );
     }
 
     @Override

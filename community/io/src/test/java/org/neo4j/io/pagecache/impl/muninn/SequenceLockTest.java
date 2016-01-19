@@ -38,7 +38,7 @@ import static org.junit.Assert.assertTrue;
 public class SequenceLockTest
 {
     private static final long TIMEOUT = 5000;
-    private static final ExecutorService executor = Executors.newCachedThreadPool(new DaemonThreadFactory());
+    private static final ExecutorService executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
 
     @AfterClass
     public static void shutDownExecutor()
@@ -62,7 +62,7 @@ public class SequenceLockTest
     }
 
     @Test
-    public void writeLockMustInvalidateOptimisticLock() throws Exception
+    public void writeLockMustInvalidateOptimisticReadLock() throws Exception
     {
         long r = lock.tryOptimisticReadLock();
         lock.tryWriteLock();
@@ -71,7 +71,7 @@ public class SequenceLockTest
     }
 
     @Test
-    public void takingWriteLockMustInvalidateOptimisticLock() throws Exception
+    public void takingWriteLockMustInvalidateOptimisticReadLock() throws Exception
     {
         long r = lock.tryOptimisticReadLock();
         lock.tryWriteLock();
@@ -147,8 +147,8 @@ public class SequenceLockTest
     @Test( expected = IllegalMonitorStateException.class, timeout = TIMEOUT )
     public void writeLockCountOverflowMustThrow() throws Exception
     {
-        // TODO its possible we might want to spin-yield or fail instead of throwing, hoping someone will give us a lock
-        for ( ;; )
+        //noinspection InfiniteLoopStatement
+        for (; ; )
         {
             assertTrue( lock.tryWriteLock() );
         }
@@ -336,6 +336,153 @@ public class SequenceLockTest
         long r = lock.unlockExclusive();
         assertTrue( lock.tryWriteLock() );
         assertFalse( lock.validateReadLock( r ) );
+    }
+
+    @Test
+    public void uncontendedFreezeLockMustBeAvailable() throws Exception
+    {
+        assertTrue( lock.tryFreezeLock() );
+    }
+
+    @Test
+    public void freezeLockMustNotInvalidateOptimisticReadLock() throws Exception
+    {
+        long r = lock.tryOptimisticReadLock();
+        lock.tryFreezeLock();
+        lock.unlockFreeze();
+        assertTrue( lock.validateReadLock( r ) );
+    }
+
+    @Test
+    public void freezeLockMustFailWriteLock() throws Exception
+    {
+        lock.tryFreezeLock();
+        assertFalse( lock.tryWriteLock() );
+    }
+
+    @Test
+    public void freezeLockMustFailExclusiveLock() throws Exception
+    {
+        lock.tryFreezeLock();
+        assertFalse( lock.tryExclusiveLock() );
+    }
+
+    @Test
+    public void cannotTakeFreezeLockIfAlreadyTaken() throws Exception
+    {
+        assertTrue( lock.tryFreezeLock() );
+        assertFalse( lock.tryFreezeLock() );
+    }
+
+    @Test
+    public void writeLockMustFailFreezeLock() throws Exception
+    {
+        lock.tryWriteLock();
+        assertFalse( lock.tryFreezeLock() );
+    }
+
+    @Test
+    public void exclusiveLockMustFailFreezeLock() throws Exception
+    {
+        lock.tryExclusiveLock();
+        assertFalse( lock.tryFreezeLock() );
+    }
+
+    @Test
+    public void unlockExclusiveAndTakeWriteLockMustFailFreezeLock() throws Exception
+    {
+        lock.tryExclusiveLock();
+        lock.unlockExclusiveAndTakeWriteLock();
+        assertFalse( lock.tryFreezeLock() );
+    }
+
+    @Test
+    public void freezeUnlockMustNotInvalidateOptimisticReadLock() throws Exception
+    {
+        long r = lock.tryOptimisticReadLock();
+        assertTrue( lock.tryFreezeLock() );
+        assertTrue( lock.validateReadLock( r ) );
+    }
+
+    @Test
+    public void optimisticReadLockMustValidateUnderFreezeLock() throws Exception
+    {
+        lock.tryFreezeLock();
+        long r = lock.tryOptimisticReadLock();
+        assertTrue( lock.validateReadLock( r ) );
+    }
+
+    @Test
+    public void freezeLockReleaseMustNotInvalidateOptimisticReadLock() throws Exception
+    {
+        lock.tryFreezeLock();
+        long r = lock.tryOptimisticReadLock();
+        lock.unlockFreeze();
+        assertTrue( lock.validateReadLock( r ) );
+    }
+
+    @Test( expected = IllegalMonitorStateException.class )
+    public void unmatchedUnlockFreezeMustThrow() throws Exception
+    {
+        lock.unlockFreeze();
+    }
+
+    @Test
+    public void uncontendedOptimisticReadLockMustBeAvailableAfterFreezeLock() throws Exception
+    {
+        lock.tryFreezeLock();
+        lock.unlockFreeze();
+        long r = lock.tryOptimisticReadLock();
+        assertTrue( lock.validateReadLock( r ) );
+    }
+
+    @Test
+    public void uncontendedWriteLockMustBeAvailableAfterFreezeLock() throws Exception
+    {
+        lock.tryFreezeLock();
+        lock.unlockFreeze();
+        assertTrue( lock.tryWriteLock() );
+    }
+
+    @Test
+    public void uncontendedExclusiveLockMustBeAvailableAfterFreezeLock() throws Exception
+    {
+        lock.tryFreezeLock();
+        lock.unlockFreeze();
+        assertTrue( lock.tryExclusiveLock() );
+    }
+
+    @Test
+    public void uncontendedFreezeLockMustBeAvailableAfterWriteLock() throws Exception
+    {
+        lock.tryWriteLock();
+        lock.unlockWrite();
+        assertTrue( lock.tryFreezeLock() );
+    }
+
+    @Test
+    public void uncontendedFreezeLockMustBeAvailableAfterExclusiveLock() throws Exception
+    {
+        lock.tryExclusiveLock();
+        lock.unlockExclusive();
+        assertTrue( lock.tryFreezeLock() );
+    }
+
+    @Test
+    public void uncontendedFreezeLockMustBeAvailableAfterFreezeLock() throws Exception
+    {
+        lock.tryFreezeLock();
+        lock.unlockFreeze();
+        assertTrue( lock.tryFreezeLock() );
+    }
+
+    @Test
+    public void stampFromUnlockExclusiveMustBeValidUnderFreezeLock() throws Exception
+    {
+        lock.tryExclusiveLock();
+        long r = lock.unlockExclusive();
+        lock.tryFreezeLock();
+        assertTrue( lock.validateReadLock( r ) );
     }
 
     @Test

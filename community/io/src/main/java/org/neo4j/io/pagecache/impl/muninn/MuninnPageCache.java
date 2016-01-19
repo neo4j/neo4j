@@ -864,6 +864,7 @@ public class MuninnPageCache implements PageCache
 
     private boolean evictPage( MuninnPage page, EvictionEvent evictionEvent )
     {
+        //noinspection TryWithIdenticalCatches - this warning is a false positive; bug in Intellij inspection
         try
         {
             page.evict( evictionEvent );
@@ -972,14 +973,14 @@ public class MuninnPageCache implements PageCache
                 // counters fast enough to reach zero.
 
                 // Skip the page if it is already write locked, or not dirty, or too popular.
-                boolean thisPageIsDirty = false;
+                boolean thisPageIsDirty;
                 if ( !(thisPageIsDirty = page.isDirty()) || !page.decrementUsage() )
                 {
                     seenDirtyPages |= thisPageIsDirty;
                     continue; // Continue looping to the next page.
                 }
 
-                if ( page.tryExclusiveLock() ) // TODO somehow avoid taking these exclusive locks, that we currently need to avoid racing with other flushes
+                if ( page.tryFreezeLock() )
                 {
                     try
                     {
@@ -1005,7 +1006,7 @@ public class MuninnPageCache implements PageCache
                     }
                     finally
                     {
-                        page.unlockExclusive();
+                        page.unlockFreeze();
                     }
                 }
 

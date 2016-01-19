@@ -69,7 +69,7 @@ final class MuninnPagedFile implements PagedFile
      * The layout looks like this:
      *
      * ┏━ Empty file marker bit. When 1, the file is empty.
-     * ┃    ┏━ Reference count, 15 bites.
+     * ┃    ┏━ Reference count, 15 bits.
      * ┃    ┃                ┏━ 48 bits for the last page id.
      * ┃┏━━━┻━━━━━━━━━━┓ ┏━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
      * MRRRRRRR RRRRRRRR IIIIIIII IIIIIIII IIIIIIII IIIIIIII IIIIIIII IIIIIIII
@@ -225,7 +225,7 @@ final class MuninnPagedFile implements PagedFile
                         if ( element instanceof MuninnPage )
                         {
                             MuninnPage page = (MuninnPage) element;
-                            if ( !(forClosing? page.tryExclusiveLock() : page.tryWriteLock()) )
+                            if ( !(forClosing? page.tryExclusiveLock() : page.tryFreezeLock()) )
                             {
                                 continue;
                             }
@@ -244,7 +244,7 @@ final class MuninnPagedFile implements PagedFile
                             }
                             else
                             {
-                                page.unlockWrite();
+                                page.unlockFreeze();
                             }
                         }
                         break;
@@ -322,7 +322,7 @@ final class MuninnPagedFile implements PagedFile
                 }
                 else
                 {
-                    pages[j].unlockWrite();
+                    pages[j].unlockFreeze();
                 }
             }
         }
