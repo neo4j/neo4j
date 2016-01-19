@@ -55,12 +55,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.neo4j.codegen.Expression.add;
 import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.invoke;
 import static org.neo4j.codegen.Expression.newArray;
 import static org.neo4j.codegen.Expression.newInstance;
 import static org.neo4j.codegen.Expression.not;
 import static org.neo4j.codegen.Expression.or;
+import static org.neo4j.codegen.Expression.sub;
 import static org.neo4j.codegen.Expression.ternary;
 import static org.neo4j.codegen.ExpressionTemplate.cast;
 import static org.neo4j.codegen.ExpressionTemplate.load;
@@ -812,6 +814,74 @@ public class CodeGenerationTest
         assertFalse( compareForType( double.class, 42D, 43D, Expression::gt ) );
     }
 
+    @Test
+    public void shouldHandleAddition() throws Throwable
+    {
+        assertThat( addForType( int.class, 17, 18 ), equalTo( 35 ) );
+        assertThat( addForType( long.class, 17L, 18L ), equalTo( 35L ) );
+        assertThat( addForType( float.class, 17F, 18F ), equalTo( 35F ) );
+        assertThat( addForType( double.class, 17D, 18D ), equalTo( 35D ) );
+    }
+
+    @Test
+    public void shouldHandleSubtraction() throws Throwable
+    {
+        assertThat( subtractForType( int.class, 19, 18 ), equalTo( 1 ) );
+        assertThat( subtractForType( long.class, 19L, 18L ), equalTo( 1L ) );
+        assertThat( subtractForType( float.class, 19F, 18F ), equalTo( 1F ) );
+        assertThat( subtractForType( double.class, 19D, 18D ), equalTo( 1D ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private <T> T addForType( Class<T> clazz, T lhs, T rhs ) throws Throwable
+    {
+        // given
+        createGenerator();
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock block = simple.generateMethod( clazz, "add",
+                    param( clazz, "a" ), param( clazz, "b" ) ) )
+            {
+                block.returns( add( block.load( "a" ), block.load( "b" ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle add =
+                instanceMethod( handle.newInstance(), "add", clazz, clazz );
+
+        // then
+        return (T) add.invoke( lhs, rhs );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private <T> T subtractForType( Class<T> clazz, T lhs, T rhs ) throws Throwable
+    {
+        // given
+        createGenerator();
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock block = simple.generateMethod( clazz, "sub",
+                    param( clazz, "a" ), param( clazz, "b" ) ) )
+            {
+                block.returns( sub( block.load( "a" ), block.load( "b" ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle sub =
+                instanceMethod( handle.newInstance(), "sub", clazz, clazz );
+
+        // then
+        return (T) sub.invoke( lhs, rhs );
+    }
+
     private <T> boolean compareForType( Class<T> clazz, T lhs, T rhs,
             BiFunction<Expression,Expression,Expression> compare ) throws Throwable
     {
@@ -820,7 +890,7 @@ public class CodeGenerationTest
         ClassHandle handle;
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
-            try ( CodeBlock block = simple.generateMethod( boolean.class, "equal",
+            try ( CodeBlock block = simple.generateMethod( boolean.class, "compare",
                     param( clazz, "a" ), param( clazz, "b" ) ) )
             {
                 block.returns( compare.apply( block.load( "a" ), block.load( "b" ) ) );
@@ -830,11 +900,11 @@ public class CodeGenerationTest
         }
 
         // when
-        MethodHandle equal =
-                instanceMethod( handle.newInstance(), "equal", clazz, clazz );
+        MethodHandle compareFcn =
+                instanceMethod( handle.newInstance(), "compare", clazz, clazz );
 
         // then
-        return (boolean) equal.invoke( lhs, rhs );
+        return (boolean) compareFcn.invoke( lhs, rhs );
     }
 
     public static class TernaryChecker

@@ -246,6 +246,37 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     @Override
     public void add( Expression lhs, Expression rhs )
     {
+        TypeReference lhsType = findLoadType( lhs );
+        TypeReference rhsType = findLoadType( rhs );
+
+        if ( !lhsType.equals( rhsType ) )
+        {
+            throw new IllegalStateException( "Cannot compare values of different types" );
+        }
+
+        lhs.accept( this );
+        rhs.accept( this );
+        switch ( lhsType.simpleName() )
+        {
+        case "int":
+        case "byte":
+        case "short":
+        case "char":
+        case "boolean":
+            methodVisitor.visitInsn( IADD );
+            break;
+        case "long":
+            methodVisitor.visitInsn( LADD );
+            break;
+        case "float":
+            methodVisitor.visitInsn( FADD );
+            break;
+        case "double":
+            methodVisitor.visitInsn( DADD );
+            break;
+        default:
+            throw new IllegalStateException( "Addition is only supported for primitive number types" );
+        }
 
     }
 
@@ -287,7 +318,37 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     @Override
     public void sub( Expression lhs, Expression rhs )
     {
+        TypeReference lhsType = findLoadType( lhs );
+        TypeReference rhsType = findLoadType( rhs );
 
+        if ( !lhsType.equals( rhsType ) )
+        {
+            throw new IllegalStateException( "Cannot compare values of different types" );
+        }
+
+        lhs.accept( this );
+        rhs.accept( this );
+        switch ( lhsType.simpleName() )
+        {
+        case "int":
+        case "byte":
+        case "short":
+        case "char":
+        case "boolean":
+            methodVisitor.visitInsn( ISUB );
+            break;
+        case "long":
+            methodVisitor.visitInsn( LSUB );
+            break;
+        case "float":
+            methodVisitor.visitInsn( FSUB );
+            break;
+        case "double":
+            methodVisitor.visitInsn( DSUB );
+            break;
+        default:
+            throw new IllegalStateException( "Subtraction is only supported for primitive number types" );
+        }
     }
 
     @Override
