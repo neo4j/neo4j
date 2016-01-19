@@ -8,6 +8,7 @@ $src = Resolve-Path -Path "$($here)\..\..\main\distribution\shell-scripts\bin\Ne
 Function global:New-MockNeo4jInstall($RootDir, $IncludeFiles = $true, $ServerType = 'Community', $ServerVersion = '0.0') {
   # Creates a skeleton directory and file structure of a Neo4j Installation
   New-Item $RootDir -ItemType Directory | Out-Null
+  New-Item "$RootDir\lib" -ItemType Directory | Out-Null
   
   if ($IncludeFiles) {
     'TempFile' | Out-File -FilePath "$RootDir\lib\neo4j-server-$($ServerVersion).jar"
