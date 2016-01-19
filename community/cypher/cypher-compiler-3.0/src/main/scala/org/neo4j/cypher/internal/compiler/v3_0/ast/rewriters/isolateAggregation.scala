@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.AggregationNameGenerator
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.Converge.iterateUntilConverged
-import org.neo4j.cypher.internal.frontend.v3_0.{topDown, replace, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, replace, topDown}
 
 /**
  * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so
@@ -55,7 +55,7 @@ case object isolateAggregation extends Rewriter {
         case clause =>
           val originalExpressions = getExpressions(clause)
 
-          val expressionsToGoToWith: Set[Expression] = iterateUntilConverged {
+          val expressionsToGoToWith: Set[Expression] = fixedPoint {
             (expressions: Set[Expression]) => expressions.flatMap {
               case e if hasAggregateButIsNotAggregate(e) =>
                 e match {

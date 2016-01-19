@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, repeat}
+import org.neo4j.cypher.internal.frontend.v3_0.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
 
 case class LogicalPlanRewriter(rewriterSequencer: String => RewriterStepSequencer) extends Rewriter {
-  val instance: Rewriter = repeat(rewriterSequencer("LogicalPlanRewriter")(
+  val instance = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
     fuseSelections,
     unnestApply,
     simplifyEquality,

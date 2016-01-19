@@ -198,15 +198,3 @@ case class replace(strategy: (Replacer => (AnyRef => AnyRef))) extends Rewriter 
 
   def apply(that: AnyRef): AnyRef = cont(that)
 }
-
-case class repeat(rewriter: Rewriter) extends Rewriter {
-  @tailrec
-  final def apply(that: AnyRef): AnyRef = {
-    val t = rewriter.apply(that)
-    if (t == that) {
-      t
-    } else {
-      apply(t)
-    }
-  }
-}

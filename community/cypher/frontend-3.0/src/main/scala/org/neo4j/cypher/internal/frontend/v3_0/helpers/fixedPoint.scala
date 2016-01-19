@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.helpers.Converge
+package org.neo4j.cypher.internal.frontend.v3_0.helpers
 
-object iterateUntilConverged {
+import scala.annotation.tailrec
 
-  def apply[A](f: (A => A)): (A => A) = {
-    (seed: A) => {
-      var current = seed
-      var next = f(current)
-      while (current != next) {
-        current = next
-        next = f(current)
-      }
+object fixedPoint {
 
-      current
-    }
+  def apply[A](f: A => A): A => A = inner(f, _)
+
+  @tailrec
+  private def inner[A](f: A => A, that: A): A = {
+    val t = f(that)
+    if (t == that)
+      t
+    else
+      inner(f, t)
   }
 }

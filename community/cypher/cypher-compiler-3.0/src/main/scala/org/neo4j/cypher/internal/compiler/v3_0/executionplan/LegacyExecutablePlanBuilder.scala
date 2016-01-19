@@ -27,12 +27,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, TokenT
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InterpretedExecutionPlanBuilder.interpretedToExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.{DisconnectedShortestPathEndPointsBuilder, _}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.SyntaxException
-import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.{fixedPoint, NonEmptyList}
 
 trait ExecutionPlanInProgressRewriter {
   def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
@@ -92,7 +91,7 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConf
     val initialPSQ = PartiallySolvedQuery(inputQuery).rewriteFromTheTail(groupAndRewriteInequalities)
 
     def untilConverged(in: ExecutionPlanInProgress): ExecutionPlanInProgress =
-      iterateUntilConverged { input: ExecutionPlanInProgress =>
+      fixedPoint { input: ExecutionPlanInProgress =>
         val result = phases(input, context)
         if (!result.query.isSolved) {
           produceAndThrowException(result)

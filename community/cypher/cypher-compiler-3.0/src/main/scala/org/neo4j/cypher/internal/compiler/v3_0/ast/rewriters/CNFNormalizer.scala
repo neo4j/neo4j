@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp, inSequence, repeat}
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp, inSequence}
 
 case class CNFNormalizer()(implicit monitor: AstRewritingMonitor) extends Rewriter {
 
@@ -103,7 +104,7 @@ object flattenBooleanOperators extends Rewriter {
     })(p.position)
   }
 
-  private val instance = inSequence(bottomUp(firstStep), repeat(bottomUp(secondStep)))
+  private val instance = inSequence(bottomUp(firstStep), fixedPoint(bottomUp(secondStep)))
 }
 
 object simplifyPredicates extends Rewriter {
@@ -122,5 +123,5 @@ object simplifyPredicates extends Rewriter {
     case p@Ors(exps) if exps.size == 1    => exps.head
   }
 
-  private val instance = repeat(bottomUp(step))
+  private val instance = fixedPoint(bottomUp(step))
 }
