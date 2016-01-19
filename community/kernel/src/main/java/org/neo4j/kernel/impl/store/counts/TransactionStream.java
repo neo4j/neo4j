@@ -221,7 +221,7 @@ class TransactionStream
         private final LogHeader header;
         private final File file;
         private final long lastTxId;
-        long cap = Long.MAX_VALUE;
+        final long cap = Long.MAX_VALUE;
 
         LogFile( FileSystemAbstraction fs, File file, ByteBuffer buffer,
                  LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader ) throws IOException

@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.countStore;
+package org.neo4j.kernel.impl.store.counts;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiConsumer;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -62,6 +63,54 @@ public class InMemoryCountsStore implements CountsStore
     }
 
     @Override
+    public void replace( CountsKey key, long[] replacement )
+    {
+        lock.readLock().lock();
+        try
+        {
+            if ( snapshot != null )
+            {
+                //TODO verify this is desirable.
+                throw new IllegalStateException(
+                        "Cannot alter count store outside of a transaction while a snapshot is processing." );
+            }
+            map.put( key, replacement );
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public void update( CountsKey key, long[] delta )
+    {
+        lock.readLock().lock();
+        try
+        {
+            if ( snapshot != null )
+            {
+                throw new IllegalStateException(
+                        "Cannot alter count store outside of a transaction while a snapshot is processing." );
+            }
+            map.compute( key, ( k, v ) -> {
+                if ( v == null )
+                {
+                    return Arrays.copyOf( delta, delta.length );
+                }
+                else
+                {
+                    return updateEachValue( v, delta );
+                }
+            } );
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
     public void updateAll( long txId, Map<CountsKey,long[]> pairs )
     {
         lock.readLock().lock();
@@ -86,6 +135,7 @@ public class InMemoryCountsStore implements CountsStore
      * @param updates A map containing the diffs to apply to the corresponding values in the map.
      * @param map The map to be updated.
      */
+
     private void applyUpdates( Map<CountsKey,long[]> updates, Map<CountsKey,long[]> map )
     {
         updates.forEach( ( key, value ) -> map.compute( key, ( k, v ) -> {
@@ -154,6 +204,12 @@ public class InMemoryCountsStore implements CountsStore
         {
             snapshot = null;
         }
+    }
+
+    @Override
+    public void forEach( BiConsumer<CountsKey,long[]> action )
+    {
+        map.forEach( action );
     }
 
     /**

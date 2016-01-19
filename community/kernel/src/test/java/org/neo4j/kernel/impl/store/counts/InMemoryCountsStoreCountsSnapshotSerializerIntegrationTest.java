@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.countStore;
+package org.neo4j.kernel.impl.store.counts;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,8 +37,8 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 import org.neo4j.test.TargetDirectory;
 
-import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotDeserializer.deserialize;
-import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshotDeserializer.deserialize;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshotSerializer.serialize;
 
 /**
  * Serializes and deserialize count stores to test that they produce the same count stores.

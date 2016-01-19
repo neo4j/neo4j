@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.countStore;
+package org.neo4j.kernel.impl.store.counts;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
-import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshotSerializer.serialize;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
