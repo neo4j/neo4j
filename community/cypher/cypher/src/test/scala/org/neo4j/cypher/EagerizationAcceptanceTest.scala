@@ -81,8 +81,11 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val node1 = createLabeledNode("L")
     relate(node0, node1)
 
-    val query = "MATCH p=(:L)-[*]-() DELETE p"
+    val query = "MATCH p=(:L)-[*]-() DELETE p RETURN count(*) as count"
 
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Int]("count").next should equal(2)
+    assertStats(result, relationshipsDeleted = 1, nodesDeleted = 2)
     assertNumberOfEagerness(query, 1)
   }
 
@@ -91,14 +94,23 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val node1 = createLabeledNode("L")
     relate(node0, node1)
 
-    val query = "MATCH p=(:L)-[*]-() DETACH DELETE p"
+    val query = "MATCH p=(:L)-[*]-() DETACH DELETE p RETURN count(*) as count"
 
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Int]("count").next should equal(2)
+    assertStats(result, relationshipsDeleted = 1, nodesDeleted = 2)
     assertNumberOfEagerness(query, 1)
   }
 
   test("github issue ##5653") {
-    assertNumberOfEagerness(
-      "MATCH (p1:Person {name:'Michal'})-[r:FRIEND_OF {since:2007}]->(p2:Person {name:'Daniela'}) DELETE r, p1, p2", 1)
+    (0 to 1).foreach { i =>
+      eengine.execute("CREATE (:Person {name:'Michal'})-[:FRIEND_OF {since:2007}]->(:Person {name:'Daniela'})")
+    }
+    val query = "MATCH (p1:Person {name:'Michal'})-[r:FRIEND_OF {since:2007}]->(p2:Person {name:'Daniela'}) DELETE r, p1, p2 RETURN count(*) AS count"
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Int]("count").next should equal(2)
+    assertStats(result, relationshipsDeleted = 2, nodesDeleted = 4)
+    assertNumberOfEagerness(query, 0)
   }
 
   test("should not introduce eagerness between MATCH and CREATE relationships with overlapping relationship types when directed") {
