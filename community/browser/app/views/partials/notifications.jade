@@ -1,9 +1,0 @@
-ul
-  li(ng-repeat="notification in notifications", ng-class="notification.style")
-    .row.notification
-      .col-sm-9(style="text-align:right")
-        span(ng-bind-html='notification.message')
-      .col-sm-3.btn-group-vertical
-        button.btn.btn-default.btn-sm(ng-repeat="option in notification.options", ng-click="rememberThenDismiss(notification, option.value)", ng-class='option.btn')
-          span.fa(ng-class='option.icon') 
-          | &nbsp;{{ option.label }}

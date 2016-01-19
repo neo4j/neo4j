@@ -99,6 +99,9 @@ Eclipse Public License, Version 1.0
   Logback Classic Module
   Logback Core Module
 
+GNU General Public License, Version 3
+  Neo4j - Browser
+
 GNU General Public License, version 2 with the Classpath Exception
   Java Servlet API
   jersey-core
