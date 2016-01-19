@@ -56,7 +56,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     result.toList shouldBe empty
   }
 
-  test("removing labels from nodes does not remove labels from label store") {
+  test("sys.db.labels should be empty when all labels are removed") {
     // Given
     createLabeledNode("A")
     execute("MATCH (a:A) REMOVE a:A")
@@ -65,11 +65,10 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     val result = execute("CALL sys.db.labels")
 
     // Then
-    result.toList should equal(
-      List(Map("label" -> "A")))
+    result shouldBe empty
   }
 
-  test("removing all the nodes does not remove labels from label store") {
+  test("sys.db.labels should be empty when all nodes are removed") {
     // Given
     createLabeledNode("A")
     execute("MATCH (a) DETACH DELETE a")
@@ -78,8 +77,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     val result = execute("CALL sys.db.labels")
 
     // Then
-    result.toList should equal(
-      List(Map("label" -> "A")))
+    result shouldBe empty
   }
 
   test("should be able to find types from built-in-procedure") {
@@ -94,9 +92,9 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     // Then
     result.toList should equal(
       List(
-        Map("relationshipTypes" -> "A"),
-        Map("relationshipTypes" -> "B"),
-        Map("relationshipTypes" -> "C")))
+        Map("relationshipType" -> "A"),
+        Map("relationshipType" -> "B"),
+        Map("relationshipType" -> "C")))
   }
 
   test("sys.db.relationshipType work on an empty database") {
@@ -105,10 +103,10 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     val result = execute("CALL sys.db.relationshipTypes")
 
     // Then
-    result.toList shouldBe empty
+    result shouldBe empty
   }
 
-  test("removing all the relationships does not remove relationship types from the store") {
+  test("sys.db.relationshipTypes should be empty when all relationships are removed") {
     // Given
     // Given
     relate(createNode(), createNode(), "A")
@@ -120,11 +118,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     val result = execute("CALL sys.db.relationshipTypes")
 
     // Then
-    result.toList should equal(
-      List(
-        Map("relationshipTypes" -> "A"),
-        Map("relationshipTypes" -> "B"),
-        Map("relationshipTypes" -> "C")))
+    result shouldBe empty
   }
 
   test("should be able to find propertyKeys from built-in-procedure") {
@@ -137,9 +131,9 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     // Then
     result.toList should equal(
       List(
-        Map("propertyKeys" -> "A"),
-        Map("propertyKeys" -> "B"),
-        Map("propertyKeys" -> "C")))
+        Map("propertyKey" -> "A"),
+        Map("propertyKey" -> "B"),
+        Map("propertyKey" -> "C")))
   }
 
   test("sys.db.propertyKeys works on an empty database") {
@@ -163,15 +157,16 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     // Then
     result.toList should equal(
       List(
-        Map("propertyKeys" -> "A"),
-        Map("propertyKeys" -> "B"),
-        Map("propertyKeys" -> "R")))
+        Map("propertyKey" -> "A"),
+        Map("propertyKey" -> "B"),
+        Map("propertyKey" -> "R")))
   }
 
   test("removing all nodes and relationship does not remove properties from the store") {
     // Given
     relate(createNode("A" -> 1), createNode("B" -> 1), "R" ->1)
     execute("MATCH (a) DETACH DELETE a")
+    println(execute("MATCH (a) RETURN count(a)").toList)
 
     // When
     val result = execute("CALL sys.db.propertyKeys")
@@ -179,9 +174,9 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     // Then
     result.toList should equal(
       List(
-        Map("propertyKeys" -> "A"),
-        Map("propertyKeys" -> "B"),
-        Map("propertyKeys" -> "R")))
+        Map("propertyKey" -> "A"),
+        Map("propertyKey" -> "B"),
+        Map("propertyKey" -> "R")))
   }
 
   test("should be able to call procedure with explicit arguments") {
@@ -262,8 +257,6 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     // Then
     an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42)"))
   }
-
-
 
   test("should fail if implicit argument is missing") {
     // Given

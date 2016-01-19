@@ -43,8 +43,11 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
     public void listAllLabels() throws Throwable
     {
         // Given
+
         DataWriteOperations ops = dataWriteOperationsInNewTransaction();
-        ops.labelGetOrCreateForName( "MyLabel" );
+        long nodeId = ops.nodeCreate();
+        int labelId = ops.labelGetOrCreateForName( "MyLabel" );
+        ops.nodeAddLabel( nodeId, labelId );
         commit();
 
         // When
@@ -74,7 +77,8 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
     {
         // Given
         DataWriteOperations ops = dataWriteOperationsInNewTransaction();
-        ops.relationshipTypeGetOrCreateForName( "MyRelType" );
+        int relType = ops.relationshipTypeGetOrCreateForName( "MyRelType" );
+        ops.relationshipCreate( relType, ops.nodeCreate(), ops.nodeCreate() );
         commit();
 
         // When

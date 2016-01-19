@@ -29,6 +29,9 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ReadOperations;
@@ -671,7 +674,8 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         Procedure.BasicContext ctx = new Procedure.BasicContext();
-        ctx.put( ReadOperations.readStatement, this );
+        ctx.put( ReadOperations.readOperations, this );
+        ctx.put( ReadOperations.statement, statement );
         return procedures.call( ctx, name, input );
     }
 

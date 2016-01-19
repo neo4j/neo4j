@@ -20,16 +20,17 @@
 package org.neo4j.kernel.builtinprocs;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.graphdb.Label;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.Procedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
-import org.neo4j.storageengine.api.Token;
+import org.neo4j.kernel.impl.api.TokenAccess;
 
-import static org.neo4j.kernel.api.ReadOperations.readStatement;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 import static org.neo4j.helpers.collection.Iterables.asRawIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.api.ReadOperations.statement;
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ListLabelsProcedure extends Procedure.BasicProcedure
 {
@@ -41,7 +42,7 @@ public class ListLabelsProcedure extends Procedure.BasicProcedure
     @Override
     public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        RawIterator<Token,ProcedureException> tokens = asRawIterator( ctx.get( readStatement ).labelsGetAllTokens() );
-        return map(  ( token ) -> new Object[]{ token.name() }, tokens );
+        RawIterator<Label,ProcedureException> labels = asRawIterator( TokenAccess.LABELS.inUse( ctx.get( statement ) ) );
+        return map( ( l) -> new Object[]{l.name()}, labels );
     }
 }
