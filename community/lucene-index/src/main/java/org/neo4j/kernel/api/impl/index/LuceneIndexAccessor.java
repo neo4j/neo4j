@@ -93,7 +93,7 @@ public class LuceneIndexAccessor implements IndexAccessor
         }
         catch ( IOException e )
         {
-            throw new LuceneIndexAcquisitionException("Can't acquire index reader");
+            throw new LuceneIndexReaderAcquisitionException( "Can't acquire index reader", e );
         }
     }
 

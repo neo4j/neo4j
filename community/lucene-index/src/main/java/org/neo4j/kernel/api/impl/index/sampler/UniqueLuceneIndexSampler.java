@@ -26,6 +26,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.register.Register;
 
+/**
+ * Sampler for unique Lucene schema index.
+ * Internally uses number of documents in the index for sampling.
+ */
 public class UniqueLuceneIndexSampler extends LuceneIndexSampler
 {
     private final IndexSearcher indexSearcher;

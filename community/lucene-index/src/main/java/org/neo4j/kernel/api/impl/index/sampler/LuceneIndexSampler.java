@@ -20,10 +20,15 @@
 package org.neo4j.kernel.api.impl.index.sampler;
 
 import org.neo4j.helpers.TaskControl;
+import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
+/**
+ * Abstract implementation of a Lucene index sampler, that can react on sampling being canceled via
+ * {@link TaskCoordinator#cancel()} }.
+ */
 public abstract class LuceneIndexSampler implements IndexSampler
 {
     private final TaskControl executionTicket;
@@ -33,6 +38,13 @@ public abstract class LuceneIndexSampler implements IndexSampler
         this.executionTicket = taskControl;
     }
 
+    /**
+     * Perform actual sampling.
+     *
+     * @param result contains the unique values and the sampled size.
+     * @return the index size.
+     * @throws IndexNotFoundKernelException if the index is dropped while sampling.
+     */
     protected abstract long performSampling( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException;
 
     @Override
@@ -48,6 +60,11 @@ public abstract class LuceneIndexSampler implements IndexSampler
         }
     }
 
+    /**
+     * Check if sampling was canceled.
+     *
+     * @throws IndexNotFoundKernelException if cancellation was requested.
+     */
     protected void checkCancellation() throws IndexNotFoundKernelException
     {
         if ( executionTicket.cancellationRequested() )

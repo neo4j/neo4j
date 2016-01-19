@@ -19,9 +19,16 @@
  */
 package org.neo4j.kernel.api.impl.index.backup;
 
-public class UnsupportedIndexDeletionPolicy extends RuntimeException
+/**
+ * Exception that is throw by {@link LuceneIndexSnapshotFileIterator} in case if there is an attempt to create a
+ * snapshot on a index with index policy that does not support snapshots.
+ *
+ * @see LuceneIndexSnapshotFileIterator
+ * @see org.apache.lucene.index.SnapshotDeletionPolicy
+ */
+class UnsupportedIndexDeletionPolicy extends RuntimeException
 {
-    public UnsupportedIndexDeletionPolicy( String message )
+    UnsupportedIndexDeletionPolicy( String message )
     {
         super( message );
     }

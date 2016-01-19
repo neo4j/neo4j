@@ -43,6 +43,11 @@ import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
+/**
+ * Schema index reader that is able to read/sample a single partition of a partitioned Lucene index.
+ *
+ * @see PartitionedIndexReader
+ */
 public class SimpleIndexReader implements IndexReader
 {
     private PartitionSearcher partitionSearcher;
@@ -135,7 +140,7 @@ public class SimpleIndexReader implements IndexReader
         }
         catch ( IOException e )
         {
-            throw new IndexReaderCloseException( e );
+            throw new IndexSearcherCloseException( e );
         }
     }
 

@@ -30,6 +30,14 @@ import java.util.Optional;
 
 import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
 
+/**
+ * Schema Lucene index writer implementation that supports writing into multiple partitions and creates partitions
+ * on-demand if needed.
+ * <p>
+ * Writer threats partition as writable if partition has number of documents that is less then configured
+ * {@link #MAXIMUM_PARTITION_SIZE}.
+ * First observable partition that satisfy writer criteria is used for writing.
+ */
 public class PartitionedIndexWriter implements LuceneIndexWriter
 {
     private LuceneSchemaIndex index;

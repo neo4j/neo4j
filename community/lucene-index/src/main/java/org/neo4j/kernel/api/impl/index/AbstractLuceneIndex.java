@@ -45,10 +45,17 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 
 import static java.util.stream.Collectors.toList;
 
+/**
+ * Abstract implementation of a partitioned index.
+ * Such index may consist of one or multiple separate Lucene indexes that are represented as independent
+ * {@link IndexPartition partitions}.
+ */
 public abstract class AbstractLuceneIndex implements Closeable
 {
+    // lock used to guard commits and close of lucene indexes from separate threads
     protected final ReentrantLock commitCloseLock = new ReentrantLock();
-    protected final ReentrantLock readWriteLock = new ReentrantLock();
+    // lock guard concurrent creation of new partitions
+    protected final ReentrantLock partitionsLock = new ReentrantLock();
 
     protected final PartitionedIndexStorage indexStorage;
     private List<IndexPartition> partitions = new CopyOnWriteArrayList<>();
@@ -63,8 +70,9 @@ public abstract class AbstractLuceneIndex implements Closeable
      * Creates new index.
      * As part of creation process index will allocate all required folders, index failure storage
      * and will create its first partition.
-     * <p></p>
+     * <p>
      * <b>Index creation do not automatically open it. To be able to use index please open it first.</b>
+     *
      * @throws IOException
      */
     public void create() throws IOException
@@ -77,6 +85,7 @@ public abstract class AbstractLuceneIndex implements Closeable
 
     /**
      * Open index with all allocated partitions.
+     *
      * @throws IOException
      */
     public void open() throws IOException
@@ -96,6 +105,7 @@ public abstract class AbstractLuceneIndex implements Closeable
 
     /**
      * Check lucene index existence within all allocated partitions.
+     *
      * @return true if index exist in all partitions, false when index is empty or does not exist
      * @throws IOException
      */
@@ -120,6 +130,7 @@ public abstract class AbstractLuceneIndex implements Closeable
      * Verify state of the index.
      * If index is already open and in use method assume that index is valid since lucene already operating with it,
      * otherwise necessary checks perform.
+     *
      * @return true if lucene confirm that index is in valid clean state or index is already open.
      */
     public boolean isValid()
@@ -160,12 +171,22 @@ public abstract class AbstractLuceneIndex implements Closeable
         return true;
     }
 
+    /**
+     * Close index and deletes all it's partitions.
+     *
+     * @throws IOException
+     */
     public void drop() throws IOException
     {
         close();
         indexStorage.cleanupFolder( indexStorage.getIndexFolder() );
     }
 
+    /**
+     * Commits all index partitions.
+     *
+     * @throws IOException
+     */
     public void flush() throws IOException
     {
         commitCloseLock.lock();
@@ -199,10 +220,15 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
     }
 
+    /**
+     * Creates an iterable over all {@link org.apache.lucene.document.Document document}s in all partitions.
+     *
+     * @return LuceneAllDocumentsReader over all documents
+     */
     public LuceneAllDocumentsReader allDocumentsReader()
     {
         ensureOpen();
-        readWriteLock.lock();
+        partitionsLock.lock();
         try
         {
             List<PartitionSearcher> searchers = new ArrayList<>( partitions.size() );
@@ -227,10 +253,17 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
         finally
         {
-            readWriteLock.unlock();
+            partitionsLock.unlock();
         }
     }
 
+    /**
+     * Snapshot of all file in all index partitions.
+     *
+     * @return iterator over all index files.
+     * @throws IOException
+     * @see org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshotFileIterator
+     */
     public ResourceIterator<File> snapshot() throws IOException
     {
         ensureOpen();
@@ -267,9 +300,14 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
     }
 
+    /**
+     * Refresh all partitions to make newly inserted data visible for readers.
+     *
+     * @throws IOException
+     */
     public void maybeRefreshBlocking() throws IOException
     {
-        readWriteLock.lock();
+        partitionsLock.lock();
         try
         {
             for ( IndexPartition partition : getPartitions() )
@@ -279,7 +317,7 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
         finally
         {
-            readWriteLock.unlock();
+            partitionsLock.unlock();
         }
     }
 
@@ -289,10 +327,16 @@ public abstract class AbstractLuceneIndex implements Closeable
         return partitions;
     }
 
+    /**
+     * Add new partition to the index.
+     *
+     * @return newly created partition
+     * @throws IOException
+     */
     IndexPartition addNewPartition() throws IOException
     {
         ensureOpen();
-        readWriteLock.lock();
+        partitionsLock.lock();
         try
         {
             File partitionFolder = createNewPartitionFolder();
@@ -303,7 +347,7 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
         finally
         {
-            readWriteLock.unlock();
+            partitionsLock.unlock();
         }
     }
 

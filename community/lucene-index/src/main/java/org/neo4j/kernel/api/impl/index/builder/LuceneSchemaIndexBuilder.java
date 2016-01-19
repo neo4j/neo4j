@@ -29,6 +29,14 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+/**
+ * Helper builder class to simplify construction and instantiation of lucene schema indexes.
+ * Most of the values already have most useful default value, that still can be overridden by corresponding
+ * builder methods.
+ *
+ * @see LuceneSchemaIndex
+ * @see AbstractLuceneIndexBuilder
+ */
 public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneSchemaIndexBuilder>
 {
     private IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
@@ -38,18 +46,32 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
     {
     }
 
+    /**
+     * Create new lucene schema index builder.
+     * @return new LuceneSchemaIndexBuilder
+     */
     public static LuceneSchemaIndexBuilder create()
     {
         return new LuceneSchemaIndexBuilder();
     }
 
+    /**
+     * Specify lucene schema index sampling config
+     * @param samplingConfig sampling config
+     * @return index builder
+     */
     public LuceneSchemaIndexBuilder withSamplingConfig( IndexSamplingConfig samplingConfig )
     {
         this.samplingConfig = samplingConfig;
         return this;
     }
 
-    public <T> LuceneSchemaIndexBuilder withSamplingBufferSize( int size )
+    /**
+     * Specify lucene schema index sampling buffer size
+     * @param size sampling buffer size
+     * @return index builder
+     */
+    public LuceneSchemaIndexBuilder withSamplingBufferSize( int size )
     {
         Map<String,String> params = stringMap( GraphDatabaseSettings.index_sampling_buffer_size.name(), size + "" );
         Config config = new Config( params );
@@ -57,24 +79,31 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
         return this;
     }
 
-    public LuceneSchemaIndexBuilder withSamplingConfig( Config config )
-    {
-        this.samplingConfig = new IndexSamplingConfig( config );
-        return this;
-    }
-
+    /**
+     * Specify lucene schema index config
+     * @param indexConfig index config
+     * @return index builder
+     */
     public LuceneSchemaIndexBuilder withIndexConfig( IndexConfiguration indexConfig )
     {
         this.indexConfig = indexConfig;
         return this;
     }
 
+    /**
+     * Transform builder to build unique index
+     * @return index builder
+     */
     public LuceneSchemaIndexBuilder uniqueIndex()
     {
         this.indexConfig = IndexConfiguration.UNIQUE;
         return this;
     }
 
+    /**
+     * Build lucene schema index with specified configuration
+     * @return lucene schema index
+     */
     public LuceneSchemaIndex build()
     {
         return new LuceneSchemaIndex( storageBuilder.build(), indexConfig, samplingConfig );

@@ -32,6 +32,12 @@ import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static java.util.stream.Collectors.toList;
 
+/**
+ * Index reader that is able to read/sample multiple partitions of a partitioned Lucene index.
+ * Internally uses multiple {@link SimpleIndexReader}s for individual partitions.
+ *
+ * @see SimpleIndexReader
+ */
 public class PartitionedIndexReader implements IndexReader
 {
 
@@ -84,7 +90,7 @@ public class PartitionedIndexReader implements IndexReader
     {
         return null;
     }
-    
+
     public void close()
     {
         try
@@ -93,7 +99,7 @@ public class PartitionedIndexReader implements IndexReader
         }
         catch ( IOException e )
         {
-            throw new IndexReaderCloseException( e );
+            throw new IndexSearcherCloseException( e );
         }
     }
 

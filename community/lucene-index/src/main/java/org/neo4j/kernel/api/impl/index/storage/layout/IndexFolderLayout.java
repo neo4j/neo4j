@@ -21,6 +21,11 @@ package org.neo4j.kernel.api.impl.index.storage.layout;
 
 import java.io.File;
 
+/**
+ * Default implementation of {@link FolderLayout} for partitioned lucene index.
+ *
+ * @see FolderLayout
+ */
 public class IndexFolderLayout implements FolderLayout
 {
     private final File indexFolder;

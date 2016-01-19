@@ -21,9 +21,40 @@ package org.neo4j.kernel.api.impl.index.storage.layout;
 
 import java.io.File;
 
+/**
+ * Component that represent on-disk layout for partitioned lucene index.
+ * <p>
+ * It's aware how files and partitions located on disk and knows how to map particular partition index into folder.
+ * Physically files for index with id <i>indexId</i> will be located in a index root folder indexId with
+ * separate sub-folder for each partition.
+ * Since each partition is separate lucene index all lucene index files will be located in a corresponding partition
+ * folder.
+ * <p>
+ * As example for index with 3 partitions we will have following directory structure:
+ * <pre>
+ * ...indexId/
+ *    |-- 1
+ *    |   `-- partition index files
+ *    |-- 2
+ *    |   `-- partition index files
+ *    |-- 3
+ *        `-- partition index files
+ * </pre>
+ */
 public interface FolderLayout
 {
+    /**
+     * Get root folder of partitioned index
+     *
+     * @return the file that represent directory where whole index is located
+     */
     File getIndexFolder();
 
+    /**
+     * Get folder that contain particular partition
+     *
+     * @param partition index of partition to get folder for
+     * @return the file that represents directory where partition with given index is located.
+     */
     File getPartitionFolder( int partition );
 }

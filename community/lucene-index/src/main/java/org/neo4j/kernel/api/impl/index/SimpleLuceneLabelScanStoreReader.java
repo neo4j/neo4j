@@ -24,9 +24,12 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-import org.neo4j.kernel.api.impl.index.reader.IndexReaderCloseException;
+import org.neo4j.kernel.api.impl.index.reader.IndexSearcherCloseException;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
+/**
+ * Label scan index reader that is able to read/sample a single partition of a partitioned index.
+ */
 public class SimpleLuceneLabelScanStoreReader implements LabelScanReader
 {
     private final PartitionSearcher partitionSearcher;
@@ -59,7 +62,7 @@ public class SimpleLuceneLabelScanStoreReader implements LabelScanReader
         }
         catch ( IOException e )
         {
-            throw new IndexReaderCloseException( e );
+            throw new IndexSearcherCloseException( e );
         }
     }
 }

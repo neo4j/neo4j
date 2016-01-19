@@ -24,11 +24,9 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +41,14 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 
 import static java.lang.String.format;
 
+/**
+ * Label scan store Lucene index writer implementation that supports writing into multiple partitions and creates
+ * partitions on-demand if needed.
+ * <p>
+ * Writer chooses writable partition based on the given nodeId and configured parameter
+ * {@link #MAXIMUM_PARTITION_SIZE}.
+ * Additional partitions are created on-demand, if needed.
+ */
 public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
 {
 

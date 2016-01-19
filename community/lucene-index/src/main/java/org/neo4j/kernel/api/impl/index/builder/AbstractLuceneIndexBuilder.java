@@ -25,34 +25,69 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 
-abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBuilder>
+/**
+ * Base class for lucene index builders.
+ *
+ * @param <T> actual index type
+ */
+abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBuilder<T>>
 {
     protected LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
 
+    /**
+     * Specify index storage
+     *
+     * @param indexStorage index storage
+     * @return index builder
+     */
     public T withIndexStorage( PartitionedIndexStorage indexStorage )
     {
         storageBuilder.withIndexStorage( indexStorage );
         return (T) this;
     }
 
+    /**
+     * Specify directory factory
+     *
+     * @param directoryFactory directory factory
+     * @return index builder
+     */
     public T withDirectoryFactory( DirectoryFactory directoryFactory )
     {
         storageBuilder.withDirectoryFactory( directoryFactory );
         return (T) this;
     }
 
+    /**
+     * Specify file system abstraction
+     *
+     * @param fileSystem file system abstraction
+     * @return index builder
+     */
     public T withFileSystem( FileSystemAbstraction fileSystem )
     {
         storageBuilder.withFileSystem( fileSystem );
         return (T) this;
     }
 
+    /**
+     * Specify index root folder
+     *
+     * @param indexRootFolder root folder
+     * @return index builder
+     */
     public T withIndexRootFolder( File indexRootFolder )
     {
         storageBuilder.withIndexRootFolder( indexRootFolder );
         return (T) this;
     }
 
+    /**
+     * Specify index identifier
+     *
+     * @param indexIdentifier identifier
+     * @return index builder
+     */
     public T withIndexIdentifier( String indexIdentifier )
     {
         storageBuilder.withIndexIdentifier( indexIdentifier );

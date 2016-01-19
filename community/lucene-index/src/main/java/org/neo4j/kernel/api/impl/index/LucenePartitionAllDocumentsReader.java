@@ -34,6 +34,9 @@ import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 
+/**
+ * Provides a view of all {@link Document}s in a single partition.
+ */
 public class LucenePartitionAllDocumentsReader implements BoundedIterable<Document>
 {
     private final PartitionSearcher partitionSearcher;

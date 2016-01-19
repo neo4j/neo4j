@@ -17,15 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index.reader;
+package org.neo4j.kernel.api.impl.index;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 
-public class IndexReaderCloseException extends UncheckedIOException
+/**
+ * Exception that will be thrown in case if encounter IOException during Lucene reader acquisition.
+ *
+ * @see org.apache.lucene.search.IndexSearcher
+ */
+public class LuceneIndexReaderAcquisitionException extends RuntimeException
 {
-    public IndexReaderCloseException( IOException cause )
+    public LuceneIndexReaderAcquisitionException( String message, IOException e )
     {
-        super( cause );
+        super( message, e );
     }
 }

@@ -32,6 +32,12 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
+/**
+ * Implementation of Lucene label scan store index that support multiple partitions.
+ * <p>
+ * Each partition stores {@link org.apache.lucene.document.Document documents} according to the given
+ * {@link BitmapDocumentFormat} and {@link LabelScanStorageStrategy}.
+ */
 public class LuceneLabelScanIndex extends AbstractLuceneIndex
 {
     private final BitmapDocumentFormat format;
@@ -44,10 +50,11 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
         this.storageStrategy = new NodeRangeDocumentLabelScanStorageStrategy( format );
     }
 
+
     public LabelScanReader getLabelScanReader()
     {
         ensureOpen();
-        readWriteLock.lock();
+        partitionsLock.lock();
         try
         {
             List<IndexPartition> partitions = getPartitions();
@@ -63,7 +70,7 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
         }
         finally
         {
-            readWriteLock.unlock();
+            partitionsLock.unlock();
         }
     }
 

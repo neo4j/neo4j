@@ -32,13 +32,13 @@ public class LuceneDocumentRetrievalException extends RuntimeException
 
     public LuceneDocumentRetrievalException( String message, long documentId, Throwable cause )
     {
-        this(message, cause);
+        this( message, cause );
         this.documentId = documentId;
     }
 
     public LuceneDocumentRetrievalException( String message, Throwable cause )
     {
-        super(message, cause);
+        super( message, cause );
     }
 
     public long getDocumentId()

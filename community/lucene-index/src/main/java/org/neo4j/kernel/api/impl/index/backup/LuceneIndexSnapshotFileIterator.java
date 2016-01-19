@@ -36,6 +36,14 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
+/**
+ * Iterator over Lucene index files for a particular {@link IndexCommit snapshot}.
+ * Applicable only to a single Lucene index partition.
+ * Internally uses {@link SnapshotDeletionPolicy#snapshot()} to create an {@link IndexCommit} that represents
+ * consistent state of the index for a particular point in time.
+ *
+ * Turns to be an empty iterator if index does not have any commits yet.
+ */
 public class LuceneIndexSnapshotFileIterator extends PrefetchingIterator<File> implements ResourceIterator<File>
 {
     private final File indexDirectory;
@@ -62,7 +70,7 @@ public class LuceneIndexSnapshotFileIterator extends PrefetchingIterator<File> i
         }
     }
 
-    LuceneIndexSnapshotFileIterator( File indexDirectory, SnapshotDeletionPolicy snapshotDeletionPolicy )
+    private LuceneIndexSnapshotFileIterator( File indexDirectory, SnapshotDeletionPolicy snapshotDeletionPolicy )
             throws IOException
     {
         this.snapshot = snapshotDeletionPolicy.snapshot();
@@ -91,7 +99,7 @@ public class LuceneIndexSnapshotFileIterator extends PrefetchingIterator<File> i
         catch ( IOException e )
         {
             throw new SnapshotReleaseException( "Unable to release lucene index snapshot for index in: " +
-                                                indexDirectory, e);
+                                                indexDirectory, e );
         }
     }
 

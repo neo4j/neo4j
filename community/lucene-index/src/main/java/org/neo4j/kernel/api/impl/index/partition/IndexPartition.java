@@ -33,6 +33,11 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshotFileIterator;
 
+/**
+ * Represents a single partition of a partitioned lucene index. Each partition is a separate Lucene index.
+ * Contains and manages lifecycle of the corresponding {@link Directory}, {@link IndexWriter writer} and
+ * {@link SearcherManager}.
+ */
 public class IndexPartition implements Closeable
 {
     private final IndexWriter indexWriter;
@@ -62,6 +67,7 @@ public class IndexPartition implements Closeable
      * Return searcher for requested partition.
      * There is no tracking of acquired searchers, so the expectation is that callers will call close on acquired
      * searchers to release resources.
+     *
      * @return partition searcher
      * @throws IOException if exception happened during searcher acquisition
      */
@@ -70,6 +76,11 @@ public class IndexPartition implements Closeable
         return new PartitionSearcher( searcherManager );
     }
 
+    /**
+     * Refresh partition to make newly inserted data visible for readers.
+     *
+     * @throws IOException if refreshing fails.
+     */
     public void maybeRefreshBlocking() throws IOException
     {
         searcherManager.maybeRefreshBlocking();
@@ -81,6 +92,12 @@ public class IndexPartition implements Closeable
         IOUtils.closeAll( searcherManager, indexWriter, directory );
     }
 
+    /**
+     * Retrieve list of consistent Lucene index files for this partition.
+     *
+     * @return the iterator over index files.
+     * @throws IOException if any IO operation fails.
+     */
     public ResourceIterator<File> snapshot() throws IOException
     {
         return LuceneIndexSnapshotFileIterator.forIndex( indexFolder, indexWriter );

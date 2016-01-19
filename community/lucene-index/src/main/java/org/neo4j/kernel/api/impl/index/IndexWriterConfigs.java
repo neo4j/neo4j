@@ -26,6 +26,9 @@ import org.neo4j.index.impl.lucene.legacy.LuceneDataSource;
 import org.neo4j.index.impl.lucene.legacy.MultipleBackupDeletionPolicy;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
+/**
+ * Helper factory for standard lucene index writer configuration.
+ */
 public final class IndexWriterConfigs
 {
     private static final int MAX_BUFFERED_DOCS =
@@ -46,11 +49,10 @@ public final class IndexWriterConfigs
     {
         IndexWriterConfig writerConfig = new IndexWriterConfig( LuceneDataSource.KEYWORD_ANALYZER );
 
-        writerConfig.setMaxBufferedDocs( MAX_BUFFERED_DOCS ); // TODO figure out depending on environment?
+        writerConfig.setMaxBufferedDocs( MAX_BUFFERED_DOCS );
         writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
         writerConfig.setUseCompoundFile( true );
 
-        // TODO: TieredMergePolicy & possibly SortingMergePolicy
         LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
         mergePolicy.setNoCFSRatio( MERGE_POLICY_NO_CFS_RATIO );
         mergePolicy.setMinMergeMB( MERGE_POLICY_MIN_MERGE_MB );

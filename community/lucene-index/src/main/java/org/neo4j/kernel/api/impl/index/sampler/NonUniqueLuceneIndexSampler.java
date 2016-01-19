@@ -38,6 +38,10 @@ import org.neo4j.register.Register;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
+/**
+ * Sampler for non-unique Lucene schema index.
+ * Internally uses terms and their document frequencies for sampling.
+ */
 public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
 {
     private final IndexSearcher indexSearcher;

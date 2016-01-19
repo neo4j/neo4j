@@ -25,6 +25,10 @@ import org.apache.lucene.search.ReferenceManager;
 import java.io.Closeable;
 import java.io.IOException;
 
+/**
+ * Container for {@link IndexSearcher} of the particular {@link IndexPartition partition}.
+ * Manages lifecycle of the underlying {@link IndexSearcher searcher}.
+ */
 public class PartitionSearcher implements Closeable
 {
     private IndexSearcher indexSearcher;

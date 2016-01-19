@@ -19,9 +19,17 @@
  */
 package org.neo4j.kernel.api.impl.index.backup;
 
-public class SnapshotReleaseException extends RuntimeException
+/**
+ * Exception that is thrown by {@link LuceneIndexSnapshotFileIterator} in case if exception
+ * occurred during index snapshot release
+ *
+ * @see LuceneIndexSnapshotFileIterator
+ * @see org.apache.lucene.index.SnapshotDeletionPolicy
+ * @see org.apache.lucene.index.IndexCommit
+ */
+class SnapshotReleaseException extends RuntimeException
 {
-    public SnapshotReleaseException( String message, Throwable e )
+    SnapshotReleaseException( String message, Throwable e )
     {
         super( message, e );
     }

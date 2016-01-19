@@ -46,6 +46,9 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static java.util.Collections.singletonMap;
 
+/**
+ * Implementation of Lucene schema index that support multiple partitions.
+ */
 public class LuceneSchemaIndex extends AbstractLuceneIndex
 {
     private static final String KEY_STATUS = "status";
@@ -74,7 +77,7 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
     public IndexReader getIndexReader() throws IOException
     {
         ensureOpen();
-        readWriteLock.lock();
+        partitionsLock.lock();
         try
         {
             List<IndexPartition> partitions = getPartitions();
@@ -83,10 +86,19 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
         }
         finally
         {
-            readWriteLock.unlock();
+            partitionsLock.unlock();
         }
     }
 
+    /**
+     * Verifies uniqueness of property values present in this index.
+     *
+     * @param accessor the accessor to retrieve actual property values from the store.
+     * @param propertyKeyId the id of the property to verify.
+     * @throws IndexEntryConflictException if there are duplicates.
+     * @throws IOException
+     * @see UniquenessVerifier#verify(PropertyAccessor, int)
+     */
     public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId )
             throws IOException, IndexEntryConflictException
     {
@@ -96,6 +108,16 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
         }
     }
 
+    /**
+     * Verifies uniqueness of updated property values.
+     *
+     * @param accessor the accessor to retrieve actual property values from the store.
+     * @param propertyKeyId the id of the property to verify.
+     * @param updatedPropertyValues the values to check uniqueness for.
+     * @throws IndexEntryConflictException if there are duplicates.
+     * @throws IOException
+     * @see UniquenessVerifier#verify(PropertyAccessor, int, List)
+     */
     public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId, List<Object> updatedPropertyValues )
             throws IOException, IndexEntryConflictException
     {
@@ -120,6 +142,12 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
         super.drop();
     }
 
+    /**
+     * Check if this index is marked as online.
+     *
+     * @return <code>true</code> if index is online, <code>false</code> otherwise
+     * @throws IOException
+     */
     public boolean isOnline() throws IOException
     {
         ensureOpen();
@@ -132,6 +160,11 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
         }
     }
 
+    /**
+     * Marks index as online by including "status" -> "online" map into commit metadata of the first partition.
+     *
+     * @throws IOException
+     */
     public void markAsOnline() throws IOException
     {
         ensureOpen();
@@ -149,6 +182,12 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
         }
     }
 
+    /**
+     * Writes the given failure message to the failure storage.
+     *
+     * @param failure the failure message.
+     * @throws IOException
+     */
     public void markAsFailed( String failure ) throws IOException
     {
         indexStorage.storeIndexFailure( failure );
