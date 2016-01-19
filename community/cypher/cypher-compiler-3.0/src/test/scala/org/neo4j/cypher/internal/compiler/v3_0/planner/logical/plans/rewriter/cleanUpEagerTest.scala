@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -74,6 +74,5 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =
-    iterateUntilConverged((p: LogicalPlan) => p.endoRewrite(cleanUpEager))(p)
-
+    fixedPoint((p: LogicalPlan) => p.endoRewrite(cleanUpEager))(p)
 }

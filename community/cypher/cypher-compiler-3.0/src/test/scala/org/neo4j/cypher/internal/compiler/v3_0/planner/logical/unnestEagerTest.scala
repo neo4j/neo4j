@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Eagerness.unnestEager
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{PropertyKeyName, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -101,6 +101,5 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =
-    iterateUntilConverged((p: LogicalPlan) => p.endoRewrite(unnestEager))(p)
-
+    fixedPoint((p: LogicalPlan) => p.endoRewrite(unnestEager))(p)
 }

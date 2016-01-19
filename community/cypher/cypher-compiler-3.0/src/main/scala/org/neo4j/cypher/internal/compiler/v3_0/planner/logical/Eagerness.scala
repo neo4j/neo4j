@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{PlannerQuery, QueryGraph}
-import org.neo4j.cypher.internal.frontend.v3_0.{repeat, bottomUp, Rewriter, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
+import org.neo4j.cypher.internal.frontend.v3_0.{bottomUp, Rewriter, SemanticDirection}
 
 import scala.annotation.tailrec
 
@@ -188,6 +189,6 @@ object Eagerness {
 
     }
 
-    override def apply(input: AnyRef) = repeat(bottomUp(instance)).apply(input)
+    override def apply(input: AnyRef) = fixedPoint(bottomUp(instance)).apply(input)
   }
 }
