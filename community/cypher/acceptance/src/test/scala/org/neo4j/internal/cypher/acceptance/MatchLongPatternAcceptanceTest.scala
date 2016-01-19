@@ -19,27 +19,116 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.util
+
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.IDPSolverMonitor
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.{monitoring, GraphDatabaseAPI}
+import org.neo4j.test.ImpermanentGraphDatabase
 import scala.collection.mutable
+import scala.collection.JavaConverters._
 
 class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  val VERBOSE = false
+  val VERBOSE = true
 
-  test("should plan a very long relationship pattern without combinatorial explosion") {
+  override def databaseConfig() = super.databaseConfig() ++ Map(
+    GraphDatabaseSettings.cypher_min_replan_interval.name -> "0",
+    GraphDatabaseSettings.cypher_compiler_tracing.name -> "true",
+    GraphDatabaseSettings.pagecache_memory.name -> "8M"
+  )
+
+  case class TestIDPSolverMonitor() extends IDPSolverMonitor {
+    var maxStartIteration = 0
+    var foundPlanIteration = 0
+
+    override def startIteration(iteration: Int): Unit = maxStartIteration = iteration
+
+    override def foundPlanAfter(iterations: Int): Unit = foundPlanIteration = iterations
+
+    override def endIteration(iteration: Int, depth: Int, tableSize: Int): Unit = {}
+  }
+
+  def runWithConfig(m: (String, String)*)(run: (ExecutionEngine, GraphDatabaseService) => Unit) = {
+    val config: util.Map[String, String] = m.toMap.asJava
+
+    val graph = new ImpermanentGraphDatabase(config) with Snitch
+    try {
+      val engine = new ExecutionEngine(graph)
+      run(engine, graph)
+    } finally {
+      graph.shutdown()
+    }
+  }
+
+  test("changing idp max table size should affect query plans") {
     val numberOfPatternRelationships = 13
-    if(VERBOSE) println("Running IDP on pattern expression of length " + numberOfPatternRelationships)
-    val query = (1 to numberOfPatternRelationships).foldLeft("MATCH p = (n0)") { (text, index) =>
+    val query = makeLongPatternQuery(numberOfPatternRelationships)
+    val maxTableSizes = Seq(128, 64, 32, 16)
+    val idpInnerIterations = maxTableSizes.foldLeft(mutable.Map.empty[Int, Int]) { (acc, maxTableSize) =>
+      val config = databaseConfig() + ("dbms.cypher.idp_solver_table_threshold" -> maxTableSize.toString)
+      runWithConfig(config.toSeq: _*) {
+        (engine, db) =>
+          graph = db.asInstanceOf[GraphDatabaseAPI with Snitch]
+          makeLargeMatrixDataset(100)
+          val monitor = TestIDPSolverMonitor()
+          val monitors: monitoring.Monitors = graph.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
+          monitors.addMonitorListener(monitor)
+          val result = engine.execute(s"EXPLAIN CYPHER planner=IDP $query")
+          val counts = countExpandsAndJoins(result.executionPlanDescription())
+          counts("joins") should be > 1
+          counts("joins") should be < numberOfPatternRelationships / 2
+          acc(maxTableSize) = monitor.maxStartIteration
+      }
+      acc
+    }
+    maxTableSizes.foreach { (maxTableSize) =>
+      println(s"$maxTableSize\t${idpInnerIterations(maxTableSize)}")
+    }
+    maxTableSizes.slice(0, maxTableSizes.size - 1).foreach { (maxTableSize) =>
+      idpInnerIterations(maxTableSize) should be < idpInnerIterations(maxTableSizes.last)
+    }
+  }
+
+  def makeLongPatternQuery(numberOfPatternRelationships: Int) =
+    (1 to numberOfPatternRelationships).foldLeft("MATCH p = (n0)") { (text, index) =>
       text + s"-[r$index]->(n$index)"
     } + " RETURN p"
+
+  test("should plan a very long relationship pattern without combinatorial explosion") {
+    makeLargeMatrixDataset(100)
+    val numberOfPatternRelationships = 13
+    if(VERBOSE) println("Running IDP on pattern expression of length " + numberOfPatternRelationships)
+    val query = makeLongPatternQuery(numberOfPatternRelationships)
     val start = System.currentTimeMillis()
     val result = eengine.execute(s"EXPLAIN CYPHER planner=IDP $query")
     val duration = System.currentTimeMillis()-start
+    println(result.executionPlanDescription())
     if(VERBOSE) println(s"IDP took ${duration}ms to solve length $numberOfPatternRelationships")
     val plan = result.executionPlanDescription()
     assertMinExpandsAndJoins(plan, Map("expands" -> numberOfPatternRelationships, "joins" -> 1))
     // For length 12 we improved compiler times from tens of minutes down to ~3s, we think this test of 30s is stable on a wide range of computing hardware
     duration should be <= 30000L
+  }
+
+  private def makeLargeMatrixDataset(size: Int): Unit = {
+    val nodes = (for (
+      a <- 0 to size;
+      b <- 0 to size
+    ) yield {
+      val name = s"n($a,$b)"
+      name -> createLabeledNode(Map("name" -> name), "Person")
+    }).toMap
+    for (
+      a <- 0 to size;
+      b <- 0 to size
+    ) yield {
+      if (a > 0) relate(nodes(s"n(${a - 1},${b})"), nodes(s"n(${a},${b})"), "KNOWS", s"n(${a - 1},${b}-n(${a},${b})")
+      if (b > 0) relate(nodes(s"n(${a},${b - 1})"), nodes(s"n(${a},${b})"), "KNOWS", s"n(${a},${b - 1}-n(${a},${b})")
+    }
+
   }
 
   test("very long pattern expressions should be solvable with multiple planners giving identical results using index lookups, expands and joins") {
@@ -49,21 +138,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
     val planners = Seq("RULE", "GREEDY", "IDP")
     val minPathLength = 8
     val maxPathLength = 15
-    val datasetBuffer = 100
-    val nodes = (for (
-      a <- 0 to maxPathLength + datasetBuffer;
-      b <- 0 to maxPathLength + datasetBuffer
-    ) yield {
-      val name = s"n($a,$b)"
-      name -> createLabeledNode(Map("name" -> name), "Person")
-    }).toMap
-    for (
-      a <- 0 to maxPathLength + datasetBuffer;
-      b <- 0 to maxPathLength + datasetBuffer
-    ) yield {
-      if (a > 0) relate(nodes(s"n(${a - 1},${b})"), nodes(s"n(${a},${b})"), "KNOWS", s"n(${a - 1},${b}-n(${a},${b})")
-      if (b > 0) relate(nodes(s"n(${a},${b - 1})"), nodes(s"n(${a},${b})"), "KNOWS", s"n(${a},${b - 1}-n(${a},${b})")
-    }
+    makeLargeMatrixDataset(maxPathLength + 100)
 
     val indexStep = 5
     val results = planners.foldLeft(mutable.Map.empty[String,Seq[Seq[Long]]]) { (data: mutable.Map[String, Seq[Seq[Long]]], planner: String) =>

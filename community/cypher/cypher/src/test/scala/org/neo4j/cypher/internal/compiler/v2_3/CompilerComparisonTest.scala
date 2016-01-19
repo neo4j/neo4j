@@ -52,6 +52,8 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     statsDivergenceThreshold = 0.5,
     queryPlanTTL = 1000,
     useErrorsOverWarnings = false,
+    idpMaxTableSize = 128,
+    idpIterationDuration = 1000,
     nonIndexedLabelWarningThreshold = 10000
   )
 
@@ -303,7 +305,9 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       queryPlanner = queryPlanner,
       runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(clock, monitors), CompiledPlanBuilder(clock,GeneratedQueryStructure)),
       semanticChecker = checker,
-      useErrorsOverWarnings = false
+      useErrorsOverWarnings = false,
+      idpMaxTableSize = 128,
+      idpIterationDuration = 1000
     )
     val pipeBuilder = new SilentFallbackPlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner,
                                                     planBuilderMonitor)

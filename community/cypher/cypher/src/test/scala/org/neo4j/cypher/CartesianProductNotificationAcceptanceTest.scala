@@ -114,6 +114,8 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
         statsDivergenceThreshold = 0.5,
         queryPlanTTL = 1000L,
         useErrorsOverWarnings = false,
+        idpMaxTableSize = 128,
+        idpIterationDuration = 1000,
         nonIndexedLabelWarningThreshold = 10000L
       ),
       Clock.SYSTEM_CLOCK,

@@ -138,6 +138,20 @@ public abstract class GraphDatabaseSettings
     public static Setting<Long> query_non_indexed_label_warning_threshold = setting(
             "dbms.cypher.non_indexed_label_warning_threshold", LONG, "10000" );
 
+    @Description( "To improve IDP query planning time, we can restrict the internal planning table size, " +
+                  "triggering compaction of candidate plans. The smaller the threshold the faster the planning, " +
+                  "but the higher the risk of sub-optimal plans." )
+    @Internal
+    public static Setting<Integer> cypher_idp_solver_table_threshold = setting(
+            "dbms.cypher.idp_solver_table_threshold", INTEGER, "128", min( 16 ) );
+
+    @Description( "To improve IDP query planning time, we can restrict the internal planning loop duration, " +
+                  "triggering more frequent compaction of candidate plans. The smaller the threshold the " +
+                  "faster the planning, but the higher the risk of sub-optimal plans." )
+    @Internal
+    public static Setting<Long> cypher_idp_solver_duration_threshold = setting(
+            "dbms.cypher.idp_solver_duration_threshold", LONG, "1000", min( 10L ) );
+
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
     public static Setting<Long> cypher_min_replan_interval = setting( "dbms.cypher.min_replan_interval", DURATION, "1s" );
 

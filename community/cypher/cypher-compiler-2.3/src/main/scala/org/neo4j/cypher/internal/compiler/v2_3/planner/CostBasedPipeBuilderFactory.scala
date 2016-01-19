@@ -35,12 +35,17 @@ object CostBasedPipeBuilderFactory {
              tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
              plannerName: Option[CostBasedPlannerName],
              runtimeBuilder: RuntimeBuilder,
-             useErrorsOverWarnings: Boolean
+             useErrorsOverWarnings: Boolean,
+             idpMaxTableSize: Int,
+             idpIterationDuration: Long
     ) = {
 
     def createQueryGraphSolver(n: CostBasedPlannerName): QueryGraphSolver = n match {
       case IDPPlannerName =>
-        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), solverConfig = DefaultIDPSolverConfig(iterationDuration = 1000))
+        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), solverConfig = DefaultIDPSolverConfig(
+          maxTableSize = idpMaxTableSize,
+          iterationDuration = idpIterationDuration
+        ))
 
       case DPPlannerName =>
         IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), solverConfig = DPSolverConfig())

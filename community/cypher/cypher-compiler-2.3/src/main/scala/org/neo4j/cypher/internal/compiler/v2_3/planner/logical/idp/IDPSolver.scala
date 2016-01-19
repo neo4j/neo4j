@@ -53,7 +53,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     // utility functions
     val goalSelector: Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](_._2, _)
 
-    def generateBestCandidates(maxTableSize: Int, maxBlockSize: Int): Int = {
+    def generateBestCandidates(maxBlockSize: Int): Int = {
       var blockSize = 1
       var keepGoing = true
       val start = System.currentTimeMillis()
@@ -94,7 +94,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     while (toDo.size > 1) {
       iterations += 1
       monitor.startIteration(iterations)
-      val largestFinished = generateBestCandidates(maxTableSize, toDo.size)
+      val largestFinished = generateBestCandidates(toDo.size)
       val (bestGoal, bestInBlock) = findBestCandidateInBlock(largestFinished)
       monitor.endIteration(iterations, largestFinished, table.size)
       compactBlock(bestGoal, bestInBlock)
