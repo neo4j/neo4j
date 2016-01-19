@@ -43,6 +43,7 @@ object ClauseConverters {
     case c: Remove => addRemoveToLogicalPlanInput(acc, c)
     case c: Merge => addMergeToLogicalPlanInput(acc, c)
     case c: LoadCSV => addLoadCSVToLogicalPlanInput(acc, c)
+    case c: Foreach => addForeachToLogicalPlanInput(acc, c)
 
     case x => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
   }
@@ -124,11 +125,13 @@ object ClauseConverters {
         //remove duplicates from loops, (a:L)-[:ER1]->(a)
         val dedupedNodes = dedup(nodes)
 
+        val seenPatternNodes = acc.allSeenPatternNodes
+
         //create nodes that are not already matched or created
-        val nodesToCreate = dedupedNodes.filterNot(pattern => acc.allSeenPatternNodes(pattern.nodeName))
+        val nodesToCreate = dedupedNodes.filterNot(pattern => seenPatternNodes(pattern.nodeName))
 
         //we must check that we are not trying to set a pattern or label on any already created nodes
-        val nodesCreatedBefore = dedupedNodes.filter(pattern => acc.allSeenPatternNodes(pattern.nodeName))
+        val nodesCreatedBefore = dedupedNodes.filter(pattern => seenPatternNodes(pattern.nodeName))
         nodesCreatedBefore.collectFirst {
           case c if c.labels.nonEmpty || c.properties.nonEmpty =>
             throw new SyntaxException(
@@ -391,6 +394,22 @@ object ClauseConverters {
           exp = clause.expression)
       ).
       withTail(PlannerQuery.empty)
+
+  private def addForeachToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Foreach): PlannerQueryBuilder = {
+    val innerBuilder = new PlannerQueryBuilder(PlannerQuery.empty, builder.semanticTable)
+      .amendQueryGraph(_.addPatternNodes(builder.allSeenPatternNodes.toSeq:_*))
+
+    val innerPlannerQuery = clause.updates.foldLeft(innerBuilder) {
+      case (acc, innerClause) => addToLogicalPlanInput(acc, innerClause)
+    }.build()
+
+    val foreachPattern = ForeachPattern(
+      variable = IdName(clause.variable.name),
+      expression = clause.expression,
+      innerUpdates = innerPlannerQuery)
+
+    builder.amendQueryGraph(_.addMutatingPatterns(foreachPattern))
+  }
 
   private def addStartToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Start): PlannerQueryBuilder = {
     builder.amendQueryGraph { qg =>

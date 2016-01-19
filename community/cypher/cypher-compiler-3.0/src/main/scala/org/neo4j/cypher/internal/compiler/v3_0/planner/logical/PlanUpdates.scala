@@ -51,6 +51,13 @@ case object PlanUpdates
     }
 
     pattern match {
+      //FOREACH
+      case foreach: ForeachPattern => {
+        val innerLeaf = context.logicalPlanProducer.planArgumentRow(Set.empty, Set.empty, source.availableSymbols + foreach.variable)
+        val innerUpdatePlan = this.apply(foreach.innerUpdates, innerLeaf)
+        val foreachPlan = context.logicalPlanProducer.planForeach(source, innerUpdatePlan, foreach)
+        foreachPlan
+      }
       //CREATE ()
       case p: CreateNodePattern => context.logicalPlanProducer.planCreateNode(source, p)
       //CREATE (a)-[:R]->(b)
