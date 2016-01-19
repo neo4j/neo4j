@@ -45,6 +45,8 @@ import org.neo4j.metrics.source.db.EntityCountMetrics;
 import org.neo4j.metrics.source.db.TransactionMetrics;
 import org.neo4j.test.ha.ClusterRule;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -59,6 +61,7 @@ import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
 import static org.neo4j.metrics.MetricsSettings.graphiteInterval;
 import static org.neo4j.metrics.MetricsSettings.metricsEnabled;
+import static org.neo4j.test.Assert.assertEventually;
 
 public class MetricsKernelExtensionFactoryIT
 {
@@ -203,10 +206,7 @@ public class MetricsKernelExtensionFactoryIT
     private long readLongValueAndAssert( File metricFile, BiPredicate<Integer,Integer> assumption ) throws Throwable
     {
         // let's wait until the file is in place (since the reporting is async that might take a while)
-        while ( !metricFile.exists() )
-        {
-            Thread.sleep( 10 );
-        }
+        assertEventually( "Metrics file should exist", metricFile::exists, is( true ), 20, SECONDS );
 
         try ( BufferedReader reader = new BufferedReader( new FileReader( metricFile ) ) )
         {
