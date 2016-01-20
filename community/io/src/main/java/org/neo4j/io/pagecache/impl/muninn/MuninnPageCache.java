@@ -113,6 +113,9 @@ public class MuninnPageCache implements PageCache
     private static final int cooperativeEvictionLiveLockThreshold = getInteger(
             MuninnPageCache.class, "cooperativeEvictionLiveLockThreshold", 100 );
 
+    private static final boolean backgroundFlushingEnabled = flag(
+            MuninnPageCache.class, "backgroundFlushingEnabled", true );
+
     // The background flush task will only spend a certain amount of time doing IO, to avoid saturating the IO
     // subsystem during times when there is more important work to be done. It will do this by measuring how much
     // time it spends on each flush, and then accumulate a sleep debt. Once the sleep debt grows beyond this
@@ -166,7 +169,6 @@ public class MuninnPageCache implements PageCache
     private final PageSwapperFactory swapperFactory;
     private final int cachePageSize;
     private final int keepFree;
-    private final CursorPool cursorPool;
     private final PageCacheTracer tracer;
     private final MuninnPage[] pages;
     private final AtomicInteger backgroundFlushPauseRequests;
@@ -228,7 +230,6 @@ public class MuninnPageCache implements PageCache
         this.swapperFactory = swapperFactory;
         this.cachePageSize = cachePageSize;
         this.keepFree = Math.min( pagesToKeepFree, maxPages / 2 );
-        this.cursorPool = new CursorPool();
         this.tracer = tracer;
         this.pages = new MuninnPage[maxPages];
         this.backgroundFlushPauseRequests = new AtomicInteger();
@@ -356,7 +357,6 @@ public class MuninnPageCache implements PageCache
                 this,
                 filePageSize,
                 swapperFactory,
-                cursorPool,
                 tracer,
                 createIfNotExists,
                 truncateExisting );
@@ -382,7 +382,10 @@ public class MuninnPageCache implements PageCache
         try
         {
             backgroundThreadExecutor.execute( new EvictionTask( this ) );
-            backgroundThreadExecutor.execute( new FlushTask( this ) ); // TODO disable background flushing
+            if ( backgroundFlushingEnabled )
+            {
+                backgroundThreadExecutor.execute( new FlushTask( this ) ); // TODO disable background flushing for good
+            }
         }
         catch ( Exception e )
         {

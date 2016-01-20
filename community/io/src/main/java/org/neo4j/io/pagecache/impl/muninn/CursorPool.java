@@ -19,15 +19,72 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-final class CursorPool
+final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 {
-    public MuninnReadPageCursor takeReadCursor()
+    private final MuninnPagedFile pagedFile;
+    private final int cachePageSize;
+
+    public CursorPool( MuninnPagedFile pagedFile, int cachePageSize )
     {
-        return new MuninnReadPageCursor();
+        this.pagedFile = pagedFile;
+        this.cachePageSize = cachePageSize;
     }
 
-    public MuninnWritePageCursor takeWriteCursor()
+    @Override
+    protected CursorSets initialValue()
     {
-        return new MuninnWritePageCursor();
+        return new CursorSets();
+    }
+
+    public MuninnReadPageCursor takeReadCursor( long pageId, int pf_flags )
+    {
+        CursorSets cursorSets = get();
+        MuninnReadPageCursor cursor = cursorSets.readCursors;
+        if ( cursor != null )
+        {
+            cursorSets.readCursors = cursor.nextCursor;
+        }
+        else
+        {
+            cursor = createReadCursor( cursorSets );
+        }
+        cursor.initialiseFlags( pagedFile, pageId, pf_flags );
+        return cursor;
+    }
+
+    private MuninnReadPageCursor createReadCursor( CursorSets cursorSets )
+    {
+        MuninnReadPageCursor cursor = new MuninnReadPageCursor( cursorSets, cachePageSize );
+        cursor.initialiseFile( pagedFile );
+        return cursor;
+    }
+
+    public MuninnWritePageCursor takeWriteCursor( long pageId, int pf_flags )
+    {
+        CursorSets cursorSets = get();
+        MuninnWritePageCursor cursor = cursorSets.writeCursors;
+        if ( cursor != null )
+        {
+            cursorSets.writeCursors = cursor.nextCursor;
+        }
+        else
+        {
+            cursor = createWriteCursor( cursorSets );
+        }
+        cursor.initialiseFlags( pagedFile, pageId, pf_flags );
+        return cursor;
+    }
+
+    private MuninnWritePageCursor createWriteCursor( CursorSets cursorSets )
+    {
+        MuninnWritePageCursor cursor = new MuninnWritePageCursor( cursorSets, cachePageSize );
+        cursor.initialiseFile( pagedFile );
+        return cursor;
+    }
+
+    static class CursorSets
+    {
+        MuninnReadPageCursor readCursors;
+        MuninnWritePageCursor writeCursors;
     }
 }

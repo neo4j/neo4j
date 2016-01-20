@@ -22,23 +22,31 @@ package org.neo4j.io.pagecache.impl.muninn;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
- * SequenceLock is a sequence-based lock like StampedLock, but with the ability to take optimistic write-locks.
+ * SequenceLock is a sequence-based lock like StampedLock, but entirely non-blocking, and with special lock modes that
+ * are needed by the Muninn page cache.
  * <p>
  * The SequenceLock supports non-blocking optimistic concurrent read locks, non-blocking concurrent write locks,
- * and a pessimistic non-blocking exclusive lock.
+ * and non-blocking pessimistic freeze (read-only) and exclusive locks.
  * <p>
  * The optimistic read lock works through validation, so at the end of the critical section, the read lock has to be
  * validated and, if the validation fails, the critical section has to be retried. The read-lock acquires a stamp
  * at the start of the critical section, which is then validated at the end of the critical section. The stamp is
- * invalidated if any write-lock or exclusive lock has been taking since the stamp was acquired.
+ * invalidated if any write lock or exclusive lock was overlapping with the read lock.
  * <p>
- * The optimistic write locks works by assuming that writes are always non-conflicting, so no validation is required.
- * However, the write locks will check if a pessimistic exclusive lock is held at the start of the critical section,
- * and if so, fail to be acquired. The write locks will invalidate all optimistic read locks. The write lock is
+ * The concurrent write locks works by assuming that writes are always non-conflicting, so no validation is required.
+ * However, the write locks will check if a pessimistic freeze or exclusive lock is held at the start of the critical
+ * section, and if so, fail to be acquired. The write locks will invalidate all optimistic read locks. The write lock
+ * is
  * try-lock only, and will never block.
  * <p>
- * The exclusive lock will also invalidate the optimistic read locks, but not the write locks. The exclusive lock is
- * try-lock only, and will never block.
+ * The freeze lock is also non-blocking (try-lock only), but can only be held by one thread at a time for
+ * implementation reasons. Freeze lock is meant to "freeze" the data. This means that freeze locks do not invalidate
+ * optimistic read locks, but do prevent write and exclusive locks. Likewise, if a write or exclusive lock is held,
+ * the attempt to take a freeze lock will fail.
+ * <p>
+ * The exclusive lock will also invalidate the optimistic read locks. The exclusive lock is try-lock only, and will
+ * never block. If a write or freeze lock is currently held, the attempt to take the exclusive lock will fail, and
+ * the exclusive lock will likewise prevent write and freeze locks from being taken.
  */
 public class SequenceLock
 {
@@ -61,6 +69,10 @@ public class SequenceLock
      */
     private static final long CNT_BITS = 17;
 
+    // TODO once the background flush task has been removed from the MuninnPageCache, the "freeze" lock can be renamed
+    // TODO to a "flush" lock, since it is only used for flushing pages. The flush lock does NOT need to exclude writers
+    // TODO but DOES need to exclusive the exclusive lock. Thus, flushing will no longer interfere with the performance
+    // TODO of reads and writes - it'll only prevent eviction, which is precisely minimum behaviour we want.
     private static final long BITS_IN_LONG = 64;
     private static final long EXL_LOCK_BITS = 1;
     private static final long FRZ_LOCK_BITS = 1;
@@ -196,13 +208,13 @@ public class SequenceLock
     }
 
     /**
-     * Grab an exclusive lock if one is immediately available. Exclusive locks will invalidate any overlapping
-     * optimistic read lock, and make write locks block. If any write locks are currently taken, then the attempt to
-     * grab an exclusive lock will fail.
+     * Grab the exclusive lock if it is immediately available. Exclusive locks will invalidate any overlapping
+     * optimistic read lock, and fail write and freeze locks. If any write or freeze locks are currently taken, or if
+     * the exclusive lock is already taken, then the attempt to grab an exclusive lock will fail.
      * <p>
      * Successfully grabbed exclusive locks must always be paired with a corresponding {@link #unlockExclusive()}.
      *
-     * @return {@code true} if we successfully got an exclusive lock, {@code false} otherwise.
+     * @return {@code true} if we successfully got the exclusive lock, {@code false} otherwise.
      */
     public boolean tryExclusiveLock()
     {
@@ -250,12 +262,24 @@ public class SequenceLock
         throw new IllegalMonitorStateException( "Unmatched unlockExclusive: " + describeState( s ) );
     }
 
+    /**
+     * Grab the freeze lock if it is immediately available. Freeze locks prevent overlapping write and exclusive locks,
+     * but do not invalidate optimistic read locks. Only one freeze lock can be held at a time. If any freeze, write,
+     * or exclusive lock is already held, the attempt to take the freeze lock will fail.
+     * <p>
+     * Successfully grabbed freeze locks must always be paired with a corresponding {@link #unlockFreeze()}.
+     *
+     * @return {@code true} if we successfully got the freeze lock, {@code false} otherwise.
+     */
     public boolean tryFreezeLock()
     {
         long s = getState();
         return ((s & UNL_MASK) == 0) && compareAndSetState( s, s + FRZ_MASK );
     }
 
+    /**
+     * Unlock the currently held freeze lock.
+     */
     public void unlockFreeze()
     {
         long s = getState();
@@ -287,8 +311,8 @@ public class SequenceLock
         long cnt = (s & CNT_MASK) >> SEQ_BITS;
         long seq = s & SEQ_MASK;
         StringBuilder sb = new StringBuilder( "SequenceLock[Excl: " ).append( excl );
-        sb.append( ", Ws: " ).append( cnt ).append( " (" ).append( Long.toBinaryString( cnt ) );
-        sb.append( "), S: " ).append( seq ).append( " (" ).append( Long.toBinaryString( seq )  ).append( ")]" );
+        sb.append( ", Ws: " ).append( cnt );
+        sb.append( ", S: " ).append( seq ).append( ']' );
         return sb.toString();
     }
 }

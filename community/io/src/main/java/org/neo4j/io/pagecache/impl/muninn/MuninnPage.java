@@ -58,7 +58,7 @@ final class MuninnPage extends SequenceLock implements Page
     public Object nextFree;
 
     private PageSwapper swapper;
-    private volatile long filePageId = PageCursor.UNBOUND_PAGE_ID;
+    private long filePageId = PageCursor.UNBOUND_PAGE_ID;
 
     public MuninnPage( int cachePageSize, MemoryManager memoryManager )
     {

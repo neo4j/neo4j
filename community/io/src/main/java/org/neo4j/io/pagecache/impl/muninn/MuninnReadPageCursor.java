@@ -25,7 +25,15 @@ import org.neo4j.io.pagecache.PageSwapper;
 
 final class MuninnReadPageCursor extends MuninnPageCursor
 {
+    private final CursorPool.CursorSets cursorSets;
     protected long lockStamp;
+    MuninnReadPageCursor nextCursor;
+
+    public MuninnReadPageCursor( CursorPool.CursorSets cursorSets, int cachePageSize )
+    {
+        super( cachePageSize );
+        this.cursorSets = cursorSets;
+    }
 
     @Override
     protected void unpinCurrentPage()
@@ -78,6 +86,12 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     protected void convertPageFaultLock( MuninnPage page )
     {
         lockStamp = page.unlockExclusive();
+    }
+
+    protected void releaseCursor()
+    {
+        nextCursor = cursorSets.readCursors;
+        cursorSets.readCursors = this;
     }
 
     @Override

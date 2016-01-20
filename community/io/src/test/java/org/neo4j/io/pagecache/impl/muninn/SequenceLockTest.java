@@ -211,6 +211,15 @@ public class SequenceLockTest
     }
 
     @Test
+    public void concurrentWriteLocksMustFailExclusiveLocks() throws Exception
+    {
+        lock.tryWriteLock();
+        lock.tryWriteLock();
+        lock.unlockWrite();
+        assertFalse( lock.tryExclusiveLock() );
+    }
+
+    @Test
     public void exclusiveLockMustBeAvailableAfterWriteLock() throws Exception
     {
         lock.tryWriteLock();
@@ -488,10 +497,10 @@ public class SequenceLockTest
     @Test
     public void toStringMustDescribeState() throws Exception
     {
-        assertThat( lock.toString(), is( "SequenceLock[Excl: 0, Ws: 0 (0), S: 0 (0)]" ) );
+        assertThat( lock.toString(), is( "SequenceLock[Excl: 0, Ws: 0, S: 0]" ) );
         lock.tryWriteLock();
-        assertThat( lock.toString(), is( "SequenceLock[Excl: 0, Ws: 1 (1), S: 0 (0)]" ) );
+        assertThat( lock.toString(), is( "SequenceLock[Excl: 0, Ws: 1, S: 0]" ) );
         lock.unlockWrite();
-        assertThat( lock.toString(), is( "SequenceLock[Excl: 0, Ws: 0 (0), S: 1 (1)]" ) );
+        assertThat( lock.toString(), is( "SequenceLock[Excl: 0, Ws: 0, S: 1]" ) );
     }
 }

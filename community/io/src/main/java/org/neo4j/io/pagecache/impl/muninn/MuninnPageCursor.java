@@ -30,14 +30,20 @@ import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+
 abstract class MuninnPageCursor implements PageCursor
 {
+    private static final boolean tracePinnedCachePageId =
+            flag( MuninnPageCursor.class, "tracePinnedCachePageId", false );
+
     // Size of the respective primitive types in bytes.
     private static final int SIZE_OF_BYTE = Byte.BYTES;
     private static final int SIZE_OF_SHORT = Short.BYTES;
     private static final int SIZE_OF_INT = Integer.BYTES;
     private static final int SIZE_OF_LONG = Long.BYTES;
 
+    private final int cachePageSize;
     protected MuninnPagedFile pagedFile;
     protected PageSwapper swapper;
     protected PageCacheTracer tracer;
@@ -51,11 +57,20 @@ abstract class MuninnPageCursor implements PageCursor
     private int size;
     private int offset;
 
-    public final void initialise( MuninnPagedFile pagedFile, long pageId, int pf_flags )
+    public MuninnPageCursor( int cachePageSize )
     {
-        this.pagedFile = pagedFile;
+        this.cachePageSize = cachePageSize;
+    }
+
+    public final void initialiseFile( MuninnPagedFile pagedFile )
+    {
         this.swapper = pagedFile.swapper;
         this.tracer = pagedFile.tracer;
+    }
+
+    public final void initialiseFlags( MuninnPagedFile pagedFile, long pageId, int pf_flags )
+    {
+        this.pagedFile = pagedFile;
         this.pageId = pageId;
         this.pf_flags = pf_flags;
     }
@@ -72,8 +87,11 @@ abstract class MuninnPageCursor implements PageCursor
         this.page = page;
         this.offset = 0;
         this.pointer = page.address();
-        this.size = page.size();
-        pinEvent.setCachePageId( page.getCachePageId() );
+        this.size = cachePageSize;
+        if ( tracePinnedCachePageId )
+        {
+            pinEvent.setCachePageId( page.getCachePageId() );
+        }
     }
 
     @Override
@@ -87,6 +105,9 @@ abstract class MuninnPageCursor implements PageCursor
     public final void close()
     {
         unpinCurrentPage();
+        releaseCursor();
+        // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
+        // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
         pagedFile = null;
     }
 
@@ -155,29 +176,21 @@ abstract class MuninnPageCursor implements PageCursor
                 // been evicted, and possibly even page faulted into something else. In this case, we discard the
                 // item and try again, as the eviction thread would have set the chunk array slot to null.
                 MuninnPage page = (MuninnPage) item;
-                if ( tryLockPage( page ) ) // TODO try simplifying this
+                boolean locked = tryLockPage( page );
+                if ( locked & page.isBoundTo( swapper, filePageId ) )
                 {
-                    if ( !page.isBoundTo( swapper, filePageId ) )
-                    {
-                        unlockPage( page );
-                        item = null;
-                    }
+                    pinCursorToPage( page, filePageId, swapper );
+                    return;
                 }
-                else
+                if ( locked )
                 {
-                    item = null;
+                    unlockPage( page );
                 }
-            }
-            else if ( item == null )
-            {
-                // Looks like there's no mapping, so we'd like to do a page fault.
-                item = initiatePageFault( filePageId, chunkOffset, chunk );
+                item = null;
             }
             else
             {
-                // We found a latch, so someone else is already doing a page fault for this page. So we'll just wait
-                // for them to finish, and grab the page then.
-                item = awaitPageFault( item );
+                item = uncommonPin( item, filePageId, chunkOffset, chunk );
             }
         }
         while ( item == null );
@@ -187,6 +200,22 @@ abstract class MuninnPageCursor implements PageCursor
     private Object[][] expandTranslationTableCapacity( int chunkId )
     {
         return pagedFile.expandCapacity( chunkId );
+    }
+
+    private Object uncommonPin( Object item, long filePageId, long chunkOffset, Object[] chunk ) throws IOException
+    {
+        if ( item == null )
+        {
+            // Looks like there's no mapping, so we'd like to do a page fault.
+            item = initiatePageFault( filePageId, chunkOffset, chunk );
+        }
+        else
+        {
+            // We found a latch, so someone else is already doing a page fault for this page. So we'll just wait
+            // for them to finish, and grab the page then.
+            item = awaitPageFault( item );
+        }
+        return item;
     }
 
     private Object initiatePageFault( long filePageId, long chunkOffset, Object[] chunk ) throws IOException
@@ -291,6 +320,8 @@ abstract class MuninnPageCursor implements PageCursor
     protected abstract boolean tryLockPage( MuninnPage page );
 
     protected abstract void unlockPage( MuninnPage page );
+
+    protected abstract void releaseCursor();
 
     // --- IO methods:
 

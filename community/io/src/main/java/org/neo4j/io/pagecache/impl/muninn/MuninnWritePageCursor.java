@@ -26,6 +26,15 @@ import org.neo4j.io.pagecache.PagedFile;
 
 final class MuninnWritePageCursor extends MuninnPageCursor
 {
+    private final CursorPool.CursorSets cursorSets;
+    MuninnWritePageCursor nextCursor;
+
+    public MuninnWritePageCursor( CursorPool.CursorSets cursorSets, int cachePageSize )
+    {
+        super( cachePageSize );
+        this.cursorSets = cursorSets;
+    }
+
     @Override
     protected void unpinCurrentPage()
     {
@@ -82,7 +91,9 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         // we make any changes to the contents of the page, because once all
         // files have been unmapped, the page cache can be closed. And when
         // that happens, dirty contents in memory will no longer have a chance
-        // to get flushed.
+        // to get flushed. It is okay for this method to throw, because we are
+        // after the reset() call, which means that if we throw, the cursor will
+        // be closed and the page lock will be released.
         assertPagedFileStillMappedAndGetIdOfLastPage();
         page.incrementUsage();
     }
@@ -91,6 +102,13 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     protected void convertPageFaultLock( MuninnPage page )
     {
         page.unlockExclusiveAndTakeWriteLock();
+    }
+
+    @Override
+    protected void releaseCursor()
+    {
+        nextCursor = cursorSets.writeCursors;
+        cursorSets.writeCursors = this;
     }
 
     @Override

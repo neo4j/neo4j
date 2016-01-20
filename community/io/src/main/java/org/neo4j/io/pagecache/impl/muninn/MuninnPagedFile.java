@@ -83,14 +83,13 @@ final class MuninnPagedFile implements PagedFile
             MuninnPageCache pageCache,
             int filePageSize,
             PageSwapperFactory swapperFactory,
-            CursorPool cursorPool,
             PageCacheTracer tracer,
             boolean createIfNotExists,
             boolean truncateExisting ) throws IOException
     {
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
-        this.cursorPool = cursorPool;
+        this.cursorPool = new CursorPool( this, pageCache.pageSize() );
         this.tracer = tracer;
 
         // The translation table is an array of arrays of references to either null, MuninnPage objects, or Latch
@@ -147,14 +146,13 @@ final class MuninnPagedFile implements PagedFile
         MuninnPageCursor cursor;
         if ( (pf_flags & PF_SHARED_READ_LOCK) == 0 )
         {
-            cursor = cursorPool.takeWriteCursor();
+            cursor = cursorPool.takeWriteCursor( pageId, pf_flags );
         }
         else
         {
-            cursor = cursorPool.takeReadCursor();
+            cursor = cursorPool.takeReadCursor( pageId, pf_flags );
         }
 
-        cursor.initialise( this, pageId, pf_flags );
         cursor.rewind();
         return cursor;
     }
