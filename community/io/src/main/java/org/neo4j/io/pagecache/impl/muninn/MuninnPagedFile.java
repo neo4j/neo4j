@@ -89,7 +89,7 @@ final class MuninnPagedFile implements PagedFile
     {
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
-        this.cursorPool = new CursorPool( this, pageCache.pageSize() );
+        this.cursorPool = new CursorPool( this );
         this.tracer = tracer;
 
         // The translation table is an array of arrays of references to either null, MuninnPage objects, or Latch

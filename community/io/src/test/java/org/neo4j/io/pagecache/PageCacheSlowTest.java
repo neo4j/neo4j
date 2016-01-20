@@ -44,6 +44,7 @@ import org.neo4j.test.RepeatRule;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -163,11 +164,10 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                             }
                             while ( cursor.shouldRetry() );
                             String lockName = updateCounter ? "PF_SHARED_WRITE_LOCK" : "PF_SHARED_READ_LOCK";
-                            assertThat( "inconsistent page read from filePageId = " + pageId + ", with " + lockName +
-                                        ", workerId = "                                                             +
-                                        threadId + " [t:"                                         + Thread
-                                                .currentThread().getId() + "]",
-                                    counter, is( pageCounts[pageId] ) );
+                            String reason = String.format(
+                                    "inconsistent page read from filePageId = %s, with %s, workerId = %s [t:%s]",
+                                    pageId, lockName, threadId, Thread.currentThread().getId() );
+                            assertThat( reason, counter, is( pageCounts[pageId] ) );
                         }
                         catch ( Throwable throwable )
                         {
@@ -243,10 +243,17 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         // Similar to the test above, except the threads will have multiple page cursors opened at a time.
 
         final AtomicBoolean shouldStop = new AtomicBoolean();
-        final int cachePages = 20;
+        final int cachePages = 40;
         final int filePages = cachePages * 2;
         final int threadCount = 8;
         final int pageSize = threadCount * 4;
+
+        // It's very important that even if all threads grab their maximum number of pages at the same time, there will
+        // still be free pages left in the cache. If we don't keep this invariant, then there's a chance that our test
+        // will run into live-locks, where a page fault will try to find a page to cooperatively evict, but all pages
+        // in cache are already taken.
+        final int maxCursorsPerThread = cachePages / (1 + threadCount);
+        assertThat( maxCursorsPerThread * threadCount, lessThan( cachePages ) );
 
         getPageCache( fs, cachePages, pageSize, PageCacheTracer.NULL );
         final PagedFile pagedFile = pageCache.map( file( "a" ), pageSize );
@@ -263,7 +270,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                 {
                     try
                     {
-                        int pageCount = rng.nextInt( 1, filePages / 10 );
+                        int pageCount = rng.nextInt( 1, maxCursorsPerThread );
                         int[] pageIds = new int[pageCount];
                         for ( int j = 0; j < pageCount; j++ )
                         {
@@ -287,11 +294,10 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                             }
                             while ( cursor.shouldRetry() );
                             String lockName = updateCounter ? "PF_SHARED_WRITE_LOCK" : "PF_SHARED_READ_LOCK";
-                            assertThat( "inconsistent page read from filePageId = " + pageId + ", with " + lockName +
-                                        ", workerId = "                                                             +
-                                        threadId + " [t:"                                         + Thread
-                                                .currentThread().getId() + "]",
-                                    counter, is( pageCounts[pageId] ) );
+                            String reason = String.format(
+                                    "inconsistent page read from filePageId = %s, with %s, workerId = %s [t:%s]",
+                                    pageId, lockName, threadId, Thread.currentThread().getId() );
+                            assertThat( reason, counter, is( pageCounts[pageId] ) );
                             if ( updateCounter )
                             {
                                 counter++;

@@ -24,10 +24,10 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
     private final MuninnPagedFile pagedFile;
     private final int cachePageSize;
 
-    public CursorPool( MuninnPagedFile pagedFile, int cachePageSize )
+    public CursorPool( MuninnPagedFile pagedFile )
     {
         this.pagedFile = pagedFile;
-        this.cachePageSize = cachePageSize;
+        this.cachePageSize = pagedFile.pageCache.pageSize();
     }
 
     @Override
