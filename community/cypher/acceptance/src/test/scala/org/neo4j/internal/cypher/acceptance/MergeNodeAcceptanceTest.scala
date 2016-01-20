@@ -421,7 +421,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     // given an empty database
 
     // when
-    val result = executeWithRulePlanner("foreach(x in [1,2,3] | merge ({property: x}))")
+    val result = updateWithBothPlanners("foreach(x in [1,2,3] | merge ({property: x}))")
 
     // then
     assertStats(result, nodesCreated = 3, propertiesWritten = 3)
@@ -638,7 +638,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("merge_inside_foreach_should_see_variables_introduced_by_update_actions_outside_foreach") {
     // when
-    val result = executeWithRulePlanner("CREATE (a) FOREACH(x in [1,2,3] | MERGE (a)-[:X]->({id: x})) RETURN a")
+    val result = updateWithBothPlanners("CREATE (a) FOREACH(x in [1,2,3] | MERGE (a)-[:X]->({id: x})) RETURN a")
 
     // then
     assertStats(result, nodesCreated = 4, relationshipsCreated = 3, propertiesWritten = 3)
