@@ -59,6 +59,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -392,5 +393,47 @@ public class CacheLayer implements StoreReadLayer
     public void releaseRelationship( long id )
     {
         diskLayer.releaseRelationship( id );
+    }
+
+    @Override
+    public long nodesGetCount()
+    {
+        return diskLayer.nodesGetCount();
+    }
+
+    @Override
+    public long relationshipsGetCount()
+    {
+        return diskLayer.relationshipsGetCount();
+    }
+
+    @Override
+    public int labelCount()
+    {
+        return diskLayer.labelCount();
+    }
+
+    @Override
+    public int propertyKeyCount()
+    {
+        return diskLayer.propertyKeyCount();
+    }
+
+    @Override
+    public int relationshipTypeCount()
+    {
+        return diskLayer.relationshipTypeCount();
+    }
+
+    @Override
+    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
+    {
+        return diskLayer.indexUpdatesAndSize( index, target );
+    }
+
+    @Override
+    public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
+    {
+        return diskLayer.indexSample( index, target );
     }
 }

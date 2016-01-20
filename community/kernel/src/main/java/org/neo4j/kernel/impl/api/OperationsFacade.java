@@ -31,7 +31,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndexHits;
-import org.neo4j.kernel.api.ProcedureRead;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
@@ -62,6 +61,10 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.Procedures;
+import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -75,10 +78,7 @@ import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.proc.Procedure;
-import org.neo4j.proc.Procedures;
-import org.neo4j.proc.ProcedureSignature;
-import org.neo4j.proc.ProcedureSignature.ProcedureName;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.Token;
@@ -313,7 +313,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int[] relTypes )
+    public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int... relTypes )
             throws EntityNotFoundException
     {
         statement.assertOpen();
@@ -469,6 +469,20 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         dataRead().relationshipVisit( statement, relId, visitor );
+    }
+
+    @Override
+    public long nodesGetCount()
+    {
+        statement.assertOpen();
+        return dataRead().nodesGetCount( statement );
+    }
+
+    @Override
+    public long relationshipsGetCount()
+    {
+        statement.assertOpen();
+        return dataRead().relationshipsGetCount( statement );
     }
 
     // </DataRead>
@@ -649,7 +663,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         Procedure.BasicContext ctx = new Procedure.BasicContext();
-        ctx.put( ProcedureRead.readStatement, this );
+        ctx.put( ReadOperations.readStatement, this );
         return procedures.call( ctx, name, input );
     }
 
@@ -795,6 +809,28 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         return tokenRead().relationshipTypeGetName( statement, relationshipTypeId );
     }
+
+    @Override
+    public int labelCount()
+    {
+        statement.assertOpen();
+        return tokenRead().labelCount( statement );
+    }
+
+    @Override
+    public int propertyKeyCount()
+    {
+        statement.assertOpen();
+        return tokenRead().propertyKeyCount( statement );
+    }
+
+    @Override
+    public int relationshipTypeCount()
+    {
+        statement.assertOpen();
+        return tokenRead().relationshipTypeCount( statement );
+    }
+
     // </TokenRead>
 
     // <TokenWrite>
@@ -1298,6 +1334,22 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         return counting().countsForRelationshipWithoutTxState( statement, startLabelId, typeId, endLabelId );
+    }
+
+    @Override
+    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
+            throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return counting().indexUpdatesAndSize( statement, index, target );
+    }
+
+    @Override
+    public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
+            throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return counting().indexSample( statement, index, target );
     }
 
     // </Counts>

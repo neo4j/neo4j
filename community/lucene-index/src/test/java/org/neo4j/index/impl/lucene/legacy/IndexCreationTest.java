@@ -38,11 +38,11 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -126,9 +126,8 @@ public class IndexCreationTest
 
     private void verifyThatIndexCreationTransactionIsTheFirstOne() throws Exception
     {
-        NeoStoreDataSource ds = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
         PhysicalLogFile pLogFile = db.getDependencyResolver().resolveDependency( PhysicalLogFile.class );
-        long version = ds.getCurrentLogVersion();
+        long version = db.getDependencyResolver().resolveDependency( LogVersionRepository.class ).getCurrentLogVersion();
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
                 new SimpleTriggerInfo( "test" )

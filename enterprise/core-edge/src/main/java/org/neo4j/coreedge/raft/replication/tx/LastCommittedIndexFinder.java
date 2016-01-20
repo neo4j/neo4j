@@ -20,9 +20,9 @@
 package org.neo4j.coreedge.raft.replication.tx;
 
 import org.neo4j.cursor.IOCursor;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -34,14 +34,14 @@ import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.de
  */
 public class LastCommittedIndexFinder
 {
-    private final MetaDataStore metaDataStore;
+    private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore transactionStore;
     private final Log log;
 
-    public LastCommittedIndexFinder( MetaDataStore metaDataStore, LogicalTransactionStore transactionStore,
+    public LastCommittedIndexFinder( TransactionIdStore transactionIdStore, LogicalTransactionStore transactionStore,
                                      LogProvider logProvider )
     {
-        this.metaDataStore = metaDataStore;
+        this.transactionIdStore = transactionIdStore;
         this.transactionStore = transactionStore;
         this.log = logProvider.getLog( getClass() );
     }
@@ -49,7 +49,7 @@ public class LastCommittedIndexFinder
     public long getLastCommittedIndex()
     {
         long lastCommittedIndex;
-        long lastTxId = metaDataStore.getLastCommittedTransactionId();
+        long lastTxId = transactionIdStore.getLastCommittedTransactionId();
 
         if ( lastTxId == 1 )
         {

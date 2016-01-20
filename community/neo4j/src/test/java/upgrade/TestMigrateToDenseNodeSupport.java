@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.Set;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -36,9 +37,11 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
@@ -218,10 +221,18 @@ public class TestMigrateToDenseNodeSupport
 
     private void verifyDenseRepresentation( GraphDatabaseService db, Node node, boolean dense )
     {
-        NeoStores neoStores = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(
-                NeoStoresSupplier.class ).get();
-        NodeRecord record = neoStores.getNodeStore().getRecord( node.getId() );
-        assertEquals( dense, record.isDense() );
+        try ( KernelTransaction tx = ((GraphDatabaseAPI)db).getDependencyResolver()
+                .resolveDependency( KernelAPI.class ).newTransaction();
+                Statement statement = tx.acquireStatement() )
+        {
+            Cursor<NodeItem> nodeCursor = statement.readOperations().nodeCursor( node.getId() );
+            assertTrue( nodeCursor.next() );
+            assertEquals( dense, nodeCursor.get().isDense() );
+        }
+        catch ( TransactionFailureException | IllegalArgumentException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     private void createSparseNode( GraphDatabaseService db, Node refNode )

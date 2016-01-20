@@ -43,7 +43,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -51,7 +50,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -376,16 +375,14 @@ public class IndexStatisticsTest
     private long indexSize( IndexDescriptor descriptor ) throws KernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
-                                      .resolveDependency( NeoStoreDataSource.class )
-                                      .getIndexService()
+                                      .resolveDependency( IndexingService.class )
                                       .indexUpdatesAndSize( descriptor ).readSecond();
     }
 
     private long indexUpdates( IndexDescriptor descriptor ) throws KernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
-                                      .resolveDependency( NeoStoreDataSource.class )
-                                      .getIndexService()
+                                      .resolveDependency( IndexingService.class )
                                       .indexUpdatesAndSize( descriptor ).readFirst();
     }
 
@@ -402,7 +399,8 @@ public class IndexStatisticsTest
 
     private CountsTracker getTracker()
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                .testAccessNeoStores().getCounts();
     }
 
     private void createSomePersons() throws KernelException

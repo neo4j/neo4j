@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
@@ -41,8 +42,11 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -52,15 +56,11 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.logging.LogProvider;
@@ -82,7 +82,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -249,7 +248,9 @@ public class IndexPopulationJobTest
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
         IndexStoreView storeView = mock( IndexStoreView.class );
         ControlledStoreScan storeScan = new ControlledStoreScan();
-        when( storeView.visitNodes( any( int[].class ), any( int[].class ), Matchers.<Visitor<NodePropertyUpdate,RuntimeException>>any() ) )
+        when( storeView.visitNodes( any( IntPredicate.class ), any( IntPredicate.class ),
+                Matchers.<Visitor<NodePropertyUpdate,RuntimeException>>any(),
+                Matchers.<Visitor<NodeLabelUpdate,RuntimeException>>any()) )
                 .thenReturn(storeScan );
 
         final IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, storeView,
@@ -564,7 +565,7 @@ public class IndexPopulationJobTest
         }
     }
 
-    private IndexPopulator inMemoryPopulator( boolean constraint )
+    private IndexPopulator inMemoryPopulator( boolean constraint ) throws TransactionFailureException
     {
         IndexConfiguration indexConfig = IndexConfiguration.of( constraint );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
@@ -579,9 +580,8 @@ public class IndexPopulationJobTest
     private final String name = "name";
     private final String age = "age";
 
-    private ThreadToStatementContextBridge ctxSupplier;
-    private CountsTracker counts;
-    private NeoStoreIndexStoreView indexStoreView;
+    private KernelAPI kernel;
+    private IndexStoreView indexStoreView;
     private KernelSchemaStateStore stateHolder;
 
     private int labelId;
@@ -591,18 +591,14 @@ public class IndexPopulationJobTest
     public void before() throws Exception
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        counts = db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get().getCounts();
+        kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         stateHolder = new KernelSchemaStateStore( NullLogProvider.getInstance() );
-        indexStoreView = newStoreView();
+        indexStoreView = indexStoreView();
 
-        try ( Transaction tx = db.beginTx() )
+        try ( KernelTransaction tx = kernel.newTransaction(); Statement statement = tx.acquireStatement() )
         {
-            Statement statement = ctxSupplier.get();
             labelId = statement.schemaWriteOperations().labelGetOrCreateForName( FIRST.name() );
-
             statement.schemaWriteOperations().labelGetOrCreateForName( SECOND.name() );
-            statement.close();
             tx.success();
         }
     }
@@ -615,6 +611,7 @@ public class IndexPopulationJobTest
 
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexPopulator populator,
                                                       FlippableIndexProxy flipper, boolean constraint )
+                                                              throws TransactionFailureException
     {
         return newIndexPopulationJob( label, propertyKey, populator, flipper, indexStoreView,
                 NullLogProvider.getInstance(), constraint );
@@ -624,7 +621,7 @@ public class IndexPopulationJobTest
                                                       IndexPopulator populator,
                                                       FlippableIndexProxy flipper, IndexStoreView storeView,
                                                       LogProvider logProvider,
-                                                      boolean constraint )
+                                                      boolean constraint ) throws TransactionFailureException
     {
         return newIndexPopulationJob( label, propertyKey,
                 mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, constraint );
@@ -635,6 +632,7 @@ public class IndexPopulationJobTest
                                                       IndexPopulator populator,
                                                       FlippableIndexProxy flipper, IndexStoreView storeView,
                                                       LogProvider logProvider, boolean constraint )
+                                                              throws TransactionFailureException
     {
         IndexDescriptor descriptor = indexDescriptor( label, propertyKey );
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
@@ -645,42 +643,40 @@ public class IndexPopulationJobTest
         return job;
     }
 
-    private IndexDescriptor indexDescriptor( Label label, String propertyKey )
+    private IndexDescriptor indexDescriptor( Label label, String propertyKey ) throws TransactionFailureException
     {
         IndexDescriptor descriptor;
-        try ( Transaction tx = db.beginTx() )
+        try ( KernelTransaction tx = kernel.newTransaction(); Statement statement = tx.acquireStatement() )
         {
-            ReadOperations statement = ctxSupplier.get().readOperations();
-            descriptor = new IndexDescriptor( statement.labelGetForName( label.name() ),
-                    statement.propertyKeyGetForName( propertyKey ) );
+            descriptor = new IndexDescriptor( statement.readOperations().labelGetForName( label.name() ),
+                    statement.readOperations().propertyKeyGetForName( propertyKey ) );
             tx.success();
         }
         return descriptor;
     }
 
-    private DoubleLongRegister indexUpdatesAndSize( Label label, String propertyKey )
+    private DoubleLongRegister indexUpdatesAndSize( Label label, String propertyKey ) throws KernelException
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( KernelTransaction tx = kernel.newTransaction(); Statement statement = tx.acquireStatement() )
         {
-            ReadOperations statement = ctxSupplier.get().readOperations();
-            int labelId = statement.labelGetForName( label.name() );
-            int propertyKeyId = statement.propertyKeyGetForName( propertyKey );
+            int labelId = statement.readOperations().labelGetForName( label.name() );
+            int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
             DoubleLongRegister result =
-                    counts.indexUpdatesAndSize( labelId, propertyKeyId, Registers.newDoubleLongRegister() );
+                    statement.readOperations().indexUpdatesAndSize( new IndexDescriptor( labelId, propertyKeyId ),
+                            Registers.newDoubleLongRegister() );
             tx.success();
             return result;
         }
     }
 
-    private DoubleLongRegister indexSample( Label label, String propertyKey )
+    private DoubleLongRegister indexSample( Label label, String propertyKey ) throws KernelException
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( KernelTransaction tx = kernel.newTransaction(); Statement statement = tx.acquireStatement() )
         {
-            ReadOperations statement = ctxSupplier.get().readOperations();
             DoubleLongRegister result = Registers.newDoubleLongRegister();
-            counts.indexSample( statement.labelGetForName( label.name() ),
-                    statement.propertyKeyGetForName( propertyKey ),
-                    result );
+            int labelId = statement.readOperations().labelGetForName( label.name() );
+            int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
+            statement.readOperations().indexSample( new IndexDescriptor( labelId, propertyKeyId ), result );
             tx.success();
             return result;
         }
@@ -707,19 +703,18 @@ public class IndexPopulationJobTest
         }
     }
 
-    private int getPropertyKeyForName( String name )
+    private int getPropertyKeyForName( String name ) throws TransactionFailureException
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( KernelTransaction tx = kernel.newTransaction(); Statement statement = tx.acquireStatement() )
         {
-            int result = ctxSupplier.get().readOperations().propertyKeyGetForName( name );
+            int result = statement.readOperations().propertyKeyGetForName( name );
             tx.success();
             return result;
         }
     }
 
-    private NeoStoreIndexStoreView newStoreView()
+    private IndexStoreView indexStoreView()
     {
-        return new NeoStoreIndexStoreView( mock( LockService.class, RETURNS_MOCKS ),
-                db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get() );
+        return db.getDependencyResolver().resolveDependency( IndexStoreView.class );
     }
 }

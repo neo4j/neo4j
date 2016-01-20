@@ -22,7 +22,7 @@ package org.neo4j.kernel.builtinprocs;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 
-import static org.neo4j.proc.ProcedureSignature.procedureName;
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
 /**
  * This registers procedures that are expected to be available by default in Neo4j.

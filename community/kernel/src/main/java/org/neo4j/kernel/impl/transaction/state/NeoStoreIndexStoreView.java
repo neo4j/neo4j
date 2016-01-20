@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.IntPredicate;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -48,10 +50,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.register.Registers;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -107,22 +106,11 @@ public class NeoStoreIndexStoreView implements IndexStoreView
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
-            final int[] labelIds, final int[] propertyKeyIds,
-            final Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor )
-    {
-        return visitNodes( labelIds, propertyKeyIds, propertyUpdateVisitor,
-                // null here is fine
-                null );
-    }
-
-    @Override
-    public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
-            final int[] labelIds, final int[] propertyKeyIds,
+            final IntPredicate labelIdFilter, IntPredicate propertyKeyIdFilter,
             final Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor,
             final Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor )
     {
-        final long allNodes =
-                counts.nodeCount( ANY_LABEL, Registers.newDoubleLongRegister() ).readSecond();
+        final long allNodes = nodeStore.getHighId();
 
         return new NodeStoreScan<FAILURE>( nodeStore, locks, allNodes )
         {
@@ -142,18 +130,13 @@ public class NeoStoreIndexStoreView implements IndexStoreView
                     labelUpdateVisitor.visit( labelChanges( node.getId(), EMPTY_LONG_ARRAY, labels ) );
                 }
 
-                if ( !containsAnyLabel( labelIds, labels ) )
+                if ( propertyUpdateVisitor != null && containsAnyLabel( labelIdFilter, labels ) )
                 {
-                    // This node has no labels of interest to us
-                    return;
-
-                }
-                properties: for ( PropertyBlock property : properties( node ) )
-                {
-                    int propertyKeyId = property.getKeyIndexId();
-                    for ( int sought : propertyKeyIds )
+                    // Notify the property update visitor
+                    properties: for ( PropertyBlock property : properties( node ) )
                     {
-                        if ( propertyKeyId == sought )
+                        int propertyKeyId = property.getKeyIndexId();
+                        if ( propertyKeyIdFilter.test( propertyKeyId ) )
                         {
                             // This node has a property of interest to us
                             NodePropertyUpdate update = add( node.getId(), propertyKeyId, valueOf( property ), labels );
@@ -167,9 +150,9 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public void nodeAsUpdates( long nodeId, NodeRecord record, Collection<NodePropertyUpdate> target )
+    public void nodeAsUpdates( long nodeId, Collection<NodePropertyUpdate> target )
     {
-        NodeRecord node = nodeStore.loadRecord( nodeId, record );
+        NodeRecord node = nodeStore.loadRecord( nodeId, new NodeRecord( nodeId ) );
         if ( node == null || !node.inUse() )
         {
             return;
@@ -237,23 +220,11 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         };
     }
 
-    private static boolean containsLabel( int sought, long[] labels )
+    private static boolean containsAnyLabel( IntPredicate labelIdFilter, long[] labels )
     {
-        for ( long label : labels )
+        for ( long candidate : labels )
         {
-            if ( label == sought )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean containsAnyLabel( int[] soughtIds, long[] labels )
-    {
-        for ( int soughtId : soughtIds )
-        {
-            if ( containsLabel( soughtId, labels ) )
+            if ( labelIdFilter.test( Math.toIntExact( candidate ) ) )
             {
                 return true;
             }

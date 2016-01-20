@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.logging.AssertableLogProvider;
@@ -196,7 +197,8 @@ public class IndexStatisticsIT
 
     private NeoStores neoStores()
     {
-        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( NeoStores.class );
+        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                .testAccessNeoStores();
     }
 
     private void setupDb( EphemeralFileSystemAbstraction fs )

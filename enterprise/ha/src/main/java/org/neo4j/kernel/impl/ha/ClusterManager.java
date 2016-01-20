@@ -82,7 +82,6 @@ import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -90,6 +89,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -749,7 +749,7 @@ public class ClusterManager
     {
         private final ExecutorService executor;
         private GraphDatabaseService result;
-        private Future<GraphDatabaseService> untilThen;
+        private final Future<GraphDatabaseService> untilThen;
 
         public HighlyAvailableGraphDatabaseProxy( final GraphDatabaseBuilder graphDatabaseBuilder )
         {
@@ -1241,7 +1241,7 @@ public class ClusterManager
             {
                 if ( !exceptSet.contains( db ) )
                 {
-                    db.getDependencyResolver().resolveDependency( StoreFlusher.class ).forceEverything();
+                    db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce();
                 }
             }
         }

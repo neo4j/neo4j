@@ -31,8 +31,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
@@ -149,7 +149,8 @@ public class IndexSamplingIntegrationTest
             db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir().getAbsolutePath() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
-            CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+            CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                    .testAccessNeoStores().getCounts();
             IndexSampleKey key = CountsKeyFactory.indexSampleKey( 0, 0 ); // cheating a bit...
             return countsTracker.get( key, Registers.newDoubleLongRegister() );
         }

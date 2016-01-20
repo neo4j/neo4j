@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.IndexSchemaRule;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -363,4 +364,18 @@ public interface StoreReadLayer
      * @throws IndexNotFoundKernelException if no such index exists.
      */
     double indexUniqueValuesPercentage( IndexDescriptor index ) throws IndexNotFoundKernelException;
+
+    long nodesGetCount();
+
+    long relationshipsGetCount();
+
+    int labelCount();
+
+    int propertyKeyCount();
+
+    int relationshipTypeCount();
+
+    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target );
+
+    DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target );
 }

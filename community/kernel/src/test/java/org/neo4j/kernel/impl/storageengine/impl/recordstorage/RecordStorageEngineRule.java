@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
@@ -98,7 +99,8 @@ public class RecordStorageEngineRule extends ExternalResource
                 mock( RelationshipTypeTokenHolder.class ), () -> {}, new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
                 schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth,
-                labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore ) );
+                labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
+                new SynchronizedArrayIdOrderingQueue( 20 ) ) );
     }
 
     @Override

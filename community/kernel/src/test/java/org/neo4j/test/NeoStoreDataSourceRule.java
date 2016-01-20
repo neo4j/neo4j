@@ -19,7 +19,6 @@
  */
 package org.neo4j.test;
 
-
 import java.io.File;
 import java.util.Map;
 

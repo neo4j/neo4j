@@ -35,7 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.metrics.source.cluster.ClusterMetrics;
@@ -94,8 +94,8 @@ public class MetricsKernelExtensionFactoryIT
     public void shouldShowTxCommittedMetricsWhenMetricsEnabled() throws Throwable
     {
         // GIVEN
-        long lastCommittedTransactionId = db.getDependencyResolver().resolveDependency( NeoStores.class )
-                .getMetaDataStore().getLastCommittedTransactionId();
+        long lastCommittedTransactionId = db.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                .getLastCommittedTransactionId();
 
         // Create some activity that will show up in the metrics data.
         addNodes( 1000 );

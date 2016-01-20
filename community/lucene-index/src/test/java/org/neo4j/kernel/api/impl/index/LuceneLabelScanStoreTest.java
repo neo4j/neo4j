@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -425,8 +424,6 @@ public class LuceneLabelScanStoreTest
         this.strategy = strategy;
     }
 
-
-
     private void assertNodesForLabel( int labelId, long... expectedNodeIds )
     {
         Set<Long> nodeSet = new HashSet<>();
@@ -476,15 +473,15 @@ public class LuceneLabelScanStoreTest
         return new FullStoreChangeStream()
         {
             @Override
-            public Iterator<NodeLabelUpdate> iterator()
+            public long applyTo( LabelScanWriter writer ) throws IOException
             {
-                return existingData.iterator();
-            }
-
-            @Override
-            public long numberOfNodes()
-            {
-                return existingData.size();
+                long count = 0;
+                for ( NodeLabelUpdate update : existingData )
+                {
+                    writer.write( update );
+                    count++;
+                }
+                return count;
             }
         };
     }

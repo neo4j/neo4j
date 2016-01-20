@@ -453,7 +453,6 @@ public class KernelTransactionImplementationTest
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
         when( readLayer.acquireStatement() ).thenReturn( mock( StoreStatement.class ) );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
-        when( storageEngine.neoStores() ).thenReturn( neoStores );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
     }
 

@@ -26,6 +26,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.NeoStoreDataSource.Diagnostics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
@@ -150,7 +151,7 @@ public class NeoStoreDataSourceTest
         Logger logger = logProvider.getLog( getClass() ).infoLogger();
 
         // WHEN
-        NeoStoreDataSource.Diagnostics.TRANSACTION_RANGE.dump( dataSource, logger );
+        Diagnostics.TRANSACTION_RANGE.dump( dataSource, logger );
 
         // THEN
         logProvider.assertContainsMessageContaining( "No transactions" );
@@ -167,7 +168,7 @@ public class NeoStoreDataSourceTest
         Logger logger = logProvider.getLog( getClass() ).infoLogger();
 
         // WHEN
-        NeoStoreDataSource.Diagnostics.TRANSACTION_RANGE.dump( dataSource, logger );
+        Diagnostics.TRANSACTION_RANGE.dump( dataSource, logger );
 
         // THEN
         logProvider.assertContainsMessageContaining( "transaction " + (prevLogLastTxId + 1) );
@@ -185,7 +186,7 @@ public class NeoStoreDataSourceTest
         Logger logger = logProvider.getLog( getClass() ).infoLogger();
 
         // WHEN
-        NeoStoreDataSource.Diagnostics.TRANSACTION_RANGE.dump( dataSource, logger );
+        Diagnostics.TRANSACTION_RANGE.dump( dataSource, logger );
 
         // THEN
         logProvider.assertContainsMessageContaining( "transaction " + (prevLogLastTxId + 1) );

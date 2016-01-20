@@ -123,6 +123,7 @@ import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
@@ -133,7 +134,6 @@ import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
@@ -228,12 +228,14 @@ public class HighlyAvailableEditionModule
 
         // TODO There's a cyclical dependency here that should be fixed
         final AtomicReference<HighAvailabilityMemberStateMachine> electionProviderRef = new AtomicReference<>();
+        OnDiskLastTxIdGetter lastTxIdGetter = new OnDiskLastTxIdGetter(
+                () -> platformModule.dependencies.resolveDependency(
+                        TransactionIdStore.class ).getLastCommittedTransactionId() );
         ElectionCredentialsProvider electionCredentialsProvider = config.get( HaSettings.slave_only ) ?
                 new NotElectableElectionCredentialsProvider() :
                 new DefaultElectionCredentialsProvider(
                         config.get( ClusterSettings.server_id ),
-                        new OnDiskLastTxIdGetter( platformModule.dependencies.provideDependency( NeoStores.class ) ),
-                        () -> electionProviderRef.get().getCurrentState()
+                        lastTxIdGetter, () -> electionProviderRef.get().getCurrentState()
                 );
 
 
@@ -467,7 +469,7 @@ public class HighlyAvailableEditionModule
 
         dependencies.satisfyDependency(
                 createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
-                        storeDir, lastUpdateTime, dependencies.provideDependency( NeoStores.class ), life ) );
+                        storeDir, lastUpdateTime, lastTxIdGetter, life ) );
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, paxosLife,
                 clusterClient, members, platformModule.jobScheduler, master, requestContextFactory,
@@ -655,9 +657,8 @@ public class HighlyAvailableEditionModule
 
     private KernelData createKernelData( Config config, GraphDatabaseAPI graphDb, ClusterMembers members,
             FileSystemAbstraction fs, PageCache pageCache, File storeDir,
-            LastUpdateTime lastUpdateTime, Supplier<NeoStores> neoStoreSupplier, LifeSupport life )
+            LastUpdateTime lastUpdateTime, LastTxIdGetter txIdGetter, LifeSupport life )
     {
-        OnDiskLastTxIdGetter txIdGetter = new OnDiskLastTxIdGetter( neoStoreSupplier );
         ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider( members,
                 txIdGetter,
                 lastUpdateTime );

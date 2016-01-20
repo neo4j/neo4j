@@ -27,4 +27,14 @@ public interface ResourceLocker
      * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
      */
     void acquireExclusive( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException;
+
+    ResourceLocker NONE = new ResourceLocker()
+    {
+        @Override
+        public void acquireExclusive( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
+        {
+            throw new UnsupportedOperationException( "Unexpected call to lock a resource " + resourceType +
+                    " " + resourceId );
+        }
+    };
 }

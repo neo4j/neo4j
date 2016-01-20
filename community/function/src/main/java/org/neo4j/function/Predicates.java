@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -42,19 +43,19 @@ public class Predicates
     @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> alwaysTrue()
     {
-        return (Predicate<T>) TRUE;
+        return TRUE;
     }
 
     @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> alwaysFalse()
     {
-        return (Predicate<T>) FALSE;
+        return FALSE;
     }
 
     @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> notNull()
     {
-        return (Predicate<T>) NOT_NULL;
+        return NOT_NULL;
     }
 
     @SafeVarargs
@@ -125,6 +126,7 @@ public class Predicates
         {
             private final Set<T> visitedItems = new HashSet<>();
 
+            @Override
             public boolean test( T item )
             {
                 return visitedItems.add( item );
@@ -187,4 +189,7 @@ public class Predicates
             }
             return false;
         };
-    }}
+    }
+
+    public static IntPredicate ALWAYS_TRUE_INT = (value) -> true;
+}

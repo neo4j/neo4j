@@ -89,7 +89,7 @@ public class RecordStorageEngineTest
         Exception applicationError = executeFailingTransaction( engine );
         assertNotNull( applicationError );
 
-        CountsTracker countsStore = engine.neoStores().getCounts();
+        CountsTracker countsStore = engine.testAccessNeoStores().getCounts();
         // possible to obtain a resetting updater that internally has a write lock on the counts store
         try ( CountsAccessor.Updater updater = countsStore.reset( 0 ) )
         {

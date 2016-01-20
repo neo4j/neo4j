@@ -43,7 +43,6 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
@@ -57,6 +56,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.register.Register;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -105,7 +106,7 @@ public class DiskLayer implements StoreReadLayer
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
     private final SchemaStorage schemaStorage;
-    private final CountsAccessor counts;
+    private final CountsTracker counts;
     private final PropertyLoader propertyLoader;
     private final Supplier<StorageStatement> statementProvider;
 
@@ -573,5 +574,47 @@ public class DiskLayer implements StoreReadLayer
             throw new UnsupportedOperationException( "not implemented" );
         }
         return counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() ).readSecond();
+    }
+
+    @Override
+    public long nodesGetCount()
+    {
+        return nodeStore.getNumberOfIdsInUse();
+    }
+
+    @Override
+    public long relationshipsGetCount()
+    {
+        return relationshipStore.getNumberOfIdsInUse();
+    }
+
+    @Override
+    public int labelCount()
+    {
+        return labelTokenHolder.size();
+    }
+
+    @Override
+    public int propertyKeyCount()
+    {
+        return propertyKeyTokenHolder.size();
+    }
+
+    @Override
+    public int relationshipTypeCount()
+    {
+        return relationshipTokenHolder.size();
+    }
+
+    @Override
+    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
+    {
+        return counts.indexUpdatesAndSize( index.getLabelId(), index.getPropertyKeyId(), target );
+    }
+
+    @Override
+    public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
+    {
+        return counts.indexSample( index.getLabelId(), index.getPropertyKeyId(), target );
     }
 }

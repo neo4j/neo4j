@@ -42,10 +42,10 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.PageCacheRule;
@@ -217,7 +217,7 @@ public class RelationshipGroupStoreTest
             tx.success();
         }
 
-        NeoStores neoStores = db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
+        NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();
@@ -251,7 +251,7 @@ public class RelationshipGroupStoreTest
             tx.success();
         }
 
-        NeoStores neoStores = db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
+        NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();
@@ -284,7 +284,7 @@ public class RelationshipGroupStoreTest
         tx.success();
         tx.close();
 
-        NeoStores neoStores = db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
+        NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();

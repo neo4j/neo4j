@@ -24,9 +24,8 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedPropertyKeyTokenHolde
 import org.neo4j.coreedge.raft.replication.token.ReplicatedRelationshipTypeTokenHolder;
 import org.neo4j.coreedge.raft.replication.tx.LastCommittedIndexFinder;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
-import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
@@ -58,11 +57,10 @@ public class RecoverTransactionLogState extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        MetaDataStore metaDataStore = dependencies.resolveDependency( NeoStoreDataSource.class )
-                .getNeoStores().getMetaDataStore();
+        TransactionIdStore transactionIdStore = dependencies.resolveDependency( TransactionIdStore.class );
         LogicalTransactionStore transactionStore = dependencies.resolveDependency( LogicalTransactionStore.class );
 
-        long lastCommittedIndex = new LastCommittedIndexFinder( metaDataStore, transactionStore, logProvider )
+        long lastCommittedIndex = new LastCommittedIndexFinder( transactionIdStore, transactionStore, logProvider )
                 .getLastCommittedIndex();
 
         ReplicatedTransactionStateMachine replicatedTransactionStateMachine =

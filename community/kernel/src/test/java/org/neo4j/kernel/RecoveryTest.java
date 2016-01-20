@@ -33,7 +33,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -57,11 +56,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.recovery.DefaultRecoverySPI;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -138,12 +137,12 @@ public class RecoveryTest
         final AtomicBoolean recoveryRequiredCalled = new AtomicBoolean();
         try
         {
-            StoreFlusher flusher = mock( StoreFlusher.class );
+            StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
                     LogEntryVersion.CURRENT.byteCode(), new RecordStorageCommandReaderFactory() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
-            life.add( new Recovery( new DefaultRecoverySPI( flusher, mock( NeoStores.class ), null,
+            life.add( new Recovery( new DefaultRecoverySPI( storageEngine, null,
                     logFiles, fs, logVersionRepository, finder )
             {
                 @Override
@@ -227,12 +226,12 @@ public class RecoveryTest
         Recovery.Monitor monitor = mock( Recovery.Monitor.class );
         try
         {
-            StoreFlusher flusher = mock( StoreFlusher.class );
+            StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
                     LogEntryVersion.CURRENT.byteCode(), new RecordStorageCommandReaderFactory() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
-            life.add( new Recovery( new DefaultRecoverySPI( flusher, mock( NeoStores.class ), null,
+            life.add( new Recovery( new DefaultRecoverySPI( storageEngine, null,
                     logFiles, fs, logVersionRepository, finder )
             {
                 @Override

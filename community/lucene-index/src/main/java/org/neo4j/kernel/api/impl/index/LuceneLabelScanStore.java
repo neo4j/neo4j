@@ -39,7 +39,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.logging.Log;
@@ -275,20 +274,17 @@ public class LuceneLabelScanStore
         {   // we saw in init() that we need to rebuild the index, so do it here after the
             // neostore has been properly started.
             monitor.rebuilding();
-            write( fullStoreStream.iterator() );
-            monitor.rebuilt( fullStoreStream.numberOfNodes() );
+            long numberOfNodes = rebuild();
+            monitor.rebuilt( numberOfNodes );
             needsRebuild = false;
         }
     }
 
-    private void write( Iterator<NodeLabelUpdate> updates ) throws IOException
+    private long rebuild() throws IOException
     {
         try ( LabelScanWriter writer = newWriter() )
         {
-            while ( updates.hasNext() )
-            {
-                writer.write( updates.next() );
-            }
+            return fullStoreStream.applyTo( writer );
         }
     }
 
@@ -300,10 +296,21 @@ public class LuceneLabelScanStore
     @Override
     public void shutdown() throws IOException
     {
-        searcherManager.close();
-        writer.close();
-        directory.close();
-        directory = null;
+        if ( searcherManager != null )
+        {   // In case something went wrong in init then the state of things might be off
+            searcherManager.close();
+            searcherManager = null;
+        }
+        if ( writer != null )
+        {
+            writer.close();
+            writer = null;
+        }
+        if ( directory != null )
+        {
+            directory.close();
+            directory = null;
+        }
     }
 
     @Override

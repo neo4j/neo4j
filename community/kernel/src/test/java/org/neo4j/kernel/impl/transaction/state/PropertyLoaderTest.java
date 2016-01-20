@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.AbstractRecordStore;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -141,7 +142,8 @@ public class PropertyLoaderTest
 
     private NeoStores neoStores()
     {
-        return db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
+        return db.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
     }
 
     private void setUpNode( long id, int... propertyValues )

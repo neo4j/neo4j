@@ -28,19 +28,19 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StorageEngine;
 
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 {
     private final TransactionAppender appender;
     private final TransactionIdStore transactionIdStore;
     private final CheckPointThreshold threshold;
-    private final StoreFlusher storeFlusher;
+    private final StorageEngine storageEngine;;
     private final LogPruning logPruning;
     private final DatabaseHealth databaseHealth;
     private final Log msgLog;
@@ -50,21 +50,21 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private long lastCheckPointedTx;
 
     public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
-            StoreFlusher storeFlusher, LogPruning logPruning, TransactionAppender appender, DatabaseHealth databaseHealth,
+            StorageEngine storageEngine, LogPruning logPruning, TransactionAppender appender, DatabaseHealth databaseHealth,
             LogProvider logProvider, CheckPointTracer tracer )
     {
-        this( transactionIdStore, threshold, storeFlusher, logPruning, appender, databaseHealth, logProvider, tracer,
+        this( transactionIdStore, threshold, storageEngine, logPruning, appender, databaseHealth, logProvider, tracer,
                 new ReentrantLock() );
     }
 
     public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
-            StoreFlusher storeFlusher, LogPruning logPruning, TransactionAppender appender, DatabaseHealth databaseHealth,
+            StorageEngine storageEngine, LogPruning logPruning, TransactionAppender appender, DatabaseHealth databaseHealth,
             LogProvider logProvider, CheckPointTracer tracer, Lock lock )
     {
         this.appender = appender;
         this.transactionIdStore = transactionIdStore;
         this.threshold = threshold;
-        this.storeFlusher = storeFlusher;
+        this.storageEngine = storageEngine;
         this.logPruning = logPruning;
         this.databaseHealth = databaseHealth;
         this.msgLog = logProvider.getLog( CheckPointerImpl.class );
@@ -164,7 +164,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
          * earlier check point and replay from there all the log entries. Everything will be ok.
          */
         msgLog.info( prefix + " Starting store flush..." );
-        storeFlusher.forceEverything();
+        storageEngine.flushAndForce();
         msgLog.info( prefix + " Store flush completed" );
 
         /*

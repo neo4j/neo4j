@@ -28,6 +28,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
+import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -116,7 +117,8 @@ public class MultipleIndexPopulatorTest
         multipleIndexPopulator.create();
         multipleIndexPopulator.indexAllNodes();
 
-        verify( indexStoreView ).visitNodes( eq( new int[]{1, 2} ), eq( new int[]{1, 2} ), any( Visitor.class ) );
+        verify( indexStoreView ).visitNodes( any( IntPredicate.class ), any( IntPredicate.class ),
+                any( Visitor.class ), any( Visitor.class ) );
     }
 
     @Test

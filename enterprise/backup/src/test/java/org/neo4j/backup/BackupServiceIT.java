@@ -50,14 +50,12 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -72,14 +70,13 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -321,13 +318,13 @@ public class BackupServiceIT
         }
         rotateAndCheckPoint( db );
 
-        long lastCommittedTxBefore = db.getDependencyResolver().resolveDependency( NeoStores.class ).getMetaDataStore()
-                                       .getLastCommittedTransactionId();
+        long lastCommittedTxBefore = db.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                .getLastCommittedTransactionId();
 
         db = dbRule.restartDatabase( ( fs, storeDirectory ) -> FileUtils.deleteFile( oldLog ) );
 
-        long lastCommittedTxAfter = db.getDependencyResolver().resolveDependency( NeoStores.class ).getMetaDataStore()
-                                      .getLastCommittedTransactionId();
+        long lastCommittedTxAfter = db.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                .getLastCommittedTransactionId();
 
         // when
         BackupService backupService = backupService();
@@ -394,9 +391,9 @@ public class BackupServiceIT
         createAndIndexNode( db, 3 );
         createAndIndexNode( db, 4 );
 
-        NeoStores neoStores = db.getDependencyResolver().resolveDependency( NeoStores.class );
-        neoStores.flush();
-        long txId = neoStores.getMetaDataStore().getLastCommittedTransactionId();
+        db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce();
+        long txId = db.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                .getLastCommittedTransactionId();
 
         // when
         BackupService backupService = backupService();
@@ -596,8 +593,7 @@ public class BackupServiceIT
         createAndIndexNode( db, 1 ); // create some data
 
         final DependencyResolver resolver = db.getDependencyResolver();
-        NeoStoreDataSource ds = resolver.resolveDependency( DataSourceManager.class ).getDataSource();
-        long expectedLastTxId = ds.getLastCommittedTransactionId();
+        long expectedLastTxId = resolver.resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
         // This monitor is added server-side...
         monitors.addMonitorListener( new StoreSnoopingMonitor( barrier ) );
@@ -619,7 +615,7 @@ public class BackupServiceIT
             barrier.awaitUninterruptibly();
 
             createAndIndexNode( db, 1 );
-            resolver.resolveDependency( NeoStoresSupplier.class ).get().flush();
+            resolver.resolveDependency( StorageEngine.class ).flushAndForce();
 
             barrier.release();
         } );

@@ -43,12 +43,13 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngineRule;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.PageCacheRule;
@@ -88,7 +89,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         long duration = parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "2s" ) );
         int numThreads = Integer.getInteger( getClass().getName() + ".numThreads",
                 Runtime.getRuntime().availableProcessors() );
-        StorageEngine storageEngine = storageEngineRule
+        RecordStorageEngine storageEngine = storageEngineRule
                 .getWith( fs, pageCacheRule.getPageCache( fs ) )
                 .storeDirectory( directory.directory() )
                 .indexProvider( new InMemoryIndexProvider() )
@@ -96,7 +97,9 @@ public class IndexWorkSyncTransactionApplicationStressIT
         storageEngine.apply( tx( asList( createIndexRule(
                 InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, 1, labelId, propertyKeyId ) ) ),
                 TransactionApplicationMode.EXTERNAL );
-        IndexProxy index = ((IndexingService)storageEngine.indexingService())
+        Dependencies dependencies = new Dependencies();
+        storageEngine.satisfyDependencies( dependencies );
+        IndexProxy index = dependencies.resolveDependency( IndexingService.class )
                 .getIndexProxy( new IndexDescriptor( labelId, propertyKeyId ) );
         awaitOnline( index );
 
@@ -140,20 +143,20 @@ public class IndexWorkSyncTransactionApplicationStressIT
     {
         private final int id;
         private final AtomicBoolean end;
-        private final StorageEngine storageEngine;
+        private final RecordStorageEngine storageEngine;
         private final NodeStore nodeIds;
         private final int batchSize;
         private final IndexProxy index;
         private int i, base;
 
-        public Worker( int id, AtomicBoolean end, StorageEngine storageEngine, int batchSize, IndexProxy index )
+        public Worker( int id, AtomicBoolean end, RecordStorageEngine storageEngine, int batchSize, IndexProxy index )
         {
             this.id = id;
             this.end = end;
             this.storageEngine = storageEngine;
             this.batchSize = batchSize;
             this.index = index;
-            NeoStores neoStores = (NeoStores) this.storageEngine.neoStores();
+            NeoStores neoStores = this.storageEngine.testAccessNeoStores();
             this.nodeIds = neoStores.getNodeStore();
         }
 

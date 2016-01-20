@@ -20,22 +20,22 @@
 package org.neo4j.kernel.impl.api.scan;
 
 import java.io.File;
-import java.util.Iterator;
+import java.io.IOException;
+import java.util.function.Supplier;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.impl.store.NodeLabelsField;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 
 /**
  * Used by a {@link KernelExtensions} to provide access a {@link LabelScanStore} and prioritize against other.
@@ -84,49 +84,46 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
         return getClass().getSimpleName() + "[" + labelScanStore + ", prio:" + priority + "]";
     }
 
-    public interface FullStoreChangeStream extends Iterable<NodeLabelUpdate>
+    public interface FullStoreChangeStream
     {
-        long numberOfNodes();
+        long applyTo( LabelScanWriter writer ) throws IOException;
     }
 
-    public static FullStoreChangeStream fullStoreLabelUpdateStream( final NeoStoresSupplier neoStoresSupplier )
+    public static FullStoreChangeStream fullStoreLabelUpdateStream( Supplier<IndexStoreView> lazyIndexStoreView )
     {
-        return new FullStoreChangeStream()
+        // IndexStoreView provided as supplier because we only actually have that dependency available
+        // when it's time to rebuilt, not when we construct this object
+        return new FullLabelStream( lazyIndexStoreView );
+    }
+
+    private static class FullLabelStream implements FullStoreChangeStream, Visitor<NodeLabelUpdate,IOException>
+    {
+        private final Supplier<IndexStoreView> lazyIndexStoreView;
+        private LabelScanWriter writer;
+        private long count;
+
+        public FullLabelStream( Supplier<IndexStoreView> lazyIndexStoreView )
         {
-            @Override
-            public Iterator<NodeLabelUpdate> iterator()
-            {
-                return new PrefetchingIterator<NodeLabelUpdate>()
-                {
-                    private final NodeStore nodeStore = neoStoresSupplier.get().getNodeStore();
-                    private final long highId = nodeStore.getHighestPossibleIdInUse();
-                    private long current;
+            this.lazyIndexStoreView = lazyIndexStoreView;
+        }
 
-                    @Override
-                    protected NodeLabelUpdate fetchNextOrNull()
-                    {
-                        while ( current <= highId )
-                        {
-                            NodeRecord node = nodeStore.forceGetRecord( current++ );
-                            if ( node.inUse() )
-                            {
-                                long[] labels = NodeLabelsField.parseLabelsField( node ).get( nodeStore );
-                                if ( labels.length > 0 )
-                                {
-                                    return NodeLabelUpdate.labelChanges( node.getId(), EMPTY_LONG_ARRAY, labels );
-                                }
-                            }
-                        }
-                        return null;
-                    }
-                };
-            }
+        @Override
+        public long applyTo( LabelScanWriter writer ) throws IOException
+        {
+            // Keep the write for using it in visit
+            this.writer = writer;
+            IndexStoreView view = lazyIndexStoreView.get();
+            StoreScan<IOException> scan = view.visitNodes( ALWAYS_TRUE_INT, ALWAYS_TRUE_INT, null, this );
+            scan.run();
+            return count;
+        }
 
-            @Override
-            public long numberOfNodes()
-            {
-                return neoStoresSupplier.get().getNodeStore().getHighId();
-            }
-        };
+        @Override
+        public boolean visit( NodeLabelUpdate update ) throws IOException
+        {
+            writer.write( update );
+            count++;
+            return false;
+        }
     }
 }

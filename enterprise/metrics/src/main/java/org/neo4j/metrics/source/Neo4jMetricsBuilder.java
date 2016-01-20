@@ -34,8 +34,8 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
@@ -67,8 +67,6 @@ public class Neo4jMetricsBuilder
     {
         Monitors monitors();
 
-        DataSourceManager dataSourceManager();
-
         TransactionCounters transactionCounters();
 
         PageCacheCounters pageCacheCounters();
@@ -82,6 +80,8 @@ public class Neo4jMetricsBuilder
         Supplier<ClusterMembers> clusterMembers();
 
         Supplier<CoreMetaData> raft();
+
+        Supplier<TransactionIdStore> transactionIdStore();
     }
 
     public Neo4jMetricsBuilder( MetricRegistry registry, EventReporter reporter, Config config, LogService logService,
@@ -102,7 +102,7 @@ public class Neo4jMetricsBuilder
         if ( config.get( MetricsSettings.neoTxEnabled ) )
         {
             life.add( new TransactionMetrics( registry,
-                    dependencies.dataSourceManager(), dependencies.transactionCounters() ) );
+                    dependencies.transactionIdStore(), dependencies.transactionCounters() ) );
             result = true;
         }
 

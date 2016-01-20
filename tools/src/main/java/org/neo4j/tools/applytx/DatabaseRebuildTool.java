@@ -36,6 +36,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -169,7 +170,8 @@ public class DatabaseRebuildTool
         public Store( GraphDatabaseBuilder dbBuilder )
         {
             this.db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
-            this.access = new StoreAccess( db ).initialize();
+            this.access = new StoreAccess( db.getDependencyResolver()
+                    .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores() ).initialize();
             this.storeDir = new File( db.getStoreDir() );
         }
 

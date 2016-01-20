@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -729,7 +730,8 @@ public class NeoStoresTest
         ds.init();
         ds.start();
 
-        NeoStores neoStores = ds.get();
+        NeoStores neoStores = ds.getDependencyResolver()
+                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         pStore = neoStores.getPropertyStore();
         rtStore = neoStores.getRelationshipTypeTokenStore();
         storeLayer = ds.getStoreLayer();
@@ -763,7 +765,8 @@ public class NeoStoresTest
 
     private long nextId( Class<?> clazz )
     {
-        NeoStores neoStores = ds.get();
+        NeoStores neoStores = ds.getDependencyResolver()
+                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         if ( clazz.equals( PropertyKeyTokenRecord.class ) )
         {
             return neoStores.getPropertyKeyTokenStore().nextId();

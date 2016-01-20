@@ -28,7 +28,7 @@ import java.lang.reflect.Field;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.TestShortString;
@@ -245,6 +245,7 @@ public class TestShortStringProperties extends TestShortString
 
     private PropertyStore propertyStore()
     {
-        return graphdb.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoreDataSource.class).getNeoStores().getPropertyStore();
+        return graphdb.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( RecordStorageEngine.class)
+                .testAccessNeoStores().getPropertyStore();
     }
 }

@@ -40,6 +40,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -80,8 +81,8 @@ public class RecoveryIT
         File restoreDbStoreDir = copyTransactionLogs();
 
         GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
-        NeoStores neoStore =
-                ((GraphDatabaseAPI) recoveredDatabase).getDependencyResolver().resolveDependency( NeoStores.class );
+        NeoStores neoStore = ((GraphDatabaseAPI) recoveredDatabase).getDependencyResolver()
+                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         assertEquals( numberOfNodes, neoStore.getNodeStore().getHighId() );
 
         database.shutdown();

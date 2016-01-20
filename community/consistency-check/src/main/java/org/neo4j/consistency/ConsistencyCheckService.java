@@ -50,15 +50,19 @@ import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 public class ConsistencyCheckService
 {
@@ -138,8 +142,10 @@ public class ConsistencyCheckService
             LabelScanStore labelScanStore = null;
             try
             {
+                IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
                 labelScanStore = new LuceneLabelScanStoreBuilder(
-                        storeDir, neoStores, fileSystem, logProvider ).build();
+                        storeDir, fullStoreLabelUpdateStream( () -> indexStoreView ),
+                        fileSystem, logProvider ).build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         fileSystem,
                         DirectoryFactory.PERSISTENT,

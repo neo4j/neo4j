@@ -50,9 +50,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.TargetDirectory;
@@ -295,7 +295,7 @@ public class CsvInputBatchImportIT
 
             // Verify counts, TODO how to get counts store other than this way?
             NeoStores neoStores = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
-                    NeoStoresSupplier.class ).get();
+                    RecordStorageEngine.class ).testAccessNeoStores();
             Function<String, Integer> labelTranslationTable =
                     translationTable( neoStores.getLabelTokenStore(), ReadOperations.ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )

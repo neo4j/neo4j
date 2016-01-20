@@ -137,4 +137,10 @@ public class DelegatingTokenHolder<TOKEN extends Token> extends LifecycleAdapter
     {
         return tokenCache.allTokens();
     }
+
+    @Override
+    public int size()
+    {
+        return tokenCache.size();
+    }
 }

@@ -102,7 +102,8 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
         @Override
         public void registered( NeoStoreDataSource dataSource )
         {
-            state = new State( dataSource.getStoreLayer(), dataSource.getIndexService());
+            state = new State( dataSource.getStoreLayer(),
+                    dataSource.getDependencyResolver().resolveDependency( IndexingService.class ) );
         }
 
         @Override

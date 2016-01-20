@@ -48,13 +48,11 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationK
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.LabelItem;
@@ -398,12 +396,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursor( TxStateHolder txStateHolder, StoreStatement statement, long nodeId )
-    {
-        return entityReadOperations.nodeCursor( txStateHolder, statement, nodeId );
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId ) throws EntityNotFoundException
     {
         return entityReadOperations.relationshipCursorById( statement, relId );
@@ -413,14 +405,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId )
     {
         return entityReadOperations.relationshipCursor( statement, relId );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipCursor( TxStateHolder txStateHolder,
-            StoreStatement statement,
-            long relId )
-    {
-        return entityReadOperations.relationshipCursor( txStateHolder, statement, relId );
     }
 
     @Override
@@ -464,6 +448,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         return entityReadOperations.nodeCursorGetFromIndexSeekByPrefix( statement, index, prefix );
     }
 
+    @Override
     public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
             IndexDescriptor index,
             Number lower, boolean includeLower,
@@ -565,4 +550,15 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         schemaWriteOperations.constraintDrop( state, constraint );
     }
 
+    @Override
+    public long nodesGetCount( KernelStatement statement )
+    {
+        return entityReadOperations.nodesGetCount( statement );
+    }
+
+    @Override
+    public long relationshipsGetCount( KernelStatement statement )
+    {
+        return entityReadOperations.relationshipsGetCount( statement );
+    }
 }

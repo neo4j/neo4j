@@ -42,7 +42,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -52,6 +51,7 @@ import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -66,7 +66,6 @@ import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.logging.NullLog;
 
 import static java.lang.String.format;
@@ -272,7 +271,7 @@ class RebuildFromLogs
     private static class ConsistencyChecker implements AutoCloseable
     {
         private final GraphDatabaseAPI graphdb;
-        private final NeoStoreDataSource dataSource;
+        private final LabelScanStore labelScanStore;
         private final Config tuningConfiguration =
                 new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
         private final SchemaIndexProvider indexes;
@@ -281,14 +280,14 @@ class RebuildFromLogs
         {
             this.graphdb = startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache, stringMap() );
             DependencyResolver resolver = graphdb.getDependencyResolver();
-            this.dataSource = resolver.resolveDependency( DataSourceManager.class ).getDataSource();
+            this.labelScanStore = resolver.resolveDependency( LabelScanStore.class );
             this.indexes = resolver.resolveDependency( SchemaIndexProvider.class );
         }
 
         private void checkConsistency() throws ConsistencyCheckIncompleteException
         {
-            LabelScanStore labelScanStore = dataSource.getLabelScanStore();
-            StoreAccess nativeStores = new StoreAccess( graphdb ).initialize();
+            StoreAccess nativeStores = new StoreAccess( graphdb.getDependencyResolver()
+                    .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores() ).initialize();
             DirectStoreAccess stores = new DirectStoreAccess( nativeStores, labelScanStore, indexes );
             FullCheck fullCheck = new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ),
                     Statistics.NONE, ConsistencyCheckService.defaultConsistencyCheckThreadsNumber() );

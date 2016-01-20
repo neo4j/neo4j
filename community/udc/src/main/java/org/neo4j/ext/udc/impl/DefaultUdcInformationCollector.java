@@ -93,7 +93,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
                 public void registered( NeoStoreDataSource ds )
                 {
                     crashPing = startupStatistics.numberOfRecoveredTransactions() > 0;
-                    storeId = Long.toHexString( ds.getRandomIdentifier() );
+                    storeId = Long.toHexString( ds.getStoreId().getRandomId() );
                 }
 
                 @Override

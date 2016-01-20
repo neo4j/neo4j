@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -64,7 +63,6 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -75,10 +73,10 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.Cursors;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
@@ -140,10 +138,7 @@ public class StateHandlingStatementOperations implements
             node.close();
             throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
-        else
-        {
-            return node;
-        }
+        return node;
     }
 
     @Override
@@ -158,17 +153,6 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Cursor<NodeItem> nodeCursor( TxStateHolder txStateHolder, StoreStatement statement, long nodeId )
-    {
-        Cursor<NodeItem> cursor = statement.acquireSingleNodeCursor( nodeId );
-        if ( txStateHolder.hasTxStateWithChanges() )
-        {
-            return txStateHolder.txState().augmentSingleNodeCursor( cursor, nodeId );
-        }
-        return cursor;
-    }
-
-    @Override
     public Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relationshipId )
             throws EntityNotFoundException
     {
@@ -178,10 +162,7 @@ public class StateHandlingStatementOperations implements
             relationship.close();
             throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
         }
-        else
-        {
-            return relationship;
-        }
+        return relationship;
     }
 
     @Override
@@ -194,21 +175,6 @@ public class StateHandlingStatementOperations implements
             return statement.txState().augmentSingleRelationshipCursor( cursor, relationshipId );
         }
         return cursor;
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipCursor( TxStateHolder txStateHolder, StoreStatement statement,
-            long relationshipId )
-    {
-        Cursor<RelationshipItem> cursor = statement.acquireSingleRelationshipCursor( relationshipId );
-        if ( txStateHolder.hasTxStateWithChanges() )
-        {
-            return txStateHolder.txState().augmentSingleRelationshipCursor( cursor, relationshipId );
-        }
-        else
-        {
-            return cursor;
-        }
     }
 
     @Override
@@ -397,7 +363,6 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-
     public RelationshipIterator relationshipsGetAll( KernelStatement state )
     {
         RelationshipIterator iterator = storeLayer.relationshipsGetAll();
@@ -485,6 +450,20 @@ public class StateHandlingStatementOperations implements
         }
 
         return storeLayer.nodesGetForLabel( state.getStoreStatement(), labelId );
+    }
+
+    @Override
+    public long nodesGetCount( KernelStatement state )
+    {
+        long base = storeLayer.nodesGetCount();
+        return state.hasTxStateWithChanges() ? base + state.txState().addedAndRemovedNodes().delta() : base;
+    }
+
+    @Override
+    public long relationshipsGetCount( KernelStatement state )
+    {
+        long base = storeLayer.relationshipsGetCount();
+        return state.hasTxStateWithChanges() ? base + state.txState().addedAndRemovedRelationships().delta() : base;
     }
 
     @Override
@@ -627,7 +606,6 @@ public class StateHandlingStatementOperations implements
         }
         return constraints;
     }
-
 
     @Override
     public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint )
@@ -1079,10 +1057,7 @@ public class StateHandlingStatementOperations implements
             state.txState().graphDoRemoveProperty( existingProperty );
             return existingProperty;
         }
-        else
-        {
-            return Property.noGraphProperty( propertyKeyId );
-        }
+        return Property.noGraphProperty( propertyKeyId );
     }
 
     private void indexesUpdateProperty( KernelStatement state,
@@ -1227,6 +1202,19 @@ public class StateHandlingStatementOperations implements
         return storeLayer.indexUniqueValuesPercentage( descriptor );
     }
 
+    @Override
+    public DoubleLongRegister indexUpdatesAndSize( KernelStatement statement, IndexDescriptor index,
+            DoubleLongRegister target )
+    {
+        return storeLayer.indexUpdatesAndSize( index, target );
+    }
+
+    @Override
+    public DoubleLongRegister indexSample( KernelStatement statement, IndexDescriptor index, DoubleLongRegister target )
+    {
+        return storeLayer.indexSample( index, target );
+    }
+
     //
     // Methods that delegate directly to storage
     //
@@ -1351,30 +1339,22 @@ public class StateHandlingStatementOperations implements
         state.txState().relationshipTypeDoCreateForName( relationshipTypeName, id );
     }
 
-    private static int[] deduplicate( int[] types )
+    @Override
+    public int labelCount( KernelStatement statement )
     {
-        int unique = 0;
-        for ( int i = 0; i < types.length; i++ )
-        {
-            int type = types[i];
-            for ( int j = 0; j < unique; j++ )
-            {
-                if ( type == types[j] )
-                {
-                    type = -1; // signal that this relationship is not unique
-                    break; // we will not find more than one conflict
-                }
-            }
-            if ( type != -1 )
-            { // this has to be done outside the inner loop, otherwise we'd never accept a single one...
-                types[unique++] = types[i];
-            }
-        }
-        if ( unique < types.length )
-        {
-            types = Arrays.copyOf( types, unique );
-        }
-        return types;
+        return storeLayer.labelCount();
+    }
+
+    @Override
+    public int propertyKeyCount( KernelStatement statement )
+    {
+        return storeLayer.propertyKeyCount();
+    }
+
+    @Override
+    public int relationshipTypeCount( KernelStatement statement )
+    {
+        return storeLayer.relationshipTypeCount();
     }
 
     // <Legacy index>

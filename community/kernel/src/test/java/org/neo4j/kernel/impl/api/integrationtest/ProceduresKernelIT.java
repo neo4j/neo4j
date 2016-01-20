@@ -25,18 +25,20 @@ import org.junit.rules.ExpectedException;
 
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.ProcedureRead;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.proc.Procedure;
-import org.neo4j.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static java.util.stream.Collectors.toList;
+
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.proc.Neo4jTypes.NTString;
-import static org.neo4j.proc.ProcedureSignature.procedureSignature;
 
 public class ProceduresKernelIT extends KernelIntegrationTest
 {
@@ -93,7 +95,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
             @Override
             public Stream<Object[]> apply( Context ctx, Object[] input ) throws ProcedureException
             {
-                return Stream.<Object[]>of( new Object[]{ ctx.get( ProcedureRead.readStatement ) } );
+                return Stream.<Object[]>of( new Object[]{ ctx.get( ReadOperations.readStatement ) } );
             }
         } );
 

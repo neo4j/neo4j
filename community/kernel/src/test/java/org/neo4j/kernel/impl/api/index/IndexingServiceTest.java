@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
@@ -64,7 +65,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
@@ -682,9 +682,9 @@ public class IndexingServiceTest
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), monitor );
 
         doAnswer( nodeUpdatesAnswer( nodeUpdate1 ) ).when( storeView )
-                .nodeAsUpdates( eq( nodeId1 ), any( NodeRecord.class ), any( Collection.class ) );
+                .nodeAsUpdates( eq( nodeId1 ), any( Collection.class ) );
         doAnswer( nodeUpdatesAnswer( nodeUpdate2 ) ).when( storeView )
-                .nodeAsUpdates( eq( nodeId2 ), any( NodeRecord.class ), any( Collection.class ) );
+                .nodeAsUpdates( eq( nodeId2 ), any( Collection.class ) );
 
         // When
         life.init();
@@ -732,7 +732,7 @@ public class IndexingServiceTest
         long nodeId = 0, indexId = 1, otherIndexId = 2;
         NodePropertyUpdate update = add( nodeId, "value" );
         doAnswer( nodeUpdatesAnswer( update ) ).when( storeView )
-                .nodeAsUpdates( eq( nodeId ), any( NodeRecord.class ), any( Collection.class ) );
+                .nodeAsUpdates( eq( nodeId ), any( Collection.class ) );
         DoubleLongRegister register = mock( DoubleLongRegister.class );
         when( register.readSecond() ).thenReturn( 42L );
         when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) )
@@ -926,7 +926,8 @@ public class IndexingServiceTest
 
         void getsProcessedByStoreScanFrom( IndexStoreView mock )
         {
-            when( mock.visitNodes( any( int[].class ), any( int[].class ), any( Visitor.class ) ) ).thenAnswer( this );
+            when( mock.visitNodes( any( IntPredicate.class ), any( IntPredicate.class ),
+                    any( Visitor.class ), any( Visitor.class ) ) ).thenAnswer( this );
         }
 
         @Override
@@ -1049,7 +1050,7 @@ public class IndexingServiceTest
     private Answer nodeUpdatesAnswer( NodePropertyUpdate... updates )
     {
         return invocation -> {
-            Collection<NodePropertyUpdate> target = (Collection<NodePropertyUpdate>) invocation.getArguments()[2];
+            Collection<NodePropertyUpdate> target = (Collection<NodePropertyUpdate>) invocation.getArguments()[1];
             target.addAll( asList( updates ) );
             return null;
         };

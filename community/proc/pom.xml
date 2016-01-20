@@ -50,14 +50,6 @@ the relevant Commercial Agreement.
   </licenses>
 
   <dependencies>
-    <!-- We depend on storage engine to get KernelException. We should probably move KernelExcption to some super
-         low-level module, together with the typs system and other "model" related things.. -->
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-storage-engine-api</artifactId>
-      <version>3.0.0-SNAPSHOT</version>
-    </dependency>
-
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

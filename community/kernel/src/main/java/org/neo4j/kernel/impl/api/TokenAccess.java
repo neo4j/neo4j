@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.storageengine.api.Token;
 
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;
+import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 
 public abstract class TokenAccess<R>
 {
@@ -50,10 +50,7 @@ public abstract class TokenAccess<R>
             {
                 return (RelationshipType) token;
             }
-            else
-            {
-                return RelationshipType.withName( token.name() );
-            }
+            return RelationshipType.withName( token.name() );
         }
 
         @Override

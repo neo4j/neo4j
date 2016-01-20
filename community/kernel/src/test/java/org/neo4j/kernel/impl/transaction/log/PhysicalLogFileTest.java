@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -57,7 +56,6 @@ public class PhysicalLogFileTest
     {
         // GIVEN
         String name = "log";
-        StoreFlusher storeFlusher = mock( StoreFlusher.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         life.add( new PhysicalLogFile( fs, logFiles, 1000,
@@ -80,7 +78,6 @@ public class PhysicalLogFileTest
     {
         // GIVEN
         String name = "log";
-        StoreFlusher logRotationControl = mock( StoreFlusher.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         Monitor monitor = mock( Monitor.class );
@@ -120,7 +117,6 @@ public class PhysicalLogFileTest
     {
         // GIVEN
         String name = "log";
-        StoreFlusher logRotationControl = mock( StoreFlusher.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
@@ -173,7 +169,6 @@ public class PhysicalLogFileTest
     {
         // GIVEN
         String name = "log";
-        StoreFlusher storeFlusher = mock( StoreFlusher.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,

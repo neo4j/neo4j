@@ -34,6 +34,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -83,7 +84,8 @@ public class CountsStoreRecoveryTest
 
     private void flushNeoStoreOnly() throws Exception
     {
-        NeoStores neoStores = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStores.class );
+        NeoStores neoStores = ((GraphDatabaseAPI) db).getDependencyResolver()
+                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         metaDataStore.flush();
     }
@@ -91,7 +93,7 @@ public class CountsStoreRecoveryTest
     private CountsTracker counts()
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
-                                      .resolveDependency( NeoStores.class )
+                                      .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores()
                                       .getCounts();
     }
 

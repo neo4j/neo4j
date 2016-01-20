@@ -33,13 +33,16 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -105,7 +108,6 @@ public class ManyPropertyKeysIT
     public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     private File storeDir;
 
-
     @Before
     public void setup()
     {
@@ -154,10 +156,13 @@ public class ManyPropertyKeysIT
         }
     }
 
-    private int propertyKeyCount( GraphDatabaseAPI db )
+    private int propertyKeyCount( GraphDatabaseAPI db ) throws TransactionFailureException
     {
-        return (int) db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get()
-                .getPropertyKeyTokenStore().getHighId();
+        try ( KernelTransaction tx = db.getDependencyResolver().resolveDependency( KernelAPI.class ).newTransaction();
+                Statement statement = tx.acquireStatement() )
+        {
+            return statement.readOperations().propertyKeyCount();
+        }
     }
 
     private static class WorkerState

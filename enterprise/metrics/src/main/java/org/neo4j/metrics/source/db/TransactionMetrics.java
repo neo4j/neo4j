@@ -22,9 +22,11 @@ package org.neo4j.metrics.source.db;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
+import java.util.function.Supplier;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static com.codahale.metrics.MetricRegistry.name;
@@ -73,14 +75,14 @@ public class TransactionMetrics extends LifecycleAdapter
     public static final String LAST_CLOSED_TX_ID = name( TRANSACTION_PREFIX, "last_closed_tx_id" );
 
     private final MetricRegistry registry;
-    private final DataSourceManager dataSourceManager;
     private final TransactionCounters transactionCounters;
+    private final Supplier<TransactionIdStore> transactionIdStore;
 
     public TransactionMetrics( MetricRegistry registry,
-            DataSourceManager dataSourceManager, TransactionCounters transactionCounters )
+            Supplier<TransactionIdStore> transactionIdStore, TransactionCounters transactionCounters )
     {
         this.registry = registry;
-        this.dataSourceManager = dataSourceManager;
+        this.transactionIdStore = transactionIdStore;
         this.transactionCounters = transactionCounters;
     }
 
@@ -113,9 +115,9 @@ public class TransactionMetrics extends LifecycleAdapter
                 (Gauge<Long>) transactionCounters::getNumberOfTerminatedWriteTransactions );
 
         registry.register( LAST_COMMITTED_TX_ID, (Gauge<Long>) () ->
-                dataSourceManager.getDataSource().getNeoStores().getMetaDataStore().getLastCommittedTransactionId() );
+                transactionIdStore.get().getLastCommittedTransactionId() );
         registry.register( LAST_CLOSED_TX_ID, (Gauge<Long>) () ->
-                dataSourceManager.getDataSource().getNeoStores().getMetaDataStore().getLastClosedTransactionId() );
+                transactionIdStore.get().getLastClosedTransactionId() );
     }
 
     @Override

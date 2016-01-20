@@ -50,17 +50,19 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
@@ -410,30 +412,22 @@ public class StoreUpgradeIntegrationTest
 
     private static void checkIndexCounts( Store store, GraphDatabaseAPI db ) throws KernelException
     {
-        CountsTracker counts = db.getDependencyResolver()
-                .resolveDependency( NeoStoreDataSource.class )
-                .getNeoStores().getCounts();
-        ThreadToStatementContextBridge bridge = db.getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class );
-
-        Iterator<IndexDescriptor> indexes = getAllIndexes( db );
-        DoubleLongRegister register = Registers.newDoubleLongRegister();
-        for ( int i = 0; indexes.hasNext(); i++ )
+        KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        try ( KernelTransaction tx = kernel.newTransaction(); Statement statement = tx.acquireStatement() )
         {
-            IndexDescriptor descriptor = indexes.next();
-
-            // wait index to be online since sometimes we need to rebuild the indexes on migration
-            awaitOnline( db, bridge, descriptor );
-
-            assertDoubleLongEquals( store.indexCounts[i][0], store.indexCounts[i][1],
-                    counts.indexUpdatesAndSize( descriptor.getLabelId(), descriptor.getPropertyKeyId(), register )
-            );
-            assertDoubleLongEquals( store.indexCounts[i][2], store.indexCounts[i][3],
-                    counts.indexSample( descriptor.getLabelId(), descriptor.getPropertyKeyId(), register )
-            );
-            try ( Transaction ignored = db.beginTx() )
+            Iterator<IndexDescriptor> indexes = getAllIndexes( db );
+            DoubleLongRegister register = Registers.newDoubleLongRegister();
+            for ( int i = 0; indexes.hasNext(); i++ )
             {
-                Statement statement = bridge.get();
+                IndexDescriptor descriptor = indexes.next();
+
+                // wait index to be online since sometimes we need to rebuild the indexes on migration
+                awaitOnline( db, statement.readOperations(), descriptor );
+
+                assertDoubleLongEquals( store.indexCounts[i][0], store.indexCounts[i][1],
+                        statement.readOperations().indexUpdatesAndSize( descriptor, register ) );
+                assertDoubleLongEquals( store.indexCounts[i][2], store.indexCounts[i][3],
+                        statement.readOperations().indexSample( descriptor, register ) );
                 double selectivity = statement.readOperations().indexUniqueValuesSelectivity( descriptor );
                 assertEquals( store.indexSelectivity[i], selectivity, 0.0000001d );
             }
@@ -515,15 +509,18 @@ public class StoreUpgradeIntegrationTest
             assertThat( indexCount, is( store.indexes() ) );
 
             // check last committed tx
-            NeoStores neoStores = db.getDependencyResolver()
-                    .resolveDependency( NeoStoreDataSource.class )
-                    .getNeoStores();
-            long lastCommittedTxId = neoStores.getMetaDataStore().getLastCommittedTransactionId();
+            TransactionIdStore txIdStore = db.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+            long lastCommittedTxId = txIdStore.getLastCommittedTransactionId();
 
-            CountsTracker counts = neoStores.getCounts();
-            assertEquals( lastCommittedTxId, counts.txId() );
-
-            assertThat( lastCommittedTxId, is( store.lastTxId ) );
+            try ( Statement statement = db.getDependencyResolver()
+                    .resolveDependency( ThreadToStatementContextBridge.class )
+                    .getKernelTransactionBoundToThisThread( true ).acquireStatement() )
+            {
+                long countsTxId = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                        .testAccessNeoStores().getCounts().txId();
+                assertEquals( lastCommittedTxId, countsTxId );
+                assertThat( lastCommittedTxId, is( store.lastTxId ) );
+            }
         }
     }
 
@@ -552,37 +549,31 @@ public class StoreUpgradeIntegrationTest
     }
 
     private static IndexDescriptor awaitOnline( GraphDatabaseAPI db,
-            ThreadToStatementContextBridge bridge,
-            IndexDescriptor index ) throws KernelException
+            ReadOperations readOperations, IndexDescriptor index ) throws KernelException
     {
         long start = System.currentTimeMillis();
         long end = start + 20_000;
         while ( System.currentTimeMillis() < end )
         {
-            try ( Transaction tx = db.beginTx() )
+            switch ( readOperations.indexGetState( index ) )
             {
-                Statement statement = bridge.get();
-                switch ( statement.readOperations().indexGetState( index ) )
-                {
-                case ONLINE:
-                    return index;
+            case ONLINE:
+                return index;
 
-                case FAILED:
-                    throw new IllegalStateException( "Index failed instead of becoming ONLINE" );
+            case FAILED:
+                throw new IllegalStateException( "Index failed instead of becoming ONLINE" );
 
-                default:
-                    break;
-                }
-                tx.success();
+            default:
+                break;
+            }
 
-                try
-                {
-                    Thread.sleep( 100 );
-                }
-                catch ( InterruptedException e )
-                {
-                    // ignored
-                }
+            try
+            {
+                Thread.sleep( 100 );
+            }
+            catch ( InterruptedException e )
+            {
+                // ignored
             }
         }
         throw new IllegalStateException( "Index did not become ONLINE within reasonable time" );

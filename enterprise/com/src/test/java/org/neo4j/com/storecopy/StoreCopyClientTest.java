@@ -41,13 +41,13 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
@@ -275,9 +275,8 @@ public class StoreCopyClientTest
                             checkPointer, fs, originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ) )
                             .flushStoresAndStreamStoreFiles( writer, false );
 
-                    final StoreId storeId =
-                            original.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get()
-                                    .getMetaDataStore().getStoreId();
+                    final StoreId storeId = original.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                    .testAccessNeoStores().getMetaDataStore().getStoreId();
 
                     ResponsePacker responsePacker = new ResponsePacker( logicalTransactionStore,
                             transactionIdStore, () -> storeId );

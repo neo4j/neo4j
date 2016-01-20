@@ -41,4 +41,6 @@ public interface TokenHolder<TOKEN extends Token>
     int getIdByName( String name );
 
     Iterable<TOKEN> getAllTokens();
+
+    int size();
 }

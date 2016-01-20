@@ -89,5 +89,4 @@ public class TxIteratorNodeCursor
             return false;
         }
     }
-
 }

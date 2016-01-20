@@ -141,7 +141,7 @@ public class CoreReplicatedContentByteBufferMarshalTest
         // given
         ByteBuf buffer = Unpooled.buffer();
 
-        ArrayList<Command> commands = new ArrayList<>();
+        ArrayList<StorageCommand> commands = new ArrayList<>();
         LabelTokenRecord before = new LabelTokenRecord( 0 );
         LabelTokenRecord after = new LabelTokenRecord( 0 );
         after.setInUse( true );

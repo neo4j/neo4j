@@ -41,10 +41,13 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.server.database.Database;
 
 import static org.mockito.Mockito.mock;
@@ -63,14 +66,30 @@ public class GraphDbHelper
 
     public int getNumberOfNodes()
     {
-        return (int) database.getGraph().getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get()
-                .getNodeStore().getNumberOfIdsInUse();
+        try ( KernelTransaction tx =
+                database.getGraph().getDependencyResolver().resolveDependency( KernelAPI.class ).newTransaction();
+                Statement statement = tx.acquireStatement() )
+        {
+            return Math.toIntExact( statement.readOperations().nodesGetCount() );
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public int getNumberOfRelationships()
     {
-        return (int) database.getGraph().getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get()
-                .getRelationshipStore().getNumberOfIdsInUse();
+        try ( KernelTransaction tx =
+                database.getGraph().getDependencyResolver().resolveDependency( KernelAPI.class ).newTransaction();
+                Statement statement = tx.acquireStatement() )
+        {
+            return Math.toIntExact( statement.readOperations().relationshipsGetCount() );
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
 

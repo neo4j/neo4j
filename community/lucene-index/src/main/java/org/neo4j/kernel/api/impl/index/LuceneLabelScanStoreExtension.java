@@ -19,15 +19,19 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.util.function.Supplier;
+
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore.Monitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
@@ -44,7 +48,13 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
     {
         Config getConfig();
 
-        NeoStoresSupplier getNeoStoreSupplier();
+        /**
+         * @return a {@link Supplier} of {@link IndexStoreView}, sort of like a delayed dependency lookup.
+         * This is because we need the {@link IndexStoreView} dependency, although at the stage where we
+         * grab dependencies, in {@link Lifecycle#init() init} that is, the {@link NeoStoreDataSource} hasn't been
+         * {@link Lifecycle#start() started} yet and so haven't provided it.
+         */
+        Supplier<IndexStoreView> indexStoreView();
 
         LogService getLogService();
     }
@@ -71,7 +81,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
                 new NodeRangeDocumentLabelScanStorageStrategy(),
                 directoryFactory, LabelScanStoreProvider.getStoreDirectory( context.storeDir() ),
                 context.fileSystem(), standard(),
-                fullStoreLabelUpdateStream( dependencies.getNeoStoreSupplier() ),
+                fullStoreLabelUpdateStream( dependencies.indexStoreView() ),
                 monitor != null ? monitor : loggerMonitor( dependencies.getLogService().getInternalLogProvider() ) );
 
         return new LabelScanStoreProvider( scanStore, priority );

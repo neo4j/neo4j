@@ -34,6 +34,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -48,7 +49,6 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
@@ -70,7 +70,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * Creator and accessor of {@link NeoStores} with some logic to provide very batch friendly services to the
  * {@link NeoStores} when instantiating it. Different services for specific purposes.
  */
-public class BatchingNeoStores implements AutoCloseable, NeoStoresSupplier
+public class BatchingNeoStores implements AutoCloseable
 {
     private final FileSystemAbstraction fileSystem;
     private final BatchingPropertyKeyTokenRepository propertyKeyRepository;
@@ -135,6 +135,7 @@ public class BatchingNeoStores implements AutoCloseable, NeoStoresSupplier
         dependencies.satisfyDependency( fileSystem );
         dependencies.satisfyDependency( this );
         dependencies.satisfyDependency( logService );
+        dependencies.satisfyDependency( IndexStoreView.EMPTY );
         KernelContext kernelContext = new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN );
         @SuppressWarnings( { "unchecked", "rawtypes" } )
         KernelExtensions extensions = life.add( new KernelExtensions(
@@ -258,11 +259,5 @@ public class BatchingNeoStores implements AutoCloseable, NeoStoresSupplier
     public LabelScanStore getLabelScanStore()
     {
         return labelScanStore;
-    }
-
-    @Override
-    public NeoStores get()
-    {
-        return neoStores;
     }
 }

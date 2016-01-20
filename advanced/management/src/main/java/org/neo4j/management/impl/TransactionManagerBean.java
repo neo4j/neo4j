@@ -27,6 +27,7 @@ import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.management.TransactionManager;
 
@@ -94,7 +95,8 @@ public final class TransactionManagerBean extends ManagementBeanProvider
             {
                 return -1;
             }
-            return neoStoreDataSource.getLastCommittedTransactionId();
+            return neoStoreDataSource.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                    .getLastCommittedTransactionId();
         }
     }
 }

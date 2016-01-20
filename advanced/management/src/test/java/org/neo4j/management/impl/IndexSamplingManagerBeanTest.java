@@ -22,6 +22,7 @@ package org.neo4j.management.impl;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -53,11 +54,13 @@ public class IndexSamplingManagerBeanTest
         storeReadLayer = mock( StoreReadLayer.class );
         indexingService = mock( IndexingService.class );
         when( dataSource.getStoreLayer() ).thenReturn( storeReadLayer );
-        when( dataSource.getIndexService() ).thenReturn( indexingService );
         when( storeReadLayer.labelGetForName( EXISTING_LABEL ) ).thenReturn( LABEL_ID );
         when( storeReadLayer.propertyKeyGetForName( EXISTING_PROPERTY ) ).thenReturn( PROPERTY_ID );
         when( storeReadLayer.propertyKeyGetForName( NON_EXISTING_PROPERTY ) ).thenReturn( -1 );
         when( storeReadLayer.labelGetForName( NON_EXISTING_LABEL ) ).thenReturn( -1 );
+        DependencyResolver resolver = mock( DependencyResolver.class );
+        when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService );
+        when( dataSource.getDependencyResolver() ).thenReturn( resolver );
     }
 
     @Test

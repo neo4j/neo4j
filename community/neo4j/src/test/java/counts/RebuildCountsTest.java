@@ -37,8 +37,8 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -149,7 +149,8 @@ public class RebuildCountsTest
 
     private CountsTracker counts()
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                .testAccessNeoStores().getCounts();
     }
 
     private void deleteCounts( FileSystemAbstraction snapshot )
