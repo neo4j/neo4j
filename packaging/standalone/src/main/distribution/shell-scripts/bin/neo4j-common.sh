@@ -103,8 +103,8 @@ show_java_help() {
 
 check_status() {
   if [ -e "${NEO4J_PIDFILE}" ] ; then
-    NEO4J_PID=$( cat "${NEO4J_PIDFILE}" )
-    kill -0 "${NEO4J_PID}" 2>/dev/null || NEO4J_PID=""
+    NEO4J_PID=$(cat "${NEO4J_PIDFILE}")
+    kill -0 "${NEO4J_PID}" 2>/dev/null || unset NEO4J_PID
   fi
 }
 
@@ -121,10 +121,10 @@ detect_os() {
 # Runs before the server command, making sure that whatever should be in place is
 # in place.
 check_and_repair_env() {
-    if [ ! -d "${NEO4J_LOG}" ]; then
-      echo "${NEO4J_LOG} was missing, recreating..."
-      mkdir -p "${NEO4J_LOG}"
-    fi
+  if [ ! -d "${NEO4J_LOG}" ]; then
+    echo "${NEO4J_LOG} was missing, recreating..."
+    mkdir -p "${NEO4J_LOG}"
+  fi
 }
 
 check_limits() {
@@ -240,28 +240,29 @@ do_stop() {
     [ -e "${NEO4J_PIDFILE}" ] && rm "${NEO4J_PIDFILE}"
     return 0
   else
-    echo -n "Stopping ${FRIENDLY_NAME} [${NEO4J_PID}]..."
-    elapsed=0
-    while [ "${NEO4J_PID}" != "" ]  ; do
-      kill ${NEO4J_PID} 2>/dev/null
-      if [ "${elapsed}" -le "$SHUTDOWN_TIMEOUT" ]; then
-        printf "."
-      fi
-      sleep 1
+    echo -n "Stopping ${FRIENDLY_NAME} ."
+    end="$((SECONDS+SHUTDOWN_TIMEOUT))"
+    while true; do
       check_status
 
-      if [ "${elapsed}" -eq "$SHUTDOWN_TIMEOUT" ] ;then
-	    echo ""
-	    echo "${FRIENDLY_NAME} [${NEO4J_PID}] is taking more than ${SHUTDOWN_TIMEOUT}s to stop"
-	    echo "There might be some troubles with the shutdown of ${FRIENDLY_NAME}, please read log files for details"
-	    echo "This script will keep waiting for the server to shutdown, you could manually kill the process ${NEO4J_PID}"
-	    echo ""
+      if [[ ! "${NEO4J_PID:-}" ]]; then
+        echo " stopped"
+        [ -e "${NEO4J_PIDFILE}" ] && rm "${NEO4J_PIDFILE}"
+        return 0
+      else
+        kill "${NEO4J_PID}" 2>/dev/null || true
       fi
 
-      elapsed="$((elapsed+1))"
+      if [[ "${SECONDS}" -ge "${end}" ]]; then
+        echo " failed to stop"
+        echo "${FRIENDLY_NAME} (pid ${NEO4J_PID}) took more than ${SHUTDOWN_TIMEOUT} seconds to stop."
+        echo "Please see ${CONSOLE_LOG} for details."
+        return 1
+      fi
+
+      echo -n "."
+      sleep 1
     done
-    echo " done"
-    [ -e "${NEO4J_PIDFILE}" ] && rm  "${NEO4J_PIDFILE}"
   fi
 }
 
@@ -279,7 +280,7 @@ do_info() {
   do_status
   build_classpath
   echo "NEO4J_HOME:        ${NEO4J_HOME}"
-  echo "JAVA_HOME:         ${JAVA_HOME}"
+  echo "JAVA_HOME:         ${JAVA_HOME:-}"
   echo "JAVA_OPTS:         ${JAVA_OPTS}"
   echo "CLASSPATH:         ${CLASSPATH}"
   print_extra_info
