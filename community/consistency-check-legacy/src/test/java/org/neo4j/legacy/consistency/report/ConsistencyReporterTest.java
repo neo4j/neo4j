@@ -39,7 +39,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.kernel.api.impl.index.LuceneNodeLabelRange;
+import org.neo4j.kernel.api.impl.labelscan.LuceneNodeLabelRange;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -57,12 +57,6 @@ import org.neo4j.legacy.consistency.RecordType;
 import org.neo4j.legacy.consistency.checking.CheckerEngine;
 import org.neo4j.legacy.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.legacy.consistency.checking.RecordCheck;
-import org.neo4j.legacy.consistency.report.ConsistencyReport;
-import org.neo4j.legacy.consistency.report.ConsistencyReporter;
-import org.neo4j.legacy.consistency.report.ConsistencySummaryStatistics;
-import org.neo4j.legacy.consistency.report.InconsistencyLogger;
-import org.neo4j.legacy.consistency.report.InconsistencyReport;
-import org.neo4j.legacy.consistency.report.PendingReferenceCheck;
 import org.neo4j.legacy.consistency.store.DiffRecordAccess;
 import org.neo4j.legacy.consistency.store.RecordAccess;
 import org.neo4j.legacy.consistency.store.RecordReference;
@@ -72,7 +66,6 @@ import org.neo4j.legacy.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -80,7 +73,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 
 @RunWith(Suite.class)

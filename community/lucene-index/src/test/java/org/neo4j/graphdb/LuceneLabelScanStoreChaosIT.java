@@ -33,7 +33,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.api.impl.index.builder.LuceneLabelScanIndexBuilder;
+import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndexBuilder;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.DatabaseRule.RestartAction;
 import org.neo4j.test.EmbeddedDatabaseRule;

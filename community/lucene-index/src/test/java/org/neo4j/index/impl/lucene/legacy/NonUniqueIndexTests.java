@@ -35,7 +35,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -51,11 +51,9 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.TargetDirectory;
 
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-
-import static java.util.Collections.singletonList;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 

@@ -98,7 +98,7 @@ public abstract class AbstractLuceneIndex implements Closeable
         open = true;
     }
 
-    boolean isOpen()
+    public boolean isOpen()
     {
         return open;
     }
@@ -321,10 +321,20 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
     }
 
-    List<IndexPartition> getPartitions()
+    public List<IndexPartition> getPartitions()
     {
         ensureOpen();
         return partitions;
+    }
+
+    public boolean hasSinglePartition( List<IndexPartition> partitions )
+    {
+        return partitions.size() == 1;
+    }
+
+    public IndexPartition getFirstPartition( List<IndexPartition> partitions )
+    {
+        return partitions.get( 0 );
     }
 
     /**
@@ -333,7 +343,7 @@ public abstract class AbstractLuceneIndex implements Closeable
      * @return newly created partition
      * @throws IOException
      */
-    IndexPartition addNewPartition() throws IOException
+    public IndexPartition addNewPartition() throws IOException
     {
         ensureOpen();
         partitionsLock.lock();
@@ -366,16 +376,6 @@ public abstract class AbstractLuceneIndex implements Closeable
             throw new IllegalStateException( "Lucene index should not be open to be able to perform required " +
                                              "operation." );
         }
-    }
-
-    protected boolean hasSinglePartition( List<IndexPartition> partitions )
-    {
-        return partitions.size() == 1;
-    }
-
-    protected IndexPartition getFirstPartition( List<IndexPartition> partitions )
-    {
-        return partitions.get( 0 );
     }
 
     private boolean luceneDirectoryExists( File folder ) throws IOException

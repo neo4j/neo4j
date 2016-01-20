@@ -52,7 +52,7 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.index.lucene.QueryContext;
-import org.neo4j.kernel.api.impl.index.DocValuesCollector;
+import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.index.impl.lucene.legacy.LuceneLegacyIndex.KEY_DOC_ID;

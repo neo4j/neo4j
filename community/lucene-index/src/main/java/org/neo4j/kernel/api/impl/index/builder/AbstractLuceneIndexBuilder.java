@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
  *
  * @param <T> actual index type
  */
-abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBuilder<T>>
+public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBuilder<T>>
 {
     protected LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
 
