@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-public abstract class PrimitiveRecord extends Abstract64BitRecord
+public abstract class PrimitiveRecord extends AbstractBaseRecord
 {
     protected long nextProp;
 

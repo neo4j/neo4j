@@ -19,7 +19,7 @@
  */
 package org.neo4j.tools.txlog.checktypes;
 
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 
 public class CheckTypes
@@ -31,10 +31,10 @@ public class CheckTypes
     public static final NeoStoreCheckType NEO_STORE = new NeoStoreCheckType();
 
     @SuppressWarnings( "unchecked" )
-    public static final CheckType<? extends Command, ? extends Abstract64BitRecord>[] CHECK_TYPES =
+    public static final CheckType<? extends Command, ? extends AbstractBaseRecord>[] CHECK_TYPES =
             new CheckType[]{NODE, PROPERTY, RELATIONSHIP, RELATIONSHIP_GROUP, NEO_STORE};
 
-    public static <C extends Command,R extends Abstract64BitRecord> CheckType<C,R> fromName( String name )
+    public static <C extends Command,R extends AbstractBaseRecord> CheckType<C,R> fromName( String name )
     {
         for ( CheckType<?,?> checkType : CHECK_TYPES )
         {

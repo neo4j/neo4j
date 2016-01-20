@@ -448,7 +448,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
                 }
 
                 store.accept( this, record );
-                progressListener.set( record.getLongId() );
+                progressListener.set( record.getId() );
             }
             progressListener.done();
         }

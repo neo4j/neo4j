@@ -252,7 +252,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             assertThat( "isFirstInFirstChain", actualRecord.isFirstInFirstChain(), is( expectedRecord.isFirstInFirstChain() ) );
             assertThat( "isFirstInSecondChain", actualRecord.isFirstInSecondChain(), is( expectedRecord.isFirstInSecondChain() ) );
             assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
-            assertThat( "getLongId", actualRecord.getLongId(), is( expectedRecord.getLongId() ) );
+            assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
             assertThat( "getNextProp", actualRecord.getNextProp(), is( expectedRecord.getNextProp() ) );
             assertThat( "inUse", actualRecord.inUse(), is( expectedRecord.inUse() ) );
         }
@@ -325,7 +325,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             assertNotNull( "expectedRecord", expectedRecord );
             assertThat( "getNameId", actualRecord.getNameId(), is( expectedRecord.getNameId() ) );
             assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
-            assertThat( "getLongId", actualRecord.getLongId(), is( expectedRecord.getLongId() ) );
+            assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
             assertThat( "isLight", actualRecord.isLight(), is( expectedRecord.isLight() ) );
 
             Collection<DynamicRecord> actualNameRecords = actualRecord.getNameRecords();
@@ -344,7 +344,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
                 assertThat( "[" + i + "]getNextBlock", actualNameRecord.getNextBlock(), is( expectedNameRecord.getNextBlock() ) );
                 assertThat( "[" + i + "]getType", actualNameRecord.getType(), is( expectedNameRecord.getType() ) );
                 assertThat( "[" + i + "]getId", actualNameRecord.getId(), is( expectedNameRecord.getId() ) );
-                assertThat( "[" + i + "]getLongId", actualNameRecord.getLongId(), is( expectedNameRecord.getLongId() ) );
+                assertThat( "[" + i + "]getLongId", actualNameRecord.getId(), is( expectedNameRecord.getId() ) );
                 assertThat( "[" + i + "]isStartRecord", actualNameRecord.isStartRecord(), is( expectedNameRecord.isStartRecord() ) );
                 assertThat( "[" + i + "]inUse", actualNameRecord.inUse(), is( expectedNameRecord.inUse() ) );
                 i++;
@@ -401,7 +401,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             assertThat( "getNextBlock", actualRecord.getNextBlock(), is( expectedRecord.getNextBlock() ) );
             assertThat( "getType", actualRecord.getType(), is( expectedRecord.getType() ) );
             assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
-            assertThat( "getLongId", actualRecord.getLongId(), is( expectedRecord.getLongId() ) );
+            assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
             assertThat( "isStartRecord", actualRecord.isStartRecord(), is( expectedRecord.isStartRecord() ) );
         }
     }
@@ -493,7 +493,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             assertThat( "getPrevProp", actualRecord.getPrevProp(), is( expectedRecord.getPrevProp() ) );
             assertThat( "getRelId", actualRecord.getRelId(), is( expectedRecord.getRelId() ) );
             assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
-            assertThat( "getLongId", actualRecord.getLongId(), is( expectedRecord.getLongId() ) );
+            assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
 
             List<PropertyBlock> actualBlocks = asList( (Iterable<PropertyBlock>) actualRecord );
             List<PropertyBlock> expectedBlocks = asList( (Iterable<PropertyBlock>) expectedRecord );
@@ -533,7 +533,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
                 assertThat( "[" + index + "]getValueRecords[" + i + "]getNextBlock", actualValueRecord.getNextBlock(), is( expectedValueRecord.getNextBlock() ) );
                 assertThat( "[" + index + "]getValueRecords[" + i + "]getType", actualValueRecord.getType(), is( expectedValueRecord.getType() ) );
                 assertThat( "[" + index + "]getValueRecords[" + i + "]getId", actualValueRecord.getId(), is( expectedValueRecord.getId() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getLongId", actualValueRecord.getLongId(), is( expectedValueRecord.getLongId() ) );
+                assertThat( "[" + index + "]getValueRecords[" + i + "]getLongId", actualValueRecord.getId(), is( expectedValueRecord.getId() ) );
                 assertThat( "[" + index + "]getValueRecords[" + i + "]isStartRecord", actualValueRecord.isStartRecord(), is( expectedValueRecord.isStartRecord() ) );
                 assertThat( "[" + index + "]getValueRecords[" + i + "]inUse", actualValueRecord.inUse(), is( expectedValueRecord.inUse() ) );
             }

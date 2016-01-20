@@ -285,7 +285,7 @@ public class NodeLabelsFieldTest
         long dynRecordId = NodeLabelsField.firstDynamicLabelRecordId( node.getLabelField() );
 
         // THEN
-        assertEquals( dynamicRecord.getLongId(), dynRecordId );
+        assertEquals( dynamicRecord.getId(), dynRecordId );
     }
 
     @Test

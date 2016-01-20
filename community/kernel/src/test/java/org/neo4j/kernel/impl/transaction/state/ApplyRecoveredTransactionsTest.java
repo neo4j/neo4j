@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -123,13 +123,13 @@ public class ApplyRecoveredTransactionsTest
         neoStores.close();
     }
 
-    private <RECORD extends Abstract64BitRecord> RECORD inUse( RECORD record )
+    private <RECORD extends AbstractBaseRecord> RECORD inUse( RECORD record )
     {
         record.setInUse( true );
         return record;
     }
 
-    private <RECORD extends Abstract64BitRecord> RECORD created( RECORD record )
+    private <RECORD extends AbstractBaseRecord> RECORD created( RECORD record )
     {
         record.setCreated();
         return record;

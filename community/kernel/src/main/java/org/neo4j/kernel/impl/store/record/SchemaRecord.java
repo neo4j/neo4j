@@ -26,7 +26,7 @@ import java.util.List;
 
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
-public class SchemaRecord extends Abstract64BitRecord implements Iterable<DynamicRecord>
+public class SchemaRecord extends AbstractBaseRecord implements Iterable<DynamicRecord>
 {
     private Collection<DynamicRecord> records;
 

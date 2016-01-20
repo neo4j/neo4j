@@ -412,7 +412,7 @@ public class RecordFormatTest
             R written = key.get();
 
             // write
-            int offset = Math.toIntExact( written.getLongId() * recordSize );
+            int offset = Math.toIntExact( written.getId() * recordSize );
             cursor.setOffset( offset );
             format.write( written, cursor );
 

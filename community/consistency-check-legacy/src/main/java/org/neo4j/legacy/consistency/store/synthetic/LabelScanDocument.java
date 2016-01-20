@@ -20,13 +20,13 @@
 package org.neo4j.legacy.consistency.store.synthetic;
 
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
  * Synthetic record type that stands in for a real record to fit in conveniently
  * with consistency checking
  */
-public class LabelScanDocument extends Abstract64BitRecord
+public class LabelScanDocument extends AbstractBaseRecord
 {
     private NodeLabelRange nodeLabelRange;
 

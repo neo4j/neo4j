@@ -828,6 +828,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
      *
      * @param highId The highest id in use to set.
      */
+    @Override
     public void setHighestPossibleIdInUse( long highId )
     {
         setHighId( highId + 1 );
@@ -987,7 +988,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     @Override
     public void updateRecord( RECORD record )
     {
-        long id = record.getLongId();
+        long id = record.getId();
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
         try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )

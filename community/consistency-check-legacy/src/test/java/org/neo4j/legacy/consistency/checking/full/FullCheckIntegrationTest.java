@@ -300,7 +300,7 @@ public class FullCheckIntegrationTest
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 Collection<DynamicRecord> newRecords = new ArrayList<>();
-                allocateFromNumbers( newRecords, prependNodeId( nodeRecord.getLongId(), new long[]{42l} ),
+                allocateFromNumbers( newRecords, prependNodeId( nodeRecord.getId(), new long[]{42l} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
@@ -750,7 +750,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record1 = inUse( new DynamicRecord( next.nodeLabel() ) );
                 DynamicRecord record2 = inUse( new DynamicRecord( next.nodeLabel() ) );
                 DynamicRecord record3 = inUse( new DynamicRecord( next.nodeLabel() ) );
-                labels[0] = nodeRecord.getLongId(); // the first id should not be a label id, but the id of the node
+                labels[0] = nodeRecord.getId(); // the first id should not be a label id, but the id of the node
                 PreAllocatedRecords allocator = new PreAllocatedRecords( 60 );
                 allocateFromNumbers( chain, labels, iterator( record1, record2, record3 ), allocator );
 
@@ -778,7 +778,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 Collection<DynamicRecord> newRecords = new ArrayList<>();
                 allocateFromNumbers( newRecords,
-                        prependNodeId( nodeRecord.getLongId(), new long[]{42l, 42l} ),
+                        prependNodeId( nodeRecord.getId(), new long[]{42l, 42l} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 

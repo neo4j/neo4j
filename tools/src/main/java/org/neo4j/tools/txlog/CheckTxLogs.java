@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -104,7 +104,7 @@ public class CheckTxLogs
         }
     }
 
-    private <C extends Command, R extends Abstract64BitRecord> void scan(
+    private <C extends Command, R extends AbstractBaseRecord> void scan(
             File[] logs, InconsistenciesHandler handler, CheckType<C,R> check ) throws IOException
     {
         System.out.println( "Checking logs for " + check.name() + " inconsistencies" );
@@ -156,7 +156,7 @@ public class CheckTxLogs
         }
     }
 
-    private <C extends Command, R extends Abstract64BitRecord> void checkAndHandleInconsistencies( CommandAndLogVersion txCommand, CheckType<C,R> check,
+    private <C extends Command, R extends AbstractBaseRecord> void checkAndHandleInconsistencies( CommandAndLogVersion txCommand, CheckType<C,R> check,
             CommittedRecords<R> state, long txId, InconsistenciesHandler handler )
     {
         C command = check.commandClass().cast( txCommand.command );

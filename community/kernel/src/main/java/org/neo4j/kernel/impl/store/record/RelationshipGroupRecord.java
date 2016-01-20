@@ -23,7 +23,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
 import java.util.Objects;
 
-public class RelationshipGroupRecord extends Abstract64BitRecord
+public class RelationshipGroupRecord extends AbstractBaseRecord
 {
     private int type;
     private long next;

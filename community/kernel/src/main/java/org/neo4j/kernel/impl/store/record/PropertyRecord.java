@@ -38,7 +38,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
  * variable length, a full PropertyRecord can be holding just one
  * PropertyBlock.
  */
-public class PropertyRecord extends Abstract64BitRecord implements Iterable<PropertyBlock>, Iterator<PropertyBlock>
+public class PropertyRecord extends AbstractBaseRecord implements Iterable<PropertyBlock>, Iterator<PropertyBlock>
 {
     private static final byte TYPE_NODE = 1;
     private static final byte TYPE_REL = 2;

@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.TokenStore;
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
@@ -163,9 +163,9 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
         track( store, command.getKey() );
     }
 
-    private void track( RecordStore<?> store, Collection<? extends Abstract64BitRecord> records )
+    private void track( RecordStore<?> store, Collection<? extends AbstractBaseRecord> records )
     {
-        for ( Abstract64BitRecord record : records )
+        for ( AbstractBaseRecord record : records )
         {
             track( store, record.getId() );
         }

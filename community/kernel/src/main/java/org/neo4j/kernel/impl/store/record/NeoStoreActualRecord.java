@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-public class NeoStoreActualRecord extends Abstract64BitRecord
+public class NeoStoreActualRecord extends AbstractBaseRecord
 {
     private long value;
 

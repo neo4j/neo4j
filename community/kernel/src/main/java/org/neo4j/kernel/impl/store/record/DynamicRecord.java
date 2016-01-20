@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store.record;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 
-public class DynamicRecord extends Abstract64BitRecord
+public class DynamicRecord extends AbstractBaseRecord
 {
     private static final byte[] NO_DATA = new byte[0];
     private static final int MAX_BYTES_IN_TO_STRING = 8, MAX_CHARS_IN_TO_STRING = 16;
@@ -176,7 +176,7 @@ public class DynamicRecord extends Abstract64BitRecord
     @Override
     public DynamicRecord clone()
     {
-        DynamicRecord clone = new DynamicRecord( getLongId() ).initialize( inUse(),
+        DynamicRecord clone = new DynamicRecord( getId() ).initialize( inUse(),
                 startRecord, nextBlock, type, length );
         if ( data != null )
         {

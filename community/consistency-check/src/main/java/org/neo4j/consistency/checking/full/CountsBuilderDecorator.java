@@ -344,12 +344,12 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
             {
                 return false;
             }
-            if ( record.getLongId() == terminationId )
+            if ( record.getId() == terminationId )
             {
                 done = true;
                 return true;
             }
-            if ( record.getLongId() == 0 )
+            if ( record.getId() == 0 )
             {
                 if ( started )
                 {

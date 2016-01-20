@@ -277,7 +277,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         @Override
         long recordId()
         {
-            return record.getLongId();
+            return record.getId();
         }
 
         @Override
@@ -329,7 +329,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         @Override
         long recordId()
         {
-            return newRecord.getLongId();
+            return newRecord.getId();
         }
 
         @Override

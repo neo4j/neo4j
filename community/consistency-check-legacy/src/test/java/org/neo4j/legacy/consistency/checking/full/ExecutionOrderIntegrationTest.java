@@ -172,7 +172,7 @@ public class ExecutionOrderIntegrationTest
                 {
                     AbstractBaseRecord record = (AbstractBaseRecord) arg;
                     entry.append( ',' ).append( record.getClass().getSimpleName() )
-                            .append( '[' ).append( record.getLongId() ).append( ']' );
+                            .append( '[' ).append( record.getId() ).append( ']' );
                 }
             }
             String message = entry.append( ')' ).toString();

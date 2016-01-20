@@ -74,7 +74,7 @@ public class PropertyKeyTokenRecord extends TokenRecord
     @Override
     public PropertyKeyTokenRecord clone()
     {
-        PropertyKeyTokenRecord propertyKeyTokenRecord = new PropertyKeyTokenRecord( getId() );
+        PropertyKeyTokenRecord propertyKeyTokenRecord = new PropertyKeyTokenRecord( getIntId() );
         propertyKeyTokenRecord.setInUse( inUse() );
         if ( isCreated() )
         {

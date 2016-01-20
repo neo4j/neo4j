@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.api.CommandVisitor;
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -170,7 +169,7 @@ public abstract class Command implements StorageCommand
         }
     }
 
-    public static abstract class BaseCommand<RECORD extends Abstract64BitRecord> extends Command
+    public static abstract class BaseCommand<RECORD extends AbstractBaseRecord> extends Command
     {
         protected final RECORD before;
         protected final RECORD after;
@@ -488,7 +487,7 @@ public abstract class Command implements StorageCommand
         public void serialize( WritableChannel channel ) throws IOException
         {
             channel.put( NeoCommandType.PROP_INDEX_COMMAND );
-            channel.putInt( after.getId() );
+            channel.putInt( after.getIntId() );
             writePropertyKeyTokenRecord( channel, before );
             writePropertyKeyTokenRecord( channel, after );
         }
@@ -529,7 +528,7 @@ public abstract class Command implements StorageCommand
         public void serialize( WritableChannel channel ) throws IOException
         {
             channel.put( NeoCommandType.REL_TYPE_COMMAND );
-            channel.putInt( after.getId() );
+            channel.putInt( after.getIntId() );
             writeRelationshipTypeTokenRecord( channel, before );
             writeRelationshipTypeTokenRecord( channel, after );
         }
@@ -569,7 +568,7 @@ public abstract class Command implements StorageCommand
         public void serialize( WritableChannel channel ) throws IOException
         {
             channel.put( NeoCommandType.LABEL_KEY_COMMAND );
-            channel.putInt( after.getId() );
+            channel.putInt( after.getIntId() );
             writeLabelTokenRecord( channel, before );
             writeLabelTokenRecord( channel, after );
         }

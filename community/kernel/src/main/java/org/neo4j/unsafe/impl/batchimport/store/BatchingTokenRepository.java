@@ -142,7 +142,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
         for ( RECORD record : recordAccess.records() )
         {
             store.updateRecord( record );
-            highestId = max( highestId, record.getId() );
+            highestId = max( highestId, record.getIntId() );
         }
         store.setHighestPossibleIdInUse( highestId );
     }

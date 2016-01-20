@@ -101,7 +101,7 @@ public class LogEntryParserDispatcherV6Test
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.put( NeoCommandType.NODE_COMMAND );
-        channel.putLong( theRecord.getLongId() );
+        channel.putLong( theRecord.getId() );
 
         // record image before
         channel.put( (byte) 0 ); // not in use

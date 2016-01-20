@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public abstract class TokenRecord extends AbstractRecord
+public abstract class TokenRecord extends AbstractBaseRecord
 {
     private int nameId;
     private List<DynamicRecord> nameRecords;

@@ -30,8 +30,15 @@ import org.neo4j.helpers.CloneableInPublic;
  */
 public abstract class AbstractBaseRecord implements CloneableInPublic
 {
+    private long id;
     private boolean inUse;
     private boolean created;
+
+    protected AbstractBaseRecord( long id )
+    {
+        this.id = id;
+        clear();
+    }
 
     protected AbstractBaseRecord initialize( boolean inUse )
     {
@@ -52,9 +59,20 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
         created = false;
     }
 
-    public abstract long getLongId();
+    public long getId()
+    {
+        return id;
+    }
 
-    public abstract void setId( long id );
+    public int getIntId()
+    {
+        return Math.toIntExact( id );
+    }
+
+    public void setId( long id )
+    {
+        this.id = id;
+    }
 
     public final boolean inUse()
     {
@@ -79,7 +97,6 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     @Override
     public int hashCode()
     {
-        long id = getLongId();
         return (int) (( id >>> 32 ) ^ id );
     }
 
@@ -93,7 +110,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
         if ( getClass() != obj.getClass() )
             return false;
         AbstractBaseRecord other = (AbstractBaseRecord) obj;
-        if ( getLongId() != other.getLongId() )
+        if ( id != other.id )
             return false;
         return true;
     }

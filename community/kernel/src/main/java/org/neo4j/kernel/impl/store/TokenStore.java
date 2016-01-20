@@ -106,7 +106,7 @@ public abstract class TokenStore<RECORD extends TokenRecord,TOKEN extends Token>
     public TOKEN getToken( int id )
     {
         RECORD record = getRecord( id, newRecord(), NORMAL );
-        return tokenFactory.newToken( getStringFor( record ), record.getId() );
+        return tokenFactory.newToken( getStringFor( record ), record.getIntId() );
     }
 
     public Collection<DynamicRecord> allocateNameRecords( byte[] chars )

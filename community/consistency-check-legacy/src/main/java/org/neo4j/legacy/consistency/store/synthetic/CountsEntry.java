@@ -37,6 +37,7 @@ public class CountsEntry extends AbstractBaseRecord
 
     public CountsEntry( CountsKey key, long count )
     {
+        super( -1 );
         this.key = key;
         this.count = count;
         setInUse( true );
@@ -57,7 +58,7 @@ public class CountsEntry extends AbstractBaseRecord
     }
 
     @Override
-    public long getLongId()
+    public long getId()
     {
         throw new UnsupportedOperationException();
     }

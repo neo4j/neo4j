@@ -36,10 +36,12 @@ public class CountsEntry extends AbstractBaseRecord
     // ========= TRANSITIONAL CONSTRUCTORS =============
     public CountsEntry()
     {
+        super( -1 );
     }
 
     public CountsEntry( CountsKey key, long count )
     {
+        super( -1 );
         initialize( key, count );
     }
     // ========= TRANSITIONAL CONSTRUCTORS =============
@@ -73,7 +75,7 @@ public class CountsEntry extends AbstractBaseRecord
     }
 
     @Override
-    public long getLongId()
+    public long getId()
     {
         throw new UnsupportedOperationException();
     }

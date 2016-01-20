@@ -318,7 +318,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                 return false;
             }
 
-            if ( record.getLongId() == 0 )
+            if ( record.getId() == 0 )
             {
                 if ( started )
                 {
