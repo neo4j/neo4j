@@ -35,6 +35,10 @@ test_expect_success "should stop" "
   neo4j-home/bin/neo4j stop
 "
 
+test_expect_success "should exit 0 if already stopped" "
+  neo4j-home/bin/neo4j stop
+"
+
 test_expect_success "should report that it's not running once stopped" "
   test_expect_code 3 neo4j-home/bin/neo4j status
 "

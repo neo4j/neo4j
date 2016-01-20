@@ -51,8 +51,7 @@ do_start()
 
 do_stop()
 {
-  start-stop-daemon --chuid ${NEO_USER} --stop --quiet --oknodo --retry=TERM/30/KILL/5 --pidfile $PIDFILE \
-    && rm -f $PIDFILE
+  $DAEMON stop
 }
 
 case "$1" in

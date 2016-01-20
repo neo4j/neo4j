@@ -236,8 +236,9 @@ do_stop() {
   check_status
 
   if [[ ! "${NEO4J_PID:-}" ]] ; then
-    echo "ERROR: ${FRIENDLY_NAME} not running"
+    echo "${FRIENDLY_NAME} not running"
     [ -e "${NEO4J_PIDFILE}" ] && rm "${NEO4J_PIDFILE}"
+    return 0
   else
     echo -n "Stopping ${FRIENDLY_NAME} [${NEO4J_PID}]..."
     elapsed=0
