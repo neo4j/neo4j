@@ -23,6 +23,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -89,26 +90,35 @@ public class CoreEdgeMetricsIT
             assertAllNodesVisible( db );
         }
 
-        File appendMetrics = metricsCsv( dbDir, CoreMetrics.APPEND_INDEX );
-        assertThat( readLastValue( appendMetrics ), greaterThan( 0L ) );
+        File coreServerMetricsDir = new File( cluster.getCoreServerById( 0 ).getStoreDir(), "metrics" );
 
-        File commitMetrics = metricsCsv( dbDir, CoreMetrics.COMMIT_INDEX );
-        assertThat( readLastValue( commitMetrics ), greaterThan( 0L ) );
+        assertEventually("append index eventually accurate",
+                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.APPEND_INDEX ) ),
+                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
 
-        File termMetrics = metricsCsv( dbDir, CoreMetrics.TERM );
-        assertThat( readLastValue( termMetrics ), greaterThan( 0L ) );
+        assertEventually("commit index eventually accurate",
+                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.COMMIT_INDEX ) ),
+                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
 
-        File leaderNotFoundMetrics = metricsCsv( dbDir, CoreMetrics.LEADER_NOT_FOUND );
-        assertThat( readLastValue( leaderNotFoundMetrics ), equalTo( 0L ) );
+        assertEventually("term eventually accurate",
+                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.TERM ) ),
+                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
 
-        File txPullRequestsMetrics = metricsCsv( dbDir, CoreMetrics.TX_PULL_REQUESTS_RECEIVED );
-        assertThat( readLastValue( txPullRequestsMetrics ), greaterThan( 0L ) );
+        assertEventually("leader not found eventually accurate",
+                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.LEADER_NOT_FOUND ) ),
+                equalTo ( 0L ), 5, TimeUnit.SECONDS );
 
-        File txRetryMetrics = metricsCsv( dbDir, CoreMetrics.TX_RETRIES );
-        assertThat( readLastValue( txRetryMetrics ), equalTo( 0L ) );
+        assertEventually("tx pull requests received eventually accurate",
+                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.TX_PULL_REQUESTS_RECEIVED ) ),
+                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
 
-        File isLeaderMetrics = metricsCsv( dbDir, CoreMetrics.IS_LEADER );
-        assertThat( readLastValue( isLeaderMetrics ), greaterThanOrEqualTo ( 0L ) );
+        assertEventually("tx retries eventually accurate",
+                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.TX_RETRIES ) ),
+                equalTo ( 0L ), 5, TimeUnit.SECONDS );
+
+        assertEventually("is leader eventually accurate",
+                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.IS_LEADER ) ),
+                greaterThanOrEqualTo ( 0L ), 5, TimeUnit.SECONDS );
 
         cluster.shutdown();
     }
@@ -133,19 +143,21 @@ public class CoreEdgeMetricsIT
         }
     }
 
-    private File metricsCsv( File dbDir, String metric )
-    {
-        File csvFile = new File( dbDir, "/server-core-0/metrics/" + metric + ".csv" );
-        assertEventually( "Metrics file should exist", csvFile::exists, is( true ), 20, SECONDS );
-        return csvFile;
-    }
 
     private static final int TIME_STAMP = 0;
     private static final int METRICS_VALUE = 1;
 
 
+    private File metricsCsv( File dbDir, String metric )
+    {
+        File csvFile = new File( dbDir, metric + ".csv" );
+        assertEventually( "Metrics file should exist", csvFile::exists, is( true ), 20, SECONDS );
+        return csvFile;
+    }
+
     private long readLastValue( File metricFile ) throws IOException
     {
+        String[] fields = null;
         try ( BufferedReader reader = new BufferedReader( new FileReader( metricFile ) ) )
         {
             String[] headers = reader.readLine().split( "," );
@@ -153,10 +165,14 @@ public class CoreEdgeMetricsIT
             assertThat( headers[TIME_STAMP], is( "t" ) );
             assertThat( headers[METRICS_VALUE], is( "value" ) );
 
-            String line = reader.readLine();
-            String[] fields = line.split( "," );
-            return Long.valueOf( fields[METRICS_VALUE] );
+            String line;
+            while ( (line = reader.readLine()) != null )
+            {
+                fields = line.split( "," );
+            }
         }
+
+        return Long.valueOf( fields[METRICS_VALUE] );
     }
 
 }
