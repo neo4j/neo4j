@@ -183,7 +183,7 @@ public class StoreCopyClient
     public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest )
             throws IOException
     {
-        // Clear up the current temp directory if there
+        // Create a temp directory (or clean if present)
         File tempStore = new File( storeDir, TEMP_COPY_DIRECTORY_NAME );
         cleanDirectory( tempStore );
 
@@ -216,6 +216,9 @@ public class StoreCopyClient
         {
             FileUtils.moveFileToDirectory( candidate, storeDir );
         }
+
+        // All done, delete temp directory
+        FileUtils.deleteRecursively( tempStore );
     }
 
     private void writeTransactionsToActiveLogFile( File tempStoreDir, Response<?> response ) throws IOException
