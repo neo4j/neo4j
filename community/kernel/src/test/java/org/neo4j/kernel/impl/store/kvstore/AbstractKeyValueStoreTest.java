@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.kvstore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,12 +50,15 @@ import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXI
 
 public class AbstractKeyValueStoreTest
 {
-    @Rule
-    public final Resources resourceManager = new Resources( FILE_IN_EXISTING_DIRECTORY );
+
+    private final ExpectedException expectedException = ExpectedException.none();
+    private final Resources resourceManager = new Resources( FILE_IN_EXISTING_DIRECTORY );
+
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
     @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+    public final RuleChain ruleChain = RuleChain.outerRule( expectedException )
+            .around( resourceManager );
 
     private static final HeaderField<Long> TX_ID = new HeaderField<Long>()
     {

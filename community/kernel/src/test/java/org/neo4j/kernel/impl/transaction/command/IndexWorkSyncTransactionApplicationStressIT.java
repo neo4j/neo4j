@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -68,12 +69,14 @@ import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 public class IndexWorkSyncTransactionApplicationStressIT
 {
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
+    private final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+
     @Rule
-    public final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
-    @Rule
-    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    public RuleChain ruleChain = RuleChain.outerRule( directory )
+                                          .around( pageCacheRule )
+                                          .around( storageEngineRule );
 
     private final int labelId = 0;
     private final int propertyKeyId = 0;

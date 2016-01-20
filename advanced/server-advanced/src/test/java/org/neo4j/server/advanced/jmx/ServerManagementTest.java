@@ -21,6 +21,7 @@ package org.neo4j.server.advanced.jmx;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
@@ -40,10 +41,13 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ServerManagementTest
 {
+
+    private final CleanupRule cleanup = new CleanupRule();
+    private final TargetDirectory.TestDirectory baseDir = TargetDirectory.testDirForTest( getClass() );
+
     @Rule
-    public final CleanupRule cleanup = new CleanupRule();
-    @Rule
-    public final TargetDirectory.TestDirectory baseDir = TargetDirectory.testDirForTest( getClass() );
+    public RuleChain ruleChain = RuleChain.outerRule( baseDir )
+            .around( cleanup );
 
     @Test
     public void shouldBeAbleToRestartServer() throws Exception

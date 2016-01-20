@@ -83,12 +83,9 @@ public class IntArrayTest
     }
 
     @Parameters
-    public static Collection<Object[]> data()
+    public static Collection<NumberArrayFactory> data()
     {
-        return Arrays.asList(
-                new Object[] {NumberArrayFactory.HEAP},
-                new Object[] {NumberArrayFactory.OFF_HEAP}
-                );
+        return Arrays.asList( NumberArrayFactory.HEAP, NumberArrayFactory.OFF_HEAP );
     }
 
     public IntArrayTest( NumberArrayFactory factory )
