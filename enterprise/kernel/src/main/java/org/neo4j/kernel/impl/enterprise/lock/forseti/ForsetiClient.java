@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.IntFunction;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.primitive.Primitive;
@@ -27,6 +28,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager.DeadlockResolutionStrategy;
 import org.neo4j.kernel.impl.locking.LockClientAlreadyClosedException;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -34,6 +36,7 @@ import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.String.format;
 
@@ -59,8 +62,14 @@ public class ForsetiClient implements Locks.Client
     /** resourceType -> wait strategy */
     private final WaitStrategy<AcquireLockTimeoutException>[] waitStrategies;
 
+    /** How to resolve deadlocks. */
+    private final DeadlockResolutionStrategy deadlockResolutionStrategy;
+
     /** Handle to return client to pool when closed. */
     private final LinkedQueuePool<ForsetiClient> clientPool;
+
+    /** Look up a client by id */
+    private final IntFunction<ForsetiClient> clientById;
 
     /**
      * The client uses this to track which locks it holds. It is solely an optimization to ensure we don't need to
@@ -93,12 +102,16 @@ public class ForsetiClient implements Locks.Client
     public ForsetiClient( int id,
                           ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps,
                           WaitStrategy<AcquireLockTimeoutException>[] waitStrategies,
-                          LinkedQueuePool<ForsetiClient> clientPool )
+                          LinkedQueuePool<ForsetiClient> clientPool,
+                          DeadlockResolutionStrategy deadlockResolutionStrategy,
+                          IntFunction<ForsetiClient> clientById )
     {
         this.clientId = id;
         this.lockMaps = lockMaps;
         this.waitStrategies = waitStrategies;
+        this.deadlockResolutionStrategy = deadlockResolutionStrategy;
         this.clientPool = clientPool;
+        this.clientById = clientById;
         this.sharedLockCounts = new PrimitiveLongIntMap[lockMaps.length];
         this.exclusiveLockCounts = new PrimitiveLongIntMap[lockMaps.length];
 
@@ -689,7 +702,8 @@ public class ForsetiClient implements Locks.Client
                                                  long resourceId, SharedLock sharedLock ) throws AcquireLockTimeoutException
     {
         int tries = 0;
-        if(!sharedLockCounts[resourceType.typeId()].containsKey( resourceId ))
+        boolean holdsSharedLock = sharedLockCounts[resourceType.typeId()].containsKey( resourceId );
+        if(!holdsSharedLock )
         {
             // We don't hold the shared lock, we need to grab it to upgrade it to an exclusive one
             if(!sharedLock.acquire( this ))
@@ -774,14 +788,41 @@ public class ForsetiClient implements Locks.Client
     {
         clearWaitList();
         lock.copyHolderWaitListsInto( waitList );
-        if(lock.anyHolderIsWaitingFor( clientId ) && lock.holderWaitListSize() >= waitListSize())
+
+        int b = lock.detectDeadlock( id() );
+        if( b != -1 && deadlockResolutionStrategy.shouldAbort( this, clientById.apply( b ) ) )
         {
+            // Force the operations below to happen after the reads we do for deadlock
+            // detection in the lines above, as a way to cut down on false-positive deadlocks
+            UnsafeUtil.loadFence();
+
             // Create message before we clear the wait-list, to lower the chance of the message being insane
             String message = this + " can't acquire " + lock + " on " + type + "(" + resourceId + "), because holders of that lock " +
                              "are waiting for " + this + ".\n Wait list:" + lock.describeWaitList();
-            waitList.clear();
-            throw new DeadlockDetectedException( message );
+
+            // Minimize the risk of false positives by double-checking that the deadlock remains
+            // after we've generated a description of it.
+            if( lock.detectDeadlock( id() ) != -1 )
+            {
+                waitList.clear();
+                throw new DeadlockDetectedException( message );
+            }
         }
+    }
+
+    /** @return an approximate (assuming data is concurrently being edited) count of the number of locks held by this client. */
+    public int lockCount()
+    {
+        int count = 0;
+        for ( PrimitiveLongIntMap sharedLockCount : sharedLockCounts )
+        {
+            count += sharedLockCount.size();
+        }
+        for ( PrimitiveLongIntMap exclusiveLockCount : exclusiveLockCounts )
+        {
+            count += exclusiveLockCount.size();
+        }
+        return count;
     }
 
     public String describeWaitList()

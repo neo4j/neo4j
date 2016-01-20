@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -53,8 +54,10 @@ import org.neo4j.test.ha.ClusterRule;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -286,13 +289,12 @@ public class TransactionConstraintsIT
         tx1.acquireReadLock( commonNode );
         thread2.execute( new AcquireReadLockOnReferenceNode( tx2, commonNode ) );
         // -- and one of them wanting (and awaiting) to upgrade its read lock to a write lock
-        Future<Lock> writeLockFuture = thread2.executeDontWait( new AcquireWriteLock( tx2, new Callable<Node>(){
-            @Override
-            public Node call() throws Exception
+        Future<Lock> writeLockFuture = thread2.executeDontWait( state -> {
+            try( Transaction ignored = tx2 ) // Close transaction no matter what happens
             {
-                return commonNode;
+                return tx2.acquireWriteLock( commonNode );
             }
-        } ) );
+        } );
 
         for ( int i = 0; i < 10; i++ )
         {
@@ -300,7 +302,7 @@ public class TransactionConstraintsIT
             Thread.sleep(2);
         }
 
-        try
+        try( Transaction ignored = tx1 ) // Close transaction no matter what happens
         {
             // WHEN
             tx1.acquireWriteLock( commonNode );
@@ -313,12 +315,12 @@ public class TransactionConstraintsIT
         {
             // THEN -- deadlock should be avoided with this exception
         }
-        finally
+        catch( ExecutionException e )
         {
-            tx1.close();
+            // OR -- the tx2 thread fails with executionexception, caused by deadlock on its end
+            assertThat( e.getCause(), instanceOf( DeadlockDetectedException.class ) );
         }
 
-        thread2.execute( new FinishTx( tx2, true ) );
         thread2.close();
     }
 
