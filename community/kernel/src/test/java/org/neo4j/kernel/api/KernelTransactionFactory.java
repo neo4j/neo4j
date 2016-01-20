@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.api.proc.Procedures;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.KernelTransactions;

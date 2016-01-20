@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.Procedure;
-import org.neo4j.kernel.api.proc.Procedures;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;

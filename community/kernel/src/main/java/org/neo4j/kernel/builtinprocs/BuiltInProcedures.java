@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.impl.proc.Procedures;
 
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
@@ -29,10 +29,10 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
  */
 public class BuiltInProcedures
 {
-    public static void addTo( KernelAPI kernel ) throws ProcedureException
+    public static void addTo( Procedures procs ) throws ProcedureException
     {
-        kernel.registerProcedure( new ListLabelsProcedure( procedureName( "sys", "db", "labels" ) ) );
-        kernel.registerProcedure( new ListPropertyKeysProcedure( procedureName( "sys", "db", "propertyKeys" ) ) );
-        kernel.registerProcedure( new ListRelationshipTypesProcedure( procedureName( "sys", "db", "relationshipTypes" ) ) );
+        procs.register( new ListLabelsProcedure( procedureName( "sys", "db", "labels" ) ) );
+        procs.register( new ListPropertyKeysProcedure( procedureName( "sys", "db", "propertyKeys" ) ) );
+        procs.register( new ListRelationshipTypesProcedure( procedureName( "sys", "db", "relationshipTypes" ) ) );
     }
 }

@@ -27,7 +27,7 @@ import java.util.Collection;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.proc.Procedures;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;

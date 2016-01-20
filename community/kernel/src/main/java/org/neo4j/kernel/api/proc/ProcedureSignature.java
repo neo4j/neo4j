@@ -28,6 +28,7 @@ import java.util.List;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableList;
 
 /**
  * This describes the signature of a procedure, made up of its namespace, name, and input/output description.
@@ -90,10 +91,7 @@ public class ProcedureSignature
             if ( o == null || getClass() != o.getClass() ) { return false; }
 
             ProcedureName that = (ProcedureName) o;
-
-            // Probably incorrect - comparing Object[] arrays with Arrays.equals
-            if ( !Arrays.equals( namespace, that.namespace ) ) { return false; }
-            return name.equals( that.name );
+            return Arrays.equals( namespace, that.namespace ) && name.equals( that.name );
         }
 
         @Override
@@ -126,6 +124,29 @@ public class ProcedureSignature
         {
             return type;
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s :: %s", name, type);
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o ) { return true; }
+            if ( o == null || getClass() != o.getClass() ) { return false; }
+            FieldSignature that = (FieldSignature) o;
+            return name.equals( that.name ) && type.equals( that.type );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = name.hashCode();
+            result = 31 * result + type.hashCode();
+            return result;
+        }
     }
 
     private final ProcedureName name;
@@ -135,8 +156,8 @@ public class ProcedureSignature
     public ProcedureSignature( ProcedureName name, List<FieldSignature> inputSignature, List<FieldSignature> outputSignature )
     {
         this.name = name;
-        this.inputSignature = inputSignature;
-        this.outputSignature = outputSignature;
+        this.inputSignature = unmodifiableList( inputSignature );
+        this.outputSignature = unmodifiableList( outputSignature );
     }
 
     public ProcedureSignature( ProcedureName name )
@@ -170,7 +191,6 @@ public class ProcedureSignature
         if ( !name.equals( that.name ) ) { return false; }
         if ( inputSignature != null ? !inputSignature.equals( that.inputSignature ) : that.inputSignature != null ) { return false; }
         return !(outputSignature != null ? !outputSignature.equals( that.outputSignature ) : that.outputSignature != null);
-
     }
 
     @Override
@@ -182,9 +202,9 @@ public class ProcedureSignature
     @Override
     public String toString()
     {
-        String strInSig = inputSignature == null ? "..." : iterableToString( typesOf( inputSignature ), ", " );
-        String strOutSig = outputSignature == null ? "..." : iterableToString( typesOf( outputSignature ), ", " );
-        return String.format( "%s(%s) : (%s)", name, strInSig, strOutSig );
+        String strInSig = inputSignature == null ? "..." : iterableToString( inputSignature, ", " );
+        String strOutSig = outputSignature == null ? "..." : iterableToString( outputSignature, ", " );
+        return String.format( "%s(%s) :: (%s)", name, strInSig, strOutSig );
     }
 
     public static class Builder
@@ -238,15 +258,5 @@ public class ProcedureSignature
     public static ProcedureName procedureName( String ... namespaceAndName)
     {
         return procedureSignature( namespaceAndName ).build().name();
-    }
-
-    private static List<AnyType> typesOf( List<FieldSignature> namedSig )
-    {
-        List<AnyType> out = new LinkedList<>();
-        for ( int i = 0; i < namedSig.size(); i++ )
-        {
-            out.add( namedSig.get( i ).neo4jType() );
-        }
-        return out;
     }
 }

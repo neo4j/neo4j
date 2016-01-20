@@ -34,6 +34,8 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
@@ -628,6 +630,16 @@ public abstract class IteratorUtil
     public static List<Integer> asList( PrimitiveIntIterator iterator )
     {
         List<Integer> out = new ArrayList<>();
+        while(iterator.hasNext())
+        {
+            out.add(iterator.next());
+        }
+        return out;
+    }
+
+    public static <T, EX extends Exception> List<T> asList( RawIterator<T, EX> iterator ) throws EX
+    {
+        List<T> out = new ArrayList<>();
         while(iterator.hasNext())
         {
             out.add(iterator.next());

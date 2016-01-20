@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotificatio
 import org.neo4j.cypher.internal.frontend.v3_0.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherException => InternalCypherException}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v3_0._
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
@@ -167,7 +167,7 @@ trait CompatibilityFor3_0 {
       def isPeriodicCommit = preparedQueryForV_3_0.map(_.isPeriodicCommit).getOrElse(false)
 
       def plan(statement: Statement, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor3_0.runSafely {
-        val planContext = new TransactionBoundPlanContext(statement, graph)
+        val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(statement, graph))
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_3_0.get, planContext, tracer)
 
         // Log notifications/warnings from planning

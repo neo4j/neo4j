@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import java.util.stream.Stream;
-
+import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.Procedure;
@@ -28,6 +27,8 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static org.neo4j.kernel.api.ReadOperations.readStatement;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.helpers.collection.Iterables.asRawIterator;
+import static org.neo4j.helpers.collection.Iterables.map;
 
 public class ListPropertyKeysProcedure extends Procedure.BasicProcedure
 {
@@ -37,8 +38,8 @@ public class ListPropertyKeysProcedure extends Procedure.BasicProcedure
     }
 
     @Override
-    public Stream<Object[]> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        return stream( ctx.get( readStatement ).propertyKeyGetAllTokens() ).map( ( token) -> new Object[]{ token.name() } );
+        return map( (t) -> new Object[]{t.name()}, asRawIterator( ctx.get( readStatement ).propertyKeyGetAllTokens() ) );
     }
 }

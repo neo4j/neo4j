@@ -270,7 +270,8 @@ public interface Status
         FailedRegistration( ClientError, "The database failed to register a procedure, refer to the associated error message for details." ),
         NoSuchProcedure( ClientError, "A request referred to a procedure that is not registered with this database instance. If you are deploying custom " +
                                       "procedures in a cluster setup, ensure all instances in the cluster have the procedure jar file deployed." ),
-        CallFailed( ClientError, "Failed to invoke a procedure. See the detailed error description for exact cause." )
+        CallFailed( ClientError, "Failed to invoke a procedure. See the detailed error description for exact cause." ),
+        TypeError( ClientError, "A procedure is using or receiving a value of an invalid type." )
         ;
 
         private final Code code;

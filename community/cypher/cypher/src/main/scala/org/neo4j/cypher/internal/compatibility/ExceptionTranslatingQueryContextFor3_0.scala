@@ -23,13 +23,11 @@ import java.net.URL
 
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
-import org.neo4j.graphdb.{ConstraintViolationException => KernelConstraintViolationException, Node, PropertyContainer, Relationship}
-import org.neo4j.kernel.api.TokenNameLookup
-import org.neo4j.kernel.api.exceptions.KernelException
+import org.neo4j.cypher.internal.spi.v3_0.ExceptionTranslationSupport
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends DelegatingQueryContext(inner) {
+class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends DelegatingQueryContext(inner) with ExceptionTranslationSupport {
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(super.setLabelsOnNode(node, labelIds))
 
@@ -123,6 +121,10 @@ class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends Delega
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
     translateException(super.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
+  override def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] = {
+    translateIterator(super.callReadOnlyProcedure(signature, args))
+  }
+
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T =
     super.withAnyOpenQueryContext(qc =>
       translateException(
@@ -189,17 +191,5 @@ class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends Delega
       translateException(super.isDeleted(obj))
   }
 
-  private def translateException[A](f: => A) = try {
-    f
-  } catch {
-    case e: KernelException => throw new CypherExecutionException(e.getUserMessage(new TokenNameLookup {
-      def propertyKeyGetName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
-
-      def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
-
-      def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
-    }), e)
-    case e : KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)
-  }
 }
 

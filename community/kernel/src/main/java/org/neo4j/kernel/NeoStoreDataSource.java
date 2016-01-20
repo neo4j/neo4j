@@ -31,6 +31,9 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -41,15 +44,14 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.proc.Procedures;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.DataIntegrityValidatingStatementOperations;
@@ -87,6 +89,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
@@ -152,10 +155,14 @@ import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
 
 public class NeoStoreDataSource implements Lifecycle, IndexProviders
 {
@@ -733,7 +740,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                                       UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
                                       StorageEngine storageEngine,
                                       IndexConfigStore indexConfigStore,
-                                      TransactionIdStore transactionIdStore ) throws ProcedureException
+                                      TransactionIdStore transactionIdStore ) throws KernelException, IOException
     {
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine,
                 config );
@@ -764,7 +771,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 storeLayer, legacyPropertyTrackers, constraintIndexCreator, updateableSchemaState, guard,
                 legacyIndexStore ) );
 
-        Procedures procedures = dependencies.satisfyDependency(new Procedures());
+        Procedures procedures = setupProcedures();
 
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( locks, constraintIndexCreator,
@@ -776,8 +783,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures );
 
         kernel.registerTransactionHook( transactionEventHandlers );
-
-        BuiltInProcedures.addTo( kernel );
 
         final NeoStoreFileListing fileListing = new NeoStoreFileListing( storeDir, labelScanStore, indexingService,
                 legacyIndexProviderLookup );
@@ -808,6 +813,18 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 return fileListing;
             }
         };
+    }
+
+    // register graph types, set up built-in procedures and scan for procedures on disk
+    private Procedures setupProcedures() throws KernelException, IOException
+    {
+        Procedures procedures = dependencies.satisfyDependency( new Procedures( msgLog ) );
+        procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class ) );
+        procedures.registerType( Relationship.class, new SimpleConverter( NTRelationship, Relationship.class ) );
+        procedures.registerType( Path.class, new SimpleConverter( NTPath, Path.class ) );
+        BuiltInProcedures.addTo( procedures );
+        procedures.loadFromDirectory( config.get( GraphDatabaseSettings.plugin_dir ) );
+        return procedures;
     }
 
     // We do this last to ensure no one is cheating with dependency access
