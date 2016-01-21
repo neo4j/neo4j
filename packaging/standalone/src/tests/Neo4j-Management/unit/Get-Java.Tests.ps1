@@ -410,7 +410,7 @@ InModuleScope Neo4j-Management {
       }
 
       It "should have correct Config File" {
-        $resultArgs | Should Match ([regex]::Escape('-DconfigFile="conf/arbiter-wrapper.conf"'))
+        $resultArgs | Should Match ([regex]::Escape('-DconfigFile="conf/neo4j-wrapper.conf"'))
       }
 
       It "should have DserverMainClass before jar in arguments" {

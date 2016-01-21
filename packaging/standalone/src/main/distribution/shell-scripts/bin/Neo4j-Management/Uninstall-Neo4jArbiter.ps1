@@ -27,9 +27,6 @@ Uninstall a Neo4j Arbiter Windows Service
 .PARAMETER Neo4jServer
 An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
 
-.PARAMETER ServiceName
-The name of the Neo4j Arbiter service.  If no name is specified, the name is determined from the Neo4j Configuration files (default)
-
 .PARAMETER SucceedIfNotExist
 Do not raise an error if the service does not exist
 
@@ -53,9 +50,6 @@ Function Uninstall-Neo4jArbiter
     [Parameter(Mandatory=$false,ValueFromPipeline=$true)]
     [object]$Neo4jServer = ''
     
-    ,[Parameter(Mandatory=$false)]
-    [string]$ServiceName = ''
-
     ,[Parameter(Mandatory=$false)]
     [switch]$SucceedIfNotExist
   )
@@ -93,30 +87,18 @@ Function Uninstall-Neo4jArbiter
       return
     }
     
-    if ($ServiceName -eq '')
-    {
-      $setting = ($thisServer | Get-Neo4jSetting -ConfigurationFile 'arbiter-wrapper.conf' -Name 'wrapper.name')
-      if ($setting -ne $null) { $ServiceName = $setting.Value }
-    }
-
-    if ($ServiceName -eq '')
-    {
-      Write-Error 'Could not find the Windows Service Name for Neo4j Arbiter'
-      return
-    }
-    
     # Get the Service object as a WMI object.  Can only do deletions through WMI or SC.EXE
-    $service = Get-WmiObject -Class Win32_Service -Filter "Name='$ServiceName'"
+    $service = Get-WmiObject -Class Win32_Service -Filter "Name='Neo4jArbiter'"
     if (($service -eq $null) -and (-not $SucceedIfNotExist) ) 
     {
-      Write-Error "Windows service $ServiceName cannot be removed as it does not exist"
+      Write-Error "Windows service Neo4jArbiter cannot be removed as it does not exist"
       return
     }
 
     if ($service -ne $null)
     {
-      Stop-Service -ServiceName $ServiceName | Out-Null
-      if ($PSCmdlet.ShouldProcess($ServiceName, 'Remove Windows Service'))
+      Stop-Service -ServiceName 'Neo4jArbiter' | Out-Null
+      if ($PSCmdlet.ShouldProcess('Neo4jArbiter' 'Remove Windows Service'))
       {  
         $service.delete() | Out-Null
       }        

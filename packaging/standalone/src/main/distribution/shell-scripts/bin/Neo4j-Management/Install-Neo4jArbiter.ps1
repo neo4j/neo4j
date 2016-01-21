@@ -27,11 +27,8 @@ Install a Neo4j Arbiter Windows Service
 .PARAMETER Neo4jServer
 An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
 
-.PARAMETER Name
-The name of the Neo4j Arbiter service.  If no name is specified the default of Neo4jArbiter is used
-
 .PARAMETER DisplayName
-The name of the Neo4j Arbiter service displayed in Service Manager.  If no name is specified the default of service name is used
+The name of the Neo4j Arbiter service displayed in Service Manager.  If no name is specified the default of 'Neo4jArbiter' is used
 
 .PARAMETER Description
 The description of the Neo4j Arbiter service.  If no name is specified the default of Neo4j-HA-Arbiter is used
@@ -46,8 +43,8 @@ Do not raise an error if the service already exists
 Pass through the Neo4j Server object instead of the Neo4j Setting Object
 
 .EXAMPLE
-'C:\Neo4j\neo4j-enterprise' | Install-Neo4jArbiter -Name Neo4jArbiter2
-Install the Neo4j Arbiter Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise', with the name Neo4jArbiter2
+'C:\Neo4j\neo4j-enterprise' | Install-Neo4jArbiter
+Install the Neo4j Arbiter Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise'
 
 .EXAMPLE
 'C:\Neo4j\neo4j-enterprise' | Install-Neo4jArbiter -PassThru | Start-Neo4jArbiter
@@ -74,9 +71,6 @@ Function Install-Neo4jArbiter
   param (
     [Parameter(Mandatory=$false,ValueFromPipeline=$true)]
     [object]$Neo4jServer = ''
-
-    ,[Parameter(Mandatory=$false)]
-    [string]$Name = 'Neo4jArbiter'
 
     ,[Parameter(Mandatory=$false)]
     [string]$DisplayName = ''
@@ -135,24 +129,21 @@ Function Install-Neo4jArbiter
       return
     }
     
-    $Name = $Name.Trim()
-    if ($DisplayName -eq '') { $DisplayName = $Name }
+    if ($DisplayName -eq '') { $DisplayName = 'Neo4jArbibiter' }
     
-    $binPath = "`"$($JavaCMD.java)`" $($JavaCMD.args -join ' ') $Name"    
+    $binPath = "`"$($JavaCMD.java)`" $($JavaCMD.args -join ' ') Neo4jArbiter"
 
     $result = $null
     if ($SucceedIfAlreadyExists)
     {
-      $result = Get-Service -Name $Name -ComputerName '.' -ErrorAction 'SilentlyContinue'
+      $result = Get-Service -Name Neo4jArbiter -ComputerName '.' -ErrorAction 'SilentlyContinue'
     }
 
     if ($result -eq $null)
     {
-      $result = (New-Service -Name $Name -Description $Description -DisplayName $DisplayName -BinaryPathName $binPath -StartupType $StartType)
+      $result = (New-Service -Name Neo4jArbiter -Description $Description -DisplayName $DisplayName -BinaryPathName $binPath -StartupType $StartType)
     }
     
-    $thisServer | Set-Neo4jSetting -ConfigurationFile 'arbiter-wrapper.conf' -Name 'wrapper.name' -Value $Name | Out-Null
-        
     if ($PassThru) { Write-Output $thisServer } else { Write-Output $result }
   }
   

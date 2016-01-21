@@ -22,7 +22,7 @@ set -euo pipefail
 
 FRIENDLY_NAME="Neo4j Arbiter"
 SHUTDOWN_TIMEOUT=20
-CONFIG_FILES=("arbiter-wrapper.conf")
+CONFIG_FILES=("neo4j-wrapper.conf")
 MAIN_CLASS="org.neo4j.server.enterprise.StandaloneClusterClient"
 MIN_ALLOWED_OPEN_FILES=1
 CONSOLE_LOG_FILE="arbiter-console.log"

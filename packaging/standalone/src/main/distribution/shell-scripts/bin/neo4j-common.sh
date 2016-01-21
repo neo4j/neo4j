@@ -182,7 +182,7 @@ setup_java_opts() {
   [[ "${wrapper_java_initmemory:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xms${wrapper_java_initmemory}m"
   [[ "${wrapper_java_maxmemory:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xmx${wrapper_java_maxmemory}m"
 
-  JAVA_OPTS="-server"
+  JAVA_OPTS="-server -Dorg.neo4j.cluster.logdirectory=${NEO4J_LOG}"
   [[ "${JAVA_MEMORY_OPTS}" ]] && JAVA_OPTS="${JAVA_OPTS} ${JAVA_MEMORY_OPTS}"
   [[ "${wrapper_java_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${wrapper_java_additional}"
   return 0

@@ -46,7 +46,6 @@ InModuleScope Neo4j-Management {
 
     Context "Throws error for Community Edition" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }    
-      Mock Get-Neo4jSetting { return $null }
 
       It "throws error if community edition" {
         { Stop-Neo4jArbiter -ErrorAction Stop } | Should Throw
@@ -55,7 +54,6 @@ InModuleScope Neo4j-Management {
     
     Context "Windows service already exists" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
       Mock Get-Java { return @{ 'java' = 'java.exe'; 'args' = @('arg1','arg2') }}
       Mock New-Service -Verifiable { throw 'Service already exists' }
 
@@ -70,10 +68,8 @@ InModuleScope Neo4j-Management {
 
     Context "Windows service already exists but no error" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
       Mock Get-Java { return @{ 'java' = 'java.exe'; 'args' = @('arg1','arg2') }}
       Mock New-Service { throw 'Service already exists' }
-      Mock Set-Neo4jSetting -Verifiable { return }
       Mock Get-Service -Verifiable { return 'service' }
 
      $result = Install-Neo4jArbiter -SucceedIfAlreadyExists
@@ -89,19 +85,15 @@ InModuleScope Neo4j-Management {
 
     Context "Installs windows service" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
       Mock Get-Java { return @{ 'java' = 'java.exe'; 'args' = @('arg1','arg2') }}
-      Mock Set-Neo4jSetting { throw 'Did not call Set-Neo4jSetting correctly' }
       Mock New-Service { throw 'Did not call New-Service correctly' }
       
       Mock New-Service -Verifiable { 'service' }  -ParameterFilter {
-        ($Name -eq 'ServiceName') -and ($Description -eq 'ServiceDescription') -and ($DisplayName -eq 'ServerDisplayName') -and
-        ($BinaryPathName -eq '"java.exe" arg1 arg2 ServiceName') -and ($StartupType -eq 'Disabled')
+        ($Name -eq 'Neo4jArbiter') -and ($Description -eq 'ServiceDescription') -and ($DisplayName -eq 'ServerDisplayName') -and
+        ($BinaryPathName -eq '"java.exe" arg1 arg2 Neo4jArbiter') -and ($StartupType -eq 'Disabled')
       }
       
-      Mock Set-Neo4jSetting -Verifiable { return } -ParameterFilter { $Value -eq 'ServiceName' }
-
-     $result = Install-Neo4jArbiter -Name 'ServiceName' -DisplayName 'ServerDisplayName' -Description 'ServiceDescription' -StartType Disabled
+      $result = Install-Neo4jArbiter -DisplayName 'ServerDisplayName' -Description 'ServiceDescription' -StartType Disabled
 
       It "result is a windows service" {
         $result | Should Be 'service'
@@ -114,18 +106,15 @@ InModuleScope Neo4j-Management {
 
     Context "Installs windows service and passthru server object" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
       Mock Get-Java { return @{ 'java' = 'java.exe'; 'args' = @('arg1','arg2') }}
-      Mock Set-Neo4jSetting { throw 'Did not call Set-Neo4jSetting correctly' }
       Mock New-Service { throw 'Did not call New-Service correctly' }
       
       Mock New-Service -Verifiable { 'service' }  -ParameterFilter {
-        ($Name -eq 'ServiceName') -and ($Description -eq 'ServiceDescription') -and ($DisplayName -eq 'ServerDisplayName') -and
-        ($BinaryPathName -eq '"java.exe" arg1 arg2 ServiceName') -and ($StartupType -eq 'Disabled')
+        ($Name -eq 'Neo4jArbiter') -and ($Description -eq 'ServiceDescription') -and ($DisplayName -eq 'ServerDisplayName') -and
+        ($BinaryPathName -eq '"java.exe" arg1 arg2 Neo4jArbiter') -and ($StartupType -eq 'Disabled')
       }
-      Mock Set-Neo4jSetting -Verifiable { return } -ParameterFilter { $Value -eq 'ServiceName' }
 
-     $result = Install-Neo4jArbiter -Name 'ServiceName' -DisplayName 'ServerDisplayName' -Description 'ServiceDescription' -StartType Disabled -PassThru
+      $result = Install-Neo4jArbiter -DisplayName 'ServerDisplayName' -Description 'ServiceDescription' -StartType Disabled -PassThru
 
       It "result is Neo4j Server object" {
         $result.GetType().ToString() | Should Be 'System.Management.Automation.PSCustomObject'

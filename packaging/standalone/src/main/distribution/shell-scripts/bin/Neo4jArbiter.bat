@@ -21,6 +21,6 @@ ECHO WARNING! This batch script has been deprecated. Please use the provided Pow
 
 set classpath="-DserverClasspath=lib/*.jar"
 set mainclass="-DserverMainClass=org.neo4j.server.enterprise.StandaloneClusterClient"
-set configFile="conf\arbiter-wrapper.conf"
+set configFile="conf\neo4j-wrapper.conf"
 
 call "%~dps0base.bat" %1 %2 %3 %4 %5"

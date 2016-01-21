@@ -46,58 +46,23 @@ InModuleScope Neo4j-Management {
 
     Context "Throws error for Community Edition" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }    
-      Mock Get-Neo4jSetting { return $null }
 
       It "throws error if community edition" {
         { Initialize-Neo4jHACluster -ServerID 1 -InitialHosts '127.0.0.1:1' -ErrorAction Stop } | Should Throw
       }
     }
-    
+
     # Windows Service Tests
-    Context "Missing service name in configuration files" {
+    Context "Start service" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise';} }    
-      Mock Get-Neo4jSetting { return $null }
-
-      It "throws error for missing service name in configuration file" {
-        { Start-Neo4jArbiter -ErrorAction Stop } | Should Throw
-      }
-      
-      It "calls Get-Neo4jSetting" {
-        Assert-MockCalled Get-Neo4jSetting -Times 1
-      }
-    }    
-
-    Context "Start service by name in configuration file" {
-      Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
-      Mock Start-Service -Verifiable { return 1 } -ParameterFilter { $Name -eq 'SomeServiceName'}
+      Mock Start-Service -Verifiable { return 1 } -ParameterFilter { $Name -eq 'Neo4jArbiter'}
       
       $result = Start-Neo4jArbiter
 
       It "result is exit code" {
         $result | Should Be 1
       }
-      
-      It "calls verified mocks" {
-        Assert-VerifiableMocks
-      }
-    }
 
-    Context "Start service by named parameter" {
-      Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
-      Mock Start-Service -Verifiable { return 1 } -ParameterFilter { $Name -eq 'SomeOtherServiceName'}
-      
-      $result = Start-Neo4jArbiter -ServiceName 'SomeOtherServiceName'
-
-      It "result is exit code" {
-        $result | Should Be 1
-      }
-
-      It "does not call Get-Neo4jSetting" {
-        Assert-MockCalled Get-Neo4jSetting -Times 0
-      }
-      
       It "calls verified mocks" {
         Assert-VerifiableMocks
       }
@@ -105,8 +70,7 @@ InModuleScope Neo4j-Management {
 
     Context "Start service and passthru server object" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
-      Mock Start-Service -Verifiable { return 1 } -ParameterFilter { $Name -eq 'SomeServiceName'}
+      Mock Start-Service -Verifiable { return 1 } -ParameterFilter { $Name -eq 'Neo4jArbiter'}
       
       $result = Start-Neo4jArbiter -PassThru
 

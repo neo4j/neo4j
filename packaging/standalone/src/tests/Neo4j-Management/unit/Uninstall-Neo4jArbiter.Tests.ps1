@@ -46,29 +46,15 @@ InModuleScope Neo4j-Management {
 
     Context "Throws error for Community Edition" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }    
-      Mock Get-Neo4jSetting { return $null }
 
       It "throws error if community edition" {
         { Stop-Neo4jArbiter -ErrorAction Stop } | Should Throw
       }
     }
 
-    Context "Missing service name in configuration files" {
-      Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise';} }    
-      Mock Get-Neo4jSetting { return $null }
-
-      It "throws error for missing service name in configuration file" {
-        { Uninstall-Neo4jArbiter -ErrorAction Stop } | Should Throw
-      }
-      
-      It "calls Get-Neo4jSetting" {
-        Assert-MockCalled Get-Neo4jSetting -Times 1
-      }
-    }
 
     Context "Windows service does not exist" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
       Mock Get-WmiObject -Verifiable { return $null }
 
       It "throws error for missing service name in configuration file" {
@@ -82,7 +68,6 @@ InModuleScope Neo4j-Management {
 
     Context "Windows service does not exist but no error" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
       Mock Get-WmiObject -Verifiable { return $null }
 
       $result = Uninstall-Neo4jArbiter -SucceedIfNotExist
@@ -96,17 +81,16 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Uninstall windows service by name in configuration files" {
+    Context "Uninstall windows service" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
-      Mock Stop-Service { return 1 } -ParameterFilter { $Name -eq 'SomeServiceName'}
+      Mock Stop-Service { return 1 } -ParameterFilter { $Name -eq 'Neo4jArbiter'}
       Mock Get-WmiObject -Verifiable {
         # Mock a Win32_Service WMI object
         $mock = New-Object -TypeName PSCustomObject
         $mock | Add-Member -MemberType ScriptMethod -Name 'delete' -Value { return 2 } | Out-Null
         
         return $mock
-      } -ParameterFilter { $Filter -eq "Name='SomeServiceName'" }
+      } -ParameterFilter { $Filter -eq "Name='Neo4jArbiter'" }
 
       $result = Uninstall-Neo4jArbiter
 
@@ -118,29 +102,5 @@ InModuleScope Neo4j-Management {
         Assert-VerifiableMocks
       }
     }
-
-    Context "Uninstall windows service by named parameter" {
-      Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
-      Mock Stop-Service { return 1 } -ParameterFilter { $Name -eq 'SomeOtherServiceName'}
-      Mock Get-WmiObject -Verifiable {
-        # Mock a Win32_Service WMI object
-        $mock = New-Object -TypeName PSCustomObject
-        $mock | Add-Member -MemberType ScriptMethod -Name 'delete' -Value { return 2 } | Out-Null
-        
-        return $mock
-      } -ParameterFilter { $Filter -eq "Name='SomeOtherServiceName'" }
-
-      $result = Uninstall-Neo4jArbiter -ServiceName 'SomeOtherServiceName'
-
-      It "result is Neo4j Server object" {
-        $result.GetType().ToString() | Should Be 'System.Management.Automation.PSCustomObject'
-      }
-      
-      It "calls verified mocks" {
-        Assert-VerifiableMocks
-      }
-    }
-
   }
 }

@@ -30,9 +30,6 @@ An object representing a Neo4j Server.  Either an empty string (path determined 
 .PARAMETER Console
 Start the Neo4j Arbiter instance as a java console application
 
-.PARAMETER ServiceName
-The name of the Neo4j Arbiter Windows Service.  If no name is specified, the name is determined from the Neo4j Configuration files (default)
-
 .PARAMETER Wait
 Wait for the java console application to finish execution
 
@@ -78,9 +75,6 @@ Function Start-Neo4jArbiter
 
     ,[Parameter(Mandatory=$false)]
     [switch]$PassThru   
-    
-    ,[Parameter(Mandatory=$false,ParameterSetName='WindowsService')]
-    [string]$ServiceName = ''
   )
   
   Begin
@@ -136,19 +130,7 @@ Function Start-Neo4jArbiter
     
     if ($PsCmdlet.ParameterSetName -eq 'WindowsService')
     {
-      if ($ServiceName -eq '')
-      {
-        $setting = ($thisServer | Get-Neo4jSetting -ConfigurationFile 'arbiter-wrapper.conf' -Name 'wrapper.name')
-        if ($setting -ne $null) { $ServiceName = $setting.Value }
-      }
-
-      if ($ServiceName -eq '')
-      {
-        Write-Error 'Could not find the Windows Service Name for Arbiter'
-        return
-      }
-
-      $result = Start-Service -Name $ServiceName -PassThru
+      $result = Start-Service -Name 'Neo4jArbiter' -PassThru
       if ($PassThru) { Write-Output $thisServer } else { Write-Output $result }
     }
   }

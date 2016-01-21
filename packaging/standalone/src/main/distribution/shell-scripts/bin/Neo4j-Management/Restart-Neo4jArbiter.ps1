@@ -27,9 +27,6 @@ Restart a Neo4j Arbiter Windows Service
 .PARAMETER Neo4jServer
 An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
 
-.PARAMETER ServiceName
-The name of the Neo4j Arbiter service.  If no name is specified, the name is determined from the Neo4j Configuration files (default)
-
 .PARAMETER PassThru
 Pass through the Neo4j Server object instead of the result of the stop operation
 
@@ -58,9 +55,6 @@ Function Restart-Neo4jArbiter
 
     ,[Parameter(Mandatory=$false)]
     [switch]$PassThru   
-    
-    ,[Parameter(Mandatory=$false)]
-    [string]$ServiceName = ''
   )
   
   Begin
@@ -96,19 +90,7 @@ Function Restart-Neo4jArbiter
       return
     }
     
-    if ($ServiceName -eq '')
-    {
-      $setting = ($thisServer | Get-Neo4jSetting -ConfigurationFile 'arbiter-wrapper.conf' -Name 'wrapper.name')
-      if ($setting -ne $null) { $ServiceName = $setting.Value }
-    }
-
-    if ($ServiceName -eq '')
-    {
-      Write-Error 'Could not find the Windows Service Name for Neo4j Arbiter'
-      return
-    }
-
-    $result = Restart-Service -Name $ServiceName -PassThru
+    $result = Restart-Service -Name 'Neo4jArbiter' -PassThru
     if ($PassThru) { Write-Output $thisServer } else { Write-Output $result }
   }
   

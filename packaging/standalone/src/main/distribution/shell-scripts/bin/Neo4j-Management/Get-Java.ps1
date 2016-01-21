@@ -171,19 +171,17 @@ Function Get-Java
           $serverMainClass = 'org.neo4j.server.Bootstrapper'
         }
         if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }
-        $wrapperConfig = 'neo4j-wrapper.conf'
       }
       if ($PsCmdlet.ParameterSetName -eq 'ArbiterInvoke')
       {
         $serverMainClass = 'org.neo4j.server.enterprise.StandaloneClusterClient'
-        $wrapperConfig = 'arbiter-wrapper.conf'
       }
       
       # Note -DserverMainClass must appear before -jar in the argument list.  Changing this order raises a Null Pointer Exception in the Windows Service Wrapper
       $ShellArgs = @( `
         "-DworkingDir=`"$($Neo4jServer.Home)`"" `
         ,"-Djava.util.logging.config.file=`"$($Neo4jServer.Home)\conf\windows-wrapper-logging.properties`"" `
-        ,"-DconfigFile=`"conf/$($wrapperConfig)`"" `
+        ,"-DconfigFile=`"conf/neo4j-wrapper.conf`"" `
         ,"-DserverClasspath=`"lib/*.jar;plugins/**/*.jar;./conf*`"" `
         ,"-DserverMainClass=$($serverMainClass)" `
         ,"-jar","`"$($Neo4jServer.Home)\bin\windows-service-wrapper-5.jar`""
