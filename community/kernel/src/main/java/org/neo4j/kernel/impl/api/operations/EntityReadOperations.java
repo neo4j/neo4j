@@ -100,6 +100,9 @@ public interface EntityReadOperations
     long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
+    int nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException;
+
     boolean graphHasProperty( KernelStatement state, int propertyKeyId );
 
     Object graphGetProperty( KernelStatement state, int propertyKeyId );

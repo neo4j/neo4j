@@ -179,7 +179,7 @@ public class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).close( true );
-        order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE );
+        order.verify( accessor ).newUpdater( IndexUpdateMode.RECOVERY );
         order.verify( updater ).process( add( 10, "foo" ) );
         order.verify( updater ).close();
     }
@@ -588,11 +588,11 @@ public class IndexingServiceTest
 
         IndexAccessor accessor1 = mock( IndexAccessor.class );
         IndexUpdater updater1 = mock( IndexUpdater.class );
-        when( accessor1.newUpdater( IndexUpdateMode.ONLINE ) ).thenReturn( updater1 );
+        when( accessor1.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater1 );
 
         IndexAccessor accessor2 = mock( IndexAccessor.class );
         IndexUpdater updater2 = mock( IndexUpdater.class );
-        when( accessor2.newUpdater( IndexUpdateMode.ONLINE ) ).thenReturn( updater2 );
+        when( accessor2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater2 );
 
         when( indexProvider.getOnlineAccessor( eq( 1L ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) ) ).thenReturn( accessor1 );

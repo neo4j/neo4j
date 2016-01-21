@@ -48,6 +48,14 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
         doRemove( encode( propertyValue ), nodeId );
     }
 
+    @Override
+    public final int countIndexedNodes( long nodeId, Object propertyValue )
+    {
+        return doCountIndexedNodes( nodeId, encode( propertyValue ) );
+    }
+
+    protected abstract int doCountIndexedNodes( long nodeId, Object encode );
+
     abstract PrimitiveLongIterator doIndexSeek( Object propertyValue );
 
     abstract boolean doAdd( Object propertyValue, long nodeId, boolean applyIdempotently );

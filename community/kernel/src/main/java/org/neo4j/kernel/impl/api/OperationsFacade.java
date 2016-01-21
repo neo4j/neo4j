@@ -576,6 +576,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         return dataRead().nodeCursorGetFromUniqueIndexSeek( statement, index, value );
     }
 
+    @Override
+    public int nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        statement.assertOpen();
+        return dataRead().nodesCountIndexed( statement, index, nodeId, value );
+    }
+
     // </DataReadCursors>
 
     // <SchemaRead>
