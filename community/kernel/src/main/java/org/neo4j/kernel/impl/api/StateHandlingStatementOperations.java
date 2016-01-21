@@ -830,6 +830,14 @@ public class StateHandlingStatementOperations implements
         return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
     }
 
+    @Override
+    public int nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        IndexReader reader = statement.getStoreStatement().getIndexReader( index );
+        return reader.countIndexedNodes( nodeId, value );
+    }
+
     private PrimitiveLongIterator filterExactIndexMatches( final KernelStatement state, IndexDescriptor index,
             Object value, PrimitiveLongIterator committed )
     {

@@ -214,6 +214,14 @@ public class GuardingStatementOperations implements
     }
 
     @Override
+    public int nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        guard.check();
+        return entityReadDelegate.nodesCountIndexed( statement, index, nodeId, value );
+    }
+
+    @Override
     public boolean graphHasProperty( KernelStatement state, int propertyKeyId )
     {
         guard.check();

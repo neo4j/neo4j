@@ -340,6 +340,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public int nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        return entityReadOperations.nodesCountIndexed( statement, index, nodeId, value );
+    }
+
+    @Override
     public boolean graphHasProperty( KernelStatement state, int propertyKeyId )
     {
         return entityReadOperations.graphHasProperty( state, propertyKeyId );

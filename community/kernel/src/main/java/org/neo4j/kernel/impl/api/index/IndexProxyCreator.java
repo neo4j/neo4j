@@ -97,7 +97,7 @@ public class IndexProxyCreator
                 monitor.populationCompleteOn( descriptor );
                 OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
                         descriptor, config, onlineAccessorFromProvider( providerDescriptor, ruleId,
-                        config, samplingConfig ), storeView, providerDescriptor
+                        config, samplingConfig ), storeView, providerDescriptor, true
                 );
                 if ( constraint )
                 {
@@ -135,7 +135,7 @@ public class IndexProxyCreator
             IndexAccessor onlineAccessor =
                     onlineAccessorFromProvider( providerDescriptor, ruleId, config, samplingConfig );
             IndexProxy proxy;
-            proxy = new OnlineIndexProxy( descriptor, config, onlineAccessor, storeView, providerDescriptor );
+            proxy = new OnlineIndexProxy( descriptor, config, onlineAccessor, storeView, providerDescriptor, false );
             proxy = new ContractCheckingIndexProxy( proxy, true );
             return proxy;
         }

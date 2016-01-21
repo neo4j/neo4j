@@ -183,6 +183,9 @@ public interface ReadOperations
     long nodeGetFromUniqueIndexSeek( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
             IndexBrokenKernelException;
 
+    int nodesCountIndexed( IndexDescriptor index, long nodeId, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException;
+
     boolean nodeExists( long nodeId );
 
     boolean relationshipExists( long relId );
