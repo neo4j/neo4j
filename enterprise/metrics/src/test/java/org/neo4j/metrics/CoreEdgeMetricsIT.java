@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.metrics.source.CoreMetrics;
+import org.neo4j.metrics.source.EdgeMetrics;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -52,6 +53,16 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.metrics.source.CoreMetrics.APPEND_INDEX;
+import static org.neo4j.metrics.source.CoreMetrics.COMMIT_INDEX;
+import static org.neo4j.metrics.source.CoreMetrics.IS_LEADER;
+import static org.neo4j.metrics.source.CoreMetrics.LEADER_NOT_FOUND;
+import static org.neo4j.metrics.source.CoreMetrics.TERM;
+import static org.neo4j.metrics.source.CoreMetrics.TX_PULL_REQUESTS_RECEIVED;
+import static org.neo4j.metrics.source.CoreMetrics.TX_RETRIES;
+import static org.neo4j.metrics.source.EdgeMetrics.PULL_UPDATES;
+import static org.neo4j.metrics.source.EdgeMetrics.PULL_UPDATE_HIGHEST_TX_ID_RECEIVED;
+import static org.neo4j.metrics.source.EdgeMetrics.PULL_UPDATE_HIGHEST_TX_ID_REQUESTED;
 import static org.neo4j.test.Assert.assertEventually;
 
 
@@ -120,6 +131,20 @@ public class CoreEdgeMetricsIT
                 () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.IS_LEADER ) ),
                 greaterThanOrEqualTo ( 0L ), 5, TimeUnit.SECONDS );
 
+        File edgeServerMetricsDir = new File( cluster.getEdgeServerById( 0 ).getStoreDir(), "metrics" );
+
+        assertEventually("pull update request registered",
+                () -> readLastValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATES ) ),
+                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
+
+        assertEventually("pull update request registered",
+                () -> readLastValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATE_HIGHEST_TX_ID_REQUESTED ) ),
+                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
+
+        assertEventually("pull update response received",
+                () -> readLastValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATE_HIGHEST_TX_ID_RECEIVED ) ),
+                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
+
         cluster.shutdown();
     }
 
@@ -146,7 +171,6 @@ public class CoreEdgeMetricsIT
 
     private static final int TIME_STAMP = 0;
     private static final int METRICS_VALUE = 1;
-
 
     private File metricsCsv( File dbDir, String metric )
     {

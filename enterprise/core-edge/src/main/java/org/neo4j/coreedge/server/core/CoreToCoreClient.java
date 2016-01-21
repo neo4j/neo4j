@@ -43,13 +43,15 @@ import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseHandler;
 import org.neo4j.coreedge.server.Expiration;
 import org.neo4j.coreedge.server.ExpiryScheduler;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 public class CoreToCoreClient extends CoreClient
 {
-    public CoreToCoreClient( LogProvider logProvider, ExpiryScheduler expiryScheduler, Expiration expiration, ChannelInitializer channelInitializer )
+    public CoreToCoreClient( LogProvider logProvider, ExpiryScheduler expiryScheduler, Expiration expiration,
+                             ChannelInitializer channelInitializer, Monitors monitors )
     {
-        super( logProvider, expiryScheduler, expiration, channelInitializer );
+        super( logProvider, expiryScheduler, expiration, channelInitializer, monitors );
     }
 
     public static class ChannelInitializer extends io.netty.channel.ChannelInitializer<SocketChannel>

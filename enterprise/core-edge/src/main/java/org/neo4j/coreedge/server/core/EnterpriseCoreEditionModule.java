@@ -315,7 +315,7 @@ public class EnterpriseCoreEditionModule
 
         CoreToCoreClient.ChannelInitializer channelInitializer = new CoreToCoreClient.ChannelInitializer( logProvider );
         CoreToCoreClient coreToCoreClient = life.add( new CoreToCoreClient( logProvider, expiryScheduler, expiration,
-                channelInitializer ) );
+                channelInitializer, platformModule.monitors ) );
         channelInitializer.setOwner( coreToCoreClient );
 
         long leaderLockTokenTimeout = config.get( CoreEdgeClusterSettings.leader_lock_token_timeout );

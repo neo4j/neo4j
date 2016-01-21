@@ -24,6 +24,7 @@ import java.io.Serializable;
 
 import io.netty.channel.ChannelInitializer;
 
+import org.neo4j.coreedge.catchup.tx.edge.PullRequestMonitor;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.catchup.RequestMessageType;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseListener;
@@ -35,12 +36,14 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
 import org.neo4j.coreedge.server.ExpiryScheduler;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 public abstract class CoreClient extends LifecycleAdapter implements StoreFileReceiver, StoreFileStreamingCompleteListener,
                                                                      TxStreamCompleteListener, TxPullResponseListener
 {
     private final LogProvider logProvider;
+    private final PullRequestMonitor pullRequestMonitor;
     private StoreFileStreams storeFileStreams = null;
     private Iterable<StoreFileStreamingCompleteListener> storeFileStreamingCompleteListeners = Listeners.newListeners();
     private Iterable<TxStreamCompleteListener> txStreamCompleteListeners = Listeners.newListeners();
@@ -48,10 +51,12 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
 
     private SenderService senderService;
 
-    public CoreClient( LogProvider logProvider, ExpiryScheduler expiryScheduler, Expiration expiration, ChannelInitializer channelInitializer )
+    public CoreClient( LogProvider logProvider, ExpiryScheduler expiryScheduler, Expiration expiration,
+                       ChannelInitializer channelInitializer, Monitors monitors )
     {
         this.logProvider = logProvider;
         this.senderService = new SenderService( expiryScheduler, expiration, channelInitializer, logProvider );
+        this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 
     public void requestStore( AdvertisedSocketAddress from )
@@ -64,6 +69,7 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     {
         TxPullRequest txPullRequest = new TxPullRequest( lastTransactionId );
         send( from, RequestMessageType.TX_PULL_REQUEST, txPullRequest );
+        pullRequestMonitor.txPullRequest( lastTransactionId );
     }
 
     protected void send( AdvertisedSocketAddress to, RequestMessageType messageType, Serializable contentMessage )
