@@ -46,9 +46,9 @@ import org.neo4j.metrics.source.db.TransactionMetrics;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
@@ -154,21 +154,26 @@ public class MetricsKernelExtensionFactoryIT
             db.execute( "match (n:Label {name: 'Pontus'}) return n.name" );
             tx.success();
         }
+
         //add some data, should make plan stale
         addNodes( 10 );
-        File metricFile = new File( outputPath, CypherMetrics.REPLAN_EVENTS + ".csv" );
 
         // WHEN
-        try ( Transaction tx = db.beginTx() )
+        for ( int i = 0; i < 10; i ++)
         {
-            db.execute( "match (n:Label {name: 'Pontus'}) return n.name" );
-            tx.success();
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.execute( "match (n:Label {name: 'Pontus'}) return n.name" );
+                tx.success();
+            }
+            addNodes( 1 );
         }
 
+        File metricFile = new File( outputPath, CypherMetrics.REPLAN_EVENTS + ".csv" );
         long events = readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue >= currentValue );
 
         // THEN
-        assertThat( events, is( 1L ) );
+        assertThat( events, greaterThan( 0L ) );
     }
 
     @Test
