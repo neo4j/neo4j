@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
-class removeIdenticalTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
   test("should not contain copies") {
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val join = NodeHashJoin(Set(IdName("a")), scan, scan)(solved)
