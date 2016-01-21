@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
+import org.neo4j.coreedge.raft.replication.session.InMemoryGlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
@@ -60,14 +61,16 @@ public class CommitProcessStateMachineCollaborationTest
                 new AdvertisedSocketAddress( "raft:1" ) );
 
         TriggeredReplicator replicator = new TriggeredReplicator();
-        StubCommittingTransactionsRegistry txFutures = new StubCommittingTransactionsRegistry( replicator, timeoutCounter );
+        StubCommittingTransactionsRegistry txFutures = new StubCommittingTransactionsRegistry( replicator,
+                timeoutCounter );
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         LocalSessionPool sessionPool = new LocalSessionPool( coreMember );
         LockTokenManager lockState = lockState( 0 );
         final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine(
-                localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures );
+                localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures,
+                new InMemoryGlobalSessionTrackerState<>() );
 
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
@@ -78,7 +81,7 @@ public class CommitProcessStateMachineCollaborationTest
         commitProcess.commit( tx(), NULL, INTERNAL );
 
         // then
-        assertEquals(2, replicator.timesReplicated());
+        assertEquals( 2, replicator.timesReplicated() );
     }
 
     @Test
@@ -97,7 +100,8 @@ public class CommitProcessStateMachineCollaborationTest
         LockTokenManager lockState = lockState( 1 );
 
         final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine(
-                localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures );
+                localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures,
+                new InMemoryGlobalSessionTrackerState<>());
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
                 replicator, sessionPool, stateMachine, 1,
@@ -107,9 +111,9 @@ public class CommitProcessStateMachineCollaborationTest
         try
         {
             commitProcess.commit( tx(), NULL, INTERNAL );
-            fail( "Should have thrown exception.");
+            fail( "Should have thrown exception." );
         }
-        catch( TransactionFailureException e )
+        catch ( TransactionFailureException e )
         {
             // expected
         }

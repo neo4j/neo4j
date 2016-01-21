@@ -27,7 +27,7 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 
 import static java.lang.String.format;
 
-public class ReplicatedTransaction implements ReplicatedContent
+public class ReplicatedTransaction<MEMBER> implements ReplicatedContent
 {
     private final byte[] txBytes;
     private final GlobalSession globalSession;
@@ -45,7 +45,7 @@ public class ReplicatedTransaction implements ReplicatedContent
         return txBytes;
     }
 
-    public GlobalSession globalSession()
+    public GlobalSession<MEMBER> globalSession()
     {
         return globalSession;
     }

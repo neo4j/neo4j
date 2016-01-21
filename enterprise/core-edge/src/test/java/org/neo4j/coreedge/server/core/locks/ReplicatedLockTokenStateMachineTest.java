@@ -22,6 +22,7 @@ package org.neo4j.coreedge.server.core.locks;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.replication.DirectReplicator;
+import org.neo4j.coreedge.server.RaftTestMember;
 
 import static org.junit.Assert.assertEquals;
 
@@ -34,7 +35,8 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         DirectReplicator replicator = new DirectReplicator();
-        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
+        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator,
+                new InMemoryReplicatedLockTokenState<RaftTestMember>() );
 
         // when
         int initialTokenId = stateMachine.currentToken().id();
@@ -48,7 +50,8 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         DirectReplicator replicator = new DirectReplicator();
-        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
+        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>( replicator,
+                new InMemoryReplicatedLockTokenState<RaftTestMember>() );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
@@ -63,7 +66,8 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         DirectReplicator replicator = new DirectReplicator();
-        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
+        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator,
+                new InMemoryReplicatedLockTokenState<RaftTestMember>() );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
@@ -84,7 +88,8 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         DirectReplicator replicator = new DirectReplicator();
-        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
+        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator,
+                new InMemoryReplicatedLockTokenState<RaftTestMember>() );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
@@ -105,7 +110,8 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         DirectReplicator replicator = new DirectReplicator();
-        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
+        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator,
+                new InMemoryReplicatedLockTokenState<RaftTestMember>() );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
@@ -130,7 +136,8 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         DirectReplicator replicator = new DirectReplicator();
-        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
+        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator,
+                new InMemoryReplicatedLockTokenState<RaftTestMember>() );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when

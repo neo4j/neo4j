@@ -29,10 +29,11 @@ import org.neo4j.coreedge.raft.replication.Replicator;
 public class ReplicatedLockTokenStateMachine<MEMBER> extends LockTokenManager
         implements Replicator.ReplicatedContentListener
 {
-    private ReplicatedLockTokenRequest<MEMBER> currentToken = new ReplicatedLockTokenRequest<>( null, LockToken.INVALID_LOCK_TOKEN_ID );
+    private final ReplicatedLockTokenState<MEMBER> state;
 
-    public ReplicatedLockTokenStateMachine( Replicator replicator )
+    public ReplicatedLockTokenStateMachine( Replicator replicator, ReplicatedLockTokenState state )
     {
+        this.state = state;
         replicator.subscribe( this );
     }
 
@@ -45,7 +46,7 @@ public class ReplicatedLockTokenStateMachine<MEMBER> extends LockTokenManager
 
             if ( tokenRequest.id() == nextCandidateId() )
             {
-                currentToken = tokenRequest;
+                state.set( tokenRequest, logIndex );
             }
 
             notifyAll();
@@ -55,7 +56,7 @@ public class ReplicatedLockTokenStateMachine<MEMBER> extends LockTokenManager
     @Override
     public synchronized ReplicatedLockTokenRequest<MEMBER> currentToken()
     {
-        return currentToken;
+        return state.get();
     }
 
     @Override

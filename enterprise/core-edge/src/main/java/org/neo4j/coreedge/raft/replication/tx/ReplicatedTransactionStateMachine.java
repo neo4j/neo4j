@@ -25,7 +25,8 @@ import java.util.Optional;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
-import org.neo4j.coreedge.raft.replication.session.GlobalSessionTracker;
+import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.locks.LockTokenManager;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -40,7 +41,7 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionInva
 
 public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedContentListener
 {
-    private final GlobalSessionTracker sessionTracker;
+    private final GlobalSessionTrackerState sessionTracker;
     private final GlobalSession myGlobalSession;
     private final LockTokenManager lockTokenManager;
     private final TransactionCommitProcess commitProcess;
@@ -50,13 +51,14 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
     public ReplicatedTransactionStateMachine( TransactionCommitProcess commitProcess,
                                               GlobalSession myGlobalSession,
                                               LockTokenManager lockTokenManager,
-                                              CommittingTransactions transactionFutures )
+                                              CommittingTransactions transactionFutures,
+                                              GlobalSessionTrackerState globalSessionTrackerState )
     {
         this.commitProcess = commitProcess;
         this.myGlobalSession = myGlobalSession;
         this.lockTokenManager = lockTokenManager;
         this.transactionFutures = transactionFutures;
-        this.sessionTracker = new GlobalSessionTracker();
+        this.sessionTracker = globalSessionTrackerState;
     }
 
     @Override
@@ -64,14 +66,14 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
     {
         if ( content instanceof ReplicatedTransaction )
         {
-            handleTransaction( (ReplicatedTransaction) content, logIndex );
+            handleTransaction( (ReplicatedTransaction<CoreMember>) content, logIndex );
         }
     }
 
-    private void handleTransaction( ReplicatedTransaction replicatedTx, long logIndex )
+    private void handleTransaction( ReplicatedTransaction<CoreMember> replicatedTx, long logIndex )
     {
-        if ( !sessionTracker.validateAndTrackOperation( replicatedTx.globalSession(), replicatedTx.localOperationId() )
-                || logIndex <= lastCommittedIndex )
+        if ( !sessionTracker.validateAndTrackOperationAtLogIndex( replicatedTx.globalSession(),
+                replicatedTx.localOperationId(), logIndex ) || logIndex <= lastCommittedIndex )
         {
             return;
         }
@@ -100,7 +102,8 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
 
         if ( currentTokenId != txLockSessionId && txLockSessionId != Locks.Client.NO_LOCK_SESSION_ID )
         {
-            future.ifPresent( txFuture -> txFuture.notifyCommitFailed( new TransactionFailureException( LockSessionInvalid,
+            future.ifPresent( txFuture -> txFuture.notifyCommitFailed( new TransactionFailureException(
+                    LockSessionInvalid,
                     "The lock session in the cluster has changed: " +
                             "[current lock session id:%d, tx lock session id:%d]",
                     currentTokenId, txLockSessionId ) ) );
@@ -109,8 +112,8 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
 
         try
         {
-           long txId = commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL,
-                   TransactionApplicationMode.EXTERNAL );
+            long txId = commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL,
+                    TransactionApplicationMode.EXTERNAL );
 
             future.ifPresent( txFuture -> txFuture.notifySuccessfullyCommitted( txId ) );
         }

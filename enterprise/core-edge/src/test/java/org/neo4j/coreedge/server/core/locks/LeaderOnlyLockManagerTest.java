@@ -44,7 +44,8 @@ public class LeaderOnlyLockManagerTest
         // given
         RaftTestMember me = member( 0 );
         DirectReplicator replicator = new DirectReplicator();
-        ReplicatedLockTokenStateMachine<RaftTestMember> replicatedLockStateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
+        ReplicatedLockTokenStateMachine<RaftTestMember> replicatedLockStateMachine =
+                new ReplicatedLockTokenStateMachine<>( replicator, new InMemoryReplicatedLockTokenState<>() );
         LeaderLocator<RaftTestMember> leaderLocator = mock( LeaderLocator.class );
         when(leaderLocator.getLeader()).thenReturn( me );
         Locks locks = mock( Locks.class );
@@ -66,7 +67,8 @@ public class LeaderOnlyLockManagerTest
         RaftTestMember me = member( 0 );
         RaftTestMember leader = member( 1 );
         DirectReplicator replicator = new DirectReplicator();
-        ReplicatedLockTokenStateMachine<RaftTestMember> replicatedLockStateMachine = new ReplicatedLockTokenStateMachine<>( replicator );
+        ReplicatedLockTokenStateMachine<RaftTestMember> replicatedLockStateMachine =
+                new ReplicatedLockTokenStateMachine<>( replicator, new InMemoryReplicatedLockTokenState<>() );
         LeaderLocator<RaftTestMember> leaderLocator = mock( LeaderLocator.class );
         when(leaderLocator.getLeader()).thenReturn( leader );
         Locks locks = mock( Locks.class );

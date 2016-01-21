@@ -30,6 +30,9 @@ public class ReplicatedLockTokenRequest<MEMBER> implements ReplicatedContent, Lo
     private final MEMBER owner;
     private final int candidateId;
 
+    public static final ReplicatedLockTokenRequest INVALID_REPLICATED_LOCK_TOKEN_REQUEST =
+            new ReplicatedLockTokenRequest<>( null, LockToken.INVALID_LOCK_TOKEN_ID );
+
     public ReplicatedLockTokenRequest( MEMBER owner, int candidateId )
     {
         this.owner = owner;
@@ -51,12 +54,15 @@ public class ReplicatedLockTokenRequest<MEMBER> implements ReplicatedContent, Lo
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
         ReplicatedLockTokenRequest that = (ReplicatedLockTokenRequest) o;
-        return candidateId == that.candidateId &&
-               Objects.equals( owner, that.owner );
+        return candidateId == that.candidateId && Objects.equals( owner, that.owner );
     }
 
     @Override

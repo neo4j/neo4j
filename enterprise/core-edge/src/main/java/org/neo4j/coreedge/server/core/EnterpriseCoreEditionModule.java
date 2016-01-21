@@ -57,7 +57,9 @@ import org.neo4j.coreedge.raft.replication.id.IdAllocationState;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdRangeAcquirer;
+import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
+import org.neo4j.coreedge.raft.replication.session.OnDiskGlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedLabelTokenHolder;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedPropertyKeyTokenHolder;
@@ -78,12 +80,14 @@ import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.CoreMember.CoreMemberMarshal;
 import org.neo4j.coreedge.server.Expiration;
 import org.neo4j.coreedge.server.ExpiryScheduler;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.SenderService;
-import org.neo4j.coreedge.server.core.locks.LockTokenManager;
 import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
+import org.neo4j.coreedge.server.core.locks.LockTokenManager;
+import org.neo4j.coreedge.server.core.locks.OnDiskReplicatedLockTokenState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.coreedge.server.logging.BetterMessageLogger;
 import org.neo4j.coreedge.server.logging.MessageLogger;
@@ -98,7 +102,6 @@ import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -188,7 +191,7 @@ public class EnterpriseCoreEditionModule
                 new File( clusterStateDirectory, NaiveDurableRaftLog.DIRECTORY_NAME ),
                 new RaftContentSerializer() ) );
 
-        MonitoredRaftLog monitoredRaftLog = new MonitoredRaftLog( raftLog, platformModule.monitors) ;
+        MonitoredRaftLog monitoredRaftLog = new MonitoredRaftLog( raftLog, platformModule.monitors );
 
         TermState termState;
         try
@@ -209,7 +212,7 @@ public class EnterpriseCoreEditionModule
             voteState = life.add( new OnDiskVoteState<>( fileSystem,
                     new File( clusterStateDirectory, OnDiskVoteState.DIRECTORY_NAME ),
                     config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
-                    new CoreMember.CoreMemberMarshal() ) );
+                    new CoreMemberMarshal() ) );
         }
         catch ( IOException e )
         {
@@ -223,7 +226,7 @@ public class EnterpriseCoreEditionModule
             raftMembershipState = life.add( new OnDiskRaftMembershipState<>( fileSystem,
                     new File( clusterStateDirectory, OnDiskRaftMembershipState.DIRECTORY_NAME ),
                     config.get( CoreEdgeClusterSettings.raft_membership_state_size ),
-                    databaseHealthSupplier, new CoreMember.CoreMemberMarshal() ) );
+                    databaseHealthSupplier, new CoreMemberMarshal() ) );
         }
         catch ( IOException e )
         {
@@ -243,11 +246,40 @@ public class EnterpriseCoreEditionModule
 
         LocalSessionPool localSessionPool = new LocalSessionPool( myself );
 
-        ReplicatedLockTokenStateMachine<CoreMember> replicatedLockTokenStateMachine =
-                new ReplicatedLockTokenStateMachine<>( replicator );
 
-        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, replicatedLockTokenStateMachine,
-                dependencies, logging, platformModule.monitors );
+        OnDiskReplicatedLockTokenState<CoreMember> onDiskReplicatedLockTokenState;
+        try
+        {
+            onDiskReplicatedLockTokenState = life.add( new OnDiskReplicatedLockTokenState<>( fileSystem,
+                    new File( clusterStateDirectory, OnDiskReplicatedLockTokenState.DIRECTORY_NAME ),
+                    config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ),
+                    new CoreMember.CoreMemberMarshal(), databaseHealthSupplier ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        ReplicatedLockTokenStateMachine<CoreMember> replicatedLockTokenStateMachine =
+                new ReplicatedLockTokenStateMachine<>( replicator, onDiskReplicatedLockTokenState );
+
+        OnDiskGlobalSessionTrackerState<CoreMember> onDiskGlobalSessionTrackerState;
+        try
+        {
+            onDiskGlobalSessionTrackerState = new
+                    OnDiskGlobalSessionTrackerState<>( fileSystem,
+                    new File( clusterStateDirectory, OnDiskGlobalSessionTrackerState.DIRECTORY_NAME ),
+                    new CoreMemberMarshal(),
+                    config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ),
+                    databaseHealthSupplier );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+
+        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool,
+                replicatedLockTokenStateMachine,
+                dependencies, logging, platformModule.monitors, onDiskGlobalSessionTrackerState );
 
         final IdAllocationState idAllocationState;
         try
@@ -329,10 +361,11 @@ public class EnterpriseCoreEditionModule
                 new DataSourceSupplier( platformModule ),
                 new CheckpointerSupplier( platformModule.dependencies ),
                 config.get( CoreEdgeClusterSettings.transaction_listen_address ),
-                platformModule.monitors);
+                platformModule.monitors );
 
         life.add( CoreServerStartupProcess.createLifeSupport(
-                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, new RaftLogReplay( monitoredRaftLog,
+                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, new RaftLogReplay(
+                        monitoredRaftLog,
                         logProvider ), raftServer,
                 catchupServer, raftTimeoutService, membershipWaiter,
                 config.get( CoreEdgeClusterSettings.join_catch_up_timeout ),
@@ -368,7 +401,9 @@ public class EnterpriseCoreEditionModule
                                                                    final LockTokenManager
                                                                            currentReplicatedLockState,
                                                                    final Dependencies dependencies,
-                                                                   final LogService logging, Monitors monitors )
+                                                                   final LogService logging,
+                                                                   Monitors monitors,
+                                                                   GlobalSessionTrackerState globalSessionTrackerState )
     {
         return ( appender, applier, config ) -> {
             TransactionRepresentationCommitProcess localCommit =
@@ -378,7 +413,7 @@ public class EnterpriseCoreEditionModule
             CommittingTransactions committingTransactions = new CommittingTransactionsRegistry();
             ReplicatedTransactionStateMachine replicatedTxStateMachine = new ReplicatedTransactionStateMachine(
                     localCommit, localSessionPool.getGlobalSession(), currentReplicatedLockState,
-                    committingTransactions );
+                    committingTransactions, globalSessionTrackerState );
 
             dependencies.satisfyDependencies( replicatedTxStateMachine );
 
@@ -476,12 +511,13 @@ public class EnterpriseCoreEditionModule
     }
 
     protected Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,
-            CoreMember myself, LockTokenManager lockTokenManager,
-            LeaderLocator<CoreMember> leaderLocator, long leaderLockTokenTimeout )
+                                       CoreMember myself, LockTokenManager lockTokenManager,
+                                       LeaderLocator<CoreMember> leaderLocator, long leaderLockTokenTimeout )
     {
         Locks local = CommunityEditionModule.createLockManager( config, logging );
 
-        return new LeaderOnlyLockManager<>( myself, replicator, leaderLocator, local, lockTokenManager, leaderLockTokenTimeout );
+        return new LeaderOnlyLockManager<>( myself, replicator, leaderLocator, local, lockTokenManager,
+                leaderLockTokenTimeout );
     }
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()

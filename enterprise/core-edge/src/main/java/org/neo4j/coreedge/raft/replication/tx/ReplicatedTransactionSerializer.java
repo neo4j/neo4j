@@ -30,7 +30,7 @@ import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 
 public class ReplicatedTransactionSerializer
 {
-    public static void serialize( ReplicatedTransaction transaction, ByteBuf buffer ) throws MarshallingException
+    public static void serialize( ReplicatedTransaction<CoreMember> transaction, ByteBuf buffer ) throws MarshallingException
     {
         UUID globalSessionId = transaction.globalSession().sessionId();
         buffer.writeLong( globalSessionId.getMostSignificantBits() );
