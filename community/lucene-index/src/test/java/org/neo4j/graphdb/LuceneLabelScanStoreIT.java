@@ -50,7 +50,7 @@ public class LuceneLabelScanStoreIT extends LabelScanStoreIT
     public void scanStoreStartWithoutExistentIndex() throws IOException
     {
         NeoStoreDataSource dataSource = getDataSource();
-        LabelScanStore labelScanStore = dataSource.getLabelScanStore();
+        LabelScanStore labelScanStore = getLabelScanStore();
         labelScanStore.shutdown();
 
         File labelScanStoreDirectory = getLabelScanStoreDirectory( dataSource );
@@ -66,7 +66,7 @@ public class LuceneLabelScanStoreIT extends LabelScanStoreIT
     public void scanStoreRecreateCorruptedIndexOnStartup() throws IOException
     {
         NeoStoreDataSource dataSource = getDataSource();
-        LabelScanStore labelScanStore = dataSource.getLabelScanStore();
+        LabelScanStore labelScanStore = getLabelScanStore();
 
         Node node = createTestNode();
         List<Long> labels = readNodeLabels( labelScanStore, node );
@@ -126,6 +126,12 @@ public class LuceneLabelScanStoreIT extends LabelScanStoreIT
         DependencyResolver dependencyResolver = dbRule.getDependencyResolver();
         DataSourceManager dataSourceManager = dependencyResolver.resolveDependency( DataSourceManager.class );
         return dataSourceManager.getDataSource();
+    }
+
+    private LabelScanStore getLabelScanStore()
+    {
+        DependencyResolver dependencyResolver = dbRule.getDependencyResolver();
+        return dependencyResolver.resolveDependency( LabelScanStore.class );
     }
 
     private void checkLabelScanStoreAccessible( LabelScanStore labelScanStore ) throws IOException
