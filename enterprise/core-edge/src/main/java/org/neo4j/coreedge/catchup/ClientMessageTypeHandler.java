@@ -24,8 +24,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
 
-import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-import org.neo4j.coreedge.catchup.ResponseMessageType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -66,9 +64,6 @@ public class ClientMessageTypeHandler extends ChannelInboundHandlerAdapter
                     break;
                 case TX_STREAM_FINISHED:
                     protocol.expect( NextMessage.TX_STREAM_FINISHED );
-                    break;
-                case LOCK:
-                    protocol.expect( NextMessage.LOCK_RESPONSE );
                     break;
                 default:
                     log.warn( "No handler found for message type %s", responseMessageType );
