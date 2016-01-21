@@ -27,12 +27,14 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.DependencyResolver;
@@ -151,23 +153,80 @@ public class BackupServiceIT
     }
 
     @Test
-    public void shouldThrowExceptionWhenDoingFullBackupOnADirectoryContainingANeoStore() throws Exception
+    public void shouldThrowExceptionWhenDoingFullBackupWhenDirectoryHasSomeFiles() throws Exception
     {
         // given
-        fileSystem.mkdir( backupDir );
-        fileSystem.create( new File( backupDir, MetaDataStore.DEFAULT_NAME ) ).close();
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createAndIndexNode( db, 1 );
+
+        // Touch a random file
+        assertTrue( new File( backupDir, ".jibberishfile" ).createNewFile() );
 
         try
         {
             // when
-            backupService().doFullBackup( "", 0, backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, new Config(),
-                    BackupClient.BIG_READ_TIMEOUT, false );
+            backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                    ConsistencyCheck.DEFAULT, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+            fail( "Should have thrown an exception" );
         }
         catch ( RuntimeException ex )
         {
             // then
-            assertThat( ex.getMessage(), containsString( "already contains a database" ) );
+            assertThat( ex.getMessage(), containsString( "is not empty" ) );
         }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenDoingFullBackupWhenDirectoryHasSomeDirs() throws Exception
+    {
+        // given
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createAndIndexNode( db, 1 );
+
+        // Touch a random directory
+        assertTrue( new File( backupDir, "jibberishfolder" ).mkdir() );
+
+        try
+        {
+            // when
+            backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                    ConsistencyCheck.DEFAULT, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+            fail( "Should have thrown an exception" );
+        }
+        catch ( RuntimeException ex )
+        {
+            // then
+            assertThat( ex.getMessage(), containsString( "is not empty" ) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldRemoveTempDirectory() throws Throwable
+    {
+        // given
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createAndIndexNode( db, 1 );
+
+        // when
+        BackupService backupService = backupService();
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE,
+                dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+        db.shutdown();
+
+        // then
+        assertFalse( "Temp directory was not removed as expected",
+                fileSystem.fileExists( new File( backupDir, StoreCopyClient.TEMP_COPY_DIRECTORY_NAME ) ) );
     }
 
     @Test
@@ -186,6 +245,8 @@ public class BackupServiceIT
 
         // then
         File[] files = fileSystem.listFiles( backupDir );
+
+        assertTrue( files.length > 0 );
 
         for ( final StoreFile storeFile : StoreFile.values() )
         {
