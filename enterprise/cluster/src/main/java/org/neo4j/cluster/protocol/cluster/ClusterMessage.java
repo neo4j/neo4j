@@ -121,10 +121,10 @@ public enum ClusterMessage
     {
         private static final long serialVersionUID = -2394291383400324304L;
 
-        private final Map<InstanceId, URI> nodes;
-        private final org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId;
-        private final Map<String, InstanceId> roles;
-        private final String clusterName;
+        private Map<InstanceId, URI> nodes;
+        private org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId;
+        private Map<String, InstanceId> roles;
+        private String clusterName;
 
         public ConfigurationResponseState( Map<String, InstanceId> roles, Map<InstanceId, URI> nodes,
                                            org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId,

@@ -42,7 +42,7 @@ public enum AcceptorMessage
     {
         private static final long serialVersionUID = 7179066752672770593L;
 
-        private final long ballot;
+        private long ballot;
 
         public PrepareState( long ballot )
         {

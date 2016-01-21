@@ -29,7 +29,7 @@ public class TxPullRequest implements Message
 {
     public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.TX_PULL_REQUEST;
 
-    private final long txId;
+    private long txId;
 
     public TxPullRequest( long txId )
     {

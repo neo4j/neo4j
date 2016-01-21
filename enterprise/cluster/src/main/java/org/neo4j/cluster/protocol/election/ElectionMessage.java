@@ -38,9 +38,9 @@ public enum ElectionMessage
     {
         private static final long serialVersionUID = 6115474263667086327L;
 
-        private final String role;
-        private final InstanceId instanceId;
-        private final Comparable<Object> voteCredentials;
+        private String role;
+        private InstanceId instanceId;
+        private Comparable<Object> voteCredentials;
 
         public VotedData( String role, InstanceId instanceId, Comparable<Object> voteCredentials )
         {
@@ -81,7 +81,7 @@ public enum ElectionMessage
     {
         private static final long serialVersionUID = -3795472557085578559L;
 
-        private final long version;
+        private long version;
 
         public VersionedVotedData( String role, InstanceId instanceId, Comparable<Object> voteCredentials, long version )
         {

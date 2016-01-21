@@ -375,9 +375,9 @@ public interface RaftMessages
 
     class Heartbeat<MEMBER> extends BaseMessage<MEMBER>
     {
-        private final long leaderTerm;
-        private final long commitIndex;
-        private final long commitIndexTerm;
+        private long leaderTerm;
+        private long commitIndex;
+        private long commitIndexTerm;
 
         public Heartbeat( MEMBER from, long leaderTerm, long commitIndex, long commitIndexTerm )
         {
