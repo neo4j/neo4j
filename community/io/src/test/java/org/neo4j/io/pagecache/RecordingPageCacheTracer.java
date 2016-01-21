@@ -86,7 +86,7 @@ public class RecordingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public PinEvent beginPin( boolean exclusiveLock, final long filePageId, final PageSwapper swapper )
+    public PinEvent beginPin( boolean writeLock, final long filePageId, final PageSwapper swapper )
     {
         return new PinEvent()
         {

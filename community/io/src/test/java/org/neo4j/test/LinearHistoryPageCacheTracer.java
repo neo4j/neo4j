@@ -547,9 +547,9 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public PinEvent beginPin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+    public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
-        return add( new PinHEvent( exclusiveLock, filePageId, swapper ));
+        return add( new PinHEvent( writeLock, filePageId, swapper ));
     }
 
     @Override

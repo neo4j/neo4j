@@ -17,9 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.stress;
+package org.neo4j.io.pagecache.impl.muninn;
 
-public class StressTestRecord
+import java.io.IOException;
+
+/**
+ * Thrown if a live-lock is encountered in the page cache. This should be extremely rare. The case would be that all
+ * pages are currently locked by page cursors, and you try to lock one more page. Then the pin would get stuck trying
+ * to find a page to evict and then fault. Except this exception will eventually get thrown to escape the infinite loop.
+ */
+public class CacheLiveLockException extends IOException
 {
-    public static int SizeOfCounter = 8;
+    public CacheLiveLockException( String msg )
+    {
+        super( msg );
+    }
 }

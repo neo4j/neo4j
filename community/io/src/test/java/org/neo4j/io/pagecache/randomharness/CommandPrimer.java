@@ -28,8 +28,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.TinyLockManager;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 import static org.hamcrest.Matchers.isOneOf;
@@ -47,6 +50,10 @@ class CommandPrimer
     private final int filePageCount;
     private final int filePageSize;
     private final RecordFormat recordFormat;
+    private final int maxRecordCount;
+    private final int recordsPerPage;
+    // Entity-locks that protect the individual records, since page write locks are not exclusive.
+    private final TinyLockManager recordLocks;
 
     public CommandPrimer(
             Random rng,
@@ -69,9 +76,13 @@ class CommandPrimer
         filesTouched = new HashSet<>();
         filesTouched.addAll( mappedFiles );
         recordsWrittenTo = new HashMap<>();
+        recordsPerPage = cache.pageSize() / recordFormat.getRecordSize();
+        maxRecordCount = filePageCount * recordsPerPage;
+        recordLocks = new TinyLockManager();
+
         for ( File file : files )
         {
-            recordsWrittenTo.put( file, new ArrayList<Integer>() );
+            recordsWrittenTo.put( file, new ArrayList<>() );
         }
     }
 
@@ -95,6 +106,8 @@ class CommandPrimer
         case UnmapFile: return unmapFile();
         case ReadRecord: return readRecord();
         case WriteRecord: return writeRecord();
+        case ReadMulti: return readMulti();
+        case WriteMulti: return writeMulti();
         default: throw new IllegalArgumentException( "Unknown command: " + command );
         }
     }
@@ -172,82 +185,167 @@ class CommandPrimer
 
     private Action readRecord()
     {
-        int mappedFilesCount = mappedFiles.size();
-        if ( mappedFilesCount == 0 )
-        {
-            return null;
-        }
-        final File file = mappedFiles.get( rng.nextInt( mappedFilesCount ) );
-        List<Integer> recordsWritten = recordsWrittenTo.get( file );
-        int recordSize = recordFormat.getRecordSize();
-        int recordsPerPage = cache.pageSize() / recordSize;
-        final int recordId =
-                recordsWritten.isEmpty()?
-                rng.nextInt( filePageCount * recordsPerPage )
-                : recordsWritten.get( rng.nextInt( recordsWritten.size() ) );
-        final int pageId = recordId / recordsPerPage;
-        final int pageOffset = (recordId % recordsPerPage) * recordSize;
-        final Record expectedRecord = recordFormat.createRecord( file, recordId );
-        return new Action( Command.ReadRecord,
-                "[file=%s, recordId=%s, pageId=%s, pageOffset=%s, expectedRecord=%s]",
-                file, recordId, pageId, pageOffset, expectedRecord )
-        {
-            @Override
-            public void perform() throws Exception
-            {
-                PagedFile pagedFile = fileMap.get( file );
-                if ( pagedFile != null )
-                {
-                    try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_LOCK ) )
-                    {
-                        if ( cursor.next() )
-                        {
-                            cursor.setOffset( pageOffset );
-                            Record actualRecord = recordFormat.readRecord( cursor );
-                            assertThat( actualRecord, isOneOf( expectedRecord, recordFormat.zeroRecord() ) );
-                        }
-                    }
-                }
-            }
-        };
+        return buildReadRecord( null );
     }
 
     private Action writeRecord()
     {
+        return buildWriteAction( null, Primitive.longSet() );
+    }
+
+    private Action readMulti()
+    {
+        int count = rng.nextInt( 5 ) + 1;
+        Action action = null;
+        for ( int i = 0; i < count; i++ )
+        {
+            action = buildReadRecord( action );
+        }
+        return action;
+    }
+
+    private Action writeMulti()
+    {
+        int count = rng.nextInt( 5 ) + 1;
+        PrimitiveLongSet recordIds = Primitive.longSet();
+        Action action = null;
+        for ( int i = 0; i < count; i++ )
+        {
+            action = buildWriteAction( action, recordIds );
+        }
+        return action;
+    }
+
+    private Action buildReadRecord( Action innerAction )
+    {
         int mappedFilesCount = mappedFiles.size();
         if ( mappedFilesCount == 0 )
         {
-            return null;
+            return innerAction;
+        }
+        final File file = mappedFiles.get( rng.nextInt( mappedFilesCount ) );
+        List<Integer> recordsWritten = recordsWrittenTo.get( file );
+        final int recordId =
+                recordsWritten.isEmpty()?
+                rng.nextInt( maxRecordCount )
+                : recordsWritten.get( rng.nextInt( recordsWritten.size() ) );
+        final int pageId = recordId / recordsPerPage;
+        final int pageOffset = (recordId % recordsPerPage) * recordFormat.getRecordSize();
+        final Record expectedRecord = recordFormat.createRecord( file, recordId );
+        return new ReadAction( file, recordId, pageId, pageOffset, expectedRecord, innerAction );
+    }
+
+    private Action buildWriteAction( Action innerAction, PrimitiveLongSet forbiddenRecordIds )
+    {
+        int mappedFilesCount = mappedFiles.size();
+        if ( mappedFilesCount == 0 )
+        {
+            return innerAction;
         }
         final File file = mappedFiles.get( rng.nextInt( mappedFilesCount ) );
         filesTouched.add( file );
-        int recordSize = 16;
-        int recordsPerPage = cache.pageSize() / recordSize;
-        final int recordId = rng.nextInt( filePageCount * recordsPerPage );
+        int recordId;
+        do
+        {
+            recordId = rng.nextInt( filePageCount * recordsPerPage );
+        }
+        while ( forbiddenRecordIds.contains( recordId ) );
         recordsWrittenTo.get( file ).add( recordId );
         final int pageId = recordId / recordsPerPage;
-        final int pageOffset = (recordId % recordsPerPage) * recordSize;
+        final int pageOffset = (recordId % recordsPerPage) * recordFormat.getRecordSize();
         final Record record = recordFormat.createRecord( file, recordId );
-        return new Action(  Command.WriteRecord,
-                "[file=%s, recordId=%s, pageId=%s, pageOffset=%s, record=%s]",
-                file, recordId, pageId, pageOffset, record )
+        return new WriteAction( file, recordId, pageId, pageOffset, record, innerAction );
+    }
+
+    private class ReadAction extends Action
+    {
+        private final File file;
+        private final int pageId;
+        private final int pageOffset;
+        private final Record expectedRecord;
+
+        public ReadAction(
+                File file, int recordId, int pageId, int pageOffset, Record expectedRecord, Action innerAction )
         {
-            @Override
-            public void perform() throws Exception
+            super( Command.ReadRecord, innerAction,
+                    "[file=%s, recordId=%s, pageId=%s, pageOffset=%s, expectedRecord=%s]", file, recordId, pageId,
+                    pageOffset, expectedRecord );
+            this.file = file;
+            this.pageId = pageId;
+            this.pageOffset = pageOffset;
+            this.expectedRecord = expectedRecord;
+        }
+
+        @Override
+        public void perform() throws Exception
+        {
+            PagedFile pagedFile = fileMap.get( file );
+            if ( pagedFile != null )
             {
-                PagedFile pagedFile = fileMap.get( file );
-                if ( pagedFile != null )
+                try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK ) )
                 {
-                    try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_EXCLUSIVE_LOCK ) )
+                    if ( cursor.next() )
                     {
-                        if ( cursor.next() )
-                        {
-                            cursor.setOffset( pageOffset );
-                            recordFormat.write( record, cursor );
-                        }
+                        cursor.setOffset( pageOffset );
+                        Record actualRecord = recordFormat.readRecord( cursor );
+                        assertThat( actualRecord, isOneOf( expectedRecord, recordFormat.zeroRecord() ) );
+                        performInnerAction();
                     }
                 }
             }
-        };
+        }
+    }
+
+    private class WriteAction extends Action
+    {
+        private final File file;
+        private final int recordId;
+        private final int pageId;
+        private final int pageOffset;
+        private final Record record;
+
+        public WriteAction( File file, int recordId, int pageId, int pageOffset, Record record, Action innerAction )
+        {
+            super( Command.WriteRecord, innerAction, "[file=%s, recordId=%s, pageId=%s, pageOffset=%s, record=%s]",
+                    file, recordId, pageId, pageOffset, record );
+            this.file = file;
+            this.recordId = recordId;
+            this.pageId = pageId;
+            this.pageOffset = pageOffset;
+            this.record = record;
+        }
+
+        @Override
+        public void perform() throws Exception
+        {
+            PagedFile pagedFile = fileMap.get( file );
+            if ( pagedFile != null )
+            {
+                // We use tryLock to avoid any deadlock scenarios.
+                if ( recordLocks.tryLock( recordId ) )
+                {
+                    try
+                    {
+                        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_WRITE_LOCK ) )
+                        {
+                            if ( cursor.next() )
+                            {
+                                cursor.setOffset( pageOffset );
+                                recordFormat.write( record, cursor );
+                                performInnerAction();
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        recordLocks.unlock( recordId );
+                    }
+                }
+            }
+            else
+            {
+                performInnerAction();
+            }
+        }
     }
 }

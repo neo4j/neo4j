@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
 
-import org.neo4j.concurrent.jsr166e.StampedLock;
 import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -34,7 +33,7 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.String.format;
 
-final class MuninnPage extends StampedLock implements Page
+final class MuninnPage extends SequenceLock implements Page
 {
     private static final long usageStampOffset = UnsafeUtil.getFieldOffset( MuninnPage.class, "usageStamp" );
 
@@ -107,7 +106,7 @@ final class MuninnPage extends StampedLock implements Page
     public void incrementUsage()
     {
         // This is intentionally left benignly racy for performance.
-        byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
+        byte usage = getUsageCounter();
         if ( usage < 4 ) // avoid cache sloshing by not doing a write if counter is already maxed out
         {
             usage <<= 1;
@@ -121,14 +120,19 @@ final class MuninnPage extends StampedLock implements Page
     public boolean decrementUsage()
     {
         // This is intentionally left benignly racy for performance.
-        byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
+        byte usage = getUsageCounter();
         usage >>>= 1;
         UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
         return usage == 0;
     }
 
+    private byte getUsageCounter()
+    {
+        return UnsafeUtil.getByteVolatile( this, usageStampOffset );
+    }
+
     /**
-     * NOTE: This method must be called while holding a pessimistic lock on the page.
+     * NOTE: This method must be called while holding an exclusive lock on the page.
      */
     public void flush( FlushEventOpportunity flushOpportunity ) throws IOException
     {
@@ -144,7 +148,6 @@ final class MuninnPage extends StampedLock implements Page
             long filePageId,
             FlushEventOpportunity flushOpportunity ) throws IOException
     {
-        assert isReadLocked() || isWriteLocked() : "doFlush requires lock";
         FlushEvent event = flushOpportunity.beginFlush( filePageId, getCachePageId(), swapper );
         try
         {
@@ -161,14 +164,13 @@ final class MuninnPage extends StampedLock implements Page
     }
 
     /**
-     * NOTE: This method MUST be called while holding the page write lock.
+     * NOTE: This method MUST be called while holding the exclusive page lock.
      */
     public void fault(
             PageSwapper swapper,
             long filePageId,
             PageFaultEvent faultEvent ) throws IOException
     {
-        assert isWriteLocked(): "Cannot fault page without write-lock";
         if ( this.swapper != null || this.filePageId != PageCursor.UNBOUND_PAGE_ID )
         {
             String msg = format(
@@ -198,7 +200,6 @@ final class MuninnPage extends StampedLock implements Page
      */
     public void evict( EvictionEvent evictionEvent ) throws IOException
     {
-        assert isWriteLocked(): "Cannot evict page without write-lock";
         long filePageId = this.filePageId;
         evictionEvent.setCachePageId( getCachePageId() );
         evictionEvent.setFilePageId( filePageId );
@@ -232,7 +233,6 @@ final class MuninnPage extends StampedLock implements Page
      */
     public void initBuffer()
     {
-        assert isWriteLocked(): "Cannot initBuffer without write-lock";
         if ( pointer == 0 )
         {
             pointer = memoryManager.allocateAligned( size() );
@@ -247,8 +247,8 @@ final class MuninnPage extends StampedLock implements Page
     @Override
     public String toString()
     {
-        return format( "MuninnPage@%x[%s -> %x, filePageId = %s%s, swapper = %s]%s",
+        return format( "MuninnPage@%x[%s -> %x, filePageId = %s%s, swapper = %s, usage counter = %s, %s]",
                 hashCode(), getCachePageId(), pointer, filePageId, (isDirty() ? ", dirty" : ""),
-                swapper, getLockStateString() );
+                swapper, getUsageCounter(), super.toString() );
     }
 }

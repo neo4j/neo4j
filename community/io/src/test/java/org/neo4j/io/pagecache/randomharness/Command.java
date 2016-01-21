@@ -26,6 +26,8 @@ public enum Command
 {
     ReadRecord( 0.3 ),
     WriteRecord( 0.6 ),
+    ReadMulti( 0.18 ),
+    WriteMulti( 0.09 ),
     FlushFile( 0.06 ),
     FlushCache( 0.02 ),
     MapFile( 0.01 ),

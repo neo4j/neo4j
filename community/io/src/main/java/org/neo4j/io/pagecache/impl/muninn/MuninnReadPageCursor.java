@@ -25,7 +25,15 @@ import org.neo4j.io.pagecache.PageSwapper;
 
 final class MuninnReadPageCursor extends MuninnPageCursor
 {
-    private boolean optimisticLock;
+    private final CursorPool.CursorSets cursorSets;
+    protected long lockStamp;
+    MuninnReadPageCursor nextCursor;
+
+    public MuninnReadPageCursor( CursorPool.CursorSets cursorSets, int cachePageSize )
+    {
+        super( cachePageSize );
+        this.cursorSets = cursorSets;
+    }
 
     @Override
     protected void unpinCurrentPage()
@@ -35,14 +43,8 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         if ( p != null )
         {
             pinEvent.done();
-            assert optimisticLock || p.isReadLocked() :
-                    "pinned page wasn't really locked; not even optimistically: " + p;
-
-            if ( !optimisticLock )
-            {
-                p.unlockRead( lockStamp );
-            }
         }
+        lockStamp = 0; // make sure not to accidentally keep a lock state around
         clearPageState();
     }
 
@@ -62,10 +64,10 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     }
 
     @Override
-    protected void lockPage( MuninnPage page )
+    protected boolean tryLockPage( MuninnPage page )
     {
-        lockStamp = page.tryOptimisticRead();
-        optimisticLock = true;
+        lockStamp = page.tryOptimisticReadLock();
+        return true;
     }
 
     @Override
@@ -81,47 +83,52 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     }
 
     @Override
-    protected void convertPageFaultLock( MuninnPage page, long stamp )
+    protected void convertPageFaultLock( MuninnPage page )
     {
-        stamp = page.tryConvertToReadLock( stamp );
-        assert stamp != 0: "Converting a write lock to a read lock should always succeed";
-        lockStamp = stamp;
-        optimisticLock = false; // We're using a pessimistic read lock
+        lockStamp = page.unlockExclusive();
+    }
+
+    protected void releaseCursor()
+    {
+        nextCursor = cursorSets.readCursors;
+        cursorSets.readCursors = this;
     }
 
     @Override
     public boolean shouldRetry() throws IOException
     {
-        boolean needsRetry = optimisticLock && !page.validate( lockStamp );
+        boolean needsRetry = !page.validateReadLock( lockStamp );
         if ( needsRetry )
         {
-            setOffset( 0 );
-            optimisticLock = false;
-            lockStamp = page.readLock();
-            // We have a pessimistic read lock on the page now. This prevents
-            // writes to the page, and it prevents the page from being evicted.
-            // However, it might have been evicted while we held the optimistic
-            // read lock, so we need to check with page.pin that this is still
-            // the page we're actually interested in:
-            if ( !page.isBoundTo( pagedFile.swapper, currentPageId ) )
-            {
-                // This is no longer the page we're interested in, so we have
-                // to release our lock and redo the pinning.
-                // This might in turn lead to a new optimistic lock on a
-                // different page if someone else has taken the page fault for
-                // us. If nobody has done that, we'll take the page fault
-                // ourselves, and in that case we'll end up with first a write
-                // lock during the faulting, and then a read lock once the
-                // fault itself is over.
-                page.unlockRead( lockStamp );
-                // Forget about this page in case pin() throws and the cursor
-                // is closed; we don't want unpinCurrentPage() to try unlocking
-                // this page.
-                page = null;
-                pin( currentPageId, false );
-            }
+            startRetry();
         }
         return needsRetry;
+    }
+
+    private void startRetry() throws IOException
+    {
+        setOffset( 0 );
+        lockStamp = page.tryOptimisticReadLock();
+        // The page might have been evicted while we held the optimistic
+        // read lock, so we need to check with page.pin that this is still
+        // the page we're actually interested in:
+        if ( !page.isBoundTo( pagedFile.swapper, currentPageId ) )
+        {
+            // This is no longer the page we're interested in, so we have
+            // to redo the pinning.
+            // This might in turn lead to a new optimistic lock on a
+            // different page if someone else has taken the page fault for
+            // us. If nobody has done that, we'll take the page fault
+            // ourselves, and in that case we'll end up with first an exclusive
+            // lock during the faulting, and then an optimistic read lock once the
+            // fault itself is over.
+            // First, forget about this page in case pin() throws and the cursor
+            // is closed; we don't want unpinCurrentPage() to try unlocking
+            // this page.
+            page = null;
+            // Then try pin again.
+            pin( currentPageId, false );
+        }
     }
 
     @Override

@@ -32,8 +32,8 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
 /**
  * Implementation of the relationship store.
@@ -117,7 +117,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord>
      */
     public boolean fillRecord( long id, RelationshipRecord target, RecordLoad loadMode )
     {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_READ_LOCK ) )
         {
             boolean success = false;
             if ( cursor.next() )
@@ -152,7 +152,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord>
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
 
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
             boolean recordIsInUse = false;
             if ( cursor.next() )
@@ -185,7 +185,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord>
 
     private void updateRecord( RelationshipRecord record, boolean force )
     {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_SHARED_WRITE_LOCK ) )
         {
             if ( cursor.next() ) // should always be true
             {

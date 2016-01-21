@@ -69,7 +69,7 @@ final class MuninnPagedFile implements PagedFile
      * The layout looks like this:
      *
      * ┏━ Empty file marker bit. When 1, the file is empty.
-     * ┃    ┏━ Reference count, 15 bites.
+     * ┃    ┏━ Reference count, 15 bits.
      * ┃    ┃                ┏━ 48 bits for the last page id.
      * ┃┏━━━┻━━━━━━━━━━┓ ┏━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
      * MRRRRRRR RRRRRRRR IIIIIIII IIIIIIII IIIIIIII IIIIIIII IIIIIIII IIIIIIII
@@ -83,14 +83,13 @@ final class MuninnPagedFile implements PagedFile
             MuninnPageCache pageCache,
             int filePageSize,
             PageSwapperFactory swapperFactory,
-            CursorPool cursorPool,
             PageCacheTracer tracer,
             boolean createIfNotExists,
             boolean truncateExisting ) throws IOException
     {
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
-        this.cursorPool = cursorPool;
+        this.cursorPool = new CursorPool( this );
         this.tracer = tracer;
 
         // The translation table is an array of arrays of references to either null, MuninnPage objects, or Latch
@@ -133,28 +132,27 @@ final class MuninnPagedFile implements PagedFile
     @Override
     public PageCursor io( long pageId, int pf_flags )
     {
-        int lockMask = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;
+        int lockMask = PF_SHARED_WRITE_LOCK | PF_SHARED_READ_LOCK;
         if ( (pf_flags & lockMask) == 0 )
         {
             throw new IllegalArgumentException(
-                    "Must specify either PF_EXCLUSIVE_LOCK or PF_SHARED_LOCK" );
+                    "Must specify either PF_SHARED_WRITE_LOCK or PF_SHARED_READ_LOCK" );
         }
         if ( (pf_flags & lockMask) == lockMask )
         {
             throw new IllegalArgumentException(
-                    "Cannot specify both PF_EXCLUSIVE_LOCK and PF_SHARED_LOCK" );
+                    "Cannot specify both PF_SHARED_WRITE_LOCK and PF_SHARED_READ_LOCK" );
         }
         MuninnPageCursor cursor;
-        if ( (pf_flags & PF_SHARED_LOCK) == 0 )
+        if ( (pf_flags & PF_SHARED_READ_LOCK) == 0 )
         {
-            cursor = cursorPool.takeWriteCursor();
+            cursor = cursorPool.takeWriteCursor( pageId, pf_flags );
         }
         else
         {
-            cursor = cursorPool.takeReadCursor();
+            cursor = cursorPool.takeReadCursor( pageId, pf_flags );
         }
 
-        cursor.initialise( this, pageId, pf_flags );
         cursor.rewind();
         return cursor;
     }
@@ -185,15 +183,23 @@ final class MuninnPagedFile implements PagedFile
     {
         try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
         {
-            flushAndForceInternal( flushEvent.flushEventOpportunity() );
+            flushAndForceInternal( flushEvent.flushEventOpportunity(), false );
             syncDevice();
         }
     }
 
-    void flushAndForceInternal( FlushEventOpportunity flushOpportunity ) throws IOException
+    public void flushAndForceForClose() throws IOException
+    {
+        try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
+        {
+            flushAndForceInternal( flushEvent.flushEventOpportunity(), true );
+            syncDevice();
+        }
+    }
+
+    void flushAndForceInternal( FlushEventOpportunity flushOpportunity, boolean forClosing ) throws IOException
     {
         pageCache.pauseBackgroundFlushTask();
-        long[] stamps = new long[translationTableChunkSize];
         MuninnPage[] pages = new MuninnPage[translationTableChunkSize];
         long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
         try
@@ -204,35 +210,51 @@ final class MuninnPagedFile implements PagedFile
                 // TODO The clean pages in question must still be loaded, though. Otherwise we'll end up writing
                 // TODO garbage to the file.
                 int pagesGrabbed = 0;
-                for ( Object element : chunk )
+                chunkLoop:for ( int i = 0; i < chunk.length; i++ )
                 {
                     filePageId++;
-                    if ( element instanceof MuninnPage )
+
+                    long offset = computeChunkOffset( filePageId );
+                    // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
+                    // in getting a lock on all available pages.
+                    for (;;)
                     {
-                        MuninnPage page = (MuninnPage) element;
-                        stamps[pagesGrabbed] = page.readLock();
-                        if ( page.isBoundTo( swapper, filePageId ) && page.isDirty() )
+                        Object element = UnsafeUtil.getObjectVolatile( chunk, offset );
+                        if ( element instanceof MuninnPage )
                         {
-                            // The page is still bound to the expected file and file page id after we locked it,
-                            // so we didn't race with eviction and faulting, and the page is dirty.
-                            // So we add it to our IO vector.
-                            pages[pagesGrabbed] = page;
-                            pagesGrabbed++;
-                            continue;
+                            MuninnPage page = (MuninnPage) element;
+                            if ( !(forClosing? page.tryExclusiveLock() : page.tryFreezeLock()) )
+                            {
+                                continue;
+                            }
+                            if ( page.isBoundTo( swapper, filePageId ) && page.isDirty() )
+                            {
+                                // The page is still bound to the expected file and file page id after we locked it,
+                                // so we didn't race with eviction and faulting, and the page is dirty.
+                                // So we add it to our IO vector.
+                                pages[pagesGrabbed] = page;
+                                pagesGrabbed++;
+                                continue chunkLoop;
+                            }
+                            else if ( forClosing )
+                            {
+                                page.unlockExclusive();
+                            }
+                            else
+                            {
+                                page.unlockFreeze();
+                            }
                         }
-                        else
-                        {
-                            page.unlockRead( stamps[pagesGrabbed] );
-                        }
+                        break;
                     }
                     if ( pagesGrabbed > 0 )
                     {
-                        pagesGrabbed = vectoredFlush( stamps, pages, pagesGrabbed, flushOpportunity );
+                        pagesGrabbed = vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
                     }
                 }
                 if ( pagesGrabbed > 0 )
                 {
-                    vectoredFlush( stamps, pages, pagesGrabbed, flushOpportunity );
+                    vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
                 }
             }
 
@@ -245,7 +267,7 @@ final class MuninnPagedFile implements PagedFile
     }
 
     private int vectoredFlush(
-            long[] stamps, MuninnPage[] pages, int pagesGrabbed, FlushEventOpportunity flushOpportunity )
+            MuninnPage[] pages, int pagesGrabbed, FlushEventOpportunity flushOpportunity, boolean forClosing )
             throws IOException
     {
         FlushEvent flush = null;
@@ -254,6 +276,15 @@ final class MuninnPagedFile implements PagedFile
             // Write the pages vector
             MuninnPage firstPage = pages[0];
             long startFilePageId = firstPage.getFilePageId();
+
+            // Mark the flushed pages as clean before our flush, so concurrent page writes can mark it as dirty and
+            // we'll be able to write those changes out on the next flush.
+            for ( int j = 0; j < pagesGrabbed; j++ )
+            {
+                // If the flush fails, we'll undo this
+                pages[j].markAsClean();
+            }
+
             flush = flushOpportunity.beginFlush( startFilePageId, firstPage.getCachePageId(), swapper );
             long bytesWritten = swapper.write( startFilePageId, pages, 0, pagesGrabbed );
 
@@ -262,17 +293,16 @@ final class MuninnPagedFile implements PagedFile
             flush.addPagesFlushed( pagesGrabbed );
             flush.done();
 
-            // Mark the flushed pages as clean
-            for ( int j = 0; j < pagesGrabbed; j++ )
-            {
-                pages[j].markAsClean();
-            }
-
             // There are now 0 'grabbed' pages
             return 0;
         }
         catch ( IOException ioe )
         {
+            // Undo marking the pages as clean
+            for ( int j = 0; j < pagesGrabbed; j++ )
+            {
+                pages[j].markAsDirty();
+            }
             if ( flush != null )
             {
                 flush.done( ioe );
@@ -284,7 +314,14 @@ final class MuninnPagedFile implements PagedFile
             // Always unlock all the pages in the vector
             for ( int j = 0; j < pagesGrabbed; j++ )
             {
-                pages[j].unlockRead( stamps[j] );
+                if ( forClosing )
+                {
+                    pages[j].unlockExclusive();
+                }
+                else
+                {
+                    pages[j].unlockFreeze();
+                }
             }
         }
     }
@@ -401,9 +438,9 @@ final class MuninnPagedFile implements PagedFile
      * none are immediately available.
      * @param faultEvent The trace event for the current page fault.
      */
-    MuninnPage grabFreePage( PageFaultEvent faultEvent ) throws IOException
+    MuninnPage grabFreeAndExclusivelyLockedPage( PageFaultEvent faultEvent ) throws IOException
     {
-        return pageCache.grabFreePage( faultEvent );
+        return pageCache.grabFreeAndExclusivelyLockedPage( faultEvent );
     }
 
     /**

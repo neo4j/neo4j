@@ -82,9 +82,9 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
         return delegate.filesUnmapped();
     }
 
-    public PinEvent beginPin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+    public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
-        return delegate.beginPin( exclusiveLock, filePageId, swapper );
+        return delegate.beginPin( writeLock, filePageId, swapper );
     }
 
     public void unmappedFile( File file )

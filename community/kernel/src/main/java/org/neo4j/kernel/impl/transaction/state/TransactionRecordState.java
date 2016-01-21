@@ -461,7 +461,7 @@ public class TransactionRecordState implements RecordState
                 @Override
                 public NeoStoreRecord load( Long key, Void additionalData )
                 {
-                    return metaDataStore.asRecord();
+                    return metaDataStore.graphPropertyRecord();
                 }
 
                 @Override

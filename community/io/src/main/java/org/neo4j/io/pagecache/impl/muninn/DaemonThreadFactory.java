@@ -17,30 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.stress;
+package org.neo4j.io.pagecache.impl.muninn;
 
-import org.neo4j.io.pagecache.PagedFile;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
-public class CountKeeperFactory
+final class DaemonThreadFactory implements ThreadFactory
 {
-    private final PagedFile pagedFile;
-    private final int recordsPerPage;
-    private final int countersPerRecord;
-
-    public CountKeeperFactory( PagedFile pagedFile, int recordsPerPage, int countersPerRecord )
+    @Override
+    public Thread newThread( Runnable r )
     {
-        this.pagedFile = pagedFile;
-        this.recordsPerPage = recordsPerPage;
-        this.countersPerRecord = countersPerRecord;
-    }
-
-    public CountKeeper createRecordKeeper()
-    {
-        return new CountKeeper( pagedFile, countersPerRecord );
-    }
-
-    public CountVerifier createVerifier()
-    {
-        return new CountVerifier( pagedFile, recordsPerPage, countersPerRecord );
+        ThreadFactory def = Executors.defaultThreadFactory();
+        Thread thread = def.newThread( r );
+        thread.setDaemon( true );
+        return thread;
     }
 }

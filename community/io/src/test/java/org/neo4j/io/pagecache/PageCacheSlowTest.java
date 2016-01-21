@@ -44,18 +44,69 @@ import org.neo4j.test.RepeatRule;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.test.ByteArrayMatcher.byteArray;
 
 public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
-    @RepeatRule.Repeat( times = 1000 )
+    private static class UpdateResult
+    {
+        final int threadId;
+        final int[] pageCounts;
+
+        UpdateResult( int threadId, int[] pageCounts )
+        {
+            this.threadId = threadId;
+            this.pageCounts = pageCounts;
+        }
+    }
+
+    private static abstract class UpdateWorker implements Callable<UpdateResult>
+    {
+        final int threadId;
+        final int filePages;
+        final AtomicBoolean shouldStop;
+        final PagedFile pagedFile;
+        final int[] pageCounts;
+        final int offset;
+
+        UpdateWorker( int threadId, int filePages, AtomicBoolean shouldStop, PagedFile pagedFile )
+        {
+            this.threadId = threadId;
+            this.filePages = filePages;
+            this.shouldStop = shouldStop;
+            this.pagedFile = pagedFile;
+            pageCounts = new int[filePages];
+            offset = threadId * 4;
+        }
+
+        @Override
+        public UpdateResult call() throws Exception
+        {
+            ThreadLocalRandom rng = ThreadLocalRandom.current();
+
+            while ( !shouldStop.get() )
+            {
+                boolean updateCounter = rng.nextBoolean();
+                int pf_flags = updateCounter ? PF_SHARED_WRITE_LOCK : PF_SHARED_READ_LOCK;
+                performReadOrUpdate( rng, updateCounter, pf_flags );
+            }
+
+            return new UpdateResult( threadId, pageCounts );
+        }
+
+        protected abstract void performReadOrUpdate( ThreadLocalRandom rng, boolean updateCounter,
+                                          int pf_flags ) throws IOException;
+    }
+
+    @RepeatRule.Repeat( times = 250 )
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void mustNotLoseUpdates() throws Exception
     {
@@ -89,53 +140,17 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         getPageCache( fs, cachePages, pageSize, PageCacheTracer.NULL );
         final PagedFile pagedFile = pageCache.map( file( "a" ), pageSize );
 
-        // Ensure all the pages exist
-        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        ensureAllPagesExists( filePages, pagedFile );
+
+        List<Future<UpdateResult>> futures = new ArrayList<>();
+        for ( int i = 0; i < threadCount; i++ )
         {
-            for ( int i = 0; i < filePages; i++ )
+            UpdateWorker worker = new UpdateWorker( i, filePages, shouldStop, pagedFile )
             {
-                assertTrue( "failed to initialise file page " + i, cursor.next() );
-                for ( int j = 0; j < pageSize; j++ )
-                {
-                    cursor.putByte( (byte) 0 );
-                }
-            }
-        }
-        pageCache.flushAndForce();
-
-        class Result
-        {
-            final int threadId;
-            final int[] pageCounts;
-
-            Result( int threadId, int[] pageCounts )
-            {
-                this.threadId = threadId;
-                this.pageCounts = pageCounts;
-            }
-        }
-
-        class Worker implements Callable<Result>
-        {
-            final int threadId;
-
-            Worker( int threadId )
-            {
-                this.threadId = threadId;
-            }
-
-            @Override
-            public Result call() throws Exception
-            {
-                int[] pageCounts = new int[filePages];
-                ThreadLocalRandom rng = ThreadLocalRandom.current();
-
-                while ( !shouldStop.get() )
+                protected void performReadOrUpdate(
+                        ThreadLocalRandom rng, boolean updateCounter, int pf_flags ) throws IOException
                 {
                     int pageId = rng.nextInt( 0, filePages );
-                    int offset = threadId * 4;
-                    boolean updateCounter = rng.nextBoolean();
-                    int pf_flags = updateCounter? PF_EXCLUSIVE_LOCK : PF_SHARED_LOCK;
                     try ( PageCursor cursor = pagedFile.io( pageId, pf_flags ) )
                     {
                         int counter;
@@ -148,10 +163,11 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                                 counter = cursor.getInt();
                             }
                             while ( cursor.shouldRetry() );
-                            String lockName = updateCounter ? "PF_EXCLUSIVE_LOCK" : "PF_SHARED_LOCK";
-                            assertThat( "inconsistent page read from filePageId = " + pageId + ", with " + lockName +
-                                        ", workerId = " + threadId + " [t:" + Thread.currentThread().getId() + "]",
-                                    counter, is( pageCounts[pageId] ) );
+                            String lockName = updateCounter ? "PF_SHARED_WRITE_LOCK" : "PF_SHARED_READ_LOCK";
+                            String reason = String.format(
+                                    "inconsistent page read from filePageId = %s, with %s, workerId = %s [t:%s]",
+                                    pageId, lockName, threadId, Thread.currentThread().getId() );
+                            assertThat( reason, counter, is( pageCounts[pageId] ) );
                         }
                         catch ( Throwable throwable )
                         {
@@ -167,24 +183,37 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                         }
                     }
                 }
-
-                return new Result( threadId, pageCounts );
-            }
+            };
+            futures.add( executor.submit( worker ) );
         }
 
-        List<Future<Result>> futures = new ArrayList<>();
-        for ( int i = 0; i < threadCount; i++ )
-        {
-            futures.add( executor.submit( new Worker( i ) ) );
-        }
-
-        Thread.sleep( 10 );
+        Thread.sleep( 40 );
         shouldStop.set( true );
 
-        for ( Future<Result> future : futures )
+        verifyUpdateResults( filePages, pagedFile, futures );
+        pagedFile.close();
+    }
+
+    private void ensureAllPagesExists( int filePages, PagedFile pagedFile ) throws IOException
+    {
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
-            Result result = future.get();
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            for ( int i = 0; i < filePages; i++ )
+            {
+                assertTrue( "failed to initialise file page " + i, cursor.next() );
+            }
+        }
+        pageCache.flushAndForce();
+    }
+
+    private void verifyUpdateResults( int filePages, PagedFile pagedFile,
+                                      List<Future<UpdateResult>> futures )
+            throws InterruptedException, ExecutionException, IOException
+    {
+        for ( Future<UpdateResult> future : futures )
+        {
+            UpdateResult result = future.get();
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
             {
                 for ( int i = 0; i < filePages; i++ )
                 {
@@ -205,6 +234,97 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                 }
             }
         }
+    }
+
+    @RepeatRule.Repeat( times = 250 )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
+    public void mustNotLoseUpdatesWhenOpeningMultiplePageCursorsPerThread() throws Exception
+    {
+        // Similar to the test above, except the threads will have multiple page cursors opened at a time.
+
+        final AtomicBoolean shouldStop = new AtomicBoolean();
+        final int cachePages = 40;
+        final int filePages = cachePages * 2;
+        final int threadCount = 8;
+        final int pageSize = threadCount * 4;
+
+        // It's very important that even if all threads grab their maximum number of pages at the same time, there will
+        // still be free pages left in the cache. If we don't keep this invariant, then there's a chance that our test
+        // will run into live-locks, where a page fault will try to find a page to cooperatively evict, but all pages
+        // in cache are already taken.
+        final int maxCursorsPerThread = cachePages / (1 + threadCount);
+        assertThat( maxCursorsPerThread * threadCount, lessThan( cachePages ) );
+
+        getPageCache( fs, cachePages, pageSize, PageCacheTracer.NULL );
+        final PagedFile pagedFile = pageCache.map( file( "a" ), pageSize );
+
+        ensureAllPagesExists( filePages, pagedFile );
+
+        List<Future<UpdateResult>> futures = new ArrayList<>();
+        for ( int i = 0; i < threadCount; i++ )
+        {
+            UpdateWorker worker = new UpdateWorker( i, filePages, shouldStop, pagedFile )
+            {
+                protected void performReadOrUpdate(
+                        ThreadLocalRandom rng, boolean updateCounter, int pf_flags ) throws IOException
+                {
+                    try
+                    {
+                        int pageCount = rng.nextInt( 1, maxCursorsPerThread );
+                        int[] pageIds = new int[pageCount];
+                        for ( int j = 0; j < pageCount; j++ )
+                        {
+                            pageIds[j] = rng.nextInt( 0, filePages );
+                        }
+                        PageCursor[] cursors = new PageCursor[pageCount];
+                        for ( int j = 0; j < pageCount; j++ )
+                        {
+                            cursors[j] = pagedFile.io( pageIds[j], pf_flags );
+                            assertTrue( cursors[j].next() );
+                        }
+                        for ( int j = 0; j < pageCount; j++ )
+                        {
+                            int pageId = pageIds[j];
+                            PageCursor cursor = cursors[j];
+                            int counter;
+                            do
+                            {
+                                cursor.setOffset( offset );
+                                counter = cursor.getInt();
+                            }
+                            while ( cursor.shouldRetry() );
+                            String lockName = updateCounter ? "PF_SHARED_WRITE_LOCK" : "PF_SHARED_READ_LOCK";
+                            String reason = String.format(
+                                    "inconsistent page read from filePageId = %s, with %s, workerId = %s [t:%s]",
+                                    pageId, lockName, threadId, Thread.currentThread().getId() );
+                            assertThat( reason, counter, is( pageCounts[pageId] ) );
+                            if ( updateCounter )
+                            {
+                                counter++;
+                                pageCounts[pageId]++;
+                                cursor.setOffset( offset );
+                                cursor.putInt( counter );
+                            }
+                        }
+                        for ( PageCursor cursor : cursors )
+                        {
+                            cursor.close();
+                        }
+                    }
+                    catch ( Throwable throwable )
+                    {
+                        shouldStop.set( true );
+                        throw throwable;
+                    }
+                }
+            };
+            futures.add( executor.submit( worker ) );
+        }
+
+        Thread.sleep( 40 );
+        shouldStop.set( true );
+
+        verifyUpdateResults( filePages, pagedFile, futures );
         pagedFile.close();
     }
 
@@ -232,7 +352,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         final CountDownLatch secondThreadGotLockLatch = new CountDownLatch( 1 );
 
         executor.submit( () -> {
-            try ( PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 cursor.next();
                 hasLockLatch.countDown();
@@ -241,10 +361,10 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             return null;
         } );
 
-        hasLockLatch.await(); // An exclusive lock is now held on page 0.
+        hasLockLatch.await(); // A write lock is now held on page 0.
 
         Future<Object> takeLockFuture = executor.submit( () -> {
-            try ( PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 cursor.next();
                 secondThreadGotLockLatch.await();
@@ -264,11 +384,11 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
         catch ( TimeoutException e )
         {
-            // As expected, the close cannot not complete while an exclusive
+            // As expected, the close cannot not complete while an write
             // lock is held
         }
 
-        // Now, both the close action and a grab for an exclusive page lock is
+        // Now, both the close action and a grab for an write page lock is
         // waiting for our first thread.
         // When we release that lock, we should see that either close completes
         // and our second thread, the one blocked on the write lock, gets an
@@ -331,7 +451,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             long maxPageId = pagedFile.getLastPageId();
             boolean performingRead = rng.nextBoolean() && maxPageId != -1;
             long startingPage = maxPageId < 0? 0 : rng.nextLong( maxPageId + 1 );
-            int pf_flags = performingRead ? PF_SHARED_LOCK : PF_EXCLUSIVE_LOCK;
+            int pf_flags = performingRead ? PF_SHARED_READ_LOCK : PF_SHARED_WRITE_LOCK;
             int pageSize = pagedFile.pageSize();
 
             try ( PageCursor cursor = pagedFile.io( startingPage, pf_flags ) )
@@ -349,7 +469,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             {
                 // Capture any exception that might have hit the eviction thread.
                 adversary.setProbabilityFactor( 0.0 );
-                try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
                 {
                     for ( int j = 0; j < 100; j++ )
                     {
@@ -438,7 +558,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
     private void verifyAdversarialPagedContent( PagedFile pagedFile ) throws IOException
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             while ( cursor.next() )
             {

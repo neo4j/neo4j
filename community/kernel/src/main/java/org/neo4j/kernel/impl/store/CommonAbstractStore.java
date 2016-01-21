@@ -43,7 +43,7 @@ import org.neo4j.logging.Logger;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -211,7 +211,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     public byte[] getRawRecordData( long id ) throws IOException
     {
         byte[] data = new byte[getRecordSize()];
-        try ( PageCursor pageCursor = storeFile.io( id / getRecordsPerPage(), PagedFile.PF_SHARED_LOCK ) )
+        try ( PageCursor pageCursor = storeFile.io( id / getRecordsPerPage(), PagedFile.PF_SHARED_READ_LOCK ) )
         {
             if ( pageCursor.next() )
             {
@@ -262,7 +262,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         int headerRecord = 0 ;
         try ( PagedFile pagedFile = pageCache.map( getStorageFileName(), pageCache.pageSize() ) )
         {
-            try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
             {
                 if ( pageCursor.next() )
                 {
@@ -315,7 +315,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             setHighId( foundHighId );
             if ( !fastRebuild )
             {
-                try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK | PF_READ_AHEAD ) )
+                try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK | PF_READ_AHEAD ) )
                 {
                     defraggedCount = rebuildIdGeneratorSlow( cursor, getRecordsPerPage(), blockSize, foundHighId );
                 }
@@ -554,7 +554,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      */
     protected long scanForHighId()
     {
-        try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             long nextPageId = storeFile.getLastPageId();
             int recordsPerPage = getRecordsPerPage();

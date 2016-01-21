@@ -19,30 +19,55 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.ClassRule;
+import org.junit.AfterClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class MetaDataStoreTest
 {
-    @ClassRule
-    public static final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private static final File STORE_DIR = new File( "store" );
+    private static final ExecutorService executor = Executors.newCachedThreadPool();
 
-    @ClassRule
-    public static final PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule( false );
+
+    @AfterClass
+    public static void shutDownExecutor()
+    {
+        executor.shutdown();
+    }
 
     @Test
     public void getCreationTimeShouldFailWhenStoreIsClosed() throws IOException
@@ -268,12 +293,11 @@ public class MetaDataStoreTest
         }
     }
 
-    private static MetaDataStore newMetaDataStore() throws IOException
+    private MetaDataStore newMetaDataStore() throws IOException
     {
         EphemeralFileSystemAbstraction fs = fsRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        File dir = new File( "store" );
-        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( fs, STORE_DIR, pageCache, NullLogProvider.getInstance() );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
 
@@ -284,8 +308,8 @@ public class MetaDataStoreTest
         MetaDataStore metaDataStore = newMetaDataStore();
         long[] originalClosedTransaction = metaDataStore.getLastClosedTransaction();
         long transactionId = originalClosedTransaction[0] + 1;
-        long version = 1l;
-        long byteOffset = 777l;
+        long version = 1L;
+        long byteOffset = 777L;
 
         // WHEN
         metaDataStore.transactionClosed( transactionId, version, byteOffset );
@@ -306,5 +330,234 @@ public class MetaDataStoreTest
         assertEquals( byteOffset, lastClosedTransactionFlags[2] );
 
         metaDataStore.close();
+    }
+
+    @Test
+    public void setUpgradeTransactionMustBeAtomic() throws Exception
+    {
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            PagedFile pf = store.storeFile;
+            store.setUpgradeTransaction( 0, 0 );
+            CountDownLatch runLatch = new CountDownLatch( 1 );
+            AtomicBoolean stopped = new AtomicBoolean();
+            AtomicLong counter = new AtomicLong();
+
+            Runnable writer = untilStopped( stopped, runLatch, () -> {
+                long count = counter.incrementAndGet();
+                store.setUpgradeTransaction( count, count );
+            } );
+
+            Runnable fileReader = untilStopped( stopped, runLatch, () -> {
+                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
+                {
+                    assertTrue( cursor.next() );
+                    long id, checksum;
+                    do
+                    {
+                        id = store.getRecordValue( cursor, MetaDataStore.Position.UPGRADE_TRANSACTION_ID );
+                        checksum = store.getRecordValue( cursor, MetaDataStore.Position.UPGRADE_TRANSACTION_CHECKSUM );
+                    }
+                    while ( cursor.shouldRetry() );
+                    assertIdEqualsChecksum( id, checksum, "file" );
+                }
+            } );
+
+            Runnable apiReader = untilStopped( stopped, runLatch, () -> {
+                TransactionId transaction = store.getUpgradeTransaction();
+                assertIdEqualsChecksum( transaction.transactionId(), transaction.checksum(), "API" );
+            } );
+
+            forkMultiple( 10, writer );
+            List<Future<?>> readerFutures = forkMultiple( 5, fileReader );
+            readerFutures.addAll( forkMultiple( 5, apiReader ) );
+
+            runLatch.await( 1, TimeUnit.SECONDS );
+            stopped.set( true );
+
+            for ( Future<?> future : readerFutures )
+            {
+                future.get(); // We assert that this does not throw
+            }
+        }
+    }
+
+    private static Runnable untilStopped(
+            AtomicBoolean stopped, CountDownLatch runLatch, ThrowingAction<? extends Exception> runnable )
+    {
+        return () -> {
+            try
+            {
+                while ( !stopped.get() )
+                {
+                    runnable.apply();
+                }
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+            finally
+            {
+                runLatch.countDown();
+            }
+        };
+    }
+
+    private static void assertIdEqualsChecksum( long id, long checksum, String source )
+    {
+        if ( id != checksum )
+        {
+            throw new AssertionError(
+                    "id (" + id + ") and checksum (" + checksum + ") from " + source + " should be identical" );
+        }
+    }
+
+    private static List<Future<?>> forkMultiple( int forks, Runnable runnable )
+    {
+        List<Future<?>> futures = new ArrayList<>();
+        for ( int i = 0; i < forks; i++ )
+        {
+            futures.add( executor.submit( runnable ) );
+        }
+        return futures;
+    }
+
+    @Test
+    public void incrementAndGetVersionMustBeAtomic() throws Exception
+    {
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            long initialVersion = store.incrementAndGetVersion();
+            int threads = 10, iterations = 2_000;
+            Semaphore startLatch = new Semaphore( 0 );
+            Runnable incrementer = () -> {
+                startLatch.acquireUninterruptibly();
+                for ( int i = 0; i < iterations; i++ )
+                {
+                    store.incrementAndGetVersion();
+                }
+            };
+            List<Future<?>> futures = forkMultiple( threads, incrementer );
+            startLatch.release( threads );
+            for ( Future<?> future : futures )
+            {
+                future.get();
+            }
+            assertThat( store.incrementAndGetVersion(), is( initialVersion + (threads * iterations) + 1 ) );
+        }
+    }
+
+    @Test
+    public void transactionCommittedMustBeAtomic() throws Exception
+    {
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            PagedFile pf = store.storeFile;
+            store.transactionCommitted( 2, 2 );
+            CountDownLatch runLatch = new CountDownLatch( 1 );
+            AtomicBoolean stopped = new AtomicBoolean();
+            AtomicLong counter = new AtomicLong( 2 );
+
+            Runnable writer = untilStopped( stopped, runLatch, () -> {
+                long count = counter.incrementAndGet();
+                store.transactionCommitted( count, count );
+            } );
+
+            Runnable fileReader = untilStopped( stopped, runLatch, () -> {
+                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
+                {
+                    assertTrue( cursor.next() );
+                    long id, checksum;
+                    do
+                    {
+                        id = store.getRecordValue( cursor, MetaDataStore.Position.LAST_TRANSACTION_ID );
+                        checksum = store.getRecordValue( cursor, MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM );
+                    }
+                    while ( cursor.shouldRetry() );
+                    assertIdEqualsChecksum( id, checksum, "file" );
+                }
+            } );
+
+            Runnable apiReader = untilStopped( stopped, runLatch, () -> {
+                TransactionId transaction = store.getLastCommittedTransaction();
+                assertIdEqualsChecksum( transaction.transactionId(), transaction.checksum(), "API" );
+            } );
+
+            forkMultiple( 10, writer );
+            List<Future<?>> readerFutures = forkMultiple( 5, fileReader );
+            readerFutures.addAll( forkMultiple( 5, apiReader ) );
+
+            runLatch.await( 1, TimeUnit.SECONDS );
+            stopped.set( true );
+
+            for ( Future<?> future : readerFutures )
+            {
+                future.get(); // We assert that this does not throw
+            }
+        }
+    }
+
+    @Test
+    public void transactionClosedMustBeAtomic() throws Exception
+    {
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            PagedFile pf = store.storeFile;
+            int initialValue = 2;
+            store.transactionClosed( initialValue, initialValue, initialValue );
+            CountDownLatch runLatch = new CountDownLatch( 1 );
+            AtomicBoolean stopped = new AtomicBoolean();
+            AtomicLong counter = new AtomicLong( initialValue );
+
+            Runnable writer = untilStopped( stopped, runLatch, () -> {
+                long count = counter.incrementAndGet();
+                store.transactionCommitted( count, count );
+            } );
+
+            Runnable fileReader = untilStopped( stopped, runLatch, () -> {
+                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
+                {
+                    assertTrue( cursor.next() );
+                    long logVersion, byteOffset;
+                    do
+                    {
+                        logVersion = store.getRecordValue( cursor,
+                                MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
+                        byteOffset = store.getRecordValue( cursor,
+                                MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
+                    }
+                    while ( cursor.shouldRetry() );
+                    assertLogVersionEqualsByteOffset( logVersion, byteOffset, "file" );
+                }
+            } );
+
+            Runnable apiReader = untilStopped( stopped, runLatch, () -> {
+                long[] transaction = store.getLastClosedTransaction();
+                assertLogVersionEqualsByteOffset( transaction[0], transaction[1], "API" );
+            } );
+
+            forkMultiple( 0, writer );
+            List<Future<?>> readerFutures = forkMultiple( 5, fileReader );
+            readerFutures.addAll( forkMultiple( 5, apiReader ) );
+
+            runLatch.await( 1, TimeUnit.SECONDS );
+            stopped.set( true );
+
+            for ( Future<?> future : readerFutures )
+            {
+                future.get(); // We assert that this does not throw
+            }
+        }
+    }
+
+    private static void assertLogVersionEqualsByteOffset( long logVersion, long byteOffset, String source )
+    {
+        if ( logVersion != byteOffset )
+        {
+            throw new AssertionError(
+                    "logVersion (" + logVersion + ") and byteOffset (" + byteOffset + ") from " + source +
+                    " should be identical" );
+        }
     }
 }

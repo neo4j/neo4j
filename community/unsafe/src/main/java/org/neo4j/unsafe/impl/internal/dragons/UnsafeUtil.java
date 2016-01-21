@@ -23,7 +23,6 @@ import sun.misc.Unsafe;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -53,8 +52,6 @@ public final class UnsafeUtil
     private static final boolean DIRTY_MEMORY = flag( UnsafeUtil.class, "DIRTY_MEMORY", false );
 
     private static final Unsafe unsafe;
-    private static final MethodHandle getAndAddInt;
-    private static final MethodHandle getAndSetObject;
     private static final MethodHandle sharedStringConstructor;
     private static final String allowUnalignedMemoryAccessProperty =
             "org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess";
@@ -77,8 +74,6 @@ public final class UnsafeUtil
         unsafe = getUnsafe();
 
         MethodHandles.Lookup lookup = MethodHandles.lookup();
-        getAndAddInt = getGetAndAddIntMethodHandle( lookup );
-        getAndSetObject = getGetAndSetObjectMethodHandle( lookup );
         sharedStringConstructor = getSharedStringConstructorMethodHandle( lookup );
 
         Class<?> dbbClass = null;
@@ -148,34 +143,30 @@ public final class UnsafeUtil
     {
         try
         {
-            return AccessController.doPrivileged( new PrivilegedExceptionAction<Unsafe>()
-            {
-                @Override
-                public Unsafe run() throws Exception
+            PrivilegedExceptionAction<Unsafe> getUnsafe = () -> {
+                try
                 {
-                    try
-                    {
-                        return Unsafe.getUnsafe();
-                    }
-                    catch ( Exception e )
-                    {
-                        Class<Unsafe> type = Unsafe.class;
-                        Field[] fields = type.getDeclaredFields();
-                        for ( Field field : fields )
-                        {
-                            if ( Modifier.isStatic( field.getModifiers() )
-                                    && type.isAssignableFrom( field.getType() ) )
-                            {
-                                field.setAccessible( true );
-                                return type.cast( field.get( null ) );
-                            }
-                        }
-                        LinkageError error = new LinkageError( "No static field of type sun.misc.Unsafe" );
-                        error.addSuppressed( e );
-                        throw error;
-                    }
+                    return Unsafe.getUnsafe();
                 }
-            } );
+                catch ( Exception e )
+                {
+                    Class<Unsafe> type = Unsafe.class;
+                    Field[] fields = type.getDeclaredFields();
+                    for ( Field field : fields )
+                    {
+                        if ( Modifier.isStatic( field.getModifiers() )
+                             && type.isAssignableFrom( field.getType() ) )
+                        {
+                            field.setAccessible( true );
+                            return type.cast( field.get( null ) );
+                        }
+                    }
+                    LinkageError error = new LinkageError( "No static field of type sun.misc.Unsafe" );
+                    error.addSuppressed( e );
+                    throw error;
+                }
+            };
+            return AccessController.doPrivileged( getUnsafe );
         }
         catch ( Exception e )
         {
@@ -191,36 +182,6 @@ public final class UnsafeUtil
         if ( unsafe == null )
         {
             throw new LinkageError( "Unsafe not available" );
-        }
-    }
-
-    private static MethodHandle getGetAndAddIntMethodHandle(
-            MethodHandles.Lookup lookup )
-    {
-        // int getAndAddInt(Object o, long offset, int delta)
-        MethodType type = MethodType.methodType( Integer.TYPE, Object.class, Long.TYPE, Integer.TYPE );
-        try
-        {
-            return lookup.findVirtual( Unsafe.class, "getAndAddInt", type );
-        }
-        catch ( Exception e )
-        {
-            return null;
-        }
-    }
-
-    private static MethodHandle getGetAndSetObjectMethodHandle(
-            MethodHandles.Lookup lookup )
-    {
-        // Object getAndSetObject(Object o, long offset, Object newValue)
-        MethodType type = MethodType.methodType( Object.class, Object.class, Long.TYPE, Object.class );
-        try
-        {
-            return lookup.findVirtual( Unsafe.class, "getAndSetObject", type );
-        }
-        catch ( Exception e )
-        {
-            return null;
         }
     }
 
@@ -262,35 +223,15 @@ public final class UnsafeUtil
      */
     public static int getAndAddInt( Object obj, long offset, int delta )
     {
-        if ( getAndAddInt != null )
-        {
-            return getAndAddInt_java8( obj, offset, delta );
-        }
-
-        return getAndAddInt_java7( obj, offset, delta );
+        return unsafe.getAndAddInt( obj, offset, delta );
     }
 
-    private static int getAndAddInt_java8( Object obj, long offset, int delta )
+    /**
+     * Orders loads before the fence, with loads and stores after the fence.
+     */
+    public static void loadFence()
     {
-        try
-        {
-            return (int) getAndAddInt.invokeExact( unsafe, obj, offset, delta );
-        }
-        catch ( Throwable throwable )
-        {
-            throw new LinkageError( "Unexpected 'getAndAddInt' intrinsic failure", throwable );
-        }
-    }
-
-    private static int getAndAddInt_java7( Object obj, long offset, int delta )
-    {
-        int x;
-        do
-        {
-            x = unsafe.getIntVolatile( obj, offset );
-        }
-        while ( !unsafe.compareAndSwapInt( obj, offset, x, x + delta ) );
-        return x;
+        unsafe.loadFence();
     }
 
     /**
@@ -320,35 +261,7 @@ public final class UnsafeUtil
      */
     public static Object getAndSetObject( Object obj, long offset, Object newValue )
     {
-        if ( getAndSetObject != null )
-        {
-            return getAndSetObject_java8( obj, offset, newValue );
-        }
-
-        return getAndSetObject_java7( obj, offset, newValue );
-    }
-
-    private static Object getAndSetObject_java8( Object obj, long offset, Object newValue )
-    {
-        try
-        {
-            return getAndSetObject.invokeExact( unsafe, obj, offset, newValue );
-        }
-        catch ( Throwable throwable )
-        {
-            throw new LinkageError( "Unexpected 'getAndSetObject' intrinsic failure", throwable );
-        }
-    }
-
-    private static Object getAndSetObject_java7( Object obj, long offset, Object newValue )
-    {
-        Object current;
-        do
-        {
-            current = unsafe.getObjectVolatile( obj, offset );
-        }
-        while ( !unsafe.compareAndSwapObject( obj, offset, current, newValue ) );
-        return current;
+        return unsafe.getAndSetObject( obj, offset, newValue );
     }
 
     /**

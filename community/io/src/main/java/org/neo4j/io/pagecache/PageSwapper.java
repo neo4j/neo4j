@@ -33,11 +33,11 @@ public interface PageSwapper
     /**
      * Read the page with the given filePageId, from the concrete file on the
      * file system, into the given page.
-     *
+     * <p>
      * Returns the number of bytes read in from the file. May be zero if the
      * requested page was beyond the end of the file. If less than the file
      * page size, then the rest of the page will contain zeros.
-     *
+     * <p>
      * Note: It is possible for the channel to be asynchronously closed while
      * this operation is taking place. For instance, if the current thread is
      * interrupted. If this happens, then the implementation must reopen the
@@ -47,15 +47,15 @@ public interface PageSwapper
 
     /**
      * Read pages from the file into the given pages, starting from the given startFilePageId.
-     *
+     * <p>
      * Returns the number of bytes read in from the file. May be zero if the
      * requested startFilePageId was beyond the end of the file. If the file does not have enough data
      * to fill up all the buffer space represented by the pages, then the remaining buffer space will be
      * filled with zero bytes.
-     *
+     * <p>
      * The contents of the pages should be considered to be garbage if the operation throws an exception,
      * since the constituent reads can be reordered, and no zeroing will take place.
-     *
+     * <p>
      * Note: It is possible for the channel to be asynchronously closed while
      * this operation is taking place. For instance, if the current thread is
      * interrupted. If this happens, then the implementation must reopen the
@@ -66,9 +66,9 @@ public interface PageSwapper
     /**
      * Write the contents of the given page, to the concrete file on the file
      * system, at the located indicated by the given filePageId.
-     *
+     * <p>
      * Returns the number of bytes written to the file.
-     *
+     * <p>
      * Note: It is possible for the channel to be asynchronously closed while
      * this operation is taking place. For instance, if the current thread is
      * interrupted. If this happens, then implementation must reopen the
@@ -79,14 +79,14 @@ public interface PageSwapper
     /**
      * Write the contents of the given pages, to the concrete file on the file system,
      * starting at the location of the given startFilePageId.
-     *
+     * <p>
      * If an exception is thrown, then some of the data may have been written, and some might not.
      * The writes may reorder and tear, so no guarantee can be made about what has been written and what has not, if
      * an exception is thrown. Therefor, the entire write operation should be retried, in the case of failure, or the
      * data should be rewritten through other means.
-     *
+     * <p>
      * Returns the number of bytes written to the file.
-     *
+     * <p>
      * Note: It is possible for the channel to be asynchronously closed while
      * this operation is taking place. For instance, if the current thread is
      * interrupted. If this happens, then implementation must reopen the
@@ -114,7 +114,7 @@ public interface PageSwapper
     /**
      * Forces all writes done by this PageSwapper to the underlying storage device, such that the writes are durable
      * when this call returns.
-     *
+     * <p>
      * This method has no effect if the {@link PageSwapperFactory#syncDevice()} method forces the writes for all
      * non-closed PageSwappers created through the given <code>PageSwapperFactory</code>.
      * The {@link PageCache#flushAndForce()} method will first call <code>force</code> on the PageSwappers for all
@@ -131,7 +131,7 @@ public interface PageSwapper
     /**
      * Truncate the file represented by this PageSwapper, so the size of the file is zero and
      * {@link #getLastPageId()} returns -1.
-     *
+     * <p>
      * Truncation may occur concurrently with writes, in which case both operations will appear to be atomic, such that
      * either the write happens before the truncation and is lost, or the file is truncated and the write then extends
      * the file with any zero padding and the written data.

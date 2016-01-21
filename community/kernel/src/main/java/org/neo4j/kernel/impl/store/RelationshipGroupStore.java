@@ -33,8 +33,8 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
 public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGroupRecord>
 {
@@ -72,7 +72,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public RelationshipGroupRecord getRecord( long id )
     {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_READ_LOCK ) )
         {
             if ( cursor.next() )
             {
@@ -97,7 +97,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
 
     public RelationshipGroupRecord forceGetRecord( long id, RelationshipGroupRecord record )
     {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_READ_LOCK ) )
         {
             if ( cursor.next() )
             {
@@ -177,7 +177,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public void updateRecord( RelationshipGroupRecord record )
     {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_SHARED_WRITE_LOCK ) )
         {
             if ( cursor.next() )
             {
@@ -232,7 +232,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public RelationshipGroupRecord forceGetRecord( long id )
     {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_READ_LOCK ) )
         {
             RelationshipGroupRecord record = new RelationshipGroupRecord( id, -1 );
             if ( cursor.next() )
@@ -253,7 +253,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public void forceUpdateRecord( RelationshipGroupRecord record )
     {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_EXCLUSIVE_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_SHARED_WRITE_LOCK ) )
         {
             if ( cursor.next() ) // should always be true
             {

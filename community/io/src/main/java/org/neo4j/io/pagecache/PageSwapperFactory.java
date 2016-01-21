@@ -26,16 +26,16 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
  * Creates PageSwappers for the given files.
- *
+ * <p>
  * A PageSwapper is responsible for swapping file pages in and out of memory.
- *
+ * <p>
  * The PageSwapperFactory presumably knows about what file system to use.
  */
 public interface PageSwapperFactory
 {
     /**
      * Configure the FileSystemAbstraction to use.
-     *
+     * <p>
      * This must be called before the first PageSwapper is created.
      */
     void setFileSystemAbstraction( FileSystemAbstraction fs );
@@ -60,19 +60,22 @@ public interface PageSwapperFactory
      * Get the unit of alignment that the swappers require of the memory buffers. For instance, if page alignment is
      * required for doing direct IO, then {@link org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil#pageSize()} can be
      * returned.
+     *
      * @return The required buffer alignment byte multiple.
      */
     long getRequiredBufferAlignment();
 
     /**
      * Create a PageSwapper for the given file.
+     *
      * @param file The file that the PageSwapper will move file pages in and
-     *             out of.
+     * out of.
      * @param filePageSize The size of the pages in the file. Presumably a
-     *                     multiple of some record size.
+     * multiple of some record size.
      * @param onEviction The PageSwapper will be told about evictions, and has
-     *                   the responsibility of informing the PagedFile via this callback.
-     * @param createIfNotExist When true, creates the given file if it does not exist, instead of throwing an exception.
+     * the responsibility of informing the PagedFile via this callback.
+     * @param createIfNotExist When true, creates the given file if it does not exist, instead of throwing an
+     * exception.
      * @return A working PageSwapper instance for the given file.
      * @throws IOException If the PageSwapper could not be created, for
      * instance if the underlying file could not be opened, or the given file does not exist and createIfNotExist is
@@ -87,7 +90,7 @@ public interface PageSwapperFactory
     /**
      * Forces all prior writes made through all non-closed PageSwappers that this factory has created, to all the
      * relevant devices, such that the writes are durable when this call returns.
-     *
+     * <p>
      * This method has no effect if the {@link PageSwapper#force()} method forces the writes for the individual file.
      * The {@link PageCache#flushAndForce()} method will first call <code>force</code> on the PageSwappers for all
      * mapped files, then call <code>syncDevice</code> on the PageSwapperFactory. This way, the writes are always made

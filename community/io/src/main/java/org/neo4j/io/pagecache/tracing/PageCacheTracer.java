@@ -53,7 +53,7 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
-        public PinEvent beginPin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+        public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
         {
             return PinEvent.NULL;
         }
@@ -159,7 +159,7 @@ public interface PageCacheTracer extends PageCacheCounters
     /**
      * A page is to be pinned.
      */
-    PinEvent beginPin( boolean exclusiveLock, long filePageId, PageSwapper swapper );
+    PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper );
 
     /**
      * A PagedFile wants to flush all its bound pages.
