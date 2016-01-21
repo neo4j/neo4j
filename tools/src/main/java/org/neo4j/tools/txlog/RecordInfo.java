@@ -29,15 +29,17 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
  *
  * @param <R> the type of the record
  */
-public class LogRecord<R extends Abstract64BitRecord>
+public class RecordInfo<R extends Abstract64BitRecord>
 {
     private final R record;
     private final long logVersion;
+    private final long txId;
 
-    public LogRecord( R record, long logVersion )
+    public RecordInfo( R record, long logVersion, long txId )
     {
         this.record = record;
         this.logVersion = logVersion;
+        this.txId = txId;
     }
 
     public R record()
@@ -45,9 +47,14 @@ public class LogRecord<R extends Abstract64BitRecord>
         return record;
     }
 
+    public long txId()
+    {
+        return txId;
+    }
+
     @Override
     public String toString()
     {
-        return record + " from log #" + logVersion;
+        return String.format( "%s (log:%d txId:%d)", record, logVersion, txId );
     }
 }

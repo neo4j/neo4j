@@ -21,7 +21,9 @@ package org.neo4j.tools.txlog;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -35,6 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.LogTestUtils;
 import org.neo4j.tools.txlog.checktypes.CheckType;
@@ -89,15 +92,30 @@ public class CheckTxLogs
         }
     }
 
+    class CommandAndLogVersion
+    {
+        StorageCommand command;
+        long logVersion;
+
+        CommandAndLogVersion( StorageCommand command, long logVersion )
+        {
+            this.command = command;
+            this.logVersion = logVersion;
+        }
+    }
+
     private <C extends Command, R extends Abstract64BitRecord> void scan(
             File[] logs, InconsistenciesHandler handler, CheckType<C,R> check ) throws IOException
     {
         System.out.println( "Checking logs for " + check.name() + " inconsistencies" );
         CommittedRecords<R> state = new CommittedRecords<>( check );
 
+        List<CommandAndLogVersion> txCommands = new ArrayList<>();
         for ( File log : logs )
         {
             long commandsRead = 0;
+            long logVersion = PhysicalLogFiles.getLogVersion( log );
+
             try ( LogEntryCursor logEntryCursor = LogTestUtils.openLog( fs, log ) )
             {
                 while ( logEntryCursor.next() )
@@ -108,10 +126,17 @@ public class CheckTxLogs
                         StorageCommand command = ((LogEntryCommand) entry).getXaCommand();
                         if ( check.commandClass().isInstance( command ) )
                         {
-                            long logVersion = PhysicalLogFiles.getLogVersion( log );
-                            C cmd = check.commandClass().cast( command );
-                            process( cmd, check, state, logVersion, handler );
+                            txCommands.add( new CommandAndLogVersion( command, logVersion ) );
                         }
+                    }
+                    else if ( entry instanceof LogEntryCommit )
+                    {
+                        long txId = ((LogEntryCommit) entry).getTxId();
+                        for ( CommandAndLogVersion txCommand : txCommands )
+                        {
+                            checkAndHandleInconsistencies( txCommand, check, state, txId, handler );
+                        }
+                        txCommands.clear();
                     }
                     commandsRead++;
                 }
@@ -119,23 +144,36 @@ public class CheckTxLogs
             System.out.println( "Processed " + log.getCanonicalPath() + " with " + commandsRead + " commands" );
             System.out.println( state );
         }
+
+        if ( !txCommands.isEmpty() )
+        {
+            System.out.println( "Found " + txCommands.size() + " uncommitted commands at the end." );
+            for ( CommandAndLogVersion txCommand : txCommands )
+            {
+                checkAndHandleInconsistencies( txCommand, check, state, -1, handler );
+            }
+            txCommands.clear();
+        }
     }
 
-    private <C extends Command, R extends Abstract64BitRecord> void process( C command, CheckType<C,R> check,
-            CommittedRecords<R> state, long logVersion, InconsistenciesHandler handler )
+    private <C extends Command, R extends Abstract64BitRecord> void checkAndHandleInconsistencies( CommandAndLogVersion txCommand, CheckType<C,R> check,
+            CommittedRecords<R> state, long txId, InconsistenciesHandler handler )
     {
+        C command = check.commandClass().cast( txCommand.command );
+
         R before = check.before( command );
         R after = check.after( command );
 
-        if ( !state.isValid( before ) )
-        {
-            LogRecord<R> seen = state.get( before.getId() );
-            LogRecord<R> current = new LogRecord<>( before, logVersion );
+        assert before.getId() == after.getId();
 
-            handler.handle( seen, current );
+        RecordInfo<R> lastSeen = state.get( after.getId() );
+
+        if ( lastSeen != null && !check.equal( before, lastSeen.record() ) )
+        {
+            handler.reportInconsistentCommand( lastSeen, new RecordInfo<>( before, txCommand.logVersion, txId ) );
         }
 
-        state.put( after, logVersion );
+        state.put( after, txCommand.logVersion, txId );
     }
 
     private static CheckType[] parseChecks( Args arguments )
