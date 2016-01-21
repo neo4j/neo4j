@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, PipeInfo, PlanFingerprint, ReadsAllNodes}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, Foreach => ForeachPlan, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantHandleQueryException, logical}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
@@ -444,7 +444,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case ValueHashJoin(_, _, ast.Equals(lhsExpression, rhsExpression)) =>
       ValueHashJoinPipe(buildExpression(lhsExpression), buildExpression(rhsExpression), lhs, rhs)()
 
-    case plans.Foreach(_, _, variable, expression) =>
+    case ForeachPlan(_, _, variable, expression) =>
       ForeachPipe(lhs, rhs, variable, toCommandExpression(expression))()
 
     case x =>

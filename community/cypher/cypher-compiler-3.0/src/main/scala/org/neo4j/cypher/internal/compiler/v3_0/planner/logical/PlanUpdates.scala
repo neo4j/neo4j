@@ -50,14 +50,30 @@ case object PlanUpdates
       solvedWithEstimate
     }
 
+    def planAllUpdatesRecursively(query: PlannerQuery, plan: LogicalPlan): LogicalPlan = {
+      query.allPlannerQueries.foldLeft(plan) {
+        // We need to plan the read-part of merge separately
+        case (acc, pq@MergePlannerQuery(qg, _, _)) =>
+          val matchGraph = qg.mutatingPatterns.collectFirst {
+            case MergeNodePattern(_, matchQG, _, _) => matchQG
+            case MergeRelationshipPattern(_, _, matchQG, _, _) => matchQG
+          }
+          assert(matchGraph.isDefined) // NOTE: We only allow one merge pattern per planner query
+          val readPlan = planMergeReadPart(plan, matchGraph.get)
+          this.apply(pq, readPlan)
+
+        case (acc, plannerQuery) => this.apply(plannerQuery, acc)
+      }
+    }
+
     pattern match {
       //FOREACH
-      case foreach: ForeachPattern => {
-        val innerLeaf = context.logicalPlanProducer.planArgumentRow(Set.empty, Set.empty, source.availableSymbols + foreach.variable)
-        val innerUpdatePlan = this.apply(foreach.innerUpdates, innerLeaf)
-        val foreachPlan = context.logicalPlanProducer.planForeach(source, innerUpdatePlan, foreach)
-        foreachPlan
-      }
+      case foreach: ForeachPattern =>
+        val innerLeaf = context.logicalPlanProducer
+          .planArgumentRow(Set.empty, Set.empty, source.availableSymbols + foreach.variable)
+        val innerUpdatePlan = planAllUpdatesRecursively(foreach.innerUpdates, innerLeaf)
+        context.logicalPlanProducer.planForeach(source, innerUpdatePlan, foreach)
+
       //CREATE ()
       case p: CreateNodePattern => context.logicalPlanProducer.planCreateNode(source, p)
       //CREATE (a)-[:R]->(b)
