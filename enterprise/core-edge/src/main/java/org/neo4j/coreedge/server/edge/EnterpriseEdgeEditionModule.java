@@ -159,7 +159,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         TxPollingClient txPollingClient = life.add(
                 new TxPollingClient( platformModule.jobScheduler, config.get( HaSettings.pull_interval ),
                         platformModule.dependencies.provideDependency( TransactionIdStore.class ), edgeToCoreClient,
-                        applyPulledTransactions, discoveryService ) );
+                        applyPulledTransactions, new ConnectToRandomCoreServer( discoveryService ) ) );
 
         StoreFetcher storeFetcher = new StoreFetcher( platformModule.logging.getInternalLogProvider(),
                 new DefaultFileSystemAbstraction(), platformModule.pageCache,

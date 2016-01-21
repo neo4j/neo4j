@@ -30,8 +30,9 @@ import org.neo4j.coreedge.server.CoreMember;
 public class ConnectToRandomCoreServer implements EdgeToCoreConnectionStrategy
 {
     private final EdgeDiscoveryService discoveryService;
+    private final Random random = new Random();
 
-    public ConnectToRandomCoreServer( EdgeDiscoveryService discoveryService)
+    public ConnectToRandomCoreServer( EdgeDiscoveryService discoveryService )
     {
         this.discoveryService = discoveryService;
     }
@@ -40,17 +41,18 @@ public class ConnectToRandomCoreServer implements EdgeToCoreConnectionStrategy
     @Override
     public AdvertisedSocketAddress coreServer()
     {
-        final Random random = new Random();
-
         final ClusterTopology clusterTopology = discoveryService.currentTopology();
-        int randomSize = random.nextInt( clusterTopology.getMembers().size() );
+        int skippedServers = random.nextInt( clusterTopology.getMembers().size() );
 
         final Iterator<CoreMember> iterator = clusterTopology.getMembers().iterator();
-        AdvertisedSocketAddress result = null;
-        for ( int i = 0; i <= randomSize; i++ )
+
+        CoreMember member;
+        do
         {
-            result = iterator.next().getCoreAddress();
+            member = iterator.next();
         }
-        return result;
+        while ( skippedServers --> 0 );
+
+        return member.getCoreAddress();
     }
 }
