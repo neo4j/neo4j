@@ -60,7 +60,7 @@ public class GraphDatabaseServiceTest
         catch ( Exception e )
         {
             // Then
-            assertThat( e.getClass().getName(), CoreMatchers.equalTo( TransactionFailureException.class.getName() ) );
+            assertThat( e.getClass().getName(), CoreMatchers.equalTo( DatabaseShutdownException.class.getName() ) );
         }
     }
 
@@ -246,7 +246,7 @@ public class GraphDatabaseServiceTest
             }
         }
 
-        assertThat( result.get().getClass(), CoreMatchers.<Object>equalTo( TransactionFailureException.class ) );
+        assertThat( result.get().getClass(), CoreMatchers.<Object>equalTo( DatabaseShutdownException.class ) );
     }
 
     @Test

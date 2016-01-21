@@ -28,7 +28,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.shell.Output;
@@ -52,7 +53,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
 {
     private final GraphDatabaseAPI graphDb;
     private boolean graphDbCreatedHere;
-    protected final Map<Serializable, TopLevelTransaction> clients = new ConcurrentHashMap<>();
+    protected final Map<Serializable, KernelTransaction> clients = new ConcurrentHashMap<>();
 
     /**
      * @param path the path to the directory where the database should be created
@@ -111,10 +112,10 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     @Override
     public void terminate( Serializable clientId )
     {
-        TopLevelTransaction tx = clients.get( clientId );
+        KernelTransaction tx = clients.get( clientId );
         if ( tx != null )
         {
-            tx.terminate();
+            tx.markForTermination();
         }
     }
 
@@ -123,7 +124,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         if ( !clients.containsKey( clientId ) )
         {
             ThreadToStatementContextBridge threadToStatementContextBridge = getThreadToStatementContextBridge();
-            TopLevelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( false );
+            KernelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( false );
             clients.put( clientId, tx );
         }
     }
@@ -143,7 +144,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         try
         {
             ThreadToStatementContextBridge threadToStatementContextBridge = getThreadToStatementContextBridge();
-            TopLevelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( false );
+            KernelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( false );
             threadToStatementContextBridge.unbindTransactionFromCurrentThread();
             if ( tx == null )
             {
@@ -162,7 +163,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
 
     public void bindTransaction( Serializable clientId ) throws ShellException
     {
-        TopLevelTransaction tx = clients.get( clientId );
+        KernelTransaction tx = clients.get( clientId );
         if ( tx != null )
         {
             try

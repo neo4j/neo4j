@@ -30,8 +30,11 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils
-import org.neo4j.kernel.{NeoStoreDataSource, TopLevelTransaction}
+import org.neo4j.kernel.{NeoStoreDataSource}
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.kernel.NeoStoreDataSource
+import org.neo4j.kernel.impl.coreapi.TopLevelTransaction
+import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable

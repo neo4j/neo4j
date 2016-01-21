@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import java.util.function.Supplier;
+
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -26,14 +29,13 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 public class RelationshipLegacyIndexProxy extends LegacyIndexProxy<Relationship> implements RelationshipIndex
 {
-    public RelationshipLegacyIndexProxy( String name, LegacyIndexProxy.Lookup lookup,
-            ThreadToStatementContextBridge statementContextBridge )
+    public RelationshipLegacyIndexProxy( String name, GraphDatabaseService gds,
+                                         Supplier<Statement> statementContextBridge )
     {
-        super( name, Type.RELATIONSHIP, lookup, statementContextBridge );
+        super( name, Type.RELATIONSHIP, gds, statementContextBridge );
     }
 
     @Override

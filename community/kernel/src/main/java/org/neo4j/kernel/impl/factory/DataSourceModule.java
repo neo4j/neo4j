@@ -28,9 +28,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.RelationshipAutoIndexer;
-import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -54,13 +51,6 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
-import org.neo4j.kernel.impl.coreapi.IndexProvider;
-import org.neo4j.kernel.impl.coreapi.IndexProviderImpl;
-import org.neo4j.kernel.impl.coreapi.LegacyIndexProxy;
-import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
-import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
-import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -88,10 +78,6 @@ public class DataSourceModule
     public final NodeManager nodeManager;
 
     public final NeoStoreDataSource neoStoreDataSource;
-
-    public final IndexManager indexManager;
-
-    public final Schema schema;
 
     public final Supplier<KernelAPI> kernelAPI;
 
@@ -134,24 +120,6 @@ public class DataSourceModule
         diagnosticsManager.prependProvider( config );
 
         life.add( platformModule.kernelExtensions );
-
-        schema = new SchemaImpl( threadToTransactionBridge );
-
-        final LegacyIndexProxy.Lookup indexLookup = new LegacyIndexProxy.Lookup()
-        {
-            @Override
-            public GraphDatabaseService getGraphDatabaseService()
-            {
-                return graphDatabaseFacade;
-            }
-        };
-
-        final IndexProvider indexProvider = new IndexProviderImpl( indexLookup, threadToTransactionBridge );
-        NodeAutoIndexerImpl nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexProvider, nodeManager ) );
-        RelationshipAutoIndexer relAutoIndexer = life.add( new RelationshipAutoIndexerImpl( config, indexProvider,
-                nodeManager ) );
-        indexManager = new IndexManagerImpl(
-                threadToTransactionBridge, indexProvider, nodeAutoIndexer, relAutoIndexer );
 
         // Factories for things that needs to be created later
         PageCache pageCache = platformModule.pageCache;
@@ -336,18 +304,6 @@ public class DataSourceModule
             public void failTransaction()
             {
                 threadToStatementContextBridge.getKernelTransactionBoundToThisThread( true ).failure();
-            }
-
-            @Override
-            public Relationship lazyRelationshipProxy( long id )
-            {
-                return nodeManager.newRelationshipProxyById( id );
-            }
-
-            @Override
-            public Relationship newRelationshipProxy( long id )
-            {
-                return nodeManager.newRelationshipProxy( id );
             }
 
             @Override

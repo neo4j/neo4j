@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.PlaceboTransaction;
+import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.test.TestGraphDatabaseFactory;
 

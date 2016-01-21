@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
@@ -251,7 +252,9 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
     }
     optGraphAs[GraphDatabaseFacade]
       .andThen(g => {
-      Option(g.platformModule.config.get(setting))
+        // TODO: Config should be passed in as a dependency to Cypher, not pulled out of casted interfaces
+        val config: Config = g.getDependencyResolver.resolveDependency(classOf[Config])
+        Option(config.get(setting))
     })
       .andThen(_.getOrElse(defaultValue))
       .applyOrElse(graph, (_: GraphDatabaseService) => defaultValue)

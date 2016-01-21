@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -35,7 +34,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class ThreadToStatementContextBridge extends LifecycleAdapter implements Supplier<Statement>
 {
-    private final ThreadLocal<TopLevelTransaction> threadToTransactionMap = new ThreadLocal<>();
+    private final ThreadLocal<KernelTransaction> threadToTransactionMap = new ThreadLocal<>();
     private boolean isShutdown;
 
     public boolean hasTransaction()
@@ -44,7 +43,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         return threadToTransactionMap.get() != null;
     }
 
-    public void bindTransactionToCurrentThread( TopLevelTransaction transaction )
+    public void bindTransactionToCurrentThread( KernelTransaction transaction )
     {
         if ( threadToTransactionMap.get() != null )
         {
@@ -65,13 +64,13 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         return getKernelTransactionBoundToThisThread( true ).acquireStatement();
     }
 
-    private void assertInUnterminatedTransaction( TopLevelTransaction transaction )
+    private void assertInUnterminatedTransaction( KernelTransaction transaction )
     {
         if ( transaction == null )
         {
             throw new NotInTransactionException();
         }
-        if ( transaction.getTransaction().shouldBeTerminated() )
+        if ( transaction.shouldBeTerminated() )
         {
             throw new TransactionTerminatedException();
         }
@@ -97,9 +96,9 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         }
     }
 
-    public TopLevelTransaction getTopLevelTransactionBoundToThisThread( boolean strict )
+    public KernelTransaction getTopLevelTransactionBoundToThisThread( boolean strict )
     {
-        TopLevelTransaction transaction = threadToTransactionMap.get();
+        KernelTransaction transaction = threadToTransactionMap.get();
         if ( strict )
         {
             assertInUnterminatedTransaction( transaction );
@@ -109,7 +108,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
 
     public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict )
     {
-        TopLevelTransaction tx = getTopLevelTransactionBoundToThisThread( strict );
-        return tx != null ? tx.getTransaction() : null;
+        checkIfShutdown();
+        return getTopLevelTransactionBoundToThisThread( strict );
     }
 }

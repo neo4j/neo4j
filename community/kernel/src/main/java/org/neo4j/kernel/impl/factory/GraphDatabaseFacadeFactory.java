@@ -125,12 +125,12 @@ public abstract class GraphDatabaseFacadeFactory
         PlatformModule platform = createPlatform( storeDir, params, dependencies, graphDatabaseFacade );
         EditionModule edition = createEdition( platform );
         final DataSourceModule dataSource = createDataSource( dependencies, platform, edition );
+        Logger msgLog = platform.logging.getInternalLog( getClass() ).infoLogger();
 
         // Start it
-        graphDatabaseFacade.init( platform, edition, dataSource );
+        graphDatabaseFacade.init( platform.config, new ClassicCoreSPI( platform, dataSource, msgLog, edition ) );
 
         Throwable error = null;
-        Logger msgLog = platform.logging.getInternalLog( getClass() ).infoLogger();
         try
         {
             // Done after create to avoid a redundant

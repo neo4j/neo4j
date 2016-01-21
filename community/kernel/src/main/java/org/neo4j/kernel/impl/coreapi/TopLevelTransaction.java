@@ -17,7 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.coreapi;
+
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Lock;
@@ -27,30 +29,23 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 
-/**
- * @deprecated This will be moved to internal packages in the next major release.
- */
-@Deprecated
 public class TopLevelTransaction implements Transaction
 {
     private final static PropertyContainerLocker locker = new PropertyContainerLocker();
-    private final ThreadToStatementContextBridge stmtProvider;
     private boolean successCalled;
     private boolean failureCalled;
+    private final Supplier<Statement> stmt;
     private final KernelTransaction transaction;
 
-    public TopLevelTransaction( KernelTransaction transaction,
-                                final ThreadToStatementContextBridge stmtProvider )
+    public TopLevelTransaction( KernelTransaction transaction, Supplier<Statement> stmt )
     {
+        this.stmt = stmt;
         this.transaction = transaction;
-        this.stmtProvider = stmtProvider;
-        this.transaction.registerCloseListener( success -> stmtProvider.unbindTransactionFromCurrentThread() );
     }
 
     @Override
@@ -117,13 +112,13 @@ public class TopLevelTransaction implements Transaction
     @Override
     public Lock acquireWriteLock( PropertyContainer entity )
     {
-        return locker.exclusiveLock( stmtProvider, entity );
+        return locker.exclusiveLock( stmt, entity );
     }
 
     @Override
     public Lock acquireReadLock( PropertyContainer entity )
     {
-        return locker.sharedLock(stmtProvider, entity);
+        return locker.sharedLock(stmt, entity);
     }
 
     @Deprecated

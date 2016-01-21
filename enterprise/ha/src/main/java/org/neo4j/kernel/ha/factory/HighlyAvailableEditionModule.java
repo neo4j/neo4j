@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.factory;
 
+import org.jboss.netty.logging.InternalLoggerFactory;
+
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
@@ -26,8 +28,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -139,7 +139,6 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -309,13 +308,14 @@ public class HighlyAvailableEditionModule
         ObservedClusterMembers observedMembers = new ObservedClusterMembers( logging.getInternalLogProvider(),
                 clusterClient, clusterClient, clusterEvents, config.get( ClusterSettings.server_id ) );
 
-        HighAvailabilityMemberStateMachine stateMachine = new HighAvailabilityMemberStateMachine( memberContext,
+        memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext,
                 platformModule.availabilityGuard, observedMembers, clusterEvents, clusterClient,
                 logging.getInternalLogProvider() );
 
-        members = dependencies.satisfyDependency( new ClusterMembers( observedMembers, stateMachine ) );
+        members = dependencies.satisfyDependency( new ClusterMembers( observedMembers, memberStateMachine ) );
 
-        memberStateMachine = paxosLife.add( stateMachine );
+        dependencies.satisfyDependency( memberStateMachine );
+        paxosLife.add( memberStateMachine );
         electionProviderRef.set( memberStateMachine );
 
         HighAvailabilityLogger highAvailabilityLogger = new HighAvailabilityLogger( logging.getUserLogProvider(),

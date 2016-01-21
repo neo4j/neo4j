@@ -33,7 +33,9 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -226,11 +228,11 @@ public class ExecutionResultTest
         }
     }
 
-    private org.neo4j.kernel.TopLevelTransaction activeTransaction()
+    private TopLevelTransaction activeTransaction()
     {
         ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency(
                 ThreadToStatementContextBridge.class );
-        return bridge.getTopLevelTransactionBoundToThisThread( false );
+        KernelTransaction kernelTransaction = bridge.getTopLevelTransactionBoundToThisThread( false );
+        return kernelTransaction == null ? null : new TopLevelTransaction( kernelTransaction, null );
     }
-
 }

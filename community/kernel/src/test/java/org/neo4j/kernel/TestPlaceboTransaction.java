@@ -28,6 +28,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -37,23 +39,22 @@ import static org.mockito.Mockito.when;
 
 public class TestPlaceboTransaction
 {
-    private TopLevelTransaction mockTopLevelTx;
     private Transaction placeboTx;
     private Node resource;
+    private KernelTransaction kernelTransaction;
+    private ReadOperations readOps;
 
     @Before
     public void before() throws Exception
     {
         ThreadToStatementContextBridge bridge = mock (ThreadToStatementContextBridge.class );
         when( bridge.get() ).thenReturn( mock( Statement.class ) );
-        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        kernelTransaction = spy( KernelTransaction.class );
         Statement statement = mock( Statement.class );
-        ReadOperations readOperations = mock( ReadOperations.class );
-        when( statement.readOperations() ).thenReturn( readOperations );
+        readOps = mock( ReadOperations.class );
+        when( statement.readOperations() ).thenReturn( readOps );
         when( bridge.get() ).thenReturn( statement );
-        mockTopLevelTx = spy( new TopLevelTransaction( kernelTransaction, bridge ) );
-
-        placeboTx = new PlaceboTransaction( mockTopLevelTx );
+        placeboTx = new PlaceboTransaction( () -> kernelTransaction, bridge );
         resource = mock( Node.class );
         when( resource.getId() ).thenReturn( 1l );
     }
@@ -65,7 +66,7 @@ public class TestPlaceboTransaction
         placeboTx.close();
 
         // Then
-        verify( mockTopLevelTx ).failure();
+        verify( kernelTransaction ).failure();
     }
 
     @Test
@@ -76,7 +77,7 @@ public class TestPlaceboTransaction
         placeboTx.close();
 
         // Then
-        verify( mockTopLevelTx ).failure();
+        verify( kernelTransaction, times(2) ).failure(); // We accept two calls to failure, since KernelTX#failure is idempotent
     }
 
     @Test
@@ -87,7 +88,7 @@ public class TestPlaceboTransaction
         placeboTx.close();
 
         // Then
-        verify( mockTopLevelTx, times( 0 ) ).failure();
+        verify( kernelTransaction, times( 0 ) ).failure();
     }
 
     @Test
@@ -99,8 +100,8 @@ public class TestPlaceboTransaction
         placeboTx.close();
 
         // Then
-        verify( mockTopLevelTx ).failure();
-        verify( mockTopLevelTx, times( 0 ) ).success();
+        verify( kernelTransaction ).failure();
+        verify( kernelTransaction, times( 0 ) ).success();
     }
 
     @Test
@@ -110,7 +111,7 @@ public class TestPlaceboTransaction
         placeboTx.acquireReadLock( resource );
 
         // then
-        verify( mockTopLevelTx ).acquireReadLock( resource );
+        verify( readOps ).acquireShared( ResourceTypes.NODE, resource.getId() );
     }
 
     @Test
@@ -120,6 +121,6 @@ public class TestPlaceboTransaction
         placeboTx.acquireWriteLock( resource );
 
         // then
-        verify( mockTopLevelTx ).acquireWriteLock( resource );
+        verify( readOps ).acquireExclusive( ResourceTypes.NODE, resource.getId() );
     }
 }

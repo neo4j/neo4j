@@ -42,6 +42,7 @@ import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.Iterables.asResourceIterable
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.api.OperationsFacade
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
@@ -190,6 +191,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val dependencies = mock[DependencyResolver]
     val bridge = mock[ThreadToStatementContextBridge]
     val monitors = new org.neo4j.kernel.monitoring.Monitors()
+    val config = new Config()
 
     val fakeDataStatement = mock[OperationsFacade]
     val fakeReadStatement = mock[ReadOperations]
@@ -208,6 +210,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)
     when(dependencies.resolveDependency(classOf[TransactionIdStore])).thenReturn(idStore)
     when(dependencies.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])).thenReturn(monitors)
+    when(dependencies.resolveDependency(classOf[Config])).thenReturn(config)
     when(fakeGraph.beginTx()).thenReturn(tx)
     val n0 = mock[Node]
     val n1 = mock[Node]

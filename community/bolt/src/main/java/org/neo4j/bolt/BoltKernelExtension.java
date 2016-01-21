@@ -19,6 +19,11 @@
  */
 package org.neo4j.bolt;
 
+import io.netty.channel.Channel;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import org.bouncycastle.operator.OperatorCreationException;
+
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -26,11 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-
-import io.netty.channel.Channel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import org.bouncycastle.operator.OperatorCreationException;
 
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
@@ -90,8 +90,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         @Description( "Set the encryption level for Neo4j Bolt protocol ports" )
         public static final Setting<EncryptionLevel> tls_level =
-                setting( "tls.level", options( EncryptionLevel.class ),
-                        OPTIONAL.name() );
+                setting( "tls.level", options( EncryptionLevel.class ), OPTIONAL.name() );
 
         @Description( "Host and port for the Neo4j Bolt Protocol" )
         public static final Setting<HostnamePort> socket_address =

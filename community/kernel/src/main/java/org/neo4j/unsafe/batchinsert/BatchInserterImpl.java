@@ -1223,7 +1223,7 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
-        public void assertInUnterminatedTransaction()
+        public void assertInOpenTransaction()
         {
             // BatchInserterImpl always is expected to be running in one big single "transaction"
         }

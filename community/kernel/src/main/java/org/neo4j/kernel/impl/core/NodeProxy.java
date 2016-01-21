@@ -78,10 +78,6 @@ public class NodeProxy
 
         void failTransaction();
 
-        Relationship lazyRelationshipProxy( long id );
-
-        Relationship newRelationshipProxy( long id );
-
         Relationship newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId );
     }
 

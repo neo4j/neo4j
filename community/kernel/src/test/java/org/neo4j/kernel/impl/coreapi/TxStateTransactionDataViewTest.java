@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -45,13 +43,10 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
@@ -302,14 +297,6 @@ public class TxStateTransactionDataViewTest
     {
         NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
         final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
-        when( nodeActions.lazyRelationshipProxy( anyLong() ) ).thenAnswer( new Answer<RelationshipProxy>()
-        {
-            @Override
-            public RelationshipProxy answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new RelationshipProxy( relActions, (Long) invocation.getArguments()[0] );
-            }
-        } );
         return new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops );
     }
 }

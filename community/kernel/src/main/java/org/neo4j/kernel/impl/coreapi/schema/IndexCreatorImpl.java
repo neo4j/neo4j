@@ -78,6 +78,6 @@ public class IndexCreatorImpl implements IndexCreator
 
     protected void assertInUnterminatedTransaction()
     {
-        actions.assertInUnterminatedTransaction();
+        actions.assertInOpenTransaction();
     }
 }
