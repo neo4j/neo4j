@@ -53,6 +53,27 @@ public class OnDiskIdAllocationStateTest
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     @Test
+    public void shouldRoundtripIdAllocationState() throws Exception
+    {
+        // given
+        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        fsa.mkdir( testDir.directory() );
+
+        OnDiskIdAllocationState store = new OnDiskIdAllocationState( fsa, testDir.directory(), 1,
+                mock( Supplier.class ) );
+
+        store.firstUnallocated( someType, 1024 );
+        store.logIndex( 1 );
+
+        // when
+        OnDiskIdAllocationState restoredOne = new OnDiskIdAllocationState( fsa, testDir
+                .directory(), 1, mock( Supplier.class ) );
+
+        // then
+        assertEquals( 1024, restoredOne.firstUnallocated( someType ) );
+    }
+
+    @Test
     public void shouldAppendEntriesToStoreFile() throws Exception
     {
         // given
@@ -72,29 +93,7 @@ public class OnDiskIdAllocationStateTest
         }
 
         // then
-        assertEquals( numberOfAllocationsToAppend * NUMBER_OF_BYTES_PER_WRITE,
-                fsa.getFileSize( stateFileA() ) );
-    }
-
-    @Test
-    public void shouldRestoreFromExistingState() throws Exception
-    {
-        // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-        fsa.mkdir( testDir.directory() );
-
-        OnDiskIdAllocationState store = new OnDiskIdAllocationState( fsa, testDir.directory(), 1,
-                mock( Supplier.class ) );
-
-        store.firstUnallocated( someType, 1024 );
-        store.logIndex( 1 );
-
-        // when
-        OnDiskIdAllocationState restoredOne = new OnDiskIdAllocationState( fsa, testDir
-                .directory(), 1, mock( Supplier.class ) );
-
-        // then
-        assertEquals( 1024, restoredOne.firstUnallocated( someType ) );
+        assertEquals( numberOfAllocationsToAppend * NUMBER_OF_BYTES_PER_WRITE, fsa.getFileSize( stateFileA() ) );
     }
 
     @Test

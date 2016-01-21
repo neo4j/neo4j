@@ -27,13 +27,13 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.StatePersister;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
+import org.neo4j.coreedge.raft.state.membership.InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class OnDiskRaftMembershipState<MEMBER> extends LifecycleAdapter implements RaftMembershipState<MEMBER>
 {
-    public static final int MAX_SIZE_OF_ADDRESS_STATE_ON_DISK = 2_000_000;
     private static final String FILENAME = "membership.state.";
     public static final String DIRECTORY_NAME = "membership-state";
 
@@ -43,17 +43,17 @@ public class OnDiskRaftMembershipState<MEMBER> extends LifecycleAdapter implemen
     private InMemoryRaftMembershipState<MEMBER> inMemoryRaftMembershipState;
 
     public OnDiskRaftMembershipState( FileSystemAbstraction fileSystemAbstraction,
-                                      File storeDir,
+                                      File stateDir,
                                       int numberOfEntriesBeforeRotation,
                                       Supplier<DatabaseHealth> databaseHealthSupplier,
                                       ChannelMarshal<MEMBER> channelMarshal ) throws IOException
     {
 
-        final InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal<MEMBER> marshal =
-                new InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal<>( channelMarshal );
+        InMemoryRaftMembershipStateChannelMarshal<MEMBER> marshal =
+                new InMemoryRaftMembershipStateChannelMarshal<>( channelMarshal );
 
-        File fileA = new File( storeDir, FILENAME + "a" );
-        File fileB = new File( storeDir, FILENAME + "b" );
+        File fileA = new File( stateDir, FILENAME + "a" );
+        File fileB = new File( stateDir, FILENAME + "b" );
 
         RaftMembershipStateRecoveryManager<MEMBER> recoveryManager = new RaftMembershipStateRecoveryManager<>(
                 fileSystemAbstraction, marshal );
@@ -89,7 +89,11 @@ public class OnDiskRaftMembershipState<MEMBER> extends LifecycleAdapter implemen
     @Override
     public void logIndex( long index )
     {
+        InMemoryRaftMembershipState<MEMBER> tempState = new InMemoryRaftMembershipState<>( inMemoryRaftMembershipState );
+        tempState.logIndex( index );
+
         inMemoryRaftMembershipState.logIndex( index );
+
         try
         {
             statePersister.persistStoreData( inMemoryRaftMembershipState );

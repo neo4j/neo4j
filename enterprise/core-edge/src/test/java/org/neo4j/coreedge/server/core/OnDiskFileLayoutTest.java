@@ -27,10 +27,12 @@ import java.util.HashMap;
 
 import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
+import org.neo4j.coreedge.raft.replication.session.OnDiskGlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.state.id_allocation.OnDiskIdAllocationState;
 import org.neo4j.coreedge.raft.state.membership.OnDiskRaftMembershipState;
 import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
 import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
+import org.neo4j.coreedge.server.core.locks.OnDiskReplicatedLockTokenState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -65,7 +67,9 @@ public class OnDiskFileLayoutTest
         fs.fileExists( new File( baseClusterStateFile, OnDiskTermState.DIRECTORY_NAME ) );
         fs.fileExists( new File( baseClusterStateFile, OnDiskRaftMembershipState.DIRECTORY_NAME ) );
         fs.fileExists( new File( baseClusterStateFile, NaiveDurableRaftLog.DIRECTORY_NAME ) );
+        fs.fileExists( new File( baseClusterStateFile, OnDiskGlobalSessionTrackerState.DIRECTORY_NAME ) );
+        fs.fileExists( new File( baseClusterStateFile, OnDiskReplicatedLockTokenState.DIRECTORY_NAME ) );
 
-        assertEquals(5, fs.listFiles( baseClusterStateFile ).length);
+        assertEquals( 7, fs.listFiles( baseClusterStateFile ).length );
     }
 }

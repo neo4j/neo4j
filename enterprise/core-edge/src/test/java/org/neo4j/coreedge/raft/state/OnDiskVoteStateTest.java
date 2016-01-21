@@ -32,6 +32,8 @@ import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.CoreMember.CoreMemberMarshal;
+import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -46,10 +48,34 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.coreedge.server.RaftTestMember.RaftTestMemberMarshal;
+
 public class OnDiskVoteStateTest
 {
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
+    @Test
+    public void shouldRoundtripVoteState() throws Exception
+    {
+        // given
+        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        fsa.mkdir( testDir.directory() );
+
+        OnDiskVoteState<RaftTestMember> oldOnDiskVoteState =
+                new OnDiskVoteState<>( fsa, testDir.directory(), 100, mock( Supplier.class ),
+                        new RaftTestMemberMarshal() );
+
+        oldOnDiskVoteState.votedFor( RaftTestMember.member(1), 1 );
+
+        // when
+        OnDiskVoteState<RaftTestMember> newOnDiskVoteState = new OnDiskVoteState<>( fsa, testDir.directory(), 100,
+                mock( Supplier.class ), new RaftTestMemberMarshal() );
+
+        // then
+        assertEquals( oldOnDiskVoteState.term(), newOnDiskVoteState.term() );
+        assertEquals( oldOnDiskVoteState.votedFor(), newOnDiskVoteState.votedFor() );
+    }
 
     @Test
     public void shouldCallWriteAndFlushOnVoteUpdate() throws Exception

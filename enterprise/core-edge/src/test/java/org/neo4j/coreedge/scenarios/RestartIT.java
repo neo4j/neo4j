@@ -66,7 +66,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0);
+        cluster = Cluster.start( dbDir, 3, 0 );
 
         // when
         cluster.removeCoreServerWithServerId( 0 );
@@ -81,7 +81,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0);
+        cluster = Cluster.start( dbDir, 3, 0 );
 
         // when
         cluster.removeCoreServerWithServerId( 1 );
@@ -96,7 +96,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0);
+        cluster = Cluster.start( dbDir, 3, 0 );
 
         // when
         final GraphDatabaseService coreDB = cluster.getCoreServerById( 0 );
@@ -104,19 +104,14 @@ public class RestartIT
         ExecutorService executor = Executors.newCachedThreadPool();
 
         final AtomicBoolean done = new AtomicBoolean( false );
-        executor.execute( new Runnable()
-        {
-            @Override
-            public void run()
+        executor.execute( () -> {
+            while ( !done.get() )
             {
-                while ( !done.get() )
+                try ( Transaction tx = coreDB.beginTx() )
                 {
-                    try ( Transaction tx = coreDB.beginTx() )
-                    {
-                        Node node = coreDB.createNode( label( "boo" ) );
-                        node.setProperty( "foobar", "baz_bat" );
-                        tx.success();
-                    }
+                    Node node = coreDB.createNode( label( "boo" ) );
+                    node.setProperty( "foobar", "baz_bat" );
+                    tx.success();
                 }
             }
         } );
@@ -137,7 +132,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 2, 1);
+        cluster = Cluster.start( dbDir, 2, 1 );
 
         // when
         final GraphDatabaseService coreDB = cluster.findLeader( 5000 );

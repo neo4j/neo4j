@@ -31,17 +31,19 @@ import org.neo4j.storageengine.api.lock.ResourceType;
  * Each member of the cluster uses its own {@link LeaderOnlyLockManager} which wraps a local {@link Locks} manager.
  * The validity of local lock managers is synchronized by using a token which gets requested by each server as necessary
  * and if the request is granted then the associated id can be used to identify a unique lock session in the cluster.
- *
+ * <p>
  * The fundamental strategy is to only allow locks on the leader. This has the benefit of minimizing the synchronization
  * to only concern the single token but it also means that non-leaders should not even attempt to request the token or
  * significant churn of this single resource will lead to a high level of aborted transactions.
- *
- * The token requests carry a candidate id and they get ordered with respect to the transactions in the consensus machinery.
+ * <p>
+ * The token requests carry a candidate id and they get ordered with respect to the transactions in the consensus
+ * machinery.
  * The latest request which gets accepted (see {@link ReplicatedTransactionStateMachine}) defines the currently valid
- * lock session id in this ordering. Each transaction that uses locking gets marked with a lock session id that was valid
+ * lock session id in this ordering. Each transaction that uses locking gets marked with a lock session id that was
+ * valid
  * at the time of acquiring it, but by the time a transaction commits it might no longer be valid, which in such case
  * would lead to the transaction being rejected and failed.
- *
+ * <p>
  * The {@link ReplicatedLockTokenStateMachine} handles the token requests and considers only one to be valid at a time.
  * Meanwhile, {@link ReplicatedTransactionStateMachine} rejects any transactions that get committed under an
  * invalid token.
@@ -58,7 +60,7 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
     private final long leaderLockTokenTimeout;
 
     public LeaderOnlyLockManager( MEMBER myself, Replicator replicator, LeaderLocator<MEMBER> leaderLocator,
-            Locks localLocks, LockTokenManager lockTokenManager, long leaderLockTokenTimeout )
+                                  Locks localLocks, LockTokenManager lockTokenManager, long leaderLockTokenTimeout )
     {
         this.myself = myself;
         this.replicator = replicator;
@@ -80,7 +82,7 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
     private synchronized int acquireTokenOrThrow()
     {
         LockToken currentToken = lockTokenManager.currentToken();
-        if( myself.equals( currentToken.owner() ) )
+        if ( myself.equals( currentToken.owner() ) )
         {
             return currentToken.id();
         }
@@ -89,8 +91,8 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
            since only the leader should take locks. */
         ensureLeader();
 
-        ReplicatedLockTokenRequest<MEMBER> lockTokenRequest = new ReplicatedLockTokenRequest<>(
-                myself, lockTokenManager.nextCandidateId() );
+        ReplicatedLockTokenRequest<MEMBER> lockTokenRequest =
+                new ReplicatedLockTokenRequest<>( myself, lockTokenManager.nextCandidateId() );
 
         try
         {
@@ -134,7 +136,7 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
             throw new AcquireLockTimeoutException( e, "Could not acquire lock token." );
         }
 
-        if( !leader.equals( myself ) )
+        if ( !leader.equals( myself ) )
         {
             throw new AcquireLockTimeoutException( "Should only attempt to take locks when leader." );
         }
@@ -179,7 +181,7 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
             {
                 lockTokenId = acquireTokenOrThrow();
             }
-            else if( lockTokenId != lockTokenManager.currentToken().id() )
+            else if ( lockTokenId != lockTokenManager.currentToken().id() )
             {
                 throw new AcquireLockTimeoutException( "Local instance lost lock token." );
             }

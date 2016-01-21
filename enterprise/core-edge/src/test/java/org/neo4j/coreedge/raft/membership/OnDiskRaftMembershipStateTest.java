@@ -40,7 +40,7 @@ public class OnDiskRaftMembershipStateTest
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     @Test
-    public void shouldStoreAndRetrieveSingleMembershipSet() throws Exception
+    public void shouldRoundtripSingleMembershipSetState() throws Exception
     {
         // given
         EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();

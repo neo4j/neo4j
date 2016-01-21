@@ -138,17 +138,25 @@ public class CoreEdgeClusterSettings
     public static final Setting<Boolean> disable_middleware_logging =
             setting( "core_edge.disable_middleware_logging", BOOLEAN, TRUE );
 
-    @Description("The maximum file size before the id allocation store is rotated (in unit of entries)")
+    @Description("The maximum file size before the id allocation file is rotated (in unit of entries)")
     public static final Setting<Integer> id_alloc_state_size = setting( "core_edge.id_alloc_state_size", INTEGER,
             "1000" );
 
-    @Description("The maximum file size before the membership state store is rotated (in unit of entries)")
-    public static Setting<Integer> raft_membership_state_size = setting( "core_edge.raft_membership_state_size",
+    @Description("The maximum file size before the membership state file is rotated (in unit of entries)")
+    public static final Setting<Integer> raft_membership_state_size = setting( "core_edge.raft_membership_state_size",
             INTEGER, "1000" );
 
-    @Description("The maximum file size before the vote state store is rotated (in unit of entries)")
-    public static Setting<Integer> vote_state_size = setting( "core_edge.raft_vote_state_size", INTEGER, "1000" );
+    @Description("The maximum file size before the vote state file is rotated (in unit of entries)")
+    public static final Setting<Integer> vote_state_size = setting( "core_edge.raft_vote_state_size", INTEGER, "1000" );
 
-    @Description("The maximum file size before the term state store is rotated (in unit of entries)")
-    public static Setting<Integer> term_state_size = setting( "core_edge.raft_term_state_size", INTEGER, "1000" );
+    @Description("The maximum file size before the term state file is rotated (in unit of entries)")
+    public static final Setting<Integer> term_state_size = setting( "core_edge.raft_term_state_size", INTEGER, "1000" );
+
+    @Description("The maximum file size before the global session tracker state file is rotated (in unit of entries)")
+    public static final Setting<Integer> global_session_tracker_state_size =
+            setting( "core_edge.global_session_tracker_state_size", INTEGER, "1000" );
+
+    @Description("The maximum file size before the replicated lock token state file is rotated (in unit of entries)")
+    public static final Setting<Integer> replicated_lock_token_state_size =
+            setting( "core_edge.replicated_lock_token_state_size", INTEGER, "1000" );
 }

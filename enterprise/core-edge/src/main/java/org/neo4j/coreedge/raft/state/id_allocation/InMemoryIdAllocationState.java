@@ -21,6 +21,7 @@ package org.neo4j.coreedge.raft.state.id_allocation;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
 
 import org.neo4j.coreedge.raft.replication.id.IdAllocationState;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
@@ -29,11 +30,13 @@ import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.kernel.impl.store.id.IdType;
 
+import static java.util.Arrays.copyOf;
+
 /**
  * An in-memory representation of the IDs allocated to this core instance.
  * Instances of this class are serialized to disk by
  *
- * @link{org.neo4j.coreedge.raft.replication.id.InMemoryIdAllocationState.Serializer}. The serialized form:
+ * {@link InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal}. The serialized form:
  * <p>
  * +----------------------------------+
  * |  8-byte length marker            |
@@ -76,6 +79,14 @@ public class InMemoryIdAllocationState implements IdAllocationState, Serializabl
         this.lastIdRangeStartForMe = lastIdRangeStartForMe;
         this.lastIdRangeLengthForMe = lastIdRangeLengthForMe;
         this.logIndex = logIndex;
+    }
+
+    public InMemoryIdAllocationState( InMemoryIdAllocationState other )
+    {
+        this.firstUnallocated = copyOf( other.firstUnallocated, other.firstUnallocated.length );
+        this.lastIdRangeStartForMe = copyOf( other.lastIdRangeStartForMe, other.lastIdRangeStartForMe.length );
+        this.lastIdRangeLengthForMe = copyOf( other.lastIdRangeLengthForMe, other.lastIdRangeLengthForMe.length );
+        this.logIndex = other.logIndex;
     }
 
     @Override
@@ -126,6 +137,44 @@ public class InMemoryIdAllocationState implements IdAllocationState, Serializabl
         lastIdRangeStartForMe[idType.ordinal()] = idRangeStart;
     }
 
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        InMemoryIdAllocationState that = (InMemoryIdAllocationState) o;
+
+        if ( logIndex != that.logIndex )
+        {
+            return false;
+        }
+        if ( !Arrays.equals( firstUnallocated, that.firstUnallocated ) )
+        {
+            return false;
+        }
+        if ( !Arrays.equals( lastIdRangeStartForMe, that.lastIdRangeStartForMe ) )
+        {
+            return false;
+        }
+        return Arrays.equals( lastIdRangeLengthForMe, that.lastIdRangeLengthForMe );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = Arrays.hashCode( firstUnallocated );
+        result = 31 * result + Arrays.hashCode( lastIdRangeStartForMe );
+        result = 31 * result + Arrays.hashCode( lastIdRangeLengthForMe );
+        result = 31 * result + (int) (logIndex ^ (logIndex >>> 32));
+        return result;
+    }
 
     static class InMemoryIdAllocationStateChannelMarshal implements ChannelMarshal<InMemoryIdAllocationState>
     {
@@ -185,7 +234,6 @@ public class InMemoryIdAllocationState implements IdAllocationState, Serializabl
 
                 return new InMemoryIdAllocationState( firstNotAllocated, lastIdRangeStartForMe,
                         lastIdRangeLengthForMe, logIndex );
-
             }
             catch ( ReadPastEndException ex )
             {
