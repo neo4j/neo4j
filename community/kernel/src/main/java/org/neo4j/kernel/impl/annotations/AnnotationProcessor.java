@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.annotations;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -123,7 +124,10 @@ public abstract class AnnotationProcessor extends AbstractProcessor
             file.getParentFile().mkdirs();
         }
 
-        newFilePrintWriter( file, StandardCharsets.UTF_8 ).append( line ).append( "\n" ).close();
+        try ( PrintWriter writer = newFilePrintWriter( file, StandardCharsets.UTF_8 ) )
+        {
+            writer.append( line ).append( "\n" );
+        }
     }
 
     private String path( String[] path )

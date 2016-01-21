@@ -33,37 +33,15 @@ public class WebTestUtils
             throw new IllegalArgumentException( "Invalid start port: " + port );
         }
 
-        ServerSocket ss = null;
-        DatagramSocket ds = null;
-        try
+        try ( ServerSocket ss = new ServerSocket( port );
+              DatagramSocket ds = new DatagramSocket( port ) )
         {
-            ss = new ServerSocket( port );
             ss.setReuseAddress( true );
-            ds = new DatagramSocket( port );
             ds.setReuseAddress( true );
             return true;
         }
         catch ( IOException e )
         {
-        }
-        finally
-        {
-            if ( ds != null )
-            {
-                ds.close();
-            }
-
-            if ( ss != null )
-            {
-                try
-                {
-                    ss.close();
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
         }
 
         return false;

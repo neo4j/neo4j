@@ -90,7 +90,7 @@ public abstract class StateRecoveryManager
         if ( !fileSystem.fileExists( file ) )
         {
             fileSystem.mkdirs( file.getParentFile() );
-            fileSystem.create( file );
+            fileSystem.create( file ).close();
         }
     }
 

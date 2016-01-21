@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -46,20 +47,22 @@ public class StoreMigratorCheckPointer
 
     /**
      * Write a check point in the log file with the given version
-     *
+     * <p>
      * It will create the file with header containing the log version and lastCommittedTx given as arguments
      *
      * @param logVersion the log version to open
      * @param lastCommittedTx the last committed tx id
      */
-    public void checkPoint( long logVersion, long lastCommittedTx) throws IOException
+    public void checkPoint( long logVersion, long lastCommittedTx ) throws IOException
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fileSystem );
         File logFileForVersion = logFiles.getLogFileForVersion( logVersion );
         if ( !fileSystem.fileExists( logFileForVersion ) )
         {
-            fileSystem.create( logFileForVersion );
-            writeLogHeader( fileSystem, logFileForVersion, logVersion, lastCommittedTx );
+            try ( StoreChannel channel = fileSystem.create( logFileForVersion ) )
+            {
+                writeLogHeader( channel, logVersion, lastCommittedTx );
+            }
         }
 
         try ( LogVersionedStoreChannel storeChannel =
@@ -70,7 +73,7 @@ public class StoreMigratorCheckPointer
             try ( PositionAwarePhysicalFlushableChannel channel =
                           new PositionAwarePhysicalFlushableChannel( storeChannel ) )
             {
-                final TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
+                TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
                 writer.checkPoint( new LogPosition( logVersion, offset ) );
             }
         }

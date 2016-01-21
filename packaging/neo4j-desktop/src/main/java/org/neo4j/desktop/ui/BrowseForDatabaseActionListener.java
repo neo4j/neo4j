@@ -75,10 +75,10 @@ class BrowseForDatabaseActionListener implements ActionListener
 
                 validLocation = true;
 
-                FileWriter fileWriter = new FileWriter( new File( ".dblocation" ) );
-                fileWriter.write( selectedFile.getAbsolutePath() );
-                fileWriter.flush();
-                fileWriter.close();
+                try ( FileWriter fileWriter = new FileWriter( new File( ".dblocation" ) ) )
+                {
+                    fileWriter.write( selectedFile.getAbsolutePath() );
+                }
             }
             catch ( UnsuitableDirectoryException ude )
             {

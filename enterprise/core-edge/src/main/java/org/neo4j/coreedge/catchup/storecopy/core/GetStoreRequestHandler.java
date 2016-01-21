@@ -68,10 +68,12 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
 
     private void sendFiles( ChannelHandlerContext ctx ) throws IOException
     {
-        ResourceIterator<File> files = dataSource.get().listStoreFiles( false );
-        while ( files.hasNext() )
+        try ( ResourceIterator<File> files = dataSource.get().listStoreFiles( false ) )
         {
-            sendFile( ctx, files.next() );
+            while ( files.hasNext() )
+            {
+                sendFile( ctx, files.next() );
+            }
         }
     }
 

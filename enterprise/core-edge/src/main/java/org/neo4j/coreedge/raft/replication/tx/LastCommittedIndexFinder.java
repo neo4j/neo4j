@@ -57,12 +57,10 @@ public class LastCommittedIndexFinder
         }
         else
         {
-            IOCursor<CommittedTransactionRepresentation> transactions;
-            byte[] lastHeaderFound;
-            try
+            byte[] lastHeaderFound = null;
+            try ( IOCursor<CommittedTransactionRepresentation> transactions =
+                          transactionStore.getTransactions( lastTxId ) )
             {
-                transactions = transactionStore.getTransactions( lastTxId );
-                lastHeaderFound = null;
                 while ( transactions.next() )
                 {
                     CommittedTransactionRepresentation committedTransactionRepresentation = transactions.get();

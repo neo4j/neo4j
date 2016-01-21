@@ -279,12 +279,9 @@ public class FileUtils
     {
         //noinspection ResultOfMethodCallIgnored
         dstFile.getParentFile().mkdirs();
-        FileInputStream input = null;
-        FileOutputStream output = null;
-        try
+        try ( FileInputStream input = new FileInputStream( srcFile );
+              FileOutputStream output = new FileOutputStream( dstFile ); )
         {
-            input = new FileInputStream( srcFile );
-            output = new FileOutputStream( dstFile );
             int bufferSize = 1024;
             byte[] buffer = new byte[bufferSize];
             int bytesRead;
@@ -297,17 +294,6 @@ public class FileUtils
         {
             // Because the message from this cause may not mention which file it's about
             throw new IOException( "Could not copy '" + srcFile + "' to '" + dstFile + "'", e );
-        }
-        finally
-        {
-            if ( input != null )
-            {
-                input.close();
-            }
-            if ( output != null )
-            {
-                output.close();
-            }
         }
     }
 

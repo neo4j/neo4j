@@ -527,9 +527,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
     private void copyFile( File from, FileSystemAbstraction fromFs, File to, ByteBuffer buffer ) throws IOException
     {
-        StoreChannel source = fromFs.open( from, "r" );
-        StoreChannel sink = this.open( to, "rw" );
-        try
+        try ( StoreChannel source = fromFs.open( from, "r" );
+              StoreChannel sink = this.open( to, "rw" ) )
         {
             for ( int available; (available = (int) (source.size() - source.position())) > 0; )
             {
@@ -538,17 +537,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 source.read( buffer );
                 buffer.flip();
                 sink.write( buffer );
-            }
-        }
-        finally
-        {
-            if ( source != null )
-            {
-                source.close();
-            }
-            if ( sink != null )
-            {
-                sink.close();
             }
         }
     }

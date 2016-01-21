@@ -49,10 +49,12 @@ public class AtomicBroadcastSerializer
             throws IOException
     {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        ObjectOutputStream oout = objectOutputStreamFactory.create( bout );
-        oout.writeObject( value );
-        oout.close();
-        byte[] bytes = bout.toByteArray();
+        byte[] bytes;
+        try ( ObjectOutputStream oout = objectOutputStreamFactory.create( bout ) )
+        {
+            oout.writeObject( value );
+        }
+        bytes = bout.toByteArray();
         return new Payload( bytes, bytes.length );
     }
 
@@ -60,7 +62,9 @@ public class AtomicBroadcastSerializer
             throws IOException, ClassNotFoundException
     {
         ByteArrayInputStream in = new ByteArrayInputStream( payload.getBuf(), 0, payload.getLen() );
-        ObjectInputStream oin = objectInputStreamFactory.create( in );
-        return oin.readObject();
+        try ( ObjectInputStream oin = objectInputStreamFactory.create( in ) )
+        {
+            return oin.readObject();
+        }
     }
 }

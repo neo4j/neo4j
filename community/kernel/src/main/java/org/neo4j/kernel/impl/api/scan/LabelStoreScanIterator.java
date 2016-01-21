@@ -31,7 +31,6 @@ import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 
 import static java.util.Arrays.copyOf;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
 public class LabelStoreScanIterator extends PrefetchingResourceIterator<NodeLabelUpdate>
@@ -57,14 +56,16 @@ public class LabelStoreScanIterator extends PrefetchingResourceIterator<NodeLabe
         while ( nodeIds.hasNext() )
         {
             long nodeId = nodeIds.next();
-            Cursor<NodeItem> nodeCursor = readOperations.nodeCursor( nodeId );
-            if ( nodeCursor.next() )
+            try ( Cursor<NodeItem> nodeCursor = readOperations.nodeCursor( nodeId ) )
             {
-                Cursor<LabelItem> labelCursor = nodeCursor.get().labels();
-                long[] labels = allLabels( labelCursor );
-                if ( labels.length > 0 )
+                if ( nodeCursor.next() )
                 {
-                    return NodeLabelUpdate.labelChanges( nodeId, EMPTY_LONG_ARRAY, labels );
+                    Cursor<LabelItem> labelCursor = nodeCursor.get().labels();
+                    long[] labels = allLabels( labelCursor );
+                    if ( labels.length > 0 )
+                    {
+                        return NodeLabelUpdate.labelChanges( nodeId, EMPTY_LONG_ARRAY, labels );
+                    }
                 }
             }
         }

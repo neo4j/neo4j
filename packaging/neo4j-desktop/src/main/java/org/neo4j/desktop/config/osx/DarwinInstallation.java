@@ -24,7 +24,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription;
 import org.neo4j.desktop.config.Environment;
 import org.neo4j.desktop.config.unix.UnixInstallation;
 
@@ -49,15 +48,13 @@ public class DarwinInstallation extends UnixInstallation
                     "echo neo4j-import",
                     "bash"};
 
-            FileWriter fileWriter = new FileWriter( new File( filename ), false );
-
-            for( String scriptCommand : scriptCommands )
+            try ( FileWriter fileWriter = new FileWriter( new File( filename ), false ) )
             {
-                fileWriter.write( scriptCommand + "\n");
+                for ( String scriptCommand : scriptCommands )
+                {
+                    fileWriter.write( scriptCommand + "\n" );
+                }
             }
-
-            fileWriter.flush();
-            fileWriter.close();
 
             String commands[] = { "bash", "-c", "chmod a+x " + filename };
 
