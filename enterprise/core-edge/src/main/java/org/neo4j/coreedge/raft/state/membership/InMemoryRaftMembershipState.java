@@ -35,7 +35,7 @@ public class InMemoryRaftMembershipState<MEMBER> implements RaftMembershipState<
     private volatile Set<MEMBER> votingMembers = new HashSet<>();
     private volatile Set<MEMBER> replicationMembers = new HashSet<>(); // votingMembers + additionalReplicationMembers
 
-    private final Set<Listener> listeners = new HashSet<>();
+    private final Set<Listener> listeners;
 
     private long logIndex = -1; // First log index is 0, so -1 is used here as "unknown" value
 
@@ -43,11 +43,22 @@ public class InMemoryRaftMembershipState<MEMBER> implements RaftMembershipState<
     {
         this.votingMembers = members;
         this.logIndex = logIndex;
+        this.listeners = new HashSet<>(  );
         updateReplicationMembers();
     }
 
     public InMemoryRaftMembershipState()
     {
+        this.listeners = new HashSet<>(  );
+    }
+
+    public InMemoryRaftMembershipState( InMemoryRaftMembershipState<MEMBER> other )
+    {
+        this.additionalReplicationMembers = new HashSet<>( other.additionalReplicationMembers );
+        this.votingMembers = new HashSet<>( other.votingMembers );
+        this.replicationMembers = new HashSet<>( other.replicationMembers );
+        this.listeners = new HashSet<>( other.listeners );
+        this.logIndex = other.logIndex;
     }
 
     public synchronized void setVotingMembers( Set<MEMBER> newVotingMembers )
@@ -126,7 +137,6 @@ public class InMemoryRaftMembershipState<MEMBER> implements RaftMembershipState<
     public static class InMemoryRaftMembershipStateChannelMarshal<MEMBER>
             implements ChannelMarshal<InMemoryRaftMembershipState<MEMBER>>
     {
-        public static final long ENTRY_MIN_SIZE = 8 + 4; // the log index plus the number of members in the set
         private final ChannelMarshal<MEMBER> memberMarshal;
 
         public InMemoryRaftMembershipStateChannelMarshal( ChannelMarshal<MEMBER> marshal )

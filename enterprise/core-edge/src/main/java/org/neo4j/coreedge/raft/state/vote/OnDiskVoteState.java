@@ -21,13 +21,13 @@ package org.neo4j.coreedge.raft.state.vote;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.StatePersister;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
+import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState.InMemoryVoteStateChannelMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -48,13 +48,13 @@ public class OnDiskVoteState<MEMBER> extends LifecycleAdapter implements VoteSta
         File fileA = new File( stateDir, FILENAME + "a" );
         File fileB = new File( stateDir, FILENAME + "b" );
 
-        InMemoryVoteState.InMemoryVoteStateChannelMarshal<MEMBER> marshal =
-                new InMemoryVoteState.InMemoryVoteStateChannelMarshal<>( memberByteBufferMarshal );
+        InMemoryVoteStateChannelMarshal<MEMBER> marshal =
+                new InMemoryVoteStateChannelMarshal<>( memberByteBufferMarshal );
 
         VoteStateRecoveryManager<MEMBER> recoveryManager =
                 new VoteStateRecoveryManager<>( fileSystemAbstraction, marshal );
 
-        final StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
+        StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
 
 
         this.inMemoryVoteState = recoveryManager.readLastEntryFrom( fileSystemAbstraction, recoveryStatus

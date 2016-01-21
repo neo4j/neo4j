@@ -28,9 +28,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -47,6 +47,23 @@ public class OnDiskTermStateTest
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
+    @Test
+    public void shouldRoundtripTermState() throws Exception
+    {
+        // given
+        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        fsa.mkdir( testDir.directory() );
+
+        OnDiskTermState oldOnDiskTermState =
+                new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
+        oldOnDiskTermState.update( 99 );
+
+        // when
+        OnDiskTermState newOnDiskTermState = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
+
+        // then
+        assertEquals( oldOnDiskTermState.currentTerm(), newOnDiskTermState.currentTerm() );
+    }
 
     @Test
     public void shouldCallWriteAllAndForceOnVoteUpdate() throws Exception
@@ -113,7 +130,7 @@ public class OnDiskTermStateTest
         store.shutdown();
 
         // Then
-        verify( channel ).flush( );
+        verify( channel ).flush();
         verify( channel ).close();
     }
 }

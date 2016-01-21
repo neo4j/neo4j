@@ -19,6 +19,13 @@
  */
 package org.neo4j.coreedge.server;
 
+import java.io.IOException;
+
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
+
 public class RaftTestMember implements Comparable<RaftTestMember>
 {
     public static RaftTestMember member( long id )
@@ -72,5 +79,28 @@ public class RaftTestMember implements Comparable<RaftTestMember>
     public int compareTo( RaftTestMember other )
     {
         return new Long( this.id ).compareTo( other.getId() );
+    }
+
+    public static class RaftTestMemberMarshal implements ChannelMarshal<RaftTestMember>
+    {
+
+        @Override
+        public void marshal( RaftTestMember target, WritableChannel channel ) throws IOException
+        {
+            channel.putLong( target.id );
+        }
+
+        @Override
+        public RaftTestMember unmarshal( ReadableChannel source ) throws IOException
+        {
+            try
+            {
+                return member( source.getLong() );
+            }
+            catch ( ReadPastEndException notEnoughBytes )
+            {
+                return null;
+            }
+        }
     }
 }

@@ -21,18 +21,16 @@ package org.neo4j.coreedge.raft.state.id_allocation;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.raft.replication.id.IdAllocationState;
 import org.neo4j.coreedge.raft.state.StatePersister;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
+import org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal.NUMBER_OF_BYTES_PER_WRITE;
 
 /**
  * The OnDiskAllocationState is a decorator around InMemoryIdAllocationState providing on-disk persistence of
@@ -46,10 +44,9 @@ public class OnDiskIdAllocationState extends LifecycleAdapter implements IdAlloc
     public static final String DIRECTORY_NAME = "id-allocation-state";
     public static final String FILENAME = "id.allocation.";
 
-    private final InMemoryIdAllocationState inMemoryIdAllocationState;
+    private InMemoryIdAllocationState inMemoryIdAllocationState;
 
     private final StatePersister<InMemoryIdAllocationState> statePersister;
-    private final InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal marshal;
 
     public OnDiskIdAllocationState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
                                     int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier )
@@ -58,13 +55,13 @@ public class OnDiskIdAllocationState extends LifecycleAdapter implements IdAlloc
         File fileA = new File( stateDir, FILENAME + "a" );
         File fileB = new File( stateDir, FILENAME + "b" );
 
+        InMemoryIdAllocationStateChannelMarshal marshal = new InMemoryIdAllocationStateChannelMarshal();
+
         IdAllocationStateRecoveryManager recoveryManager =
-                new IdAllocationStateRecoveryManager( fileSystemAbstraction,
-                        new InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal() );
+                new IdAllocationStateRecoveryManager( fileSystemAbstraction, marshal );
 
-        final StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
+        StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
 
-        this.marshal = new InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal();
         this.inMemoryIdAllocationState = recoveryManager.readLastEntryFrom( fileSystemAbstraction, recoveryStatus.previouslyActive() );
 
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
@@ -98,10 +95,13 @@ public class OnDiskIdAllocationState extends LifecycleAdapter implements IdAlloc
     @Override
     public void logIndex( long logIndex )
     {
-        inMemoryIdAllocationState.logIndex( logIndex );
+        InMemoryIdAllocationState temp = new InMemoryIdAllocationState(inMemoryIdAllocationState);
+        temp.logIndex( logIndex );
+
         try
         {
-            statePersister.persistStoreData( inMemoryIdAllocationState );
+            statePersister.persistStoreData( temp );
+            inMemoryIdAllocationState = temp;
         }
         catch ( IOException e )
         {
