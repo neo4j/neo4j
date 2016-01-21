@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
 import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
+import org.neo4j.coreedge.server.edge.EdgeToCoreConnectionStrategy;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -35,15 +36,15 @@ public class TxPollingClient extends LifecycleAdapter
 {
     private final JobScheduler jobScheduler;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
-    private final EdgeDiscoveryService edgeDiscoveryService;
+    private final EdgeToCoreConnectionStrategy connectionStrategy;
     private final long pollingInterval;
     private final CoreClient coreClient;
     private final TxPullResponseListener txPullResponseListener;
 
     public TxPollingClient( JobScheduler jobScheduler, long pollingInterval,
-                            Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                            CoreClient coreClient, TxPullResponseListener txPullResponseListener,
-                            EdgeDiscoveryService edgeDiscoveryService )
+            Supplier<TransactionIdStore> transactionIdStoreSupplier,
+            CoreClient coreClient, TxPullResponseListener txPullResponseListener,
+            EdgeToCoreConnectionStrategy connectionStrategy )
     {
         this.coreClient = coreClient;
         this.txPullResponseListener = txPullResponseListener;
@@ -52,7 +53,7 @@ public class TxPollingClient extends LifecycleAdapter
         this.pollingInterval = pollingInterval;
 
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
-        this.edgeDiscoveryService = edgeDiscoveryService;
+        this.connectionStrategy = connectionStrategy;
     }
 
     public void startPolling()
@@ -61,7 +62,7 @@ public class TxPollingClient extends LifecycleAdapter
         final TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
         jobScheduler.scheduleRecurring( pullUpdates,
                 () -> coreClient.pollForTransactions(
-                        first( edgeDiscoveryService.currentTopology().getMembers() ).getCoreAddress(),
+                        connectionStrategy.coreServer(),
                         transactionIdStore.getLastCommittedTransactionId() ), pollingInterval, MILLISECONDS );
     }
 

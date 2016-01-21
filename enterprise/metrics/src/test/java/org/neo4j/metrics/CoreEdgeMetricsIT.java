@@ -19,15 +19,16 @@
  */
 package org.neo4j.metrics;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Rule;
-import org.junit.Test;
-
+import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
@@ -37,36 +38,23 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.metrics.source.CoreMetrics;
-import org.neo4j.metrics.source.EdgeMetrics;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.metrics.source.CoreMetrics.APPEND_INDEX;
-import static org.neo4j.metrics.source.CoreMetrics.COMMIT_INDEX;
-import static org.neo4j.metrics.source.CoreMetrics.IS_LEADER;
-import static org.neo4j.metrics.source.CoreMetrics.LEADER_NOT_FOUND;
-import static org.neo4j.metrics.source.CoreMetrics.TERM;
-import static org.neo4j.metrics.source.CoreMetrics.TX_PULL_REQUESTS_RECEIVED;
-import static org.neo4j.metrics.source.CoreMetrics.TX_RETRIES;
 import static org.neo4j.metrics.source.EdgeMetrics.PULL_UPDATES;
 import static org.neo4j.metrics.source.EdgeMetrics.PULL_UPDATE_HIGHEST_TX_ID_RECEIVED;
 import static org.neo4j.metrics.source.EdgeMetrics.PULL_UPDATE_HIGHEST_TX_ID_REQUESTED;
 import static org.neo4j.test.Assert.assertEventually;
-
-
-import org.neo4j.coreedge.discovery.Cluster;
 
 public class CoreEdgeMetricsIT
 {
@@ -120,7 +108,16 @@ public class CoreEdgeMetricsIT
                 equalTo ( 0L ), 5, TimeUnit.SECONDS );
 
         assertEventually("tx pull requests received eventually accurate",
-                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.TX_PULL_REQUESTS_RECEIVED ) ),
+                () ->
+                {
+                    long total = 0;
+                    for ( final CoreGraphDatabase db : cluster.coreServers() )
+                    {
+                        File metricsDir = new File( db.getStoreDir(), "metrics" );
+                        total += readLastValue( metricsCsv( metricsDir, CoreMetrics.TX_PULL_REQUESTS_RECEIVED ) );
+                    }
+                    return total;
+                },
                 greaterThan ( 0L ), 5, TimeUnit.SECONDS );
 
         assertEventually("tx retries eventually accurate",
