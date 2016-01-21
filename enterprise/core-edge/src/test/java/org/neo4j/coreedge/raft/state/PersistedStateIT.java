@@ -88,14 +88,14 @@ public class PersistedStateIT
     {
         EphemeralFileSystemAbstraction normalFSA = new EphemeralFileSystemAbstraction();
         /*
-         * Magic number warning. For a rotation threshold of 14, 998 operations on file A falls on creation of the
+         * Magic number warning. For a rotation threshold of 14, 998 operations on file A falls on truncation of the
          * file during rotation. This has been discovered via experimentation. The end result is that there is a
          * failure to create the file to rotate to. This should be recoverable.
          */
         AdversarialFileSystemAbstraction breakingFSA = new AdversarialFileSystemAbstraction(
                 new MethodGuardedAdversary(
                         new CountingAdversary( 20, true ),
-                        FileSystemAbstraction.class.getMethod( "create", File.class ) ),
+                        FileSystemAbstraction.class.getMethod( "truncate", File.class, long.class ) ),
                 normalFSA );
         SelectiveFileSystemAbstraction combinedFSA = new SelectiveFileSystemAbstraction(
                 new File( testDir.directory(), "long.a" ), breakingFSA, normalFSA );
@@ -114,8 +114,8 @@ public class PersistedStateIT
         }
         catch ( Exception expected )
         {
-            // this stack trace should contain FSA.create()
-            ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "create" );
+            // this stack trace should contain FSA.truncate()
+            ensureStackTraceContainsExpectedMethod( expected.getStackTrace(), "truncate" );
         }
 
         LongState restoredState = new LongState( normalFSA, testDir.directory(), 14 );

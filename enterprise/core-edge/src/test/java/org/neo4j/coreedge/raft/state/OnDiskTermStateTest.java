@@ -47,13 +47,6 @@ public class OnDiskTermStateTest
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
-    private OnDiskTermState createTermState( FileSystemAbstraction fileSystem ) throws IOException
-    {
-        final Supplier mock = mock( Supplier.class );
-        when( mock.get() ).thenReturn( mock( DatabaseHealth.class ) );
-
-        return new OnDiskTermState( fileSystem, testDir.directory(), 100, mock );
-    }
 
     @Test
     public void shouldCallWriteAllAndForceOnVoteUpdate() throws Exception

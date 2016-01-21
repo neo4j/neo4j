@@ -21,6 +21,7 @@ package org.neo4j.coreedge.raft.state;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -29,6 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.test.TargetDirectory;
@@ -118,6 +120,57 @@ public class StatePersisterTest
         assertEquals( numberOfEntriesBeforeRotation * 4, fsa.getFileSize( stateFileB() ) );
     }
 
+    @Test
+    public void shouldClearFileOnFirstUse() throws Exception
+    {
+        // given
+        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        fsa.mkdir( testDir.directory() );
+
+        int rotationCount = 10;
+        AtomicIntegerMarshal atomicIntegerMarshal = new AtomicIntegerMarshal();
+        StatePersister<AtomicInteger> statePersister = new StatePersister<>( stateFileA(), stateFileB(), fsa,
+                rotationCount,
+                atomicIntegerMarshal, stateFileA(),
+                mock( Supplier.class ) );
+
+        int largestValueWritten = 0;
+        for ( ; largestValueWritten < rotationCount * 2; largestValueWritten++ )
+        {
+            statePersister.persistStoreData( new AtomicInteger( largestValueWritten ) );
+        }
+        statePersister.close();
+        // now both files are full. We reopen, then write some more.
+        statePersister = new StatePersister<>( stateFileA(), stateFileB(), fsa,
+                rotationCount,
+                atomicIntegerMarshal, stateFileA(),
+                mock( Supplier.class ) );
+
+        statePersister.persistStoreData( new AtomicInteger( largestValueWritten++ ) );
+        statePersister.persistStoreData( new AtomicInteger( largestValueWritten++ ) );
+        statePersister.persistStoreData( new AtomicInteger( largestValueWritten ) );
+
+        /*
+         * We have written stuff in fileA but not gotten to the end (resulting in rotation). The largestValueWritten
+         * should nevertheless be correct
+         */
+        statePersister.close();
+        ByteBuffer forReadingBackIn = ByteBuffer.allocate( 10_000 );
+        StoreChannel lastWrittenTo = fsa.open( stateFileA(), "r" );
+        lastWrittenTo.read( forReadingBackIn );
+        forReadingBackIn.flip();
+
+        AtomicInteger lastRead = null;
+        AtomicInteger current;
+        while( ( current = atomicIntegerMarshal.unmarshal( forReadingBackIn ) ) != null )
+        {
+            lastRead = current;
+        }
+
+        // then
+        assertEquals( largestValueWritten, lastRead.get() );
+    }
+
     private static class AtomicIntegerMarshal implements ByteBufferMarshal<AtomicInteger>, ChannelMarshal<AtomicInteger>
     {
         @Override
@@ -129,7 +182,14 @@ public class StatePersisterTest
         @Override
         public AtomicInteger unmarshal( ByteBuffer source )
         {
-            return new AtomicInteger( source.getInt() );
+            try
+            {
+                return new AtomicInteger( source.getInt() );
+            }
+            catch( BufferUnderflowException notEnoughBytes )
+            {
+                return null;
+            }
         }
 
         @Override
