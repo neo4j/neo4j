@@ -142,16 +142,17 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public void replay() throws Throwable
     {
-        int index = 0;
-        for (; index <= commitIndex; index++ )
-        {
-            ReplicatedContent content = readEntryContent( index );
-            for ( Listener listener : listeners )
-            {
-                listener.onAppended( content, index );
-                listener.onCommitted( content, index );
-            }
-        }
+        /*
+         * Since all state machines and replicated content listeners persist their state, we can skip all entries that
+         * have been committed successfully.
+         * However, looking at how commit() does its thing, we probably face a race with a crash in between updating
+         * the commit index and having notified all replicated content listeners. We should probably invert the order
+         * there. For this reason, and having the (assumed/required) idempotent property of replicated content listeners,
+         * we still replay the last committed entry because, since we do one entry at a time, that may be the only one
+         * that has not been applied against all listeners.
+         * This change is effectively equivalent to truncating/compacting the raft log.
+         */
+        long index = Math.max( 0, commitIndex ); // new instances have a commit index of -1, which should be ignored
         for (; index <= appendIndex; index++ )
         {
             ReplicatedContent content = readEntryContent( index );
@@ -197,7 +198,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         {
             throw new RaftStorageException( "Failed to append log entry", e );
         }
-
     }
 
     @Override
@@ -329,6 +329,15 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         {
             this.term = term;
             this.contentPointer = contentPointer;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Entry{" +
+                    "term=" + term +
+                    ", contentPointer=" + contentPointer +
+                    '}';
         }
     }
 
