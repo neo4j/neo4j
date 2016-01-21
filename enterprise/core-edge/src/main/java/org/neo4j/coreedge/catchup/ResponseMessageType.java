@@ -28,7 +28,6 @@ public enum ResponseMessageType
     FILE( (byte) 3 ),
     STORY_COPY_FINISHED( (byte) 4 ),
     TX_STREAM_FINISHED( (byte) 5 ),
-    LOCK( (byte) 6 ),
     UNKNOWN( (byte) 200 ),;
 
     private byte messageType;

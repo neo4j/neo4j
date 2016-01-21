@@ -41,7 +41,6 @@ public class CatchupClientProtocol
         STORE_COPY_FINISHED,
         TX_STREAM_FINISHED,
         FILE_HEADER,
-        FILE_CONTENTS,
-        LOCK_RESPONSE
+        FILE_CONTENTS
     }
 }
