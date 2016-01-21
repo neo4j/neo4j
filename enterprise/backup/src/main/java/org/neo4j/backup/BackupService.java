@@ -126,9 +126,10 @@ class BackupService
     BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, File targetDirectory,
             ConsistencyCheck consistencyCheck, Config tuningConfiguration, final long timeout, final boolean forensics )
     {
-        if ( directoryContainsDb( targetDirectory ) )
+        if ( !directoryIsEmpty( targetDirectory ) )
         {
-            throw new RuntimeException( targetDirectory + " already contains a database" );
+            throw new RuntimeException( "Can only perform a full backup into an empty directory but " +
+                    targetDirectory + " is not empty" );
         }
         long timestamp = System.currentTimeMillis();
         long lastCommittedTx = -1;
@@ -223,7 +224,7 @@ class BackupService
     BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort, File targetDirectory,
             ConsistencyCheck consistencyCheck, Config config, long timeout, boolean forensics )
     {
-        if ( !directoryContainsDb( targetDirectory ) )
+        if ( directoryIsEmpty( targetDirectory ) )
         {
             return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, consistencyCheck, config, timeout,
                     forensics );
@@ -266,6 +267,11 @@ class BackupService
     boolean directoryContainsDb( File targetDirectory )
     {
         return fileSystem.fileExists( new File( targetDirectory, MetaDataStore.DEFAULT_NAME ) );
+    }
+
+    boolean directoryIsEmpty( File targetDirectory )
+    {
+        return !fileSystem.isDirectory( targetDirectory ) || 0 == fileSystem.listFiles( targetDirectory ).length;
     }
 
     static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache, Map<String,String> config )
