@@ -20,21 +20,7 @@
 set -euo pipefail
 [[ "${TRACE:-}" ]] && set -x
 
-FRIENDLY_NAME="Neo4j Arbiter"
-SHUTDOWN_TIMEOUT=20
-CONFIG_FILES=("neo4j-wrapper.conf")
-MAIN_CLASS="org.neo4j.server.enterprise.StandaloneClusterClient"
-MIN_ALLOWED_OPEN_FILES=1
-CONSOLE_LOG_FILE="arbiter-console.log"
-
-print_start_message() {
-  echo "Started."
-  echo "This instance is now joining the cluster."
-}
-
-print_extra_info() {
-  :
-}
+IS_ARBITER="t"
 
 setup_neo4jhome_and_script() {
   SCRIPT=$0

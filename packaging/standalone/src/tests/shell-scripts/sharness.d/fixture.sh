@@ -24,7 +24,7 @@ clear_config() {
 
 set_main_class() {
   class=$1
-  sed -i.bak -e "s/#{neo4j\.mainClass}/${class}/" neo4j-home/bin/neo4j
+  sed -i.bak -e "s/#{neo4j\.mainClass}/${class}/" neo4j-home/bin/neo4j-common.sh
 }
 
 neo4j_home() {

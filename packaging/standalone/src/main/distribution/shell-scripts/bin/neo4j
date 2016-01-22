@@ -20,32 +20,7 @@
 set -euo pipefail
 [[ "${TRACE:-}" ]] && set -x
 
-FRIENDLY_NAME="Neo4j Server"
-SHUTDOWN_TIMEOUT=120
-CONFIG_FILES=("neo4j-wrapper.conf" "neo4j.properties")
-MAIN_CLASS="#{neo4j.mainClass}"
-MIN_ALLOWED_OPEN_FILES=40000
-CONSOLE_LOG_FILE="console.log"
-
-server_port() {
-  echo "${org_neo4j_server_webserver_port:-7474}"
-}
-
-print_start_message() {
-  NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:-localhost}"
-
-  echo "Started at http://${NEO4J_SERVER_ADDRESS}:$(server_port) (pid ${NEO4J_PID})."
-
-  if [ "${org_neo4j_server_database_mode:-}" = "HA" ] ; then
-    echo "This HA instance will be operational once it has joined the cluster."
-  else
-    echo "There may be a short delay until the server is ready."
-  fi
-}
-
-print_extra_info() {
-  echo "NEO4J_SERVER_PORT: $(server_port)"
-}
+IS_ARBITER="f"
 
 setup_neo4jhome_and_script() {
   SCRIPT=$0

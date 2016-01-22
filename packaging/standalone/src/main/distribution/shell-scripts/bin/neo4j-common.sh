@@ -21,16 +21,8 @@
 # Callers must do the following:
 #  * set -e
 #  * define these variables and functions:
-#     - FRIENDLY_NAME
-#     - SHUTDOWN_TIMEOUT
-#     - CONFIG_FILES
-#     - MAIN_CLASS
-#     - MIN_ALLOWED_OPEN_FILES
-#     - CONSOLE_LOG_FILE
 #     - NEO4J_HOME
 #     - SCRIPT
-#     - print_start_message()
-#     - print_extra_info()
 #  * source this file
 #  * run `main "$@"`
 #
@@ -45,6 +37,7 @@
 #  * NEO4J_LOG
 #  * NEO4J_PIDFILE
 #  * NEO4J_START_WAIT
+#  * IS_ARBITER
 
 find_java_home() {
   [[ "${JAVA_HOME:-}" ]] && return
@@ -101,6 +94,47 @@ check_java() {
 show_java_help() {
   echo "* Please use Oracle(R) Java(TM) 8 or OpenJDK(TM) to run Neo4j Server."
   echo "* Please see http://docs.neo4j.org/ for Neo4j Server installation instructions."
+}
+
+setup_arbiter_options() {
+  if [[ "${IS_ARBITER:-}" == "t" ]]; then
+    SHUTDOWN_TIMEOUT=20
+    MIN_ALLOWED_OPEN_FILES=1
+    CONSOLE_LOG="${NEO4J_LOG}/arbiter-console.log"
+    MAIN_CLASS="org.neo4j.server.enterprise.StandaloneClusterClient"
+
+    print_start_message() {
+      echo "Started."
+      echo "This instance is now joining the cluster."
+    }
+
+    print_extra_info() {
+      :
+    }
+  else
+    SHUTDOWN_TIMEOUT=120
+    MIN_ALLOWED_OPEN_FILES=40000
+    CONSOLE_LOG="${NEO4J_LOG}/console.log"
+    MAIN_CLASS="#{neo4j.mainClass}"
+
+    port="${org_neo4j_server_webserver_port:-7474}"
+
+    print_start_message() {
+      NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:-localhost}"
+
+      echo "Started at http://${NEO4J_SERVER_ADDRESS}:${port} (pid ${NEO4J_PID})."
+
+      if [ "${org_neo4j_server_database_mode:-}" = "HA" ] ; then
+        echo "This HA instance will be operational once it has joined the cluster."
+      else
+        echo "There may be a short delay until the server is ready."
+      fi
+    }
+
+    print_extra_info() {
+      echo "NEO4J_SERVER_PORT: ${port}"
+    }
+  fi
 }
 
 check_status() {
@@ -160,7 +194,7 @@ parse_config() {
     fi
   }
 
-  for file in "${CONFIG_FILES[@]}"; do
+  for file in "neo4j-wrapper.conf" "neo4j.properties"; do
     path="${NEO4J_CONFIG}/${file}"
     if [ -e "${path}" ]; then
       while read line; do
@@ -174,7 +208,6 @@ setup_paths() {
   [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
   [[ "${NEO4J_LOG:-}" ]] || NEO4J_LOG="${NEO4J_HOME}/data/log"
   [[ "${NEO4J_PIDFILE:-}" ]] || NEO4J_PIDFILE="${NEO4J_HOME}/data/neo4j-service.pid"
-  CONSOLE_LOG="${NEO4J_LOG}/${CONSOLE_LOG_FILE}"
 }
 
 setup_java_opts() {
@@ -195,11 +228,11 @@ build_classpath() {
 do_console() {
   check_status
   if [[ "${NEO4J_PID:-}" ]] ; then
-    echo "${FRIENDLY_NAME} is already running (pid ${NEO4J_PID})."
+    echo "Neo4j is already running (pid ${NEO4J_PID})."
     exit 1
   fi
 
-  echo "Starting ${FRIENDLY_NAME}."
+  echo "Starting Neo4j."
 
   check_limits
   build_classpath
@@ -211,11 +244,11 @@ do_console() {
 do_start() {
   check_status
   if [[ "${NEO4J_PID:-}" ]] ; then
-    echo "${FRIENDLY_NAME} is already running (pid ${NEO4J_PID})."
+    echo "Neo4j is already running (pid ${NEO4J_PID})."
     exit 0
   fi
 
-  echo "Starting ${FRIENDLY_NAME}."
+  echo "Starting Neo4j."
 
   check_limits
   build_classpath
@@ -241,11 +274,11 @@ do_stop() {
   check_status
 
   if [[ ! "${NEO4J_PID:-}" ]] ; then
-    echo "${FRIENDLY_NAME} not running"
+    echo "Neo4j not running"
     [ -e "${NEO4J_PIDFILE}" ] && rm "${NEO4J_PIDFILE}"
     return 0
   else
-    echo -n "Stopping ${FRIENDLY_NAME} ."
+    echo -n "Stopping Neo4j."
     end="$((SECONDS+SHUTDOWN_TIMEOUT))"
     while true; do
       check_status
@@ -260,7 +293,7 @@ do_stop() {
 
       if [[ "${SECONDS}" -ge "${end}" ]]; then
         echo " failed to stop"
-        echo "${FRIENDLY_NAME} (pid ${NEO4J_PID}) took more than ${SHUTDOWN_TIMEOUT} seconds to stop."
+        echo "Neo4j (pid ${NEO4J_PID}) took more than ${SHUTDOWN_TIMEOUT} seconds to stop."
         echo "Please see ${CONSOLE_LOG} for details."
         return 1
       fi
@@ -274,10 +307,10 @@ do_stop() {
 do_status() {
   check_status
   if [[ ! "${NEO4J_PID:-}" ]] ; then
-    echo "${FRIENDLY_NAME} is not running"
+    echo "Neo4j is not running"
     exit 3
   else
-    echo "${FRIENDLY_NAME} is running at pid ${NEO4J_PID}"
+    echo "Neo4j is running at pid ${NEO4J_PID}"
   fi
 }
 
@@ -297,6 +330,7 @@ main() {
   parse_config
   setup_java_opts
   check_java
+  setup_arbiter_options
 
   case "$1" in
     console)
