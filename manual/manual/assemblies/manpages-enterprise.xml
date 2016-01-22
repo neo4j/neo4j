@@ -37,7 +37,6 @@
         <include>neo4j-shell.*</include>
         <include>neo4j-import.*</include>
         <include>neo4j-backup.*</include>
-        <include>neo4j-arbiter.*</include>
       </includes>
     </fileSet>
   </fileSets>
