@@ -43,8 +43,8 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 public class ReplicatedTransactionFactory
 {
-    public static ReplicatedTransaction createImmutableReplicatedTransaction(
-            TransactionRepresentation tx, GlobalSession globalSession, LocalOperationId localOperationId ) throws IOException
+    public static <T> ReplicatedTransaction<T> createImmutableReplicatedTransaction(
+            TransactionRepresentation tx, GlobalSession<T> globalSession, LocalOperationId localOperationId ) throws IOException
     {
         ByteBuf transactionBuffer = Unpooled.buffer();
 
@@ -58,7 +58,7 @@ public class ReplicatedTransactionFactory
         byte[] txBytes = Arrays.copyOf( transactionBuffer.array(), transactionBuffer.writerIndex() );
         transactionBuffer.release();
 
-        return new ReplicatedTransaction( txBytes, globalSession, localOperationId );
+        return new ReplicatedTransaction<>( txBytes, globalSession, localOperationId );
     }
 
     public static TransactionRepresentation extractTransactionRepresentation( ReplicatedTransaction replicatedTransaction, byte[] extraHeader ) throws IOException

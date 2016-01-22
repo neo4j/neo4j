@@ -26,7 +26,6 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.locks.LockTokenManager;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -39,9 +38,9 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionInvalid;
 
-public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedContentListener
+public class ReplicatedTransactionStateMachine<MEMBER> implements Replicator.ReplicatedContentListener
 {
-    private final GlobalSessionTrackerState sessionTracker;
+    private final GlobalSessionTrackerState<MEMBER> sessionTracker;
     private final GlobalSession myGlobalSession;
     private final LockTokenManager lockTokenManager;
     private final TransactionCommitProcess commitProcess;
@@ -52,7 +51,7 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
                                               GlobalSession myGlobalSession,
                                               LockTokenManager lockTokenManager,
                                               CommittingTransactions transactionFutures,
-                                              GlobalSessionTrackerState globalSessionTrackerState )
+                                              GlobalSessionTrackerState<MEMBER> globalSessionTrackerState )
     {
         this.commitProcess = commitProcess;
         this.myGlobalSession = myGlobalSession;
@@ -66,64 +65,93 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
     {
         if ( content instanceof ReplicatedTransaction )
         {
-            handleTransaction( (ReplicatedTransaction<CoreMember>) content, logIndex );
+            handleTransaction( (ReplicatedTransaction<MEMBER>) content, logIndex );
         }
     }
 
-    private void handleTransaction( ReplicatedTransaction<CoreMember> replicatedTx, long logIndex )
+    private void handleTransaction( ReplicatedTransaction<MEMBER> replicatedTx, long logIndex )
     {
-        if ( !sessionTracker.validateAndTrackOperationAtLogIndex( replicatedTx.globalSession(),
-                replicatedTx.localOperationId(), logIndex ) || logIndex <= lastCommittedIndex )
+        /*
+         * This check quickly verifies that the session is invalid. Since we update the session state *after* appending
+         * the tx to the log, we are certain here that on replay, if the session tracker says that the session is invalid,
+         * then the transaction either should never be committed or has already been appended in the log.
+         */
+        if ( !operationValid( replicatedTx ) )
         {
             return;
         }
 
-        TransactionRepresentation tx;
-        try
+        /*
+         * At this point, we need to check if the tx exists in the log. If it does, it is ok to skip it. However, we
+         * may still need to persist the session state (as we may crashed in between), which happens outside this
+         * if check.
+         */
+        if ( !txAlreadyCommitted( logIndex ) )
         {
-            byte[] extraHeader = encodeLogIndexAsTxHeader( logIndex );
-            tx = ReplicatedTransactionFactory.extractTransactionRepresentation(
-                    replicatedTx, extraHeader );
+            TransactionRepresentation tx;
+            try
+            {
+                byte[] extraHeader = encodeLogIndexAsTxHeader( logIndex );
+                tx = ReplicatedTransactionFactory.extractTransactionRepresentation(
+                        replicatedTx, extraHeader );
+            }
+            catch ( IOException e )
+            {
+                throw new IllegalStateException( "Failed to locally commit a transaction that has already been " +
+                        "committed to the RAFT log. This server cannot process later transactions and needs to be " +
+                        "restarted once the underlying cause has been addressed.", e );
+            }
+
+            // A missing future means the transaction does not belong to this instance
+            Optional<CommittingTransaction> future = replicatedTx.globalSession().equals( myGlobalSession ) ?
+                    Optional.ofNullable( transactionFutures.retrieve( replicatedTx.localOperationId() ) ) :
+                    Optional.<CommittingTransaction>empty();
+
+            int currentTokenId = lockTokenManager.currentToken().id();
+            int txLockSessionId = tx.getLockSessionId();
+
+            if ( currentTokenId != txLockSessionId && txLockSessionId != Locks.Client.NO_LOCK_SESSION_ID )
+            {
+                future.ifPresent( txFuture -> txFuture.notifyCommitFailed( new TransactionFailureException(
+                        LockSessionInvalid,
+                        "The lock session in the cluster has changed: " +
+                                "[current lock session id:%d, tx lock session id:%d]",
+                        currentTokenId, txLockSessionId ) ) );
+                return;
+            }
+
+            try
+            {
+                long txId = commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL,
+                        TransactionApplicationMode.EXTERNAL );
+
+                future.ifPresent( txFuture -> txFuture.notifySuccessfullyCommitted( txId ) );
+            }
+            catch ( TransactionFailureException e )
+            {
+                future.ifPresent( txFuture -> txFuture.notifyCommitFailed( e ) );
+                throw new IllegalStateException( "Failed to locally commit a transaction that has already been " +
+                        "committed to the RAFT log. This server cannot process later transactions and needs to be " +
+                        "restarted once the underlying cause has been addressed.", e );
+            }
         }
-        catch ( IOException e )
+        /*
+         * Finally, we need to check, in an idempotent fashion, if the session state needs to be persisted.
+         */
+        if ( sessionTracker.logIndex() < logIndex )
         {
-            throw new IllegalStateException( "Failed to locally commit a transaction that has already been " +
-                    "committed to the RAFT log. This server cannot process later transactions and needs to be " +
-                    "restarted once the underlying cause has been addressed.", e );
+            sessionTracker.update( replicatedTx.globalSession(), replicatedTx.localOperationId(), logIndex );
         }
+    }
 
-        // A missing future means the transaction does not belong to this instance
-        Optional<CommittingTransaction> future = replicatedTx.globalSession().equals( myGlobalSession ) ?
-                Optional.ofNullable( transactionFutures.retrieve( replicatedTx.localOperationId() ) ) :
-                Optional.<CommittingTransaction>empty();
+    private boolean operationValid( ReplicatedTransaction<MEMBER> replicatedTx )
+    {
+        return sessionTracker.validateOperation( replicatedTx.globalSession(), replicatedTx.localOperationId() );
+    }
 
-        int currentTokenId = lockTokenManager.currentToken().id();
-        int txLockSessionId = tx.getLockSessionId();
-
-        if ( currentTokenId != txLockSessionId && txLockSessionId != Locks.Client.NO_LOCK_SESSION_ID )
-        {
-            future.ifPresent( txFuture -> txFuture.notifyCommitFailed( new TransactionFailureException(
-                    LockSessionInvalid,
-                    "The lock session in the cluster has changed: " +
-                            "[current lock session id:%d, tx lock session id:%d]",
-                    currentTokenId, txLockSessionId ) ) );
-            return;
-        }
-
-        try
-        {
-            long txId = commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL,
-                    TransactionApplicationMode.EXTERNAL );
-
-            future.ifPresent( txFuture -> txFuture.notifySuccessfullyCommitted( txId ) );
-        }
-        catch ( TransactionFailureException e )
-        {
-            future.ifPresent( txFuture -> txFuture.notifyCommitFailed( e ) );
-            throw new IllegalStateException( "Failed to locally commit a transaction that has already been " +
-                    "committed to the RAFT log. This server cannot process later transactions and needs to be " +
-                    "restarted once the underlying cause has been addressed.", e );
-        }
+    private boolean txAlreadyCommitted( long logIndex )
+    {
+        return logIndex <= lastCommittedIndex;
     }
 
     public void setLastCommittedIndex( long lastCommittedIndex )

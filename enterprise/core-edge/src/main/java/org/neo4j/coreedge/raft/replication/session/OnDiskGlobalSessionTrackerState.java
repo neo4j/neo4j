@@ -65,27 +65,35 @@ public class OnDiskGlobalSessionTrackerState<MEMBER> extends LifecycleAdapter im
     }
 
     @Override
-    public boolean validateAndTrackOperationAtLogIndex( GlobalSession<MEMBER> globalSession, LocalOperationId
-            localOperationId, long logIndex )
+    public boolean validateOperation( GlobalSession<MEMBER> globalSession, LocalOperationId
+            localOperationId )
+    {
+        return inMemoryGlobalSessionTrackerState.validateOperation( globalSession, localOperationId );
+    }
+
+    @Override
+    public void update( GlobalSession<MEMBER> globalSession, LocalOperationId localOperationId, long logIndex )
     {
         InMemoryGlobalSessionTrackerState<MEMBER> temp =
                 new InMemoryGlobalSessionTrackerState<>( inMemoryGlobalSessionTrackerState );
 
-        boolean stateUpdated = temp.validateAndTrackOperationAtLogIndex( globalSession, localOperationId, logIndex );
+        temp.update( globalSession, localOperationId, logIndex );
 
-        if ( stateUpdated )
+        try
         {
-            try
-            {
-                statePersister.persistStoreData( temp );
-                inMemoryGlobalSessionTrackerState = temp;
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            statePersister.persistStoreData( temp );
+            inMemoryGlobalSessionTrackerState = temp;
         }
-        return stateUpdated;
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    @Override
+    public long logIndex()
+    {
+        return inMemoryGlobalSessionTrackerState.logIndex();
     }
 
     @Override

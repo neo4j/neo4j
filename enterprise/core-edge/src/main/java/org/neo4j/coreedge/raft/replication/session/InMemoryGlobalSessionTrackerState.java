@@ -56,15 +56,44 @@ public class InMemoryGlobalSessionTrackerState<MEMBER> implements GlobalSessionT
     }
 
     @Override
-    public boolean validateAndTrackOperationAtLogIndex( GlobalSession<MEMBER> globalSession,
-                                                        LocalOperationId localOperationId, long logIndex )
+    public boolean validateOperation( GlobalSession<MEMBER> globalSession,
+                                      LocalOperationId localOperationId )
     {
-        this.logIndex = logIndex;
-        LocalSessionTracker localSessionTracker = validateGlobalSessionAndGetLocalSessionTracker( globalSession );
-        return localSessionTracker.validateAndTrackOperation( localOperationId );
+        boolean result;
+
+        LocalSessionTracker existingSessionTracker = sessionTrackers.get( globalSession.owner() );
+        if ( isNewSession( globalSession, existingSessionTracker ) )
+        {
+            result = isFirstOperation( localOperationId );
+        }
+        else
+        {
+            result = existingSessionTracker.isValidOperation( localOperationId );
+        }
+
+        return result;
     }
 
-    long logIndex()
+    @Override
+    public void update( GlobalSession<MEMBER> globalSession, LocalOperationId localOperationId, long logIndex )
+    {
+        LocalSessionTracker localSessionTracker = validateGlobalSessionAndGetLocalSessionTracker( globalSession );
+        localSessionTracker.validateAndTrackOperation( localOperationId );
+        this.logIndex = logIndex;
+    }
+
+    private boolean isNewSession( GlobalSession<MEMBER> globalSession, LocalSessionTracker existingSessionTracker )
+    {
+        return existingSessionTracker == null || !existingSessionTracker.globalSessionId.equals( globalSession.sessionId() );
+    }
+
+    private boolean isFirstOperation( LocalOperationId id )
+    {
+        return id.sequenceNumber() == 0;
+    }
+
+    @Override
+    public long logIndex()
     {
         return logIndex;
     }
@@ -73,12 +102,8 @@ public class InMemoryGlobalSessionTrackerState<MEMBER> implements GlobalSessionT
     {
         LocalSessionTracker localSessionTracker = sessionTrackers.get( globalSession.owner() );
 
-        if ( localSessionTracker == null )
-        {
-            localSessionTracker = new LocalSessionTracker( globalSession.sessionId() );
-            sessionTrackers.put( globalSession.owner(), localSessionTracker );
-        }
-        else if ( !localSessionTracker.globalSessionId.equals( globalSession.sessionId() ) )
+        if ( localSessionTracker == null ||
+                !localSessionTracker.globalSessionId.equals( globalSession.sessionId() ) )
         {
             localSessionTracker = new LocalSessionTracker( globalSession.sessionId() );
             sessionTrackers.put( globalSession.owner(), localSessionTracker );

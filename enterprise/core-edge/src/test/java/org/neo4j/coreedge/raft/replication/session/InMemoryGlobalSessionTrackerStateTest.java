@@ -19,117 +19,13 @@
  */
 package org.neo4j.coreedge.raft.replication.session;
 
-import java.util.UUID;
+import org.neo4j.coreedge.server.RaftTestMember;
 
-import org.junit.Test;
-
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-public class InMemoryGlobalSessionTrackerStateTest
+public class InMemoryGlobalSessionTrackerStateTest extends BaseGlobalSessionTrackerStateTest
 {
-    CoreMember coreA = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
-            new AdvertisedSocketAddress( "raft:1" ) );
-    CoreMember coreB = new CoreMember( new AdvertisedSocketAddress( "core:2" ),
-            new AdvertisedSocketAddress( "raft:2" ) );
-
-    GlobalSession sessionA = new GlobalSession( UUID.randomUUID(), coreA );
-    GlobalSession sessionA2 = new GlobalSession( UUID.randomUUID(), coreA );
-
-    GlobalSession sessionB = new GlobalSession( UUID.randomUUID(), coreB );
-
-    @Test
-    public void firstValidSequenceNumberIsZero()
+    @Override
+    protected GlobalSessionTrackerState<RaftTestMember> instantiateSessionTracker()
     {
-        InMemoryGlobalSessionTrackerState sessionTracker = new InMemoryGlobalSessionTrackerState();
-
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 0 ), 0 ) );
-        assertFalse( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 1, -1 ),
-                0 ) );
-        assertFalse( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 2, 1 ), 0 ) );
-    }
-
-    @Test
-    public void repeatedOperationsAreRejected()
-    {
-        InMemoryGlobalSessionTrackerState sessionTracker = new InMemoryGlobalSessionTrackerState();
-
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 0 ), 0 ) );
-        assertFalse( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 0 ), 0 ) );
-        assertFalse( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 0 ), 0 ) );
-    }
-
-    @Test
-    public void seriesOfOperationsAreAccepted()
-    {
-        InMemoryGlobalSessionTrackerState sessionTracker = new InMemoryGlobalSessionTrackerState();
-
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 0 ), 0 ) );
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 1 ), 0 ) );
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 2 ), 0 ) );
-    }
-
-    @Test
-    public void gapsAreNotAllowed()
-    {
-        InMemoryGlobalSessionTrackerState sessionTracker = new InMemoryGlobalSessionTrackerState();
-
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 0 ), 0 ) );
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 1 ), 0 ) );
-        assertFalse( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 3 ), 0 ) );
-
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 2 ), 0 ) );
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 3 ), 0 ) );
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 4 ), 0 ) );
-        assertFalse( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 6 ), 0 ) );
-    }
-
-    @Test
-    public void localSessionsAreIndependent()
-    {
-        InMemoryGlobalSessionTrackerState sessionTracker = new InMemoryGlobalSessionTrackerState();
-
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 0 ), 0 ) );
-        assertFalse( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 0 ), 0 ) );
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 1 ), 0 ) );
-
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 1, 0 ), 0 ) );
-        assertFalse( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 1, 0 ), 0 ) );
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 1, 1 ), 0 ) );
-    }
-
-    @Test
-    public void globalSessionsAreIndependent()
-    {
-        InMemoryGlobalSessionTrackerState sessionTracker = new InMemoryGlobalSessionTrackerState();
-
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 0 ), 0 ) );
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionB, new LocalOperationId( 0, 0 ), 0 ) );
-
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 1, 0 ), 0 ) );
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionB, new LocalOperationId( 1, 0 ), 0 ) );
-
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 2, 0 ), 0 ) );
-        assertFalse( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 2, 0 ), 0 ) );
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionB, new LocalOperationId( 2, 0 ), 0 ) );
-        assertFalse( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 2, 0 ), 0 ) );
-        assertFalse( sessionTracker.validateAndTrackOperationAtLogIndex( sessionB, new LocalOperationId( 2, 0 ), 0 ) );
-    }
-
-    @Test
-    public void newGlobalSessionUnderSameOwnerResetsCorrespondingLocalSessionTracker()
-    {
-        InMemoryGlobalSessionTrackerState sessionTracker = new InMemoryGlobalSessionTrackerState();
-
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 0 ), 0 ) );
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA, new LocalOperationId( 0, 1 ), 0 ) );
-
-        assertFalse( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA2, new LocalOperationId( 0, 2 ), 0 ) );
-
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA2, new LocalOperationId( 0, 0 ), 0 ) );
-        assertTrue( sessionTracker.validateAndTrackOperationAtLogIndex( sessionA2, new LocalOperationId( 0, 1 ), 0 ) );
+        return new InMemoryGlobalSessionTrackerState<>();
     }
 }
