@@ -13,6 +13,8 @@ fi
 echo "stdout from java"
 echo "stderr from java" >&2
 
+echo -n "$@" >../java-args
+
 if [[ "${FAKE_JAVA_SLEEP:-}" ]]; then
   sleep "${FAKE_JAVA_SLEEP}"
 fi

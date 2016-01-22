@@ -17,6 +17,11 @@ set_config() {
   echo "${name}=${value}" >>"neo4j-home/conf/${file}"
 }
 
+clear_config() {
+  file=$1
+  rm "neo4j-home/conf/${file}"
+}
+
 set_main_class() {
   class=$1
   sed -i.bak -e "s/#{neo4j\.mainClass}/${class}/" neo4j-home/bin/neo4j
