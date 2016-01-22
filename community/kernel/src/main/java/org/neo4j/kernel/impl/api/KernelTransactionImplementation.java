@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.helpers.Clock;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -117,6 +118,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionHooks.TransactionHooksState hooksState;
     private KernelStatement currentStatement;
     private CloseListener closeListener;
+    private AccessMode accessMode = AccessMode.FULL;
 
     private boolean beforeHookInvoked;
     private boolean closing, closed;
@@ -202,6 +204,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
+    public AccessMode mode()
+    {
+        return accessMode;
+    }
+
+    @Override
+    public void setMode( AccessMode mode )
+    {
+        this.accessMode = mode;
+    }
+
+    @Override
     public KernelStatement acquireStatement()
     {
         assertTransactionOpen();
@@ -222,11 +236,21 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public void upgradeToDataTransaction() throws InvalidTransactionTypeKernelException
     {
+        if( !accessMode.allowsWrites() )
+        {
+            throw new InvalidTransactionTypeKernelException(
+                    String.format( "Write operations are not allowed for `%s` transactions.", accessMode.name() ) );
+        }
         transactionType = transactionType.upgradeToDataTransaction();
     }
 
     public void upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
     {
+        if( !accessMode.allowsSchemaWrites() )
+        {
+            throw new InvalidTransactionTypeKernelException(
+                    String.format( "Schema write operations are not allowed for `%s` transactions.", accessMode.name() ) );
+        }
         doUpgradeToSchemaTransaction();
         transactionType = transactionType.upgradeToSchemaTransaction();
     }

@@ -72,7 +72,7 @@ import static org.mockito.Mockito.when;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @RunWith( Parameterized.class )
-public class KernelTransactionImplementationTest
+public class KernelTransactionImplementationTest extends KernelTransactionTestBase
 {
     @Parameterized.Parameter( 0 )
     public ThrowingConsumer<KernelTransaction,Exception> transactionConsumer;
@@ -430,57 +430,5 @@ public class KernelTransactionImplementationTest
             verify( this.transactionMonitor, times( 1 ) ).upgradeToWriteTransaction();
         }
         verifyNoMoreInteractions( transactionMonitor );
-    }
-
-    private final StorageEngine storageEngine = mock( StorageEngine.class );
-    private final NeoStores neoStores = mock( NeoStores.class );
-    private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
-    private final StoreReadLayer readLayer = mock( StoreReadLayer.class );
-    private final TransactionHooks hooks = new TransactionHooks();
-    private final LegacyIndexTransactionState legacyIndexState = mock( LegacyIndexTransactionState.class );
-    private final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
-    private final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
-    private final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
-    private final TransactionHeaderInformationFactory headerInformationFactory =
-            mock( TransactionHeaderInformationFactory.class );
-    private final FakeClock clock = new FakeClock();
-    private final KernelTransactions kernelTransactions = mock( KernelTransactions.class );
-
-    @Before
-    public void before()
-    {
-        when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
-        when( headerInformationFactory.create() ).thenReturn( headerInformation );
-        when( readLayer.acquireStatement() ).thenReturn( mock( StoreStatement.class ) );
-        when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
-        when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
-    }
-
-    private KernelTransactionImplementation newTransaction()
-    {
-        return newTransaction( 0 );
-    }
-
-    private KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted )
-    {
-        return new KernelTransactionImplementation( null, null, new NoOpClient(), hooks, null, null, headerInformationFactory,
-                commitProcess, transactionMonitor, legacyIndexState, kernelTransactions, clock, TransactionTracer.NULL,
-                storageEngine, lastTransactionIdWhenStarted );
-    }
-
-    public class CapturingCommitProcess implements TransactionCommitProcess
-    {
-        private long txId = 1;
-        private TransactionRepresentation transaction;
-
-        @Override
-        public long commit( TransactionToApply batch, CommitEvent commitEvent,
-                            TransactionApplicationMode mode ) throws TransactionFailureException
-        {
-            assert transaction == null : "Designed to only allow one transaction";
-            assert batch.next() == null : "Designed to only allow one transaction";
-            transaction = batch.transactionRepresentation();
-            return txId++;
-        }
     }
 }
