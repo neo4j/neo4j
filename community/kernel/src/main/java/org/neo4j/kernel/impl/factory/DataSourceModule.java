@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -158,7 +159,8 @@ public class DataSourceModule
 
         life.add( nodeManager );
 
-        life.add( new DatabaseAvailability( platformModule.availabilityGuard, platformModule.transactionMonitor ) );
+        life.add( new DatabaseAvailability( platformModule.availabilityGuard, platformModule.transactionMonitor,
+                config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ) ) );
 
         life.add( new StartupWaiter( platformModule.availabilityGuard, editionModule.transactionStartTimeout ) );
 
