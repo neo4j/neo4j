@@ -85,6 +85,8 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.InternalProcedureLoggingService;
+import org.neo4j.kernel.impl.proc.LoggingService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -750,14 +752,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
          * This is used by legacy indexes and constraint indexes whenever a transaction is to be spawned
          * from within an existing transaction. It smells, and we should look over alternatives when time permits.
          */
-        Supplier<KernelAPI> kernelProvider = new Supplier<KernelAPI>()
-        {
-            @Override
-            public KernelAPI get()
-            {
-                return kernelModule.kernelAPI();
-            }
-        };
+        Supplier<KernelAPI> kernelProvider = () -> kernelModule.kernelAPI();
 
         ConstraintIndexCreator constraintIndexCreator =
                 new ConstraintIndexCreator( kernelProvider, indexingService );
@@ -772,7 +767,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 storeLayer, legacyPropertyTrackers, constraintIndexCreator, updateableSchemaState, guard,
                 legacyIndexStore ) );
 
-        Procedures procedures = setupProcedures();
+        Procedures procedures = setupProcedures( logService );
 
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( locks, constraintIndexCreator,
@@ -817,7 +812,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     // register graph types, set up built-in procedures and scan for procedures on disk
-    private Procedures setupProcedures() throws KernelException, IOException
+    private Procedures setupProcedures( final LogService log ) throws KernelException, IOException
     {
         Procedures procedures = dependencies.satisfyDependency( new Procedures( msgLog ) );
         procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class ) );
@@ -827,6 +822,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         //register API
         procedures.registerComponent( GraphDatabaseService.class,
                 (ctx) -> dependencyResolver.resolveDependency( GraphDatabaseService.class ) );
+
+        InternalProcedureLoggingService loggingService = new InternalProcedureLoggingService( log.getUserLog( Procedures.class  ) );
+        procedures.registerComponent( LoggingService.class, (ctx) -> loggingService );
 
         BuiltInProcedures.addTo( procedures );
         procedures.loadFromDirectory( config.get( GraphDatabaseSettings.plugin_dir ) );

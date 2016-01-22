@@ -19,14 +19,14 @@
  */
 package org.neo4j.procedure;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -34,21 +34,27 @@ import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.proc.Resource;
 import org.neo4j.kernel.impl.proc.JarBuilder;
+import org.neo4j.kernel.impl.proc.LoggingService;
 import org.neo4j.kernel.impl.proc.Name;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.ReadOnlyProcedure;
+import org.neo4j.kernel.impl.proc.Resource;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertFalse;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class ProcedureIT
 {
@@ -229,6 +235,39 @@ public class ProcedureIT
         }
     }
 
+    @Test
+    public void shouldLogLikeThereIsNoTomorrow() throws Throwable
+    {
+        // Given
+        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
+
+        // When
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+
+        GraphDatabaseService db = new TestGraphDatabaseFactory()
+                .setInternalLogProvider( logProvider )
+                .setUserLogProvider( logProvider  )
+                .newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .newGraphDatabase();
+
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            Result res = db.execute( "CALL org.neo4j.procedure.logAround()" );
+            while ( res.hasNext() ) res.next();
+        }
+
+        // Then
+        AssertableLogProvider.LogMatcherBuilder match = inLog( Procedures.class );
+        logProvider.assertAtLeastOnce(
+            match.debug( "1" ),
+            match.info( "2" ),
+            match.warn( "3" ),
+            match.error( "4" )
+        );
+    }
+
     public static class Output
     {
         public long someVal = 1337;
@@ -278,6 +317,9 @@ public class ProcedureIT
         @Resource
         public GraphDatabaseService db;
 
+        @Resource
+        public LoggingService logging;
+
         @ReadOnlyProcedure
         public Stream<Output> integrationTestMe()
         {
@@ -322,6 +364,16 @@ public class ProcedureIT
         {
             return stream( spliteratorUnknownSize( db.findNodes( label( "Person" ) ), ORDERED | IMMUTABLE ), false )
                     .map( ( n ) -> new MyOutputRecord( (String) n.getProperty( "name" ) ) );
+        }
+
+        @ReadOnlyProcedure
+        public Stream<Output> logAround()
+        {
+            logging.debug( "1" );
+            logging.info( "2" );
+            logging.warn( "3" );
+            logging.error( "4" );
+            return Stream.empty();
         }
     }
 }

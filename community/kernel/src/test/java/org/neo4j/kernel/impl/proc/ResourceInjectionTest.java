@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -32,6 +33,8 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Procedure;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -91,7 +94,7 @@ public class ResourceInjectionTest
 
         List<String> listCoolPeople()
         {
-            return asList( "booh!" );
+            return singletonList( "booh!" );
         }
     }
 
@@ -118,7 +121,6 @@ public class ResourceInjectionTest
             return api.listCoolPeople().stream().map( MyOutputRecord::new );
         }
     }
-
 
     private List<Procedure> compile( Class<?> clazz ) throws KernelException
     {

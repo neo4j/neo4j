@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.proc;
 import junit.framework.TestCase;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -36,6 +37,9 @@ import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.Procedure;
 import org.neo4j.kernel.api.proc.Procedure.BasicContext;
 
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
@@ -43,6 +47,36 @@ public class ReflectiveProcedureTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    private ReflectiveProcedureCompiler procedureCompiler;
+    private TypeMappers typeMappers;
+    private ComponentRegistry components;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        typeMappers = new TypeMappers();
+        components = new ComponentRegistry();
+        procedureCompiler = new ReflectiveProcedureCompiler( typeMappers, components );
+    }
+
+    @Test
+    public void shouldInjectLogging() throws KernelException
+    {
+        // Given
+        LoggingService loggingService = spy( LoggingService.class );
+        components.register( LoggingService.class, (ctx) -> loggingService );
+        Procedure procedure = procedureCompiler.compile( LoggingProcedure.class ).get( 0 );
+
+        // When
+        procedure.apply( new BasicContext(), new Object[0] );
+
+        // Then
+        verify( loggingService ).debug( "1" );
+        verify( loggingService ).info( "2" );
+        verify( loggingService ).warn( "3" );
+        verify( loggingService ).error( "4" );
+    }
 
     @Test
     public void shouldCompileProcedure() throws Throwable
@@ -158,6 +192,22 @@ public class ReflectiveProcedureTest
         }
     }
 
+    public static class LoggingProcedure
+    {
+        @Resource
+        public LoggingService logging;
+
+        @ReadOnlyProcedure
+        public Stream<MyOutputRecord> logAround()
+        {
+            logging.debug( "1" );
+            logging.info( "2" );
+            logging.warn( "3" );
+            logging.error( "4" );
+            return Stream.empty();
+        }
+    }
+
     public static class SingleReadOnlyProcedure
     {
         @ReadOnlyProcedure
@@ -235,6 +285,6 @@ public class ReflectiveProcedureTest
 
     private List<Procedure> compile( Class<?> clazz ) throws KernelException
     {
-        return new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry() ).compile( clazz );
+        return procedureCompiler.compile( clazz );
     }
 }
