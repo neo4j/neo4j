@@ -6,8 +6,10 @@ test_description="Test differences running the arbiter"
 fake_install
 export FAKE_JAVA_SLEEP=1
 
+set_config 'org.neo4j.server.database.mode' 'ARBITER' neo4j-server.properties
+
 test_expect_success "should start" "
-  neo4j-home/bin/neo4j-arbiter start >neo4j.stdout
+  neo4j-home/bin/neo4j start >neo4j.stdout
 "
 
 test_expect_success "should redirect output to arbiter-console.log" "

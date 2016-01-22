@@ -46,9 +46,7 @@
                     <include name="**/server/bin/neo4j"/>
                     <include name="**/server/bin/neo4j-shell"/>
                     <include name="**/server/bin/neo4j-import"/>
-                    <include name="**/server/bin/neo4j-common.sh"/>
                     <include name="**/server/bin/neo4j-backup"/>
-                    <include name="**/server/bin/neo4j-arbiter"/>
                 </fileset>
             </chmod>
 

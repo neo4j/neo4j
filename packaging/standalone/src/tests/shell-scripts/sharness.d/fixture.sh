@@ -3,7 +3,6 @@ fake_install() {
   mkdir -p neo4j-home/conf
   cp ../../../main/distribution/shell-scripts/bin/* neo4j-home/bin 2>/dev/null
   chmod +x neo4j-home/bin/neo4j
-  chmod +x neo4j-home/bin/neo4j-arbiter
 }
 
 clear_config() {
@@ -24,7 +23,7 @@ clear_config() {
 
 set_main_class() {
   class=$1
-  sed -i.bak -e "s/#{neo4j\.mainClass}/${class}/" neo4j-home/bin/neo4j-common.sh
+  sed -i.bak -e "s/#{neo4j\.mainClass}/${class}/" neo4j-home/bin/neo4j
 }
 
 neo4j_home() {
