@@ -37,7 +37,6 @@
 #  * NEO4J_LOG
 #  * NEO4J_PIDFILE
 #  * NEO4J_START_WAIT
-#  * IS_ARBITER
 
 find_java_home() {
   [[ "${JAVA_HOME:-}" ]] && return
@@ -97,7 +96,7 @@ show_java_help() {
 }
 
 setup_arbiter_options() {
-  if [[ "${IS_ARBITER:-}" == "t" ]]; then
+  if [[ "${SCRIPT}" == "neo4j-arbiter" ]]; then
     SHUTDOWN_TIMEOUT=20
     MIN_ALLOWED_OPEN_FILES=1
     CONSOLE_LOG="${NEO4J_LOG}/arbiter-console.log"

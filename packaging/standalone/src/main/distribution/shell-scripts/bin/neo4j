@@ -20,8 +20,6 @@
 set -euo pipefail
 [[ "${TRACE:-}" ]] && set -x
 
-IS_ARBITER="f"
-
 setup_neo4jhome_and_script() {
   SCRIPT=$0
 
