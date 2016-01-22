@@ -145,29 +145,34 @@ public class KernelIT extends KernelIntegrationTest
     public void changesInTransactionContextShouldBeRolledBackWhenTxIsRolledBack() throws Exception
     {
         // GIVEN
-        Transaction tx = db.beginTx();
-        Statement statement = statementContextSupplier.get();
+        Node node;
+        int labelId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Statement statement = statementContextSupplier.get();
 
-        // WHEN
-        Node node = db.createNode();
-        int labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
-        statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
-        statement.close();
-        tx.close();
+            // WHEN
+            node = db.createNode();
+            labelId = statement.dataWriteOperations().labelGetOrCreateForName( "labello" );
+            statement.dataWriteOperations().nodeAddLabel( node.getId(), labelId );
+            statement.close();
+            tx.close();
+        }
 
         // THEN
-        tx = db.beginTx();
-        statement = statementContextSupplier.get();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
-            statement.readOperations().nodeHasLabel( node.getId(), labelId );
-            fail( "should have thrown exception" );
+            Statement statement = statementContextSupplier.get();
+            try
+            {
+                statement.readOperations().nodeHasLabel( node.getId(), labelId );
+                fail( "should have thrown exception" );
+            }
+            catch ( EntityNotFoundException e )
+            {
+                // Yay!
+            }
         }
-        catch ( EntityNotFoundException e )
-        {
-            // Yay!
-        }
-
     }
 
     @Test
