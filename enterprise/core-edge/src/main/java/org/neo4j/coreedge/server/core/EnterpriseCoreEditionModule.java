@@ -403,7 +403,7 @@ public class EnterpriseCoreEditionModule
                                                                    final Dependencies dependencies,
                                                                    final LogService logging,
                                                                    Monitors monitors,
-                                                                   GlobalSessionTrackerState globalSessionTrackerState )
+                                                                   GlobalSessionTrackerState<CoreMember> globalSessionTrackerState )
     {
         return ( appender, applier, config ) -> {
             TransactionRepresentationCommitProcess localCommit =
@@ -411,7 +411,7 @@ public class EnterpriseCoreEditionModule
             dependencies.satisfyDependencies( localCommit );
 
             CommittingTransactions committingTransactions = new CommittingTransactionsRegistry();
-            ReplicatedTransactionStateMachine replicatedTxStateMachine = new ReplicatedTransactionStateMachine(
+            ReplicatedTransactionStateMachine<CoreMember> replicatedTxStateMachine = new ReplicatedTransactionStateMachine<>(
                     localCommit, localSessionPool.getGlobalSession(), currentReplicatedLockState,
                     committingTransactions, globalSessionTrackerState );
 

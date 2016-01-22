@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.replication.session;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.junit.Rule;
@@ -28,63 +29,55 @@ import org.junit.Test;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMember.RaftTestMemberMarshal;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.UUID.randomUUID;
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.assertTrue;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
-public class OnDiskGlobalSessionTrackerStateTest
+public class OnDiskGlobalSessionTrackerStateTest extends BaseGlobalSessionTrackerStateTest
 {
     @Rule
     public final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
+    private final EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
 
     @Test
     public void shouldRoundtripGlobalSessionTrackerState() throws Exception
     {
         // given
-        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-        fsa.mkdir( testDir.directory() );
-
-        OnDiskGlobalSessionTrackerState<RaftTestMember> oldState = new OnDiskGlobalSessionTrackerState<>( fsa,
-                testDir.directory(), new RaftTestMemberMarshal(), 100, mock( Supplier.class ) );
+        GlobalSessionTrackerState<RaftTestMember> oldState = instantiateSessionTracker();
 
         final GlobalSession<RaftTestMember> globalSession = new GlobalSession<>( randomUUID(), member( 1 ) );
 
-        oldState.validateAndTrackOperationAtLogIndex( globalSession, new LocalOperationId( 1, 0 ), 0 );
+        oldState.update( globalSession, new LocalOperationId( 1, 0 ), 0 );
 
         // when
         OnDiskGlobalSessionTrackerState<RaftTestMember> newState = new OnDiskGlobalSessionTrackerState<>( fsa,
                 testDir.directory(), new RaftTestMemberMarshal(), 100, mock( Supplier.class ) );
 
         // then
-        assertTrue( oldState.validateAndTrackOperationAtLogIndex( globalSession, new LocalOperationId( 1, 1 ), 99 ) );
-        assertTrue( newState.validateAndTrackOperationAtLogIndex( globalSession, new LocalOperationId( 1, 1 ), 99 ) );
+        assertTrue( oldState.validateOperation( globalSession, new LocalOperationId( 1, 1 ) ) );
+        assertTrue( newState.validateOperation( globalSession, new LocalOperationId( 1, 1 ) ) );
 
-        assertFalse( oldState.validateAndTrackOperationAtLogIndex( globalSession, new LocalOperationId( 1, 3 ), 99 ) );
-        assertFalse( newState.validateAndTrackOperationAtLogIndex( globalSession, new LocalOperationId( 1, 3 ), 99 ) );
+        assertFalse( oldState.validateOperation( globalSession, new LocalOperationId( 1, 3 ) ) );
+        assertFalse( newState.validateOperation( globalSession, new LocalOperationId( 1, 3 ) ) );
     }
 
     @Test
     public void shouldPersistOnSessionCreation() throws Exception
     {
         // given
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-
-        OnDiskGlobalSessionTrackerState<RaftTestMember> state = new OnDiskGlobalSessionTrackerState<>( fsa,
-                testDir.directory(), new RaftTestMemberMarshal(), 10, mock( Supplier.class ) );
+        GlobalSessionTrackerState<RaftTestMember> state = instantiateSessionTracker();
 
         // when
-        state.validateAndTrackOperationAtLogIndex( new GlobalSession<>( randomUUID(), member( 1 ) ),
-                new LocalOperationId( 1, 0 ), 0 );
+        state.update( new GlobalSession<>( randomUUID(), member( 1 ) ), new LocalOperationId( 1, 0 ), 0 );
 
         // then
         assertThat( fsa.getFileSize( new File( testDir.directory(), OnDiskGlobalSessionTrackerState.FILENAME + "a" )
@@ -95,69 +88,34 @@ public class OnDiskGlobalSessionTrackerStateTest
     public void shouldPersistOnSessionUpdate() throws Exception
     {
         // given
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-
-        OnDiskGlobalSessionTrackerState<RaftTestMember> state = new OnDiskGlobalSessionTrackerState<>( fsa,
-                testDir.directory(), new RaftTestMemberMarshal(), 10, mock( Supplier.class ) );
+        GlobalSessionTrackerState<RaftTestMember> state = instantiateSessionTracker();
         File fileName = new File( testDir.directory(), OnDiskGlobalSessionTrackerState.FILENAME + "a" );
 
         GlobalSession<RaftTestMember> globalSession = new GlobalSession<>( randomUUID(), member( 1 ) );
-        state.validateAndTrackOperationAtLogIndex( globalSession, new LocalOperationId( 1, 0 ), 0 );
+        state.update( globalSession, new LocalOperationId( 1, 0 ), 0 );
 
         long initialFileSize = fsa.getFileSize( fileName );
 
         // when
         // the global session exists and this local operation id is a valid next value
-        state.validateAndTrackOperationAtLogIndex( globalSession, new LocalOperationId( 1, 1 ), 1 );
+        state.update( globalSession, new LocalOperationId( 1, 1 ), 1 );
 
         // then
         assertThat( fsa.getFileSize( fileName ), greaterThan( initialFileSize ) );
     }
 
-    @Test
-    public void shouldNotPersistOnNegativeSessionCheckForExistingGlobalSession() throws Exception
+    @Override
+    protected GlobalSessionTrackerState<RaftTestMember> instantiateSessionTracker()
     {
-        // given
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        fsa.mkdir( testDir.directory() );
 
-        OnDiskGlobalSessionTrackerState<RaftTestMember> state = new OnDiskGlobalSessionTrackerState<>( fsa,
-                testDir.directory(), new RaftTestMemberMarshal(), 10, mock( Supplier.class ) );
-        File fileName = new File( testDir.directory(), OnDiskGlobalSessionTrackerState.FILENAME + "a" );
-
-        GlobalSession<RaftTestMember> globalSession = new GlobalSession<>( randomUUID(), member(
-                1 ) );
-        state.validateAndTrackOperationAtLogIndex( globalSession, new LocalOperationId( 1, 0 ), 0 );
-
-        long initialFileSize = fsa.getFileSize( fileName );
-        assertThat( initialFileSize, greaterThan( 0L ) );
-
-        // when
-        // The global session exists but this local operation id is not a valid next value
-        state.validateAndTrackOperationAtLogIndex( globalSession, new LocalOperationId( 2, 4 ), 1 );
-
-        // then
-        assertThat( fsa.getFileSize( fileName ), equalTo( initialFileSize ) );
-    }
-
-
-    @Test
-    public void shouldNotPersistOnNegativeSessionCheckForNewGlobalSession() throws Exception
-    {
-        // given
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-
-        OnDiskGlobalSessionTrackerState<RaftTestMember> state = new OnDiskGlobalSessionTrackerState<>( fsa,
-                testDir.directory(), new RaftTestMemberMarshal(), 10, mock( Supplier.class ) );
-        File fileName = new File( testDir.directory(), OnDiskGlobalSessionTrackerState.FILENAME + "a" );
-
-        GlobalSession<RaftTestMember> globalSession = new GlobalSession<>( randomUUID(), member(
-                1 ) );
-
-        // when
-        // this is the first time we see globalSession but the local operation id is invalid
-        state.validateAndTrackOperationAtLogIndex( globalSession, new LocalOperationId( 1, 1 ), 0 );
-
-        // then
-        assertThat( fsa.getFileSize( fileName ), equalTo( 0L ) );
+        try
+        {
+            return new OnDiskGlobalSessionTrackerState<>( fsa, testDir.directory(), new RaftTestMemberMarshal(), 100, mock( Supplier.class ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

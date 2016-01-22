@@ -36,6 +36,9 @@ public interface GlobalSessionTrackerState<MEMBER>
     /**
      * Tracks the operation and returns true iff this operation should be allowed.
      */
-    boolean validateAndTrackOperationAtLogIndex( GlobalSession<MEMBER> globalSession, LocalOperationId localOperationId,
-                                                 long logIndex );
+    boolean validateOperation( GlobalSession<MEMBER> globalSession, LocalOperationId localOperationId );
+
+    void update( GlobalSession<MEMBER> globalSession, LocalOperationId localOperationId, long logIndex );
+
+    long logIndex();
 }
