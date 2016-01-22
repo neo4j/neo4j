@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -64,6 +66,8 @@ public class ProcedureIT
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    private GraphDatabaseService db;
+
     @Test
     public void shouldLoadProcedureFromPluginDirectory() throws Throwable
     {
@@ -71,9 +75,9 @@ public class ProcedureIT
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
 
         // Then
         try ( Transaction ignore = db.beginTx() )
@@ -95,9 +99,9 @@ public class ProcedureIT
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
 
         // Then
         try ( Transaction ignore = db.beginTx() )
@@ -115,9 +119,9 @@ public class ProcedureIT
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
 
         // Then
         try ( Transaction ignore = db.beginTx() )
@@ -137,9 +141,9 @@ public class ProcedureIT
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
 
         // Then
         try ( Transaction ignore = db.beginTx() )
@@ -158,9 +162,9 @@ public class ProcedureIT
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
 
         // Then
         try ( Transaction ignore = db.beginTx() )
@@ -177,7 +181,7 @@ public class ProcedureIT
     public void shouldGiveHelpfulErrorOnMissingProcedure() throws Throwable
     {
         // Given
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
 
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -217,9 +221,10 @@ public class ProcedureIT
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
+
         try ( Transaction ignore = db.beginTx() )
         {
             db.createNode( label( "Person" ) ).setProperty( "name", "Buddy Holly" );
@@ -245,11 +250,11 @@ public class ProcedureIT
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .setInternalLogProvider( logProvider )
-                .setUserLogProvider( logProvider  )
-                .newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+            .setInternalLogProvider( logProvider )
+            .setUserLogProvider( logProvider  )
+            .newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
 
         // When
         try ( Transaction ignore = db.beginTx() )
@@ -266,6 +271,21 @@ public class ProcedureIT
             match.warn( "3" ),
             match.error( "4" )
         );
+    }
+
+    @Before
+    public void setUp()
+    {
+        this.db = null;
+    }
+
+    @After
+    public void tearDown()
+    {
+        if ( this.db != null )
+        {
+            this.db.shutdown();
+        }
     }
 
     public static class Output
