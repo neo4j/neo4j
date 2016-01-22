@@ -8,13 +8,8 @@ export FAKE_JAVA_SLEEP=1
 
 set_config 'org.neo4j.server.database.mode' 'ARBITER' neo4j-server.properties
 
-test_expect_success "should start" "
+test_expect_success "should start successfully" "
   neo4j-home/bin/neo4j start >neo4j.stdout
-"
-
-test_expect_success "should redirect output to arbiter-console.log" "
-  grep 'stdout from java' neo4j-home/data/log/arbiter-console.log &&
-  grep 'stderr from java' neo4j-home/data/log/arbiter-console.log
 "
 
 test_expect_success "should invoke arbiter main class" "

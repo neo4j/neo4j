@@ -105,7 +105,6 @@ setup_arbiter_options() {
   if [[ "$(echo "${org_neo4j_server_database_mode:-}" | tr [:lower:] [:upper:])" == "ARBITER" ]]; then
     SHUTDOWN_TIMEOUT=20
     MIN_ALLOWED_OPEN_FILES=1
-    CONSOLE_LOG="${NEO4J_LOG}/arbiter-console.log"
     MAIN_CLASS="org.neo4j.server.enterprise.StandaloneClusterClient"
 
     print_start_message() {
@@ -119,7 +118,6 @@ setup_arbiter_options() {
   else
     SHUTDOWN_TIMEOUT=120
     MIN_ALLOWED_OPEN_FILES=40000
-    CONSOLE_LOG="${NEO4J_LOG}/console.log"
     MAIN_CLASS="#{neo4j.mainClass}"
 
     port="${org_neo4j_server_webserver_port:-7474}"
@@ -213,6 +211,7 @@ setup_paths() {
   [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
   [[ "${NEO4J_LOG:-}" ]] || NEO4J_LOG="${NEO4J_HOME}/data/log"
   [[ "${NEO4J_PIDFILE:-}" ]] || NEO4J_PIDFILE="${NEO4J_HOME}/data/neo4j-service.pid"
+  CONSOLE_LOG="${NEO4J_LOG}/console.log"
 }
 
 setup_java_opts() {
