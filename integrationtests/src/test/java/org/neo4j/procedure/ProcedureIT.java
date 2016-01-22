@@ -35,12 +35,12 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.proc.JarBuilder;
-import org.neo4j.kernel.impl.proc.LoggingService;
 import org.neo4j.kernel.impl.proc.Name;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.ReadOnlyProcedure;
 import org.neo4j.kernel.impl.proc.Resource;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.Log;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Spliterator.IMMUTABLE;
@@ -318,7 +318,7 @@ public class ProcedureIT
         public GraphDatabaseService db;
 
         @Resource
-        public LoggingService logging;
+        public Log log;
 
         @ReadOnlyProcedure
         public Stream<Output> integrationTestMe()
@@ -369,10 +369,10 @@ public class ProcedureIT
         @ReadOnlyProcedure
         public Stream<Output> logAround()
         {
-            logging.debug( "1" );
-            logging.info( "2" );
-            logging.warn( "3" );
-            logging.error( "4" );
+            log.debug( "1" );
+            log.info( "2" );
+            log.warn( "3" );
+            log.error( "4" );
             return Stream.empty();
         }
     }

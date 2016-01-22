@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.Procedure;
 import org.neo4j.kernel.api.proc.Procedure.BasicContext;
+import org.neo4j.logging.Log;
 
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -49,33 +50,31 @@ public class ReflectiveProcedureTest
     public ExpectedException exception = ExpectedException.none();
 
     private ReflectiveProcedureCompiler procedureCompiler;
-    private TypeMappers typeMappers;
     private ComponentRegistry components;
 
     @Before
     public void setUp() throws Exception
     {
-        typeMappers = new TypeMappers();
         components = new ComponentRegistry();
-        procedureCompiler = new ReflectiveProcedureCompiler( typeMappers, components );
+        procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components );
     }
 
     @Test
     public void shouldInjectLogging() throws KernelException
     {
         // Given
-        LoggingService loggingService = spy( LoggingService.class );
-        components.register( LoggingService.class, (ctx) -> loggingService );
+        Log log = spy( Log.class );
+        components.register( Log.class, (ctx) -> log );
         Procedure procedure = procedureCompiler.compile( LoggingProcedure.class ).get( 0 );
 
         // When
         procedure.apply( new BasicContext(), new Object[0] );
 
         // Then
-        verify( loggingService ).debug( "1" );
-        verify( loggingService ).info( "2" );
-        verify( loggingService ).warn( "3" );
-        verify( loggingService ).error( "4" );
+        verify( log ).debug( "1" );
+        verify( log ).info( "2" );
+        verify( log ).warn( "3" );
+        verify( log ).error( "4" );
     }
 
     @Test
@@ -195,15 +194,15 @@ public class ReflectiveProcedureTest
     public static class LoggingProcedure
     {
         @Resource
-        public LoggingService logging;
+        public Log log;
 
         @ReadOnlyProcedure
         public Stream<MyOutputRecord> logAround()
         {
-            logging.debug( "1" );
-            logging.info( "2" );
-            logging.warn( "3" );
-            logging.error( "4" );
+            log.debug( "1" );
+            log.info( "2" );
+            log.warn( "3" );
+            log.error( "4" );
             return Stream.empty();
         }
     }

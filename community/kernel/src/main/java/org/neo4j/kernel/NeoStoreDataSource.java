@@ -85,8 +85,6 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.proc.InternalProcedureLoggingService;
-import org.neo4j.kernel.impl.proc.LoggingService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -812,7 +810,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     // register graph types, set up built-in procedures and scan for procedures on disk
-    private Procedures setupProcedures( final LogService log ) throws KernelException, IOException
+    private Procedures setupProcedures( final LogService logService ) throws KernelException, IOException
     {
         Procedures procedures = dependencies.satisfyDependency( new Procedures( msgLog ) );
         procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class ) );
@@ -823,8 +821,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         procedures.registerComponent( GraphDatabaseService.class,
                 (ctx) -> dependencyResolver.resolveDependency( GraphDatabaseService.class ) );
 
-        InternalProcedureLoggingService loggingService = new InternalProcedureLoggingService( log.getUserLog( Procedures.class  ) );
-        procedures.registerComponent( LoggingService.class, (ctx) -> loggingService );
+        Log proceduresLog = logService.getUserLog( Procedures.class  );
+        procedures.registerComponent( Log.class, (ctx) -> proceduresLog );
 
         BuiltInProcedures.addTo( procedures );
         procedures.loadFromDirectory( config.get( GraphDatabaseSettings.plugin_dir ) );
