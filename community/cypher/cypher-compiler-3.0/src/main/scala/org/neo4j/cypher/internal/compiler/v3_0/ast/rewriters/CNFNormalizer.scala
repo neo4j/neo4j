@@ -73,8 +73,8 @@ case class distributeLawsRewriter()(implicit monitor: AstRewritingMonitor) exten
   }
 
   private def dnfCounts(value: Any) = value.treeFold(1) {
-    case Or(lhs, a: And) => (acc, children) => children(acc + 1)
-    case Or(a: And, rhs) => (acc, children) => children(acc + 1)
+    case Or(lhs, a: And) => acc => (acc + 1, Some(identity))
+    case Or(a: And, rhs) => acc => (acc + 1, Some(identity))
   }
 
   private val step = Rewriter.lift {

@@ -38,7 +38,7 @@ sealed trait QueryHorizon extends PageDocFormatting { // with ToPrettyString[Que
 
   def dependencies: Set[IdName] = dependingExpressions.treeFold(Set.empty[IdName]) {
     case id: Variable =>
-      (acc, children) => children(acc + IdName(id.name))
+      acc => (acc + IdName(id.name), Some(identity))
   }
 }
 

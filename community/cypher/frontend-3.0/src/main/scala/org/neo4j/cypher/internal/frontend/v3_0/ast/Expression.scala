@@ -82,7 +82,7 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
 
   def arguments: Seq[Expression] = this.treeFold(List.empty[Expression]) {
     case e: Expression if e != this =>
-      (acc, _) => acc :+ e
+      acc => (acc :+ e, None)
   }
 
   // All variables referenced from this expression or any of its children
@@ -90,15 +90,14 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
   def dependencies: Set[Variable] =
     this.treeFold(TreeAcc[Set[Variable]](Set.empty)) {
       case scope: ScopeExpression => {
-        case (acc, children) =>
+        case acc =>
           val newAcc = acc.push(scope.variables)
-          children(newAcc).pop
+          (newAcc, Some((x) => x.pop))
       }
-      case id: Variable => {
-        case (acc, children) if acc.contains(id) =>
-          children(acc)
-        case (acc, children) =>
-          children(acc.map(_ + id))
+      case id: Variable => acc => {
+        val newAcc = if (acc.contains(id)) acc
+        else acc.map(_ + id)
+        (newAcc, Some(identity))
       }
     }.data
 
@@ -107,15 +106,15 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
   def inputs: Seq[(Expression, Set[Variable])] =
     this.treeFold(TreeAcc[Seq[(Expression, Set[Variable])]](Seq.empty)) {
       case scope: ScopeExpression=> {
-        case (acc, children) =>
+        case acc =>
           val newAcc = acc.push(scope.variables).map { case pairs => pairs :+ (scope -> acc.toSet) }
-          children(newAcc).pop
+          (newAcc, Some((x) => x.pop))
       }
 
       case expr: Expression => {
-        case (acc, children) =>
+        case acc =>
           val newAcc = acc.map { case pairs => pairs :+ (expr -> acc.toSet) }
-          children(newAcc)
+          (newAcc, Some(identity))
       }
     }.data
 

@@ -56,22 +56,23 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
       // the contained pattern expression for no further processing
       // by this tree fold
       case expr@PatternExpression(pattern) =>
-        (acc, children) =>
+        acc =>
           // only process pattern expressions that were not contained in previously seen nested plans
-          if (acc.contains(expr)) {
-            children(acc)
+          val newAcc = if (acc.contains(expr)) {
+            acc
           } else {
             val arguments = planArguments ++ scopeMap(expr)
             val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr)(context)
             val uniqueNamedExpr = namedExpr.copy()
             val nestedPlan = NestedPlanExpression(plan, uniqueNamedExpr)(uniqueNamedExpr.position)
-            children(acc.updated(expr, nestedPlan))
+            acc.updated(expr, nestedPlan)
           }
+
+          (newAcc, Some(identity))
 
       // Never ever replace pattern expressions in nested plan expressions in the original expression
       case NestedPlanExpression(_, pattern) =>
-        (acc, children) =>
-          children(acc.updated(pattern, pattern))
+        acc => (acc.updated(pattern, pattern), Some(identity))
     }
   }
 

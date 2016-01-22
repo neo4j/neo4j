@@ -50,7 +50,7 @@ object Namespacer {
       // ignore variable in StartItem that represents index names and key names
       case Return(_, ReturnItems(_, items), _, _, _) =>
         val variables = items.map(_.alias.map(Ref[Variable]).get)
-        (acc, children) => children(acc ++ variables)
+        acc => (acc ++ variables, Some(identity))
     }
 
   private def variableRenamings(statement: Statement, variableDefinitions: Map[SymbolUse, SymbolUse],
@@ -60,7 +60,7 @@ object Namespacer {
         val symbolDefinition = variableDefinitions(i.toSymbolUse)
         val newVariable = i.renameId(s"  ${symbolDefinition.nameWithPosition}")
         val renaming = Ref(i) -> newVariable
-        (acc, children) => children(acc + renaming)
+        acc => (acc + renaming, Some(identity))
     }
 }
 

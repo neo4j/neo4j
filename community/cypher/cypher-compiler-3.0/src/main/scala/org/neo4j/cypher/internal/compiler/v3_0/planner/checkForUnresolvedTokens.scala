@@ -35,14 +35,14 @@ object checkForUnresolvedTokens extends ((Query, SemanticTable) => Seq[InternalN
 
     ast.treeFold(Seq.empty[InternalNotification]) {
 
-      case label@LabelName(name) if isEmptyLabel(name) => (acc, children) => children(
-        acc :+ MissingLabelNotification(label.position, name))
+      case label@LabelName(name) if isEmptyLabel(name) => acc =>
+        (acc :+ MissingLabelNotification(label.position, name), Some(identity))
 
-      case rel@RelTypeName(name) if isEmptyRelType(name) => (acc, children) => children(
-        acc :+ MissingRelTypeNotification(rel.position, name))
+      case rel@RelTypeName(name) if isEmptyRelType(name) => acc =>
+        (acc :+ MissingRelTypeNotification(rel.position, name), Some(identity))
 
-      case prop@PropertyKeyName(name) if isEmptyPropertyName(name) => (acc, children) => children(
-        acc :+ MissingPropertyNameNotification(prop.position, name))
+      case prop@PropertyKeyName(name) if isEmptyPropertyName(name) => acc =>
+        (acc :+ MissingPropertyNameNotification(prop.position, name), Some(identity))
 
     }
   }

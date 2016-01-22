@@ -129,41 +129,40 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     val properties: Seq[String] = (where match {
       case Some(w) => w.treeFold(Seq.empty[String]) {
         case Equals(Property(Variable(id), PropertyKeyName(name)), other) if id == variable && applicable(other) =>
-          (acc, _) => acc :+ name
+          acc => (acc :+ name, None)
         case Equals(other, Property(Variable(id), PropertyKeyName(name))) if id == variable && applicable(other) =>
-          (acc, _) => acc :+ name
+          acc => (acc :+ name, None)
         case In(Property(Variable(id), PropertyKeyName(name)),_) if id == variable =>
-          (acc, _) => acc :+ name
+          acc => (acc :+ name, None)
         case predicate@FunctionInvocation(_, _, IndexedSeq(Property(Variable(id), PropertyKeyName(name))))
           if id == variable && predicate.function.contains(functions.Exists) =>
-          (acc, _) => acc :+ name
+          acc => (acc :+ name, None)
         case IsNotNull(Property(Variable(id), PropertyKeyName(name))) if id == variable =>
-          (acc, _) => acc :+ name
+          acc => (acc :+ name, None)
         case StartsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          (acc, _) => acc :+ name
+          acc => (acc :+ name, None)
         case EndsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          (acc, _) => acc :+ name
+          acc => (acc :+ name, None)
         case Contains(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          (acc, _) => acc :+ name
+          acc => (acc :+ name, None)
         case expr: InequalityExpression =>
-          (acc, _) => Seq(expr.lhs, expr.rhs).foldLeft(acc) { (acc, expr) =>
-            expr match {
-              case Property(Variable(id), PropertyKeyName(name)) if id == variable =>
-                acc :+ name
-              case _ => acc
+          acc =>
+            val newAcc: Seq[String] = Seq(expr.lhs, expr.rhs).foldLeft(acc) { (acc, expr) =>
+              expr match {
+                case Property(Variable(id), PropertyKeyName(name)) if id == variable => acc :+ name
+                case _ => acc
+              }
             }
-          }
+            (newAcc, None)
         case _: Where | _: And | _: Ands | _: Set[_] =>
-          (acc, children) => children(acc)
+          acc => (acc, Some(identity))
         case _ =>
-          (acc, _) => acc
+          acc => (acc, None)
       }
       case None => Seq.empty
     }) ++ pattern.treeFold(Seq.empty[String]) {
-      case NodePattern(Some(Variable(id)), _, Some(MapExpression(prop))) if variable == id => {
-        case (acc, _) =>
-          acc ++ prop.map(_._1.name)
-      }
+      case NodePattern(Some(Variable(id)), _, Some(MapExpression(prop))) if variable == id =>
+        acc => (acc ++ prop.map(_._1.name), None)
     }
     properties.contains(property)
   }
@@ -190,11 +189,11 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     labels = where match {
       case Some(innerWhere) => innerWhere.treeFold(labels) {
         case HasLabels(Variable(id), predicateLabels) if id == variable =>
-          (acc, _) => acc ++ predicateLabels.map(_.name)
+          acc => (acc ++ predicateLabels.map(_.name), None)
         case _: Where | _: And | _: Ands | _: Set[_] =>
-          (acc, children) => children(acc)
+          acc => (acc, Some(identity))
         case _ =>
-          (acc, _) => acc
+          acc => (acc, None)
       }
       case None => labels
     }

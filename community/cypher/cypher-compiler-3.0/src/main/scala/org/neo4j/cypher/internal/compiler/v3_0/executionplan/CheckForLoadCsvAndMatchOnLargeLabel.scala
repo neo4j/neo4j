@@ -40,17 +40,16 @@ case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonInde
 
     // Walk over the pipe tree and check if a large label scan is to be executed after a LoadCsv
     val resultState = pipe.reverseTreeFold[SearchState](NoneFound) {
-      case _: LoadCSVPipe => (acc, children) =>
-        acc match {
-          case LargeLabelFound => children(LargeLabelWithLoadCsvFound)
-          case e => e
-        }
+      case _: LoadCSVPipe => {
+        case LargeLabelFound => (LargeLabelWithLoadCsvFound, Some(identity))
+        case e => (e, None)
+      }
       case NodeByLabelScanPipe(_, label) if cardinality(label.id(planContext)) > threshold =>
-        (acc, children) => children(LargeLabelFound)
+        acc => (LargeLabelFound, Some(identity))
       case NodeStartPipe(_, _, NodeByLabelEntityProducer(_, id), _) if cardinality(id) > threshold =>
-        (acc, children) => children(LargeLabelFound)
+        acc => (LargeLabelFound, Some(identity))
       case ExecuteUpdateCommandsPipe(_, commands) if hasMergeOnLargeLabel(commands) =>
-        (acc, children) => children(LargeLabelFound)
+        acc => (LargeLabelFound, Some(identity))
     }
 
     resultState match {

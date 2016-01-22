@@ -55,7 +55,7 @@ object ExpressionConverters {
     def extractPatternExpressions: Seq[PatternExpression] =
       expression.treeFold(Seq.empty[PatternExpression]) {
         case p: PatternExpression =>
-          (acc, _) => acc :+ p
+          acc => (acc :+ p, None)
       }
   }
 
@@ -64,15 +64,15 @@ object ExpressionConverters {
       predicate.treeFold(Set.empty[Predicate]) {
         // n:Label
         case p@HasLabels(Variable(name), labels) =>
-          (acc, _) => acc ++ labels.map {
-            label: LabelName =>
-              Predicate(Set(IdName(name)), p.copy(labels = Seq(label))(p.position))
-          }
+          acc => val newAcc = acc ++ labels.map { label =>
+                Predicate(Set(IdName(name)), p.copy(labels = Seq(label))(p.position))
+            }
+            (newAcc, None)
         // and
         case _: Ands =>
-          (acc, children) => children(acc)
+          acc => (acc, Some(identity))
         case p: Expression =>
-          (acc, _) => acc + Predicate(p.idNames, p)
+          acc => (acc + Predicate(p.idNames, p), None)
       }.map(filterUnnamed)
     }
 
@@ -102,7 +102,7 @@ object ExpressionConverters {
 
     private def unnamedIdNamesInNestedPatternExpressions(expression: Expression) = {
       val patternExpressions = expression.treeFold(Seq.empty[PatternExpression]) {
-        case p: PatternExpression => (acc, _) => acc :+ p
+        case p: PatternExpression => acc => (acc :+ p, None)
       }
 
       val unnamedIdsInPatternExprs = patternExpressions.flatMap(_.idNames)
