@@ -33,6 +33,7 @@ import java.util.Map.Entry;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.function.BiFunction;
 import org.neo4j.function.Function;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
 import org.neo4j.helpers.ArrayUtil;
@@ -40,9 +41,11 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.Version;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
@@ -181,7 +184,16 @@ public class ImportTool
                 "<true/false>",
                 "Whether or not to ignore extra columns in the data not specified by the header. "
                         + "Skipped columns will be logged, containing at most number of entities specified by "
-                        + BAD_TOLERANCE.key() + "." );
+                        + BAD_TOLERANCE.key() + "." ),
+        DATABASE_CONFIG( "db-config", null,
+                "<path/to/neo4j.properties>",
+                "(advanced) File specifying database-specific configuration. For more information consult "
+                        + "manual about available configuration options for a neo4j configuration file. "
+                        + "Only configuration affecting store at time of creation will be read. "
+                        + "Examples of supported config are:\n"
+                        + GraphDatabaseSettings.dense_node_threshold.name() + "\n"
+                        + GraphDatabaseSettings.string_block_size.name() + "\n"
+                        + GraphDatabaseSettings.array_block_size.name() );
 
         private final String key;
         private final Object defaultValue;
@@ -304,6 +316,7 @@ public class ImportTool
         int badTolerance;
         Charset inputEncoding;
         boolean skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns;
+        Config dbConfig;
 
         try
         {
@@ -335,6 +348,8 @@ public class ImportTool
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector );
+            dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.<File>optional(),
+                    Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -351,11 +366,12 @@ public class ImportTool
 
         life.start();
         org.neo4j.unsafe.impl.batchimport.Configuration configuration =
-                importConfiguration( processors, defaultSettingsSuitableForTests );
+                importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig );
         BatchImporter importer = new ParallelBatchImporter( storeDir,
                 configuration,
                 logService,
-                ExecutionMonitors.defaultVisible() );
+                ExecutionMonitors.defaultVisible(),
+                dbConfig );
         printOverview( storeDir, nodesFiles, relationshipsFiles );
         boolean success = false;
         try
@@ -400,6 +416,11 @@ public class ImportTool
                 }
             }
         }
+    }
+
+    private static Config loadDbConfig( File file ) throws IOException
+    {
+        return file != null && file.exists() ? new Config( MapUtil.load( file ) ) : new Config();
     }
 
     private static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,
@@ -460,7 +481,7 @@ public class ImportTool
     }
 
     private static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
-            final boolean defaultSettingsSuitableForTests )
+            final boolean defaultSettingsSuitableForTests, final Config dbConfig )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
         {
@@ -476,6 +497,12 @@ public class ImportTool
             public int maxNumberOfProcessors()
             {
                 return processors != null ? processors.intValue() : super.maxNumberOfProcessors();
+            }
+
+            @Override
+            public int denseNodeThreshold()
+            {
+                return dbConfig.get( GraphDatabaseSettings.dense_node_threshold );
             }
         };
     }

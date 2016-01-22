@@ -376,7 +376,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
                 importConfig, logService, withDynamicProcessorAssignment( migrationBatchImporterMonitor(
                 legacyStore ), importConfig ),
-                additionalInitialIds );
+                additionalInitialIds, config );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         InputIterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
@@ -415,7 +415,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         // that dynamic record store over before doing the "batch import".
         //   Copying this file just as-is assumes that the format hasn't change. If that happens we're in
         // a different situation, where we first need to migrate this file.
-        BatchingNeoStores.createStore( fileSystem, migrationDir.getPath() );
+        BatchingNeoStores.createStore( fileSystem, migrationDir.getPath(), config );
         Iterable<StoreFile> storeFiles = iterable( StoreFile.NODE_LABEL_STORE );
         StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, storeFiles,
                 true, // OK if it's not there (1.9)
