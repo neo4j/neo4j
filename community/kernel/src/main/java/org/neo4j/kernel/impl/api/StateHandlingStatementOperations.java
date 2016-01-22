@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.Statement;
@@ -40,11 +41,14 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -73,6 +77,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.Cursors;
@@ -112,17 +117,17 @@ public class StateHandlingStatementOperations implements
         LegacyIndexWriteOperations
 {
     private final StoreReadLayer storeLayer;
-    private final LegacyPropertyTrackers legacyPropertyTrackers;
+    private final AutoIndexing autoIndexing;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final LegacyIndexStore legacyIndexStore;
 
     public StateHandlingStatementOperations(
-            StoreReadLayer storeLayer, LegacyPropertyTrackers propertyTrackers,
+            StoreReadLayer storeLayer, AutoIndexing propertyTrackers,
             ConstraintIndexCreator constraintIndexCreator,
             LegacyIndexStore legacyIndexStore )
     {
         this.storeLayer = storeLayer;
-        this.legacyPropertyTrackers = propertyTrackers;
+        this.autoIndexing = propertyTrackers;
         this.constraintIndexCreator = constraintIndexCreator;
         this.legacyIndexStore = legacyIndexStore;
     }
@@ -303,9 +308,10 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    public void nodeDelete( KernelStatement state, long nodeId )
+            throws AutoIndexingKernelException, EntityNotFoundException, InvalidTransactionTypeKernelException
     {
-        legacyPropertyTrackers.nodeDelete( nodeId );
+        autoIndexing.nodes().entityRemoved( state.dataWriteOperations(), nodeId );
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             state.txState().nodeDoDelete( cursor.get().id() );
@@ -331,7 +337,8 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void relationshipDelete( final KernelStatement state, long relationshipId ) throws EntityNotFoundException
+    public void relationshipDelete( final KernelStatement state, long relationshipId )
+            throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException
     {
         try ( Cursor<RelationshipItem> cursor = relationshipCursorById( state, relationshipId ) )
         {
@@ -339,9 +346,8 @@ public class StateHandlingStatementOperations implements
 
             // NOTE: We implicitly delegate to neoStoreTransaction via txState.legacyState here. This is because that
             // call returns modified properties, which node manager uses to update legacy tx state. This will be cleaned up
-
             // once we've removed legacy tx state.
-            legacyPropertyTrackers.relationshipDelete( relationship.id() );
+            autoIndexing.relationships().entityRemoved( state.dataWriteOperations(), relationshipId );
             final TransactionState txState = state.txState();
             if ( txState.relationshipIsAddedInThisTx( relationship.id() ) )
             {
@@ -922,8 +928,9 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
-            throws EntityNotFoundException
+            throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException
     {
+        DataWriteOperations ops = state.dataWriteOperations();
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
@@ -932,14 +939,13 @@ public class StateHandlingStatementOperations implements
             {
                 if ( !properties.next() )
                 {
-                    legacyPropertyTrackers.nodeAddStoreProperty( node.id(), property );
+                    autoIndexing.nodes().propertyAdded( ops, nodeId, property );
                     existingProperty = Property.noProperty( property.propertyKeyId(), EntityType.NODE, node.id() );
                 }
                 else
                 {
                     existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
-                    legacyPropertyTrackers.nodeChangeStoreProperty( node.id(), (DefinedProperty) existingProperty,
-                            property );
+                    autoIndexing.nodes().propertyChanged( ops, nodeId, existingProperty, property );
                 }
             }
 
@@ -958,8 +964,10 @@ public class StateHandlingStatementOperations implements
     @Override
     public Property relationshipSetProperty( KernelStatement state,
             long relationshipId,
-            DefinedProperty property ) throws EntityNotFoundException
+            DefinedProperty property )
+            throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException
     {
+        DataWriteOperations ops = state.dataWriteOperations();
         try ( Cursor<RelationshipItem> cursor = relationshipCursorById( state, relationshipId ) )
         {
             RelationshipItem relationship = cursor.get();
@@ -968,15 +976,14 @@ public class StateHandlingStatementOperations implements
             {
                 if ( !properties.next() )
                 {
-                    legacyPropertyTrackers.relationshipAddStoreProperty( relationship.id(), property );
+                    autoIndexing.relationships().propertyAdded( ops, relationshipId, property );
                     existingProperty = Property.noProperty( property.propertyKeyId(), EntityType.RELATIONSHIP,
                             relationship.id() );
                 }
                 else
                 {
                     existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
-                    legacyPropertyTrackers.relationshipChangeStoreProperty( relationship.id(),
-                            (DefinedProperty) existingProperty, property );
+                    autoIndexing.relationships().propertyChanged( ops, relationshipId, existingProperty, property );
                 }
             }
 
@@ -998,8 +1005,9 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
-            throws EntityNotFoundException
+            throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException
     {
+        DataWriteOperations ops = state.dataWriteOperations();
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
@@ -1015,7 +1023,7 @@ public class StateHandlingStatementOperations implements
                 {
                     existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
 
-                    legacyPropertyTrackers.nodeRemoveStoreProperty( node.id(), (DefinedProperty) existingProperty );
+                    autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
                     state.txState().nodeDoRemoveProperty( node.id(), (DefinedProperty) existingProperty );
 
                     indexesUpdateProperty( state, node.id(), labelIds, propertyKeyId,
@@ -1029,8 +1037,10 @@ public class StateHandlingStatementOperations implements
     @Override
     public Property relationshipRemoveProperty( KernelStatement state,
             long relationshipId,
-            int propertyKeyId ) throws EntityNotFoundException
+            int propertyKeyId )
+            throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException
     {
+        DataWriteOperations ops = state.dataWriteOperations();
         try ( Cursor<RelationshipItem> cursor = relationshipCursorById( state, relationshipId ) )
         {
             RelationshipItem relationship = cursor.get();
@@ -1045,8 +1055,7 @@ public class StateHandlingStatementOperations implements
                 {
                     existingProperty = Property.property( properties.get().propertyKeyId(), properties.get().value() );
 
-                    legacyPropertyTrackers.relationshipRemoveStoreProperty( relationship.id(),
-                            (DefinedProperty) existingProperty );
+                    autoIndexing.relationships().propertyRemoved( ops, relationshipId, propertyKeyId );
                     state.txState().relationshipDoRemoveProperty( relationship.id(),
                             (DefinedProperty) existingProperty );
                 }

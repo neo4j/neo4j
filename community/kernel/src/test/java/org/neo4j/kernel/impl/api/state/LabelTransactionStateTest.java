@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
+import org.neo4j.kernel.impl.api.AutoIndexing;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
@@ -67,7 +67,7 @@ public class LabelTransactionStateTest
 
         txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );
-        txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
+        txContext = new StateHandlingStatementOperations( store, mock( AutoIndexing.class ),
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
 
         storeStatement = mock( StoreStatement.class );

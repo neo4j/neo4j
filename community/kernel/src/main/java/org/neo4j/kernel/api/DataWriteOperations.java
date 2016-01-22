@@ -22,7 +22,9 @@ package org.neo4j.kernel.api;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -36,12 +38,14 @@ public interface DataWriteOperations extends TokenWriteOperations
 
     long nodeCreate();
 
-    void nodeDelete( long nodeId ) throws EntityNotFoundException;
+    void nodeDelete( long nodeId )
+            throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException;
 
     long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
             throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;
 
-    void relationshipDelete( long relationshipId ) throws EntityNotFoundException;
+    void relationshipDelete( long relationshipId )
+            throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException;
 
     /**
      * Labels a node with the label corresponding to the given label id.
@@ -63,9 +67,10 @@ public interface DataWriteOperations extends TokenWriteOperations
     boolean nodeRemoveLabel( long nodeId, int labelId ) throws EntityNotFoundException;
 
     Property nodeSetProperty( long nodeId, DefinedProperty property )
-            throws EntityNotFoundException, ConstraintValidationKernelException;
+            throws EntityNotFoundException, ConstraintValidationKernelException, AutoIndexingKernelException, InvalidTransactionTypeKernelException;
 
-    Property relationshipSetProperty( long relationshipId, DefinedProperty property ) throws EntityNotFoundException;
+    Property relationshipSetProperty( long relationshipId, DefinedProperty property )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException;
 
     Property graphSetProperty( DefinedProperty property );
 
@@ -73,9 +78,11 @@ public interface DataWriteOperations extends TokenWriteOperations
      * Remove a node's property given the node's id and the property key id and return the value to which
      * it was set or null if it was not set on the node
      */
-    Property nodeRemoveProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+    Property nodeRemoveProperty( long nodeId, int propertyKeyId )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException;
 
-    Property relationshipRemoveProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
+    Property relationshipRemoveProperty( long relationshipId, int propertyKeyId )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException;
 
     Property graphRemoveProperty( int propertyKeyId );
 

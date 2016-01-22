@@ -35,7 +35,9 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -113,7 +115,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
-            throws ConstraintValidationKernelException, EntityNotFoundException
+            throws ConstraintValidationKernelException, EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
@@ -186,7 +188,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     // Simply delegate the rest of the invocations
 
     @Override
-    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    public void nodeDelete( KernelStatement state, long nodeId )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         entityWriteOperations.nodeDelete( state, nodeId );
     }
@@ -202,7 +205,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public void relationshipDelete( KernelStatement state, long relationshipId ) throws EntityNotFoundException
+    public void relationshipDelete( KernelStatement state, long relationshipId )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         entityWriteOperations.relationshipDelete( state, relationshipId );
     }
@@ -216,7 +220,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     @Override
     public Property relationshipSetProperty( KernelStatement state,
             long relationshipId,
-            DefinedProperty property ) throws EntityNotFoundException
+            DefinedProperty property ) throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         return entityWriteOperations.relationshipSetProperty( state, relationshipId, property );
     }
@@ -229,7 +233,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
-            throws EntityNotFoundException
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         return entityWriteOperations.nodeRemoveProperty( state, nodeId, propertyKeyId );
     }
@@ -237,7 +241,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     @Override
     public Property relationshipRemoveProperty( KernelStatement state,
             long relationshipId,
-            int propertyKeyId ) throws EntityNotFoundException
+            int propertyKeyId ) throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         return entityWriteOperations.relationshipRemoveProperty( state, relationshipId, propertyKeyId );
     }

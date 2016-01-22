@@ -52,6 +52,7 @@ import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.api.AutoIndexing;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.DataIntegrityValidatingStatementOperations;
@@ -60,7 +61,6 @@ import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
-import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.LockingStatementOperations;
 import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -74,7 +74,6 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
@@ -262,6 +261,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     private final Log msgLog;
     private final LogService logService;
+    private final AutoIndexing autoIndexing;
     private final LogProvider logProvider;
     private final DependencyResolver dependencyResolver;
     private final TokenNameLookup tokenNameLookup;
@@ -282,7 +282,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final PhysicalLogFile.Monitor physicalLogMonitor;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final StartupStatisticsProvider startupStatistics;
-    private final NodeManager nodeManager;
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
     private final AtomicInteger recoveredCount = new AtomicInteger();
@@ -328,9 +327,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             PhysicalLogFile.Monitor physicalLogMonitor,
             TransactionHeaderInformationFactory transactionHeaderInformationFactory,
             StartupStatisticsProvider startupStatistics,
-            NodeManager nodeManager,
             Guard guard,
             CommitProcessFactory commitProcessFactory,
+            AutoIndexing autoIndexing,
             PageCache pageCache,
             ConstraintSemantics constraintSemantics,
             Monitors monitors,
@@ -342,6 +341,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.dependencyResolver = dependencyResolver;
         this.scheduler = scheduler;
         this.logService = logService;
+        this.autoIndexing = autoIndexing;
         this.logProvider = logService.getInternalLogProvider();
         this.propertyKeyTokenHolder = propertyKeyTokens;
         this.labelTokens = labelTokens;
@@ -356,7 +356,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.physicalLogMonitor = physicalLogMonitor;
         this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
         this.startupStatistics = startupStatistics;
-        this.nodeManager = nodeManager;
         this.guard = guard;
         this.constraintSemantics = constraintSemantics;
         this.monitors = monitors;
@@ -758,11 +757,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         LegacyIndexStore legacyIndexStore = new LegacyIndexStore( config,
                 indexConfigStore, kernelProvider, legacyIndexProviderLookup );
 
-        LegacyPropertyTrackers legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
-                nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
-
         StatementOperationParts statementOperations = dependencies.satisfyDependency( buildStatementOperations(
-                storeLayer, legacyPropertyTrackers, constraintIndexCreator, updateableSchemaState, guard,
+                storeLayer, autoIndexing, constraintIndexCreator, updateableSchemaState, guard,
                 legacyIndexStore ) );
 
         Procedures procedures = setupProcedures( logService );
@@ -968,7 +964,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     private StatementOperationParts buildStatementOperations(
-            StoreReadLayer storeReadLayer, LegacyPropertyTrackers legacyPropertyTrackers,
+            StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
             ConstraintIndexCreator constraintIndexCreator, UpdateableSchemaState updateableSchemaState,
             Guard guard, LegacyIndexStore legacyIndexStore )
     {
@@ -976,7 +972,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         // To it we add:
         // + Transaction state handling
         StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations( storeReadLayer,
-                legacyPropertyTrackers, constraintIndexCreator,
+                autoIndexing, constraintIndexCreator,
                 legacyIndexStore );
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,

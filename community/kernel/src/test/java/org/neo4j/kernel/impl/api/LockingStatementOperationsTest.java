@@ -30,6 +30,8 @@ import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -140,7 +142,8 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeDeletingNode() throws EntityNotFoundException
+    public void shouldAcquireEntityWriteLockBeforeDeletingNode()
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         // WHEN
         lockingOps.nodeDelete( state, 123 );
