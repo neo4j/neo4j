@@ -31,8 +31,8 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description("Settings available in the Enterprise server")
 public interface EnterpriseServerSettings
 {
-    @Description( "Configure the operating mode of the database -- 'SINGLE' for stand-alone operation or 'HA' " +
-            "for operating as a member in a cluster." )
+    @Description( "Configure the operating mode of the database -- 'SINGLE' for stand-alone operation, 'HA' for " +
+            "operating as a member in a cluster or 'ARBITER' for an HA-only cluster member with no database" )
     Setting<String> mode = setting( "org.neo4j.server.database.mode", STRING, "SINGLE" );
 
     @SuppressWarnings("unused") // accessed from the browser
