@@ -30,9 +30,6 @@ The Neo4j Server Object
 .PARAMETER ForServer
 Retrieve the Java command line to start a Neo4j Server
 
-.PARAMETER ForArbiter
-Retrieve the Java command line to start a Neo4j Arbiter
-
 .PARAMETER ForUtility
 Retrieve the Java command line to start a Neo4j utility such as Neo4j Shell.
 
@@ -60,14 +57,10 @@ Function Get-Java
   param (
     [Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
     [Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInvoke')]
-    [Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ArbiterInvoke')]
     [PSCustomObject]$Neo4jServer
         
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInvoke')]
     [switch]$ForServer
-
-    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ArbiterInvoke')]
-    [switch]$ForArbiter
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
     [switch]$ForUtility
@@ -157,9 +150,24 @@ Function Get-Java
     $ShellArgs = @()
 
     # Shell arguments for the Neo4jServer and Arbiter classes
-    if (($PsCmdlet.ParameterSetName -eq 'ServerInvoke') -or ($PsCmdlet.ParameterSetName -eq 'ArbiterInvoke') )
+    if ($PsCmdlet.ParameterSetName -eq 'ServerInvoke')
     {
-      if ($PsCmdlet.ParameterSetName -eq 'ServerInvoke')
+      $setting = ($thisServer | Get-Neo4jSetting -ConfigurationFile 'neo4j-server.properties' -Name 'org.neo4j.server.database.mode')
+
+      if ($setting -eq $null)
+      {
+        $mode = 'SINGLE'
+      }
+      else
+      {
+        $mode = $setting.Value.ToUpper()
+      }
+
+      if ($mode -eq 'ARBITER')
+      {
+        $serverMainClass = 'org.neo4j.server.enterprise.StandaloneClusterClient'
+      }
+      else
       {
         $serverMainClass = ''
         # Server Class Path for version 2.3 and above
@@ -172,11 +180,7 @@ Function Get-Java
         }
         if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }
       }
-      if ($PsCmdlet.ParameterSetName -eq 'ArbiterInvoke')
-      {
-        $serverMainClass = 'org.neo4j.server.enterprise.StandaloneClusterClient'
-      }
-      
+
       # Note -DserverMainClass must appear before -jar in the argument list.  Changing this order raises a Null Pointer Exception in the Windows Service Wrapper
       $ShellArgs = @( `
         "-DworkingDir=`"$($Neo4jServer.Home)`"" `

@@ -383,25 +383,30 @@ InModuleScope Neo4j-Management {
       }
     }    
 
-    # Arbiter Invoke
-    Context "Arbiter Invoke" {
+    # Arbiter mode
+    Context "Arbiter mode" {
       Mock Test-Path { $false }
       [Environment]::SetEnvironmentVariable('JAVA_HOME','TestPath:\JavaHome', "Process")
       Mock Get-ItemProperty { return $null }      
       Mock Test-Path { $true }  -ParameterFilter {
         ($Path -eq 'TestPath:\JavaHome\bin\java.exe')
       }
-      
+      Mock Get-Neo4jSetting {
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j-server.properties'; 'Name'='org.neo4j.server.database.mode'; 'Value'='ARBITER' })
+      } -ParameterFilter {
+        $Name -eq 'org.neo4j.server.database.mode'
+      }
+
       $serverObject = (New-Object -TypeName PSCustomObject -Property @{
         'Home' = 'TestDrive:\Path';
         'ServerVersion' = '2.3';
         'ServerType' = 'Enterprise'
       })
 
-      $result = Get-Java -ForArbiter -Neo4jServer $serverObject
+      $result = Get-Java -ForServer -Neo4jServer $serverObject
       $resultArgs = ($result.args -join ' ')
 
-      It "should have main class of org.neo4j.server.enterprise.StandaloneClusterClient" {
+      It "should have main class of StandaloneClusterClient" {
         $resultArgs | Should Match ([regex]::Escape('-DserverMainClass=org.neo4j.server.enterprise.StandaloneClusterClient'))
       }
 

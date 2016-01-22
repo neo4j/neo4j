@@ -108,7 +108,7 @@ Function Start-Neo4jServer
     if ($thisServer -eq $null) { return }
     
     if ($PsCmdlet.ParameterSetName -eq 'Console')
-    {    
+    {
       $JavaCMD = Get-Java -Neo4jServer $thisServer -ForServer
       if ($JavaCMD -eq $null)
       {
