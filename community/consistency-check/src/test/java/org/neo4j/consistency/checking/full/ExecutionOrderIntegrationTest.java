@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;

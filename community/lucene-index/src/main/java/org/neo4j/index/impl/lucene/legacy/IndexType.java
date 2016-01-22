@@ -272,7 +272,7 @@ public abstract class IndexType
 
     abstract Query get( String key, Object value );
 
-    TxData newTxData( LuceneIndex index )
+    TxData newTxData( LuceneLegacyIndex index )
     {
         return new ExactTxData( index );
     }
@@ -380,7 +380,7 @@ public abstract class IndexType
         {
             names.add( field.name() );
         }
-        names.remove( LuceneIndex.KEY_DOC_ID );
+        names.remove( LuceneLegacyIndex.KEY_DOC_ID );
         for ( String name : names )
         {
             document.removeFields( name );
@@ -393,7 +393,7 @@ public abstract class IndexType
         List<IndexableField> numericFields = new ArrayList<>();
         for ( IndexableField field : document.getFields() )
         {
-            if ( field.numericValue() != null && !field.name().equals( LuceneIndex.KEY_DOC_ID ) )
+            if ( field.numericValue() != null && !field.name().equals( LuceneLegacyIndex.KEY_DOC_ID ) )
             {
                 numericFields.add( field );
             }
@@ -408,8 +408,8 @@ public abstract class IndexType
     public static Document newBaseDocument( long entityId )
     {
         Document doc = new Document();
-        doc.add( new StringField( LuceneIndex.KEY_DOC_ID, "" + entityId, Store.YES ) );
-        doc.add( new NumericDocValuesField( LuceneIndex.KEY_DOC_ID, entityId ) );
+        doc.add( new StringField( LuceneLegacyIndex.KEY_DOC_ID, "" + entityId, Store.YES ) );
+        doc.add( new NumericDocValuesField( LuceneLegacyIndex.KEY_DOC_ID, entityId ) );
         return doc;
     }
 
@@ -422,7 +422,7 @@ public abstract class IndexType
 
     public Term idTerm( long entityId )
     {
-        return new Term( LuceneIndex.KEY_DOC_ID, "" + entityId );
+        return new Term( LuceneLegacyIndex.KEY_DOC_ID, "" + entityId );
     }
 
     Query idTermQuery( long entityId )

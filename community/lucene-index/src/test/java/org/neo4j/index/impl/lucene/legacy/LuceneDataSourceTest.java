@@ -20,7 +20,6 @@
 package org.neo4j.index.impl.lucene.legacy;
 
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterAccessor;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -109,9 +108,9 @@ public class LuceneDataSourceTest
         IndexIdentifier bazIdentifier = identifier( "baz" );
         IndexWriter fooIndexWriter = dataSource.getIndexSearcher( fooIdentifier ).getWriter();
         dataSource.getIndexSearcher( barIdentifier );
-        assertFalse( IndexWriterAccessor.isClosed( fooIndexWriter ) );
+        assertTrue( fooIndexWriter.isOpen() );
         dataSource.getIndexSearcher( bazIdentifier );
-        assertTrue( IndexWriterAccessor.isClosed( fooIndexWriter ) );
+        assertFalse( fooIndexWriter.isOpen() );
     }
 
     @Test
@@ -176,7 +175,7 @@ public class LuceneDataSourceTest
         dataSource.getIndexSearcher( bazIdentifier );
         IndexWriter newFooIndexWriter = dataSource.getIndexSearcher( fooIdentifier ).getWriter();
         assertNotSame( oldFooIndexWriter, newFooIndexWriter );
-        assertFalse( IndexWriterAccessor.isClosed( newFooIndexWriter ) );
+        assertTrue( newFooIndexWriter.isOpen() );
     }
 
     private Map<String, String> config()

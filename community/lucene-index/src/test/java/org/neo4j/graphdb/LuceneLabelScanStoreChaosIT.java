@@ -19,29 +19,28 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Stream;
 
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.function.Predicates;
+import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndexBuilder;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.DatabaseRule.RestartAction;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
-import static org.hamcrest.CoreMatchers.containsString;
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.Exceptions.peel;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
@@ -65,36 +64,20 @@ public class LuceneLabelScanStoreChaosIT
         deleteNode( node2 ); // just to create a hole in the store
 
         // WHEN
-        // TODO how do we make sure it was deleted and then fully rebuilt? I mean if we somehow deleted
-        // the wrong directory here then it would also work, right?
         dbRule.restartDatabase( deleteTheLabelScanStoreIndex() );
 
         // THEN
-        assertEquals(
-                asSet( node1, node3 ),
-                getAllNodesWithLabel( Labels.First ) );
+        assertEquals( asSet( node1, node3 ), getAllNodesWithLabel( Labels.First ) );
     }
 
     @Test
-    public void shouldPreventCorruptedLabelScanStoreToStartup() throws Exception
+    public void rebuildCorruptedLabelScanStoreToStartup() throws Exception
     {
-        // GIVEN
-        createLabeledNode( Labels.First );
+        Node node = createLabeledNode( Labels.First );
 
-        // WHEN
-        // TODO how do we make sure it was deleted and then fully rebuilt? I mean if we somehow deleted
-        // the wrong directory here then it would also work, right?
-        try
-        {
-            dbRule.restartDatabase( corruptTheLabelScanStoreIndex() );
-            fail( "Shouldn't be able to start up" );
-        }
-        catch ( RuntimeException e )
-        {
-            // THEN
-            Throwable ioe = peel( e, Predicates.<Throwable>instanceOf( RuntimeException.class ) );
-            assertThat( ioe.getMessage(), containsString( "Label scan store could not be read" ) );
-        }
+        dbRule.restartDatabase( corruptTheLabelScanStoreIndex() );
+
+        assertEquals( asSet( node ), getAllNodesWithLabel( Labels.First ) );
     }
 
     private RestartAction corruptTheLabelScanStoreIndex()
@@ -103,10 +86,14 @@ public class LuceneLabelScanStoreChaosIT
             try
             {
                 int filesCorrupted = 0;
-                for ( File file : labelScanStoreIndexDirectory( storeDirectory ).listFiles() )
+                List<File> partitionDirs = labelScanStoreIndexDirectories( storeDirectory );
+                for ( File partitionDir : partitionDirs )
                 {
-                    scrambleFile( file );
-                    filesCorrupted++;
+                    for ( File file : partitionDir.listFiles() )
+                    {
+                        scrambleFile( file );
+                        filesCorrupted++;
+                    }
                 }
                 assertTrue( "No files found to corrupt", filesCorrupted > 0 );
             }
@@ -122,10 +109,13 @@ public class LuceneLabelScanStoreChaosIT
         return ( fs, storeDirectory ) -> {
             try
             {
-                File directory = labelScanStoreIndexDirectory( storeDirectory );
-                assertTrue( "We seem to want to delete the wrong directory here", directory.exists() );
-                assertTrue( "No index files to delete", directory.listFiles().length > 0 );
-                deleteRecursively( directory );
+                List<File> partitionDirs = labelScanStoreIndexDirectories( storeDirectory );
+                for ( File dir : partitionDirs )
+                {
+                    assertTrue( "We seem to want to delete the wrong directory here", dir.exists() );
+                    assertTrue( "No index files to delete", dir.listFiles().length > 0 );
+                    deleteRecursively( dir );
+                }
             }
             catch ( IOException e )
             {
@@ -134,9 +124,13 @@ public class LuceneLabelScanStoreChaosIT
         };
     }
 
-    private File labelScanStoreIndexDirectory( File storeDirectory )
+    private List<File> labelScanStoreIndexDirectories( File storeDirectory )
     {
-        return new File( new File( new File( storeDirectory, "schema" ), "label" ), "lucene" );
+        File rootDir = new File( new File( new File( new File( storeDirectory, "schema" ), "label" ), "lucene" ),
+                LuceneLabelScanIndexBuilder.DEFAULT_INDEX_IDENTIFIER );
+
+        File[] partitionDirs = rootDir.listFiles( File::isDirectory );
+        return (partitionDirs == null) ? Collections.emptyList() : Stream.of( partitionDirs ).collect( toList() );
     }
 
     private Node createLabeledNode( Label... labels )
@@ -190,8 +184,6 @@ public class LuceneLabelScanStoreChaosIT
 
     private enum Labels implements Label
     {
-        First,
-        Second,
-        Third;
+        First, Second, Third
     }
 }

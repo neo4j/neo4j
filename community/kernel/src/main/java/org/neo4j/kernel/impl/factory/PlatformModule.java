@@ -105,7 +105,7 @@ public class PlatformModule
 
     public final TransactionStats transactionMonitor;
 
-    public PlatformModule( File storeDir, Map<String, String> params, DatabaseInfo databaseInfo,
+    public PlatformModule( File providedStoreDir, Map<String, String> params, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
     {
         this.databaseInfo = databaseInfo;
@@ -124,7 +124,7 @@ public class PlatformModule
         config = dependencies.satisfyDependency( new Config( params, getSettingsClasses(
                 externalDependencies.settingsClasses(), externalDependencies.kernelExtensions() ) ) );
 
-        this.storeDir = storeDir.getAbsoluteFile();
+        this.storeDir = providedStoreDir.getAbsoluteFile();
 
         // Database system information, used by UDC
         dependencies.satisfyDependency( new UsageData() );

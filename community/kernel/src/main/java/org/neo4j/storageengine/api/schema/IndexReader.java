@@ -19,14 +19,11 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import java.util.Collections;
-import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.register.Register.DoubleLong;
+
 
 /**
  * Reader for an index. Must honor repeatable reads, which means that if a lookup is executed multiple times the
@@ -84,18 +81,7 @@ public interface IndexReader extends Resource
      */
     int countIndexedNodes( long nodeId, Object propertyValue );
 
-    /**
-     * @return the set of value types present in the index
-     */
-    Set<Class> valueTypesInIndex();
-
-    /**
-     * Sample this index (on the current thread)
-     * @param result contains the unique values and the sampled size
-     * @return the index size
-     * @throws IndexNotFoundKernelException if the index is dropped while sampling
-     */
-    long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException;
+    IndexSampler createSampler();
 
     IndexReader EMPTY = new IndexReader()
     {
@@ -138,16 +124,9 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public Set<Class> valueTypesInIndex()
+        public IndexSampler createSampler()
         {
-            return Collections.emptySet();
-        }
-
-        @Override
-        public long sampleIndex( DoubleLong.Out result )
-        {
-            result.write( 0l, 0l );
-            return 0;
+            return IndexSampler.EMPTY;
         }
 
         @Override

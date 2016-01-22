@@ -20,118 +20,46 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FilteredDocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.IOUtils;
+
+import static java.util.stream.Collectors.toList;
 
 public class LuceneAllDocumentsReader implements BoundedIterable<Document>
 {
-    private final IndexSearcher searcher;
-    private final LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher> searcherManager;
+    private final List<LucenePartitionAllDocumentsReader> partitionReaders;
 
-    public LuceneAllDocumentsReader(
-            LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher> searcherManager )
+    public LuceneAllDocumentsReader( List<LucenePartitionAllDocumentsReader> partitionReaders )
     {
-        this.searcherManager = searcherManager;
-        try
-        {
-            this.searcher = searcherManager.acquire();
-        }
-        catch ( IOException e )
-        {
-            throw new LuceneIndexSearcherAcquisitionException( "Can't acquire lucene index searcher.", e );
-        }
+        this.partitionReaders = partitionReaders;
     }
 
     @Override
     public long maxCount()
     {
-        return maxDocIdBoundary();
+        return partitionReaders.stream().mapToLong( LucenePartitionAllDocumentsReader::maxCount ).sum();
     }
 
     @Override
     public Iterator<Document> iterator()
     {
-        return new PrefetchingIterator<Document>()
-        {
-            private DocIdSetIterator idIterator = iterateAllDocs();
+        Iterator<Iterator<Document>> iterators = partitionReaders.stream()
+                .map( LucenePartitionAllDocumentsReader::iterator )
+                .collect( toList() )
+                .iterator();
 
-            @Override
-            protected Document fetchNextOrNull()
-            {
-                try
-                {
-                    int doc = idIterator.nextDoc();
-                    if ( doc == DocIdSetIterator.NO_MORE_DOCS )
-                    {
-                        return null;
-                    }
-                    return getDocument( doc );
-                }
-                catch ( IOException e )
-                {
-                    throw new LuceneDocumentRetrievalException( "Can't fetch document id from lucene index.", e );
-                }
-            }
-        };
+        return Iterables.concat( iterators );
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
-        try
-        {
-            searcherManager.release( searcher );
-        }
-        catch ( IOException e )
-        {
-            throw new LuceneIndexSearcherReleaseException( "Can't release index searcher: " + searcher + ".", e );
-        }
-    }
-
-    private Document getDocument( int docId )
-    {
-        try
-        {
-            return searcher.doc( docId );
-        }
-        catch ( IOException e )
-        {
-            throw new LuceneDocumentRetrievalException("Can't retrieve document with id: " + docId + ".", docId, e );
-        }
-    }
-
-    private DocIdSetIterator iterateAllDocs()
-    {
-        IndexReader reader = searcher.getIndexReader();
-        final Bits liveDocs = MultiFields.getLiveDocs( reader );
-        final DocIdSetIterator allDocs = DocIdSetIterator.all( reader.maxDoc() );
-        if ( liveDocs == null )
-        {
-            return allDocs;
-        }
-
-        return new FilteredDocIdSetIterator( allDocs )
-        {
-            @Override
-            protected boolean match( int doc )
-            {
-                return liveDocs.get( doc );
-            }
-        };
-    }
-
-    private int maxDocIdBoundary()
-    {
-        return searcher.getIndexReader().maxDoc();
+        IOUtils.closeAll( partitionReaders );
     }
 }

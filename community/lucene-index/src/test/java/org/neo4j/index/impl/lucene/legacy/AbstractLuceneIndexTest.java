@@ -97,15 +97,15 @@ public abstract class AbstractLuceneIndexTest
         beginTx();
     }
 
-    protected static abstract interface EntityCreator<T extends PropertyContainer>
+    protected interface EntityCreator<T extends PropertyContainer>
     {
         T create( Object... properties );
         
         void delete( T entity );
     }
 
-    private static final RelationshipType TEST_TYPE =
-            RelationshipType.withName( "TEST_TYPE" );
+    private static final RelationshipType TEST_TYPE = RelationshipType.withName( "TEST_TYPE" );
+
     protected static final EntityCreator<Node> NODE_CREATOR = new EntityCreator<Node>()
     {
         public Node create( Object... properties )

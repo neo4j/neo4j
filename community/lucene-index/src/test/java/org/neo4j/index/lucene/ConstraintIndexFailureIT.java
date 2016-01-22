@@ -24,17 +24,13 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
-import org.neo4j.kernel.api.index.util.FailureStorage;
-import org.neo4j.kernel.api.index.util.FolderLayout;
+import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -106,24 +102,9 @@ public class ConstraintIndexFailureIT
     private void storeIndexFailure( String failure ) throws IOException
     {
         File luceneRootDirectory = new File( storeDir.directory(), "schema/index/lucene" );
-        new FailureStorage( new DefaultFileSystemAbstraction(), new FolderLayout( luceneRootDirectory ) )
-                .storeIndexFailure( singleIndexId( luceneRootDirectory ), failure );
-    }
-
-    private int singleIndexId( File luceneRootDirectory )
-    {
-        List<Integer> indexIds = new ArrayList<>();
-        for ( String file : luceneRootDirectory.list() )
-        {
-            try
-            {
-                indexIds.add( Integer.parseInt( file ) );
-            }
-            catch ( NumberFormatException e )
-            {
-                // do nothing
-            }
-        }
-        return IteratorUtil.single( indexIds );
+        PartitionedIndexStorage indexStorage = LuceneIndexStorageBuilder.create()
+                .withIndexRootFolder( luceneRootDirectory )
+                .withIndexIdentifier( "1" ).build();
+        indexStorage.storeIndexFailure( failure );
     }
 }

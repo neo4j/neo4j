@@ -28,7 +28,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.kernel.impl.locking.Locks.Client;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -128,11 +127,6 @@ public class Exceptions
             exception = exception.getCause();
         }
         return exception;
-    }
-
-    public static Predicate<Throwable> exceptionsWithMessageContaining( final String message )
-    {
-        return item -> item.getMessage() != null && item.getMessage().contains( message );
     }
 
     private Exceptions()
@@ -273,28 +267,6 @@ public class Exceptions
         {
             throw new RuntimeException( e );
         }
-    }
-
-    @Deprecated
-    public static Predicate<StackTraceElement> classImplementingInterface( final Class<Client> cls )
-    {
-        return item -> {
-            try
-            {
-                for ( Class<?> interfaceClass : Class.forName( item.getClassName() ).getInterfaces() )
-                {
-                    if ( interfaceClass.equals( cls ) )
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-            catch ( ClassNotFoundException e )
-            {
-                return false;
-            }
-        };
     }
 
     @Deprecated

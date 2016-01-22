@@ -54,13 +54,13 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstan
 
 public class IndexRestartIT
 {
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private GraphDatabaseService db;
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private TestGraphDatabaseFactory factory;
     private final ControlledPopulationSchemaIndexProvider provider = new ControlledPopulationSchemaIndexProvider();
     private final Label myLabel = label( "MyLabel" );
-
 
     @Before
     public void before() throws Exception

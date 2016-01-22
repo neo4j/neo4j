@@ -55,13 +55,13 @@ public class IndexConstraintsTest
     @Before
     public void setup() throws IOException
     {
-        this.graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After
     public void shutdown() throws IOException
     {
-        this.graphDb.shutdown();
+        graphDb.shutdown();
     }
 
     @Test
@@ -81,26 +81,22 @@ public class IndexConstraintsTest
                 Executors.newFixedThreadPool( numThreads ) );
         for ( int i = 0; i < numThreads; i++ )
         {
-            ecs.submit( new Callable<Node>()
-            {
-                public Node call() throws Exception
+            ecs.submit( () -> {
+                try ( Transaction tx = graphDb.beginTx() )
                 {
-                    try ( Transaction tx = graphDb.beginTx() )
+                    final Node node = graphDb.createNode();
+                    // Acquire lock
+                    tx.acquireWriteLock( commonNode );
+                    Index<Node> index = graphDb.index().forNodes( "uuids" );
+                    final Node existing = index.get( "uuid", uuid ).getSingle();
+                    if ( existing != null )
                     {
-                        final Node node = graphDb.createNode();
-                        // Acquire lock
-                        tx.acquireWriteLock( commonNode );
-                        Index<Node> index = graphDb.index().forNodes( "uuids" );
-                        final Node existing = index.get( "uuid", uuid ).getSingle();
-                        if ( existing != null )
-                        {
-                            throw new RuntimeException( "Node already exists" );
-                        }
-                        node.setProperty( "uuid", uuid );
-                        index.add( node, "uuid", uuid );
-                        tx.success();
-                        return node;
+                        throw new RuntimeException( "Node already exists" );
                     }
+                    node.setProperty( "uuid", uuid );
+                    index.add( node, "uuid", uuid );
+                    tx.success();
+                    return node;
                 }
             } );
         }

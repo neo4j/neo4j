@@ -23,10 +23,9 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.impl.index.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
-import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore;
-import org.neo4j.kernel.api.impl.index.NodeRangeDocumentLabelScanStorageStrategy;
+import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndex;
+import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndexBuilder;
+import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
@@ -46,7 +45,7 @@ public class LuceneLabelScanStoreBuilder
     private final FileSystemAbstraction fileSystem;
     private final LogProvider logProvider;
 
-    private LuceneLabelScanStore labelScanStore = null;
+    private LuceneLabelScanStore labelScanStore;
 
     public LuceneLabelScanStoreBuilder( File storeDir, FullStoreChangeStream fullStoreStream,
             FileSystemAbstraction fileSystem, LogProvider logProvider )
@@ -62,12 +61,12 @@ public class LuceneLabelScanStoreBuilder
         if ( null == labelScanStore )
         {
             // TODO: Replace with kernel extension based lookup
-            labelScanStore = new LuceneLabelScanStore(
-                    new NodeRangeDocumentLabelScanStorageStrategy(),
-                    DirectoryFactory.PERSISTENT,
-                    LabelScanStoreProvider.getStoreDirectory( storeDir ),
-                    fileSystem, IndexWriterFactories.standard(),
-                    fullStoreStream, LuceneLabelScanStore.loggerMonitor( logProvider ) );
+            LuceneLabelScanIndex index = LuceneLabelScanIndexBuilder.create()
+                    .withFileSystem( fileSystem )
+                    .withIndexRootFolder( LabelScanStoreProvider.getStoreDirectory( storeDir ) )
+                    .build();
+            labelScanStore = new LuceneLabelScanStore( index, fullStoreStream,
+                    logProvider, LuceneLabelScanStore.Monitor.EMPTY );
 
             try
             {

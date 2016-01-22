@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
-import java.lang.reflect.Array;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -31,13 +29,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;
-import static org.neo4j.register.Register.DoubleLong;
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
@@ -247,65 +244,8 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public Set<Class> valueTypesInIndex()
+    public IndexSampler createSampler()
     {
-        if ( data == null )
-        {
-            return Collections.emptySet();
-        }
-        Set<Class> result = new HashSet<>();
-        for ( Object value : data.keySet() )
-        {
-            if ( value instanceof Number )
-            {
-                result.add( Number.class );
-            }
-            else if ( value instanceof String )
-            {
-                result.add( String.class );
-            }
-            else if ( value instanceof Boolean )
-            {
-                result.add( Boolean.class );
-            }
-            else if ( value instanceof ArrayKey )
-            {
-                result.add( Array.class );
-            }
-        }
-        return result;
-    }
-
-    @Override
-    public long sampleIndex( final DoubleLong.Out result ) throws IndexNotFoundKernelException
-    {
-        if ( data == null )
-        {
-            throw new IndexNotFoundKernelException( "Index dropped while sampling." );
-        }
-        final long[] uniqueAndSize = {0, 0};
-        try
-        {
-            iterateAll( new IndexEntryIterator()
-            {
-                @Override
-                public void visitEntry( Object value, Set<Long> nodeIds )
-                {
-                    int ids = nodeIds.size();
-                    if ( ids > 0 )
-                    {
-                        uniqueAndSize[0] += 1;
-                        uniqueAndSize[1] += ids;
-                    }
-                }
-            });
-        }
-        catch ( Exception ex )
-        {
-            throw new RuntimeException( ex );
-        }
-
-        result.write( uniqueAndSize[0], uniqueAndSize[1] );
-        return uniqueAndSize[1];
+        return new HashBasedIndexSampler( data );
     }
 }

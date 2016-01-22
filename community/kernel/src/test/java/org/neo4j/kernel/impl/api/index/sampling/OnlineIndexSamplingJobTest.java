@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -32,6 +31,7 @@ import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -39,7 +39,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.register.Register.DoubleLong;
@@ -80,6 +79,7 @@ public class OnlineIndexSamplingJobTest
     private final IndexStoreView indexStoreView = mock( IndexStoreView.class );
     private final IndexDescriptor indexDescriptor = new IndexDescriptor( 1, 2 );
     private final IndexReader indexReader = mock( IndexReader.class );
+    private final IndexSampler indexSampler = mock( IndexSampler.class );
 
     private final long indexUniqueValues = 21l;
     private final long indexSize = 23l;
@@ -90,22 +90,18 @@ public class OnlineIndexSamplingJobTest
         when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
         when( indexProxy.config() ).thenReturn( IndexConfiguration.NON_UNIQUE );
         when( indexProxy.newReader() ).thenReturn( indexReader );
-        doAnswer( answerWith( indexUniqueValues, indexSize ) ).when( indexReader )
+        when( indexReader.createSampler() ).thenReturn( indexSampler );
+        doAnswer( answerWith( indexUniqueValues, indexSize ) ).when( indexSampler )
                                                               .sampleIndex( any( DoubleLong.Out.class ) );
 
     }
 
     private Answer<Long> answerWith( final long indexUniqueValues, final long indexSize )
     {
-        return new Answer<Long>()
-        {
-            @Override
-            public Long answer( InvocationOnMock invocationOnMock ) throws Throwable
-            {
-                final DoubleLong.Out result = (DoubleLong.Out) invocationOnMock.getArguments()[0];
-                result.write( indexUniqueValues, indexSize );
-                return indexSize;
-            }
+        return invocationOnMock -> {
+            DoubleLong.Out result = (DoubleLong.Out) invocationOnMock.getArguments()[0];
+            result.write( indexUniqueValues, indexSize );
+            return indexSize;
         };
     }
 }

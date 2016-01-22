@@ -30,8 +30,8 @@ import org.neo4j.kernel.spi.legacyindex.LegacyIndexProviderTransaction;
 public class LuceneLegacyIndexTransaction implements LegacyIndexProviderTransaction
 {
     private final LuceneDataSource dataSource;
-    private final Map<String, LuceneIndex> nodeIndexes = new HashMap<>();
-    private final Map<String, LuceneIndex> relationshipIndexes = new HashMap<>();
+    private final Map<String,LuceneLegacyIndex> nodeIndexes = new HashMap<>();
+    private final Map<String,LuceneLegacyIndex> relationshipIndexes = new HashMap<>();
     private final LuceneTransactionState luceneTransaction;
     private final IndexCommandFactory commandFactory;
 
@@ -45,11 +45,11 @@ public class LuceneLegacyIndexTransaction implements LegacyIndexProviderTransact
     @Override
     public LegacyIndex nodeIndex( String indexName, Map<String, String> configuration )
     {
-        LuceneIndex index = nodeIndexes.get( indexName );
+        LuceneLegacyIndex index = nodeIndexes.get( indexName );
         if ( index == null )
         {
             IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Node, indexName );
-            index = new LuceneIndex.NodeIndex( dataSource, identifier, luceneTransaction,
+            index = new LuceneLegacyIndex.NodeLegacyIndex( dataSource, identifier, luceneTransaction,
                     IndexType.getIndexType( configuration ), commandFactory );
             nodeIndexes.put( indexName, index );
         }
@@ -59,11 +59,11 @@ public class LuceneLegacyIndexTransaction implements LegacyIndexProviderTransact
     @Override
     public LegacyIndex relationshipIndex( String indexName, Map<String, String> configuration )
     {
-        LuceneIndex index = relationshipIndexes.get( indexName );
+        LuceneLegacyIndex index = relationshipIndexes.get( indexName );
         if ( index == null )
         {
             IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Relationship, indexName );
-            index = new LuceneIndex.RelationshipIndex( dataSource, identifier, luceneTransaction,
+            index = new LuceneLegacyIndex.RelationshipLegacyIndex( dataSource, identifier, luceneTransaction,
                     IndexType.getIndexType( configuration ), commandFactory );
             relationshipIndexes.put( indexName, index );
         }

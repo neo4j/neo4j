@@ -1,3 +1,3 @@
 org.neo4j.index.lucene.LuceneKernelExtensionFactory
-org.neo4j.kernel.api.impl.index.LuceneLabelScanStoreExtension
-org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory
+ org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStoreExtension
+org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory

@@ -68,7 +68,7 @@ public class LuceneLegacyIndexUpgrader
     private static final String LUCENE4_CORE_JAR_NAME = "lucene-core-4.10.4.jar";
     private static final String LUCENE5_CORE_JAR_NAME = "lucene-core-5.3.1.jar";
     private static final String LUCENE5_BACKWARD_CODECS_NAME = "lucene-backward-codecs-5.3.1.jar";
-    public static final String SEGMENTS_FILE_NAME_PREFIX = "segments";
+    private static final String SEGMENTS_FILE_NAME_PREFIX = "segments";
 
     private final Path indexRootPath;
     private final Monitor monitor;

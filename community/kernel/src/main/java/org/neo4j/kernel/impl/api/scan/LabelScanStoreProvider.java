@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
@@ -33,7 +34,6 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 

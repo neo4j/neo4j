@@ -112,7 +112,7 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     public Map<String, String> fillInDefaults( Map<String, String> source )
     {
         Map<String, String> result = source != null ?
-                new HashMap<>( source ) : new HashMap<String, String>();
+                new HashMap<>( source ) : new HashMap<>();
         String analyzer = result.get( KEY_ANALYZER );
         if ( analyzer == null )
         {

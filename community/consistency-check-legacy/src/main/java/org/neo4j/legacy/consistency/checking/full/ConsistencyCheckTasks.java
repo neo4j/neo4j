@@ -40,7 +40,6 @@ import org.neo4j.legacy.consistency.checking.labelscan.LabelScanDocumentProcesso
 import org.neo4j.legacy.consistency.report.ConsistencyReporter;
 
 import static java.lang.String.format;
-
 import static org.neo4j.legacy.consistency.checking.full.MultiPassStore.ARRAYS;
 import static org.neo4j.legacy.consistency.checking.full.MultiPassStore.LABELS;
 import static org.neo4j.legacy.consistency.checking.full.MultiPassStore.NODES;
@@ -136,7 +135,7 @@ public class ConsistencyCheckTasks
         {
             if ( checkLabelScanStore )
             {
-                tasks.add( new RecordScanner<>( labelScanStore.newAllEntriesReader(),
+                tasks.add( new RecordScanner<>( labelScanStore.allNodeLabelRanges(),
                         format( "LabelScanStore_%d", iPass ), progress, new LabelScanDocumentProcessor(
                         filteredReporter,
                         new LabelScanCheck() ) ) );

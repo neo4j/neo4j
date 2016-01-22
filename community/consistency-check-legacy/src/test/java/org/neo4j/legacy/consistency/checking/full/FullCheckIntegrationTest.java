@@ -65,6 +65,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -99,14 +100,11 @@ import org.neo4j.legacy.consistency.checking.GraphStoreFixture;
 import org.neo4j.legacy.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.storageengine.api.schema.SchemaRule;
-import org.neo4j.unsafe.batchinsert.LabelScanWriter;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;

@@ -19,23 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.util.function.Function;
-
-import org.neo4j.function.Functions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 
 public class LuceneKernelExtensions
 {
     public static DirectoryFactory directoryFactory( boolean ephemeral, FileSystemAbstraction fileSystem )
     {
-        if ( ephemeral )
-        {
-            return fileSystem.getOrCreateThirdPartyFileSystem( DirectoryFactory.class, IN_MEMORY_FACTORY );
-        }
         return fileSystem.getOrCreateThirdPartyFileSystem( DirectoryFactory.class,
-                Functions.<Class<DirectoryFactory>, DirectoryFactory>constant( DirectoryFactory.PERSISTENT ) );
+                clazz -> ephemeral ? new DirectoryFactory.InMemoryDirectoryFactory() : DirectoryFactory.PERSISTENT );
     }
 
-    public static final Function<Class<DirectoryFactory>, DirectoryFactory> IN_MEMORY_FACTORY =
-            directoryFactoryClass -> new DirectoryFactory.InMemoryDirectoryFactory();
 }

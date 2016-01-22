@@ -37,7 +37,7 @@ public class ExactTxData extends TxData
     private Map<String, Map<Object, Set<EntityId>>> data;
     private boolean hasOrphans;
 
-    ExactTxData( LuceneIndex index )
+    ExactTxData( LuceneLegacyIndex index )
     {
         super( index );
     }

@@ -30,18 +30,21 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 public class ConstraintCreationIT
 {
-    private static final Label LABEL = Label.label( "label1" );
     @Rule
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( ConstraintCreationIT.class );
+
+    private static final Label LABEL = Label.label( "label1" );
+    private static final String INDEX_IDENTIFIER = "1";
 
     @Test
     public void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
@@ -77,11 +80,8 @@ public class ConstraintCreationIT
 
         SchemaIndexProvider schemaIndexProvider =
                 db.getDependencyResolver().resolveDependency( SchemaIndexProvider.class );
-        File schemaStorePath = schemaIndexProvider.getSchemaIndexStoreDirectory( new File( db.getStoreDir() ) );
+        File schemaStoreDir = schemaIndexProvider.getSchemaIndexStoreDirectory( new File( db.getStoreDir() ) );
 
-        String indexId = "1";
-        File[] files = new File(schemaStorePath, indexId ).listFiles();
-        assertNotNull( files );
-        assertEquals(0, files.length);
+        assertFalse( new IndexFolderLayout( schemaStoreDir, INDEX_IDENTIFIER ).getIndexFolder().exists() );
     }
 }

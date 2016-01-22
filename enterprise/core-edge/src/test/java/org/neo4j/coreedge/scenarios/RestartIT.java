@@ -19,30 +19,29 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.legacy.consistency.ConsistencyCheckService;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.legacy.consistency.ConsistencyCheckService;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.Label.label;
 
 public class RestartIT

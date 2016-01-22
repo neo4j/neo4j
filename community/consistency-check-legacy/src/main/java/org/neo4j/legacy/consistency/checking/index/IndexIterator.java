@@ -21,7 +21,7 @@ package org.neo4j.legacy.consistency.checking.index;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
 
 public class IndexIterator implements BoundedIterable<Long>

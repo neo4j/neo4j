@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.util.Set;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSampler;
 
 public class DelegatingIndexReader implements IndexReader
 {
@@ -73,15 +70,9 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
-    public Set<Class> valueTypesInIndex()
+    public IndexSampler createSampler()
     {
-        return delegate.valueTypesInIndex();
-    }
-
-    @Override
-    public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException
-    {
-        return delegate.sampleIndex( result );
+        return delegate.createSampler();
     }
 
     @Override

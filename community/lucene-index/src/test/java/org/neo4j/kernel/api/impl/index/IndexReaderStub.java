@@ -81,11 +81,6 @@ public class IndexReaderStub extends LeafReader
         };
     }
 
-    public void throwOnNextFieldsAccess( IOException throwOnFields )
-    {
-        this.throwOnFields = throwOnFields;
-    }
-
     public void setElements( String[] elements )
     {
         this.elements = elements;
@@ -148,9 +143,7 @@ public class IndexReaderStub extends LeafReader
     @Override
     public Bits getDocsWithField( String field ) throws IOException
     {
-        throw new RuntimeException(
-                "org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReaderTest.ReaderStub.getDocsWithField: Not " +
-                "yet implemented." );
+        throw new RuntimeException( "Not yet implemented." );
     }
 
     @Override
@@ -162,9 +155,7 @@ public class IndexReaderStub extends LeafReader
     @Override
     public FieldInfos getFieldInfos()
     {
-        throw new RuntimeException(
-                "org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReaderTest.ReaderStub.getFieldInfos: Not yet " +
-                "implemented." );
+        throw new RuntimeException( "Not yet implemented." );
     }
 
     @Override
@@ -193,15 +184,12 @@ public class IndexReaderStub extends LeafReader
     @Override
     public void checkIntegrity() throws IOException
     {
-
     }
 
     @Override
     public Fields getTermVectors( int docID ) throws IOException
     {
-        throw new RuntimeException(
-                "org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReaderTest.ReaderStub.getTermVectors: Not yet " +
-                "implemented." );
+        throw new RuntimeException( "Not yet implemented." );
     }
 
     @Override
@@ -225,6 +213,5 @@ public class IndexReaderStub extends LeafReader
     @Override
     protected void doClose() throws IOException
     {
-
     }
 }

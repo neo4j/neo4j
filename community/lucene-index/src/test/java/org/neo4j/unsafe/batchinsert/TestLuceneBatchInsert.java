@@ -542,19 +542,8 @@ public class TestLuceneBatchInsert
     @SuppressWarnings( "rawtypes" )
     private Predicate<? super KernelExtensionFactory> onlyRealLuceneExtensions()
     {
-        return new Predicate<KernelExtensionFactory>()
-        {
-            @Override
-            public boolean test( KernelExtensionFactory extension )
-            {
-                if ( extension instanceof InMemoryLabelScanStoreExtension ||
-                        extension instanceof InMemoryIndexProviderFactory )
-                {
-                    return false;
-                }
-                return true;
-            }
-        };
+        return extension -> !(extension instanceof InMemoryLabelScanStoreExtension ||
+                          extension instanceof InMemoryIndexProviderFactory);
     }
 
     private void switchToGraphDatabaseService( ConfigurationParameter... config )

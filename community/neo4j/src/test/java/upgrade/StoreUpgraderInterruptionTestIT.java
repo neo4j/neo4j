@@ -73,7 +73,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoSt
 @RunWith( Parameterized.class )
 public class StoreUpgraderInterruptionTestIT
 {
-    @Parameterized.Parameter( 0 )
+    @Parameterized.Parameter
     public String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
     private final LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider( new

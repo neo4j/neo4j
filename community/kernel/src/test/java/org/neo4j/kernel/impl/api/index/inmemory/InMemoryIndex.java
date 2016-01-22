@@ -27,7 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -174,7 +174,7 @@ class InMemoryIndex
         {
             try
             {
-                return indexData.sampleIndex( result );
+                return indexData.createSampler().sampleIndex( result );
             }
             catch ( IndexNotFoundKernelException e )
             {

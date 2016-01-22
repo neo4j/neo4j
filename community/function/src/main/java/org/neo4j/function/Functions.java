@@ -121,9 +121,4 @@ public final class Functions
             return null;
         };
     }
-
-    public static <T> Function<Void,T> fromSupplier( final Supplier<T> supplier )
-    {
-        return t -> supplier.get();
-    }
 }

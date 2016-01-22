@@ -19,7 +19,7 @@
  */
 package org.neo4j.legacy.consistency.store.synthetic;
 
-import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
 
 /**

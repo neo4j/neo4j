@@ -33,16 +33,15 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.binarySearch;
 import static java.util.Collections.singletonList;
-
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 public class InMemoryLabelScanStore implements LabelScanStore
@@ -115,74 +114,6 @@ public class InMemoryLabelScanStore implements LabelScanStore
                     }
                 }
                 return nodes.iterator();
-            }
-        };
-    }
-
-    @Override
-    public AllEntriesLabelScanReader newAllEntriesReader()
-    {
-        final Map<Long, Set<Long>> nodesToLabels = new HashMap<>();
-        for ( Map.Entry<Long, Set<Long>> labelToNodes : data.entrySet() )
-        {
-            for ( Long nodeId : labelToNodes.getValue() )
-            {
-                if ( ! nodesToLabels.containsKey( nodeId ))
-                {
-                    nodesToLabels.put( nodeId, new HashSet<Long>(  ) );
-                }
-                nodesToLabels.get( nodeId ).add( labelToNodes.getKey() );
-            }
-        }
-
-        return new AllEntriesLabelScanReader()
-        {
-            @Override
-            public long maxCount()
-            {
-                return 0;
-            }
-
-            @Override
-            public void close()
-            {
-            }
-
-            @Override
-            public Iterator<NodeLabelRange> iterator()
-            {
-                NodeLabelRange range = new NodeLabelRange()
-                {
-                    @Override
-                    public int id()
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public long[] nodes()
-                    {
-                        return toLongArray( nodesToLabels.keySet() );
-                    }
-
-                    @Override
-                    public long[] labels( long nodeId )
-                    {
-                        return toLongArray( nodesToLabels.get( nodeId ) );
-                    }
-                };
-                return singletonList( range ).iterator();
-            }
-
-            private long[] toLongArray( Set<Long> longs )
-            {
-                long[] array = new long[longs.size()];
-                int position = 0;
-                for ( Long entry : longs )
-                {
-                    array[position++] = entry;
-                }
-                return array;
             }
         };
     }
@@ -263,5 +194,73 @@ public class InMemoryLabelScanStore implements LabelScanStore
     @Override
     public void force()
     {   // Nothing to force
+    }
+
+    @Override
+    public AllEntriesLabelScanReader allNodeLabelRanges()
+    {
+        Map<Long,Set<Long>> nodesToLabels = new HashMap<>();
+        for ( Map.Entry<Long,Set<Long>> labelToNodes : data.entrySet() )
+        {
+            for ( Long nodeId : labelToNodes.getValue() )
+            {
+                if ( !nodesToLabels.containsKey( nodeId ) )
+                {
+                    nodesToLabels.put( nodeId, new HashSet<>() );
+                }
+                nodesToLabels.get( nodeId ).add( labelToNodes.getKey() );
+            }
+        }
+
+        return new AllEntriesLabelScanReader()
+        {
+            @Override
+            public long maxCount()
+            {
+                return 0;
+            }
+
+            @Override
+            public void close()
+            {
+            }
+
+            @Override
+            public Iterator<NodeLabelRange> iterator()
+            {
+                NodeLabelRange range = new NodeLabelRange()
+                {
+                    @Override
+                    public int id()
+                    {
+                        return 0;
+                    }
+
+                    @Override
+                    public long[] nodes()
+                    {
+                        return toLongArray( nodesToLabels.keySet() );
+                    }
+
+                    @Override
+                    public long[] labels( long nodeId )
+                    {
+                        return toLongArray( nodesToLabels.get( nodeId ) );
+                    }
+                };
+                return singletonList( range ).iterator();
+            }
+
+            private long[] toLongArray( Set<Long> longs )
+            {
+                long[] array = new long[longs.size()];
+                int position = 0;
+                for ( Long entry : longs )
+                {
+                    array[position++] = entry;
+                }
+                return array;
+            }
+        };
     }
 }
