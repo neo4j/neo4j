@@ -51,13 +51,15 @@ public class JarBuilder
 
     private byte[] classCompiledBytes( String fileName ) throws IOException
     {
-        InputStream in = getClass().getClassLoader().getResourceAsStream( fileName );
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ( in.available() > 0 )
+        try( InputStream in = getClass().getClassLoader().getResourceAsStream( fileName ) )
         {
-            out.write( in.read() );
-        }
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            while ( in.available() > 0 )
+            {
+                out.write( in.read() );
+            }
 
-        return out.toByteArray();
+            return out.toByteArray();
+        }
     }
 }

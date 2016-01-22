@@ -50,7 +50,7 @@ public class ProcedureJarLoaderTest
     @Rule public ExpectedException exception = ExpectedException.none();
 
     private final ProcedureJarLoader jarloader =
-            new ProcedureJarLoader( new ReflectiveProcedureCompiler( new TypeMappers() ), NullLog.getInstance() );
+            new ProcedureJarLoader( new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry() ), NullLog.getInstance() );
 
     @Test
     public void shouldLoadProcedureFromJar() throws Throwable

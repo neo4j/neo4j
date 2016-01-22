@@ -31,6 +31,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -47,7 +48,6 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
@@ -85,6 +85,8 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -155,14 +157,13 @@ import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
-import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
-import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
+import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements Lifecycle, IndexProviders
 {
@@ -822,6 +823,11 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class ) );
         procedures.registerType( Relationship.class, new SimpleConverter( NTRelationship, Relationship.class ) );
         procedures.registerType( Path.class, new SimpleConverter( NTPath, Path.class ) );
+
+        //register API
+        procedures.registerComponent( GraphDatabaseService.class,
+                (ctx) -> dependencyResolver.resolveDependency( GraphDatabaseService.class ) );
+
         BuiltInProcedures.addTo( procedures );
         procedures.loadFromDirectory( config.get( GraphDatabaseSettings.plugin_dir ) );
         return procedures;

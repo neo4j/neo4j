@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.proc;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -35,7 +36,8 @@ public class Procedures
 {
     private final ProcedureRegistry registry = new ProcedureRegistry();
     private final TypeMappers typeMappers = new TypeMappers();
-    private final ReflectiveProcedureCompiler compiler = new ReflectiveProcedureCompiler(typeMappers);
+    private final ComponentRegistry components = new ComponentRegistry();
+    private final ReflectiveProcedureCompiler compiler = new ReflectiveProcedureCompiler(typeMappers, components);
     private final Log log;
 
     public Procedures()
@@ -43,7 +45,7 @@ public class Procedures
         this( NullLog.getInstance() );
     }
 
-    public Procedures(Log log)
+    public Procedures( Log log )
     {
         this.log = log;
     }
@@ -69,9 +71,25 @@ public class Procedures
         }
     }
 
+    /**
+     * Registers a type and how to convert it to a Neo4jType
+     * @param javaClass the class of the native type
+     * @param toNeo the conversion to Neo4jTypes
+     */
     public synchronized void registerType( Class<?> javaClass, TypeMappers.NeoValueConverter toNeo )
     {
         typeMappers.registerType( javaClass, toNeo );
+    }
+
+    /**
+     * Registers a component, these become available in reflective procedures for injection.
+     *
+     * @param cls the type of component to be registered (this is what users 'ask' for in their field declaration)
+     * @param supplier a function that supplies the actual component, given the context of a procedure invocation
+     */
+    public synchronized <T> void registerComponent( Class<T> cls, Function<Procedure.Context, T> supplier )
+    {
+        components.register( cls, supplier );
     }
 
     /**
