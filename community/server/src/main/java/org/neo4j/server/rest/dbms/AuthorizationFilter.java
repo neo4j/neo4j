@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriBuilder;
 
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -42,7 +43,7 @@ import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.web.XForwardUtil;
 
 import static java.lang.String.format;
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.web.XForwardUtil.X_FORWARD_HOST_HEADER_KEY;
@@ -88,14 +89,14 @@ public class AuthorizationFilter implements Filter
         final String header = request.getHeader( HttpHeaders.AUTHORIZATION );
         if ( header == null )
         {
-            noHeader().writeResponse( response );
+            requestAuthentication( request, noHeader ).accept( response );
             return;
         }
 
         final String[] usernameAndPassword = extractCredential( header );
         if ( usernameAndPassword == null )
         {
-            badHeader().writeResponse( response );
+            badHeader.accept( response );
             return;
         }
 
@@ -107,7 +108,7 @@ public class AuthorizationFilter implements Filter
             case PASSWORD_CHANGE_REQUIRED:
                 if ( !PASSWORD_CHANGE_WHITELIST.matcher( path ).matches() )
                 {
-                    passwordChangeRequired( username, baseURL( request ) ).writeResponse( response );
+                    passwordChangeRequired( username, baseURL( request ) ).accept( response );
                     return;
                 }
                 // fall through
@@ -115,132 +116,81 @@ public class AuthorizationFilter implements Filter
                 filterChain.doFilter( new AuthorizedRequestWrapper( BASIC_AUTH, username, request ), servletResponse );
                 return;
             case TOO_MANY_ATTEMPTS:
-                tooManyAttemptes().writeResponse( response );
+                tooManyAttempts.accept( response );
                 return;
             default:
                 log.warn( "Failed authentication attempt for '%s' from %s", username, request.getRemoteAddr() );
-                invalidCredential().writeResponse( response );
+                requestAuthentication( request, invalidCredential ).accept( response );
                 return;
         }
     }
 
-    // This is a pretty annoying duplication of work, where we're manually re-implementing the JSON serialization
-    // layer. Because we don't have access to jersey at this level, we can't use our regular serialization. This,
-    // obviously, implies a larger architectural issue, which is left as a future exercise.
-    private static abstract class ErrorResponse
+    private static ThrowingConsumer<HttpServletResponse, IOException> error( int code, Object body )
     {
-        private final int statusCode;
-
-        private ErrorResponse( int statusCode )
+        return (response) ->
         {
-            this.statusCode = statusCode;
-        }
-
-        void addHeaders( HttpServletResponse response )
-        {
-        }
-
-        abstract Object body();
-
-        void writeResponse( HttpServletResponse response ) throws IOException
-        {
-            response.setStatus( statusCode );
+            response.setStatus( code );
             response.addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
-            addHeaders( response );
-            response.getOutputStream().write( JsonHelper.createJsonFrom( body() ).getBytes( StandardCharsets.UTF_8 ) );
-        }
-    }
-
-    private static final ErrorResponse NO_HEADER = new ErrorResponse( 401 )
-    {
-        @Override
-        void addHeaders( HttpServletResponse response )
-        {
-            response.addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );
-        }
-
-        @Override
-        Object body()
-        {
-            return map( "errors", asList( map(
-                    "code", Status.Security.AuthorizationFailed.code().serialize(),
-                    "message", "No authorization header supplied." ) ) );
-        }
-    };
-
-    private static ErrorResponse noHeader()
-    {
-        return NO_HEADER;
-    }
-
-    private static final ErrorResponse BAD_HEADER = new ErrorResponse( 400 )
-    {
-        @Override
-        Object body()
-        {
-            return map( "errors", asList( map(
-                    "code", Status.Request.InvalidFormat.code().serialize(),
-                    "message", "Invalid Authorization header." ) ) );
-        }
-    };
-
-    private static ErrorResponse badHeader()
-    {
-        return BAD_HEADER;
-    }
-
-    private static final ErrorResponse INVALID_CREDENTIAL = new ErrorResponse( 401 )
-    {
-        @Override
-        void addHeaders( HttpServletResponse response )
-        {
-            response.addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );
-        }
-
-        @Override
-        Object body()
-        {
-            return map( "errors", asList( map(
-                    "code", Status.Security.AuthorizationFailed.code().serialize(),
-                    "message", "Invalid username or password." ) ) );
-        }
-    };
-
-    private static ErrorResponse invalidCredential()
-    {
-        return INVALID_CREDENTIAL;
-    }
-
-    private static final ErrorResponse TOO_MANY_ATTEMPTS = new ErrorResponse( 429 )
-    {
-        @Override
-        Object body()
-        {
-            return map( "errors", asList( map(
-                    "code", Status.Security.AuthenticationRateLimit.code().serialize(),
-                    "message", "Too many failed authentication requests. Please wait 5 seconds and try again." ) ) );
-        }
-    };
-
-    private static ErrorResponse tooManyAttemptes()
-    {
-        return TOO_MANY_ATTEMPTS;
-    }
-
-    private static ErrorResponse passwordChangeRequired( final String username, final String baseURL )
-    {
-        return new ErrorResponse( 403 )
-        {
-            @Override
-            Object body()
-            {
-                URI path = UriBuilder.fromUri( baseURL ).path( format( "/user/%s/password", username ) ).build();
-                return map( "errors", asList( map(
-                        "code", Status.Security.AuthorizationFailed.code().serialize(),
-                        "message", "User is required to change their password."
-                ) ), "password_change", path.toString() );
-            }
+            response.getOutputStream().write( JsonHelper.createJsonFrom( body ).getBytes( StandardCharsets.UTF_8 ) );
         };
+    }
+
+    private static final ThrowingConsumer<HttpServletResponse, IOException> noHeader =
+            error(  401,
+                    map( "errors", singletonList( map(
+                            "code", Status.Security.AuthorizationFailed.code().serialize(),
+                            "message", "No authorization header supplied." ) ) ) );
+
+    private static final ThrowingConsumer<HttpServletResponse, IOException> badHeader =
+            error(  400,
+                    map( "errors", singletonList( map(
+                            "code", Status.Request.InvalidFormat.code().serialize(),
+                            "message", "Invalid Authorization header." ) ) ) );
+
+    private static final ThrowingConsumer<HttpServletResponse, IOException> invalidCredential =
+            error(  401,
+                    map( "errors", singletonList( map(
+                            "code", Status.Security.AuthorizationFailed.code().serialize(),
+                            "message", "Invalid username or password." ) ) ) );
+
+    private static final ThrowingConsumer<HttpServletResponse, IOException> tooManyAttempts =
+            error(  429,
+                    map( "errors", singletonList( map(
+                            "code", Status.Security.AuthenticationRateLimit.code().serialize(),
+                            "message", "Too many failed authentication requests. Please wait 5 seconds and try again." ) ) ) );
+
+    private static ThrowingConsumer<HttpServletResponse, IOException> passwordChangeRequired( final String username, final String baseURL )
+    {
+        URI path = UriBuilder.fromUri( baseURL ).path( format( "/user/%s/password", username ) ).build();
+        return error( 403,
+                map( "errors", singletonList( map(
+                        "code", Status.Security.AuthorizationFailed.code().serialize(),
+                        "message", "User is required to change their password." ) ), "password_change", path.toString() ) );
+    }
+
+    /**
+     * In order to avoid browsers popping up an auth box when using the Neo4j Browser, it sends us a special header.
+     * When we get that special header, we send a crippled authentication challenge back that the browser does not
+     * understand, which lets the Neo4j Browser handle auth on its own.
+     *
+     * Otherwise, we send a regular basic auth challenge. This method adds the appropriate header depending on the
+     * inbound request.
+     */
+    private static ThrowingConsumer<HttpServletResponse, IOException> requestAuthentication(
+            HttpServletRequest req, ThrowingConsumer<HttpServletResponse, IOException> responseGen )
+    {
+        if( "true".equals( req.getHeader( "X-Ajax-Browser-Auth" ) ) )
+        {
+            return (res) -> {
+                responseGen.accept( res );
+                res.addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );
+            };
+        } else {
+            return (res) -> {
+                responseGen.accept( res );
+                res.addHeader( HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Neo4j\"" );
+            };
+        }
     }
 
     private String baseURL( HttpServletRequest request )

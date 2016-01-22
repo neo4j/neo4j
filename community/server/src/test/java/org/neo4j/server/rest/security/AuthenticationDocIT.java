@@ -73,7 +73,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         RESTDocsGenerator.ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 401 )
-                .expectedHeader( "WWW-Authenticate", "None" )
+                .expectedHeader( "WWW-Authenticate", "Basic realm=\"Neo4j\"" )
                 .get( dataURL() );
 
         // Then
@@ -122,7 +122,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
                 .noGraph()
                 .expectedStatus( 401 )
                 .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "incorrect" ) )
-                .expectedHeader( "WWW-Authenticate", "None" )
+                .expectedHeader( "WWW-Authenticate", "Basic realm=\"Neo4j\"" )
                 .post( dataURL() );
 
         // Then
@@ -261,7 +261,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         assertThat(response.status(), equalTo(401));
         assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.AuthorizationFailed"));
         assertThat(response.get("errors").get(0).get("message").asText(), equalTo("No authorization header supplied."));
-        assertThat(response.header( HttpHeaders.WWW_AUTHENTICATE ), equalTo("None"));
+        assertThat(response.header( HttpHeaders.WWW_AUTHENTICATE ), equalTo("Basic realm=\"Neo4j\""));
 
         // When malformed header
         response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, "This makes no sense" ).request( method, server.baseUri().resolve( path ).toString(), payload );
@@ -274,7 +274,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         assertThat(response.status(), equalTo(401));
         assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.AuthorizationFailed"));
         assertThat(response.get("errors").get(0).get("message").asText(), equalTo("Invalid username or password."));
-        assertThat(response.header(HttpHeaders.WWW_AUTHENTICATE ), equalTo("None"));
+        assertThat(response.header(HttpHeaders.WWW_AUTHENTICATE ), equalTo("Basic realm=\"Neo4j\""));
 
         // When authorized
         response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) ).request( method, server.baseUri().resolve( path ).toString(), payload );
