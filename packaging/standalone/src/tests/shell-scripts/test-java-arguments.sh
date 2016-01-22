@@ -28,11 +28,6 @@ for run_command in run_console run_daemon; do
     test_expect_java_arg '-Xmx1024m'
   "
 
-  test_expect_success "should set neo4j.home" "
-    ${run_command} &&
-    test_expect_java_arg '-Dneo4j.home=$(neo4j_home)'
-  "
-
   test_expect_success "should invoke main class" "
     set_main_class some.main.class &&
     ${run_command} &&

@@ -167,9 +167,7 @@ public class StandaloneClusterClient
 
     private static LogService logService( FileSystemAbstraction fileSystem ) throws IOException
     {
-        File home = new File( System.getProperty( "neo4j.home" ) );
-        String logDir = System.getProperty( "org.neo4j.cluster.logdirectory",
-                new File( new File( new File( home, "data" ), "log" ), "arbiter" ).getAbsolutePath() );
+        String logDir = System.getProperty( "org.neo4j.cluster.logdirectory", "data/log" );
         return StoreLogService.withUserLogProvider( FormattedLogProvider.toOutputStream( System.out ) )
                 .inStoreDirectory( fileSystem, new File( logDir ) );
     }
