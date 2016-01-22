@@ -83,7 +83,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 
     private void applyIndexUpdates()
     {
-        if ( indexUpdates != null )
+        if ( indexUpdates != null && indexUpdates.hasUpdates() )
         {
             indexUpdatesSync.apply( new IndexUpdatesWork( indexUpdates ) );
             indexUpdates = null;

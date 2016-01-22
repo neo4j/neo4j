@@ -33,7 +33,6 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class KernelStatement implements TxStateHolder, Statement
 {
@@ -42,12 +41,12 @@ public class KernelStatement implements TxStateHolder, Statement
     private final StorageStatement storeStatement;
     private final KernelTransactionImplementation transaction;
     private final OperationsFacade facade;
-    private LabelScanReader labelScanReader;
     private int referenceCount;
     private boolean closed;
 
-    public KernelStatement( KernelTransactionImplementation transaction, TxStateHolder txStateHolder,
-                            Locks.Client locks, StatementOperationParts operations, StorageStatement storeStatement, Procedures procedures )
+    public KernelStatement( KernelTransactionImplementation transaction,
+            TxStateHolder txStateHolder, Locks.Client locks,
+            StatementOperationParts operations, StorageStatement storeStatement, Procedures procedures )
     {
         this.transaction = transaction;
         this.locks = locks;
@@ -155,12 +154,6 @@ public class KernelStatement implements TxStateHolder, Statement
     private void cleanupResources()
     {
         storeStatement.close();
-
-        if ( null != labelScanReader )
-        {
-            labelScanReader.close();
-        }
-
         transaction.releaseStatement( this );
     }
 

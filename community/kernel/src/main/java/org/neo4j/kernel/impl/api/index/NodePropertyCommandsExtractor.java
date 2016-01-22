@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.storageengine.api.CommandsToApply;
 
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRecordOfLabels;
 
 /**
  * Implements both BatchTransactionApplier and TransactionApplier in order to reduce garbage.
@@ -44,6 +45,7 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
 {
     private final PrimitiveLongObjectMap<NodeCommand> nodeCommandsById = longObjectMap();
     private final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = longObjectMap();
+    private boolean hasUpdates;
 
     @Override
     public TransactionApplier startTx( CommandsToApply transaction )
@@ -68,7 +70,22 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
     public boolean visitNodeCommand( NodeCommand command ) throws IOException
     {
         nodeCommandsById.put( command.getKey(), command );
+        if ( !hasUpdates && hasLabelChanges( command ) )
+        {
+            hasUpdates = true;
+        }
         return false;
+    }
+
+    private boolean hasLabelChanges( NodeCommand command )
+    {
+        long before = command.getBefore().getLabelField();
+        long after = command.getAfter().getLabelField();
+        return before != after ||
+                // Because we don't know here, there may have been changes to a dynamic label record
+                // even though it still points to the same one
+                fieldPointsToDynamicRecordOfLabels( before ) || fieldPointsToDynamicRecordOfLabels( after );
+
     }
 
     @Override
@@ -84,13 +101,14 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
                 propertyCommandsByNodeIds.put( nodeId, group = new ArrayList<>() );
             }
             group.add( command );
+            hasUpdates = true;
         }
         return false;
     }
 
     public boolean containsAnyNodeOrPropertyUpdate()
     {
-        return !nodeCommandsById.isEmpty() || !propertyCommandsByNodeIds.isEmpty();
+        return hasUpdates;
     }
 
     public PrimitiveLongObjectMap<NodeCommand> nodeCommandsById()

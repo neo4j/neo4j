@@ -58,18 +58,19 @@ public class StoreStatement implements StorageStatement
     private final NeoStores neoStores;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
-    private final IndexReaderFactory indexReaderFactory;
-    private final Supplier<LabelScanReader> labelScanReaderSupplier;
+    private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
+    private IndexReaderFactory indexReaderFactory;
+    private final Supplier<LabelScanReader> labelScanStore;
     private LabelScanReader labelScanReader;
     private boolean closed;
 
     public StoreStatement( final NeoStores neoStores, final LockService lockService,
-            IndexReaderFactory indexReaderFactory,
+            Supplier<IndexReaderFactory> indexReaderFactory,
             Supplier<LabelScanReader> labelScanReaderSupplier )
     {
         this.neoStores = neoStores;
-        this.indexReaderFactory = indexReaderFactory;
-        this.labelScanReaderSupplier = labelScanReaderSupplier;
+        this.indexReaderFactorySupplier = indexReaderFactory;
+        this.labelScanStore = labelScanReaderSupplier;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
 
@@ -155,7 +156,10 @@ public class StoreStatement implements StorageStatement
     public void close()
     {
         assert !closed;
-        indexReaderFactory.close();
+        if ( indexReaderFactory != null )
+        {
+            indexReaderFactory.close();
+        }
         if ( labelScanReader != null )
         {
             labelScanReader.close();
@@ -209,22 +213,25 @@ public class StoreStatement implements StorageStatement
     @Override
     public LabelScanReader getLabelScanReader()
     {
-        if ( labelScanReader == null )
-        {
-            labelScanReader = labelScanReaderSupplier.get();
-        }
-        return labelScanReader;
+        return labelScanReader != null ?
+                labelScanReader : (labelScanReader = labelScanStore.get());
+    }
+
+    private IndexReaderFactory indexReaderFactory()
+    {
+        return indexReaderFactory != null ?
+                indexReaderFactory : (indexReaderFactory = indexReaderFactorySupplier.get());
     }
 
     @Override
     public IndexReader getIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexReaderFactory.newReader( descriptor );
+        return indexReaderFactory().newReader( descriptor );
     }
 
     @Override
     public IndexReader getFreshIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexReaderFactory.newUnCachedReader( descriptor );
+        return indexReaderFactory().newUnCachedReader( descriptor );
     }
 }

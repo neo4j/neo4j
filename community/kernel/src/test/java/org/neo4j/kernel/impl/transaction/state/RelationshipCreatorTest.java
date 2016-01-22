@@ -189,6 +189,12 @@ public class RelationshipCreatorTest
         {
             return delegate.hasChanges();
         }
+
+        @Override
+        public int changeSize()
+        {
+            return delegate.changeSize();
+        }
     }
 
     private static final int DENSE_NODE_THRESHOLD = 5;

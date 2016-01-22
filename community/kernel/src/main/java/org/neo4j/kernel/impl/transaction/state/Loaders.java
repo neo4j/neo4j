@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -47,6 +48,67 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public class Loaders
 {
+    private final Loader<Long,NodeRecord,Void> nodeLoader;
+    private final Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader;
+    private final Loader<Long,RelationshipRecord,Void> relationshipLoader;
+    private final Loader<Long,RelationshipGroupRecord,Integer> relationshipGroupLoader;
+    private final Loader<Long,Collection<DynamicRecord>,SchemaRule> schemaRuleLoader;
+    private final Loader<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenLoader;
+    private final Loader<Integer,LabelTokenRecord,Void> labelTokenLoader;
+    private final Loader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader;
+
+    public Loaders( NeoStores neoStores )
+    {
+        nodeLoader = nodeLoader( neoStores.getNodeStore() );
+        propertyLoader = propertyLoader( neoStores.getPropertyStore() );
+        relationshipLoader = relationshipLoader( neoStores.getRelationshipStore() );
+        relationshipGroupLoader = relationshipGroupLoader( neoStores.getRelationshipGroupStore() );
+        schemaRuleLoader = schemaRuleLoader( neoStores.getSchemaStore() );
+        propertyKeyTokenLoader = propertyKeyTokenLoader( neoStores.getPropertyKeyTokenStore() );
+        labelTokenLoader = labelTokenLoader( neoStores.getLabelTokenStore() );
+        relationshipTypeTokenLoader = relationshipTypeTokenLoader( neoStores.getRelationshipTypeTokenStore() );
+    }
+
+    public Loader<Long,NodeRecord,Void> nodeLoader()
+    {
+        return nodeLoader;
+    }
+
+    public Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader()
+    {
+        return propertyLoader;
+    }
+
+    public Loader<Long,RelationshipRecord,Void> relationshipLoader()
+    {
+        return relationshipLoader;
+    }
+
+    public Loader<Long,RelationshipGroupRecord,Integer> relationshipGroupLoader()
+    {
+        return relationshipGroupLoader;
+    }
+
+    public Loader<Long,Collection<DynamicRecord>,SchemaRule> schemaRuleLoader()
+    {
+        return schemaRuleLoader;
+    }
+
+    public Loader<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenLoader()
+    {
+        return propertyKeyTokenLoader;
+    }
+
+    public Loader<Integer,LabelTokenRecord,Void> labelTokenLoader()
+    {
+        return labelTokenLoader;
+    }
+
+    public Loader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader()
+    {
+        return relationshipTypeTokenLoader;
+    }
+
     public static Loader<Long,NodeRecord,Void> nodeLoader( final NodeStore store )
     {
         return new Loader<Long,NodeRecord,Void>()
@@ -141,7 +203,7 @@ public class Loaders
 
             @Override
             public void ensureHeavy( RelationshipRecord record )
-            {
+            {   // Nothing to load
             }
 
             @Override

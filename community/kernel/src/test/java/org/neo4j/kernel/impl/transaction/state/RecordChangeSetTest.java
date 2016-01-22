@@ -38,7 +38,7 @@ public class RecordChangeSetTest
     public void shouldStartWithSetsInitializedAndEmpty() throws Exception
     {
         // GIVEN
-        RecordChangeSet changeSet = new RecordChangeSet( mock( NeoStores.class ) );
+        RecordChangeSet changeSet = new RecordChangeSet( mock( Loaders.class ) );
 
         // WHEN
         // nothing really
@@ -62,7 +62,7 @@ public class RecordChangeSetTest
         when( mockStore.getSchemaStore() ).thenReturn( mock( SchemaStore.class ) );
         when( mockStore.getRelationshipGroupStore() ).thenReturn( mock( RelationshipGroupStore.class ) );
 
-        RecordChangeSet changeSet = new RecordChangeSet( mockStore );
+        RecordChangeSet changeSet = new RecordChangeSet( new Loaders( mockStore ) );
 
         // WHEN
         /*

@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import java.util.function.Supplier;
+
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -39,13 +39,13 @@ public class StoreStatementTest
     public void shouldCloseOpenedLabelScanReader() throws Exception
     {
         // given
-        LabelScanStore scanStore = mock( LabelScanStore.class );
+        Supplier<LabelScanReader> scanStore = mock( Supplier.class );
         LabelScanReader scanReader = mock( LabelScanReader.class );
 
-        when( scanStore.newReader() ).thenReturn( scanReader );
+        when( scanStore.get() ).thenReturn( scanReader );
         StoreStatement statement = new StoreStatement(
                 mock( NeoStores.class ), LockService.NO_LOCK_SERVICE,
-                mock( IndexReaderFactory.class ), scanStore::newReader );
+                mock( Supplier.class ), scanStore );
 
         // when
         LabelScanReader actualReader = statement.getLabelScanReader();
@@ -57,7 +57,7 @@ public class StoreStatementTest
         statement.close();
 
         // then
-        verify( scanStore ).newReader();
+        verify( scanStore ).get();
         verifyNoMoreInteractions( scanStore );
 
         verify( scanReader ).close();

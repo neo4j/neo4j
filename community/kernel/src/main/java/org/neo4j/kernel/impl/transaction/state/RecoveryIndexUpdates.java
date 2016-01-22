@@ -57,4 +57,10 @@ public class RecoveryIndexUpdates implements IndexUpdates
         ids.addAll( propCommands.iterator() );
         ids.addAll( nodeCommands.iterator() );
     }
+
+    @Override
+    public boolean hasUpdates()
+    {
+        return !ids.isEmpty();
+    }
 }

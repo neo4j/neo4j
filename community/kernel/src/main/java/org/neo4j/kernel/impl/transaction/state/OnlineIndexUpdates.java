@@ -96,6 +96,12 @@ public class OnlineIndexUpdates implements IndexUpdates
         gatherUpdatesFromNodeCommands( nodeCommands, propertyCommands, propertyChanges );
     }
 
+    @Override
+    public boolean hasUpdates()
+    {
+        return !updates.isEmpty();
+    }
+
     private void gatherUpdatesFromPropertyCommands(
             PrimitiveLongObjectMap<NodeCommand> nodeCommands,
             PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,

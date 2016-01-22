@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -78,9 +79,16 @@ import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
+import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
+import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
+import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
+import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
+import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
+import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
+import org.neo4j.kernel.impl.transaction.state.RelationshipDeleter;
+import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
@@ -98,7 +106,6 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
-import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -142,6 +149,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync;
     private final NeoStoreIndexStoreView indexStoreView;
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
+
+    // Immutable state for creating/applying commands
+    private final Loaders loaders;
+    private final RelationshipCreator relationshipCreator;
+    private final RelationshipDeleter relationshipDeleter;
+    private final PropertyCreator propertyCreator;
+    private final PropertyDeleter propertyDeleter;
 
     public RecordStorageEngine(
             File storeDir,
@@ -203,12 +217,24 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     schemaStorage, neoStores, indexingService,
                     storeStatementSupplier( neoStores, config, lockService ) );
             storeLayer = new CacheLayer( diskLayer, schemaCache );
+
             legacyIndexApplierLookup = new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup );
 
             labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
 
             commandReaderFactory = new RecordStorageCommandReaderFactory();
             indexUpdatesSync = new WorkSync<>( indexingService );
+
+            // Immutable state for creating/applying commands
+            loaders = new Loaders( neoStores );
+            RelationshipGroupGetter relationshipGroupGetter =
+                    new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
+            relationshipCreator = new RelationshipCreator( relationshipGroupGetter,
+                    config.get( GraphDatabaseSettings.dense_node_threshold ) );
+            PropertyTraverser propertyTraverser = new PropertyTraverser();
+            propertyDeleter = new PropertyDeleter( neoStores.getPropertyStore(), propertyTraverser );
+            relationshipDeleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter );
+            propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser );
         }
         catch ( Throwable failure )
         {
@@ -222,11 +248,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         final LockService currentLockService =
                 config.get( use_read_locks_on_property_reads ) ? lockService : NO_LOCK_SERVICE;
-        final Supplier<LabelScanReader> labelScanReaderSupplier = labelScanStore::newReader;
+        final Supplier<IndexReaderFactory> indexReaderFactory = () -> {
+            return new IndexReaderFactory.Caching( indexingService );
+        };
 
         return () -> {
-            return new StoreStatement( neoStores, currentLockService,
-                    new IndexReaderFactory.Caching( indexingService ), labelScanReaderSupplier );
+            return new StoreStatement( neoStores, currentLockService, indexReaderFactory, labelScanStore::newReader );
         };
     }
 
@@ -253,9 +280,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         if ( txState != null )
         {
-            NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStores, locks );
-            TransactionRecordState recordState = new TransactionRecordState( neoStores, integrityValidator, context );
-            recordState.initialize( lastTransactionIdWhenStarted );
+            RecordChangeSet recordChangeSet = new RecordChangeSet( loaders );
+            TransactionRecordState recordState = new TransactionRecordState( neoStores, integrityValidator,
+                    recordChangeSet, lastTransactionIdWhenStarted, locks,
+                    relationshipCreator, relationshipDeleter, propertyCreator, propertyDeleter );
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState,

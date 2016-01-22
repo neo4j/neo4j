@@ -717,6 +717,12 @@ public class IndexingServiceTest
             {
                 throw new UnsupportedOperationException();
             }
+
+            @Override
+            public boolean hasUpdates()
+            {
+                return !nodeIds.isEmpty();
+            }
         };
     }
 

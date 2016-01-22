@@ -22,13 +22,13 @@ package org.neo4j.unsafe.impl.batchimport.store;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.util.collection.ArrayCollection;
 
 /**
  * {@link RecordAccess} optimized for batching and an access pattern where records are created sequentially.
- * Mostly here as a bridge between a batch importer and existing record logic in {@link NeoStoreTransactionContext}
+ * Mostly here as a bridge between a batch importer and existing record logic in {@link TransactionRecordState}
  * and friends.
  */
 public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RECORD,ADDITIONAL>
