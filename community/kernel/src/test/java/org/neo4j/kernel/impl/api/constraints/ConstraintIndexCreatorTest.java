@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -194,6 +195,18 @@ public class ConstraintIndexCreatorTest
                 public boolean isOpen()
                 {
                     return true;
+                }
+
+                @Override
+                public AccessMode mode()
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void setMode( AccessMode mode )
+                {
+                    throw new UnsupportedOperationException();
                 }
 
                 @Override

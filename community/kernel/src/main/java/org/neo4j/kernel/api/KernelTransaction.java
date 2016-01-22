@@ -112,6 +112,17 @@ public interface KernelTransaction extends AutoCloseable
     boolean isOpen();
 
     /**
+     * @return the mode this transaction is currently executing in.
+     */
+    AccessMode mode();
+
+    /**
+     * Set the mode this transaction should execute in. This controls which capabilities the transaction has.
+     * @param mode mode to use.
+     */
+    void setMode( AccessMode mode );
+
+    /**
      * @return {@code true} if {@link #markForTermination()} has been invoked, otherwise {@code false}.
      */
     boolean shouldBeTerminated();
