@@ -35,6 +35,7 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 
 public class LogEntryParserDispatcherV6Test
 {
@@ -137,7 +138,7 @@ public class LogEntryParserDispatcherV6Test
     public void shouldParseCheckPointEntry() throws IOException
     {
         // given
-        final CheckPoint checkPoint = new CheckPoint( new LogPosition( 43, 44 ) );
+        final CheckPoint checkPoint = new CheckPoint( new LogPosition( 43, 44 ), NO_SNAPSHOT );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong( checkPoint.getLogPosition().getLogVersion() );

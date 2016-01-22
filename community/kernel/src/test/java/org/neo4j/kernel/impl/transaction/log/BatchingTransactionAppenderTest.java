@@ -68,7 +68,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
@@ -77,7 +77,8 @@ public class BatchingTransactionAppenderTest
     @Rule
     public final LifeRule life = new LifeRule( true );
 
-    private final InMemoryVersionableReadableClosablePositionAwareChannel channel = new InMemoryVersionableReadableClosablePositionAwareChannel();
+    private final InMemoryVersionableReadableClosablePositionAwareChannel channel =
+            new InMemoryVersionableReadableClosablePositionAwareChannel();
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
     private final LogFile logFile = mock( LogFile.class );
@@ -91,20 +92,21 @@ public class BatchingTransactionAppenderTest
         when( logFile.getWriter() ).thenReturn( channel );
         long txId = 15;
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
-        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, databaseHealth ) );
+        TransactionAppender appender = life.add(
+                new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache, transactionIdStore, BYPASS,
+                        databaseHealth ) );
 
         // WHEN
-        TransactionRepresentation transaction = transaction( singleCreateNodeCommand( 0 ),
-                new byte[]{1, 2, 5}, 2, 1, 12345, 4545, 12345 + 10 );
+        TransactionRepresentation transaction =
+                transaction( singleCreateNodeCommand( 0 ), new byte[]{1, 2, 5}, 2, 1, 12345, 4545, 12345 + 10 );
 
         appender.append( new TransactionToApply( transaction ), logAppendEvent );
 
         // THEN
-        final LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory() );
-        try ( PhysicalTransactionCursor<ReadableLogChannel> reader =
-                      new PhysicalTransactionCursor<>( channel, logEntryReader ) )
+        final LogEntryReader<ReadableLogChannel> logEntryReader =
+                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
+        try ( PhysicalTransactionCursor<ReadableLogChannel> reader = new PhysicalTransactionCursor<>( channel,
+                logEntryReader ) )
         {
             reader.next();
             TransactionRepresentation tx = reader.get().getTransactionRepresentation();
@@ -122,8 +124,9 @@ public class BatchingTransactionAppenderTest
     {
         // GIVEN
         when( logFile.getWriter() ).thenReturn( channel );
-        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, databaseHealth ) );
+        TransactionAppender appender = life.add(
+                new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache, transactionIdStore, BYPASS,
+                        databaseHealth ) );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 2L, 3L, 4L );
         TransactionToApply batch = batchOf(
                 transaction( singleCreateNodeCommand( 0 ), new byte[0], 0, 0, 0, 1, 0 ),
@@ -150,20 +153,22 @@ public class BatchingTransactionAppenderTest
         when( logFile.getWriter() ).thenReturn( channel );
         long nextTxId = 15;
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( nextTxId );
-        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, databaseHealth ) );
+        TransactionAppender appender = life.add(
+                new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache, transactionIdStore, BYPASS,
+                        databaseHealth ) );
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final int masterId = 2, authorId = 1;
         final long timeStarted = 12345, latestCommittedTxWhenStarted = nextTxId - 5, timeCommitted = timeStarted + 10;
-        PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
-                singleCreateNodeCommand( 0 ) );
-        transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
-                latestCommittedTxWhenStarted, timeCommitted, -1 );
+        PhysicalTransactionRepresentation transactionRepresentation =
+                new PhysicalTransactionRepresentation( singleCreateNodeCommand( 0 ) );
+        transactionRepresentation
+                .setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
+                        timeCommitted, -1 );
 
-        LogEntryStart start = new LogEntryStart( 0, 0, 0l, latestCommittedTxWhenStarted, null,
-                LogPosition.UNSPECIFIED );
+        LogEntryStart start =
+                new LogEntryStart( 0, 0, 0l, latestCommittedTxWhenStarted, null, LogPosition.UNSPECIFIED );
         LogEntryCommit commit = new OnePhaseCommit( nextTxId, 0l );
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
@@ -172,10 +177,10 @@ public class BatchingTransactionAppenderTest
                 logAppendEvent );
 
         // THEN
-        LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory() );
-        try ( PhysicalTransactionCursor<ReadableLogChannel> reader =
-                      new PhysicalTransactionCursor<>( channel, logEntryReader ) )
+        LogEntryReader<ReadableLogChannel> logEntryReader =
+                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
+        try ( PhysicalTransactionCursor<ReadableLogChannel> reader = new PhysicalTransactionCursor<>( channel,
+                logEntryReader ) )
         {
             reader.next();
             TransactionRepresentation result = reader.get().getTransactionRepresentation();
@@ -194,22 +199,24 @@ public class BatchingTransactionAppenderTest
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         when( logFile.getWriter() ).thenReturn( channel );
-        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, databaseHealth ) );
+        TransactionAppender appender = life.add(
+                new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache, transactionIdStore, BYPASS,
+                        databaseHealth ) );
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final int masterId = 2, authorId = 1;
         final long timeStarted = 12345, latestCommittedTxWhenStarted = 4545, timeCommitted = timeStarted + 10;
-        PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
-                singleCreateNodeCommand( 0 ) );
-        transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
-                latestCommittedTxWhenStarted, timeCommitted, -1 );
+        PhysicalTransactionRepresentation transactionRepresentation =
+                new PhysicalTransactionRepresentation( singleCreateNodeCommand( 0 ) );
+        transactionRepresentation
+                .setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
+                        timeCommitted, -1 );
 
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
 
-        LogEntryStart start = new LogEntryStart( 0, 0, 0L, latestCommittedTxWhenStarted, null,
-                LogPosition.UNSPECIFIED );
+        LogEntryStart start =
+                new LogEntryStart( 0, 0, 0l, latestCommittedTxWhenStarted, null, LogPosition.UNSPECIFIED );
         LogEntryCommit commit = new OnePhaseCommit( latestCommittedTxWhenStarted + 2, 0l );
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
@@ -238,8 +245,9 @@ public class BatchingTransactionAppenderTest
         when( logFile.getWriter() ).thenReturn( channel );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         Mockito.reset( databaseHealth );
-        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, databaseHealth ) );
+        TransactionAppender appender = life.add(
+                new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache, transactionIdStore, BYPASS,
+                        databaseHealth ) );
 
         // WHEN
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
@@ -284,8 +292,9 @@ public class BatchingTransactionAppenderTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         Mockito.reset( databaseHealth );
-        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
-                metadataCache, transactionIdStore, BYPASS, databaseHealth ) );
+        TransactionAppender appender = life.add(
+                new BatchingTransactionAppender( logFile, NO_ROTATION, metadataCache, transactionIdStore, BYPASS,
+                        databaseHealth ) );
 
         // WHEN
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
@@ -314,11 +323,12 @@ public class BatchingTransactionAppenderTest
         when( channel.prepareForFlush() ).thenReturn( flushable );
         when( channel.putLong( anyLong() ) ).thenReturn( channel );
         when( logFile.getWriter() ).thenReturn( channel );
-        BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
-                positionCache, transactionIdStore, BYPASS, databaseHealth ) );
+        BatchingTransactionAppender appender = life.add(
+                new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache, transactionIdStore, BYPASS,
+                        databaseHealth ) );
 
         // When
-        appender.checkPoint( new LogPosition( 1l, 2l ), LogCheckPointEvent.NULL );
+        appender.checkPoint( new LogPosition( 1l, 2l ), LogCheckPointEvent.NULL, NO_SNAPSHOT );
 
         // Then
         verify( channel, times( 1 ) ).putLong( 1l );
@@ -334,17 +344,18 @@ public class BatchingTransactionAppenderTest
         // Given
         IOException ioex = new IOException( "boom!" );
         FlushablePositionAwareChannel channel = mock( FlushablePositionAwareChannel.class, RETURNS_MOCKS );
-        when (channel.put( anyByte() ) ).thenReturn( channel );
+        when( channel.put( anyByte() ) ).thenReturn( channel );
         when( channel.putLong( anyLong() ) ).thenThrow( ioex );
         when( channel.put( anyByte() ) ).thenThrow( ioex );
         when( logFile.getWriter() ).thenReturn( channel );
-        BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender(
-                logFile, NO_ROTATION, positionCache, transactionIdStore, BYPASS, databaseHealth ) );
+        BatchingTransactionAppender appender = life.add(
+                new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache, transactionIdStore, BYPASS,
+                        databaseHealth ) );
 
         // When
         try
         {
-            appender.checkPoint( new LogPosition( 0l, 0l ), LogCheckPointEvent.NULL );
+            appender.checkPoint( new LogPosition( 0l, 0l ), LogCheckPointEvent.NULL, NO_SNAPSHOT );
             fail( "should have thrown " );
         }
         catch ( IOException ex )
@@ -356,14 +367,15 @@ public class BatchingTransactionAppenderTest
         verify( databaseHealth, times( 1 ) ).panic( ioex );
     }
 
-    public final @Rule CleanupRule cleanup = new CleanupRule();
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
 
     private TransactionRepresentation transaction( Collection<StorageCommand> commands, byte[] additionalHeader,
             int masterId, int authorId, long timeStarted, long latestCommittedTxWhenStarted, long timeCommitted )
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
-        tx.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
-                timeCommitted, -1 );
+        tx.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted,
+                -1 );
         return tx;
     }
 

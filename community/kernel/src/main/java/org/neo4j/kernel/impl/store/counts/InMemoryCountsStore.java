@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.function.Predicates.awaitForever;
 
-public class InMemoryCountsStore implements CountsStore
+class InMemoryCountsStore implements CountsStore
 {
     private static final long[] EMPTY_METADATA = {1L};
     private final ReadWriteLock lock = new ReentrantReadWriteLock();

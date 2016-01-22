@@ -32,15 +32,16 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -59,8 +59,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.Math.max;
-
 import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -283,7 +283,7 @@ public class StoreCopyClient
             }
 
             long currentLogVersion = logVersionRepository.getCurrentLogVersion();
-            writer.checkPoint( new LogPosition( currentLogVersion, LOG_HEADER_SIZE ) );
+            writer.checkPoint( new LogPosition( currentLogVersion, LOG_HEADER_SIZE ), NO_SNAPSHOT );
 
             // And since we write this manually we need to set the correct transaction id in the
             // header of the log that we just wrote.

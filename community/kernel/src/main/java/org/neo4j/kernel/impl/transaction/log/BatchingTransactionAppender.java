@@ -29,6 +29,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -148,7 +149,8 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             {
                 throw new IllegalStateException(
                         "Received " + tx.transactionRepresentation() + " with txId:" + expectedTransactionId +
-                        " to be applied, but appending it ended up generating an unexpected txId:" + transactionId );
+                                " to be applied, but appending it ended up generating an unexpected txId:" +
+                                transactionId );
             }
         }
     }
@@ -163,14 +165,17 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     }
 
     @Override
-    public void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent ) throws IOException
+    public void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent, CountsSnapshot snapshot )
+            throws IOException
     {
         try
         {
             // Synchronized with logFile to get absolute control over concurrent rotations happening
             synchronized ( logFile )
             {
-                transactionLogWriter.checkPoint( logPosition );
+
+                transactionLogWriter.checkPoint( logPosition, snapshot );
+
             }
         }
         catch ( Throwable cause )
@@ -205,11 +210,11 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             transactionLogWriter.append( transaction, transactionId );
             LogPosition logPositionAfterCommit = writer.getCurrentPosition( positionMarker ).newPosition();
 
-            long transactionChecksum = checksum(
-                    transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() );
-            transactionMetadataCache.cacheTransactionMetadata(
-                    transactionId, logPositionBeforeCommit, transaction.getMasterId(), transaction.getAuthorId(),
-                    transactionChecksum );
+            long transactionChecksum =
+                    checksum( transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() );
+            transactionMetadataCache
+                    .cacheTransactionMetadata( transactionId, logPositionBeforeCommit, transaction.getMasterId(),
+                            transaction.getAuthorId(), transactionChecksum );
 
             transaction.accept( indexCommandDetector );
             boolean hasLegacyIndexChanges = indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
@@ -218,9 +223,8 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                 // Offer this transaction id to the queue so that the legacy index applier can take part in the ordering
                 legacyIndexTransactionOrdering.offer( transactionId );
             }
-            return new TransactionCommitment(
-                    hasLegacyIndexChanges, transactionId, transactionChecksum, logPositionAfterCommit,
-                    transactionIdStore );
+            return new TransactionCommitment( hasLegacyIndexChanges, transactionId, transactionChecksum,
+                    logPositionAfterCommit, transactionIdStore );
         }
         catch ( final Throwable panic )
         {

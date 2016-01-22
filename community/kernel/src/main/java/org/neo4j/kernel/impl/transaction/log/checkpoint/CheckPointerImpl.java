@@ -23,24 +23,28 @@ import java.io.IOException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
+
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 {
     private final TransactionAppender appender;
     private final TransactionIdStore transactionIdStore;
     private final CheckPointThreshold threshold;
-    private final StorageEngine storageEngine;;
+    private final StorageEngine storageEngine;
+    ;
     private final LogPruning logPruning;
     private final DatabaseHealth databaseHealth;
     private final Log msgLog;
@@ -50,16 +54,17 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private long lastCheckPointedTx;
 
     public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
-            StorageEngine storageEngine, LogPruning logPruning, TransactionAppender appender, DatabaseHealth databaseHealth,
-            LogProvider logProvider, CheckPointTracer tracer )
+            StorageEngine storageEngine, LogPruning logPruning, TransactionAppender appender,
+            DatabaseHealth databaseHealth, LogProvider logProvider, CheckPointTracer tracer )
     {
         this( transactionIdStore, threshold, storageEngine, logPruning, appender, databaseHealth, logProvider, tracer,
                 new ReentrantLock() );
     }
 
     public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
-            StorageEngine storageEngine, LogPruning logPruning, TransactionAppender appender, DatabaseHealth databaseHealth,
-            LogProvider logProvider, CheckPointTracer tracer, Lock lock )
+            StorageEngine storageEngine, LogPruning logPruning, TransactionAppender appender,
+            DatabaseHealth databaseHealth, LogProvider logProvider, CheckPointTracer tracer,
+            Lock lock )
     {
         this.appender = appender;
         this.transactionIdStore = transactionIdStore;
@@ -111,8 +116,8 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             lock.lock();
             try
             {
-                msgLog.info( info.describe( lastCheckPointedTx ) +
-                             " Check pointing was already running, completed now" );
+                msgLog.info(
+                        info.describe( lastCheckPointedTx ) + " Check pointing was already running, completed now" );
                 return lastCheckPointedTx;
             }
             finally
@@ -174,8 +179,12 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
          */
         databaseHealth.assertHealthy( IOException.class );
 
+        msgLog.info( prefix + " Starting Counts Store Snapshot Operation..." );
+        CountsSnapshot snapshot = NO_SNAPSHOT;
+        msgLog.info( prefix + " Counts Store Snapshot completed." );
+
         msgLog.info( prefix + " Starting appending check point entry into the tx log..." );
-        appender.checkPoint( logPosition, logCheckPointEvent );
+        appender.checkPoint( logPosition, logCheckPointEvent, snapshot );
         threshold.checkPointHappened( lastClosedTransactionId );
         msgLog.info( prefix + " Appending check point entry into the tx log completed" );
 

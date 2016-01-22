@@ -19,20 +19,37 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT_SNAPSHOT;
 
 public class CheckPoint extends AbstractLogEntry
 {
     private final LogPosition logPosition;
+    private final CountsSnapshot snapshot;
 
-    public CheckPoint( LogPosition logPosition )
+    public CheckPoint( LogPosition logPosition, CountsSnapshot snapshot )
     {
-        this( LogEntryVersion.CURRENT, logPosition );
+        this( LogEntryVersion.CURRENT, logPosition, snapshot );
     }
 
-    public CheckPoint( LogEntryVersion version, LogPosition logPosition )
+    public CountsSnapshot getSnapshot()
     {
-        super( version, LogEntryByteCodes.CHECK_POINT );
+        return snapshot;
+    }
+
+    public boolean hasSnapshot()
+    {
+        return snapshot != NO_SNAPSHOT;
+    }
+
+    public CheckPoint( LogEntryVersion version, LogPosition logPosition, CountsSnapshot snapshot )
+    {
+        super( version, snapshot == NO_SNAPSHOT ? CHECK_POINT : CHECK_POINT_SNAPSHOT );
+        this.snapshot = snapshot;
         this.logPosition = logPosition;
     }
 
@@ -75,7 +92,7 @@ public class CheckPoint extends AbstractLogEntry
     public String toString()
     {
         return "CheckPoint[" +
-               "position=" + logPosition +
-               ']';
+                "position=" + logPosition +
+                ']';
     }
 }

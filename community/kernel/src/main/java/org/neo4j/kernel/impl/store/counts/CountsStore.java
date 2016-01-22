@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
  * snapshot from. Update transactions may be applied out of order, therefore the returned snapshot may be of the
  * count store at a higher transaction ID value than the requested value.
  */
-interface CountsStore
+public interface CountsStore
 {
     /**
      * Returns the value for the corresponding key in the CountsStore. The length of the returned value depends on

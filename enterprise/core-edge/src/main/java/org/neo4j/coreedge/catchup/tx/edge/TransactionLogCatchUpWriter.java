@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -34,13 +35,12 @@ import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Math.max;
-
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -53,8 +53,8 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     private final ReadOnlyLogVersionRepository logVersionRepository;
     private final TransactionLogWriter writer;
 
-    public TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache ) throws
-            IOException
+    public TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache )
+            throws IOException
     {
         this.fs = fs;
         this.life = new LifeSupport();
@@ -81,7 +81,7 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     public void setCorrectTransactionId( long endTxId ) throws IOException
     {
         long currentLogVersion = logVersionRepository.getCurrentLogVersion();
-        writer.checkPoint( new LogPosition( currentLogVersion, LOG_HEADER_SIZE ) );
+        writer.checkPoint( new LogPosition( currentLogVersion, LOG_HEADER_SIZE ), NO_SNAPSHOT );
 
         File currentLogFile = logFiles.getLogFileForVersion( currentLogVersion );
         writeLogHeader( fs, currentLogFile, currentLogVersion, max( BASE_TX_ID, endTxId ) );

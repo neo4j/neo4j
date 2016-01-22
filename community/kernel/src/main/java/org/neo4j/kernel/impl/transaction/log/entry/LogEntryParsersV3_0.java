@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshotDeserializer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
@@ -29,14 +31,14 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 
-// 2.3
-public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
+// 3.0
+public enum LogEntryParsersV3_0 implements LogEntryParser<LogEntry>
 {
     EMPTY
             {
                 @Override
-                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReader ) throws IOException
+                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
+                        LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
                 {
                     return null;
 
@@ -58,8 +60,8 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
     TX_START
             {
                 @Override
-                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReader ) throws IOException
+                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
+                        LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
                 {
                     LogPosition position = marker.newPosition();
                     int masterId = channel.getInt();
@@ -69,8 +71,7 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
                     int additionalHeaderLength = channel.getInt();
                     byte[] additionalHeader = new byte[additionalHeaderLength];
                     channel.get( additionalHeader, additionalHeaderLength );
-                    return new LogEntryStart( version, masterId, authorId, timeWritten,
-                            latestCommittedTxWhenStarted,
+                    return new LogEntryStart( version, masterId, authorId, timeWritten, latestCommittedTxWhenStarted,
                             additionalHeader, position );
                 }
 
@@ -90,11 +91,12 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
     COMMAND
             {
                 @Override
-                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReader ) throws IOException
+                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
+                        LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
                 {
-                    StorageCommand command = commandReader.byVersion(
-                            version.byteCode(), version.logHeaderFormatVersion() ).read( channel );
+                    StorageCommand command =
+                            commandReader.byVersion( version.byteCode(), version.logHeaderFormatVersion() )
+                                    .read( channel );
                     return command == null ? null : new LogEntryCommand( version, command );
                 }
 
@@ -114,8 +116,8 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
     TX_1P_COMMIT
             {
                 @Override
-                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReader ) throws IOException
+                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
+                        LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
                 {
                     long txId = channel.getLong();
                     long timeWritten = channel.getLong();
@@ -137,8 +139,8 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
     CHECK_POINT
             {
                 @Override
-                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReader ) throws IOException
+                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
+                        LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
                 {
                     long logVersion = channel.getLong();
                     long byteOffset = channel.getLong();
@@ -149,6 +151,31 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
                 public byte byteCode()
                 {
                     return LogEntryByteCodes.CHECK_POINT;
+                }
+
+                @Override
+                public boolean skip()
+                {
+                    return false;
+                }
+            },
+
+    CHECK_POINT_SNAPSHOT
+            {
+                @Override
+                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel,
+                        LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
+                {
+                    long logVersion = channel.getLong();
+                    long byteOffset = channel.getLong();
+                    CountsSnapshot snapshot = CountsSnapshotDeserializer.deserialize( channel );
+                    return new CheckPoint( version, new LogPosition( logVersion, byteOffset ), snapshot );
+                }
+
+                @Override
+                public byte byteCode()
+                {
+                    return LogEntryByteCodes.CHECK_POINT_SNAPSHOT;
                 }
 
                 @Override

@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChann
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 
 public class StoreMigratorCheckPointer
@@ -73,8 +74,8 @@ public class StoreMigratorCheckPointer
             try ( PositionAwarePhysicalFlushableChannel channel =
                           new PositionAwarePhysicalFlushableChannel( storeChannel ) )
             {
-                TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
-                writer.checkPoint( new LogPosition( logVersion, offset ) );
+                final TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
+                writer.checkPoint( new LogPosition( logVersion, offset ), NO_SNAPSHOT);
             }
         }
     }

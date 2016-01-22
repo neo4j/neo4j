@@ -29,6 +29,7 @@ import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 
 public class PositionToRecoverFromTest
@@ -55,7 +56,7 @@ public class PositionToRecoverFromTest
         // given
         LogPosition checkPointLogPosition = new LogPosition( 1l, 4242 );
         when( finder.find( logVersion ) )
-                .thenReturn( new LatestCheckPoint( new CheckPoint( checkPointLogPosition ), true, logVersion ) );
+                .thenReturn( new LatestCheckPoint( new CheckPoint( checkPointLogPosition, NO_SNAPSHOT ), true, logVersion ) );
 
         // when
         LogPosition logPosition = new PositionToRecoverFrom( finder ).apply( logVersion );

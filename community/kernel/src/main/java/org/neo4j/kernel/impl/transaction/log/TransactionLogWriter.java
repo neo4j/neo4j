@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 
@@ -35,9 +36,8 @@ public class TransactionLogWriter
 
     public void append( TransactionRepresentation transaction, long transactionId ) throws IOException
     {
-        writer.writeStartEntry( transaction.getMasterId(), transaction.getAuthorId(),
-                transaction.getTimeStarted(), transaction.getLatestCommittedTxWhenStarted(),
-                transaction.additionalHeader() );
+        writer.writeStartEntry( transaction.getMasterId(), transaction.getAuthorId(), transaction.getTimeStarted(),
+                transaction.getLatestCommittedTxWhenStarted(), transaction.additionalHeader() );
 
         // Write all the commands to the log channel
         writer.serialize( transaction );
@@ -46,8 +46,8 @@ public class TransactionLogWriter
         writer.writeCommitEntry( transactionId, transaction.getTimeCommitted() );
     }
 
-    public void checkPoint( LogPosition logPosition ) throws IOException
+    public void checkPoint( LogPosition logPosition, CountsSnapshot snapshot ) throws IOException
     {
-        writer.writeCheckPointEntry( logPosition );
+        writer.writeCheckPointEntry( logPosition, snapshot );
     }
 }
