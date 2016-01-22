@@ -139,6 +139,7 @@
             <excludedGroups>
               ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1}|(org.neo4j.bolt){1}|(org.neo4j.build){1}|(org.neo4j.examples){1}|(org.neo4j.test){1})$
             </excludedGroups>
+            <excludedArtifacts>^((neo4j-browser))$</excludedArtifacts>
             <includedScopes>compile</includedScopes>
           </configuration>
           <executions>
