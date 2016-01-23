@@ -23,18 +23,24 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.List;
+
 import org.neo4j.collection.RawIterator;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.Procedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ProceduresKernelIT extends KernelIntegrationTest
@@ -46,14 +52,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
             .in( "name", NTString )
             .out( "name", NTString ).build();
 
-    private final Procedure.BasicProcedure procedure = new Procedure.BasicProcedure( signature )
-    {
-        @Override
-        public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input )
-        {
-            return RawIterator.<Object[], ProcedureException>of( input );
-        }
-    };
+    private final Procedure procedure = procedure( signature );
 
     @Test
     public void shouldGetProcedureByName() throws Throwable
@@ -67,6 +66,37 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // Then
         assertThat( found, equalTo( signature ) );
+    }
+
+    @Test
+    public void shouldGetBuiltInProcedureByName() throws Throwable
+    {
+        // When
+        ProcedureSignature found = readOperationsInNewTransaction()
+                .procedureGet( procedureName( "sys", "db", "labels" ) );
+
+        // Then
+        assertThat( found, equalTo( procedureSignature( procedureName( "sys", "db", "labels" ) )
+                .out(  "label", Neo4jTypes.NTString ).build() ) );
+    }
+
+    @Test
+    public void shouldGetAllProcedures() throws Throwable
+    {
+        // Given
+        kernel.registerProcedure( procedure );
+        kernel.registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).build() ) );
+        kernel.registerProcedure( procedure( procedureSignature( "example", "exampleProc3" ).build() ) );
+
+        // When
+        List<ProcedureSignature> signatures =
+                IteratorUtil.asList( readOperationsInNewTransaction().proceduresGetAll() );
+
+        // Then
+        assertThat( signatures, hasItems(
+            procedure.signature(),
+            procedureSignature( "example", "exampleProc2" ).build(),
+            procedureSignature( "example", "exampleProc3" ).build() ) );
     }
 
     @Test
@@ -101,5 +131,17 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // Then
         assertNotNull( asList( stream  ).get( 0 )[0] );
+    }
+
+    private static Procedure procedure( final ProcedureSignature signature )
+    {
+        return new Procedure.BasicProcedure( signature )
+        {
+            @Override
+            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input )
+            {
+                return RawIterator.<Object[], ProcedureException>of( input );
+            }
+        };
     }
 }

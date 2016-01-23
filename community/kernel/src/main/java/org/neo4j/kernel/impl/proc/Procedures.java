@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.proc;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
@@ -109,6 +110,11 @@ public class Procedures
     public ProcedureSignature get( ProcedureSignature.ProcedureName name ) throws ProcedureException
     {
         return registry.get( name );
+    }
+
+    public Set<ProcedureSignature> getAll()
+    {
+        return registry.getAll();
     }
 
     public RawIterator<Object[], ProcedureException> call( Procedure.Context ctx, ProcedureSignature.ProcedureName name,

@@ -34,5 +34,6 @@ public class BuiltInProcedures
         procs.register( new ListLabelsProcedure( procedureName( "sys", "db", "labels" ) ) );
         procs.register( new ListPropertyKeysProcedure( procedureName( "sys", "db", "propertyKeys" ) ) );
         procs.register( new ListRelationshipTypesProcedure( procedureName( "sys", "db", "relationshipTypes" ) ) );
+        procs.register( new ListProceduresProcedure( procedureName( "sys", "db", "procedures" ) ) );
     }
 }
