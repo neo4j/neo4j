@@ -20,28 +20,30 @@
 package org.neo4j.kernel.builtinprocs;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.Procedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.storageengine.api.Token;
+import org.neo4j.kernel.impl.api.TokenAccess;
 
-import static org.neo4j.kernel.api.ReadOperations.readStatement;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 import static org.neo4j.helpers.collection.Iterables.asRawIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.api.ReadOperations.statement;
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ListRelationshipTypesProcedure extends Procedure.BasicProcedure
 {
     public ListRelationshipTypesProcedure( ProcedureSignature.ProcedureName name )
     {
-        super( procedureSignature( name ).out(  name.name(), Neo4jTypes.NTString ).build());
+        super( procedureSignature( name ).out( "relationshipType", Neo4jTypes.NTString ).build());
     }
 
     @Override
     public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        RawIterator<Token,ProcedureException> tokens = asRawIterator( ctx.get( readStatement ).relationshipTypesGetAllTokens() );
-        return map(  ( token ) -> new Object[]{ token.name() }, tokens );
+        RawIterator<RelationshipType,ProcedureException> types =
+                asRawIterator( TokenAccess.RELATIONSHIP_TYPES.inUse( ctx.get( statement ) ) );
+        return map( ( l) -> new Object[]{l.name()}, types );
     }
 }

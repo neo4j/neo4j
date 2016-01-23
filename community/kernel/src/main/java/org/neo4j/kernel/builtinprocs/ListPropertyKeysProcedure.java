@@ -24,24 +24,24 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.Procedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.storageengine.api.Token;
+import org.neo4j.kernel.impl.api.TokenAccess;
 
-import static org.neo4j.kernel.api.ReadOperations.readStatement;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 import static org.neo4j.helpers.collection.Iterables.asRawIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.api.ReadOperations.statement;
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ListPropertyKeysProcedure extends Procedure.BasicProcedure
 {
     public ListPropertyKeysProcedure( ProcedureSignature.ProcedureName name )
     {
-        super( procedureSignature( name ).out( name.name(), Neo4jTypes.NTString ).build() );
+        super( procedureSignature( name ).out( "propertyKey", Neo4jTypes.NTString ).build() );
     }
 
     @Override
     public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        RawIterator<Token,ProcedureException> tokens = asRawIterator( ctx.get( readStatement ).propertyKeyGetAllTokens() );
-        return map(  ( token ) -> new Object[]{ token.name() }, tokens );
+        RawIterator<String,ProcedureException> labels = asRawIterator( TokenAccess.PROPERTY_KEYS.inUse( ctx.get( statement ) ) );
+        return map( ( key) -> new Object[]{key}, labels );
     }
 }
