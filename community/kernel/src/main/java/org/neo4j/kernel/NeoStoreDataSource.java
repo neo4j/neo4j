@@ -750,14 +750,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
          * This is used by legacy indexes and constraint indexes whenever a transaction is to be spawned
          * from within an existing transaction. It smells, and we should look over alternatives when time permits.
          */
-        Supplier<KernelAPI> kernelProvider = new Supplier<KernelAPI>()
-        {
-            @Override
-            public KernelAPI get()
-            {
-                return kernelModule.kernelAPI();
-            }
-        };
+        Supplier<KernelAPI> kernelProvider = () -> kernelModule.kernelAPI();
 
         ConstraintIndexCreator constraintIndexCreator =
                 new ConstraintIndexCreator( kernelProvider, indexingService );
@@ -772,7 +765,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 storeLayer, legacyPropertyTrackers, constraintIndexCreator, updateableSchemaState, guard,
                 legacyIndexStore ) );
 
-        Procedures procedures = setupProcedures();
+        Procedures procedures = setupProcedures( logService );
 
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( locks, constraintIndexCreator,
@@ -817,7 +810,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     // register graph types, set up built-in procedures and scan for procedures on disk
-    private Procedures setupProcedures() throws KernelException, IOException
+    private Procedures setupProcedures( final LogService logService ) throws KernelException, IOException
     {
         Procedures procedures = dependencies.satisfyDependency( new Procedures( msgLog ) );
         procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class ) );
@@ -827,6 +820,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         //register API
         procedures.registerComponent( GraphDatabaseService.class,
                 (ctx) -> dependencyResolver.resolveDependency( GraphDatabaseService.class ) );
+
+        Log proceduresLog = logService.getUserLog( Procedures.class  );
+        procedures.registerComponent( Log.class, (ctx) -> proceduresLog );
 
         BuiltInProcedures.addTo( procedures );
         procedures.loadFromDirectory( config.get( GraphDatabaseSettings.plugin_dir ) );

@@ -19,14 +19,16 @@
  */
 package org.neo4j.procedure;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -34,21 +36,27 @@ import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.proc.Resource;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Name;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.ReadOnlyProcedure;
+import org.neo4j.kernel.impl.proc.Resource;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.Log;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertFalse;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class ProcedureIT
 {
@@ -58,6 +66,8 @@ public class ProcedureIT
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    private GraphDatabaseService db;
+
     @Test
     public void shouldLoadProcedureFromPluginDirectory() throws Throwable
     {
@@ -65,9 +75,9 @@ public class ProcedureIT
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
 
         // Then
         try ( Transaction ignore = db.beginTx() )
@@ -89,9 +99,9 @@ public class ProcedureIT
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
 
         // Then
         try ( Transaction ignore = db.beginTx() )
@@ -109,9 +119,9 @@ public class ProcedureIT
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
 
         // Then
         try ( Transaction ignore = db.beginTx() )
@@ -131,9 +141,9 @@ public class ProcedureIT
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
 
         // Then
         try ( Transaction ignore = db.beginTx() )
@@ -152,9 +162,9 @@ public class ProcedureIT
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
 
         // Then
         try ( Transaction ignore = db.beginTx() )
@@ -171,7 +181,7 @@ public class ProcedureIT
     public void shouldGiveHelpfulErrorOnMissingProcedure() throws Throwable
     {
         // Given
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
 
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -211,9 +221,10 @@ public class ProcedureIT
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
+
         try ( Transaction ignore = db.beginTx() )
         {
             db.createNode( label( "Person" ) ).setProperty( "name", "Buddy Holly" );
@@ -226,6 +237,54 @@ public class ProcedureIT
                     "CALL org.neo4j.procedure.listCoolPeopleInDatabase" );
 
             assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldLogLikeThereIsNoTomorrow() throws Throwable
+    {
+        // Given
+        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
+
+        // When
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+
+        GraphDatabaseService db = new TestGraphDatabaseFactory()
+            .setInternalLogProvider( logProvider )
+            .setUserLogProvider( logProvider  )
+            .newImpermanentDatabaseBuilder()
+            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+            .newGraphDatabase();
+
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            Result res = db.execute( "CALL org.neo4j.procedure.logAround()" );
+            while ( res.hasNext() ) res.next();
+        }
+
+        // Then
+        AssertableLogProvider.LogMatcherBuilder match = inLog( Procedures.class );
+        logProvider.assertAtLeastOnce(
+            match.debug( "1" ),
+            match.info( "2" ),
+            match.warn( "3" ),
+            match.error( "4" )
+        );
+    }
+
+    @Before
+    public void setUp()
+    {
+        this.db = null;
+    }
+
+    @After
+    public void tearDown()
+    {
+        if ( this.db != null )
+        {
+            this.db.shutdown();
         }
     }
 
@@ -278,6 +337,9 @@ public class ProcedureIT
         @Resource
         public GraphDatabaseService db;
 
+        @Resource
+        public Log log;
+
         @ReadOnlyProcedure
         public Stream<Output> integrationTestMe()
         {
@@ -322,6 +384,16 @@ public class ProcedureIT
         {
             return stream( spliteratorUnknownSize( db.findNodes( label( "Person" ) ), ORDERED | IMMUTABLE ), false )
                     .map( ( n ) -> new MyOutputRecord( (String) n.getProperty( "name" ) ) );
+        }
+
+        @ReadOnlyProcedure
+        public Stream<Output> logAround()
+        {
+            log.debug( "1" );
+            log.info( "2" );
+            log.warn( "3" );
+            log.error( "4" );
+            return Stream.empty();
         }
     }
 }
