@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
@@ -28,8 +29,6 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -551,7 +550,7 @@ public interface ReadOperations
             throws IndexNotFoundKernelException;
 
     //===========================================
-    //== PRECEDURE OPERATIONS ===================
+    //== PROCEDURE OPERATIONS ===================
     //===========================================
 
     /** For read procedures, this key will be available in the invocation context as a means to access the current read statement. */
@@ -562,6 +561,9 @@ public interface ReadOperations
 
     /** Fetch a procedure given its signature. */
     ProcedureSignature procedureGet( ProcedureSignature.ProcedureName name ) throws ProcedureException;
+
+    /** Fetch all registered procedures */
+    Set<ProcedureSignature> proceduresGetAll();
 
     /** Invoke a read-only procedure by name */
     RawIterator<Object[], ProcedureException> procedureCallRead( ProcedureSignature.ProcedureName name, Object[] input ) throws ProcedureException;

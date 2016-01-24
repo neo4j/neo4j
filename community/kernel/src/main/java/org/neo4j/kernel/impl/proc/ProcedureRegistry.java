@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -97,5 +98,10 @@ public class ProcedureRegistry
                 "There is no procedure with the name `%s` registered for this database instance. " +
                 "Please ensure you've spelled the procedure name correctly and that the " +
                 "procedure is properly deployed.", name );
+    }
+
+    public Set<ProcedureSignature> getAll()
+    {
+        return procedures.values().stream().map( Procedure::signature ).collect( Collectors.toSet());
     }
 }

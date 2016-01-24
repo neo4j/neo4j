@@ -87,4 +87,20 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyRelType"} ) ) );
     }
+
+    @Test
+    public void listProcedures() throws Throwable
+    {
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                readOperationsInNewTransaction().procedureCallRead( procedureName( "sys", "db", "procedures" ), new Object[0] );
+
+        // Then
+        assertThat( asList( stream ), contains(
+                equalTo( new Object[]{"sys.db.labels", "sys.db.labels() :: (label :: STRING?)"} ),
+                equalTo( new Object[]{"sys.db.procedures", "sys.db.procedures() :: (name :: STRING?, signature :: STRING?)"} ),
+                equalTo( new Object[]{"sys.db.propertyKeys", "sys.db.propertyKeys() :: (propertyKey :: STRING?)"}),
+                equalTo( new Object[]{"sys.db.relationshipTypes", "sys.db.relationshipTypes() :: (relationshipType :: STRING?)"})
+        ));
+    }
 }

@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.Procedure.Context
 import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
-import org.neo4j.kernel.api.proc.{Neo4jTypes}
+import org.neo4j.kernel.api.proc.Neo4jTypes
 import org.neo4j.kernel.api.proc.Procedure.BasicProcedure
 
 class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {

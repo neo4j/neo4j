@@ -173,9 +173,10 @@ public class ProcedureSignature
 
         ProcedureSignature that = (ProcedureSignature) o;
 
-        if ( !name.equals( that.name ) ) { return false; }
-        if ( inputSignature != null ? !inputSignature.equals( that.inputSignature ) : that.inputSignature != null ) { return false; }
-        return !(outputSignature != null ? !outputSignature.equals( that.outputSignature ) : that.outputSignature != null);
+        return
+           name.equals( that.name ) &&
+           inputSignature.equals( that.inputSignature ) &&
+           outputSignature.equals( that.outputSignature );
     }
 
     @Override

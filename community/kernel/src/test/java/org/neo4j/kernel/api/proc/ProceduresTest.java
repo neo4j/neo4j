@@ -19,22 +19,26 @@
  */
 package org.neo4j.kernel.api.proc;
 
+import java.util.List;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.impl.proc.Procedures;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
 import static org.neo4j.kernel.api.proc.Procedure.Key.key;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
 
 public class ProceduresTest
 {
@@ -42,14 +46,7 @@ public class ProceduresTest
 
     private final Procedures procs = new Procedures();
     private final ProcedureSignature signature = procedureSignature( "org", "myproc" ).build();
-    private final Procedure procedure = new Procedure.BasicProcedure(signature)
-    {
-        @Override
-        public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input )
-        {
-            return RawIterator.<Object[], ProcedureException>of( input );
-        }
-    };
+    private final Procedure procedure = procedure( signature );
 
     @Test
     public void shouldGetRegisteredProcedure() throws Throwable
@@ -59,6 +56,22 @@ public class ProceduresTest
 
         // Then
         assertThat( procs.get( signature.name() ), equalTo( signature ) );
+    }
+
+    @Test
+    public void shouldGetAllRegisteredProcedures() throws Throwable
+    {
+        // When
+        procs.register( procedure( procedureSignature( "org", "myproc1" ).build() ) );
+        procs.register( procedure( procedureSignature( "org", "myproc2" ).build() ) );
+        procs.register( procedure( procedureSignature( "org", "myproc3" ).build() ) );
+
+        // Then
+        List<ProcedureSignature> signatures = IteratorUtil.asList( procs.getAll() );
+        assertThat( signatures, containsInAnyOrder(
+                procedureSignature( "org", "myproc1" ).build(),
+                procedureSignature( "org", "myproc2" ).build(),
+                procedureSignature( "org", "myproc3" ).build() ) );
     }
 
     @Test
@@ -177,6 +190,18 @@ public class ProceduresTest
             public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
             {
                 return null;
+            }
+        };
+    }
+
+    private Procedure procedure( ProcedureSignature signature )
+    {
+        return new Procedure.BasicProcedure( signature )
+        {
+            @Override
+            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input )
+            {
+                return RawIterator.<Object[], ProcedureException>of( input );
             }
         };
     }
