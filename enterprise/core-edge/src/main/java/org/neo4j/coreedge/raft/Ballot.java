@@ -21,9 +21,9 @@ package org.neo4j.coreedge.raft;
 
 public class Ballot
 {
-    public static <MEMBER> boolean shouldVoteFor( MEMBER candidate, long requestTerm, long contextTerm,
-                                                  long contextLastAppended, long requestLastLogIndex,
+    public static <MEMBER> boolean shouldVoteFor( MEMBER candidate, long contextTerm, long requestTerm,
                                                   long contextLastLogTerm, long requestLastLogTerm,
+                                                  long contextLastAppended, long requestLastLogIndex,
                                                   MEMBER votedFor )
     {
         if ( requestTerm < contextTerm )
@@ -31,11 +31,14 @@ public class Ballot
             return false;
         }
 
-        boolean termOk = contextLastLogTerm <= requestLastLogTerm;
-        boolean appendedOk = contextLastAppended <= requestLastLogIndex;
-        boolean requesterLogUpToDate = termOk && appendedOk;
-        boolean votedForOtherInSameTerm = (requestTerm == contextTerm &&
-                !(votedFor == null || votedFor.equals( candidate )));
+        boolean requestLogEndsAtHigherTerm = requestLastLogTerm > contextLastLogTerm;
+        boolean logsEndAtSameTerm = requestLastLogTerm == contextLastLogTerm;
+        boolean requestLogAtLeastAsLongAsMyLog = requestLastLogIndex >= contextLastAppended;
+        boolean requesterLogUpToDate = requestLogEndsAtHigherTerm ||
+                (logsEndAtSameTerm && requestLogAtLeastAsLongAsMyLog);
+
+        boolean votedForOtherInSameTerm = requestTerm == contextTerm &&
+                votedFor != null && !votedFor.equals( candidate );
 
         return requesterLogUpToDate && !votedForOtherInSameTerm;
     }

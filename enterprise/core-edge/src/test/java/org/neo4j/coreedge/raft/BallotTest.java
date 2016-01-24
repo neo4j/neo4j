@@ -29,50 +29,175 @@ import static org.junit.Assert.assertTrue;
 @RunWith(MockitoJUnitRunner.class)
 public class BallotTest
 {
-    Object A = new Object();
-    Object B = new Object();
+    Object candidate = new Object();
+    Object otherMember = new Object();
+
+    long logTerm = 10;
+    long currentTerm = 20;
+    long appendIndex = 1000;
 
     @Test
-    public void shouldVoteFalseInOldTerm()
+    public void shouldAcceptRequestWithIdenticalLog()
     {
-        // when + then
-        assertFalse( Ballot.shouldVoteFor( A, 4 /*request term */, 5 /*context term */, -1, -1, -1, -1, null ) );
+        assertTrue( Ballot.shouldVoteFor(
+                candidate,
+                currentTerm,
+                currentTerm,
+                logTerm,
+                logTerm,
+                appendIndex,
+                appendIndex,
+                null
+        ) );
     }
 
     @Test
-    public void shouldVoteFalseIfLogNotUpToDateBecauseOfTerm()
+    public void shouldRejectRequestFromOldTerm()
     {
-        // when + then
-        assertFalse( Ballot.shouldVoteFor( A, 0, 0, 0, 0, 1 /*context last log term */, 0 /*request last log term */,
-                null ) );
+        assertFalse( Ballot.shouldVoteFor(
+                candidate,
+                currentTerm,
+                currentTerm - 1,
+                logTerm,
+                logTerm,
+                appendIndex,
+                appendIndex,
+                null
+        ) );
     }
 
     @Test
-    public void shouldVoteFalseIfLogNotUpToDateBecauseOfIndex()
+    public void shouldRejectRequestIfCandidateLogEndsAtLowerTerm()
     {
-        // when + then
-        assertFalse( Ballot.shouldVoteFor( A, 0, 0, 1/*context last appended */, 0/*request last log index*/, 0, 0,
-                null ) );
+        assertFalse( Ballot.shouldVoteFor(
+                candidate,
+                currentTerm,
+                currentTerm,
+                logTerm,
+                logTerm - 1,
+                appendIndex,
+                appendIndex,
+                null
+        ) );
     }
 
     @Test
-    public void shouldVoteFalseIfAlreadyVotedForOtherCandidate()
+    public void shouldRejectRequestIfLogsEndInSameTermButCandidateLogIsShorter()
     {
-        // when + then
-        assertFalse( Ballot.shouldVoteFor( A, 0, 0, 0, 0, 0, 0, B ) );
+        assertFalse( Ballot.shouldVoteFor(
+                candidate,
+                currentTerm,
+                currentTerm,
+                logTerm,
+                logTerm,
+                appendIndex,
+                appendIndex - 1,
+                null
+        ) );
     }
 
     @Test
-    public void shouldVoteTrueIfAlreadyVotedForCandidate()
+    public void shouldAcceptRequestIfLogsEndInSameTermAndCandidateLogIsSameLength()
     {
-        // when + then
-        assertTrue( Ballot.shouldVoteFor( A, 0, 0, 0, 0, 0, 0, A ) );
+        assertTrue( Ballot.shouldVoteFor(
+                candidate,
+                currentTerm,
+                currentTerm,
+                logTerm,
+                logTerm,
+                appendIndex,
+                appendIndex,
+                null
+        ) );
     }
 
     @Test
-    public void shouldVoteTrueForNewCandidateWithUpToDateLog()
+    public void shouldAcceptRequestIfLogsEndInSameTermAndCandidateLogIsLonger()
     {
-        // when + then
-        assertTrue( Ballot.shouldVoteFor( A, 0, 0, 0, 0, 0, 0, null ) );
+        assertTrue( Ballot.shouldVoteFor(
+                candidate,
+                currentTerm,
+                currentTerm,
+                logTerm,
+                logTerm,
+                appendIndex,
+                appendIndex + 1,
+                null
+        ) );
+    }
+
+    @Test
+    public void shouldAcceptRequestIfLogsEndInHigherTermAndCandidateLogIsShorter()
+    {
+        assertTrue( Ballot.shouldVoteFor(
+                candidate,
+                currentTerm,
+                currentTerm,
+                logTerm,
+                logTerm + 1,
+                appendIndex,
+                appendIndex - 1,
+                null
+        ) );
+    }
+
+    @Test
+    public void shouldAcceptRequestIfLogEndsAtHigherTermAndCandidateLogIsSameLength()
+    {
+        assertTrue( Ballot.shouldVoteFor(
+                candidate,
+                currentTerm,
+                currentTerm,
+                logTerm,
+                logTerm + 1,
+                appendIndex,
+                appendIndex,
+                null
+        ) );
+    }
+
+    @Test
+    public void shouldAcceptRequestIfLogEndsAtHigherTermAndCandidateLogIsLonger()
+    {
+        assertTrue( Ballot.shouldVoteFor(
+                candidate,
+                currentTerm,
+                currentTerm,
+                logTerm,
+                logTerm + 1,
+                appendIndex,
+                appendIndex + 1,
+                null
+        ) );
+    }
+
+    @Test
+    public void shouldRejectRequestIfAlreadyVotedForOtherCandidate()
+    {
+        assertFalse( Ballot.shouldVoteFor(
+                candidate,
+                currentTerm,
+                currentTerm,
+                logTerm,
+                logTerm,
+                appendIndex,
+                appendIndex,
+                otherMember
+        ) );
+    }
+
+    @Test
+    public void shouldAcceptRequestIfAlreadyVotedForCandidate()
+    {
+        assertTrue( Ballot.shouldVoteFor(
+                candidate,
+                currentTerm,
+                currentTerm,
+                logTerm,
+                logTerm,
+                appendIndex,
+                appendIndex,
+                candidate
+        ) );
     }
 }
