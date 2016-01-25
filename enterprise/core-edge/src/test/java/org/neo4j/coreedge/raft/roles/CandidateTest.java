@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
-import java.util.UUID;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -28,162 +26,116 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
-import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.net.Inbound;
+import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
+import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteResponse;
-import static org.neo4j.coreedge.raft.roles.Role.LEADER;
-import static org.neo4j.coreedge.server.RaftTestMember.member;
-import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
-import static org.neo4j.coreedge.raft.TestMessageBuilders.voteRequest;
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
+import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
+import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CandidateTest
 {
     private RaftTestMember myself = member( 0 );
-
-    /* A few members that we use at will in tests. */
     private RaftTestMember member1 = member( 1 );
 
     @Mock
     private Inbound inbound;
 
     private LogProvider logProvider = NullLogProvider.getInstance();
-    public static final int HIGHEST_TERM = 99;
 
     @Test
-    public void shouldBeElectedLeader() throws Exception
+    public void shouldBeElectedLeaderOnReceivingGrantedVoteResponseWithCurrentTerm() throws Exception
     {
         // given
-        long term = 0;
-        RaftState<RaftTestMember> state = raftState()
-                .myself( myself )
-                .term( term )
-                .build();
-
-        Candidate candidate = new Candidate();
+        RaftState<RaftTestMember> state = newState();
 
         // when
-        Outcome<RaftTestMember> outcome = candidate.handle( voteResponse()
-                .term( term )
+        Outcome<RaftTestMember> outcome = CANDIDATE.handler.handle( voteResponse()
+                .term( state.term() )
                 .from( member1 )
                 .grant()
                 .build(), state, log() );
 
         // then
         assertEquals( LEADER, outcome.getNewRole() );
-        assertThat( outcome.getLogCommands(), hasItem( new AppendLogEntry( 0, new RaftLogEntry( term, new NewLeaderBarrier() ) )) );
+        assertThat( outcome.getLogCommands(), hasItem( new AppendLogEntry( 0,
+                new RaftLogEntry( state.term(), new NewLeaderBarrier() ) ) ) );
     }
 
     @Test
-    public void candidateShouldUpdateTermToCurrentMessageAndBecomeFollower() throws Exception
+    public void shouldStayAsCandidateOnReceivingDeniedVoteResponseWithCurrentTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = raftState().build();
-
-        Candidate candidate = new Candidate();
+        RaftState<RaftTestMember> state = newState();
 
         // when
-        Outcome outcome = candidate.handle( voteRequest().from( member1 ).term( HIGHEST_TERM ).lastLogIndex( 0 )
-                .lastLogTerm( -1 ).build(), state, log() );
-
-        // then
-        assertEquals( FOLLOWER, outcome.getNewRole() );
-        assertEquals( HIGHEST_TERM, outcome.getTerm() );
-    }
-
-    @Test
-    public void candidateShouldBecomeFollowerIfReceivesMessageWithNewerTerm() throws Exception
-    {
-        // given
-        RaftState<RaftTestMember> state = raftState()
-                .myself( myself )
-                .build();
-
-        Candidate candidate = new Candidate();
-
-        // when
-        RaftMessages.Vote.Request<RaftTestMember> message = voteRequest()
+        Outcome<RaftTestMember> outcome = CANDIDATE.handler.handle( voteResponse()
+                .term( state.term() )
                 .from( member1 )
-                .term( state.term() + 1 )
-                .lastLogIndex( 0 )
-                .lastLogTerm( -1 ).build();
-        Outcome<RaftTestMember> outcome = candidate.handle( message, state, log() );
+                .deny()
+                .build(), state, log() );
 
         // then
-        assertEquals( message, messageFor( outcome,  myself ) );
-        assertEquals( FOLLOWER, outcome.getNewRole() );
-    }
-
-    @Test
-    public void candidateShouldRejectAnyMessageWithOldTerm() throws Exception
-    {
-        // given
-        RaftState<RaftTestMember> state = raftState().build();
-
-        Candidate candidate = new Candidate();
-
-        // when
-        Outcome<RaftTestMember> outcome = candidate.handle( voteRequest().from( member1 ).term( state.term() - 1 ).lastLogIndex( 0 )
-                .lastLogTerm( -1 ).build(), state, log() );
-
-        // then
-        assertFalse( ((RaftMessages.Vote.Response) messageFor( outcome, member1 )).voteGranted() );
         assertEquals( CANDIDATE, outcome.getNewRole() );
     }
 
     @Test
-    public void candidateShouldBecomeFollowerOnReceiptOfAppendEntriesFromLeaderWithHigherTerm() throws Exception
+    public void shouldUpdateTermOnReceivingVoteResponseWithLaterTerm() throws Exception
     {
-        candidateShouldBecomeFollowerOnReceiptOfAppendEntriesFromLeaderWithTerm( 2 );
+        // given
+        RaftState<RaftTestMember> state = newState();
+
+        final long voterTerm = state.term() + 1;
+
+        // when
+        Outcome<RaftTestMember> outcome = CANDIDATE.handler.handle( voteResponse()
+                .term( voterTerm )
+                .from( member1 )
+                .grant()
+                .build(), state, log() );
+
+        // then
+        assertEquals( FOLLOWER, outcome.getNewRole() );
+        assertEquals( voterTerm, outcome.getTerm() );
     }
 
     @Test
-    public void candidateShouldBecomeFollowerOnReceiptOfAppendEntriesFromLeaderWithSameTerm() throws Exception
-    {
-        candidateShouldBecomeFollowerOnReceiptOfAppendEntriesFromLeaderWithTerm( 1 );
-    }
-
-    private void candidateShouldBecomeFollowerOnReceiptOfAppendEntriesFromLeaderWithTerm( int term ) throws Exception
+    public void shouldRejectVoteResponseWithOldTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = raftState()
-                .myself( myself )
-                .term( 1 )
-                .build();
+        RaftState<RaftTestMember> state = newState();
 
-        Candidate candidate = new Candidate();
+        final long voterTerm = state.term() - 1;
 
         // when
-        RaftMessages.AppendEntries.Request<RaftTestMember> message = appendEntriesRequest()
+        Outcome<RaftTestMember> outcome = CANDIDATE.handler.handle( voteResponse()
+                .term( voterTerm )
                 .from( member1 )
-                .leader( member1 )
-                .leaderTerm( term )
-                .leaderCommit( 1 )
-                .correlationId( UUID.randomUUID() )
-                .prevLogIndex( 0 )
-                .prevLogTerm( term - 1 ).build();
-        Outcome<RaftTestMember> outcome = candidate.handle( message, state, log() );
+                .grant()
+                .build(), state, log() );
 
         // then
-        assertEquals( message, messageFor( outcome,  myself ) );
-        assertEquals( FOLLOWER, outcome.getNewRole() );
+        assertEquals( CANDIDATE, outcome.getNewRole() );
+    }
+
+    public RaftState<RaftTestMember> newState() throws RaftStorageException
+    {
+        return raftState().myself( myself ).build();
     }
 
     private Log log()

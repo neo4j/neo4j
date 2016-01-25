@@ -88,47 +88,6 @@ public class LeaderTest
     private static final ReplicatedString CONTENT = ReplicatedString.valueOf( "some-content-to-raft" );
 
     @Test
-    public void leaderShouldUpdateTermToCurrentMessageAndBecomeFollower() throws Exception
-    {
-        // given
-        RaftState<RaftTestMember> state = raftState().build();
-
-        Leader leader = new Leader();
-
-        // when
-        Outcome outcome = leader.handle( voteRequest().from( member1 ).term( HIGHEST_TERM ).lastLogIndex( 0 )
-                .lastLogTerm( -1 ).build(), state, log() );
-
-        // then
-        assertEquals( FOLLOWER, outcome.getNewRole() );
-        assertEquals( HIGHEST_TERM, outcome.getTerm() );
-    }
-
-    @Test
-    public void leaderShouldRejectVoteRequestWithNewerTermAndBecomeAFollower() throws Exception
-    {
-        // given
-        RaftState<RaftTestMember> state = raftState().myself( myself ).build();
-
-        Leader leader = new Leader();
-
-        // when
-        RaftMessages.Vote.Request<RaftTestMember> message = voteRequest()
-                .from( member1 )
-                .term( state.term() + 1 )
-                .lastLogIndex( 0 )
-                .lastLogTerm( -1 )
-                .build();
-        Outcome<RaftTestMember> outcome = leader.handle( message, state, log() );
-
-        // then
-        assertEquals( message, messageFor( outcome, myself ) );
-        assertEquals( FOLLOWER, outcome.getNewRole() );
-        assertEquals( 0, count( outcome.getLogCommands() ) );
-        assertEquals( state.term() + 1, outcome.getTerm() );
-    }
-
-    @Test
     public void leaderShouldNotRespondToSuccessResponseFromFollowerThatWillSoonUpToDateViaInFlightMessages()
             throws Exception
     {
@@ -393,29 +352,6 @@ public class LeaderTest
     }
 
     // TODO: test that shows we don't commit for previous terms
-
-    @Test
-    public void leaderShouldRejectAnyMessageWithOldTerm() throws Exception
-    {
-        // given
-        RaftState<RaftTestMember> state = raftState().build();
-
-        Leader leader = new Leader();
-
-        // when
-        RaftMessages.Vote.Request<RaftTestMember> message = voteRequest()
-                .from( member1 )
-                .term( state.term() - 1 )
-                .lastLogIndex( 0 )
-                .lastLogTerm( -1 )
-                .build();
-        Outcome<RaftTestMember> outcome = leader.handle( message, state, log() );
-
-        // then
-        assertFalse( ((RaftMessages.Vote.Response<RaftTestMember>) messageFor( outcome, member1 ))
-                .voteGranted() );
-        assertEquals( LEADER, outcome.getNewRole() );
-    }
 
     @Test
     public void leaderShouldSendHeartbeatsToAllClusterMembersOnReceiptOfHeartbeatTick() throws Exception

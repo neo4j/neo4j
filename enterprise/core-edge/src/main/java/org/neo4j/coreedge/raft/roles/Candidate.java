@@ -52,7 +52,7 @@ public class Candidate implements RaftMessageHandler
                 }
 
                 outcome.setNextRole( FOLLOWER );
-                outcome.addOutgoingMessage( new RaftMessages.Directed<>( ctx.myself(), message ) );
+                Heart.beat( ctx, outcome, (RaftMessages.Heartbeat<MEMBER>) message );
                 break;
             }
 
@@ -71,7 +71,7 @@ public class Candidate implements RaftMessageHandler
                 }
 
                 outcome.setNextRole( FOLLOWER );
-                outcome.addOutgoingMessage( new RaftMessages.Directed<>( ctx.myself(), req ) );
+                Appending.handleAppendEntriesRequest( ctx, outcome, req );
                 break;
             }
 
@@ -101,7 +101,7 @@ public class Candidate implements RaftMessageHandler
                             ctx.term(), ctx.myself(), outcome.getVotesForMe() );
 
                     outcome.setLeader( ctx.myself() );
-                    Leader.appendNewEntry( ctx, outcome, new NewLeaderBarrier() );
+                    Appending.appendNewEntry( ctx, outcome, new NewLeaderBarrier() );
 
                     outcome.setLastLogIndexBeforeWeBecameLeader( ctx.entryLog().appendIndex() );
                     outcome.setNextRole( LEADER );
@@ -115,11 +115,9 @@ public class Candidate implements RaftMessageHandler
 
                 if ( req.term() > ctx.term() )
                 {
-                    outcome.setNextTerm( req.term() );
                     outcome.getVotesForMe().clear();
-
                     outcome.setNextRole( FOLLOWER );
-                    outcome.addOutgoingMessage( new RaftMessages.Directed<>( ctx.myself(), req ) );
+                    Voting.handleVoteRequest( ctx, outcome, req );
                     break;
                 }
 

@@ -23,9 +23,7 @@ import org.neo4j.coreedge.raft.Followers;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.Heartbeat;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
@@ -58,21 +56,6 @@ public class Leader implements RaftMessageHandler
         }
     }
 
-    static <MEMBER> void appendNewEntry( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome, ReplicatedContent
-            content ) throws RaftStorageException
-    {
-        long prevLogIndex = ctx.entryLog().appendIndex();
-        long prevLogTerm = prevLogIndex == -1 ? -1 :
-                prevLogIndex > ctx.lastLogIndexBeforeWeBecameLeader() ?
-                        ctx.term() :
-                        ctx.entryLog().readLogEntry( prevLogIndex ).term();
-
-        RaftLogEntry newLogEntry = new RaftLogEntry( ctx.term(), content );
-
-        outcome.addShipCommand( new ShipCommand.NewEntry( prevLogIndex, prevLogTerm, newLogEntry ) );
-        outcome.addLogCommand( new AppendLogEntry( prevLogIndex + 1, newLogEntry ) );
-    }
-
     @Override
     public <MEMBER> Outcome<MEMBER> handle( RaftMessages.Message<MEMBER> message,
                                             ReadableRaftState<MEMBER> ctx, Log log ) throws RaftStorageException
@@ -91,7 +74,7 @@ public class Leader implements RaftMessageHandler
                 }
 
                 outcome.setNextRole( FOLLOWER );
-                outcome.addOutgoingMessage( new RaftMessages.Directed<>( ctx.myself(), message ) );
+                Heart.beat( ctx, outcome, (Heartbeat<MEMBER>) message );
                 break;
             }
 
@@ -122,7 +105,7 @@ public class Leader implements RaftMessageHandler
                 {
                     // There is a new leader in a later term, we should revert to follower. (§5.1)
                     outcome.setNextRole( FOLLOWER );
-                    outcome.addOutgoingMessage( new RaftMessages.Directed<>( ctx.myself(), message ) );
+                    Appending.handleAppendEntriesRequest( ctx, outcome, req );
                     break;
                 }
             }
@@ -197,10 +180,8 @@ public class Leader implements RaftMessageHandler
 
                 if ( req.term() > ctx.term() )
                 {
-                    outcome.setNextTerm( req.term() );
-
                     outcome.setNextRole( FOLLOWER );
-                    outcome.addOutgoingMessage( new RaftMessages.Directed<>( ctx.myself(), req ) );
+                    Voting.handleVoteRequest( ctx, outcome, req );
                     break;
                 }
 
@@ -213,7 +194,7 @@ public class Leader implements RaftMessageHandler
                 RaftMessages.NewEntry.Request<MEMBER> req = (RaftMessages.NewEntry.Request<MEMBER>) message;
                 ReplicatedContent content = req.content();
 
-                appendNewEntry( ctx, outcome, content );
+                Appending.appendNewEntry( ctx, outcome, content );
                 break;
             }
         }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.util.NoSuchElementException;
 import java.util.function.Predicate;
 
 import org.neo4j.coreedge.raft.outcome.Outcome;
@@ -26,11 +27,24 @@ import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
 
+import static java.lang.String.format;
+
+import static org.junit.Assert.fail;
+
 public class MessageUtils
 {
     public static RaftMessages.Message<RaftTestMember> messageFor( Outcome<RaftTestMember> outcome, final RaftTestMember member )
     {
         Predicate<RaftMessages.Directed<RaftTestMember>> selectMember = message -> message.to() == member;
-        return IteratorUtil.single( new FilteringIterable<>( outcome.getOutgoingMessages(), selectMember ) ).message();
+        try
+        {
+            return IteratorUtil.single( new FilteringIterable<>( outcome.getOutgoingMessages(), selectMember ) )
+                        .message();
+        }
+        catch ( NoSuchElementException e )
+        {
+            throw new AssertionError( format( "Expected message for %s, but outcome only contains %s.",
+                    member, outcome.getOutgoingMessages() ) );
+        }
     }
 }
