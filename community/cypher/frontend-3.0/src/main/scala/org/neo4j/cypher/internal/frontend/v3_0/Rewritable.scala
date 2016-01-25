@@ -23,6 +23,7 @@ import java.lang.reflect.Method
 
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_0.Rewritable._
@@ -123,22 +124,34 @@ object inSequence {
 }
 
 object topDown {
-
   class TopDownRewriter(rewriter: Rewriter) extends Rewriter {
-    def apply(that: AnyRef): AnyRef = {
-      val rewrittenThat = that.rewrite(rewriter)
-      //this piece of code is used a lot and has been through profiling
-      //please don't just remove it because it is ugly looking
-      val children = rewrittenThat.children.toList
-      val buffer = new Array[AnyRef](children.size)
-      val it = children.iterator
-      var index = 0
-      while (it.hasNext) {
-        buffer(index) = apply(it.next())
-        index += 1
-      }
+    override def apply(that: AnyRef): AnyRef = {
+      val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
+      val result = rec(initialStack)
+      assert(result.size == 1)
+      result.head
+    }
 
-      rewrittenThat.dup(buffer)
+    @tailrec
+    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+      val (currentJobs, _) = stack.top
+      if (currentJobs.isEmpty) {
+        val (_, newChildren) = stack.pop()
+        if (stack.isEmpty) {
+          newChildren
+        } else {
+          val (job :: jobs, doneJobs) = stack.pop()
+          val doneJob = job.dup(newChildren)
+          stack.push((jobs, doneJobs += doneJob))
+          rec(stack)
+        }
+      } else {
+        val (newJob :: jobs, doneJobs) = stack.pop()
+        val rewrittenJob = newJob.rewrite(rewriter)
+        stack.push((rewrittenJob :: jobs, doneJobs))
+        stack.push((rewrittenJob.children.toList, new mutable.MutableList()))
+        rec(stack)
+      }
     }
   }
 
