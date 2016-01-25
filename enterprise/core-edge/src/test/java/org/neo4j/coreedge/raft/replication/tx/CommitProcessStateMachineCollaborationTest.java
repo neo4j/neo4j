@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
@@ -68,9 +69,9 @@ public class CommitProcessStateMachineCollaborationTest
 
         LocalSessionPool sessionPool = new LocalSessionPool( coreMember );
         LockTokenManager lockState = lockState( 0 );
-        final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine(
+        final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures,
-                new InMemoryGlobalSessionTrackerState<>() );
+                new InMemoryGlobalSessionTrackerState<>(), NullLogProvider.getInstance() );
 
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
@@ -99,9 +100,9 @@ public class CommitProcessStateMachineCollaborationTest
         LocalSessionPool sessionPool = new LocalSessionPool( coreMember );
         LockTokenManager lockState = lockState( 1 );
 
-        final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine(
+        final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures,
-                new InMemoryGlobalSessionTrackerState<>());
+                new InMemoryGlobalSessionTrackerState<>(), NullLogProvider.getInstance() );
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
                 replicator, sessionPool, stateMachine, 1,

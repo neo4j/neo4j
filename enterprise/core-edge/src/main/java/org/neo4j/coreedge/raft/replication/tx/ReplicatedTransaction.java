@@ -19,11 +19,13 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
+import java.io.IOException;
 import java.util.Objects;
 
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 import static java.lang.String.format;
 
@@ -81,6 +83,14 @@ public class ReplicatedTransaction<MEMBER> implements ReplicatedContent
     @Override
     public String toString()
     {
-        return format( "ReplicatedTransaction{globalSession=%s, localOperationId=%s}", globalSession, localOperationId );
+        try
+        {
+            TransactionRepresentation tx = ReplicatedTransactionFactory.extractTransactionRepresentation( this, new byte[0] );
+            return format( "ReplicatedTransaction{globalSession=%s, localOperationId=%s, tx=%s}", globalSession, localOperationId, tx );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

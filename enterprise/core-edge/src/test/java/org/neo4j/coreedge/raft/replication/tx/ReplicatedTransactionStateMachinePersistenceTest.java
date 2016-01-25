@@ -49,6 +49,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.logging.NullLogProvider;
 
 public class ReplicatedTransactionStateMachinePersistenceTest
 {
@@ -65,7 +66,7 @@ public class ReplicatedTransactionStateMachinePersistenceTest
                 new GlobalSession<>( UUID.randomUUID(), RaftTestMember.member( 1 ) ),
                 mock( LockTokenManager.class, RETURNS_MOCKS ),
                 new CommittingTransactionsRegistry(),
-                new InMemoryGlobalSessionTrackerState<>() );
+                new InMemoryGlobalSessionTrackerState<>(), NullLogProvider.getInstance() );
 
         TransactionRepresentation tx = new PhysicalTransactionRepresentation( Collections.emptySet() );
         ReplicatedTransaction<RaftTestMember> rtx =
@@ -109,7 +110,7 @@ public class ReplicatedTransactionStateMachinePersistenceTest
                 new GlobalSession<>( UUID.randomUUID(), RaftTestMember.member( 1 ) ),
                 mock( LockTokenManager.class, RETURNS_MOCKS ),
                 new CommittingTransactionsRegistry(),
-                sessionTracker );
+                sessionTracker, NullLogProvider.getInstance() );
 
         TransactionRepresentation tx = new PhysicalTransactionRepresentation( Collections.emptySet() );
         ReplicatedTransaction<RaftTestMember> rtx =
@@ -158,7 +159,7 @@ public class ReplicatedTransactionStateMachinePersistenceTest
                 new GlobalSession<>( UUID.randomUUID(), RaftTestMember.member( 1 ) ),
                 mock( LockTokenManager.class, RETURNS_MOCKS ),
                 new CommittingTransactionsRegistry(),
-                sessionTrackerState );
+                sessionTrackerState, NullLogProvider.getInstance() );
 
         TransactionRepresentation tx = new PhysicalTransactionRepresentation( Collections.emptySet() );
         ReplicatedTransaction<RaftTestMember> rtx =

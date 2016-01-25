@@ -413,7 +413,7 @@ public class EnterpriseCoreEditionModule
             CommittingTransactions committingTransactions = new CommittingTransactionsRegistry();
             ReplicatedTransactionStateMachine<CoreMember> replicatedTxStateMachine = new ReplicatedTransactionStateMachine<>(
                     localCommit, localSessionPool.getGlobalSession(), currentReplicatedLockState,
-                    committingTransactions, globalSessionTrackerState );
+                    committingTransactions, globalSessionTrackerState, logging.getInternalLogProvider() );
 
             dependencies.satisfyDependencies( replicatedTxStateMachine );
 

@@ -33,7 +33,11 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+
+import static java.lang.String.format;
 
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionInvalid;
@@ -45,19 +49,23 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements Replicator.Rep
     private final LockTokenManager lockTokenManager;
     private final TransactionCommitProcess commitProcess;
     private final CommittingTransactions transactionFutures;
+    private final Log log;
+
     private long lastCommittedIndex = -1;
 
     public ReplicatedTransactionStateMachine( TransactionCommitProcess commitProcess,
                                               GlobalSession myGlobalSession,
                                               LockTokenManager lockTokenManager,
                                               CommittingTransactions transactionFutures,
-                                              GlobalSessionTrackerState<MEMBER> globalSessionTrackerState )
+                                              GlobalSessionTrackerState<MEMBER> globalSessionTrackerState,
+                                              LogProvider logProvider )
     {
         this.commitProcess = commitProcess;
         this.myGlobalSession = myGlobalSession;
         this.lockTokenManager = lockTokenManager;
         this.transactionFutures = transactionFutures;
         this.sessionTracker = globalSessionTrackerState;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -73,11 +81,14 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements Replicator.Rep
     {
         /*
          * This check quickly verifies that the session is invalid. Since we update the session state *after* appending
-         * the tx to the log, we are certain here that on replay, if the session tracker says that the session is invalid,
+         * the tx to the log, we are certain here that on replay, if the session tracker says that the session is
+         * invalid,
          * then the transaction either should never be committed or has already been appended in the log.
          */
         if ( !operationValid( replicatedTx ) )
         {
+            log.info( format( "[%d] Invalid operation: %s %s",
+                    logIndex, replicatedTx.globalSession(), replicatedTx.localOperationId() ) );
             return;
         }
 
@@ -97,6 +108,9 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements Replicator.Rep
             }
             catch ( IOException e )
             {
+                log.info( format( "[%d] Failed to read transaction representation: %s %s",
+                        logIndex, replicatedTx.globalSession(), replicatedTx.localOperationId() ) );
+
                 throw new IllegalStateException( "Failed to locally commit a transaction that has already been " +
                         "committed to the RAFT log. This server cannot process later transactions and needs to be " +
                         "restarted once the underlying cause has been addressed.", e );
@@ -112,6 +126,8 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements Replicator.Rep
 
             if ( currentTokenId != txLockSessionId && txLockSessionId != Locks.Client.NO_LOCK_SESSION_ID )
             {
+                log.info( format( "[%d] Lock session changed: %s %s",
+                        logIndex, replicatedTx.globalSession(), replicatedTx.localOperationId() ) );
                 future.ifPresent( txFuture -> txFuture.notifyCommitFailed( new TransactionFailureException(
                         LockSessionInvalid,
                         "The lock session in the cluster has changed: " +
@@ -129,6 +145,8 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements Replicator.Rep
             }
             catch ( TransactionFailureException e )
             {
+                log.info( format( "[%d] Failed to commit transaction: %s %s",
+                        logIndex, replicatedTx.globalSession(), replicatedTx.localOperationId() ) );
                 future.ifPresent( txFuture -> txFuture.notifyCommitFailed( e ) );
                 throw new IllegalStateException( "Failed to locally commit a transaction that has already been " +
                         "committed to the RAFT log. This server cannot process later transactions and needs to be " +

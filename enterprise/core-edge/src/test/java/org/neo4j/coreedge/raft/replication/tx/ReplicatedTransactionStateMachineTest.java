@@ -29,6 +29,7 @@ import org.neo4j.coreedge.raft.replication.session.InMemoryGlobalSessionTrackerS
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.core.locks.LockTokenManager;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.junit.Assert.assertEquals;
@@ -53,7 +55,7 @@ public class ReplicatedTransactionStateMachineTest
 {
     CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
             new AdvertisedSocketAddress( "raft:1" ) );
-    GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), coreMember );
+    GlobalSession globalSession = new GlobalSession<>( UUID.randomUUID(), coreMember );
 
     @Test
     public void shouldCommitTransaction() throws Exception
@@ -67,9 +69,9 @@ public class ReplicatedTransactionStateMachineTest
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
-        final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine(
+        final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, globalSession, lockState( lockSessionId ), new CommittingTransactionsRegistry(),
-                new InMemoryGlobalSessionTrackerState<>() );
+                new InMemoryGlobalSessionTrackerState<>(), NullLogProvider.getInstance() );
 
         // when
         listener.onReplicated( tx, 0 );
@@ -90,9 +92,9 @@ public class ReplicatedTransactionStateMachineTest
                 physicalTx( lockSessionId ), globalSession, localOperationId );
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
-        ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine(
+        ReplicatedTransactionStateMachine<CoreMember> listener = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, globalSession, lockState( lockSessionId ), new CommittingTransactionsRegistry(),
-                new InMemoryGlobalSessionTrackerState<>() );
+                new InMemoryGlobalSessionTrackerState<>(), NullLogProvider.getInstance() );
 
         // when
         listener.onReplicated( tx, 0 );
@@ -117,9 +119,9 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         CommittingTransactions committingTransactions = new CommittingTransactionsRegistry();
-        final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine(
+        final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, globalSession, lockState( currentLockSessionId ), committingTransactions,
-                new InMemoryGlobalSessionTrackerState<>() );
+                new InMemoryGlobalSessionTrackerState<>(), NullLogProvider.getInstance() );
 
         CommittingTransaction future = committingTransactions.register( localOperationId );
 
@@ -152,9 +154,9 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         CommittingTransactions committingTransactions = new CommittingTransactionsRegistry();
-        final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine(
+        final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, globalSession, lockState( currentLockSessionId ), committingTransactions,
-                new InMemoryGlobalSessionTrackerState<>() );
+                new InMemoryGlobalSessionTrackerState<>(), NullLogProvider.getInstance() );
 
         CommittingTransaction future = committingTransactions.register( localOperationId );
 

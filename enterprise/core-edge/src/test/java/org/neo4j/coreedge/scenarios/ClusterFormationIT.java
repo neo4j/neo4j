@@ -19,6 +19,10 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,6 +30,8 @@ import org.junit.Test;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.EdgeServerConnectionException;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.core.CoreGraphDatabase;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
@@ -53,7 +59,7 @@ public class ClusterFormationIT
     public void shouldBeAbleToAddAndRemoveEdgeServers() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 3);
+        cluster = Cluster.start( dir.directory(), 3, 3 );
 
         // when
         cluster.removeEdgeServerWithServerId( 0 );
@@ -74,7 +80,7 @@ public class ClusterFormationIT
     public void shouldBeAbleToAddAndRemoveCoreServers() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 0);
+        cluster = Cluster.start( dir.directory(), 3, 0 );
 
         // when
         cluster.removeCoreServerWithServerId( 0 );
@@ -97,10 +103,48 @@ public class ClusterFormationIT
     }
 
     @Test
+    public void shouldBeAbleToAddAndRemoveCoreServersUnderModestLoad() throws Exception
+    {
+        // given
+        cluster = Cluster.start( dir.directory(), 3, 0 );
+
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.submit( (Runnable) () -> {
+            CoreGraphDatabase leader = cluster.getLeader();
+            try ( Transaction tx = leader.beginTx() )
+            {
+                leader.createNode();
+                tx.success();
+            }
+        } );
+
+        // when
+        cluster.removeCoreServerWithServerId( 0 );
+        cluster.addCoreServerWithServerId( 0, 3 );
+
+        // then
+        assertEquals( 3, cluster.numberOfCoreServers() );
+
+        // when
+        cluster.removeCoreServerWithServerId( 1 );
+
+        // then
+        assertEquals( 2, cluster.numberOfCoreServers() );
+
+        // when
+        cluster.addCoreServerWithServerId( 4, 3 );
+
+        // then
+        assertEquals( 3, cluster.numberOfCoreServers() );
+
+        executorService.shutdown();
+    }
+
+    @Test
     public void shouldBeAbleToRestartTheCluster() throws Exception
     {
         // when
-        cluster = Cluster.start( dir.directory(), 3, 0);
+        cluster = Cluster.start( dir.directory(), 3, 0 );
 
         // then
         assertEquals( 3, cluster.numberOfCoreServers() );

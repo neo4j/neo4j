@@ -56,22 +56,17 @@ public class InMemoryGlobalSessionTrackerState<MEMBER> implements GlobalSessionT
     }
 
     @Override
-    public boolean validateOperation( GlobalSession<MEMBER> globalSession,
-                                      LocalOperationId localOperationId )
+    public boolean validateOperation( GlobalSession<MEMBER> globalSession, LocalOperationId localOperationId )
     {
-        boolean result;
-
         LocalSessionTracker existingSessionTracker = sessionTrackers.get( globalSession.owner() );
         if ( isNewSession( globalSession, existingSessionTracker ) )
         {
-            result = isFirstOperation( localOperationId );
+            return isFirstOperation( localOperationId );
         }
         else
         {
-            result = existingSessionTracker.isValidOperation( localOperationId );
+            return existingSessionTracker.isValidOperation( localOperationId );
         }
-
-        return result;
     }
 
     @Override
@@ -84,7 +79,8 @@ public class InMemoryGlobalSessionTrackerState<MEMBER> implements GlobalSessionT
 
     private boolean isNewSession( GlobalSession<MEMBER> globalSession, LocalSessionTracker existingSessionTracker )
     {
-        return existingSessionTracker == null || !existingSessionTracker.globalSessionId.equals( globalSession.sessionId() );
+        return existingSessionTracker == null ||
+                !existingSessionTracker.globalSessionId.equals( globalSession.sessionId() );
     }
 
     private boolean isFirstOperation( LocalOperationId id )
@@ -221,8 +217,7 @@ public class InMemoryGlobalSessionTrackerState<MEMBER> implements GlobalSessionT
         }
 
         /**
-         * The sequence numbers under a single local session must come strictly in order
-         * and are only valid exactly once.
+         * The sequence numbers under a single local session must come strictly in order and are only valid once only.
          */
         private boolean isValidOperation( LocalOperationId operationId )
         {
