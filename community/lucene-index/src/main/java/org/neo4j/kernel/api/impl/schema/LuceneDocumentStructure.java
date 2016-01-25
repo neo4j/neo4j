@@ -21,13 +21,14 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -36,15 +37,13 @@ import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.util.NumericUtils;
 
+import java.io.IOException;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.kernel.api.index.ArrayEncoder;
-
-import static java.lang.String.format;
-import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 
 public class LuceneDocumentStructure
@@ -67,215 +66,29 @@ public class LuceneDocumentStructure
         }
     };
 
-    static DocWithId reuseDocument( long nodeId )
+    private LuceneDocumentStructure()
+    {
+    }
+
+    private static DocWithId reuseDocument( long nodeId )
     {
         DocWithId doc = perThreadDocument.get();
         doc.setId( nodeId );
         return doc;
     }
 
-    Document reusedDocument( long nodeId )
-    {
-        return reuseDocument( nodeId ).document;
-    }
-
-    enum ValueEncoding
-    {
-        Number
-                {
-                    @Override
-                    String key()
-                    {
-                        return "number";
-                    }
-
-                    @Override
-                    boolean canEncode( Object value )
-                    {
-                        return value instanceof Number;
-                    }
-
-                    @Override
-                    Field encodeField( Object value )
-                    {
-                        return new DoubleField( key(), ((Number) value).doubleValue(), NO );
-                    }
-
-                    @Override
-                    void setFieldValue( Object value, Field field )
-                    {
-                        field.setDoubleValue( ((Number) value).doubleValue() );
-                    }
-
-                    @Override
-                    NumericRangeQuery<Double> encodeQuery( Object value )
-                    {
-                        final Double doubleValue = ((Number) value).doubleValue();
-                        return NumericRangeQuery.newDoubleRange( key(), doubleValue, doubleValue, true, true );
-                    }
-                },
-        Array
-                {
-                    @Override
-                    String key()
-                    {
-                        return "array";
-                    }
-
-                    @Override
-                    boolean canEncode( Object value )
-                    {
-                        return value.getClass().isArray();
-                    }
-
-                    @Override
-                    Field encodeField( Object value )
-                    {
-                        return field( key(), ArrayEncoder.encode( value ) );
-                    }
-
-                    @Override
-                    void setFieldValue( Object value, Field field )
-                    {
-                        field.setStringValue( ArrayEncoder.encode( value ) );
-                    }
-
-                    @Override
-                    TermQuery encodeQuery( Object value )
-                    {
-                        return new TermQuery( new Term( key(), ArrayEncoder.encode( value ) ) );
-                    }
-                },
-        Bool
-                {
-                    @Override
-                    String key()
-                    {
-                        return "bool";
-                    }
-
-                    @Override
-                    boolean canEncode( Object value )
-                    {
-                        return value instanceof Boolean;
-                    }
-
-                    @Override
-                    Field encodeField( Object value )
-                    {
-                        return field( key(), value.toString() );
-                    }
-
-                    @Override
-                    void setFieldValue( Object value, Field field )
-                    {
-                        field.setStringValue( value.toString() );
-                    }
-
-                    @Override
-                    TermQuery encodeQuery( Object value )
-                    {
-                        return new TermQuery( new Term( key(), value.toString() ) );
-                    }
-                },
-        String
-                {
-                    @Override
-                    String key()
-                    {
-                        return "string";
-                    }
-
-                    @Override
-                    boolean canEncode( Object value )
-                    {
-                        // Any other type can be safely serialised as a string
-                        return true;
-                    }
-
-                    @Override
-                    Field encodeField( Object value )
-                    {
-                        return field( key(), value.toString() );
-                    }
-
-                    @Override
-                    void setFieldValue( Object value, Field field )
-                    {
-                        field.setStringValue( value.toString() );
-                    }
-
-                    @Override
-                    TermQuery encodeQuery( Object value )
-                    {
-                        return new TermQuery( new Term( key(), value.toString() ) );
-                    }
-                };
-
-        abstract String key();
-
-        abstract boolean canEncode( Object value );
-
-        abstract Field encodeField( Object value );
-
-        abstract void setFieldValue( Object value, Field field );
-
-        abstract Query encodeQuery( Object value );
-
-        public static ValueEncoding fromKey( String key )
-        {
-            switch ( key )
-            {
-            case "number":
-                return Number;
-            case "array":
-                return Array;
-            case "bool":
-                return Bool;
-            case "string":
-                return String;
-            }
-            throw new IllegalArgumentException( "Unknown key: " + key );
-        }
-    }
-
-    private LuceneDocumentStructure()
-    {
-    }
-
     public static Document documentRepresentingProperty( long nodeId, Object value )
     {
         DocWithId document = reuseDocument( nodeId );
-        document.setValue( valueEncodingForValue( value ), value );
+        document.setValue( ValueEncoding.forValue( value ), value );
         return document.document;
-    }
-
-    public static ValueEncoding valueEncodingForValue( Object value )
-    {
-        for ( ValueEncoding encoding : ValueEncoding.values() )
-        {
-            if ( encoding.canEncode( value ) )
-            {
-                return encoding;
-            }
-        }
-
-        throw new IllegalStateException( "Unable to encode the value " + value );
     }
 
     public static String encodedStringValue( Object value )
     {
-        return valueEncodingForValue( value ).encodeField( value ).stringValue();
-    }
-
-    private static Field field( String fieldIdentifier, String value )
-    {
-        return field( fieldIdentifier, value, NO );
-    }
-
-    private static Field field( String fieldIdentifier, String value, Field.Store store )
-    {
-        return new StringField( fieldIdentifier, value, store );
+        ValueEncoding encoding = ValueEncoding.forValue( value );
+        Field field = encoding.encodeField( value );
+        return field.stringValue();
     }
 
     public static MatchAllDocsQuery newScanQuery()
@@ -285,14 +98,8 @@ public class LuceneDocumentStructure
 
     public static Query newSeekQuery( Object value )
     {
-        for ( ValueEncoding encoding : ValueEncoding.values() )
-        {
-            if ( encoding.canEncode( value ) )
-            {
-                return encoding.encodeQuery( value );
-            }
-        }
-        throw new IllegalArgumentException( format( "Unable to create query for %s", value ) );
+        ValueEncoding encoding = ValueEncoding.forValue( value );
+        return encoding.encodeQuery( value );
     }
 
     /**
@@ -317,12 +124,12 @@ public class LuceneDocumentStructure
         if ( (includeLowerBoundary != includeLower) || (includeUpperBoundary != includeUpper) )
         {
             BooleanQuery.Builder builder = new BooleanQuery.Builder();
-            if (includeLowerBoundary != includeLower)
+            if ( includeLowerBoundary != includeLower )
             {
                 builder.add( new TermQuery( new Term( ValueEncoding.String.key(), lower ) ), BooleanClause.Occur
                         .MUST_NOT );
             }
-            if (includeUpperBoundary != includeUpper)
+            if ( includeUpperBoundary != includeUpper )
             {
                 builder.add( new TermQuery( new Term( ValueEncoding.String.key(), upper ) ), BooleanClause.Occur
                         .MUST_NOT );
@@ -346,6 +153,29 @@ public class LuceneDocumentStructure
     public static long getNodeId( Document from )
     {
         return Long.parseLong( from.get( NODE_ID_KEY ) );
+    }
+
+    /**
+     * Filters the given {@link Terms terms} to include only terms that were created using fields from
+     * {@link ValueEncoding#encodeField(Object)}. Internal lucene terms like those created for indexing numeric values
+     * (see javadoc for {@link NumericRangeQuery} class) are skipped. In other words this method returns
+     * {@link TermsEnum} over all terms for the given field that were created using {@link ValueEncoding}.
+     *
+     * @param terms the terms to be filtered
+     * @param fieldKey the corresponding {@link ValueEncoding#key() field key}
+     * @return terms enum over all inserted terms
+     * @throws IOException if it is not possible to obtain {@link TermsEnum}
+     * @see NumericRangeQuery
+     * @see org.apache.lucene.analysis.NumericTokenStream
+     * @see NumericUtils#PRECISION_STEP_DEFAULT
+     * @see NumericUtils#filterPrefixCodedLongs(TermsEnum)
+     */
+    public static TermsEnum originalTerms( Terms terms, String fieldKey ) throws IOException
+    {
+        TermsEnum termsEnum = terms.iterator();
+        return ValueEncoding.forKey( fieldKey ) == ValueEncoding.Number
+               ? NumericUtils.filterPrefixCodedLongs( termsEnum )
+               : termsEnum;
     }
 
     private static class DocWithId
