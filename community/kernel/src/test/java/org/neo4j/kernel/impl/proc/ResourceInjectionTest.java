@@ -23,14 +23,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.Resource;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -47,10 +48,10 @@ public class ResourceInjectionTest
     public void shouldCompileAndRunProcedure() throws Throwable
     {
         // Given
-        Procedure proc = compile( ProcedureWithInjectedAPI.class ).get( 0 );
+        CallableProcedure proc = compile( ProcedureWithInjectedAPI.class ).get( 0 );
 
         // Then
-        List<Object[]> out = IteratorUtil.asList( proc.apply( new Procedure.BasicContext(), new Object[0] ) );
+        List<Object[]> out = IteratorUtil.asList( proc.apply( new CallableProcedure.BasicContext(), new Object[0] ) );
 
         // Then
         assertThat( out.get( 0 ), equalTo( (new Object[]{"Bonnie"}) ) );
@@ -103,7 +104,7 @@ public class ResourceInjectionTest
         @Resource
         public MyAwesomeAPI api;
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> listCoolPeople()
         {
             return api.listCoolPeople().stream().map( MyOutputRecord::new );
@@ -115,14 +116,14 @@ public class ResourceInjectionTest
         @Resource
         public UnknownAPI api;
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> listCoolPeople()
         {
             return api.listCoolPeople().stream().map( MyOutputRecord::new );
         }
     }
 
-    private List<Procedure> compile( Class<?> clazz ) throws KernelException
+    private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
         ComponentRegistry components = new ComponentRegistry();
         components.register( MyAwesomeAPI.class, (ctx) -> new MyAwesomeAPI() );

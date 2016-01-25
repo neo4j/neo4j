@@ -21,7 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 
 /**
  * The main API through which access to the Neo4j kernel is made, both read
@@ -60,5 +60,5 @@ public interface KernelAPI
      *
      * @param signature signature of the procedure
      */
-    void registerProcedure( Procedure signature ) throws ProcedureException;
+    void registerProcedure( CallableProcedure signature ) throws ProcedureException;
 }

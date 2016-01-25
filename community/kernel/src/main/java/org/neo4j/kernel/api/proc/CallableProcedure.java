@@ -26,7 +26,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public interface Procedure
+public interface CallableProcedure
 {
     ProcedureSignature signature();
     RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException;
@@ -79,7 +79,7 @@ public interface Procedure
         }
     }
 
-    abstract class BasicProcedure implements Procedure
+    abstract class BasicProcedure implements CallableProcedure
     {
         private final ProcedureSignature signature;
 

@@ -34,13 +34,13 @@ import java.util.zip.ZipInputStream;
 import org.neo4j.collection.PrefetchingRawIterator;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.logging.Log;
 
 import static java.util.stream.Collectors.toList;
 
 /**
- * Given the location of a jarfile, reads the contents of the jar and returns compiled {@link Procedure} instances.
+ * Given the location of a jarfile, reads the contents of the jar and returns compiled {@link CallableProcedure} instances.
  */
 public class ProcedureJarLoader
 {
@@ -53,19 +53,19 @@ public class ProcedureJarLoader
         this.log = log;
     }
 
-    public List<Procedure> loadProcedures( URL jar ) throws Exception
+    public List<CallableProcedure> loadProcedures( URL jar ) throws Exception
     {
         return loadProcedures( jar, new URLClassLoader( new URL[]{jar}, this.getClass().getClassLoader() ), new LinkedList<>() );
     }
 
-    public List<Procedure> loadProceduresFromDir( File root ) throws IOException, KernelException
+    public List<CallableProcedure> loadProceduresFromDir( File root ) throws IOException, KernelException
     {
         if ( !root.exists() )
         {
             return Collections.emptyList();
         }
 
-        LinkedList<Procedure> out = new LinkedList<>();
+        LinkedList<CallableProcedure> out = new LinkedList<>();
 
         List<URL> list = Stream.of( root.listFiles( ( dir, name ) -> name.endsWith( ".jar" ) ) ).map( this::toURL ).collect( toList() );
         URL[] jarFiles = list.toArray( new URL[list.size()] );
@@ -79,7 +79,7 @@ public class ProcedureJarLoader
         return out;
     }
 
-    private List<Procedure> loadProcedures( URL jar, ClassLoader loader, List<Procedure> target ) throws IOException, KernelException
+    private List<CallableProcedure> loadProcedures( URL jar, ClassLoader loader, List<CallableProcedure> target ) throws IOException, KernelException
     {
         RawIterator<Class<?>,IOException> classes = listClassesIn( jar, loader );
         while ( classes.hasNext() )

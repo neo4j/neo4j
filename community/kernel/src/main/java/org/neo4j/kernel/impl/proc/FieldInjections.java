@@ -29,7 +29,8 @@ import java.util.function.Function;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.procedure.Resource;
 
 /**
  * Injects annotated fields with appropriate values.
@@ -50,16 +51,16 @@ public class FieldInjections
     {
         private final Field field;
         private final MethodHandle setter;
-        private final Function<Procedure.Context,?> supplier;
+        private final Function<CallableProcedure.Context,?> supplier;
 
-        public FieldSetter( Field field, MethodHandle setter, Function<Procedure.Context,?> supplier )
+        public FieldSetter( Field field, MethodHandle setter, Function<CallableProcedure.Context,?> supplier )
         {
             this.field = field;
             this.setter = setter;
             this.supplier = supplier;
         }
 
-        void apply( Procedure.Context ctx, Object object ) throws ProcedureException
+        void apply( CallableProcedure.Context ctx, Object object ) throws ProcedureException
         {
             try
             {
@@ -106,7 +107,7 @@ public class FieldInjections
     {
         try
         {
-            Function<Procedure.Context,?> supplier = components.supplierFor( field.getType() );
+            Function<CallableProcedure.Context,?> supplier = components.supplierFor( field.getType() );
             if( supplier == null )
             {
                 throw new ProcedureException( Status.Procedure.FailedRegistration,

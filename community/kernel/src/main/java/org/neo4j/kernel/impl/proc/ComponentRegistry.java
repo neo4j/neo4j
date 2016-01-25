@@ -23,31 +23,31 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 
 /**
  * Tracks components that can be injected into user-defined procedures.
  */
 public class ComponentRegistry
 {
-    private final Map<Class<?>, Function<Procedure.Context, ?>> suppliers;
+    private final Map<Class<?>, Function<CallableProcedure.Context, ?>> suppliers;
 
     public ComponentRegistry()
     {
         this( new HashMap<>() );
     }
 
-    public ComponentRegistry( Map<Class<?>,Function<Procedure.Context,?>> suppliers )
+    public ComponentRegistry( Map<Class<?>,Function<CallableProcedure.Context,?>> suppliers )
     {
         this.suppliers = suppliers;
     }
 
-    public Function<Procedure.Context,?> supplierFor( Class<?> type )
+    public Function<CallableProcedure.Context,?> supplierFor( Class<?> type )
     {
         return suppliers.get( type );
     }
 
-    public <T> void register( Class<T> cls, Function<Procedure.Context,T> supplier )
+    public <T> void register( Class<T> cls, Function<CallableProcedure.Context,T> supplier )
     {
         suppliers.put( cls, supplier );
     }

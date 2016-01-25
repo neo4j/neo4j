@@ -33,10 +33,12 @@ import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.Procedure;
-import org.neo4j.kernel.api.proc.Procedure.BasicContext;
+import org.neo4j.kernel.api.proc.CallableProcedure.BasicContext;
 import org.neo4j.logging.Log;
+import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.Resource;
 
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -65,7 +67,7 @@ public class ReflectiveProcedureTest
         // Given
         Log log = spy( Log.class );
         components.register( Log.class, (ctx) -> log );
-        Procedure procedure = procedureCompiler.compile( LoggingProcedure.class ).get( 0 );
+        CallableProcedure procedure = procedureCompiler.compile( LoggingProcedure.class ).get( 0 );
 
         // When
         procedure.apply( new BasicContext(), new Object[0] );
@@ -81,7 +83,7 @@ public class ReflectiveProcedureTest
     public void shouldCompileProcedure() throws Throwable
     {
         // When
-        List<Procedure> procedures = compile( SingleReadOnlyProcedure.class );
+        List<CallableProcedure> procedures = compile( SingleReadOnlyProcedure.class );
 
         // Then
         TestCase.assertEquals( 1, procedures.size() );
@@ -96,7 +98,7 @@ public class ReflectiveProcedureTest
     public void shouldRunSimpleReadOnlyProcedure() throws Throwable
     {
         // Given
-        Procedure proc = compile( SingleReadOnlyProcedure.class ).get( 0 );
+        CallableProcedure proc = compile( SingleReadOnlyProcedure.class ).get( 0 );
 
         // When
         RawIterator<Object[],ProcedureException> out = proc.apply( new BasicContext(), new Object[0] );
@@ -112,7 +114,7 @@ public class ReflectiveProcedureTest
     public void shouldIgnoreClassesWithNoProcedures() throws Throwable
     {
         // When
-        List<Procedure> procedures = compile( PrivateConstructorButNoProcedures.class );
+        List<CallableProcedure> procedures = compile( PrivateConstructorButNoProcedures.class );
 
         // Then
         TestCase.assertEquals( 0, procedures.size() );
@@ -122,9 +124,9 @@ public class ReflectiveProcedureTest
     public void shouldRunClassWithMultipleProceduresDeclared() throws Throwable
     {
         // Given
-        List<Procedure> compiled = compile( MultiProcedureProcedure.class );
-        Procedure bananaPeople = compiled.get( 0 );
-        Procedure coolPeople = compiled.get( 1 );
+        List<CallableProcedure> compiled = compile( MultiProcedureProcedure.class );
+        CallableProcedure bananaPeople = compiled.get( 0 );
+        CallableProcedure coolPeople = compiled.get( 1 );
 
         // When
         RawIterator<Object[],ProcedureException> coolOut = coolPeople.apply( new BasicContext(), new Object[0] );
@@ -196,7 +198,7 @@ public class ReflectiveProcedureTest
         @Resource
         public Log log;
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> logAround()
         {
             log.debug( "1" );
@@ -209,7 +211,7 @@ public class ReflectiveProcedureTest
 
     public static class SingleReadOnlyProcedure
     {
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> listCoolPeople()
         {
             return Stream.of(
@@ -220,7 +222,7 @@ public class ReflectiveProcedureTest
 
     public static class MultiProcedureProcedure
     {
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> listCoolPeople()
         {
             return Stream.of(
@@ -228,7 +230,7 @@ public class ReflectiveProcedureTest
                     new MyOutputRecord( "Clyde" ) );
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<SomeOtherOutputRecord> listBananaOwningPeople()
         {
             return Stream.of(
@@ -244,7 +246,7 @@ public class ReflectiveProcedureTest
 
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> listCoolPeople()
         {
             return Stream.of(
@@ -260,7 +262,7 @@ public class ReflectiveProcedureTest
 
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> listCoolPeople()
         {
             return Stream.of(
@@ -282,7 +284,7 @@ public class ReflectiveProcedureTest
         }
     }
 
-    private List<Procedure> compile( Class<?> clazz ) throws KernelException
+    private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
         return procedureCompiler.compile( clazz );
     }

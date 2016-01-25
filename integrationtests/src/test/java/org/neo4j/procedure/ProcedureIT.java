@@ -19,16 +19,16 @@
  */
 package org.neo4j.procedure;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -37,10 +37,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.proc.JarBuilder;
-import org.neo4j.kernel.impl.proc.Name;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.proc.ReadOnlyProcedure;
-import org.neo4j.kernel.impl.proc.Resource;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -49,11 +46,9 @@ import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertFalse;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -340,32 +335,32 @@ public class ProcedureIT
         @Resource
         public Log log;
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<Output> integrationTestMe()
         {
             return Stream.of( new Output() );
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<Output> simpleArgument( @Name( "name" ) long someValue )
         {
             return Stream.of( new Output( someValue ) );
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<Output> genericArguments( @Name( "stringList" ) List<List<String>> stringList,
                 @Name( "longList" ) List<List<List<Long>>> longList )
         {
             return Stream.of( new Output( stringList.size() + longList.size() ) );
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<Output> mapArgument( @Name( "map" )Map<String,Object> map )
         {
             return Stream.of( new Output( map.size() ) );
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<NodeOutput> node( @Name( "id" ) long id )
         {
             NodeOutput nodeOutput = new NodeOutput();
@@ -373,20 +368,20 @@ public class ProcedureIT
             return Stream.of( nodeOutput );
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<Output> throwsExceptionInStream()
         {
             return Stream.generate( () -> { throw new RuntimeException( "Kaboom" ); } );
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> listCoolPeopleInDatabase()
         {
             return stream( spliteratorUnknownSize( db.findNodes( label( "Person" ) ), ORDERED | IMMUTABLE ), false )
                     .map( ( n ) -> new MyOutputRecord( (String) n.getProperty( "name" ) ) );
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<Output> logAround()
         {
             log.debug( "1" );

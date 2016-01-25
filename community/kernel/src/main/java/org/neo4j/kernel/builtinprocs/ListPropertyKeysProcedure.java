@@ -22,7 +22,7 @@ package org.neo4j.kernel.builtinprocs;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.impl.api.TokenAccess;
 
@@ -31,7 +31,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.api.ReadOperations.statement;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
-public class ListPropertyKeysProcedure extends Procedure.BasicProcedure
+public class ListPropertyKeysProcedure extends CallableProcedure.BasicProcedure
 {
     public ListPropertyKeysProcedure( ProcedureSignature.ProcedureName name )
     {

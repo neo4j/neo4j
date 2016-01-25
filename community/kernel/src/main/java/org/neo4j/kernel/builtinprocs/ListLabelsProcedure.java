@@ -23,7 +23,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.api.TokenAccess;
 
@@ -32,7 +32,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.api.ReadOperations.statement;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
-public class ListLabelsProcedure extends Procedure.BasicProcedure
+public class ListLabelsProcedure extends CallableProcedure.BasicProcedure
 {
     public ListLabelsProcedure( ProcedureName name )
     {

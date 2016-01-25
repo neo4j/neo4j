@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.impl.proc.ReadOnlyProcedure;
+import org.neo4j.procedure.Procedure;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.HTTP;
@@ -47,13 +47,13 @@ public class JavaProceduresTest
             public long someNumber = 1337;
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<OutputRecord> myProc()
         {
             return Stream.of( new OutputRecord() );
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<OutputRecord> procThatThrows()
         {
             throw new RuntimeException( "This is an exception" );

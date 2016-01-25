@@ -32,17 +32,18 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
+import org.neo4j.procedure.Procedure;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
 /**
- * Handles converting a class into one or more callable {@link Procedure}.
+ * Handles converting a class into one or more callable {@link CallableProcedure}.
  */
 public class ReflectiveProcedureCompiler
 {
@@ -58,12 +59,12 @@ public class ReflectiveProcedureCompiler
         this.fieldInjections = new FieldInjections( components );
     }
 
-    public List<Procedure> compile( Class<?> procDefinition ) throws KernelException
+    public List<CallableProcedure> compile( Class<?> procDefinition ) throws KernelException
     {
         try
         {
             List<Method> procedureMethods = asList( procDefinition.getDeclaredMethods() ).stream()
-                    .filter( m -> m.isAnnotationPresent( ReadOnlyProcedure.class ) )
+                    .filter( m -> m.isAnnotationPresent( Procedure.class ) )
                     .collect( Collectors.toList() );
 
             if( procedureMethods.isEmpty() )
@@ -73,7 +74,7 @@ public class ReflectiveProcedureCompiler
 
             MethodHandle constructor = constructor( procDefinition );
 
-            ArrayList<Procedure> out = new ArrayList<>( procedureMethods.size() );
+            ArrayList<CallableProcedure> out = new ArrayList<>( procedureMethods.size() );
             for ( Method method : procedureMethods )
             {
                 out.add( compileProcedure( procDefinition, constructor, method ) );
@@ -129,7 +130,7 @@ public class ReflectiveProcedureCompiler
         return new ProcedureName( namespace, name );
     }
 
-    private static class ReflectiveProcedure implements Procedure
+    private static class ReflectiveProcedure implements CallableProcedure
     {
         private final ProcedureSignature signature;
         private final MethodHandle constructor;

@@ -32,9 +32,11 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.logging.NullLog;
+import org.neo4j.procedure.Name;
+import org.neo4j.procedure.Procedure;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.contains;
@@ -59,14 +61,14 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithOneProcedure.class );
 
         // When
-        List<Procedure> procedures = jarloader.loadProcedures( jar );
+        List<CallableProcedure> procedures = jarloader.loadProcedures( jar );
 
         // Then
-        List<ProcedureSignature> signatures = procedures.stream().map( Procedure::signature ).collect( toList() );
+        List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
         assertThat( signatures, contains(
                 procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ));
 
-        assertThat( asList( procedures.get( 0 ).apply( new Procedure.BasicContext(), new Object[0] ) ),
+        assertThat( asList( procedures.get( 0 ).apply( new CallableProcedure.BasicContext(), new Object[0] ) ),
                 contains( IsEqual.equalTo( new Object[]{1337L} )) );
     }
 
@@ -77,17 +79,17 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithProcedureWithArgument.class );
 
         // When
-        List<Procedure> procedures = jarloader.loadProcedures( jar );
+        List<CallableProcedure> procedures = jarloader.loadProcedures( jar );
 
         // Then
-        List<ProcedureSignature> signatures = procedures.stream().map( Procedure::signature ).collect( toList() );
+        List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
         assertThat( signatures, contains(
                 procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myProcedure" )
                         .in( "value", NTInteger )
                         .out( "someNumber", NTInteger )
                         .build() ));
 
-        assertThat( asList(procedures.get( 0 ).apply( new Procedure.BasicContext(), new Object[]{42L} ) ),
+        assertThat( asList(procedures.get( 0 ).apply( new CallableProcedure.BasicContext(), new Object[]{42L} ) ),
                 contains( IsEqual.equalTo( new Object[]{42L} )) );
     }
 
@@ -98,10 +100,10 @@ public class ProcedureJarLoaderTest
         URL jar = createJarFor( ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class );
 
         // When
-        List<Procedure> procedures = jarloader.loadProcedures( jar );
+        List<CallableProcedure> procedures = jarloader.loadProcedures( jar );
 
         // Then
-        List<ProcedureSignature> signatures = procedures.stream().map( Procedure::signature ).collect( toList() );
+        List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
         assertThat( signatures, containsInAnyOrder(
                 procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myOtherProcedure" ).out( "someNumber", NTInteger ).build(),
                 procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ));
@@ -130,10 +132,10 @@ public class ProcedureJarLoaderTest
         createJarFor( ClassWithAnotherProcedure.class );
 
         // When
-        List<Procedure> procedures = jarloader.loadProceduresFromDir( tmpdir.getRoot() );
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( tmpdir.getRoot() );
 
         // Then
-        List<ProcedureSignature> signatures = procedures.stream().map( Procedure::signature ).collect( toList() );
+        List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
         assertThat( signatures, containsInAnyOrder(
                 procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myOtherProcedure" ).out( "someNumber", NTInteger ).build(),
                 procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ));
@@ -161,7 +163,7 @@ public class ProcedureJarLoaderTest
 
     public static class ClassWithInvalidProcedure
     {
-        @ReadOnlyProcedure
+        @Procedure
         public boolean booleansAreNotAcceptableReturnTypes()
         {
             return false;
@@ -170,7 +172,7 @@ public class ProcedureJarLoaderTest
 
     public static class ClassWithOneProcedure
     {
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<Output> myProcedure()
         {
             return Stream.of( new Output() );
@@ -187,7 +189,7 @@ public class ProcedureJarLoaderTest
 
     public static class ClassWithAnotherProcedure
     {
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<Output> myOtherProcedure()
         {
             return Stream.of( new Output() );
@@ -196,7 +198,7 @@ public class ProcedureJarLoaderTest
 
     public static class ClassWithProcedureWithArgument
     {
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<Output> myProcedure(@Name( "value" ) long value)
         {
             return Stream.of( new Output(value) );
