@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.frontend.v3_0
 
 import java.lang.reflect.Method
 
+import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
+import org.neo4j.cypher.internal.frontend.v3_0.Rewritable._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
-import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_0.Rewritable._
 
 object Rewriter {
   def lift(f: PartialFunction[AnyRef, AnyRef]): Rewriter = f.orElse(PartialFunction(identity[AnyRef]))
@@ -105,9 +105,8 @@ trait Rewritable {
 }
 
 object inSequence {
-
-  class InSequenceRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
-    def apply(that: AnyRef): AnyRef = {
+  private class InSequenceRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
+    override def apply(that: AnyRef): AnyRef = {
       val it = rewriters.iterator
       //this piece of code is used a lot and has been through profiling
       //please don't just remove it because it is ugly looking
@@ -120,11 +119,11 @@ object inSequence {
     }
   }
 
-  def apply(rewriters: Rewriter*) = new InSequenceRewriter(rewriters)
+  def apply(rewriters: Rewriter*): Rewriter = new InSequenceRewriter(rewriters)
 }
 
 object topDown {
-  class TopDownRewriter(rewriter: Rewriter) extends Rewriter {
+  private class TopDownRewriter(rewriter: Rewriter) extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
       val result = rec(initialStack)
@@ -155,12 +154,12 @@ object topDown {
     }
   }
 
-  def apply(rewriter: Rewriter) = new TopDownRewriter(rewriter)
+  def apply(rewriter: Rewriter): Rewriter = new TopDownRewriter(rewriter)
 }
 
 object bottomUp {
 
-  class BottomUpRewriter(val rewriter: Rewriter) extends Rewriter {
+  private class BottomUpRewriter(val rewriter: Rewriter) extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
       val result = rec(initialStack)
@@ -189,7 +188,7 @@ object bottomUp {
     }
   }
 
-  def apply(rewriter: Rewriter) = new BottomUpRewriter(rewriter)
+  def apply(rewriter: Rewriter): Rewriter = new BottomUpRewriter(rewriter)
 }
 
 trait Replacer {
@@ -198,9 +197,6 @@ trait Replacer {
 }
 
 case class replace(strategy: (Replacer => (AnyRef => AnyRef))) extends Rewriter {
-
-  self =>
-
   private val cont = strategy(new Replacer {
     def expand(replacement: AnyRef) = {
       //this piece of code is used a lot and has been through profiling
