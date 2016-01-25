@@ -161,20 +161,31 @@ object topDown {
 object bottomUp {
 
   class BottomUpRewriter(val rewriter: Rewriter) extends Rewriter {
-    def apply(that: AnyRef): AnyRef = {
-      //this piece of code is used a lot and has been through profiling
-      //please don't just remove it because it is ugly looking
-      val children = that.children.toList
-      val buffer = new Array[AnyRef](children.size)
-      val it = children.iterator
-      var index = 0
-      while (it.hasNext) {
-        buffer(index) = apply(it.next())
-        index += 1
-      }
+    override def apply(that: AnyRef): AnyRef = {
+      val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
+      val result = rec(initialStack)
+      assert(result.size == 1)
+      result.head
+    }
 
-      val rewrittenThat = that.dup(buffer)
-      rewriter.apply(rewrittenThat)
+    @tailrec
+    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+      val (currentJobs, _) = stack.top
+      if (currentJobs.isEmpty) {
+        val (_, newChildren) = stack.pop()
+        if (stack.isEmpty) {
+          newChildren
+        } else {
+          val (job :: jobs, doneJobs) = stack.pop()
+          val doneJob = job.dup(newChildren)
+          val rewrittenDoneJob = doneJob.rewrite(rewriter)
+          stack.push((jobs, doneJobs += rewrittenDoneJob))
+          rec(stack)
+        }
+      } else {
+        stack.push((currentJobs.head.children.toList, new mutable.MutableList()))
+        rec(stack)
+      }
     }
   }
 
