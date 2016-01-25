@@ -40,7 +40,7 @@ import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
-public class AutoIndexerTest
+public class AutoIndexOperationsTest
 {
     @Rule
     public final DatabaseRule db = new EmbeddedDatabaseRule()

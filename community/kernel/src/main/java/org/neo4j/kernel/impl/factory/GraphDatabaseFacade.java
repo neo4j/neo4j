@@ -49,7 +49,6 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -63,15 +62,18 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.AutoIndexing;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.coreapi.AutoIndexerFacade;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
 import org.neo4j.kernel.impl.coreapi.IndexProviderImpl;
-import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
-import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
+import org.neo4j.kernel.impl.coreapi.ReadOnlyIndexFacade;
+import org.neo4j.kernel.impl.coreapi.ReadOnlyRelationshipIndexFacade;
+import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerFacade;
 import org.neo4j.kernel.impl.coreapi.StandardNodeActions;
 import org.neo4j.kernel.impl.coreapi.StandardRelationshipActions;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
@@ -86,11 +88,9 @@ import org.neo4j.storageengine.api.EntityType;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.node_auto_indexing;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.node_keys_indexable;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_auto_indexing;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_keys_indexable;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.kernel.impl.api.AutoIndexing.NODE_AUTO_INDEX;
+import static org.neo4j.kernel.impl.api.AutoIndexing.RELATIONSHIP_AUTO_INDEX;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 
@@ -155,11 +155,7 @@ public class GraphDatabaseFacade
         /** Execute a cypher statement */
         Result executeQuery( String query, Map<String, Object> parameters, QuerySession querySession );
 
-        // Methods below smell a bit - at least the property trackers should go to kernel API somewhere, probably the others as well
-        void addNodePropertyTracker( PropertyTracker<Node> tracker );
-        void removeNodePropertyTracker( PropertyTracker<Node> tracker );
-        void addRelationshipPropertyTracker( PropertyTracker<Relationship> tracker );
-        void removeRelationshipPropertyTracker( PropertyTracker<Relationship> tracker );
+        AutoIndexing autoIndexing();
 
         void registerKernelEventHandler( KernelEventHandler handler );
         void unregisterKernelEventHandler( KernelEventHandler handler );
@@ -188,8 +184,12 @@ public class GraphDatabaseFacade
         this.nodeActions = new StandardNodeActions( spi::currentStatement, spi::currentTransaction, this::assertTransactionOpen, relActions, this );
         this.schema = new SchemaImpl( spi::currentStatement );
         this.indexManager = new IndexManagerImpl( spi::currentStatement, idxProvider,
-                new NodeAutoIndexerImpl( config.get( node_auto_indexing ), config.get( node_keys_indexable ), idxProvider, spi ),
-                new RelationshipAutoIndexerImpl( config.get( relationship_auto_indexing ), config.get( relationship_keys_indexable ), idxProvider, spi ) );
+                new AutoIndexerFacade(
+                        () -> new ReadOnlyIndexFacade<>(idxProvider.getOrCreateNodeIndex( NODE_AUTO_INDEX, null ) ),
+                        spi.autoIndexing().nodes() ),
+                new RelationshipAutoIndexerFacade(
+                        () -> new ReadOnlyRelationshipIndexFacade( idxProvider.getOrCreateRelationshipIndex( RELATIONSHIP_AUTO_INDEX, null ) ),
+                        spi.autoIndexing().relationships() ) );
     }
 
     @Override

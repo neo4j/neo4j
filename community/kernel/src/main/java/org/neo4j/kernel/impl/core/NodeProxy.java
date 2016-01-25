@@ -47,6 +47,8 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
@@ -117,6 +119,11 @@ public class NodeProxy
         {
             throw new NotFoundException( "Unable to delete Node[" + nodeId +
                                              "] since it has already been deleted." );
+        }
+        catch ( AutoIndexingKernelException e )
+        {
+            throw new IllegalStateException( "Auto indexing encountered a failure while deleting the node: "
+                                             + e.getMessage(), e );
         }
     }
 
@@ -299,6 +306,11 @@ public class NodeProxy
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
+        catch ( AutoIndexingKernelException e )
+        {
+            throw new IllegalStateException( "Auto indexing encountered a failure while setting property: "
+                                             + e.getMessage(), e );
+        }
     }
 
     @Override
@@ -320,6 +332,11 @@ public class NodeProxy
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
+        }
+        catch ( AutoIndexingKernelException e )
+        {
+            throw new IllegalStateException( "Auto indexing encountered a failure while removing property: "
+                                             + e.getMessage(), e );
         }
     }
 

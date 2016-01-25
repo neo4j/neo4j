@@ -45,11 +45,14 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -67,6 +70,8 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.Procedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -930,7 +935,8 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public void nodeDelete( long nodeId ) throws EntityNotFoundException
+    public void nodeDelete( long nodeId )
+            throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException
     {
         statement.assertOpen();
         dataWrite().nodeDelete( statement, nodeId );
@@ -945,7 +951,8 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public void relationshipDelete( long relationshipId ) throws EntityNotFoundException
+    public void relationshipDelete( long relationshipId )
+            throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException
     {
         statement.assertOpen();
         dataWrite().relationshipDelete( statement, relationshipId );
@@ -968,7 +975,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     @Override
     public Property nodeSetProperty( long nodeId, DefinedProperty property )
-            throws EntityNotFoundException, ConstraintValidationKernelException
+            throws EntityNotFoundException, ConstraintValidationKernelException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         statement.assertOpen();
         return dataWrite().nodeSetProperty( statement, nodeId, property );
@@ -976,10 +983,10 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     @Override
     public Property relationshipSetProperty( long relationshipId, DefinedProperty property )
-            throws EntityNotFoundException
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         statement.assertOpen();
-            return dataWrite().relationshipSetProperty( statement, relationshipId, property );
+        return dataWrite().relationshipSetProperty( statement, relationshipId, property );
     }
 
     @Override
@@ -990,14 +997,16 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Property nodeRemoveProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Property nodeRemoveProperty( long nodeId, int propertyKeyId )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         statement.assertOpen();
         return dataWrite().nodeRemoveProperty( statement, nodeId, propertyKeyId );
     }
 
     @Override
-    public Property relationshipRemoveProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
+    public Property relationshipRemoveProperty( long relationshipId, int propertyKeyId )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         statement.assertOpen();
         return dataWrite().relationshipRemoveProperty( statement, relationshipId, propertyKeyId );

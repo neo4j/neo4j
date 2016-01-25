@@ -24,18 +24,16 @@ import java.util.Map;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.api.AutoIndexing;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -83,6 +81,12 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
+    public AutoIndexing autoIndexing()
+    {
+        return dataSource.autoIndexing;
+    }
+
+    @Override
     public DependencyResolver resolver()
     {
         return platform.dependencies;
@@ -122,30 +126,6 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     public String storeDir()
     {
         return platform.storeDir.getAbsolutePath();
-    }
-
-    @Override
-    public void addNodePropertyTracker( PropertyTracker<Node> tracker )
-    {
-        dataSource.nodeManager.addNodePropertyTracker( tracker );
-    }
-
-    @Override
-    public void removeNodePropertyTracker( PropertyTracker<Node> tracker )
-    {
-        dataSource.nodeManager.removeNodePropertyTracker( tracker );
-    }
-
-    @Override
-    public void addRelationshipPropertyTracker( PropertyTracker<Relationship> tracker )
-    {
-        dataSource.nodeManager.addRelationshipPropertyTracker( tracker );
-    }
-
-    @Override
-    public void removeRelationshipPropertyTracker( PropertyTracker<Relationship> tracker )
-    {
-        dataSource.nodeManager.removeRelationshipPropertyTracker( tracker );
     }
 
     @Override

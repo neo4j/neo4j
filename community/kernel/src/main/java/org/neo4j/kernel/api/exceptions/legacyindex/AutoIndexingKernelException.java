@@ -17,18 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.api.exceptions.legacyindex;
 
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.exceptions.KernelException;
 
-public interface PropertyTracker<T extends PropertyContainer>
+public class AutoIndexingKernelException extends KernelException
 {
-    void setEnabled( boolean enabled );
-
-    void propertyAdded( DataWriteOperations ops, T primitive, String propertyName, Object propertyValue );
-
-    void propertyRemoved( T primitive, String propertyName, Object propertyValue );
-
-    void propertyChanged( T primitive, String propertyName, Object oldValue, Object newValue );
+    public AutoIndexingKernelException( KernelException cause )
+    {
+        super( cause.status(), cause, cause.getMessage() );
+    }
 }

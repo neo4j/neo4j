@@ -17,69 +17,79 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.api;
 
+import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collections;
-
-import org.neo4j.graphdb.Node;
+import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.impl.api.AutoIndexing.AutoIndexOperations;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.coreapi.IndexProvider;
-import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.storageengine.api.Token;
 
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.properties.Property.property;
 
-public class NodeAutoIndexerImplTest
+public class AutoIndexOperationsTest
 {
-
     private final IndexProvider indexProvider = mock( IndexProvider.class, RETURNS_MOCKS );
-    private final NodeAutoIndexerImpl index = new NodeAutoIndexerImpl( true, Collections.emptyList(), indexProvider, mock( GraphDatabaseFacade.SPI.class ) );
+    private final DataWriteOperations ops = mock(DataWriteOperations.class);
+    private final PropertyKeyTokenHolder tokens = mock( PropertyKeyTokenHolder.class );
+    private final AutoIndexOperations index = new AutoIndexOperations( tokens, AutoIndexOperations.EntityType.NODE );
+
+    private final int nonIndexedProperty = 1337;
+    private final String nonIndexedPropertyName = "foo";
+    private final int indexedProperty = 1338;
+    private final String indexedPropertyName = "bar";
+
+    @Before
+    public void setup() throws TokenNotFoundException
+    {
+        when(tokens.getTokenById( nonIndexedProperty )).thenReturn( new Token( nonIndexedPropertyName, 1337 ) );
+        when(tokens.getTokenById( indexedProperty )).thenReturn( new Token( indexedPropertyName, 1337 ) );
+    }
 
     @Test
     public void shouldNotRemoveFromIndexForNonAutoIndexedProperty() throws Exception
     {
         // Given
-        String indexedPropertyName = "someProperty";
-        String nonIndexedPropertyName = "someOtherProperty";
         index.startAutoIndexingProperty( indexedPropertyName );
 
         // When
-        index.propertyRemoved( mock( Node.class ), nonIndexedPropertyName, new Object() );
+        index.propertyRemoved( ops, 11, nonIndexedProperty );
 
         // Then
-        verifyZeroInteractions( indexProvider );
+        verifyZeroInteractions( ops );
     }
 
     @Test
     public void shouldNotAddToIndexForNonAutoIndexedProperty() throws Exception
     {
         // Given
-        String indexedPropertyName = "someProperty";
-        String nonIndexedPropertyName = "someOtherProperty";
         index.startAutoIndexingProperty( indexedPropertyName );
 
         // When
-        index.propertyAdded( mock( Node.class ), nonIndexedPropertyName, new Object() );
+        index.propertyAdded( ops, 11, property( nonIndexedProperty, "Hello!" ) );
 
         // Then
-        verifyZeroInteractions( indexProvider );
+        verifyZeroInteractions( ops );
     }
 
     @Test
     public void shouldNotAddOrRemoveFromIndexForNonAutoIndexedProperty() throws Exception
     {
         // Given
-        String indexedPropertyName = "someProperty";
-        String nonIndexedPropertyName = "someOtherProperty";
         index.startAutoIndexingProperty( indexedPropertyName );
 
         // When
-        index.propertyChanged( mock( Node.class ), nonIndexedPropertyName, new Object(), new Object() );
+        index.propertyChanged( ops, 11, property( nonIndexedProperty, "Goodbye!" ), property( nonIndexedProperty, "Hello!" ) );
 
         // Then
-        verifyZeroInteractions( indexProvider );
+        verifyZeroInteractions( ops );
     }
 }

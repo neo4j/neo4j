@@ -19,15 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -38,8 +34,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     private final RelationshipProxy.RelationshipActions relationshipActions;
     private final GraphPropertiesProxy.GraphPropertiesActions graphPropertiesActions;
 
-    private final List<PropertyTracker<Node>> nodePropertyTrackers;
-    private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
     private final GraphDatabaseService graphDatabaseService;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
 
@@ -53,10 +47,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         this.relationshipActions = new RelationshipActionsImpl();
         this.graphPropertiesActions = new GraphPropertiesActionsImpl();
         this.threadToTransactionBridge = threadToTransactionBridge;
-        // Trackers may be added and removed at runtime, e.g. via the REST interface in server,
-        // so we use the thread-safe CopyOnWriteArrayList.
-        this.nodePropertyTrackers = new CopyOnWriteArrayList<>();
-        this.relationshipPropertyTrackers = new CopyOnWriteArrayList<>();
     }
 
     @Override
@@ -82,36 +72,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     public GraphProperties newGraphProperties()
     {
         return new GraphPropertiesProxy( graphPropertiesActions );
-    }
-
-    public List<PropertyTracker<Node>> getNodePropertyTrackers()
-    {
-        return nodePropertyTrackers;
-    }
-
-    public List<PropertyTracker<Relationship>> getRelationshipPropertyTrackers()
-    {
-        return relationshipPropertyTrackers;
-    }
-
-    public void addNodePropertyTracker( PropertyTracker<Node> nodePropertyTracker )
-    {
-        nodePropertyTrackers.add( nodePropertyTracker );
-    }
-
-    public void removeNodePropertyTracker( PropertyTracker<Node> nodePropertyTracker )
-    {
-        nodePropertyTrackers.remove( nodePropertyTracker );
-    }
-
-    public void addRelationshipPropertyTracker( PropertyTracker<Relationship> relationshipPropertyTracker )
-    {
-        relationshipPropertyTrackers.add( relationshipPropertyTracker );
-    }
-
-    public void removeRelationshipPropertyTracker( PropertyTracker<Relationship> relationshipPropertyTracker )
-    {
-        relationshipPropertyTrackers.remove( relationshipPropertyTracker );
     }
 
     private class NodeActionsImpl implements NodeProxy.NodeActions
