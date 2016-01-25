@@ -7,6 +7,7 @@ fake_install
 export FAKE_JAVA_SLEEP=1
 
 set_config 'org.neo4j.server.database.mode' 'ARBITER' neo4j-server.properties
+touch "$(neo4j_home)/lib/neo4j-server-enterprise-0.0.0.jar"
 
 test_expect_success "should start successfully" "
   neo4j-home/bin/neo4j start >neo4j.stdout

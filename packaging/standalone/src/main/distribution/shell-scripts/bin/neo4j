@@ -102,13 +102,18 @@ show_java_help() {
 }
 
 setup_arbiter_options() {
-  if [[ "$(echo "${org_neo4j_server_database_mode:-}" | tr [:lower:] [:upper:])" == "ARBITER" ]]; then
+  is_arbiter() {
+    compgen -G "${NEO4J_HOME}/lib/neo4j-server-enterprise-*.jar" >/dev/null && \
+      [[ "$(echo "${org_neo4j_server_database_mode:-}" | tr [:lower:] [:upper:])" == "ARBITER" ]]
+  }
+
+  if is_arbiter; then
     SHUTDOWN_TIMEOUT=20
     MIN_ALLOWED_OPEN_FILES=1
     MAIN_CLASS="org.neo4j.server.enterprise.StandaloneClusterClient"
 
     print_start_message() {
-      echo "Started."
+      echo "Started in ARBITER mode."
       echo "This instance is now joining the cluster."
     }
 
