@@ -36,15 +36,13 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
 import static java.util.EnumSet.allOf;
+
 import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
@@ -416,40 +414,6 @@ public abstract class IteratorUtil
     /**
      * Adds all the items in {@code iterator} to {@code collection}.
      * @param <C> the type of {@link Collection} to add to items to.
-     * @param iterator the {@link Iterator} to grab the items from.
-     * @param collection the {@link Collection} to add the items to.
-     * @return the {@code collection} which was passed in, now filled
-     * with the items from {@code iterator}.
-     */
-    public static <C extends Collection<Long>> C addToCollection( PrimitiveLongIterator iterator, C collection )
-    {
-        while ( iterator.hasNext() )
-        {
-            collection.add( iterator.next() );
-        }
-        return collection;
-    }
-
-    /**
-     * Adds all the items in {@code iterator} to {@code collection}.
-     * @param <C> the type of {@link Collection} to add to items to.
-     * @param iterator the {@link Iterator} to grab the items from.
-     * @param collection the {@link Collection} to add the items to.
-     * @return the {@code collection} which was passed in, now filled
-     * with the items from {@code iterator}.
-     */
-    public static <C extends Collection<Integer>> C addToCollection( PrimitiveIntIterator iterator, C collection )
-    {
-        while ( iterator.hasNext() )
-        {
-            collection.add( iterator.next() );
-        }
-        return collection;
-    }
-
-    /**
-     * Adds all the items in {@code iterator} to {@code collection}.
-     * @param <C> the type of {@link Collection} to add to items to.
      * @param <T> the type of items in the collection and iterator.
      * @param iterator the {@link Iterator} to grab the items from.
      * @param collection the {@link Collection} to add the items to.
@@ -615,26 +579,6 @@ public abstract class IteratorUtil
     public static <T> List<T> asList( Iterable<T> iterator )
     {
         return addToCollection( iterator, new ArrayList<T>() );
-    }
-
-    public static List<Long> asList( PrimitiveLongIterator iterator )
-    {
-        List<Long> out = new ArrayList<>();
-        while(iterator.hasNext())
-        {
-            out.add(iterator.next());
-        }
-        return out;
-    }
-
-    public static List<Integer> asList( PrimitiveIntIterator iterator )
-    {
-        List<Integer> out = new ArrayList<>();
-        while(iterator.hasNext())
-        {
-            out.add(iterator.next());
-        }
-        return out;
     }
 
     public static <T, EX extends Exception> List<T> asList( RawIterator<T, EX> iterator ) throws EX
@@ -952,114 +896,6 @@ public abstract class IteratorUtil
             return (ResourceIterator<T>) iterator;
         }
         return new WrappingResourceIterator<>( iterator );
-    }
-
-    @SuppressWarnings("UnusedDeclaration"/*Useful when debugging in tests, but not used outside of debugging sessions*/)
-    public static Iterator<Long> toJavaIterator( final PrimitiveLongIterator primIterator )
-    {
-        return new Iterator<Long>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return primIterator.hasNext();
-            }
-
-            @Override
-            public Long next()
-            {
-                return primIterator.next();
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException(  );
-            }
-        };
-    }
-
-    public static List<Long> primitivesList( PrimitiveLongIterator iterator )
-    {
-        ArrayList<Long> result = new ArrayList<>();
-        while ( iterator.hasNext() )
-        {
-            result.add( iterator.next() );
-        }
-        return result;
-    }
-
-    public static Set<Long> asSet( PrimitiveLongIterator iterator )
-    {
-        return internalAsSet( iterator, false );
-    }
-
-    private static Set<Long> internalAsSet( PrimitiveLongIterator iterator, boolean allowDuplicates )
-    {
-        Set<Long> set = new HashSet<>();
-        while ( iterator.hasNext() )
-        {
-            long value = iterator.next();
-            if ( !set.add( value ) && !allowDuplicates )
-            {
-                throw new IllegalStateException( "Duplicates found. Tried to add " + value + " to " + set );
-            }
-        }
-        return set;
-    }
-
-    public static Set<Integer> asSet( PrimitiveIntIterator iterator )
-    {
-        Set<Integer> set = new HashSet<>();
-        while ( iterator.hasNext() )
-        {
-            set.add( iterator.next() );
-        }
-        return set;
-    }
-
-    /**
-     * Creates a {@link Set} from an array of iterator.
-     *
-     * @param iterator the iterator to add to the set.
-     * @return the {@link Set} containing the iterator.
-     */
-    public static Set<Long> asUniqueSet( PrimitiveLongIterator iterator )
-    {
-        HashSet<Long> set = new HashSet<>();
-        while ( iterator.hasNext() )
-        {
-            addUnique( set, iterator.next() );
-        }
-        return set;
-    }
-
-    public static PrimitiveLongResourceIterator resourceIterator( final PrimitiveLongIterator iterator,
-            final Resource resource )
-    {
-        return new PrimitiveLongResourceIterator()
-        {
-            @Override
-            public void close()
-            {
-                if ( resource != null )
-                {
-                    resource.close();
-                }
-            }
-
-            @Override
-            public long next()
-            {
-                return iterator.next();
-            }
-
-            @Override
-            public boolean hasNext()
-            {
-                return iterator.hasNext();
-            }
-        };
     }
 
     public static <T> ResourceIterator<T> resourceIterator( final Iterator<T> iterator, final Resource resource )

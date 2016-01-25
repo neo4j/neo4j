@@ -76,7 +76,7 @@ public abstract class PrefetchingRawIterator<T, EXCEPTION extends Exception> imp
 
     @Override
     public void remove()
-        {
-            throw new UnsupportedOperationException();
-        }
+    {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -55,7 +55,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
@@ -124,7 +123,7 @@ public class IndexQueryTransactionStateTest
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( 1l, 3l ) ) );
+        assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 1l, 3l ) ) );
     }
 
     @Test
@@ -158,7 +157,7 @@ public class IndexQueryTransactionStateTest
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
+        assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 2l, 3l ) ) );
     }
 
     @Test
@@ -197,7 +196,7 @@ public class IndexQueryTransactionStateTest
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( nodeId, 2l, 3l ) ) );
+        assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( nodeId, 2l, 3l ) ) );
     }
 
     @Test
@@ -243,7 +242,7 @@ public class IndexQueryTransactionStateTest
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( nodeId, 2l, 3l ) ) );
+        assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( nodeId, 2l, 3l ) ) );
     }
 
     @Test
@@ -286,7 +285,7 @@ public class IndexQueryTransactionStateTest
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
+        assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 2l, 3l ) ) );
     }
 
     @Test
@@ -331,7 +330,7 @@ public class IndexQueryTransactionStateTest
         PrimitiveLongIterator result = txContext.nodesGetFromIndexSeek( state, indexDescriptor, value );
 
         // Then
-        assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
+        assertThat( PrimitiveLongCollections.toSet( result ), equalTo( asSet( 2l, 3l ) ) );
     }
 
     @Test
@@ -362,7 +361,7 @@ public class IndexQueryTransactionStateTest
 
     private static PrimitiveLongResourceIterator asPrimitiveResourceIterator( long... values )
     {
-        return resourceIterator( PrimitiveLongCollections.iterator( values ), new Resource()
+        return PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( values ), new Resource()
         {
             @Override
             public void close()

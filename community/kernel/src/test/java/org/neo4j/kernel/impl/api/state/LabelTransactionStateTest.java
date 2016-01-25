@@ -28,6 +28,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -167,7 +169,7 @@ public class LabelTransactionStateTest
         txContext.nodeAddLabel( state, 2, 2 );
 
         // THEN
-        assertEquals( asSet( 0L, 1L, 2L ), asSet( txContext.nodesGetForLabel( state, 2 ) ) );
+        assertEquals( asSet( 0L, 1L, 2L ), PrimitiveLongCollections.toSet( txContext.nodesGetForLabel( state, 2 ) ) );
     }
 
     @Test
@@ -183,7 +185,7 @@ public class LabelTransactionStateTest
         txContext.nodeRemoveLabel( state, 1, 2 );
 
         // THEN
-        assertEquals( asSet( 0L ), asSet( txContext.nodesGetForLabel( state, 2 ) ) );
+        assertEquals( asSet( 0L ), PrimitiveLongCollections.toSet( txContext.nodesGetForLabel( state, 2 ) ) );
     }
 
     @Test
@@ -364,7 +366,7 @@ public class LabelTransactionStateTest
         {
             if ( cursor.next() )
             {
-                assertEquals( asSet( labels ), asSet( cursor.get().getLabels() ) );
+                assertEquals( asSet( labels ), PrimitiveIntCollections.toSet( cursor.get().getLabels() ) );
             }
         }
 

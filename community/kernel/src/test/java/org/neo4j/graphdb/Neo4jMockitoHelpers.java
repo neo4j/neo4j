@@ -26,6 +26,7 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 
@@ -53,7 +54,7 @@ public class Neo4jMockitoHelpers
             @Override
             public PrimitiveLongResourceIterator answer( InvocationOnMock invocation ) throws Throwable
             {
-                return resourceIterator( toPrimitiveIterator( values.iterator() ), NO_RESOURCE );
+                return PrimitiveLongCollections.resourceIterator( toPrimitiveIterator( values.iterator() ), NO_RESOURCE );
             }
         };
     }

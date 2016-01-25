@@ -763,11 +763,11 @@ public class StateHandlingStatementOperations implements
          * close the IndexReader when done iterating over the lookup result. This is because we get
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
-        PrimitiveLongResourceIterator committed = resourceIterator( reader.seek( value ), reader );
+        PrimitiveLongResourceIterator committed = PrimitiveLongCollections.resourceIterator( reader.seek( value ), reader );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
         PrimitiveLongIterator changesFiltered = filterIndexStateChangesForScanOrSeek( state, index, value,
                 exactMatches );
-        return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
+        return single( PrimitiveLongCollections.resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
     }
 
     @Override
