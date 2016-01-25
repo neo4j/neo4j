@@ -78,8 +78,7 @@ case object projectNamedPaths extends Rewriter {
       case expr: PathExpression =>
         expr
     }
-    val result = topDown(applicator)(input)
-    result
+    topDown(applicator)(input)
   }
 
   private def collectProjectibles(input: AnyRef): Projectibles = input.treeFold(Projectibles.empty) {

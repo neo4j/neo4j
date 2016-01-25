@@ -29,9 +29,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, PipeInfo, PlanFingerprint, ReadsAllNodes}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantHandleQueryException, logical}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast => compilerAst, pipes}
@@ -257,10 +256,10 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case Sort(_, sortItems) =>
       SortPipe(source, sortItems.map(translateSortDescription))()
 
-    case plans.Skip(_, count) =>
+    case SkipPlan(_, count) =>
       SkipPipe(source, buildExpression(count))()
 
-    case plans.Limit(_, count, DoNotIncludeTies) =>
+    case LimitPlan(_, count, DoNotIncludeTies) =>
       (source, count) match {
         case (SortPipe(inner, sortDescription), SignedDecimalIntegerLiteral("1")) =>
           Top1Pipe(inner, sortDescription.toList)()
@@ -272,7 +271,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
           LimitPipe(source, buildExpression(count))()
       }
 
-    case plans.Limit(_, count, IncludeTies) =>
+    case LimitPlan(_, count, IncludeTies) =>
       (source, count) match {
         case (SortPipe(inner, sortDescription), SignedDecimalIntegerLiteral("1")) =>
           Top1WithTiesPipe(inner, sortDescription.toList)()
@@ -302,6 +301,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
     case UnwindCollection(_, variable, collection) =>
       UnwindPipe(source, toCommandExpression(collection), variable.name)()
+
+    case LoadCSVPlan(_, url, variableName, format, fieldTerminator) =>
+      LoadCSVPipe(source, format, toCommandExpression(url), variableName.name, fieldTerminator)()
 
     case ProduceResult(columns, _) =>
       ProduceResultsPipe(source, columns)()
@@ -450,7 +452,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
   implicit val table: SemanticTable = context.semanticTable
 
   private object buildPipeExpressions extends Rewriter {
-    val instance = Rewriter.lift {
+    private val instance = bottomUp(Rewriter.lift {
       case compilerAst.NestedPlanExpression(patternPlan, pattern) =>
         val pos = pattern.position
         val pipe = recurse(patternPlan)
@@ -459,9 +461,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         val pathExpression: PathExpression = ast.PathExpression(step)(pos)
         val result = compilerAst.NestedPipeExpression(pipe, pathExpression)(pos)
         result
-    }
+    })
 
-    def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
+    override def apply(that: AnyRef): AnyRef = instance.apply(that)
   }
 
   private def buildExpression(expr: ast.Expression)(implicit planContext: PlanContext): CommandExpression = {

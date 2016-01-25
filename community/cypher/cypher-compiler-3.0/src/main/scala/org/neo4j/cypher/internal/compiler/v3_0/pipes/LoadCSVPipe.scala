@@ -36,11 +36,12 @@ case object HasHeaders extends CSVFormat
 case object NoHeaders extends CSVFormat
 
 case class LoadCSVPipe(source: Pipe,
-                  format: CSVFormat,
-                  urlExpression: Expression,
-                  variable: String,
-                  fieldTerminator: Option[String])(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) {
+                       format: CSVFormat,
+                       urlExpression: Expression,
+                       variable: String,
+                       fieldTerminator: Option[String])
+                      (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def getImportURL(urlString: String, context: QueryContext): URL = {
     val url: URL = try {
@@ -64,7 +65,7 @@ case class LoadCSVPipe(source: Pipe,
     private var nextContext: ExecutionContext = null
     private var needsUpdate = true
 
-    def hasNext: Boolean = {
+    override def hasNext: Boolean = {
       if (needsUpdate) {
         nextContext = computeNextRow()
         needsUpdate = false
@@ -72,7 +73,7 @@ case class LoadCSVPipe(source: Pipe,
       nextContext != null
     }
 
-    def next(): ExecutionContext = {
+    override def next(): ExecutionContext = {
       if (!hasNext) Iterator.empty.next()
       needsUpdate = true
       nextContext
@@ -95,13 +96,14 @@ case class LoadCSVPipe(source: Pipe,
     override def next(): ExecutionContext = context.newWith(variable -> inner.next().toSeq)
   }
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
     input.flatMap(context => {
       implicit val s = state
-      val url = getImportURL(urlExpression(context).asInstanceOf[String], state.query)
+      val urlString: String = urlExpression(context).asInstanceOf[String]
+      val url = getImportURL(urlString, state.query)
 
       val iterator: Iterator[Array[String]] = state.resources.getCsvIterator(url, fieldTerminator)
       format match {
@@ -114,18 +116,20 @@ case class LoadCSVPipe(source: Pipe,
     })
   }
 
-  def planDescription: InternalPlanDescription =
-    source.planDescription.andThen(this.id, "LoadCSV", variables)
-
-  def symbols: SymbolTable = format match {
+  override def symbols: SymbolTable = format match {
     case HasHeaders => source.symbols.add(variable, MapType.instance)
     case NoHeaders => source.symbols.add(variable, CollectionType(AnyType.instance))
   }
 
   override def localEffects = Effects()
 
-  def dup(sources: List[Pipe]): Pipe = {
+  override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)
+    copy(source = head)(estimatedCardinality)
   }
+
+  override def planDescriptionWithoutCardinality: InternalPlanDescription =
+    source.planDescription.andThen(this.id, "LoadCSV", variables)
+
+  override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated))
 }

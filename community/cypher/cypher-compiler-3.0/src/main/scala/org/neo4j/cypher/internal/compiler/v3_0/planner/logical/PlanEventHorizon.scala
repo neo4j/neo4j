@@ -52,6 +52,9 @@ case object PlanEventHorizon
       case UnwindProjection(variable, expression) =>
         context.logicalPlanProducer.planUnwind(plan, variable, expression)
 
+      case LoadCSVProjection(variableName, url, format, fieldTermiator) =>
+        context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTermiator)
+
       case _ =>
         throw new CantHandleQueryException
     }

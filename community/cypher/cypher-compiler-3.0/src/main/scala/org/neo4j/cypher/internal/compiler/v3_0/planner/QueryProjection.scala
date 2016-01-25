@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.CSVFormat
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LazyMode, StrictnessMode}
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
@@ -155,6 +156,14 @@ case class UnwindProjection(variable: IdName, exp: Expression) extends QueryHori
   override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds + variable
 
   override def dependingExpressions = Seq(exp)
+
+  override def preferredStrictness = None
+}
+
+case class LoadCSVProjection(variable: IdName, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {
+  override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds + variable
+
+  override def dependingExpressions = Seq(url)
 
   override def preferredStrictness = None
 }

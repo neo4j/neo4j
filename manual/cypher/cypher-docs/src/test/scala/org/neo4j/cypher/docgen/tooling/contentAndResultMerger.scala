@@ -49,7 +49,7 @@ object contentAndResultMerger {
   private class ContentReplacer(rewrites: Map[QueryResultPlaceHolder, Content]) extends Rewriter {
     override def apply(value: AnyRef): AnyRef = instance(value)
 
-    val instance: Rewriter = bottomUp(Rewriter.lift {
+    private val instance: Rewriter = bottomUp(Rewriter.lift {
       case q: QueryResultPlaceHolder => rewrites(q)
     })
   }

@@ -23,7 +23,7 @@ import java.net.URL
 
 import org.mockito.Matchers
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.ExternalResource
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -31,7 +31,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   var resourceUnderTest: LoadCsvPeriodicCommitObserver = _
   var queryContext: QueryContext = _
-  var resource: ExternalResource = _
+  var resource: ExternalCSVResource = _
   val url: URL = new URL("file:///tmp/something.csv")
 
   test("writing should not trigger tx restart until next csv line is fetched") {
@@ -74,7 +74,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   override protected def beforeEach() {
     queryContext = mock[QueryContext]
-    resource = mock[ExternalResource]
+    resource = mock[ExternalCSVResource]
     resourceUnderTest = new LoadCsvPeriodicCommitObserver(1, resource, queryContext)
   }
 }

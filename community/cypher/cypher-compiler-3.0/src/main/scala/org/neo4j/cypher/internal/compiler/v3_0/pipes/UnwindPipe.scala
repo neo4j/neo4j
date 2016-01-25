@@ -39,7 +39,7 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
   }
 
   def planDescriptionWithoutCardinality: InternalPlanDescription =
-    PlanDescriptionImpl(this.id, "UNWIND", SingleChild(source.planDescription), Seq(), variables)
+    PlanDescriptionImpl(this.id, "Unwind", SingleChild(source.planDescription), Seq(), variables)
 
   def symbols = source.symbols.add(variable, collection.getType(source.symbols).legacyIteratedType)
 

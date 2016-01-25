@@ -35,9 +35,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp, replace}
  */
 case object projectFreshSortExpressions extends Rewriter {
 
-  def apply(that: AnyRef): AnyRef = {
-    bottomUp(instance).apply(that)
-  }
+  override def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
     case clause @ With(_, _, None, _, _, None) =>
@@ -72,7 +70,7 @@ case object projectFreshSortExpressions extends Rewriter {
       Seq(clause)
   }
 
-  private val instance: Rewriter = replace(replacer => {
+  private val instance: Rewriter = bottomUp(replace(replacer => {
 
     case expr: Expression =>
       replacer.stop(expr)
@@ -82,7 +80,7 @@ case object projectFreshSortExpressions extends Rewriter {
 
     case astNode =>
       replacer.expand(astNode)
-  })
+  }))
 
   private implicit class ItemSetContainer[T](input: Option[T]) {
     def extract[K](f: T => Set[K]): Set[K] =

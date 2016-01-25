@@ -53,15 +53,15 @@ object PatternExpressionPatternElementNamer {
   }
 
   private case class namePatternElementsFromMap(map: Map[PatternElement, Variable]) extends Rewriter {
-    def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
+    override def apply(that: AnyRef): AnyRef = instance.apply(that)
 
-    private val instance: Rewriter = Rewriter.lift {
+    private val instance: Rewriter = topDown(Rewriter.lift {
       case pattern: NodePattern if map.contains(pattern) =>
         pattern.copy(variable = Some(map(pattern)))(pattern.position)
       case pattern: RelationshipChain if map.contains(pattern) =>
         val rel = pattern.relationship
         pattern.copy(relationship = rel.copy(variable = Some(map(pattern)))(rel.position))(pattern.position)
-    }
+    })
   }
 }
 

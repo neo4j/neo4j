@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import java.net.URL
 
-trait ExternalResource {
+trait ExternalCSVResource {
   def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]]
 }
 
-object ExternalResource {
-  def empty: ExternalResource = new ExternalResource {
+object ExternalCSVResource {
+  def empty: ExternalCSVResource = new ExternalCSVResource {
     override def getCsvIterator(url: URL, fieldTerminator: Option[String]): Iterator[Array[String]] = Iterator.empty
   }
 }

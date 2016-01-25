@@ -430,10 +430,10 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
   test("unrelated nodes with same property should not clash") {
     // given
     graph.createConstraint("Person", "id")
-    executeWithCostPlannerOnly("MERGE (a:Item {id:1}) MERGE (b:Person {id:1})")
+    graph.execute("MERGE (a:Item {id:1}) MERGE (b:Person {id:1})")
 
     // when
-    executeWithCostPlannerOnly("MERGE (a:Item {id:2}) MERGE (b:Person {id:1})")
+    updateWithBothPlanners("MERGE (a:Item {id:2}) MERGE (b:Person {id:1})")
 
     // then does not throw
   }
@@ -626,7 +626,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
         ))
 
     // when
-    executeWithCostPlannerOnly(
+    updateWithBothPlanners(
       "MATCH (foo) WITH foo.x AS x, foo.y AS y " +
         "MERGE (c:N {x: x, y: y+1}) " +
         "MERGE (a:N {x: x, y: y}) " +

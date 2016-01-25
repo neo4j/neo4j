@@ -28,9 +28,9 @@ either index lookup or node-by-id operations
  */
 case object rewriteEqualityToInCollection extends Rewriter {
 
-  override def apply(that: AnyRef) = bottomUp(instance)(that)
+  override def apply(that: AnyRef) = instance(that)
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
     // id(a) = value => id(a) IN [value]
     case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), idValueExpr)
       if func.function.contains(functions.Id) =>
@@ -43,5 +43,5 @@ case object rewriteEqualityToInCollection extends Rewriter {
     // a.prop = value => a.prop IN [value]
     case predicate@Equals(prop@Property(id: Variable, propKeyName), idValueExpr) =>
       In(prop, Collection(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
-  }
+  })
 }

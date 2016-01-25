@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Return
 
 case object reattachAliasedExpressions extends Rewriter {
-  def apply(in: AnyRef): AnyRef = bottomUp(findingRewriter).apply(in)
+  override def apply(in: AnyRef): AnyRef = findingRewriter.apply(in)
 
-  private val findingRewriter: Rewriter = Rewriter.lift {
+  private val findingRewriter: Rewriter = bottomUp(Rewriter.lift {
     case clause: Return =>
       val innerRewriter = expressionRewriter(clause.returnItems.items)
       clause.copy(
@@ -38,7 +38,7 @@ case object reattachAliasedExpressions extends Rewriter {
       clause.copy(
         orderBy = clause.orderBy.endoRewrite(innerRewriter)
       )(clause.position)
-  }
+  })
 
   private def expressionRewriter(items: Seq[ReturnItem]): Rewriter = {
     val aliasedExpressions: Map[String, Expression] = items.map { returnItem =>

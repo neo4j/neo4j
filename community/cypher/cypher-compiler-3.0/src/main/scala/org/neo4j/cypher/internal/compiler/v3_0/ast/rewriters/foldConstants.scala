@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 case object foldConstants extends Rewriter {
   def apply(that: AnyRef): AnyRef =
   try {
-    bottomUp(instance).apply(that)
+    instance.apply(that)
   } catch {
     case e: java.lang.ArithmeticException => throw new v3_0.ArithmeticException(e.getMessage, e)
   }
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
     case e@Add(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>
       SignedDecimalIntegerLiteral((lhs.value + rhs.value).toString)(e.position)
     case e@Add(lhs: DecimalDoubleLiteral, rhs: SignedIntegerLiteral) =>
@@ -61,11 +61,11 @@ case object foldConstants extends Rewriter {
     case e@Multiply(lhs: NumberLiteral, rhs: NumberLiteral) =>
       e
     case e@Multiply(lhs: NumberLiteral, rhs) =>
-      Multiply(rhs, lhs)(e.position).rewrite(bottomUp(this))
+      Multiply(rhs, lhs)(e.position).rewrite(instance)
     case e@Multiply(lhs@Multiply(innerLhs, innerRhs: NumberLiteral), rhs: NumberLiteral) =>
-      Multiply(Multiply(innerRhs, rhs)(lhs.position), innerLhs)(e.position).rewrite(bottomUp(this))
+      Multiply(Multiply(innerRhs, rhs)(lhs.position), innerLhs)(e.position).rewrite(instance)
     case e@Multiply(lhs@Multiply(innerLhs: NumberLiteral, innerRhs), rhs: NumberLiteral) =>
-      Multiply(Multiply(innerLhs, rhs)(lhs.position), innerRhs)(e.position).rewrite(bottomUp(this))
+      Multiply(Multiply(innerLhs, rhs)(lhs.position), innerRhs)(e.position).rewrite(instance)
 
     case e@Divide(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>
       SignedDecimalIntegerLiteral((lhs.value / rhs.value).toString)(e.position)
@@ -101,5 +101,5 @@ case object foldConstants extends Rewriter {
       SignedDecimalIntegerLiteral((-rhs.value).toString)(e.position)
     case e: UnarySubtract =>
       Subtract(SignedDecimalIntegerLiteral("0")(e.position), e.rhs)(e.position)
-  }
+  })
 }

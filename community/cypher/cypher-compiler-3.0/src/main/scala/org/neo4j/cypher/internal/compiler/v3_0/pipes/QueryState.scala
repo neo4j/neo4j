@@ -32,7 +32,7 @@ import scala.collection.mutable
 
 
 class QueryState(val query: QueryContext,
-                 val resources: ExternalResource,
+                 val resources: ExternalCSVResource,
                  val params: Map[String, Any],
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val timeReader: TimeReader = new TimeReader,

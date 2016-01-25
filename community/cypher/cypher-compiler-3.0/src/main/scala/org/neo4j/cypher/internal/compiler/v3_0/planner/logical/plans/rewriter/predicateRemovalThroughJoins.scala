@@ -34,9 +34,9 @@ exist on the LHS.
  */
 case object predicateRemovalThroughJoins extends Rewriter {
 
-  def apply(input: AnyRef) = bottomUp(instance).apply(input)
+  override def apply(input: AnyRef) = instance.apply(input)
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
     case n@NodeHashJoin(nodeIds, lhs, rhs@Selection(rhsPredicates, rhsLeaf)) =>
       val lhsPredicates = predicatesDependingOnTheJoinIds(lhs.solved.lastQueryGraph, nodeIds)
       val newSelection = rhsPredicates.filterNot(lhsPredicates)
@@ -48,7 +48,7 @@ case object predicateRemovalThroughJoins extends Rewriter {
         val newRhsSolved = CardinalityEstimation.lift(newRhsPlannerQuery, rhsLeaf.solved.estimatedCardinality)
         NodeHashJoin(nodeIds, lhs, Selection(newSelection, rhsLeaf)(newRhsSolved))(n.solved)
       }
-  }
+  })
 
   private def predicatesDependingOnTheJoinIds(qg: QueryGraph, nodeIds: Set[IdName]): Set[Expression] =
     qg.selections.predicates.filter(p => (p.dependencies intersect nodeIds) == nodeIds).map(_.expr)

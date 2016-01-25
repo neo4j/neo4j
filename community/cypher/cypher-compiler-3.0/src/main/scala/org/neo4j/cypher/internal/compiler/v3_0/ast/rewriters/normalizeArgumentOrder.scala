@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.{topDown, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, topDown}
 
 // TODO: Support n.prop <op> m.prop, perhaps by
 //  either killing this and just looking on both lhs and rhs all over the place or
@@ -29,9 +28,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.{topDown, Rewriter}
 //
 case object normalizeArgumentOrder extends Rewriter {
 
-  override def apply(that: AnyRef): AnyRef = topDown(instance)(that)
+  override def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = topDown(Rewriter.lift {
 
     // move id(n) on equals to the left
     case predicate @ Equals(func@FunctionInvocation(_, _, _), _) if func.function.contains(functions.Id) =>
@@ -55,7 +54,7 @@ case object normalizeArgumentOrder extends Rewriter {
       } else {
         inequality
       }
-  }
+  })
 }
 
 

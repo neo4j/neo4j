@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, InternalExecutionResult, READ_ONLY}
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalResource, QueryState}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, GraphStatistics, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, ExecutionMode, ExplainExecutionResult, ExplainMode, ProcedurePlannerName, ProcedureRuntimeName, TaskCloser}
@@ -45,7 +45,7 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, args: Seq[E
   override def run(ctx: QueryContext, planType: ExecutionMode,
                    params: Map[String, Any]): InternalExecutionResult = {
 
-    val state = new QueryState(ctx, ExternalResource.empty, params)
+    val state = new QueryState(ctx, ExternalCSVResource.empty, params)
     val input = if (commandExpressions.nonEmpty) commandExpressions.map(_.apply(ExecutionContext.empty)(state))
     else {
       signature.inputSignature.map { f =>

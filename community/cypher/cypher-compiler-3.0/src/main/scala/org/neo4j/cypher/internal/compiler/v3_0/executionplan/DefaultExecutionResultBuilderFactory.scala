@@ -33,7 +33,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
 
   case class ExecutionWorkflowBuilder() extends ExecutionResultBuilder {
     private val taskCloser = new TaskCloser
-    private var externalResource: ExternalResource = new CSVResources(taskCloser)
+    private var externalResource: ExternalCSVResource = new CSVResources(taskCloser)
     private var maybeQueryContext: Option[QueryContext] = None
     private var pipeDecorator: PipeDecorator = NullPipeDecorator
     private var exceptionDecorator: CypherException => CypherException = identity

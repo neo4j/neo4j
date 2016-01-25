@@ -26,8 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 case object unnestOptional extends Rewriter {
 
-
-  def apply(input: AnyRef) = if (isSafe(input)) bottomUp(instance).apply(input) else input
+  override def apply(input: AnyRef) = if (isSafe(input)) instance.apply(input) else input
 
   import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
 
@@ -40,7 +39,7 @@ case object unnestOptional extends Rewriter {
         case _:MergeCreateRelationship => true
   }
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
 
     case apply:AntiConditionalApply => apply
 
@@ -54,7 +53,7 @@ case object unnestOptional extends Rewriter {
       Selection(predicates,
       e@Expand(_: Argument, _, _, _, _, _, _)), _)) =>
         optionalExpand(e, lhs)(predicates)(apply.solved)
-  }
+  })
 
   private def optionalExpand(e: Expand, lhs: LogicalPlan): (Seq[Expression] => PlannerQuery with CardinalityEstimation => OptionalExpand) =
     predicates => OptionalExpand(lhs, e.from, e.dir, e.types, e.to, e.relName, e.mode, predicates)
