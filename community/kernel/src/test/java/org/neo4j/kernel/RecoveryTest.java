@@ -33,6 +33,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
@@ -148,7 +149,7 @@ public class RecoveryTest
                     new DefaultRecoverySPI( storageEngine, null, logFiles, fs, logVersionRepository, finder )
                     {
                         @Override
-                        public Visitor<LogVersionedStoreChannel,Exception> getRecoverer()
+                        public Visitor<LogVersionedStoreChannel,Exception> getRecoverer( CountsSnapshot snapshot )
                         {
                             return new Visitor<LogVersionedStoreChannel,Exception>()
                             {
@@ -238,7 +239,7 @@ public class RecoveryTest
                     new DefaultRecoverySPI( storageEngine, null, logFiles, fs, logVersionRepository, finder )
                     {
                         @Override
-                        public Visitor<LogVersionedStoreChannel,Exception> getRecoverer()
+                        public Visitor<LogVersionedStoreChannel,Exception> getRecoverer( CountsSnapshot snapshot )
                         {
                             throw new AssertionError( "Recovery should not be required" );
                         }

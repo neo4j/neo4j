@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
@@ -112,6 +113,13 @@ public interface StorageEngine
      * preparations to be ready for recovering transactions.
      */
     void prepareForRecoveryRequired();
+
+    /**
+     * As part of the simplified counts store. This will initialize the count store in the storage engine
+     * when doing recovery.
+     */
+    void initFromSnapshot(CountsSnapshot snapshot);
+
 
     // ====================================================================
     // All these methods below are temporary while in the process of

@@ -84,6 +84,8 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.counts.CountsStorageService;
+import org.neo4j.kernel.impl.store.counts.CountsStorageServiceImpl;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
@@ -432,7 +434,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
             storageEngine = buildStorageEngine(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
-                    indexConfigStore, updateableSchemaState::clear, legacyIndexTransactionOrdering );
+                    indexConfigStore, updateableSchemaState::clear, legacyIndexTransactionOrdering,
+                    new CountsStorageServiceImpl() );
 
             // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
             // true it's not entirely true for the time being. As long as we need this call below, which
@@ -550,7 +553,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
             LegacyIndexProviderLookup legacyIndexProviderLookup, IndexConfigStore indexConfigStore,
-            Runnable schemaStateChangeCallback, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering )
+            Runnable schemaStateChangeCallback, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering,
+            CountsStorageService countsStorageService )
     {
         LabelScanStoreProvider labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                 HighestSelectionStrategy.getInstance());
@@ -559,7 +563,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                         labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
                         tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
                         labelScanStore, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
-                        LowLimit.RECORD_FORMATS ) );
+                        LowLimit.RECORD_FORMATS, countsStorageService ) );
     }
 
     private TransactionLogModule buildTransactionLogs(

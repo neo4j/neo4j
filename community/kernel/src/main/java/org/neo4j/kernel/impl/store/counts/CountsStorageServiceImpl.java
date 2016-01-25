@@ -31,21 +31,14 @@ public class CountsStorageServiceImpl implements CountsStorageService
 {
     private CountsStore countsStore;
     private IndexStatsUpdater indexStatsUpdater;
-    private final UpdaterFactory updaterFactory;
-
-    public CountsStorageServiceImpl( CountsStore countsStore )
-    {
-        this.countsStore = countsStore;
-        indexStatsUpdater = new IndexStatsUpdaterFactory().indexStatsUpdater( countsStore );
-        updaterFactory = new UpdaterFactory();
-    }
+    private final UpdaterFactory updaterFactory = new UpdaterFactory();
 
     public CountsSnapshot snapshot( long txId )
     {
         return countsStore.snapshot( txId );
     }
 
-    public void setInitializer(IndexStatsUpdater indexStatsUpdater)
+    public void setInitializer( IndexStatsUpdater indexStatsUpdater )
     {
         this.indexStatsUpdater = indexStatsUpdater;
     }
@@ -62,7 +55,7 @@ public class CountsStorageServiceImpl implements CountsStorageService
     }
 
     @Override
-    public Updater apply(long txId)
+    public Updater apply( long txId )
     {
         return updaterFor( txId );
     }
@@ -140,5 +133,6 @@ public class CountsStorageServiceImpl implements CountsStorageService
     public void initialize( CountsSnapshot snapshot )
     {
         countsStore = new InMemoryCountsStore( snapshot );
+        indexStatsUpdater = new IndexStatsUpdaterFactory().indexStatsUpdater( countsStore );
     }
 }

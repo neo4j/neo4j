@@ -21,16 +21,17 @@ package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
 
-import org.neo4j.function.ThrowingLongFunction;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogRecoveryInfo;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 
 /**
  * Utility class to find the log position to start recovery from
  */
-public class PositionToRecoverFrom implements ThrowingLongFunction<LogPosition,IOException>
+public class PositionToRecoverFrom
 {
     private final LatestCheckPointFinder checkPointFinder;
 
@@ -47,18 +48,18 @@ public class PositionToRecoverFrom implements ThrowingLongFunction<LogPosition,I
      * start recovery from
      * @throws IOException if log files cannot be read
      */
-    @Override
-    public LogPosition apply( long currentLogVersion ) throws IOException
+    public LogRecoveryInfo apply( long currentLogVersion ) throws IOException
     {
         LatestCheckPointFinder.LatestCheckPoint latestCheckPoint = checkPointFinder.find( currentLogVersion );
         if ( !latestCheckPoint.commitsAfterCheckPoint )
         {
-            return LogPosition.UNSPECIFIED;
+            return new LogRecoveryInfo( LogPosition.UNSPECIFIED, CountsSnapshot.NO_SNAPSHOT );
         }
 
         if ( latestCheckPoint.checkPoint != null )
         {
-            return latestCheckPoint.checkPoint.getLogPosition();
+            return new LogRecoveryInfo( latestCheckPoint.checkPoint.getLogPosition(),
+                    latestCheckPoint.checkPoint.getSnapshot() );
         }
         else
         {
@@ -66,9 +67,9 @@ public class PositionToRecoverFrom implements ThrowingLongFunction<LogPosition,I
             {
                 long fromLogVersion = Math.max( INITIAL_LOG_VERSION, latestCheckPoint.oldestLogVersionFound );
                 throw new UnderlyingStorageException( "No check point found in any log file from version " +
-                                                      fromLogVersion + " to " + currentLogVersion );
+                        fromLogVersion + " to " + currentLogVersion );
             }
-            return LogPosition.start( 0 );
+            return new LogRecoveryInfo( LogPosition.start( 0 ), new CountsSnapshot( 0 ) );
         }
     }
 }

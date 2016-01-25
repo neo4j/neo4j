@@ -23,7 +23,7 @@ import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.register.Register;
 
-interface CountsStorageService extends CountsAccessor, CountsVisitor.Visitable
+public interface CountsStorageService extends CountsAccessor, CountsVisitor.Visitable
 {
     CountsAccessor.Updater updaterFor( long txId );
 

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.counts;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 
@@ -33,6 +34,11 @@ public class CountsSnapshot
     {
         this.map = map;
         this.txId = txId;
+    }
+
+    public CountsSnapshot( long txId )
+    {
+        this( txId, new ConcurrentHashMap<>() );
     }
 
     public Map<CountsKey,long[]> getMap()

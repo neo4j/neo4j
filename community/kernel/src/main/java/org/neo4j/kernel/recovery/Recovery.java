@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogRecoveryInfo;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -46,11 +48,11 @@ public class Recovery extends LifecycleAdapter
     {
         void forceEverything();
 
-        Visitor<LogVersionedStoreChannel,Exception> getRecoverer();
+        Visitor<LogVersionedStoreChannel,Exception> getRecoverer( CountsSnapshot snapshot );
 
         Iterator<LogVersionedStoreChannel> getLogFiles( long fromVersion ) throws IOException;
 
-        LogPosition getPositionToRecoverFrom() throws IOException;
+        LogRecoveryInfo getRecoveryInformation() throws IOException;
 
         public void recoveryRequired();
     }
@@ -69,7 +71,8 @@ public class Recovery extends LifecycleAdapter
     @Override
     public void init() throws Throwable
     {
-        LogPosition recoveryPosition = spi.getPositionToRecoverFrom();
+        LogRecoveryInfo logRecoveryInfo = spi.getRecoveryInformation();
+        LogPosition recoveryPosition = logRecoveryInfo.getLogPosition();
         if ( LogPosition.UNSPECIFIED.equals( recoveryPosition ) )
         {
             return;
@@ -77,7 +80,7 @@ public class Recovery extends LifecycleAdapter
         Iterator<LogVersionedStoreChannel> logFiles = spi.getLogFiles( recoveryPosition.getLogVersion() );
         monitor.recoveryRequired( recoveryPosition );
         spi.recoveryRequired();
-        Visitor<LogVersionedStoreChannel,Exception> recoverer = spi.getRecoverer();
+        Visitor<LogVersionedStoreChannel,Exception> recoverer = spi.getRecoverer( logRecoveryInfo.getCountsSnapshot() );
         while ( logFiles.hasNext() )
         {
             try ( LogVersionedStoreChannel toRecover = logFiles.next() )

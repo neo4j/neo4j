@@ -22,7 +22,9 @@ package org.neo4j.kernel.recovery;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogRecoveryInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
 
@@ -44,25 +46,44 @@ public class PositionToRecoverFromTest
         when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, false, logVersion ) );
 
         // when
-        LogPosition logPosition = new PositionToRecoverFrom( finder ).apply( logVersion );
+        LogRecoveryInfo logRecoveryInfo = new PositionToRecoverFrom( finder ).apply( logVersion );
 
         // then
-        assertEquals( LogPosition.UNSPECIFIED, logPosition );
+        assertEquals( LogPosition.UNSPECIFIED, logRecoveryInfo.getLogPosition() );
+        assertEquals( NO_SNAPSHOT, logRecoveryInfo.getCountsSnapshot() );
     }
 
     @Test
-    public void shouldReturnLogPositionToRecoverFromIfNeeded() throws Throwable
+    public void shouldReturnLogPositionToRecoverFromIfNeededNoSnapshot() throws Throwable
     {
         // given
         LogPosition checkPointLogPosition = new LogPosition( 1l, 4242 );
-        when( finder.find( logVersion ) )
-                .thenReturn( new LatestCheckPoint( new CheckPoint( checkPointLogPosition, NO_SNAPSHOT ), true, logVersion ) );
+        when( finder.find( logVersion ) ).thenReturn(
+                new LatestCheckPoint( new CheckPoint( checkPointLogPosition, NO_SNAPSHOT ), true, logVersion ) );
 
         // when
-        LogPosition logPosition = new PositionToRecoverFrom( finder ).apply( logVersion );
+        LogRecoveryInfo logRecoveryInfo = new PositionToRecoverFrom( finder ).apply( logVersion );
 
         // then
-        assertEquals( checkPointLogPosition, logPosition );
+        assertEquals( checkPointLogPosition, logRecoveryInfo.getLogPosition() );
+        assertEquals( NO_SNAPSHOT, logRecoveryInfo.getCountsSnapshot() );
+    }
+
+    @Test
+    public void shouldReturnLogPositionToRecoverFromIfNeededWithSnapshot() throws Throwable
+    {
+        // given
+        LogPosition checkPointLogPosition = new LogPosition( 1l, 4242 );
+        CountsSnapshot snapshot = new CountsSnapshot( 42 );
+        when( finder.find( logVersion ) ).thenReturn(
+                new LatestCheckPoint( new CheckPoint( checkPointLogPosition, snapshot ), true, logVersion ) );
+
+        // when
+        LogRecoveryInfo logRecoveryInfo = new PositionToRecoverFrom( finder ).apply( logVersion );
+
+        // then
+        assertEquals( checkPointLogPosition, logRecoveryInfo.getLogPosition() );
+        assertEquals( snapshot, logRecoveryInfo.getCountsSnapshot() );
     }
 
     @Test
@@ -72,10 +93,11 @@ public class PositionToRecoverFromTest
         when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, true, INITIAL_LOG_VERSION ) );
 
         // when
-        LogPosition logPosition = new PositionToRecoverFrom( finder ).apply( logVersion );
+        LogRecoveryInfo logRecoveryInfo = new PositionToRecoverFrom( finder ).apply( logVersion );
 
         // then
-        assertEquals( LogPosition.start( INITIAL_LOG_VERSION ), logPosition );
+        assertEquals( LogPosition.start( INITIAL_LOG_VERSION ), logRecoveryInfo.getLogPosition() );
+        assertEquals( 0, logRecoveryInfo.getCountsSnapshot().getTxId() );
     }
 
     @Test
@@ -90,7 +112,7 @@ public class PositionToRecoverFromTest
         {
             new PositionToRecoverFrom( finder ).apply( logVersion );
         }
-        catch( UnderlyingStorageException ex )
+        catch ( UnderlyingStorageException ex )
         {
             // then
             final String expectedMessage =

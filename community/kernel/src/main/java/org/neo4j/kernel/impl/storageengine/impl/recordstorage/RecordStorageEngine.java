@@ -70,6 +70,8 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+import org.neo4j.kernel.impl.store.counts.CountsStorageService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.command.CacheInvalidationBatchTransactionApplier;
@@ -151,6 +153,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final NeoStoreIndexStoreView indexStoreView;
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
+    private final CountsStorageService countsStorageService;
 
     // Immutable state for creating/applying commands
     private final Loaders loaders;
@@ -181,7 +184,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             LegacyIndexProviderLookup legacyIndexProviderLookup,
             IndexConfigStore indexConfigStore,
             IdOrderingQueue legacyIndexTransactionOrdering,
-            RecordFormats recordFormats )
+            RecordFormats recordFormats,
+            CountsStorageService countsStorageService )
     {
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
@@ -193,6 +197,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.indexConfigStore = indexConfigStore;
         this.constraintSemantics = constraintSemantics;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
+        this.countsStorageService = countsStorageService;
 
         final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory,
                 pageCache, fs, logProvider, recordFormats );
@@ -395,6 +400,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         indexingService.init();
         labelScanStore.init();
+    }
+
+    public void initFromSnapshot(CountsSnapshot snapshot)
+    {
+        countsStorageService.initialize( snapshot );
     }
 
     @Override

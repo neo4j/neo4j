@@ -70,6 +70,6 @@ public class RecoveryRequiredChecker
                         new RecordStorageCommandReaderFactory() );
 
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        return new PositionToRecoverFrom( finder ).apply( logVersion ) != LogPosition.UNSPECIFIED;
+        return new PositionToRecoverFrom( finder ).apply( logVersion ).getLogPosition() != LogPosition.UNSPECIFIED;
     }
 }
