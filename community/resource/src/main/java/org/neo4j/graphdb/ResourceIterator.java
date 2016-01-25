@@ -21,6 +21,10 @@ package org.neo4j.graphdb;
 
 import java.util.Iterator;
 import java.util.function.Function;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static java.util.Spliterators.spliteratorUnknownSize;
 
 /**
  * Closeable Iterator with associated resources.
@@ -42,6 +46,16 @@ public interface ResourceIterator<T> extends Iterator<T>, Resource
      */
     @Override
     void close();
+
+    /**
+     * @return this iterator as a {@link Stream}
+     */
+    default Stream<T> stream()
+    {
+        return StreamSupport
+                .stream( spliteratorUnknownSize( this, 0 ), false )
+                .onClose( this::close );
+    }
 
     default <R> ResourceIterator<R> map( Function<T,R> map )
     {

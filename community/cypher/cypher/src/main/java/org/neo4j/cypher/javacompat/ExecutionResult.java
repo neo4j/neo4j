@@ -25,6 +25,7 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.ExecutionPlanDescription;
@@ -210,6 +211,13 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     public ResourceIterator<Map<String, Object>> iterator()
     {
         return innerIterator(); // legacy method - don't convert exceptions...
+    }
+
+    @Override
+    public Stream<Map<String,Object>> stream()
+    {
+        // Need to implement to disambiguate Iterable/Iterator stream
+        return iterator().stream();
     }
 
     @Override

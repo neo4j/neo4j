@@ -21,6 +21,7 @@ package org.neo4j.graphdb.index;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -88,6 +89,12 @@ public interface IndexHits<T> extends ResourceIterator<T>, ResourceIterable<T>
      * ignore any consecutive call (for convenience).
      */
     void close();
+
+    @Override
+    default Stream<T> stream()
+    {
+        return iterator().stream();
+    }
 
     /**
      * Returns the first and only item from the result iterator, or {@code null}
