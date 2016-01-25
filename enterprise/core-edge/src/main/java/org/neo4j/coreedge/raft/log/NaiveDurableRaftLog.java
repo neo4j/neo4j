@@ -152,7 +152,8 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
          * that has not been applied against all listeners.
          * This change is effectively equivalent to truncating/compacting the raft log.
          */
-        long index = Math.max( 0, commitIndex ); // new instances have a commit index of -1, which should be ignored
+//        long index = Math.max( 0, commitIndex ); // new instances have a commit index of -1, which should be ignored
+        long index = 0;
         for (; index <= appendIndex; index++ )
         {
             ReplicatedContent content = readEntryContent( index );
