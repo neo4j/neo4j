@@ -97,10 +97,14 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), contains(
-                equalTo( new Object[]{"sys.db.labels", "sys.db.labels() :: (label :: STRING?)"} ),
-                equalTo( new Object[]{"sys.db.procedures", "sys.db.procedures() :: (name :: STRING?, signature :: STRING?)"} ),
-                equalTo( new Object[]{"sys.db.propertyKeys", "sys.db.propertyKeys() :: (propertyKey :: STRING?)"}),
-                equalTo( new Object[]{"sys.db.relationshipTypes", "sys.db.relationshipTypes() :: (relationshipType :: STRING?)"})
+                equalTo( new Object[]{"sys.db.labels", "sys.db.labels() :: (label :: STRING?)",
+                        "Retrieve a list of all labels that are currently in use."} ),
+                equalTo( new Object[]{"sys.db.procedures", "sys.db.procedures() :: (name :: STRING?, signature :: STRING?, description :: STRING?)",
+                        "Retrieve a list of all procedures that are currently registered."} ),
+                equalTo( new Object[]{"sys.db.propertyKeys", "sys.db.propertyKeys() :: (propertyKey :: STRING?)",
+                        "Retrieve a list of all property keys that are currently in use."}),
+                equalTo( new Object[]{"sys.db.relationshipTypes", "sys.db.relationshipTypes() :: (relationshipType :: STRING?)",
+                        "Retrieve a list of all relationship types that are currently in use."})
         ));
     }
 }

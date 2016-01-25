@@ -25,8 +25,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Function;
 
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.Procedure;
@@ -50,9 +50,9 @@ public class FieldInjections
     {
         private final Field field;
         private final MethodHandle setter;
-        private final Function<Procedure.Context,?> supplier;
+        private final ThrowingFunction<Procedure.Context, ?, ProcedureException> supplier;
 
-        public FieldSetter( Field field, MethodHandle setter, Function<Procedure.Context,?> supplier )
+        public FieldSetter( Field field, MethodHandle setter, ThrowingFunction<Procedure.Context, ?, ProcedureException> supplier )
         {
             this.field = field;
             this.setter = setter;
@@ -106,7 +106,7 @@ public class FieldInjections
     {
         try
         {
-            Function<Procedure.Context,?> supplier = components.supplierFor( field.getType() );
+            ThrowingFunction<Procedure.Context, ?, ProcedureException> supplier = components.supplierFor( field.getType() );
             if( supplier == null )
             {
                 throw new ProcedureException( Status.Procedure.FailedRegistration,

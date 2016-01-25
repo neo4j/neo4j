@@ -21,8 +21,9 @@ package org.neo4j.kernel.impl.proc;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
+import org.neo4j.function.ThrowingFunction;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Procedure;
 
 /**
@@ -30,25 +31,46 @@ import org.neo4j.kernel.api.proc.Procedure;
  */
 public class ComponentRegistry
 {
-    private final Map<Class<?>, Function<Procedure.Context, ?>> suppliers;
+    private final Map<Class<?>, ThrowingFunction<Procedure.Context, ?, ProcedureException>> suppliers;
+    private ThrowingFunction<Class<?>, ThrowingFunction<Procedure.Context, ?, ProcedureException>, ProcedureException> fallback;
 
     public ComponentRegistry()
     {
         this( new HashMap<>() );
     }
 
-    public ComponentRegistry( Map<Class<?>,Function<Procedure.Context,?>> suppliers )
+    public ComponentRegistry( Map<Class<?>,ThrowingFunction<Procedure.Context, ?, ProcedureException>> suppliers )
     {
         this.suppliers = suppliers;
     }
 
-    public Function<Procedure.Context,?> supplierFor( Class<?> type )
+    /** Find a supplier for the specified component class, or return null if none exists. */
+    public ThrowingFunction<Procedure.Context, ?, ProcedureException> supplierFor( Class<?> type ) throws ProcedureException
     {
-        return suppliers.get( type );
+        if( suppliers.containsKey( type ))
+        {
+            return suppliers.get( type );
+        }
+        else if( fallback != null )
+        {
+            return fallback.apply( type );
+        }
+        else
+        {
+            return null;
+        }
     }
 
-    public <T> void register( Class<T> cls, Function<Procedure.Context,T> supplier )
+    public <T> void register( Class<T> cls, ThrowingFunction<Procedure.Context, T, ProcedureException> supplier )
     {
         suppliers.put( cls, supplier );
+    }
+
+    /**
+     * If no specific registered component matches, this fallback is triggered, and if it returns a non-null injector, we use that.
+     */
+    public void registerFallback( ThrowingFunction<Class<?>, ThrowingFunction<Procedure.Context, ?, ProcedureException>, ProcedureException> supplier )
+    {
+        this.fallback = supplier;
     }
 }
