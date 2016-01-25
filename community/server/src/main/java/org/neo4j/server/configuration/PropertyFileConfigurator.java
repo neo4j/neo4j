@@ -53,7 +53,7 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
         loadServerProperties( propertiesFile, log );
         loadDatabaseTuningProperties( propertiesFile, log );
 
-        serverConfig = new Config( serverProperties, ServerConfigFactory.getDefaultSettingsClasses() );
+        serverConfig = new Config( serverProperties, BaseServerConfigLoader.getDefaultSettingsClasses() );
     }
 
     @Override

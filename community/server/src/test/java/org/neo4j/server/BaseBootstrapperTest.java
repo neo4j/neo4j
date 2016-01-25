@@ -20,11 +20,13 @@
 package org.neo4j.server;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.util.ArrayList;
 
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -35,7 +37,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
-import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.CommunityBootstrapper.start;
@@ -49,18 +50,52 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
 
-    private Bootstrapper bootstrapper;
+    protected Bootstrapper bootstrapper;
+
+    protected String[] baseConfig()
+    {
+        return new String[]{};
+    }
+
+    protected String[] completeCommandLineConfig( String... additional )
+    {
+        ArrayList<String> config = new ArrayList<>();
+
+        for ( String baseConfig : baseConfig() )
+        {
+            config.add( baseConfig );
+        }
+
+        for ( String extra : additional )
+        {
+            config.add( extra );
+        }
+
+        return config.toArray( new String[config.size()] );
+    }
+
+    @Before
+    public void before()
+    {
+        bootstrapper = newBootstrapper();
+    }
+
+    @After
+    public void after()
+    {
+        if ( bootstrapper != null )
+        {
+            bootstrapper.stop();
+        }
+    }
 
     protected abstract Bootstrapper newBootstrapper();
 
     @Test
     public void shouldStartStopNeoServerWithoutAnyConfigFiles()
     {
-        // Given
-        bootstrapper = newBootstrapper();
-
         // When
-        int resultCode = start( bootstrapper, array( "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
+        int resultCode = start( bootstrapper, completeCommandLineConfig( "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
 
         // Then
         assertEquals( Bootstrapper.OK, resultCode );
@@ -71,7 +106,6 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     public void canSpecifyConfigFile() throws Throwable
     {
         // Given
-        bootstrapper = newBootstrapper();
         File configFile = tempDir.newFile( "neo4j.config" );
 
         store( stringMap(
@@ -79,7 +113,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         ), configFile );
 
         // When
-        start( bootstrapper, array(
+        start( bootstrapper, completeCommandLineConfig(
                 "-C", configFile.getAbsolutePath(),
                 "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
 
@@ -91,7 +125,6 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     public void canOverrideConfigValues() throws Throwable
     {
         // Given
-        bootstrapper = newBootstrapper();
         File configFile = tempDir.newFile( "neo4j.config" );
 
         store( stringMap(
@@ -99,7 +132,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         ), configFile );
 
         // When
-        start( bootstrapper, array(
+        start( bootstrapper, completeCommandLineConfig(
                 "-C", configFile.getAbsolutePath(),
                 "-c", configOption( forced_kernel_id.name(), "mycustomvalue" ),
                 "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
@@ -108,16 +141,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "mycustomvalue" ) );
     }
 
-    @After
-    public void cleanup()
-    {
-        if ( bootstrapper != null )
-        {
-            bootstrapper.stop();
-        }
-    }
-
-    private String configOption( String key, String value )
+    protected String configOption( String key, String value )
     {
         return key + "=" + value;
     }

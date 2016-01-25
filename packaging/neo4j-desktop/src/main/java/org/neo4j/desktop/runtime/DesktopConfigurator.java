@@ -25,7 +25,7 @@ import org.neo4j.desktop.config.Installation;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.ServerConfigFactory;
+import org.neo4j.server.configuration.BaseServerConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.web.ServerInternalSettings;
 
@@ -50,7 +50,7 @@ public class DesktopConfigurator
 
     public void refresh()
     {
-        config = ServerConfigFactory.loadConfig(
+        config = new BaseServerConfigLoader().loadConfig(
                 /** Future single file, neo4j.conf or similar */
                 null,
 

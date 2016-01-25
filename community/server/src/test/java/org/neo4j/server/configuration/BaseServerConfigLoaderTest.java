@@ -37,9 +37,8 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.test.SuppressOutput.suppressAll;
 
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.server.configuration.ServerConfigFactory.loadConfig;
 
-public class ServerConfigFactoryTest
+public class BaseServerConfigLoaderTest
 {
     @Rule
     public final SuppressOutput suppressOutput = suppressAll();
@@ -47,6 +46,7 @@ public class ServerConfigFactoryTest
     public final TemporaryFolder folder = new TemporaryFolder();
 
     private final Log log = NullLog.getInstance();
+    private final BaseServerConfigLoader configLoader = new BaseServerConfigLoader();
 
     @Test
     public void whenDatabaseTuningFilePresentInDefaultLocationShouldLoadItEvenIfNotSpecified() throws IOException
@@ -59,7 +59,7 @@ public class ServerConfigFactoryTest
                 .build();
 
         // when
-        Config config = loadConfig( null, emptyPropertyFile, log );
+        Config config = configLoader.loadConfig( null, emptyPropertyFile, log );
 
         // then
         assertEquals( "fromdefaultlocation", config.get( GraphDatabaseSettings.forced_kernel_id ) );
@@ -82,7 +82,7 @@ public class ServerConfigFactoryTest
                 .build();
 
         // when
-        Config config = loadConfig( null, emptyPropertyFile, log );
+        Config config = configLoader.loadConfig( null, emptyPropertyFile, log );
 
         // then
         assertEquals( "shouldgetloaded", config.get( GraphDatabaseSettings.forced_kernel_id ) );
@@ -99,7 +99,7 @@ public class ServerConfigFactoryTest
                 .build();
 
         // when
-        Config config = loadConfig( null, propertyFile, log );
+        Config config = configLoader.loadConfig( null, propertyFile, log );
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -118,7 +118,7 @@ public class ServerConfigFactoryTest
         File nonExistentFilePropertiesFile = new File( "/tmp/" + System.currentTimeMillis() );
 
         // When
-        Config config = loadConfig( null, nonExistentFilePropertiesFile, log );
+        Config config = configLoader.loadConfig( null, nonExistentFilePropertiesFile, log );
 
         // Then
         assertNotNull( config );
