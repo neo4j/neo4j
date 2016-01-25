@@ -170,10 +170,10 @@ public class Follower implements RaftMessageHandler
                     outcome.setVotedFor( null );
                 }
 
-                boolean willVoteForCandidate = shouldVoteFor( req.candidate(), req.term(), outcome.getTerm(), ctx
-                                .entryLog().appendIndex(),
-                        req.lastLogIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ),
-                        req.lastLogTerm(), outcome.getVotedFor() );
+                boolean willVoteForCandidate = shouldVoteFor( req.candidate(), outcome.getTerm(), req.term(),
+                        ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ), req.lastLogTerm(),
+                        ctx.entryLog().appendIndex(), req.lastLogIndex(),
+                        outcome.getVotedFor() );
 
                 if ( willVoteForCandidate )
                 {
