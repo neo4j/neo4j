@@ -163,7 +163,6 @@ Function Get-Java
       {
         $serverMainClass = ''
         # Server Class Path for version 2.3 and above
-        if ($Neo4jServer.ServerType -eq 'Advanced') { $serverMainClass = 'org.neo4j.server.advanced.AdvancedBootstrapper' }
         if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseBootstrapper' }
         if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityBootstrapper' }
         # Server Class Path for version 2.2 and below

@@ -95,9 +95,6 @@ Function Get-Neo4jServer
       # if neo4j-server-enterprise-<version>.jar exists then this is the enterprise version
       if ($_.Name -like 'neo4j-server-enterprise-*.jar') { $serverProperties.ServerType = 'Enterprise' }
 
-      # if neo4j-server-advanced-<version>.jar exists then this is the advanced version
-      if ($_.Name -like 'neo4j-server-advanced-*.jar') { $serverProperties.ServerType = 'Advanced' }
-      
       # Get the server version from the name of the neo4j-server-<version>.jar file
       if ($matches -ne $null) { $matches.Clear() }
       if ($_.Name -match '^neo4j-server-(\d.+)\.jar$') { $serverProperties.ServerVersion = $matches[1] }

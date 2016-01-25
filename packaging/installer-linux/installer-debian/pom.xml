@@ -189,9 +189,6 @@
                       file="${project.baseDir}/../../../standalone/target/neo4j-community-${neo4j.version}-unix.tar.gz" />
                     <copy
                       toDir="${project.build.directory}"
-                      file="${project.baseDir}/../../../standalone/target/neo4j-advanced-${neo4j.version}-unix.tar.gz" />
-                    <copy
-                      toDir="${project.build.directory}"
                       file="${project.baseDir}/../../../standalone/target/neo4j-enterprise-${neo4j.version}-unix.tar.gz" />
                   </target>
                 </configuration>

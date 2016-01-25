@@ -17,29 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.enterprise;
+package org.neo4j.server.enterprise.jmx;
 
-import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.server.CommunityBootstrapper;
-import org.neo4j.server.NeoServer;
 
-public class EnterpriseBootstrapper extends CommunityBootstrapper
-{
-    public static void main( String[] args )
-    {
-        int exit = start( new EnterpriseBootstrapper(), args );
-        if ( exit != 0 )
-        {
-            System.exit( exit );
-        }
-    }
-
-    @Override
-    protected NeoServer createNeoServer( Config configurator, GraphDatabaseDependencies dependencies, LogProvider
-            userLogProvider )
-    {
-        return new EnterpriseNeoServer( configurator, dependencies, userLogProvider );
-    }
+public interface ServerManagementMBean {
+    void restartServer();
 }

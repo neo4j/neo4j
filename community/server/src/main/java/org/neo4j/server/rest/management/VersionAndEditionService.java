@@ -80,10 +80,6 @@ public class VersionAndEditionService implements AdvertisableService
         {
             return "enterprise";
         }
-        else if ( serverClassName.contains( "advancedneoserver" ) )
-        {
-            return "advanced";
-        }
         else if ( serverClassName.contains( "communityneoserver" ) )
         {
             return "community";
@@ -91,8 +87,8 @@ public class VersionAndEditionService implements AdvertisableService
         else
         {
 //            return "unknown";
-            throw new IllegalStateException( "The Neo Server running is of unknown type. Valid types are Community, " +
-                    "Advanced, and Enterprise." );
+            throw new IllegalStateException( "The Neo Server running is of unknown type. Valid types are Community " +
+                    "and Enterprise." );
         }
     }
 }

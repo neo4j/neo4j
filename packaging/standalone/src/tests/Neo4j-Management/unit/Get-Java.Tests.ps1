@@ -254,36 +254,6 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Server Invoke - Advanced v2.3" {
-      Mock Test-Path { $false }
-      [Environment]::SetEnvironmentVariable('JAVA_HOME','TestPath:\JavaHome', "Process")
-      Mock Get-ItemProperty { return $null }      
-      Mock Test-Path { $true }  -ParameterFilter {
-        ($Path -eq 'TestPath:\JavaHome\bin\java.exe')
-      }
-      
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' = 'TestDrive:\Path';
-        'ServerVersion' = '2.3';
-        'ServerType' = 'Advanced'
-      })
-
-      $result = Get-Java -ForServer -Neo4jServer $serverObject
-      $resultArgs = ($result.args -join ' ')
-
-      It "should have main class of org.neo4j.server.advanced.AdvancedBootstrapper" {
-        $resultArgs | Should Match ([regex]::Escape('-DserverMainClass=org.neo4j.server.advanced.AdvancedBootstrapper'))
-      }
-
-      It "should have correct WorkingDir" {
-        $resultArgs | Should Match ([regex]::Escape('-DworkingDir="TestDrive:\Path'))
-      }
-
-      It "should have DserverMainClass before jar in arguments" {
-        ($resultArgs.IndexOf('-DserverMainClass=') -lt $resultArgs.IndexOf(' -jar ')) | Should Be $true
-      }
-    }
-
     Context "Server Invoke - Community v2.2" {
       Mock Test-Path { $false }
       [Environment]::SetEnvironmentVariable('JAVA_HOME','TestPath:\JavaHome', "Process")
@@ -431,7 +401,7 @@ InModuleScope Neo4j-Management {
       $result = Get-Java -ForArbiter -Neo4jServer $serverObject
       $resultArgs = ($result.args -join ' ')
 
-      It "should have main class of org.neo4j.server.advanced.AdvancedBootstrapper" {
+      It "should have main class of org.neo4j.server.enterprise.StandaloneClusterClient" {
         $resultArgs | Should Match ([regex]::Escape('-DserverMainClass=org.neo4j.server.enterprise.StandaloneClusterClient'))
       }
 

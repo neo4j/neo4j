@@ -238,7 +238,6 @@
 
     <modules>
         <module>installer-rpm-community</module>
-        <module>installer-rpm-advanced</module>
         <module>installer-rpm-enterprise</module>
     </modules>
 </project>

@@ -33,12 +33,8 @@ community-build::
 +
 If you are looking to fix a bug or add a feature to the community edition, this is the place to be.
 
-advanced-build::
-  This component adds extra functionality which is then included in the enterprise edition.
-  The code for the extra functionality can be found in the `advanced` directory of the repository.
-
 enterprise-build::
-  This enterprise build adds extra features to the advanced build and corresponds to the enterprise edition
+  This enterprise build adds extra features and corresponds to the enterprise edition
   described http://neo4j.com/editions/[here].
   The source code for these extra features can be found in the `enterprise` directory of the repository.
 
@@ -137,20 +133,6 @@ neo4j-kernel::
   The kernel is the core of Neo4j.
   It contains the custom storage system, the embedded API of Neo4j and transaction support as listed link:community/kernel/README.md[here].
 
-==== Advanced Modules ====
-
-neo4j-server-advanced::
-  This module contains the extra monitoring features of the advanced version of the Neo4j server.
-
-neo4j-advanced::
-  Just like the neo4j module, this is simply a meta package to allow easy inclusion of the 
-  other maven modules.
-  This meta package includes modules from the advanced version and also includes neo4j.
-
-neo4j-management::
-  The management module extends the neo4j-jmx module with extra monitoring features.
-  These features are documented http://neo4j.com/docs/milestone/operations-monitoring.html[here].
-
 ==== Enterprise Modules ====
 
 neo4j-ha::
@@ -177,7 +159,7 @@ neo4j-consistency-check::
 
 neo4j-server-enterprise::
   This version of the Neo4j server incorporates the high availability and clustering features into the Neo4j server.
-  It also contains all the features of the advanced and community server.
+  It also contains all the features of the community server.
 
 neo4j-enterprise::
   This meta package can be used to easily include a lot of the other modules of Neo4j.
@@ -201,7 +183,6 @@ as discussed in the Module Structure section.
 The top-level directories in the repository contain the main components:
 
 `community/`:: contains the community-build component
-`advanced/`:: contains the advanced-build component
 `enterprise/`:: contains the enterprise-build component
 `packaging/`:: contains the packaging-build component
 `manual/`:: contains the neo4j-manual component

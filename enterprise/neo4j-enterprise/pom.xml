@@ -34,7 +34,7 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-advanced</artifactId>
+      <artifactId>neo4j</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -186,10 +186,6 @@
                 </resource>
                 <resource>
                   <directory>${project.build.directory}/../../ha/src/main/java/</directory>
-                  <filtering>false</filtering>
-                </resource>
-                 <resource>
-                  <directory>${project.build.directory}/../../../advanced/management/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
                  <resource>

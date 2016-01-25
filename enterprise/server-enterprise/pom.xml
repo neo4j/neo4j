@@ -66,11 +66,6 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server-advanced</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
       <version>${project.version}</version>
     </dependency>

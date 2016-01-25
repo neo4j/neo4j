@@ -112,10 +112,6 @@ the relevant Commercial Agreement.
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>${project.build.directory}/../../../advanced/management/src/main/java/</directory>
-                  <filtering>false</filtering>
-                </resource>
-                <resource>
                   <directory>${project.build.directory}/../../../community/lucene-index/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
