@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_0.bottomUp.BottomUpRewriter
 import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 

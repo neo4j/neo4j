@@ -1273,7 +1273,7 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 0)
   }
 
-  ignore("should not be eager when merging on already bound variables") {
+  test("should not be eager when merging on already bound variables") {
     val query = "MERGE (city:City) MERGE (country:Country) MERGE (city)-[:IN]->(country) RETURN count(*)"
 
     val result = updateWithBothPlanners(query)
