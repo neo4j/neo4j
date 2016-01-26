@@ -30,6 +30,8 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
+import org.neo4j.procedure.Name;
+import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -56,19 +58,19 @@ public class MethodSignatureCompilerTest
 
     public static class ClassWithProcedureWithSimpleArgs
     {
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> echo( @Name("name") String in)
         {
             return Stream.of( new MyOutputRecord( in ));
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> echoWithoutAnnotations( @Name("name")String in1, String in2)
         {
             return Stream.of( new MyOutputRecord( in1 + in2 ));
         }
 
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> echoWithInvalidType( @Name("name") UnmappableRecord in)
         {
             return Stream.of( new MyOutputRecord( "echo" ));

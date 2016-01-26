@@ -30,7 +30,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -52,7 +52,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
             .in( "name", NTString )
             .out( "name", NTString ).build();
 
-    private final Procedure procedure = procedure( signature );
+    private final CallableProcedure procedure = procedure( signature );
 
     @Test
     public void shouldGetProcedureByName() throws Throwable
@@ -117,7 +117,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     public void registeredProcedureShouldGetReadOperations() throws Throwable
     {
         // Given
-        kernel.registerProcedure( new Procedure.BasicProcedure( signature )
+        kernel.registerProcedure( new CallableProcedure.BasicProcedure( signature )
         {
             @Override
             public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
@@ -133,9 +133,9 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         assertNotNull( asList( stream  ).get( 0 )[0] );
     }
 
-    private static Procedure procedure( final ProcedureSignature signature )
+    private static CallableProcedure procedure( final ProcedureSignature signature )
     {
-        return new Procedure.BasicProcedure( signature )
+        return new CallableProcedure.BasicProcedure( signature )
         {
             @Override
             public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input )

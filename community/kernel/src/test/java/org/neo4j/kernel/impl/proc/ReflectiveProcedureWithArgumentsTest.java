@@ -33,8 +33,10 @@ import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.procedure.Name;
+import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -50,7 +52,7 @@ public class ReflectiveProcedureWithArgumentsTest
     public void shouldCompileSimpleProcedure() throws Throwable
     {
         // When
-        List<Procedure> procedures = compile( ClassWithProcedureWithSimpleArgs.class );
+        List<CallableProcedure> procedures = compile( ClassWithProcedureWithSimpleArgs.class );
 
         // Then
         TestCase.assertEquals( 1, procedures.size() );
@@ -66,10 +68,10 @@ public class ReflectiveProcedureWithArgumentsTest
     public void shouldRunSimpleProcedure() throws Throwable
     {
         // Given
-        Procedure procedure = compile( ClassWithProcedureWithSimpleArgs.class ).get( 0 );
+        CallableProcedure procedure = compile( ClassWithProcedureWithSimpleArgs.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = procedure.apply( new Procedure.BasicContext(), new Object[]{"Pontus", 35L} );
+        RawIterator<Object[],ProcedureException> out = procedure.apply( new CallableProcedure.BasicContext(), new Object[]{"Pontus", 35L} );
 
         // Then
         List<Object[]> collect = asList( out );
@@ -80,10 +82,10 @@ public class ReflectiveProcedureWithArgumentsTest
     public void shouldRunGenericProcedure() throws Throwable
     {
         // Given
-        Procedure procedure = compile( ClassWithProcedureWithGenericArgs.class ).get( 0 );
+        CallableProcedure procedure = compile( ClassWithProcedureWithGenericArgs.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = procedure.apply( new Procedure.BasicContext(), new Object[]{
+        RawIterator<Object[],ProcedureException> out = procedure.apply( new CallableProcedure.BasicContext(), new Object[]{
                 Arrays.asList( "Roland", "Eddie", "Susan", "Jake" ),
                 Arrays.asList( 1000L, 23L, 29L, 12L )} );
 
@@ -121,7 +123,7 @@ public class ReflectiveProcedureWithArgumentsTest
 
     public static class ClassWithProcedureWithSimpleArgs
     {
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> listCoolPeople( @Name( "name" ) String name, @Name( "age" ) long age )
         {
             return Stream.of( new MyOutputRecord( name + " is " + age + " years old." ) );
@@ -130,7 +132,7 @@ public class ReflectiveProcedureWithArgumentsTest
 
     public static class ClassWithProcedureWithGenericArgs
     {
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> listCoolPeople( @Name( "names" ) List<String> names,
                                                       @Name( "age" ) List<Long> ages )
         {
@@ -148,14 +150,14 @@ public class ReflectiveProcedureWithArgumentsTest
 
     public static class ClassWithProcedureWithoutAnnotatedArgs
     {
-        @ReadOnlyProcedure
+        @Procedure
         public Stream<MyOutputRecord> listCoolPeople( String name, int age )
         {
             return Stream.of( new MyOutputRecord( name + " is " + age + " years old." ) );
         }
     }
 
-    private List<Procedure> compile( Class<?> clazz ) throws KernelException
+    private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
         return new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry() ).compile( clazz );
     }

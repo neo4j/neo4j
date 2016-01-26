@@ -37,7 +37,7 @@ import static org.junit.Assert.assertThat;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
-import static org.neo4j.kernel.api.proc.Procedure.Key.key;
+import static org.neo4j.kernel.api.proc.CallableProcedure.Key.key;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ProceduresTest
@@ -46,7 +46,7 @@ public class ProceduresTest
 
     private final Procedures procs = new Procedures();
     private final ProcedureSignature signature = procedureSignature( "org", "myproc" ).build();
-    private final Procedure procedure = procedure( signature );
+    private final CallableProcedure procedure = procedure( signature );
 
     @Test
     public void shouldGetRegisteredProcedure() throws Throwable
@@ -81,7 +81,7 @@ public class ProceduresTest
         procs.register( procedure );
 
         // When
-        RawIterator<Object[], ProcedureException> result = procs.call( new Procedure.BasicContext()
+        RawIterator<Object[], ProcedureException> result = procs.call( new CallableProcedure.BasicContext()
         {
         }, signature.name(), new Object[]{1337} );
 
@@ -99,7 +99,7 @@ public class ProceduresTest
                                  "procedure name correctly and that the procedure is properly deployed." );
 
         // When
-        procs.call( new Procedure.BasicContext()
+        procs.call( new CallableProcedure.BasicContext()
         {
         }, signature.name(), new Object[]{1337} );
     }
@@ -161,9 +161,9 @@ public class ProceduresTest
     public void shouldMakeContextAvailable() throws Throwable
     {
         // Given
-        Procedure.Key<String> someKey = key("someKey", String.class);
+        CallableProcedure.Key<String> someKey = key("someKey", String.class);
 
-        procs.register( new Procedure.BasicProcedure(signature)
+        procs.register( new CallableProcedure.BasicProcedure(signature)
         {
             @Override
             public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
@@ -172,7 +172,7 @@ public class ProceduresTest
             }
         } );
 
-        Procedure.BasicContext ctx = new Procedure.BasicContext();
+        CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
         ctx.put( someKey, "hello, world" );
 
         // When
@@ -182,9 +182,9 @@ public class ProceduresTest
         assertThat( asList( result ), contains( equalTo( new Object[]{ "hello, world" } ) ) );
     }
 
-    private Procedure.BasicProcedure procedureWithSignature( final ProcedureSignature signature )
+    private CallableProcedure.BasicProcedure procedureWithSignature( final ProcedureSignature signature )
     {
-        return new Procedure.BasicProcedure(signature)
+        return new CallableProcedure.BasicProcedure(signature)
         {
             @Override
             public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
@@ -194,9 +194,9 @@ public class ProceduresTest
         };
     }
 
-    private Procedure procedure( ProcedureSignature signature )
+    private CallableProcedure procedure( ProcedureSignature signature )
     {
-        return new Procedure.BasicProcedure( signature )
+        return new CallableProcedure.BasicProcedure( signature )
         {
             @Override
             public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input )

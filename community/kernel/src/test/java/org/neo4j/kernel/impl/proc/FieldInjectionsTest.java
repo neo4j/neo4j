@@ -26,6 +26,7 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.procedure.Resource;
 
 import static junit.framework.TestCase.assertEquals;
 

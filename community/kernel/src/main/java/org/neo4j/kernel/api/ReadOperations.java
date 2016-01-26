@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -554,10 +554,10 @@ public interface ReadOperations
     //===========================================
 
     /** For read procedures, this key will be available in the invocation context as a means to access the current read statement. */
-    Procedure.Key<ReadOperations> readOperations = Procedure.Key.key("statementContext.read", ReadOperations.class );
+    CallableProcedure.Key<ReadOperations> readOperations = CallableProcedure.Key.key("statementContext.read", ReadOperations.class );
 
     /** For managed procedures, this gives access to the current statement. */
-    Procedure.Key<Statement> statement = Procedure.Key.key("statement", Statement.class );
+    CallableProcedure.Key<Statement> statement = CallableProcedure.Key.key("statement", Statement.class );
 
     /** Fetch a procedure given its signature. */
     ProcedureSignature procedureGet( ProcedureSignature.ProcedureName name ) throws ProcedureException;

@@ -29,19 +29,19 @@ import java.util.stream.Collectors;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 public class ProcedureRegistry
 {
-    private final Map<ProcedureSignature.ProcedureName,Procedure> procedures = new HashMap<>();
+    private final Map<ProcedureSignature.ProcedureName,CallableProcedure> procedures = new HashMap<>();
 
     /**
      * Register a new procedure. This method must not be called concurrently with {@link #get(ProcedureSignature.ProcedureName)}.
      *
      * @param proc the procedure.
      */
-    public synchronized void register( Procedure proc ) throws ProcedureException
+    public synchronized void register( CallableProcedure proc ) throws ProcedureException
     {
         ProcedureSignature signature = proc.signature();
         ProcedureSignature.ProcedureName name = signature.name();
@@ -73,7 +73,7 @@ public class ProcedureRegistry
 
     public ProcedureSignature get( ProcedureSignature.ProcedureName name ) throws ProcedureException
     {
-        Procedure proc = procedures.get( name );
+        CallableProcedure proc = procedures.get( name );
         if ( proc == null )
         {
             throw noSuchProcedure( name );
@@ -81,10 +81,10 @@ public class ProcedureRegistry
         return proc.signature();
     }
 
-    public RawIterator<Object[],ProcedureException> call( Procedure.Context ctx, ProcedureSignature.ProcedureName name, Object[] input )
+    public RawIterator<Object[],ProcedureException> call( CallableProcedure.Context ctx, ProcedureSignature.ProcedureName name, Object[] input )
             throws ProcedureException
     {
-        Procedure proc = procedures.get( name );
+        CallableProcedure proc = procedures.get( name );
         if ( proc == null )
         {
             throw noSuchProcedure( name );
@@ -102,6 +102,6 @@ public class ProcedureRegistry
 
     public Set<ProcedureSignature> getAll()
     {
-        return procedures.values().stream().map( Procedure::signature ).collect( Collectors.toSet());
+        return procedures.values().stream().map( CallableProcedure::signature ).collect( Collectors.toSet());
     }
 }

@@ -23,10 +23,11 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.{CypherExecutionException, CypherTypeException, ExecutionEngineFunSuite, InvalidArgumentException}
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
-import org.neo4j.kernel.api.proc.Procedure.Context
+import org.neo4j.kernel.api.proc.{CallableProcedure, Neo4jTypes}
+import CallableProcedure.Context
 import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
 import org.neo4j.kernel.api.proc.Neo4jTypes
-import org.neo4j.kernel.api.proc.Procedure.BasicProcedure
+import CallableProcedure.BasicProcedure
 
 class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
 

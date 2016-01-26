@@ -24,7 +24,7 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.impl.proc.ReadOnlyProcedure;
+import org.neo4j.procedure.Procedure;
 
 /**
  * Utility for constructing and starting Neo4j for test purposes.
@@ -108,7 +108,7 @@ public interface TestServerBuilder
 
     /**
      * Configure the server to load the specified procedure definition class. The class should contain one or more
-     * methods annotated with {@link ReadOnlyProcedure}, these will become available to call through
+     * methods annotated with {@link Procedure}, these will become available to call through
      * cypher.
      *
      * @param procedureClass a class containing one or more procedure definitions

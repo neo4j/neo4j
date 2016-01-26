@@ -27,7 +27,7 @@ import java.util.function.Function;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.Procedure;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -55,7 +55,7 @@ public class Procedures
      * Register a new procedure. This method must not be called concurrently with {@link #get(ProcedureSignature.ProcedureName)}.
      * @param proc the procedure.
      */
-    public synchronized void register( Procedure proc ) throws ProcedureException
+    public synchronized void register( CallableProcedure proc ) throws ProcedureException
     {
         registry.register( proc );
     }
@@ -66,7 +66,7 @@ public class Procedures
      */
     public synchronized void register( Class<?> proc ) throws KernelException
     {
-        for ( Procedure procedure : compiler.compile( proc ) )
+        for ( CallableProcedure procedure : compiler.compile( proc ) )
         {
             register( procedure );
         }
@@ -88,7 +88,7 @@ public class Procedures
      * @param cls the type of component to be registered (this is what users 'ask' for in their field declaration)
      * @param supplier a function that supplies the actual component, given the context of a procedure invocation
      */
-    public synchronized <T> void registerComponent( Class<T> cls, Function<Procedure.Context, T> supplier )
+    public synchronized <T> void registerComponent( Class<T> cls, Function<CallableProcedure.Context, T> supplier )
     {
         components.register( cls, supplier );
     }
@@ -101,7 +101,7 @@ public class Procedures
      */
     public synchronized void loadFromDirectory( File dir ) throws IOException, KernelException
     {
-        for ( Procedure procedure : new ProcedureJarLoader( compiler, log ).loadProceduresFromDir( dir ) )
+        for ( CallableProcedure procedure : new ProcedureJarLoader( compiler, log ).loadProceduresFromDir( dir ) )
         {
             register( procedure );
         }
@@ -117,7 +117,7 @@ public class Procedures
         return registry.getAll();
     }
 
-    public RawIterator<Object[], ProcedureException> call( Procedure.Context ctx, ProcedureSignature.ProcedureName name,
+    public RawIterator<Object[], ProcedureException> call( CallableProcedure.Context ctx, ProcedureSignature.ProcedureName name,
                                                            Object[] input ) throws ProcedureException
     {
         return registry.call( ctx, name, input );
