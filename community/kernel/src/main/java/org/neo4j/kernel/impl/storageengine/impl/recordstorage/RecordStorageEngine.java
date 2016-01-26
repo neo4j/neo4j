@@ -448,7 +448,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void registerDiagnostics( DiagnosticsManager diagnosticsManager )
     {
         neoStores.registerDiagnostics( diagnosticsManager );
-        diagnosticsManager.register( new TransactionRangeDiagnostics( null ), neoStores );
     }
 
     @Override
