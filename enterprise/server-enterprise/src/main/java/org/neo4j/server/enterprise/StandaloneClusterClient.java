@@ -73,7 +73,7 @@ public class StandaloneClusterClient
     {
         life.add( logging );
         life.add( clusterClient );
-        timer = new Timer();
+        timer = new Timer( true );
         addShutdownHook();
         life.start();
     }
