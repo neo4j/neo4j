@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp, replace}
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 /**
  * This rewriter ensures that WITH clauses containing a ORDER BY or WHERE are split, such that the ORDER BY or WHERE does not
@@ -35,13 +35,13 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp, replace}
  */
 case object projectFreshSortExpressions extends Rewriter {
 
-  override def apply(that: AnyRef): AnyRef = instance.apply(that)
+  override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
-    case clause @ With(_, _, None, _, _, None) =>
+    case clause@With(_, _, None, _, _, None) =>
       Seq(clause)
 
-    case clause @ With(_, ri, orderBy, skip, limit, where) =>
+    case clause@With(_, ri, orderBy, skip, limit, where) =>
       val allAliases = ri.aliases
       val passedThroughAliases = ri.passedThrough
       val evaluatedAliases = allAliases -- passedThroughAliases
@@ -69,16 +69,11 @@ case object projectFreshSortExpressions extends Rewriter {
       Seq(clause)
   }
 
-  private val instance: Rewriter = bottomUp(replace(replacer => {
-
-    case expr: Expression =>
-      replacer.stop(expr)
-
-    case query @ SingleQuery(clauses) =>
+  private val rewriter = Rewriter.lift {
+    case query@SingleQuery(clauses) =>
       query.copy(clauses = clauses.flatMap(clauseRewriter))(query.position)
+  }
 
-    case astNode =>
-      replacer.expand(astNode)
-  }))
+  private val instance: Rewriter = bottomUp(rewriter, _.isInstanceOf[Expression])
 }
 

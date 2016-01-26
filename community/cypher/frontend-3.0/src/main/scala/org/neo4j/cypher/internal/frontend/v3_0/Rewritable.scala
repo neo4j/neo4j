@@ -123,7 +123,7 @@ object inSequence {
 }
 
 object topDown {
-  private class TopDownRewriter(rewriter: Rewriter) extends Rewriter {
+  private class TopDownRewriter(rewriter: Rewriter, val stopper: AnyRef => Boolean) extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
       val result = rec(initialStack)
@@ -146,20 +146,25 @@ object topDown {
         }
       } else {
         val (newJob :: jobs, doneJobs) = stack.pop()
-        val rewrittenJob = newJob.rewrite(rewriter)
-        stack.push((rewrittenJob :: jobs, doneJobs))
-        stack.push((rewrittenJob.children.toList, new mutable.MutableList()))
+        if (stopper(newJob)) {
+          stack.push((jobs, doneJobs += newJob))
+        } else {
+          val rewrittenJob = newJob.rewrite(rewriter)
+          stack.push((rewrittenJob :: jobs, doneJobs))
+          stack.push((rewrittenJob.children.toList, new mutable.MutableList()))
+        }
         rec(stack)
       }
     }
   }
 
-  def apply(rewriter: Rewriter): Rewriter = new TopDownRewriter(rewriter)
+  def apply(rewriter: Rewriter, stopper: (AnyRef) => Boolean = _ => false): Rewriter =
+    new TopDownRewriter(rewriter, stopper)
 }
 
 object bottomUp {
 
-  private class BottomUpRewriter(val rewriter: Rewriter) extends Rewriter {
+  private class BottomUpRewriter(val rewriter: Rewriter, val stopper: AnyRef => Boolean) extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
       val result = rec(initialStack)
@@ -182,39 +187,18 @@ object bottomUp {
           rec(stack)
         }
       } else {
-        stack.push((currentJobs.head.children.toList, new mutable.MutableList()))
+        val next = currentJobs.head
+        if (stopper(next)) {
+          val (job :: jobs, doneJobs) = stack.pop()
+          stack.push((jobs, doneJobs += job))
+        } else {
+          stack.push((next.children.toList, new mutable.MutableList()))
+        }
         rec(stack)
       }
     }
   }
 
-  def apply(rewriter: Rewriter): Rewriter = new BottomUpRewriter(rewriter)
-}
-
-trait Replacer {
-  def expand(replacement: AnyRef): AnyRef
-  def stop(replacement: AnyRef): AnyRef
-}
-
-case class replace(strategy: (Replacer => (AnyRef => AnyRef))) extends Rewriter {
-  private val cont = strategy(new Replacer {
-    def expand(replacement: AnyRef) = {
-      //this piece of code is used a lot and has been through profiling
-      //please don't just remove it because it is ugly looking
-      val children = replacement.children.toList
-      val buffer = new Array[AnyRef](children.size)
-      val it = children.iterator
-      var index = 0
-      while (it.hasNext) {
-        buffer(index) = apply(it.next())
-        index += 1
-      }
-
-      replacement.dup(buffer)
-    }
-
-    def stop(replacement: AnyRef) = replacement
-  })
-
-  def apply(that: AnyRef): AnyRef = cont(that)
+  def apply(rewriter: Rewriter, stopper: (AnyRef) => Boolean = _ => false): Rewriter =
+    new BottomUpRewriter(rewriter, stopper)
 }

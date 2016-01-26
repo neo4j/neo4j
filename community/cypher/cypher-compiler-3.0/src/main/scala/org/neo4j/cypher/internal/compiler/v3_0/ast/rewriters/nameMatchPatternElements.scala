@@ -20,33 +20,26 @@
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.{replace, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_0.{bottomUp, Rewriter}
 
 case object nameMatchPatternElements extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val instance: Rewriter = replace(replacer => {
-    case expr: Expression =>
-      replacer.stop(expr)
-
+  private val rewriter = Rewriter.lift {
     case m: Match =>
       val rewrittenPattern = m.pattern.endoRewrite(nameAllPatternElements.namingRewriter)
       m.copy(pattern = rewrittenPattern)(m.position)
+  }
 
-    case astNode =>
-      replacer.expand(astNode)
-  })
+  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 }
 
 case object nameUpdatingClauses extends Rewriter {
 
-  def apply(that: AnyRef): AnyRef = findingRewriter.apply(that)
+  def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val findingRewriter: Rewriter = replace(replacer => {
-    case expr: Expression =>
-      replacer.stop(expr)
-
+  private val findingRewriter: Rewriter = Rewriter.lift {
     case createUnique@CreateUnique(pattern) =>
       val rewrittenPattern = pattern.endoRewrite(nameAllPatternElements.namingRewriter)
       createUnique.copy(pattern = rewrittenPattern)(createUnique.position)
@@ -58,8 +51,7 @@ case object nameUpdatingClauses extends Rewriter {
     case merge@Merge(pattern, _) =>
       val rewrittenPattern = pattern.endoRewrite(nameAllPatternElements.namingRewriter)
       merge.copy(pattern = rewrittenPattern)(merge.position)
+  }
 
-    case astNode =>
-      replacer.expand(astNode)
-  })
+  private val instance = bottomUp(findingRewriter, _.isInstanceOf[Expression])
 }

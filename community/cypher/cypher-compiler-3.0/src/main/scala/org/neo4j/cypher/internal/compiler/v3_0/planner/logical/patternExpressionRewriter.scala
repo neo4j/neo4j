@@ -23,24 +23,23 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, PatternExpression}
-import org.neo4j.cypher.internal.frontend.v3_0.{IdentityMap, Rewriter, replace}
+import org.neo4j.cypher.internal.frontend.v3_0.{topDown, IdentityMap, Rewriter}
 
 // Rewrite pattern expressions to nested plan expressions by planning them using the given context
 case class patternExpressionRewriter(planArguments: Set[IdName], context: LogicalPlanningContext) extends Rewriter {
 
-    def apply(that: AnyRef): AnyRef = that match {
-      case  expression: Expression =>
-        val scopeMap = computeScopeMap(expression)
+  override def apply(that: AnyRef): AnyRef = that match {
+    case expression: Expression =>
+      val scopeMap = computeScopeMap(expression)
 
-        // build an identity map of replacements
-        val replacements = computeReplacements(scopeMap, that)
+      // build an identity map of replacements
+      val replacements = computeReplacements(scopeMap, that)
 
-        // apply replacements, descending into the replacements themselves recursively
-        val rewriter = createReplacer(replacements)
+      // apply replacements, descending into the replacements themselves recursively
+      val rewriter = createRewriter(replacements)
 
-        val result = expression.endoRewrite(rewriter)
-        result
-    }
+      expression.endoRewrite(rewriter)
+  }
 
   private def computeScopeMap(expression: Expression) = {
     val exprScopes = expression.inputs.map {
@@ -76,14 +75,10 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
     }
   }
 
-  private def createReplacer(replacements: IdentityMap[AnyRef, AnyRef]): replace =
-    replace { replacer => that => replacements.get(that) match {
-
-      // nested plans are already rewritten by strategy.planPatternExpression
-      case Some(plan: NestedPlanExpression) => replacer.stop(plan)
-
-      // traverse down in all other cases (just like bottomUp would do)
-      case _ => replacer.expand(that)
+  private def createRewriter(replacements: IdentityMap[AnyRef, AnyRef]): Rewriter = {
+    val rewriter = Rewriter.lift {
+      case that => replacements.getOrElse(that, that)
     }
+    topDown(rewriter, _.isInstanceOf[NestedPlanExpression])
   }
 }
