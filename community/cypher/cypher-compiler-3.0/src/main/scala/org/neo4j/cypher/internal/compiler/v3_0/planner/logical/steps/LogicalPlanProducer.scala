@@ -198,7 +198,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
                                 argumentIds: Set[IdName])(implicit context: LogicalPlanningContext) = {
-    val solved = PlannerQuery(queryGraph = QueryGraph.empty
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
