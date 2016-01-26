@@ -35,9 +35,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       hints: Set[Hint] = Set.empty,
                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty,
                       mutatingPatterns: Seq[MutatingPattern] = Seq.empty)
-  extends UpdateGraph with PageDocFormatting { // with ToPrettyString[QueryGraph] {
-//  def toDefaultPrettyString(formatter: DocFormatter) =
-//    toPrettyString(formatter)(InternalDocHandler.docGen)
+  extends UpdateGraph with PageDocFormatting {
 
   def size = patternRelationships.size
 
@@ -257,6 +255,13 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   }
 
   def writeOnly = !containsReads && containsUpdates
+
+  def createsNodes: Boolean = mutatingPatterns.exists {
+    case _: CreateNodePattern => true
+    case _: MergeNodePattern => true
+    case MergeRelationshipPattern(nodesToCreate, _, _, _, _) => nodesToCreate.nonEmpty
+    case _ => false
+  }
 
   def addMutatingPatterns(patterns: MutatingPattern*): QueryGraph =
     copy(mutatingPatterns = mutatingPatterns ++ patterns)
