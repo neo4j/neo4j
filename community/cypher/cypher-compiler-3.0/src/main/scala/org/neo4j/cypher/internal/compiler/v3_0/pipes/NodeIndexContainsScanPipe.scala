@@ -40,7 +40,7 @@ case class NodeIndexContainsScanPipe(ident: String,
 
   private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+  override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
@@ -60,25 +60,25 @@ case class NodeIndexContainsScanPipe(ident: String,
     resultNodes
   }
 
-  def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
+  override def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescriptionWithoutCardinality = {
+  override def planDescriptionWithoutCardinality = {
     val arguments = Seq(Index(label.name, propertyKey.name), LegacyExpression(valueExpr))
     new PlanDescriptionImpl(this.id, "NodeIndexContainsScan", NoChildren, arguments, variables)
   }
 
-  def symbols = new SymbolTable(Map(ident -> CTNode))
+  override def symbols = new SymbolTable(Map(ident -> CTNode))
 
   override def monitor = pipeMonitor
 
-  def dup(sources: List[Pipe]): Pipe = {
+  override def dup(sources: List[Pipe]): Pipe = {
     require(sources.isEmpty)
     this
   }
 
-  def sources: Seq[Pipe] = Seq.empty
+  override def sources: Seq[Pipe] = Seq.empty
 
   override def localEffects = Effects(ReadsNodesWithLabels(label.name), ReadsGivenNodeProperty(propertyKey.name))
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }
