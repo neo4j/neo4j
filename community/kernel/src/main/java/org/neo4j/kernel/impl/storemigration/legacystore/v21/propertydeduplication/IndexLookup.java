@@ -131,14 +131,7 @@ class IndexLookup implements AutoCloseable
         }
         final IndexReader reader = getIndexReader( rule );
 
-        return new Index()
-        {
-            @Override
-            public boolean contains( long nodeId, Object propertyValue )
-            {
-                return reader.countIndexedNodes( nodeId, propertyValue ) > 0;
-            }
-        };
+        return ( nodeId, propertyValue ) -> reader.countIndexedNodes( nodeId, propertyValue ) > 0;
     }
 
     public boolean hasAnyIndexes()
@@ -146,7 +139,7 @@ class IndexLookup implements AutoCloseable
         return !indexRuleIndex.isEmpty();
     }
 
-    static interface Index
+    interface Index
     {
         boolean contains( long nodeId, Object propertyValue ) throws IOException;
     }

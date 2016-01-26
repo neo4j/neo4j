@@ -28,7 +28,7 @@ public enum IndexConfiguration
 
     private final boolean unique;
 
-    private IndexConfiguration( boolean unique )
+    IndexConfiguration( boolean unique )
     {
         this.unique = unique;
     }

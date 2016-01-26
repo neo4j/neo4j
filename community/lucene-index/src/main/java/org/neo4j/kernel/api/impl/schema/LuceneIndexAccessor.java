@@ -39,7 +39,7 @@ public class LuceneIndexAccessor implements IndexAccessor
     private final LuceneIndexWriter writer;
     private LuceneSchemaIndex luceneIndex;
 
-    LuceneIndexAccessor( LuceneSchemaIndex luceneIndex ) throws IOException
+    public LuceneIndexAccessor( LuceneSchemaIndex luceneIndex ) throws IOException
     {
         this.luceneIndex = luceneIndex;
         this.writer = luceneIndex.getIndexWriter();

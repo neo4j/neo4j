@@ -79,7 +79,7 @@ public interface IndexReader extends Resource
      * @param propertyValue property value to match.
      * @return number of index entries for the given {@code nodeId} and {@code propertyValue}.
      */
-    int countIndexedNodes( long nodeId, Object propertyValue );
+    long countIndexedNodes( long nodeId, Object propertyValue );
 
     IndexSampler createSampler();
 
@@ -118,7 +118,7 @@ public interface IndexReader extends Resource
 
         // Used for checking index correctness
         @Override
-        public int countIndexedNodes( long nodeId, Object propertyValue )
+        public long countIndexedNodes( long nodeId, Object propertyValue )
         {
             return 0;
         }

@@ -20,37 +20,52 @@
 package org.neo4j.kernel.api.impl.labelscan.reader;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.labelscan.storestrategy.LabelScanStorageStrategy;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 /**
- * Label scan index reader that is able to read/sample a single partition of a partitioned index.
+ * Index reader that is able to read/sample multiple partitions of a partitioned labels scan index.
+ * Internally uses multiple {@link SimpleLuceneLabelScanStoreReader}s for individual partitions.
+ *
+ * @see SimpleLuceneLabelScanStoreReader
  */
-public class SimpleLuceneLabelScanStoreReader implements LabelScanReader
+public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
 {
-    private final PartitionSearcher partitionSearcher;
-    private final LabelScanStorageStrategy strategy;
 
-    public SimpleLuceneLabelScanStoreReader( PartitionSearcher partitionSearcher, LabelScanStorageStrategy strategy )
+    private final List<LabelScanReader> storeReaders;
+
+    public PartitionedLuceneLabelScanStoreReader( List<PartitionSearcher> searchers,
+            LabelScanStorageStrategy storageStrategy )
     {
-        this.partitionSearcher = partitionSearcher;
-        this.strategy = strategy;
+        this( searchers.stream()
+                .map( searcher -> new SimpleLuceneLabelScanStoreReader( searcher, storageStrategy ) )
+                .collect( Collectors.toList() ) );
+    }
+
+    PartitionedLuceneLabelScanStoreReader(List<LabelScanReader> readers)
+    {
+        this.storeReaders = readers;
     }
 
     @Override
     public PrimitiveLongIterator nodesWithLabel( int labelId )
     {
-        return strategy.nodesWithLabel( partitionSearcher.getIndexSearcher(), labelId );
+        return partitionedOperation( storeReader -> storeReader.nodesWithLabel( labelId ) );
     }
 
     @Override
     public PrimitiveLongIterator labelsForNode( long nodeId )
     {
-        return strategy.labelsForNode( partitionSearcher.getIndexSearcher(), nodeId );
+        return partitionedOperation( storeReader -> storeReader.labelsForNode( nodeId ) );
     }
 
     @Override
@@ -58,11 +73,19 @@ public class SimpleLuceneLabelScanStoreReader implements LabelScanReader
     {
         try
         {
-            partitionSearcher.close();
+            IOUtils.closeAll( storeReaders );
         }
         catch ( IOException e )
         {
             throw new IndexReaderCloseException( e );
         }
+    }
+
+    private PrimitiveLongIterator partitionedOperation(
+            Function<LabelScanReader,PrimitiveLongIterator> readerFunction )
+    {
+        return PrimitiveLongCollections.concat( storeReaders.parallelStream()
+                .map( readerFunction::apply )
+                .iterator() );
     }
 }

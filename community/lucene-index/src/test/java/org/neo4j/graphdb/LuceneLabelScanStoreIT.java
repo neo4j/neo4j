@@ -29,9 +29,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.List;
 
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -41,6 +40,7 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class LuceneLabelScanStoreIT extends LabelScanStoreIT
@@ -69,8 +69,8 @@ public class LuceneLabelScanStoreIT extends LabelScanStoreIT
         LabelScanStore labelScanStore = getLabelScanStore();
 
         Node node = createTestNode();
-        List<Long> labels = readNodeLabels( labelScanStore, node );
-        assertEquals( "Label scan store see 1 label for node", 1, labels.size() );
+        long[] labels = readNodeLabels( labelScanStore, node );
+        assertEquals( "Label scan store see 1 label for node", 1, labels.length );
         labelScanStore.force();
         labelScanStore.shutdown();
 
@@ -79,15 +79,15 @@ public class LuceneLabelScanStoreIT extends LabelScanStoreIT
         labelScanStore.init();
         labelScanStore.start();
 
-        List<Long> rebuildLabels = readNodeLabels( labelScanStore, node );
-        assertEquals( "Store should rebuild corrupted index", labels, rebuildLabels );
+        long[] rebuildLabels = readNodeLabels( labelScanStore, node );
+        assertArrayEquals( "Store should rebuild corrupted index", labels, rebuildLabels );
     }
 
-    private List<Long> readNodeLabels( LabelScanStore labelScanStore, Node node )
+    private long[] readNodeLabels( LabelScanStore labelScanStore, Node node )
     {
         try ( LabelScanReader reader = labelScanStore.newReader() )
         {
-            return Iterables.toList( reader.labelsForNode( node.getId() ) );
+            return PrimitiveLongCollections.asArray( reader.labelsForNode( node.getId() ) );
         }
     }
 
@@ -142,7 +142,7 @@ public class LuceneLabelScanStoreIT extends LabelScanStoreIT
         }
         try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
         {
-            assertEquals( 1, labelScanReader.labelsForNode( 1 ).next().intValue() );
+            assertEquals( 1, labelScanReader.labelsForNode( 1 ).next() );
         }
     }
 

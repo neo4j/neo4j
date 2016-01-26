@@ -391,6 +391,24 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
     }
 
+    protected static List<PartitionSearcher> acquireSearchers( List<IndexPartition> partitions ) throws IOException
+    {
+        List<PartitionSearcher> searchers = new ArrayList<>( partitions.size() );
+        try
+        {
+            for ( IndexPartition partition : partitions )
+            {
+                searchers.add( partition.acquireSearcher() );
+            }
+            return searchers;
+        }
+        catch ( IOException e )
+        {
+            IOUtils.closeAllSilently( searchers );
+            throw e;
+        }
+    }
+
     private boolean luceneDirectoryExists( File folder ) throws IOException
     {
         try ( Directory directory = indexStorage.openDirectory( folder ) )

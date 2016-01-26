@@ -24,18 +24,17 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReader;
 import org.neo4j.kernel.api.impl.labelscan.bitmaps.BitmapFormat;
 import org.neo4j.kernel.api.impl.labelscan.reader.LuceneAllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.concat;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 
 /**
@@ -91,7 +90,7 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     }
 
     @Override
-    public Iterator<Long> labelsForNode( IndexSearcher searcher, long nodeId )
+    public PrimitiveLongIterator labelsForNode( IndexSearcher searcher, long nodeId )
     {
         try
         {
@@ -99,7 +98,7 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
 
             if ( topDocs.scoreDocs.length < 1 )
             {
-                return emptyIterator();
+                return PrimitiveLongCollections.emptyIterator();
             }
             else if ( topDocs.scoreDocs.length > 1 )
             {
@@ -109,7 +108,7 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
 
             int doc = topDocs.scoreDocs[0].doc;
 
-            List<Long> labels = new ArrayList<>();
+            PrimitiveLongSet labels = Primitive.longSet();
 
             for ( IndexableField fields : searcher.doc( doc ).getFields() )
             {

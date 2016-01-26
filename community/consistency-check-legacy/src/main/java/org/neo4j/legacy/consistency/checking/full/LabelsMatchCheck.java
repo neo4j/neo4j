@@ -19,9 +19,9 @@
  */
 package org.neo4j.legacy.consistency.checking.full;
 
-import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.legacy.consistency.checking.CheckerEngine;
 import org.neo4j.legacy.consistency.checking.RecordCheck;
@@ -45,7 +45,7 @@ public class LabelsMatchCheck implements
                        RecordAccess records )
     {
         Set<Long> labelsFromNode = NodeLabelReader.getListOfLabels( record, records, engine );
-        Iterator<Long> labelsFromLabelScanStore = labelScanReader.labelsForNode( record.getId() );
+        PrimitiveLongIterator labelsFromLabelScanStore = labelScanReader.labelsForNode( record.getId() );
 
         while ( labelsFromLabelScanStore.hasNext() )
         {

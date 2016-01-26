@@ -277,7 +277,7 @@ public class LuceneLabelScanStoreWriterTest
 
     private PartitionedLuceneLabelScanWriter createWriter( LuceneLabelScanIndex index )
     {
-        return new PartitionedLuceneLabelScanWriter( index, format, mock( Lock.class ) );
+        return new PartitionedLuceneLabelScanWriter( index, format );
     }
 
     private StubIndexPartition newStubIndexPartition( File folder )

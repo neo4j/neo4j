@@ -62,14 +62,12 @@ public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
 
     private final List<NodeLabelUpdate> updates;
     private long currentRange;
-    private final Lock heldLock;
     private LuceneLabelScanIndex index;
 
-    public PartitionedLuceneLabelScanWriter( LuceneLabelScanIndex index, BitmapDocumentFormat format, Lock heldLock )
+    public PartitionedLuceneLabelScanWriter( LuceneLabelScanIndex index, BitmapDocumentFormat format)
     {
         this.index = index;
         this.format = format;
-        this.heldLock = heldLock;
         currentRange = -1;
         updates = new ArrayList<>( format.bitmapFormat().rangeSize() );
     }
@@ -99,21 +97,8 @@ public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
     @Override
     public void close() throws IOException
     {
-        try
-        {
-            flush();
-        }
-        finally
-        {
-            try
-            {
-                index.maybeRefreshBlocking();
-            }
-            finally
-            {
-                heldLock.unlock();
-            }
-        }
+        flush();
+        index.maybeRefreshBlocking();
     }
 
     private Map<Long/*range*/,Bitmap> readLabelBitMapsInRange( IndexSearcher searcher, long range ) throws IOException

@@ -134,6 +134,11 @@ public class PrimitiveLongCollections
     }
 
     // Concating
+    public static PrimitiveLongIterator concat( Iterable<PrimitiveLongIterator> primitiveLongIterators )
+    {
+        return new PrimitiveLongConcatingIterator( primitiveLongIterators.iterator() );
+    }
+
     public static PrimitiveLongIterator concat( Iterator<PrimitiveLongIterator> iterators )
     {
         return new PrimitiveLongConcatingIterator( iterators );

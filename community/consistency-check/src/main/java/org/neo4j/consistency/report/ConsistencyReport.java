@@ -189,7 +189,7 @@ public interface ConsistencyReport
         void notIndexed( IndexRule index, Object propertyValue );
 
         @Documented( "This node was found in the expected index, although multiple times" )
-        void indexedMultipleTimes( IndexRule index, Object propertyValue, int count );
+        void indexedMultipleTimes( IndexRule index, Object propertyValue, long count );
 
         @Documented( "There is another node in the unique index with the same property value." )
         void uniqueIndexNotUnique( IndexRule index, Object propertyValue, long duplicateNodeId );

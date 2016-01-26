@@ -21,17 +21,17 @@ package org.neo4j.kernel.impl.api.scan;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -103,9 +103,9 @@ public class InMemoryLabelScanStore implements LabelScanStore
             }
 
             @Override
-            public Iterator<Long> labelsForNode( long nodeId )
+            public PrimitiveLongIterator labelsForNode( long nodeId )
             {
-                List<Long> nodes = new ArrayList<>();
+                PrimitiveLongSet nodes = Primitive.longSet();
                 for ( Map.Entry<Long, Set<Long>> entry : data.entrySet() )
                 {
                     if ( entry.getValue().contains( nodeId ) )
