@@ -310,14 +310,27 @@ public abstract class AbstractLuceneIndex implements Closeable
         partitionsLock.lock();
         try
         {
-            for ( IndexPartition partition : getPartitions() )
-            {
-                partition.maybeRefreshBlocking();
-            }
+            getPartitions().parallelStream().forEach( this::maybeRefreshPartition );
+        }
+        catch ( UncheckedIOException e )
+        {
+            throw e.getCause();
         }
         finally
         {
             partitionsLock.unlock();
+        }
+    }
+
+    private void maybeRefreshPartition( IndexPartition partition )
+    {
+        try
+        {
+            partition.maybeRefreshBlocking();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 
