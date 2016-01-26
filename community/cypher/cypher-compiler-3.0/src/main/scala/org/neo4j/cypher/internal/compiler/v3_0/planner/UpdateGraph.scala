@@ -243,7 +243,7 @@ trait UpdateGraph {
 
   /*
   * Checks for overlap between what node props are read in query graph
-  * and what is updated with SET here
+  * and what is updated with SET here (properties added by create/merge directly is handled elsewhere)
   */
   private def setNodePropertyOverlap(qg: QueryGraph): Boolean = {
 

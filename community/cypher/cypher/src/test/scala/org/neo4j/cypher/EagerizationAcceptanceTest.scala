@@ -37,7 +37,6 @@ class EagerizationAcceptanceTest
   val VERBOSE_INCLUDE_PLAN_DESCRIPTION = true
 
   val EagerRegEx: Regex = "Eager(?!(Aggregation))".r
-  val RepeatableReadRegEx: Regex = "RepeatableRead".r
 
   test("should introduce eagerness between MATCH and DELETE relationships") {
     val a = createNode()
@@ -113,15 +112,24 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 1)
   }
 
-  test("github issue ##5653") {
-    (0 to 1).foreach { i =>
-      eengine.execute("CREATE (:Person {name:'Michal'})-[:FRIEND_OF {since:2007}]->(:Person {name:'Daniela'})")
-    }
-    val query = "MATCH (p1:Person {name:'Michal'})-[r:FRIEND_OF {since:2007}]->(p2:Person {name:'Daniela'}) DELETE r, p1, p2 RETURN count(*) AS count"
+  test("github issue #5653") {
+    eengine.execute("CREATE (a:Person {id: 42})-[:FRIEND_OF]->(b:Person {id:42}), (b)-[:FRIEND_OF]->(a), (:Person)-[:FRIEND_OF]->(b)")
+
+    val query = "MATCH (p1:Person {id: 42})-[r:FRIEND_OF]->(p2:Person {id:42}) DETACH DELETE r, p1, p2 RETURN count(*) AS count"
     val result = updateWithBothPlanners(query)
     result.columnAs[Int]("count").next should equal(2)
-    assertStats(result, relationshipsDeleted = 2, nodesDeleted = 4)
-    assertNumberOfEagerness(query, 0)
+    assertStats(result, relationshipsDeleted = 3, nodesDeleted = 2)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("github issue #5653 with path instead") {
+    eengine.execute("CREATE (a:Person {id: 42})-[:FRIEND_OF]->(b:Person {id:42}), (b)-[:FRIEND_OF]->(a), (:Person)-[:FRIEND_OF]->(b)")
+
+    val query = "MATCH p = (p1:Person {id: 42})-[r:FRIEND_OF]->(p2:Person {id:42}) DETACH DELETE p RETURN count(*) AS count"
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Int]("count").next should equal(2)
+    assertStats(result, relationshipsDeleted = 3, nodesDeleted = 2)
+    assertNumberOfEagerness(query, 1)
   }
 
   test("should not introduce eagerness between MATCH and CREATE relationships with overlapping relationship types when directed") {
@@ -133,7 +141,7 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     result.columnAs[Int]("count").next should equal(1)
     assertStats(result, relationshipsCreated = 1)
-    assertNumberOfEagerness(query, 0)
+    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("should not introduce eagerness between MATCH and CREATE relationships with unrelated relationship types") {
@@ -206,8 +214,7 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     assertStats(result, nodesCreated = 2, nodesDeleted = 2, propertiesWritten = 2, labelsAdded = 2)
     result.columnAs[Node]("b2.deleted").toList should equal(List(null, null))
-    //TODO:M We should be able to only have 1 eager plan
-    assertNumberOfEagerness(query, 2)
+    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   test("should introduce eagerness between DELETE and MERGE for nodes when there merge matches all labels") {
@@ -268,7 +275,25 @@ class EagerizationAcceptanceTest
 
     // Merge should not be able to match on deleted relationship
     result.toList should equal(List(Map("exists(t2.id)" -> false), Map("exists(t2.id)" -> false)))
-    assertNumberOfEagerness(query, 1)
+    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
+  }
+
+  test("should introduce eagerness between MATCH and DELETE + DELETE and MERGE for relationship, direction reversed") {
+    val a = createNode()
+    val b = createNode()
+    val rel1 = relate(a, b, "T", Map("id" -> 1))
+    val query =
+      """
+        |MATCH (a)-[t:T]->(b)
+        |DELETE t
+        |MERGE (a)<-[t2:T]-(b)
+        |RETURN count(*)
+      """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, relationshipsDeleted = 1, relationshipsCreated = 1)
+    result.columnAs[Long]("count(*)").next shouldBe 1
+    assertNumberOfEagerness(query, 2)
   }
 
   test("should introduce eagerness between DELETE and MERGE for relationships when there is no read matching the merge") {
@@ -287,7 +312,7 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     assertStats(result, relationshipsDeleted = 2, relationshipsCreated = 1)
     result.toList should equal(List(Map("exists(t2.id)" -> false), Map("exists(t2.id)" -> false)))
-    assertNumberOfEagerness(query, 1)
+    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   test("should introduce eagerness between DELETE and MERGE for relationships when there is a read matching the merge") {
@@ -306,7 +331,26 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     assertStats(result, relationshipsDeleted = 2, relationshipsCreated = 1)
     result.toList should equal(List(Map("exists(t2.id)" -> false), Map("exists(t2.id)" -> false)))
-    assertNumberOfEagerness(query, 1)
+    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
+  }
+
+  test("should introduce eagerness between DELETE and MERGE for relationships when there is a read matching the merge, direction reversed") {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b, "T", Map("id" -> 1))
+    relate(a, b, "T", Map("id" -> 1))
+    val query =
+      """
+        |MATCH (a)-[t]->(b)
+        |DELETE t
+        |MERGE (a)<-[t2:T2]-(b)
+        |RETURN count(*)
+      """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, relationshipsDeleted = 2, relationshipsCreated = 1)
+    result.columnAs[Long]("count(*)").next shouldBe 2
+    assertNumberOfEagerness(query, 2)
   }
 
   // TESTS FOR MATCH AND CREATE
@@ -341,7 +385,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (k) CREATE (l {prop: 44}) WITH * MATCH (m) CREATE (n {prop:45}) RETURN count(*)"
 
     val result = updateWithBothPlanners(query)
-    result should use("Eager")
+
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, nodesCreated = 10, propertiesWritten = 10)
     assertNumberOfEagerness(query, 2)
@@ -389,7 +433,7 @@ class EagerizationAcceptanceTest
     createLabeledNode(Map("id" -> 0), "L")
     graph.createIndex("L", "id")
 
-    val query = "MATCH (:L {id: 0}) CREATE (:L {id:0}) RETURN count(*)"
+    val query = "MATCH (n:L {id: 0}) USING INDEX n:L(id) CREATE (:L {id:0}) RETURN count(*)"
 
     val result = updateWithBothPlanners(query)
     result.columnAs[Long]("count(*)").next shouldBe 1
@@ -528,8 +572,34 @@ class EagerizationAcceptanceTest
     relate(createNode(), createNode(), "TYPE")
     val query = "MATCH (a)-[:TYPE]->(b) CREATE (a)-[:TYPE]->(b) RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), relationshipsCreated = 2)
-    assertNumberOfEagerness(query, 0)
+    val result = updateWithBothPlanners(query)
+    assertStats(result, relationshipsCreated = 2)
+    result.columnAs[Int]("count(*)").next should equal(2)
+    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
+  }
+
+  test("should introduce an eager pipe between a leaf relationship read and a relationship create if directions reversed 1") {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b, "TYPE") // NOTE: The order the nodes are related should not affect the result (opposite from the test below)
+    val query = "MATCH (a)-[:TYPE]->(b) CREATE (a)<-[:TYPE]-(b) RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, relationshipsCreated = 1)
+    result.columnAs[Int]("count(*)").next should equal(1)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should introduce an eager pipe between a leaf relationship read and a relationship create if directions reversed 2") {
+    val a = createNode()
+    val b = createNode()
+    relate(b, a, "TYPE") // NOTE: The order the nodes are related should not affect the result (opposite from the test above)
+    val query = "MATCH (a)-[:TYPE]->(b) CREATE (a)<-[:TYPE]-(b) RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, relationshipsCreated = 1)
+    result.columnAs[Int]("count(*)").next should equal(1)
+    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce an eager pipe between a non-directional leaf relationship read and a relationship create") {
@@ -537,7 +607,6 @@ class EagerizationAcceptanceTest
     relate(createNode(), createNode(), "TYPE")
     val query = "MATCH (a)-[:TYPE]-(b) CREATE (a)-[:TYPE]->(b) RETURN count(*) as count"
 
-    //TODO this is probably safe, we need to check directions
     val result = updateWithBothPlanners(query)
     assertStats(result, relationshipsCreated = 4)
     result.columnAs[Int]("count").next should equal(4)
@@ -586,8 +655,7 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, nodesCreated = 20, relationshipsCreated = 10)
-    assertNumberOfEagerness(query, 2)
-
+    assertNumberOfEagerness(query, 3, optimalEagerCount = 2)
   }
 
   test("should introduce an eager pipe between a non-leaf relationship read and a relationship create") {
@@ -644,14 +712,13 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a:Person), (m:Movie) DELETE a, m RETURN count(*)"
 
-
     val result = updateWithBothPlanners(query)
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, nodesDeleted = 4)
     assertNumberOfEagerness(query, 1)
   }
 
-  test("should introduce eagerness when deleting nodes on single leaf") {
+  test("should not introduce eagerness when deleting nodes on single leaf") {
     createLabeledNode("Person")
     createLabeledNode("Person")
     createLabeledNode("Movie")
@@ -701,20 +768,34 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 1)
   }
 
-  test("matching directional relationship, deleting relationship and nodes should not be eager") {
-    relate(createNode(), createNode(), "T1")
-    relate(createNode(), createNode(), "T2")
-    relate(createNode(), createNode())
-    relate(createNode(), createNode(), "T1")
-    relate(createNode(), createNode(), "T2")
-    relate(createNode(), createNode())
+  test("matching directional relationship, and detach deleting both nodes should be eager") {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+    relate(a, b)
 
-    val query = "MATCH (a)-[r]->(b) DELETE r, a, b RETURN count(*)"
+    val query = "MATCH (a)-[r]->(b) DETACH DELETE a, b RETURN count(*)"
 
     val result = updateWithBothPlanners(query)
-    result.toList should equal (List(Map("count(*)" -> 6)))
-    assertStats(result, nodesDeleted = 12, relationshipsDeleted = 6)
-    assertNumberOfEagerness(query, 0)
+
+    result.toList should equal (List(Map("count(*)" -> 2)))
+    assertStats(result, nodesDeleted = 2, relationshipsDeleted = 2)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("matching directional relationship, and deleting it should not be eager") {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+    relate(a, b)
+
+    val query = "MATCH (a)-[r]->(b) DELETE r RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+
+    result.toList should equal (List(Map("count(*)" -> 2)))
+    assertStats(result, relationshipsDeleted = 2)
+    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("matching directional relationship, deleting relationship and labeled nodes should not be eager") {
@@ -726,7 +807,7 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     result.toList should equal (List(Map("count(*)" -> 2)))
     assertStats(result, nodesDeleted = 4, relationshipsDeleted = 2)
-    assertNumberOfEagerness(query, 0)
+    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("matching reversed directional relationship, deleting relationship and labeled nodes should not be eager") {
@@ -738,7 +819,7 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     result.toList should equal (List(Map("count(*)" -> 2)))
     assertStats(result, nodesDeleted = 4, relationshipsDeleted = 2)
-    assertNumberOfEagerness(query, 0)
+    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("matching directional relationship with property, deleting relationship and nodes should not be eager") {
@@ -752,7 +833,7 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     result.toList should equal (List(Map("count(*)" -> 4)))
     assertStats(result, nodesDeleted = 8, relationshipsDeleted = 4)
-    assertNumberOfEagerness(query, 0)
+    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("matching undirected relationship, deleting relationship and nodes should be eager") {
@@ -828,7 +909,8 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 1)
   }
 
-  test("create directional relationship with property, match and delete relationship and nodes within same transaction should be eager and work") {
+  // ANDRES CLAIMS THAT THIS TEST IS DUBIOUS
+  test("create directional relationship with property, match and delete relationship and nodes within same query should be eager and work") {
     val query = "CREATE ()-[:T {prop: 3}]->() WITH * MATCH (a)-[r {prop : 3}]->(b) DELETE r, a, b RETURN count(*)"
 
     val result = updateWithBothPlanners(query)
@@ -940,15 +1022,27 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 1)
   }
 
+  test("should be eager if merging node with properties after matching all nodes") {
+    createLabeledNode("Two")
+    createLabeledNode("Two")
+    createNode()
+    val query = "MATCH (a:Two), (b) MERGE (q {p: 1}) RETURN count(*) AS c"
+
+    val result: InternalExecutionResult = updateWithBothPlanners(query)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
+    result.toList should equal(List(Map("c" -> 6)))
+    assertNumberOfEagerness(query, 1)
+  }
+
   test("on match set label on unstable iterator should not be eager if no overlap") {
     createLabeledNode("Two")
     createLabeledNode("Two")
     createNode()
-    val query = "MATCH (m1:Two), (m2:Two), (n) MERGE (q) ON MATCH SET q:One RETURN count(*) AS c"
+    val query = "MATCH (m1:Two), (m2:Two) MERGE (q) ON MATCH SET q:One RETURN count(*) AS c"
 
     val result: InternalExecutionResult = updateWithBothPlanners(query)
     assertStats(result, labelsAdded = 3)
-    result.toList should equal(List(Map("c" -> 36)))
+    result.toList should equal(List(Map("c" -> 12)))
     assertNumberOfEagerness(query, 0)
   }
 
@@ -982,11 +1076,11 @@ class EagerizationAcceptanceTest
     createNode()
     createNode(Map("id" -> 0))
     createNode(Map("id" -> 0))
-    val query = "MATCH (b {id: 0}), (c {id: 0}), (a) MERGE () ON MATCH SET a.id2 = 0 RETURN count(*) AS c"
+    val query = "MATCH (b {id: 0}), (c {id: 0}) MERGE (a) ON MATCH SET a.id2 = 0 RETURN count(*) AS c"
 
     val result = updateWithBothPlanners(query)
-    result.toList should equal(List(Map("c" -> 36)))
-    assertStats(result, propertiesWritten = 36)
+    result.toList should equal(List(Map("c" -> 12)))
+    assertStats(result, propertiesWritten = 12)
 
     assertNumberOfEagerness(query, 0)
   }
@@ -1027,6 +1121,43 @@ class EagerizationAcceptanceTest
     result.toList should equal(List(Map("c" -> 36)))
     assertStats(result, propertiesWritten = 36)
 
+    assertNumberOfEagerness(query, 1)
+  }
+
+  // TODO: This does not work on 2.3 either
+  ignore("should introduce eagerness between MATCH and DELETE path") {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+    relate(a, b)
+
+    val query = """MATCH p=()-->()
+                  |DELETE p
+                  |RETURN count(*)
+                """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, nodesDeleted = 2, relationshipsDeleted = 2)
+    result.columnAs[Long]("count(*)").next shouldBe 2
+    assertNumberOfEagerness(query, 1)
+  }
+
+  // TODO: This does not work on 2.3 either
+  ignore("should introduce eagerness between MATCH, UNWIND, DELETE nodes in path") {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+    relate(a, b)
+
+    val query = """MATCH p=()-->()
+                  |UNWIND nodes(p) as n
+                  |DETACH DELETE n
+                  |RETURN count(*)
+                """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, nodesDeleted = 2, relationshipsDeleted = 2)
+    result.columnAs[Long]("count(*)").next shouldBe 2
     assertNumberOfEagerness(query, 1)
   }
 
@@ -1079,7 +1210,7 @@ class EagerizationAcceptanceTest
     assertStats(result, relationshipsCreated = 3, labelsAdded = 1)
 
     //TODO this we need to consider not only overlap but also what known labels the node we set has
-    assertNumberOfEagerness(query, 1)
+    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("should introduce eagerness when the ON MATCH includes writing to a right-side matched label") {
@@ -1110,7 +1241,7 @@ class EagerizationAcceptanceTest
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, relationshipsCreated = 3, labelsAdded = 2)
     //TODO this we need to consider not only overlap but also what known labels the node we set has
-    assertNumberOfEagerness(query, 1)
+    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("should introduce eagerness when the ON CREATE includes writing to a right-side matched label") {
@@ -1148,7 +1279,6 @@ class EagerizationAcceptanceTest
 
     val result: InternalExecutionResult = updateWithBothPlanners(query)
     assertStats(result, nodesCreated = 2, relationshipsCreated = 2, labelsAdded = 2)
-
     result.toList should equal(List(Map("nodes" -> 15)))
     assertNumberOfEagerness(query, 1)
   }
@@ -1161,6 +1291,14 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     result.columnAs[Long]("count(*)").next shouldBe 0
     assertStats(result, relationshipsCreated = 1)
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("never ending query should end - this is the query that prompted Eagerness in the first place") {
+    createNode()
+    val query = "MATCH (a) CREATE ()"
+    val result = updateWithBothPlanners(query)
+    assertStats(result, nodesCreated = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1273,6 +1411,24 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 0)
   }
 
+  test("Multiple single node merges building on each other through property values should be eager") {
+    val query = "MERGE(a {p: 1}) MERGE(b {p: a.p}) MERGE(c {p: b.p}) RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next shouldBe 1
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
+    assertNumberOfEagerness(query, 2)
+  }
+
+  test("Multiple single node merges should be eager") {
+    val query = "UNWIND [0, 1] AS i MERGE (a {p: i % 2}) MERGE (b {p: (i + 1) % 2}) ON CREATE SET b:ShouldNotBeSet RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next shouldBe 2
+    assertStats(result, nodesCreated = 2, propertiesWritten = 2, labelsAdded = 0)
+    assertNumberOfEagerness(query, 1)
+  }
+
   test("should not be eager when merging on already bound variables") {
     val query = "MERGE (city:City) MERGE (country:Country) MERGE (city)-[:IN]->(country) RETURN count(*)"
 
@@ -1330,10 +1486,12 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (n), (m:Lol) SET n:Lol RETURN count(*)"
 
+    // this is intended for the rule planner only, since the assumption is made that
+    // the left-most node in the match pattern will become the 'stable leaf'
     val result = eengine.execute(s"cypher planner=rule $query")
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStatsResult(labelsAdded = 1)(result.queryStatistics())
-    assertNumberOfEagerness(query, 1)
+//    assertNumberOfEagerness(query, 1) -- not with rule planner
   }
 
   test("matching label on right-hand side and setting same label should be eager and get the count right") {
@@ -1579,6 +1737,18 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 0)
   }
 
+  test("matching two relationships, writing one property should be eager") {
+    val l = createLabeledNode("L")
+    val a = createNode()
+    relate(a, l, "prop" -> 42)
+    relate(l, a)
+
+    val query = "MATCH ()-[r {prop: 42}]-(), (:L)-[r2]-() SET r2.prop = 42"
+
+    assertNumberOfEagerness(query, 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 2)
+  }
+
   test("setting property in tail should be eager if overlap") {
     createNode()
     createNode()
@@ -1602,7 +1772,7 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     result.columnAs[Int]("count").next should equal(12)
     assertStats(result, propertiesWritten = 12, nodesCreated = 2)
-    assertNumberOfEagerness(query, 2)
+    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   test("setting property in tail should be eager if overlap first tail") {
@@ -1610,12 +1780,20 @@ class EagerizationAcceptanceTest
     createNode()
     createNode("prop" -> 42)
     createNode("prop" -> 42)
-    val query = "CREATE () WITH * MATCH (n {prop: 42}) CREATE (m) WITH * MATCH (o) SET n.prop = 42 RETURN count(*) as count"
+    val query =
+      """CREATE ()
+        |WITH *
+        |MATCH (n {prop: 42})
+        |CREATE (m)
+        |WITH *
+        |MATCH (o)
+        |SET m.prop = 42
+        |RETURN count(*) as count""".stripMargin
 
     val result = updateWithBothPlanners(query)
     result.columnAs[Int]("count").next should equal(14)
     assertStats(result, propertiesWritten = 14, nodesCreated = 3)
-    assertNumberOfEagerness(query, 3)
+    assertNumberOfEagerness(query, 3, optimalEagerCount = 1)
   }
 
   test("setting property in tail should not be eager if no overlap") {
@@ -1652,12 +1830,16 @@ class EagerizationAcceptanceTest
   }
 
   test("matching node property, writing with += should be eager when using parameters") {
-    relate(createNode(Map("prop" -> 5)),createNode())
-    val query = "MATCH (n {prop : 5})-[r]-(m) SET m += {props} RETURN count(*)"
+    val s = createNode(Map("prop" -> 5))
+    val e = createNode()
+    relate(s,e)
+    relate(e,s)
+
+    val query = "MATCH (n {prop : 5})-[r]->(m) SET m += {props} RETURN count(*)"
+
     val result = updateWithBothPlanners(query, "props" -> Map("prop" -> 5))
     assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
-
     assertNumberOfEagerness(query, 1)
   }
 
@@ -1911,8 +2093,7 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesCreated = 4)
-    //TODO:M We should be able to only be eager once
-    assertNumberOfEagerness(query, 2)
+    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   // LOAD CSV
@@ -1992,25 +2173,32 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesCreated = 4)
-    //TODO:M We should be able to only be eager once
-    assertNumberOfEagerness(query, 2)
+    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
-  private def assertNumberOfEagerness(query: String, expectedEagerCount: Int) {
+  private def assertNumberOfEagerness(query: String, expectedEagerCount: Int, optimalEagerCount: Int = -1) {
+    withClue("The optimum must be smaller than the expected, otherwise just use expected") {
+      expectedEagerCount shouldBe >=(optimalEagerCount)
+    }
     val q = if (query.contains("EXPLAIN")) query else "EXPLAIN CYPHER " + query
     val result = eengine.execute(q)
     val plan = result.executionPlanDescription().toString
     result.close()
     val eagers = EagerRegEx.findAllIn(plan).length
-    val repeatableReads = RepeatableReadRegEx.findAllIn(plan).length
-    val length = eagers + repeatableReads
     if (VERBOSE && expectedEagerCount > 0) {
-      println(s"\n$query expected eagerness $expectedEagerCount\n  Eager: $eagers\n  RepeatableReads: $repeatableReads")
+      println(s"\n$query expected eagerness $expectedEagerCount\n  Eager: $eagers\n")
       if (VERBOSE_INCLUDE_PLAN_DESCRIPTION)
         println(plan)
     }
-    withClue(s"Number of eagerness ") {
-      length shouldBe expectedEagerCount
+    val msg = if (eagers == optimalEagerCount) {
+      s"Optimal eager count $optimalEagerCount achieved! Please change the test expectation (if this is a stable solution) "
+    } else if (eagers < expectedEagerCount) {
+      "Too few eagers: "
+    } else {
+      "Too many eagers: "
+    }
+    withClue(msg) {
+      eagers shouldBe expectedEagerCount
     }
   }
 }

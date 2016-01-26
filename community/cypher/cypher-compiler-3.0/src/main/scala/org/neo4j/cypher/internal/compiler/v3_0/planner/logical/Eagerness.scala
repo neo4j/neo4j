@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_0.{bottomUp, Rewriter, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 import scala.annotation.tailrec
 
@@ -104,8 +104,9 @@ object Eagerness {
     val propertiesToCreate = tail.queryGraph.createNodeProperties
     val labelsToRemove = tail.queryGraph.labelsToRemoveFromOtherNodes(currentNode)
 
+    val tailCreatesNodes = tail.exists(_.queryGraph.createsNodes)
     tail.queryGraph.updatesNodes &&
-      (labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tail.exists(_.queryGraph.createNodePatterns.nonEmpty) || //MATCH () CREATE (...)?
+      (labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tailCreatesNodes || //MATCH () CREATE/MERGE (...)?
         (labelsOnCurrentNode intersect labelsToCreate).nonEmpty || //MATCH (:A) CREATE (:A)?
         propertiesOnCurrentNode.exists(propertiesToCreate.overlaps) || //MATCH ({prop:42}) CREATE ({prop:...})
 
@@ -121,11 +122,18 @@ object Eagerness {
    * - (a)-[r]-(b) (undirected)
    * - (a)-[r1]->(b)-[r2]->(c) (multi step)
    * - (a)-[r*]->(b) (variable length)
+   * - where the match pattern and the create/merge pattern
+   *   includes the same nodes, but the direction is reversed
    */
   private def hasUnsafeRelationships(queryGraph: QueryGraph): Boolean = {
-    val allPatterns = queryGraph.allPatternRelationships
-    allPatterns.size > 1 || allPatterns.exists(r => r.dir == SemanticDirection.BOTH || !r.length.isSimple)
+    /*
+     * It is difficult to implement a perfect fit for all four above rules (the fourth one is the tricky one).
+     * Therefore we are better safe than sorry, and just see all relationships as unsafe.
+     */
+    hasRelationships(queryGraph)
   }
+
+  private def hasRelationships(queryGraph: QueryGraph) = queryGraph.allPatternRelationships.nonEmpty
 
   case object unnestEager extends Rewriter {
 
