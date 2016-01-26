@@ -24,6 +24,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.locks.LockSupport;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -37,6 +39,8 @@ import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class KernelSchemaStateFlushingTest
 {
@@ -69,7 +73,7 @@ public class KernelSchemaStateFlushingTest
 
         IndexDescriptor descriptor = createIndex();
 
-        awaitIndexOnline( descriptor );
+        awaitIndexOnline( descriptor, "test" );
 
         // when
         String after = commitToSchemaState( "test", "after" );
@@ -83,7 +87,7 @@ public class KernelSchemaStateFlushingTest
     {
         IndexDescriptor descriptor = createIndex();
 
-        awaitIndexOnline( descriptor );
+        awaitIndexOnline( descriptor, "test" );
 
         commitToSchemaState( "test", "before" );
 
@@ -171,13 +175,27 @@ public class KernelSchemaStateFlushingTest
         }
     }
 
-    private void awaitIndexOnline( IndexDescriptor descriptor )
+    private void awaitIndexOnline( IndexDescriptor descriptor, String keyForProbing )
             throws IndexNotFoundKernelException, TransactionFailureException
     {
         try ( KernelTransaction transaction = kernel.newTransaction();
              Statement statement = transaction.acquireStatement() )
         {
             SchemaIndexTestHelper.awaitIndexOnline( statement.readOperations(), descriptor );
+            transaction.success();
+        }
+        awaitSchemaStateCleared( keyForProbing );
+    }
+
+    private void awaitSchemaStateCleared( String keyForProbing ) throws TransactionFailureException
+    {
+        try ( KernelTransaction transaction = kernel.newTransaction();
+                Statement statement = transaction.acquireStatement() )
+        {
+            while ( statement.readOperations().schemaStateGetOrCreate( keyForProbing, (ignored) -> null ) != null )
+            {
+                LockSupport.parkNanos( MILLISECONDS.toNanos( 10 ) );
+            }
             transaction.success();
         }
     }
