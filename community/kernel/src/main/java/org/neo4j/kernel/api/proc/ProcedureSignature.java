@@ -135,19 +135,21 @@ public class ProcedureSignature
     }
 
     private final ProcedureName name;
+    private final String description;
     private final List<FieldSignature> inputSignature;
     private final List<FieldSignature> outputSignature;
 
-    public ProcedureSignature( ProcedureName name, List<FieldSignature> inputSignature, List<FieldSignature> outputSignature )
+    public ProcedureSignature( ProcedureName name, List<FieldSignature> inputSignature, List<FieldSignature> outputSignature, String description )
     {
         this.name = name;
+        this.description = description;
         this.inputSignature = unmodifiableList( inputSignature );
         this.outputSignature = unmodifiableList( outputSignature );
     }
 
     public ProcedureSignature( ProcedureName name )
     {
-        this( name, Collections.emptyList(), Collections.emptyList() );
+        this( name, Collections.emptyList(), Collections.emptyList(), "N/A" );
     }
 
     public ProcedureName name()
@@ -163,6 +165,12 @@ public class ProcedureSignature
     public List<FieldSignature> outputSignature()
     {
         return outputSignature;
+    }
+
+    /** Optional human-readable description of this procedure. */
+    public String description()
+    {
+        return description;
     }
 
     @Override
@@ -198,10 +206,18 @@ public class ProcedureSignature
         private final ProcedureName name;
         private final List<FieldSignature> inputSignature = new LinkedList<>();
         private final List<FieldSignature> outputSignature = new LinkedList<>();
+        private String description = "N/A";
 
         public Builder( String[] namespace, String name )
         {
             this.name = new ProcedureName( namespace, name );
+        }
+
+        /** Define an input field */
+        public Builder description( String description )
+        {
+            this.description = description;
+            return this;
         }
 
         /** Define an input field */
@@ -220,7 +236,7 @@ public class ProcedureSignature
 
         public ProcedureSignature build()
         {
-            return new ProcedureSignature(name, inputSignature, outputSignature );
+            return new ProcedureSignature(name, inputSignature, outputSignature, description );
         }
     }
 

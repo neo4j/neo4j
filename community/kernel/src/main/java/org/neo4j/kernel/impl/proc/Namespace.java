@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory;
+package org.neo4j.kernel.impl.proc;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -25,13 +25,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used to add description of settings in {@link GraphDatabaseSettings}. These can then be accessed through the {@link GraphDatabaseSettingsResourceBundle}.
- *
- * This is deprecated, it will be moved out of the public API in 1.11.
+ * Internal mechanism to override the default namespace for a procedure class.
  */
+@Target( ElementType.TYPE )
 @Retention( RetentionPolicy.RUNTIME )
-@Target( {ElementType.TYPE, ElementType.FIELD, ElementType.METHOD } )
-public @interface Description
+public @interface Namespace
 {
-    String value();
+    String[] value();
 }

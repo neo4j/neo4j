@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.graphdb.factory.Description;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -97,12 +98,14 @@ public class ReflectiveProcedureCompiler
     {
         ProcedureName procName = extractName( procDefinition, method );
 
+        String description = method.isAnnotationPresent( Description.class ) ?
+                             method.getAnnotation( Description.class ).value() : "N/A";
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         OutputMapper outputMapper = outputMappers.mapper( method );
         MethodHandle procedureMethod = lookup.unreflect( method );
         List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
-        ProcedureSignature signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature() );
+        ProcedureSignature signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), description );
 
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
@@ -124,7 +127,16 @@ public class ReflectiveProcedureCompiler
 
     private ProcedureName extractName( Class<?> procDefinition, Method m )
     {
-        String[] namespace = procDefinition.getPackage().getName().split( "\\." );
+        String[] namespace;
+        if( procDefinition.isAnnotationPresent( Namespace.class ))
+        {
+            namespace = procDefinition.getAnnotation( Namespace.class ).value();
+        }
+        else
+        {
+            // Default to using the name space the class is declared in
+            namespace = procDefinition.getPackage().getName().split( "\\." );
+        }
         String name = m.getName();
         return new ProcedureName( namespace, name );
     }

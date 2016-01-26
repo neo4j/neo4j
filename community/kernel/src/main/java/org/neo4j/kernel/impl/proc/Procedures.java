@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.proc;
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.Procedure;
@@ -88,7 +88,7 @@ public class Procedures
      * @param cls the type of component to be registered (this is what users 'ask' for in their field declaration)
      * @param supplier a function that supplies the actual component, given the context of a procedure invocation
      */
-    public synchronized <T> void registerComponent( Class<T> cls, Function<Procedure.Context, T> supplier )
+    public synchronized <T> void registerComponent( Class<T> cls, ThrowingFunction<Procedure.Context, T, ProcedureException> supplier )
     {
         components.register( cls, supplier );
     }

@@ -44,11 +44,12 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.guard.Guard;
@@ -162,6 +163,7 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
+import static org.neo4j.kernel.builtinprocs.BuiltInProcedures.BUILTINS;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements Lifecycle, IndexProviders
@@ -816,11 +818,17 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         //register API
         procedures.registerComponent( GraphDatabaseService.class,
                 (ctx) -> dependencyResolver.resolveDependency( GraphDatabaseService.class ) );
+        procedures.registerComponent( DependencyResolver.class, (ctx) -> dependencyResolver );
+        procedures.registerComponent( Statement.class, (ctx) -> ctx.get( ReadOperations.statement ) );
 
         Log proceduresLog = logService.getUserLog( Procedures.class  );
         procedures.registerComponent( Log.class, (ctx) -> proceduresLog );
 
-        BuiltInProcedures.addTo( procedures );
+        for ( Class procs : BUILTINS )
+        {
+            procedures.register( procs );
+        }
+
         procedures.loadFromDirectory( config.get( GraphDatabaseSettings.plugin_dir ) );
         return procedures;
     }

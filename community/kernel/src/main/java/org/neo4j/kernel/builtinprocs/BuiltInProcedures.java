@@ -19,21 +19,114 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.impl.proc.Procedures;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.stream.Stream;
 
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.factory.Description;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.impl.api.TokenAccess;
+import org.neo4j.kernel.impl.proc.Namespace;
+import org.neo4j.kernel.impl.proc.ReadOnlyProcedure;
+import org.neo4j.kernel.impl.proc.Resource;
+
+import static java.util.Spliterators.spliteratorUnknownSize;
+import static java.util.stream.StreamSupport.stream;
 
 /**
  * This registers procedures that are expected to be available by default in Neo4j.
  */
 public class BuiltInProcedures
 {
-    public static void addTo( Procedures procs ) throws ProcedureException
+    public static Class[] BUILTINS = new Class[]{ ReadOnlySystemProcedures.class };
+
+    @Namespace({"sys", "db"})
+    public static class ReadOnlySystemProcedures
     {
-        procs.register( new ListLabelsProcedure( procedureName( "sys", "db", "labels" ) ) );
-        procs.register( new ListPropertyKeysProcedure( procedureName( "sys", "db", "propertyKeys" ) ) );
-        procs.register( new ListRelationshipTypesProcedure( procedureName( "sys", "db", "relationshipTypes" ) ) );
-        procs.register( new ListProceduresProcedure( procedureName( "sys", "db", "procedures" ) ) );
+        @Resource
+        public Statement statement;
+
+        @ReadOnlyProcedure
+        @Description( "Retrieve a list of all labels that are currently in use." )
+        public Stream<LabelOutput> labels()
+        {
+            ResourceIterator<Label> labels = TokenAccess.LABELS.inUse( statement );
+            return stream( spliteratorUnknownSize( labels, 0), false ).map( LabelOutput::new );
+        }
+
+        @ReadOnlyProcedure
+        @Description( "Retrieve a list of all property keys that are currently in use." )
+        public Stream<PropertyKeyOutput> propertyKeys()
+        {
+            ResourceIterator<String> labels = TokenAccess.PROPERTY_KEYS.inUse( statement );
+            return stream( spliteratorUnknownSize( labels, 0), false ).map( PropertyKeyOutput::new );
+        }
+
+        @ReadOnlyProcedure
+        @Description( "Retrieve a list of all relationship types that are currently in use." )
+        public Stream<RelationshipTypeOutput> relationshipTypes()
+        {
+            ResourceIterator<RelationshipType> relTypes = TokenAccess.RELATIONSHIP_TYPES.inUse( statement );
+            return stream( spliteratorUnknownSize( relTypes, 0 ), false ).map( RelationshipTypeOutput::new );
+        }
+
+        @ReadOnlyProcedure
+        @Description( "Retrieve a list of all procedures that are currently registered." )
+        public Stream<ProcedureOutput> procedures()
+        {
+            Set<ProcedureSignature> procedureSignatures = statement.readOperations().proceduresGetAll();
+            ArrayList<ProcedureSignature> sorted = new ArrayList<>( procedureSignatures );
+            sorted.sort( (a,b) -> a.name().toString().compareTo( b.name().toString() ) );
+
+            return sorted.stream().map( ProcedureOutput::new );
+        }
+
+        public static class LabelOutput
+        {
+            public String label;
+
+            public LabelOutput(Label in)
+            {
+                label = in.name();
+            }
+        }
+
+        public static class PropertyKeyOutput
+        {
+            public String propertyKey;
+
+            public PropertyKeyOutput(String in)
+            {
+                propertyKey = in;
+            }
+        }
+
+        public static class RelationshipTypeOutput
+        {
+            public String relationshipType;
+
+            public RelationshipTypeOutput(RelationshipType in)
+            {
+                relationshipType = in.name();
+            }
+        }
+
+        public static class ProcedureOutput
+        {
+            public String name;
+            public String signature;
+            public String description;
+
+            public ProcedureOutput(ProcedureSignature in)
+            {
+                name = in.name().toString();
+                signature = in.toString();
+                description = in.description();
+            }
+        }
     }
 }
