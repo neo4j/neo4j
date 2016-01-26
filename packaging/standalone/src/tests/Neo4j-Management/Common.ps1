@@ -12,6 +12,6 @@ Function global:New-MockNeo4jInstall($RootDir, $IncludeFiles = $true, $ServerTyp
   
   if ($IncludeFiles) {
     'TempFile' | Out-File -FilePath "$RootDir\system\lib\neo4j-server-$($ServerVersion).jar"
-    if ($ServerType -eq 'Enterprise') { 'TempFile' | Out-File -FilePath "$RootDir\system\lib\neo4j-server-enterprise-$($ServerVersion).jar" }
+    if ($ServerType -eq 'Enterprise') { 'TempFile' | Out-File -FilePath "$RootDir\lib\neo4j-server-enterprise-$($ServerVersion).jar" }
   }
 }
