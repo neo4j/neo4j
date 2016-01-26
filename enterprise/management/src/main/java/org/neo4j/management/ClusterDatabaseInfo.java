@@ -21,8 +21,8 @@ package org.neo4j.management;
 
 public class ClusterDatabaseInfo extends ClusterMemberInfo
 {
-    private final long lastCommittedTxId;
-    private final long lastUpdateTime;
+    private long lastCommittedTxId;
+    private long lastUpdateTime;
 
     public ClusterDatabaseInfo( ClusterMemberInfo memberInfo, long lastCommittedTxId, long lastUpdateTime )
     {

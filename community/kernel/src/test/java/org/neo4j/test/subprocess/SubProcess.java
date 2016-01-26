@@ -73,7 +73,7 @@ public abstract class SubProcess<T, P> implements Serializable
     // by default will inherit output destinations for subprocess from current process
     private static final boolean INHERIT_OUTPUT_DEFAULT_VALUE = true;
 
-    private final Class<T> t;
+    private Class<T> t;
     private transient boolean inheritOutput = INHERIT_OUTPUT_DEFAULT_VALUE;
     private final transient Predicate<String> classPathFilter;
 
@@ -121,16 +121,6 @@ public abstract class SubProcess<T, P> implements Serializable
             throw new ClassCastException( getClass().getName() + " must implement declared interface " + t );
         }
         this.classPathFilter = classPathFilter;
-    }
-
-    public SubProcess( Predicate<String> classPathFilter )
-    {
-        this( classPathFilter, INHERIT_OUTPUT_DEFAULT_VALUE );
-    }
-
-    public SubProcess( boolean inheritOutput )
-    {
-        this(null, inheritOutput );
     }
 
     public SubProcess()
@@ -473,9 +463,9 @@ public abstract class SubProcess<T, P> implements Serializable
 
     private static class DispatcherTrapImpl extends UnicastRemoteObject implements DispatcherTrap
     {
-        private final Object parameter;
+        private Object parameter;
         private volatile Dispatcher dispatcher;
-        private final SubProcess<?, ?> process;
+        private SubProcess<?, ?> process;
 
         DispatcherTrapImpl( SubProcess<?, ?> process, Object parameter ) throws RemoteException
         {
