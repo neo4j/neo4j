@@ -13,7 +13,7 @@
         <license-text.header>GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
         <lucene4.version>4.10.4</lucene4.version>
-        <lucene5.version>5.3.1</lucene5.version>
+        <lucene5.version>5.4.0</lucene5.version>
     </properties>
 
     <modelVersion>4.0.0</modelVersion>
