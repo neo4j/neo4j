@@ -6,6 +6,8 @@ test_description="Test Java arguments"
 fake_install
 
 for run_command in run_console run_daemon; do
+  clear_config
+
   test_expect_success "should specify -server" "
     ${run_command} &&
     test_expect_java_arg '-server'
@@ -51,5 +53,14 @@ for run_command in run_console run_daemon; do
     test_expect_java_arg ':$(neo4j_home)/plugins/*'
   "
 done
+
+test_expect_success "should set heap size constraints when checking version" "
+  clear_config &&
+  set_config 'wrapper.java.initmemory' '512' neo4j-wrapper.conf &&
+  set_config 'wrapper.java.maxmemory' '1024' neo4j-wrapper.conf &&
+  neo4j-home/bin/neo4j status || true &&
+  test_expect_java_arg '-Xms512m' &&
+  test_expect_java_arg '-Xmx1024m'
+"
 
 test_done

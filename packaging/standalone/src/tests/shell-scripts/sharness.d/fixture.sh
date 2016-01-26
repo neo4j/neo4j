@@ -6,6 +6,10 @@ fake_install() {
   chmod +x neo4j-home/bin/neo4j-arbiter
 }
 
+clear_config() {
+  rm -f neo4j-home/conf/*
+}
+
 set_config() {
   name=$1
   value=$2
