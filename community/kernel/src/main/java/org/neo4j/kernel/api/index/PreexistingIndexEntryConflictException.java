@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 
 import static java.lang.String.format;
 
 /**
- * Thrown from update methods (eg. {@link IndexPopulator#add(long, Object)}, {@link IndexPopulator#update(Iterable)},
- * and {@link IndexAccessor#updateAndCommit(Iterable)}) of an index that is unique when a conflicting entry (clashing
- * with an existing value - violating uniqueness) is being added.
+ * Thrown when a conflicting entry (clashing with an existing value - violating uniqueness) is detected.
  */
 public class PreexistingIndexEntryConflictException extends IndexEntryConflictException
 {
@@ -103,9 +102,9 @@ public class PreexistingIndexEntryConflictException extends IndexEntryConflictEx
     public String toString()
     {
         return "PreexistingIndexEntryConflictException{" +
-                "propertyValue=" + propertyValue +
-                ", addedNodeId=" + addedNodeId +
-                ", existingNodeId=" + existingNodeId +
-                '}';
+               "propertyValue=" + Strings.prettyPrint( propertyValue ) +
+               ", addedNodeId=" + addedNodeId +
+               ", existingNodeId=" + existingNodeId +
+               '}';
     }
 }

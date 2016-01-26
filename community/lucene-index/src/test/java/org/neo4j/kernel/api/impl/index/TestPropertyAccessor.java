@@ -17,12 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
 
-public interface PropertyLookup
+public class TestPropertyAccessor implements PropertyAccessor
 {
-    Property nodeProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+    private final Object[] propertyValues;
+
+    public TestPropertyAccessor( Object[] propertyValues )
+    {
+        this.propertyValues = propertyValues;
+    }
+
+    @Override
+    public Property getProperty( long nodeId, int propertyKeyId )
+    {
+        return Property.property( propertyKeyId, propertyValues[(int) nodeId] );
+    }
 }

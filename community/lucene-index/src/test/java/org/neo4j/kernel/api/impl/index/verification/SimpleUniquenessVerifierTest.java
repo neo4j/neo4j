@@ -1,0 +1,220 @@
+/*
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.api.impl.index.verification;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.store.Directory;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.List;
+
+import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.kernel.api.impl.index.TestPropertyAccessor;
+import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
+import org.neo4j.kernel.api.impl.schema.verification.SimpleUniquenessVerifier;
+import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
+import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.test.TargetDirectory;
+
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+public class SimpleUniquenessVerifierTest
+{
+    private static final int PROPERTY_KEY_ID = 42;
+
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
+    private DirectoryFactory dirFactory;
+    private IndexWriter writer;
+    private SearcherManager searcherManager;
+
+    @Before
+    public void initLuceneResources() throws Exception
+    {
+        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+        Directory dir = dirFactory.open( testDir.directory( "test" ) );
+        writer = new IndexWriter( dir, IndexWriterConfigs.standardConfig() );
+        searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
+    }
+
+    @After
+    public void closeLuceneResources() throws Exception
+    {
+        IOUtils.closeAll( searcherManager, writer, dirFactory );
+    }
+
+    @Test
+    public void partitionSearcherIsClosed() throws IOException
+    {
+        PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
+        SimpleUniquenessVerifier verifier = new SimpleUniquenessVerifier( partitionSearcher );
+
+        verifier.close();
+
+        verify( partitionSearcher ).close();
+    }
+
+    @Test
+    public void populationVerificationNoDuplicates() throws Exception
+    {
+        List<Object> data = asList( "string1", 42, 43, 44, 45L, (byte) 46, 47.0, (float) 48.1, "string2" );
+        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+
+        insert( data );
+
+        assertNoDuplicates( propertyAccessor );
+    }
+
+    @Test
+    public void populationVerificationOneDuplicate() throws IOException
+    {
+        List<Object> data = asList( "cat", 21, 22, 23, 24L, (byte) 25, 26.0, (float) 22, "dog" );
+        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+
+        insert( data );
+
+        assertHasDuplicates( propertyAccessor );
+    }
+
+    @Test
+    public void populationVerificationManyDuplicate() throws IOException
+    {
+        List<Object> data = asList( "dog", "cat", "dog", "dog", "dog", "dog" );
+        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+
+        insert( data );
+
+        assertHasDuplicates( propertyAccessor );
+    }
+
+    @Test
+    public void updatesVerificationNoDuplicates() throws Exception
+    {
+        List<Object> data = asList( "lucene", 1337975550, 43.10, 'a', 'b', 'c', (byte) 12 );
+        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+
+        insert( data );
+
+        assertNoDuplicatesCreated( propertyAccessor, asList( 1337975550, 'c', (byte) 12 ) );
+    }
+
+    @Test
+    public void updatesVerificationOneDuplicate() throws IOException
+    {
+        List<Object> data = asList( "foo", "bar", "baz", 100, 200, 'q', 'u', 'x', "aa", 300, 'u', -100 );
+        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+
+        insert( data );
+
+        assertDuplicatesCreated( propertyAccessor, asList( "aa", 'u', -100 ) );
+    }
+
+    @Test
+    public void updatesVerificationManyDuplicate() throws IOException
+    {
+        List<Object> data = asList( -99, 'a', -10.0, -99.99999, "apa", (float) -99.99999, "mod", "div", "div", -10 );
+        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+
+        insert( data );
+
+        assertDuplicatesCreated( propertyAccessor, asList( (float) -99.99999, 'a', -10, "div" ) );
+    }
+
+    private void assertNoDuplicates( PropertyAccessor propertyAccessor ) throws Exception
+    {
+        try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
+        {
+            verifier.verify( propertyAccessor, PROPERTY_KEY_ID );
+        }
+    }
+
+    private void assertNoDuplicatesCreated( PropertyAccessor propertyAccessor, List<Object> updatedPropertyValues )
+            throws Exception
+    {
+        try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
+        {
+            verifier.verify( propertyAccessor, PROPERTY_KEY_ID, updatedPropertyValues );
+        }
+    }
+
+    private void assertHasDuplicates( PropertyAccessor propertyAccessor )
+    {
+        try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
+        {
+            verifier.verify( propertyAccessor, PROPERTY_KEY_ID );
+            fail( "Uniqueness verification was successful. This is not expected..." );
+        }
+        catch ( Throwable t )
+        {
+            assertThat( t, instanceOf( PreexistingIndexEntryConflictException.class ) );
+        }
+    }
+
+    private void assertDuplicatesCreated( PropertyAccessor propertyAccessor, List<Object> updatedPropertyValues )
+    {
+        try ( UniquenessVerifier verifier = newSimpleUniquenessVerifier() )
+        {
+            verifier.verify( propertyAccessor, PROPERTY_KEY_ID, updatedPropertyValues );
+            fail( "Uniqueness verification was successful. This is not expected..." );
+        }
+        catch ( Throwable t )
+        {
+            assertThat( t, instanceOf( PreexistingIndexEntryConflictException.class ) );
+        }
+    }
+
+    private void insert( List<Object> data ) throws IOException
+    {
+        for ( int i = 0; i < data.size(); i++ )
+        {
+            Document doc = LuceneDocumentStructure.documentRepresentingProperty( i, data.get( i ) );
+            writer.addDocument( doc );
+        }
+        searcherManager.maybeRefreshBlocking();
+    }
+
+    private PropertyAccessor newPropertyAccessor( List<Object> propertyValues )
+    {
+        return new TestPropertyAccessor( propertyValues.toArray() );
+    }
+
+    private UniquenessVerifier newSimpleUniquenessVerifier() throws IOException
+    {
+        PartitionSearcher partitionSearcher = new PartitionSearcher( searcherManager );
+        return new SimpleUniquenessVerifier( partitionSearcher );
+    }
+}

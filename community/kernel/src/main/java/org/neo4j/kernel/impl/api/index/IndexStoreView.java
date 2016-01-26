@@ -24,7 +24,6 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -87,8 +86,7 @@ public interface IndexStoreView extends PropertyAccessor
     IndexStoreView EMPTY = new IndexStoreView()
     {
         @Override
-        public Property getProperty( long nodeId, int propertyKeyId )
-                throws EntityNotFoundException, PropertyNotFoundException
+        public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
         {
             return Property.noNodeProperty( nodeId, propertyKeyId );
         }

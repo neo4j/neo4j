@@ -25,6 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -44,13 +45,13 @@ public class LookupFilter
     /**
      * used by the consistency checker
      */
-    public static PrimitiveLongIterator exactIndexMatches( PropertyLookup lookup, PrimitiveLongIterator indexedNodeIds,
-            int propertyKeyId, Object value )
+    public static PrimitiveLongIterator exactIndexMatches( PropertyAccessor accessor,
+            PrimitiveLongIterator indexedNodeIds, int propertyKeyId, Object value )
     {
         if ( isNumberOrArray( value ) )
         {
             return PrimitiveLongCollections.filter( indexedNodeIds,
-                    new LookupBasedExactMatchPredicate( lookup, propertyKeyId,
+                    new LookupBasedExactMatchPredicate( accessor, propertyKeyId,
                             value ) );
         }
         return indexedNodeIds;
@@ -150,18 +151,18 @@ public class LookupFilter
      */
     private static class LookupBasedExactMatchPredicate extends BaseExactMatchPredicate
     {
-        final PropertyLookup lookup;
+        final PropertyAccessor accessor;
 
-        LookupBasedExactMatchPredicate( PropertyLookup lookup, int propertyKeyId, Object value )
+        LookupBasedExactMatchPredicate( PropertyAccessor accessor, int propertyKeyId, Object value )
         {
             super( propertyKeyId, value );
-            this.lookup = lookup;
+            this.accessor = accessor;
         }
 
         @Override
         Property nodeProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
         {
-            return lookup.nodeProperty( nodeId, propertyKeyId );
+            return accessor.getProperty( nodeId, propertyKeyId );
         }
     }
 

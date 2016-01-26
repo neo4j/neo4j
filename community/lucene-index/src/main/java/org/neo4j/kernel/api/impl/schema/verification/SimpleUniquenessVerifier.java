@@ -36,8 +36,16 @@ import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 
-import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
-
+/**
+ * A {@link UniquenessVerifier} that is able to verify value uniqueness inside a single index partition using
+ * it's {@link PartitionSearcher}.
+ * <p>
+ * This verifier reads all terms, checks document frequency for each term and verifies uniqueness of values from the
+ * property store if document frequency is greater than 1.
+ *
+ * @see PartitionSearcher
+ * @see DuplicateCheckingCollector
+ */
 public class SimpleUniquenessVerifier implements UniquenessVerifier
 {
     private final PartitionSearcher partitionSearcher;
@@ -59,7 +67,7 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
                 Fields fields = leafReaderContext.reader().fields();
                 for ( String field : fields )
                 {
-                    if ( NODE_ID_KEY.equals( field ) )
+                    if ( LuceneDocumentStructure.NODE_ID_KEY.equals( field ) )
                     {
                         continue;
                     }

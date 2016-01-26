@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
 
-class DuplicateCheckingCollector extends SimpleCollector
+public class DuplicateCheckingCollector extends SimpleCollector
 {
     private final PropertyAccessor accessor;
     private final int propertyKeyId;
