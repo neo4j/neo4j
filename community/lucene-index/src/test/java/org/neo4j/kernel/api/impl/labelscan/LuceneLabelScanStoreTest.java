@@ -255,7 +255,7 @@ public class LuceneLabelScanStoreTest
         for ( long i = 0; i < 34; i++ )
         {
             assertThat( nodesWithLabel, hasItem( i ) );
-            Set<Long> labels = asSet( reader.labelsForNode( i ) );
+            Set<Long> labels = PrimitiveLongCollections.toSet( reader.labelsForNode( i ) );
             assertThat( labels, hasItem( labelId ) );
         }
     }
@@ -282,7 +282,7 @@ public class LuceneLabelScanStoreTest
         for ( long i = 0; i < 34; i++ )
         {
             assertThat( nodesWithLabel0, hasItem( i ) );
-            Set<Long> labels = asSet( reader.labelsForNode( i ) );
+            Set<Long> labels = PrimitiveLongCollections.toSet( reader.labelsForNode( i ) );
             assertThat( labels, hasItem( label0Id ) );
         }
     }
