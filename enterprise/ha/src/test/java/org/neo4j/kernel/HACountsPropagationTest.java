@@ -57,7 +57,7 @@ public class HACountsPropagationTest
             tx.success();
         }
 
-        waitForPullUpdates();
+        cluster.sync();
 
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
@@ -86,7 +86,7 @@ public class HACountsPropagationTest
             tx.success();
         }
 
-        waitForPullUpdates();
+        cluster.sync();
 
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
@@ -95,18 +95,6 @@ public class HACountsPropagationTest
             assertEquals( 1, counts.relationshipCount( -1, -1, 0, newDoubleLongRegister() ).readSecond() );
             assertEquals( 1, counts.relationshipCount( -1, 0, -1, newDoubleLongRegister() ).readSecond() );
             assertEquals( 1, counts.relationshipCount( -1, 0, 0, newDoubleLongRegister() ).readSecond() );
-        }
-    }
-
-    private void waitForPullUpdates()
-    {
-        try
-        {
-            Thread.sleep( PULL_INTERVAL * 2 );
-        }
-        catch ( InterruptedException ex )
-        {
-            // ignore me
         }
     }
 }
