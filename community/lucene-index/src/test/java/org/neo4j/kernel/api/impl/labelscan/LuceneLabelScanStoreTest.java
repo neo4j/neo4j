@@ -69,7 +69,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
@@ -388,7 +387,7 @@ public class LuceneLabelScanStoreTest
         LabelScanReader reader = store.newReader();
 
         // THEN
-        assertThat( asSet( reader.labelsForNode( nodeId ) ), hasItems( labelId1, labelId2 ) );
+        assertThat( PrimitiveLongCollections.toSet( reader.labelsForNode( nodeId ) ), hasItems( labelId1, labelId2 ) );
         reader.close();
     }
 
