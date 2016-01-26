@@ -56,12 +56,12 @@ case object addUniquenessPredicates extends Rewriter {
   def collectUniqueRels(pattern: ASTNode): Seq[UniqueRel] =
     pattern.treeFold(Seq.empty[UniqueRel]) {
       case _: ShortestPaths =>
-        (acc, _) => acc
+        acc => (acc, None)
 
       case RelationshipChain(_, patRel @ RelationshipPattern(optIdent, _, types, _, _, _), _) =>
-        (acc, children) => {
+        acc => {
           val ident = optIdent.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns"))
-          children(acc :+ UniqueRel(ident, types.toSet, patRel.isSingleLength))
+          (acc :+ UniqueRel(ident, types.toSet, patRel.isSingleLength), Some(identity))
         }
     }
 

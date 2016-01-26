@@ -216,7 +216,7 @@ object QueryTagger extends QueryTagger[String] {
   // run inner query tagger on each child ast node and return union over all results
   case class forEachChild(inner: QueryTagger[ASTNode]) extends QueryTagger[Statement] {
     def apply(input: Statement) = input.treeFold(Set.empty[QueryTag]) {
-      case node: ASTNode => (acc, children) => children(acc ++ inner(node))
+      case node: ASTNode => acc => (acc ++ inner(node), Some(identity))
     }
   }
 

@@ -55,7 +55,7 @@ abstract class LogicalPlan
 
   def leaves: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
     case plan: LogicalPlan
-      if plan.lhs.isEmpty && plan.rhs.isEmpty => (acc, r) => r(acc :+ plan)
+      if plan.lhs.isEmpty && plan.rhs.isEmpty => acc => (acc :+ plan, Some(identity))
   }
 
   def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): LogicalPlan = {

@@ -45,10 +45,10 @@ object PatternExpressionPatternElementNamer {
   private case object findPatternElements {
     def apply(astNode: ASTNode): Seq[PatternElement] = astNode.treeFold(Seq.empty[PatternElement]) {
       case patternElement: PatternElement =>
-        (acc, children) => children(acc :+ patternElement)
+        acc => (acc :+ patternElement, Some(identity))
 
       case patternExpr: PatternExpression =>
-        (acc, _) => acc
+        acc => (acc, None)
     }
   }
 

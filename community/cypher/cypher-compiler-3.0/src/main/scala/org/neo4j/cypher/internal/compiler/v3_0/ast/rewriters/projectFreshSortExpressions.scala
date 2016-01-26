@@ -49,11 +49,10 @@ case object projectFreshSortExpressions extends Rewriter {
       if (evaluatedAliases.isEmpty) {
         Seq(clause)
       } else {
-        val nonItemDependencies =
-          orderBy.extract(_.dependencies) ++
-            skip.extract(_.dependencies) ++
-            limit.extract(_.dependencies) ++
-            where.extract(_.dependencies)
+        val nonItemDependencies = orderBy.map(_.dependencies).getOrElse(Set.empty) ++
+            skip.map(_.dependencies).getOrElse(Set.empty) ++
+            limit.map(_.dependencies).getOrElse(Set.empty) ++
+            where.map(_.dependencies).getOrElse(Set.empty)
         val dependenciesFromPreviousScope = nonItemDependencies -- allAliases
 
         val passedItems = dependenciesFromPreviousScope.map(_.asAlias)
@@ -81,10 +80,5 @@ case object projectFreshSortExpressions extends Rewriter {
     case astNode =>
       replacer.expand(astNode)
   }))
-
-  private implicit class ItemSetContainer[T](input: Option[T]) {
-    def extract[K](f: T => Set[K]): Set[K] =
-      input.map(f).getOrElse(Set.empty)
-  }
 }
 

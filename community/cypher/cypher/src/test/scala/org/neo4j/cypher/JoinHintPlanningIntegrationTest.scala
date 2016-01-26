@@ -80,7 +80,7 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
 
   def joinSymbolsIn(plan: LogicalPlan) = {
     val flattenedPlan = plan.treeFold(Seq.empty[LogicalPlan]) {
-      case plan: LogicalPlan => (acc, r) => r(acc :+ plan)
+      case plan: LogicalPlan => acc => (acc :+ plan, Some(identity))
     }
 
     flattenedPlan.collect {

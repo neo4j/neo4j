@@ -34,34 +34,34 @@ object literalReplacement {
     })
   }
 
-  private val literalMatcher: PartialFunction[Any, (LiteralReplacements, LiteralReplacements => LiteralReplacements) => LiteralReplacements] = {
+  private val literalMatcher: PartialFunction[Any, LiteralReplacements => (LiteralReplacements, Option[LiteralReplacements => LiteralReplacements])] = {
     case _: ast.Match | _: ast.Create | _: ast.CreateUnique | _: ast.Merge | _: ast.SetClause | _: ast.Return | _: ast.With =>
-      (acc, children) => children(acc)
+      acc => (acc, Some(identity))
     case _: ast.Clause | _: ast.PeriodicCommitHint | _: ast.Limit | _: ast.CallProcedure =>
-      (acc, _) => acc
+      acc => (acc, None)
     case n: ast.NodePattern =>
-      (acc, _) => n.properties.treeFold(acc)(literalMatcher)
+      acc => (n.properties.treeFold(acc)(literalMatcher), None)
     case r: ast.RelationshipPattern =>
-      (acc, _) => r.properties.treeFold(acc)(literalMatcher)
+      acc => (r.properties.treeFold(acc)(literalMatcher), None)
     case ast.ContainerIndex(_, _: ast.StringLiteral) =>
-      (acc, _) => acc
+      acc => (acc, None)
     case l: ast.StringLiteral =>
-      (acc, _) => acc + (l -> ast.Parameter(s"  AUTOSTRING${acc.size}")(l.position))
+      acc => (acc + (l -> ast.Parameter(s"  AUTOSTRING${acc.size}")(l.position)), None)
     case l: ast.IntegerLiteral =>
-      (acc, _) => acc + (l -> ast.Parameter(s"  AUTOINT${acc.size}")(l.position))
+      acc => (acc + (l -> ast.Parameter(s"  AUTOINT${acc.size}")(l.position)), None)
     case l: ast.DoubleLiteral =>
-      (acc, _) => acc + (l -> ast.Parameter(s"  AUTODOUBLE${acc.size}")(l.position))
+      acc => (acc + (l -> ast.Parameter(s"  AUTODOUBLE${acc.size}")(l.position)), None)
     case l: ast.BooleanLiteral =>
-      (acc, _) => acc + (l -> ast.Parameter(s"  AUTOBOOL${acc.size}")(l.position))
+      acc => (acc + (l -> ast.Parameter(s"  AUTOBOOL${acc.size}")(l.position)), None)
   }
 
   def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
     // TODO: Replace with .exists
     val containsParameter: Boolean = term.treeFold(false) {
       case term: Parameter =>
-        (acc, _) => true
+        acc => (true, None)
       case _ =>
-        (acc, children) => if (acc) true else children(acc)
+        acc => (acc, if (acc) None else Some(identity))
     }
 
     if (containsParameter) {

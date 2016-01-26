@@ -50,10 +50,10 @@ case object projectNamedPaths extends Rewriter {
     def withVariableRewritesForExpression(expr: Expression) =
       expr.treeFold(self) {
         case ident: Variable =>
-          (acc, children) =>
+          acc =>
             acc.paths.get(ident) match {
-              case Some(pathExpr) => children(acc.withRewrittenVariable(Ref(ident) -> pathExpr))
-              case None => children(acc)
+              case Some(pathExpr) => (acc.withRewrittenVariable(Ref(ident) -> pathExpr), Some(identity))
+              case None => (acc, Some(identity))
             }
       }
   }
@@ -83,14 +83,14 @@ case object projectNamedPaths extends Rewriter {
 
   private def collectProjectibles(input: AnyRef): Projectibles = input.treeFold(Projectibles.empty) {
     case aliased: AliasedReturnItem =>
-      (acc, children) =>
-        children(acc.withProtectedVariable(Ref(aliased.variable)))
+      acc =>
+        (acc.withProtectedVariable(Ref(aliased.variable)), Some(identity))
 
     case ident: Variable =>
-      (acc, children) =>
+      acc =>
         acc.paths.get(ident) match {
-          case Some(pathExpr) => children(acc.withRewrittenVariable(Ref(ident) -> pathExpr))
-          case None => children(acc)
+          case Some(pathExpr) => (acc.withRewrittenVariable(Ref(ident) -> pathExpr), Some(identity))
+          case None => (acc, Some(identity))
         }
 
     // Optimization 1
@@ -107,20 +107,20 @@ case object projectNamedPaths extends Rewriter {
     // TODO: Plan level rewriting to delay computation of unused projections
 
     case projection: With =>
-      (acc, children) =>
+      acc =>
         val projectedVariables = projection.returnItems.items.flatMap(_.alias).toSet
         val projectedAcc = projection.returnItems.items.map(_.expression).foldLeft(acc) {
           (acc, expr) => acc.withVariableRewritesForExpression(expr)
         }
-        children(projectedAcc.withoutNamedPaths)
+        (projectedAcc.withoutNamedPaths, Some(identity))
 
     case NamedPatternPart(_, part: ShortestPaths) =>
-      (acc, children) => children(acc)
+      acc => (acc, Some(identity))
 
     case part @ NamedPatternPart(variable, patternPart) =>
-      (acc, children) =>
+      acc =>
         val pathExpr = PathExpression(patternPartPathExpression(patternPart))(part.position)
-        children(acc.withNamedPath(variable -> pathExpr).withProtectedVariable(Ref(variable)))
+        (acc.withNamedPath(variable -> pathExpr).withProtectedVariable(Ref(variable)), Some(identity))
   }
 
   def patternPartPathExpression(patternPart: AnonymousPatternPart): PathStep = patternPart match {

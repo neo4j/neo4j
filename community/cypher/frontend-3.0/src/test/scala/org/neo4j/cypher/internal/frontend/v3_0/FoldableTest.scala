@@ -55,7 +55,7 @@ class FoldableTest extends CypherFunSuite {
     val ast = Add(Val(55), Add(Val(43), Val(52)))
 
     val result = ast.treeFold(50) {
-      case Val(x) => (acc, r) => r(acc + x)
+      case Val(x) => acc => (acc + x, Some(identity))
     }
 
     assert(result === 200)
@@ -65,8 +65,8 @@ class FoldableTest extends CypherFunSuite {
     val ast = Add(Val(55), Add(Val(43), Val(52)))
 
     val result = ast.treeFold(50) {
-      case Val(x) => (acc, r) => r(acc + x)
-      case Add(Val(43), _) => (acc, _) => acc + 20
+      case Val(x) => acc => (acc + x, Some(identity))
+      case Add(Val(43), _) => acc => (acc + 20, None)
     }
 
     assert(result === 125)

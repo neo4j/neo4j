@@ -34,7 +34,7 @@ object PredicateSplitter {
   def apply(scopeLookup: Clause => Set[Variable], statement: Statement): PredicateSplitter = {
     statement.treeFold(PredicateSplitter.empty) {
       case clause@Match(false, pattern, _, Some(where)) =>
-        (acc, children) =>
+        acc =>
           val namedPaths = namedPatternPartVariables(pattern)
           val predicates = conjunctionPredicates(where.expression)
           val (matchPredicates, withPredicates) = predicates.partition(x => (x.dependencies `intersect` namedPaths).isEmpty)
@@ -53,7 +53,7 @@ object PredicateSplitter {
               acc + (Ref(clause) -> (newMatchClause -> newWithClause))
             }
 
-          children(newAcc)
+          (newAcc, Some(identity))
     }
   }
 

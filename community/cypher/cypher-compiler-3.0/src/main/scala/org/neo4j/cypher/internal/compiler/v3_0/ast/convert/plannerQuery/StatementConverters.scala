@@ -43,7 +43,7 @@ object StatementConverters {
   private def findBlacklistedNodes(node: AnyRef): Seq[ASTNode] = {
     node.treeFold(Seq.empty[ASTNode]) {
       case node: ASTNode if NODE_BLACKLIST.contains(node.getClass) =>
-        (acc, children) => children(acc :+ node)
+        acc => (acc :+ node, Some(identity))
     }
   }
 

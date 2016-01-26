@@ -27,7 +27,7 @@ case object aggregationsAreIsolated extends Condition {
 
   def apply(that: Any): Seq[String] = that.treeFold(Seq.empty[String]) {
     case expr: Expression if hasAggregateButIsNotAggregate(expr) =>
-      (acc, _) => acc :+ s"Expression $expr contains child expressions which are aggregations"
+      acc => (acc :+ s"Expression $expr contains child expressions which are aggregations", None)
   }
 
   override def name: String = productPrefix

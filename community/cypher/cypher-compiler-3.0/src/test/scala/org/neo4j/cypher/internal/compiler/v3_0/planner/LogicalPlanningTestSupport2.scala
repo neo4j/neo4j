@@ -233,7 +233,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     import Foldable._
     override def apply(actual: LogicalPlan): MatchResult = {
       val matches = actual.treeFold(false) {
-        case lp if tag.runtimeClass.isInstance(lp) => (acc, children) => true
+        case lp if tag.runtimeClass.isInstance(lp) => acc => (true, None)
       }
       MatchResult(
         matches = matches,
