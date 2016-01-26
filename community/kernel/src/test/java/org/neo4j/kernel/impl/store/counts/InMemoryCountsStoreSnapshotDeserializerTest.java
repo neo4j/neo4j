@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
 import static org.neo4j.kernel.impl.store.counts.CountsSnapshotDeserializer.deserialize;
 import static org.neo4j.kernel.impl.store.counts.CountsSnapshotSerializer.serialize;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_NODE;
@@ -94,10 +93,10 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
         updates.put( CountsKeyFactory.nodeKey( 1 ), new long[]{1} );
         updates.put( CountsKeyFactory.nodeKey( 2 ), new long[]{1} );
         updates.put( CountsKeyFactory.nodeKey( 3 ), new long[]{1} );
-        countStore.updateAll( 1, updates );
+        countStore.updateAll( 2, updates );
         serializedBytes = ByteBuffer.allocate( 1000 );
         InMemoryClosableChannel logChannel = new InMemoryClosableChannel( serializedBytes.array() );
-        serialize( logChannel, countStore.snapshot( 1 ) );
+        serialize( logChannel, countStore.snapshot( 2 ) );
 
         //WHEN
         serializedBytes.position( 8 );

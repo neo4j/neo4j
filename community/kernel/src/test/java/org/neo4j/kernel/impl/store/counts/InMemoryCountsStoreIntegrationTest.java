@@ -178,7 +178,7 @@ public class InMemoryCountsStoreIntegrationTest
             for ( int i = 0; i < repeatTimes; i++ )
             {
                 int id = intermediateStateTestManager.getId();
-                long txId = id + ThreadLocalRandom.current().nextLong( 0, 5 );
+                long txId = id; //+ ThreadLocalRandom.current().nextLong( 0, 5 );
                 CountsSnapshot countsSnapshot = countStore.snapshot( txId );
                 long snapshotTxId = countsSnapshot.getTxId();
 

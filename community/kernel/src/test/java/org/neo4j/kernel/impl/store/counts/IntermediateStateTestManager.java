@@ -33,7 +33,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 
 public class IntermediateStateTestManager
 {
-    private volatile int id = 1;
+    private volatile int id = 2;
     private List<ConcurrentHashMap<CountsKey,long[]>> intermediateStateMaps = new ArrayList<>();
     private Iterator<ConcurrentHashMap<CountsKey,long[]>> maps;
 
@@ -42,6 +42,7 @@ public class IntermediateStateTestManager
     public IntermediateStateTestManager()
     {
         intermediateStateMaps.add( new ConcurrentHashMap<>() );
+        intermediateStateMaps.add( new ConcurrentHashMap<>() ); //Two blank maps are required since BASE_TX_ID = 2.
         this.maps = new Iterator<ConcurrentHashMap<CountsKey,long[]>>()
         {
             @Override

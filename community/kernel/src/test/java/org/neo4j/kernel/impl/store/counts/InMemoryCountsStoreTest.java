@@ -48,7 +48,7 @@ public class InMemoryCountsStoreTest
         update.put( key, new long[]{1} );
 
         //WHEN
-        countStore.updateAll( 1, update );
+        countStore.updateAll( 2, update );
 
         //THEN
         assertEquals( countStore.get( key )[0], 1 );
@@ -64,7 +64,7 @@ public class InMemoryCountsStoreTest
         update.put( key, new long[]{1} );
 
         //WHEN
-        countStore.updateAll( 1, update );
+        countStore.updateAll( 2, update );
 
         //THEN
         Assert.assertNull( countStore.get( CountsKeyFactory.relationshipKey( 1, 1, 1 ) ) );
@@ -80,7 +80,7 @@ public class InMemoryCountsStoreTest
         update.put( key, new long[]{1} );
 
         //WHEN
-        countStore.updateAll( 1, update );
+        countStore.updateAll( 2, update );
 
         //THEN throws
         countStore.get( null );
@@ -95,11 +95,11 @@ public class InMemoryCountsStoreTest
         Map<CountsKey,long[]> update = new HashMap<>();
 
         //WHEN
-        countStore.updateAll( 1, update );
+        countStore.updateAll( 2, update );
 
         //THEN
-        CountsSnapshot countsSnapshot = countStore.snapshot( 1 );
-        assertEquals( countsSnapshot.getTxId(), 1 );
+        CountsSnapshot countsSnapshot = countStore.snapshot( 2 );
+        assertEquals( countsSnapshot.getTxId(), 2 );
         assertEquals( countsSnapshot.getMap().size(), 0 );
     }
 
@@ -113,11 +113,11 @@ public class InMemoryCountsStoreTest
         update.put( key, new long[]{1} );
 
         //WHEN
-        countStore.updateAll( 1, update );
+        countStore.updateAll( 2, update );
 
         //THEN
-        CountsSnapshot countsSnapshot = countStore.snapshot( 1 );
-        assertEquals( countsSnapshot.getTxId(), 1 );
+        CountsSnapshot countsSnapshot = countStore.snapshot( 2 );
+        assertEquals( countsSnapshot.getTxId(), 2 );
         assertEquals( countsSnapshot.getMap().size(), 1 );
         assertEquals( countsSnapshot.getMap().get( key )[0], 1 );
     }
@@ -133,29 +133,29 @@ public class InMemoryCountsStoreTest
         NodeKey keyC = CountsKeyFactory.nodeKey( 3 );
 
         update.put( keyA, new long[]{1} );
-        countStore.updateAll( 1, update );
-        update.clear();
-
-        update.put( keyB, new long[]{1} );
         countStore.updateAll( 2, update );
         update.clear();
 
-        update.put( keyC, new long[]{1} );
+        update.put( keyB, new long[]{1} );
         countStore.updateAll( 3, update );
+        update.clear();
+
+        update.put( keyC, new long[]{1} );
+        countStore.updateAll( 4, update );
 
         //WHEN
-        CountsSnapshot countsSnapshot = countStore.snapshot( 3 );
+        CountsSnapshot countsSnapshot = countStore.snapshot( 4 );
         long beforeTxId = countsSnapshot.getTxId();
-        assertEquals( 3, beforeTxId );
+        assertEquals( 4, beforeTxId );
         countStore = new InMemoryCountsStore( countsSnapshot );
 
         //THEN
-        CountsSnapshot secondCountsSnapshot = countStore.snapshot( 3 );
-        assertEquals( 3, secondCountsSnapshot.getTxId() );
+        CountsSnapshot secondCountsSnapshot = countStore.snapshot( 4 );
+        assertEquals( 4, secondCountsSnapshot.getTxId() );
         update.put( keyC, new long[]{1} );
-        countStore.updateAll( 4, update );
-        CountsSnapshot thirdCountsSnapshot = countStore.snapshot( 4 );
-        assertEquals( 4, thirdCountsSnapshot.getTxId() );
+        countStore.updateAll( 5, update );
+        CountsSnapshot thirdCountsSnapshot = countStore.snapshot( 5 );
+        assertEquals( 5, thirdCountsSnapshot.getTxId() );
     }
 
     @Test
@@ -165,7 +165,7 @@ public class InMemoryCountsStoreTest
         Map<CountsKey,long[]> update = new HashMap<>();
         NodeKey nodeKey = CountsKeyFactory.nodeKey( 1 );
         update.put( nodeKey, new long[]{1} );
-        countStore.updateAll( 1, update );
+        countStore.updateAll( 2, update );
 
         countStore.forEach( new BiConsumer<CountsKey,long[]>()
         {
@@ -299,7 +299,7 @@ public class InMemoryCountsStoreTest
         IndexStatisticsKey indexStatisticsKey = CountsKeyFactory.indexStatisticsKey( 1, 1 );
 
         //WHEN
-        countStore.updateAll( 1, new HashMap<CountsKey,long[]>()
+        countStore.updateAll( 2, new HashMap<CountsKey,long[]>()
         {{
             put( nodeKey, new long[]{42} );
             put( relKey, new long[]{89} );
@@ -333,7 +333,7 @@ public class InMemoryCountsStoreTest
         IndexStatisticsKey indexStatisticsKey = CountsKeyFactory.indexStatisticsKey( 1, 1 );
 
         //WHEN
-        countStore.updateAll( 1, new HashMap<CountsKey,long[]>()
+        countStore.updateAll( 2, new HashMap<CountsKey,long[]>()
         {{
             put( nodeKey, new long[]{42} );
             put( relKey, new long[]{89} );
