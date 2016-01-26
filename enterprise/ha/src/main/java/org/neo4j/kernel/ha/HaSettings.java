@@ -34,7 +34,7 @@ import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_descending;
+import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
 
 /**
  * Settings for High Availability mode
@@ -91,7 +91,7 @@ public class HaSettings
     public static final Setting<Integer> tx_push_factor = setting( "ha.tx_push_factor", INTEGER, "1", min( 0 ) );
 
     @Description( "Push strategy of a transaction to a slave during commit." )
-    public static final Setting<TxPushStrategy> tx_push_strategy = setting( "ha.tx_push_strategy", options( TxPushStrategy.class ), fixed_descending.name() );
+    public static final Setting<TxPushStrategy> tx_push_strategy = setting( "ha.tx_push_strategy", options( TxPushStrategy.class ), fixed_ascending.name() );
 
     @Description( "Size of batches of transactions applied on slaves when pulling from master" )
     public static final Setting<Integer> pull_apply_batch_size = setting( "ha.pull_apply_batch_size", INTEGER, "100" );
