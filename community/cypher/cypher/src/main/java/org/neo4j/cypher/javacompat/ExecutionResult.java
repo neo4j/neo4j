@@ -213,6 +213,9 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
         return innerIterator(); // legacy method - don't convert exceptions...
     }
 
+    /**
+     * @return this result as a {@link Stream}
+     */
     @Override
     public Stream<Map<String,Object>> stream()
     {

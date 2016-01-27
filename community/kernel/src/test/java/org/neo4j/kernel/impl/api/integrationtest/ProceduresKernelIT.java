@@ -122,7 +122,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
             @Override
             public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
             {
-                return RawIterator.<Object[], ProcedureException>of( new Object[]{ ctx.get( ReadOperations.readOperations ) } );
+                return RawIterator.<Object[], ProcedureException>of( new Object[]{ ctx.get( ReadOperations.statement ) } );
             }
         } );
 

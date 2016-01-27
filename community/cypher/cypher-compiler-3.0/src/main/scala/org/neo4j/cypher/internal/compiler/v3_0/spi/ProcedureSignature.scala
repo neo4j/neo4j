@@ -19,11 +19,33 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.spi
 
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType, READ_ONLY, READ_WRITE}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
+
+sealed trait ProcedureMode {
+  val queryType: InternalQueryType
+
+  def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]]
+}
+
+case object procReadOnly extends ProcedureMode {
+  override val queryType: InternalQueryType = READ_ONLY
+
+  override def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] =
+    ctx.callReadOnlyProcedure(signature, args)
+}
+
+case object procReadWrite extends ProcedureMode {
+  override val queryType: InternalQueryType = READ_WRITE
+
+  override def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] =
+    ctx.callReadWriteProcedure(signature, args)
+}
 
 case class ProcedureSignature(name: ProcedureName,
                               inputSignature: Seq[FieldSignature],
-                              outputSignature: Seq[FieldSignature] )
+                              outputSignature: Seq[FieldSignature],
+                              mode: ProcedureMode = procReadOnly )
 
 case class ProcedureName(namespace: Seq[String], name: String)
 

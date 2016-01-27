@@ -48,6 +48,7 @@ import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -268,6 +269,53 @@ public class ProcedureIT
         );
     }
 
+    @Test
+    public void readOnlyProcedureCannotWrite() throws Throwable
+    {
+        // Given
+        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
+        db = new TestGraphDatabaseFactory()
+                .newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .newGraphDatabase();
+
+        // Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Write operations are not allowed" );
+
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.execute( "CALL org.neo4j.procedure.readOnlyTryingToWrite()" ).next();
+        }
+    }
+
+    @Test
+    public void procedureMarkedForWritingCanWrite() throws Throwable
+    {
+        // Given
+        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
+        db = new TestGraphDatabaseFactory()
+                .newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .newGraphDatabase();
+
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            // TODO: #hasNext should not be needed here, result of writes should be eagerized
+            db.execute( "CALL org.neo4j.procedure.writingProcedure()" ).hasNext();
+            tx.success();
+        }
+
+        // Then
+        try( Transaction tx = db.beginTx() )
+        {
+            assertEquals(1, db.getAllNodes().stream().count());
+            tx.success();
+        }
+    }
+
     @Before
     public void setUp()
     {
@@ -316,11 +364,6 @@ public class ProcedureIT
     {
         public String name;
 
-        public MyOutputRecord()
-        {
-
-        }
-
         public MyOutputRecord( String name )
         {
             this.name = name;
@@ -329,10 +372,10 @@ public class ProcedureIT
 
     public static class ClassWithProcedures
     {
-        @Resource
+        @Context
         public GraphDatabaseService db;
 
-        @Resource
+        @Context
         public Log log;
 
         @Procedure
@@ -388,6 +431,21 @@ public class ProcedureIT
             log.info( "2" );
             log.warn( "3" );
             log.error( "4" );
+            return Stream.empty();
+        }
+
+        @Procedure
+        public Stream<Output> readOnlyTryingToWrite()
+        {
+            db.createNode();
+            return Stream.empty();
+        }
+
+        @Procedure
+        @PerformsWrites
+        public Stream<Output> writingProcedure()
+        {
+            db.createNode();
             return Stream.empty();
         }
     }

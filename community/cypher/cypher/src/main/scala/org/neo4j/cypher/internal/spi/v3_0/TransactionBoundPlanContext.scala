@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v3_0
 
-import org.neo4j.cypher.MissingIndexException
+import org.neo4j.cypher.{CypherExecutionException, MissingIndexException}
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.ExpanderStep
@@ -127,8 +127,16 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
     val ks = _statement.readOperations().procedureGet(kn)
     val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
     val output = ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
+    val mode = asCypherProcMode(ks.mode())
 
-    ProcedureSignature(name, input, output)
+    ProcedureSignature(name, input, output, mode)
+  }
+
+  private def asCypherProcMode(mode: KernelProcedureSignature.Mode): ProcedureMode = mode match {
+    case KernelProcedureSignature.Mode.READ_ONLY => procReadOnly
+    case KernelProcedureSignature.Mode.READ_WRITE => procReadWrite
+    case _ => throw new CypherExecutionException(
+      "Unable to execute procedure, because it requires an unrecognized excution mode: " + mode.name(), null )
   }
 
   private def asCypherType(neoType: AnyType): CypherType = neoType match {

@@ -21,12 +21,15 @@ package org.neo4j.kernel.api;
 
 import java.util.Map;
 
+import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 
@@ -141,4 +144,7 @@ public interface DataWriteOperations extends TokenWriteOperations
     void nodeLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException;
 
     void relationshipLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException;
+
+    /** Invoke a read/write procedure by name */
+    RawIterator<Object[], ProcedureException> procedureCallWrite( ProcedureSignature.ProcedureName name, Object[] input ) throws ProcedureException;
 }

@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.procedure.Resource;
+import org.neo4j.procedure.Context;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -101,7 +101,7 @@ public class ResourceInjectionTest
 
     public static class ProcedureWithInjectedAPI
     {
-        @Resource
+        @Context
         public MyAwesomeAPI api;
 
         @Procedure
@@ -113,7 +113,7 @@ public class ResourceInjectionTest
 
     public static class procedureWithUnknownAPI
     {
-        @Resource
+        @Context
         public UnknownAPI api;
 
         @Procedure

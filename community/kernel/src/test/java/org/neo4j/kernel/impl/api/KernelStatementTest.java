@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

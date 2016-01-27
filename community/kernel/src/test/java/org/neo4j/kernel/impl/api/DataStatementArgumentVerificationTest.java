@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.proc.Procedures;
 
@@ -102,6 +103,6 @@ public class DataStatementArgumentVerificationTest
 
     private OperationsFacade stubStatement()
     {
-        return new OperationsFacade( mock( KernelStatement.class ), null, new Procedures() );
+        return new OperationsFacade( mock(KernelTransaction.class), mock( KernelStatement.class ), null, new Procedures() );
     }
 }

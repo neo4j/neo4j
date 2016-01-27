@@ -23,11 +23,14 @@ import java.io.File;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -53,6 +56,8 @@ import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -62,7 +67,11 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.execution_guard_enabled;
 
 /**
@@ -144,11 +153,12 @@ public class DataSourceModule
                 logging.getInternalLog( DatabaseHealth.class ) ) );
 
         autoIndexing = new AutoIndexing( platformModule.config, editionModule.propertyKeyTokenHolder );
+        Procedures procedures = setupProcedures( platformModule );
 
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource( storeDir, config,
                 editionModule.idGeneratorFactory, logging, platformModule.jobScheduler,
                 new NonTransactionalTokenNameLookup( editionModule.labelTokenHolder,
-                        editionModule.relationshipTypeTokenHolder, editionModule.propertyKeyTokenHolder ),
+                editionModule.relationshipTypeTokenHolder, editionModule.propertyKeyTokenHolder ),
                 deps, editionModule.propertyKeyTokenHolder, editionModule.labelTokenHolder, relationshipTypeTokenHolder,
                 editionModule.lockManager, schemaWriteGuard, transactionEventHandlers,
                 platformModule.monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
@@ -156,7 +166,7 @@ public class DataSourceModule
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
                 editionModule.headerInformationFactory, startupStatistics, guard,
                 editionModule.commitProcessFactory, autoIndexing, pageCache, editionModule.constraintSemantics,
-                platformModule.monitors, platformModule.tracers ) );
+                platformModule.monitors, platformModule.tracers, procedures ) );
         dataSourceManager.register( neoStoreDataSource );
 
         life.add( new MonitorGc( config, logging.getInternalLog( MonitorGc.class ) ) );
@@ -198,32 +208,9 @@ public class DataSourceModule
             }
         } );
 
-        storeId = new Supplier<StoreId>()
-        {
-            @Override
-            public StoreId get()
-            {
-                return neoStoreDataSource.getStoreId();
-            }
-        };
-
-        kernelAPI = new Supplier<KernelAPI>()
-        {
-            @Override
-            public KernelAPI get()
-            {
-                return neoStoreDataSource.getKernel();
-            }
-        };
-
-        this.queryExecutor = new Supplier<QueryExecutionEngine>()
-        {
-            @Override
-            public QueryExecutionEngine get()
-            {
-                return queryExecutor.get();
-            }
-        };
+        this.storeId = neoStoreDataSource::getStoreId;
+        this.kernelAPI = neoStoreDataSource::getKernel;
+        this.queryExecutor = queryExecutor::get;
     }
 
     protected RelationshipProxy.RelationshipActions createRelationshipActions(
@@ -319,6 +306,31 @@ public class DataSourceModule
         };
     }
 
+    private Procedures setupProcedures( PlatformModule platform )
+    {
+        File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
+        Log internalLog = platform.logging.getInternalLog( Procedures.class );
+
+        Procedures procedures = new Procedures( pluginDir, internalLog );
+        platform.life.add( procedures );
+        platform.dependencies.satisfyDependency( procedures );
+
+        procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class ) );
+        procedures.registerType( Relationship.class, new SimpleConverter( NTRelationship, Relationship.class ) );
+        procedures.registerType( Path.class, new SimpleConverter( NTPath, Path.class ) );
+
+        // Register injectables
+        procedures.registerComponent( GraphDatabaseService.class,
+                (ctx) -> platform.dependencies.resolveDependency( GraphDatabaseService.class ) );
+
+        Log proceduresLog = platform.logging.getUserLog( Procedures.class  );
+        procedures.registerComponent( Log.class, (ctx) -> proceduresLog );
+
+        // Not public API, but useful to have available in procedures to access the kernel etc.
+        procedures.registerComponent( DependencyResolver.class, (ctx) -> platform.dependencies );
+
+        return procedures;
+    }
 
     /**
      * At end of startup, wait for instance to become available for transactions.

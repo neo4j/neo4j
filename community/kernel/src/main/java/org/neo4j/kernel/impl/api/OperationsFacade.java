@@ -30,7 +30,9 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -93,12 +95,15 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations
 {
-    final KernelStatement statement;
+    private final KernelTransaction tx;
+    private final KernelStatement statement;
     private final StatementOperationParts operations;
     private final Procedures procedures;
 
-    OperationsFacade( KernelStatement statement, StatementOperationParts operations, Procedures procedures )
+    OperationsFacade( KernelTransaction tx, KernelStatement statement,
+                      StatementOperationParts operations, Procedures procedures )
     {
+        this.tx = tx;
         this.statement = statement;
         this.operations = operations;
         this.procedures = procedures;
@@ -499,6 +504,25 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         return dataRead().relationshipsGetCount( statement );
     }
 
+    @Override
+    public ProcedureSignature procedureGet( ProcedureName name ) throws ProcedureException
+    {
+        statement.assertOpen();
+        return procedures.get( name );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallRead( ProcedureName name, Object[] input ) throws ProcedureException
+    {
+        return callProcedure( name, input, AccessMode.READ );
+    }
+
+    @Override
+    public Set<ProcedureSignature> proceduresGetAll()
+    {
+        statement.assertOpen();
+        return procedures.getAll();
+    }
     // </DataRead>
 
     // <DataReadCursors>
@@ -671,30 +695,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         return schemaRead().indexGetOwningUniquenessConstraintId( statement, index );
-    }
-
-    @Override
-    public ProcedureSignature procedureGet( ProcedureName name ) throws ProcedureException
-    {
-        statement.assertOpen();
-        return procedures.get( name );
-    }
-
-    @Override
-    public RawIterator<Object[], ProcedureException> procedureCallRead( ProcedureName name, Object[] input ) throws ProcedureException
-    {
-        statement.assertOpen();
-        CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
-        ctx.put( ReadOperations.readOperations, this );
-        ctx.put( ReadOperations.statement, statement );
-        return procedures.call( ctx, name, input );
-    }
-
-    @Override
-    public Set<ProcedureSignature> proceduresGetAll()
-    {
-        statement.assertOpen();
-        return procedures.getAll();
     }
 
     @Override
@@ -1022,6 +1022,12 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         return dataWrite().graphRemoveProperty( statement, propertyKeyId );
+    }
+
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallWrite( ProcedureName name, Object[] input ) throws ProcedureException
+    {
+        return callProcedure( name, input, AccessMode.FULL );
     }
     // </DataWrite>
 
@@ -1387,4 +1393,23 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     // </Counts>
+
+    private RawIterator<Object[],ProcedureException> callProcedure(
+            ProcedureName name, Object[] input, AccessMode read )
+            throws ProcedureException
+    {
+        statement.assertOpen();
+        AccessMode originalMode = tx.mode();
+        try
+        {
+            tx.setMode( read );
+            CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
+            ctx.put( ReadOperations.statement, statement );
+            return procedures.call( ctx, name, input );
+        }
+        finally
+        {
+            tx.setMode( originalMode );
+        }
+    }
 }

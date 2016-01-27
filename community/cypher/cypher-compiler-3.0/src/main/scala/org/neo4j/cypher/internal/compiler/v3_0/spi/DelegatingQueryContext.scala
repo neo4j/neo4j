@@ -193,6 +193,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]) =
     inner.callReadOnlyProcedure(signature, args)
+
+  override def callReadWriteProcedure(signature: ProcedureSignature, args: Seq[Any]) =
+    inner.callReadWriteProcedure(signature, args)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

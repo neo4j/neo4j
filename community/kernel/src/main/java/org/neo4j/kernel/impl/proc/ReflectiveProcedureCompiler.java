@@ -37,10 +37,13 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
+import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
+import static org.neo4j.helpers.collection.Iterables.asRawIterator;
 
 /**
  * Handles converting a class into one or more callable {@link CallableProcedure}.
@@ -103,7 +106,13 @@ public class ReflectiveProcedureCompiler
         MethodHandle procedureMethod = lookup.unreflect( method );
         List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
-        ProcedureSignature signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature() );
+        ProcedureSignature.Mode mode = ProcedureSignature.Mode.READ_ONLY;
+        if( method.isAnnotationPresent( PerformsWrites.class ) )
+        {
+            mode = ProcedureSignature.Mode.READ_WRITE;
+        }
+
+        ProcedureSignature signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode );
 
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
     }
@@ -173,9 +182,16 @@ public class ReflectiveProcedureCompiler
                 args[0] = cls;
                 System.arraycopy( input, 0, args, 1, input.length );
 
-                Iterator<?> out = ((Stream<?>) procedureMethod.invokeWithArguments( args )).iterator();
+                Object rs = procedureMethod.invokeWithArguments( args );
 
-                return new MappingIterator( out );
+                if( rs != null )
+                {
+                    return new MappingIterator( ((Stream<?>) rs).iterator() );
+                }
+                else
+                {
+                    return asRawIterator( emptyIterator() );
+                }
             }
             catch ( Throwable throwable )
             {
