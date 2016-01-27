@@ -96,8 +96,7 @@ public class PartitionedIndexReader implements IndexReader
     @Override
     public PrimitiveLongIterator containsString( String exactTerm )
     {
-        // TODO: Implement once index partitioning work is merged
-        return null;
+        return partitionedOperation( reader -> reader. containsString( exactTerm ) );
     }
 
     @Override
