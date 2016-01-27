@@ -118,8 +118,9 @@ public interface StorageEngine
      * As part of the simplified counts store. This will initialize the count store in the storage engine
      * when doing recovery.
      */
-    void initFromSnapshot(CountsSnapshot snapshot);
+    void initFromSnapshot( CountsSnapshot snapshot );
 
+    CountsSnapshot getSnapshotFromCountsStorageService( long txId );
 
     // ====================================================================
     // All these methods below are temporary while in the process of

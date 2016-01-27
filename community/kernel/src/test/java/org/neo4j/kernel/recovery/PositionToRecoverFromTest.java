@@ -31,8 +31,8 @@ import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class PositionToRecoverFromTest
 {
@@ -44,13 +44,14 @@ public class PositionToRecoverFromTest
     {
         // given
         when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, false, logVersion ) );
+        CountsSnapshot snapshot = new CountsSnapshot(BASE_TX_ID);
 
         // when
         LogRecoveryInfo logRecoveryInfo = new PositionToRecoverFrom( finder ).apply( logVersion );
 
         // then
         assertEquals( LogPosition.UNSPECIFIED, logRecoveryInfo.getLogPosition() );
-        assertEquals( NO_SNAPSHOT, logRecoveryInfo.getCountsSnapshot() );
+        assertEquals( snapshot, logRecoveryInfo.getCountsSnapshot() );
     }
 
     @Test
@@ -58,15 +59,16 @@ public class PositionToRecoverFromTest
     {
         // given
         LogPosition checkPointLogPosition = new LogPosition( 1l, 4242 );
+        CountsSnapshot snapshot = new CountsSnapshot( BASE_TX_ID );
         when( finder.find( logVersion ) ).thenReturn(
-                new LatestCheckPoint( new CheckPoint( checkPointLogPosition, NO_SNAPSHOT ), true, logVersion ) );
+                new LatestCheckPoint( new CheckPoint( checkPointLogPosition, snapshot ), true, logVersion ) );
 
         // when
         LogRecoveryInfo logRecoveryInfo = new PositionToRecoverFrom( finder ).apply( logVersion );
 
         // then
         assertEquals( checkPointLogPosition, logRecoveryInfo.getLogPosition() );
-        assertEquals( NO_SNAPSHOT, logRecoveryInfo.getCountsSnapshot() );
+        assertEquals( snapshot, logRecoveryInfo.getCountsSnapshot() );
     }
 
     @Test
@@ -97,7 +99,7 @@ public class PositionToRecoverFromTest
 
         // then
         assertEquals( LogPosition.start( INITIAL_LOG_VERSION ), logRecoveryInfo.getLogPosition() );
-        assertEquals( 0, logRecoveryInfo.getCountsSnapshot().getTxId() );
+        assertEquals( BASE_TX_ID, logRecoveryInfo.getCountsSnapshot().getTxId() );
     }
 
     @Test

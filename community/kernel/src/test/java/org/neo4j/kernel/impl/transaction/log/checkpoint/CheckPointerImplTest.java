@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -53,7 +54,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 
 public class CheckPointerImplTest
 {
@@ -70,6 +70,11 @@ public class CheckPointerImplTest
     private final long initialTransactionId = 2l;
     private final long transactionId = 42l;
     private final LogPosition logPosition = new LogPosition( 16l, 233l );
+    private final CountsSnapshot snapshot = new CountsSnapshot( 42 );
+
+    {
+        when( storageEngine.getSnapshotFromCountsStorageService( anyLong() )).thenReturn( snapshot );
+    }
 
     @Test
     public void shouldNotFlushIfItIsNotNeeded() throws Throwable
@@ -106,9 +111,9 @@ public class CheckPointerImplTest
         // Then
         assertEquals( transactionId, txId );
         verify( storageEngine, times( 1 ) ).flushAndForce();
+        verify( storageEngine, times( 1 ) ).getSnapshotFromCountsStorageService( txId );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ),
-                eq( NO_SNAPSHOT ) );
+        verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ), eq( snapshot ) );
         verify( threshold, times( 1 ) ).initialize( initialTransactionId );
         verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
         verify( threshold, times( 1 ) ).isCheckPointingNeeded( transactionId, INFO );
@@ -133,9 +138,9 @@ public class CheckPointerImplTest
         // Then
         assertEquals( transactionId, txId );
         verify( storageEngine, times( 1 ) ).flushAndForce();
+        verify( storageEngine, times( 1 ) ).getSnapshotFromCountsStorageService( txId );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ),
-                eq( NO_SNAPSHOT ) );
+        verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ), eq( snapshot ) );
         verify( threshold, times( 1 ) ).initialize( initialTransactionId );
         verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
@@ -160,9 +165,10 @@ public class CheckPointerImplTest
         // Then
         assertEquals( transactionId, txId );
         verify( storageEngine, times( 1 ) ).flushAndForce();
+        verify( storageEngine, times( 1 ) ).getSnapshotFromCountsStorageService( txId );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender, times( 1 ) )
-                .checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ), eq( NO_SNAPSHOT ) );
+                .checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ), eq( snapshot ) );
         verify( threshold, times( 1 ) ).initialize( initialTransactionId );
         verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
@@ -184,7 +190,7 @@ public class CheckPointerImplTest
             public Object answer( InvocationOnMock invocation ) throws Throwable
             {
                 verify( appender )
-                        .checkPoint( any( LogPosition.class ), any( LogCheckPointEvent.class ), eq( NO_SNAPSHOT ) );
+                        .checkPoint( any( LogPosition.class ), any( LogCheckPointEvent.class ), eq( snapshot ) );
                 reset( appender );
                 invocation.callRealMethod();
                 return null;
@@ -242,7 +248,7 @@ public class CheckPointerImplTest
 
         checkPointing.forceCheckPoint( INFO );
 
-        verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ), eq( NO_SNAPSHOT ) );
+        verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ), eq( snapshot ) );
         reset( appender );
 
         checkPointing.tryCheckPoint( INFO );

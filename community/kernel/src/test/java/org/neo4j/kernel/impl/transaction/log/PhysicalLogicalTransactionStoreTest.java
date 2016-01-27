@@ -163,7 +163,12 @@ public class PhysicalLogicalTransactionStoreTest
             }
 
             @Override
-            public Visitor<LogVersionedStoreChannel,Exception> getRecoverer( CountsSnapshot snapshot )
+            public void initializeCounts( CountsSnapshot snapshot )
+            {
+            }
+
+            @Override
+            public Visitor<LogVersionedStoreChannel,Exception> getRecoverer()
             {
                 return recoverer;
             }

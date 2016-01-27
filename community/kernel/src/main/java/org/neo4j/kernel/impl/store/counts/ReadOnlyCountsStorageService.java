@@ -50,6 +50,12 @@ public class ReadOnlyCountsStorageService implements CountsStorageService
     }
 
     @Override
+    public CountsSnapshot snapshot( long txId )
+    {
+        return delegate.snapshot( txId );
+    }
+
+    @Override
     public Register.DoubleLongRegister nodeCount( int labelId, Register.DoubleLongRegister target )
     {
         return delegate.nodeCount( labelId, target );

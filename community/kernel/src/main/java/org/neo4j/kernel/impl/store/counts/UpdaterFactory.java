@@ -30,7 +30,7 @@ import static org.neo4j.kernel.impl.api.CountsAccessor.Updater;
 
 class UpdaterFactory
 {
-    Updater getUpdater(CountsStore countsStore, long txId)
+    Updater getUpdater( CountsStore countsStore, long txId )
     {
         return new Updater()
         {
@@ -51,12 +51,10 @@ class UpdaterFactory
             @Override
             public void close()
             {
-                if ( updates.isEmpty() )
+                if ( countsStore != null )
                 {
-                    return;
+                    countsStore.updateAll( txId, updates );
                 }
-
-                countsStore.updateAll( txId, updates );
             }
         };
     }

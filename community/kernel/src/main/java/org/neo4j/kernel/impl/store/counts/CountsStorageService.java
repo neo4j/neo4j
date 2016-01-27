@@ -29,7 +29,9 @@ public interface CountsStorageService extends CountsAccessor, CountsVisitor.Visi
 
     CountsAccessor.IndexStatsUpdater indexStatsUpdater();
 
-    Updater apply(long txId);
+    Updater apply( long txId );
+
+    CountsSnapshot snapshot( long txId );
 
     @Override
     Register.DoubleLongRegister nodeCount( int labelId, Register.DoubleLongRegister target );

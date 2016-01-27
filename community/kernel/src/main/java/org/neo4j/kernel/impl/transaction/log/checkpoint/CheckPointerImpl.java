@@ -36,7 +36,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 
-import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 {
@@ -44,7 +43,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final TransactionIdStore transactionIdStore;
     private final CheckPointThreshold threshold;
     private final StorageEngine storageEngine;
-    ;
+
     private final LogPruning logPruning;
     private final DatabaseHealth databaseHealth;
     private final Log msgLog;
@@ -180,7 +179,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         databaseHealth.assertHealthy( IOException.class );
 
         msgLog.info( prefix + " Starting Counts Store Snapshot Operation..." );
-        CountsSnapshot snapshot = NO_SNAPSHOT;
+        CountsSnapshot snapshot = storageEngine.getSnapshotFromCountsStorageService( lastClosedTransactionId );
         msgLog.info( prefix + " Counts Store Snapshot completed." );
 
         msgLog.info( prefix + " Starting appending check point entry into the tx log..." );

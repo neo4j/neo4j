@@ -373,7 +373,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                         mode ) );
 
         // Counts store application
-        appliers.add( new CountsStoreBatchTransactionApplier( neoStores.getCounts(), mode ) );
+        appliers.add( new CountsStoreBatchTransactionApplier( neoStores.getCounts(), countsStorageService, mode ) );
 
         // Perform the application
         return new BatchTransactionApplierFacade(
@@ -405,6 +405,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void initFromSnapshot(CountsSnapshot snapshot)
     {
         countsStorageService.initialize( snapshot );
+    }
+
+    @Override
+    public CountsSnapshot getSnapshotFromCountsStorageService( long txId )
+    {
+        return countsStorageService.snapshot( txId );
     }
 
     @Override

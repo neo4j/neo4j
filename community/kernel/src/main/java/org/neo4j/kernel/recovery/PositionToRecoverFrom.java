@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogRecoveryInfo;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 /**
  * Utility class to find the log position to start recovery from
@@ -53,7 +54,9 @@ public class PositionToRecoverFrom
         LatestCheckPointFinder.LatestCheckPoint latestCheckPoint = checkPointFinder.find( currentLogVersion );
         if ( !latestCheckPoint.commitsAfterCheckPoint )
         {
-            return new LogRecoveryInfo( LogPosition.UNSPECIFIED, CountsSnapshot.NO_SNAPSHOT );
+            CountsSnapshot snapshot = latestCheckPoint.checkPoint == null ? new CountsSnapshot( BASE_TX_ID )
+                                                                          : latestCheckPoint.checkPoint.getSnapshot();
+            return new LogRecoveryInfo( LogPosition.UNSPECIFIED, snapshot );
         }
 
         if ( latestCheckPoint.checkPoint != null )
@@ -69,7 +72,7 @@ public class PositionToRecoverFrom
                 throw new UnderlyingStorageException( "No check point found in any log file from version " +
                         fromLogVersion + " to " + currentLogVersion );
             }
-            return new LogRecoveryInfo( LogPosition.start( 0 ), new CountsSnapshot( 0 ) );
+            return new LogRecoveryInfo( LogPosition.start( 0 ), new CountsSnapshot( BASE_TX_ID ) );
         }
     }
 }

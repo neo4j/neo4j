@@ -64,12 +64,17 @@ public class DefaultRecoverySPI implements Recovery.SPI
     }
 
     @Override
-    public Visitor<LogVersionedStoreChannel,Exception> getRecoverer( CountsSnapshot snapshot )
+    public void initializeCounts( CountsSnapshot snapshot )
     {
         if ( snapshot != NO_SNAPSHOT )
         {
             storageEngine.initFromSnapshot( snapshot );
         }
+    }
+
+    @Override
+    public Visitor<LogVersionedStoreChannel,Exception> getRecoverer()
+    {
         return logFileRecoverer;
     }
 

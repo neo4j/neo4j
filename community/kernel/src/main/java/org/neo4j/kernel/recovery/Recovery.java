@@ -48,13 +48,15 @@ public class Recovery extends LifecycleAdapter
     {
         void forceEverything();
 
-        Visitor<LogVersionedStoreChannel,Exception> getRecoverer( CountsSnapshot snapshot );
+        void initializeCounts( CountsSnapshot snapshot );
+
+        Visitor<LogVersionedStoreChannel,Exception> getRecoverer();
 
         Iterator<LogVersionedStoreChannel> getLogFiles( long fromVersion ) throws IOException;
 
         LogRecoveryInfo getRecoveryInformation() throws IOException;
 
-        public void recoveryRequired();
+        void recoveryRequired();
     }
 
     private final SPI spi;
@@ -73,6 +75,7 @@ public class Recovery extends LifecycleAdapter
     {
         LogRecoveryInfo logRecoveryInfo = spi.getRecoveryInformation();
         LogPosition recoveryPosition = logRecoveryInfo.getLogPosition();
+        spi.initializeCounts( logRecoveryInfo.getCountsSnapshot() );
         if ( LogPosition.UNSPECIFIED.equals( recoveryPosition ) )
         {
             return;
@@ -80,7 +83,7 @@ public class Recovery extends LifecycleAdapter
         Iterator<LogVersionedStoreChannel> logFiles = spi.getLogFiles( recoveryPosition.getLogVersion() );
         monitor.recoveryRequired( recoveryPosition );
         spi.recoveryRequired();
-        Visitor<LogVersionedStoreChannel,Exception> recoverer = spi.getRecoverer( logRecoveryInfo.getCountsSnapshot() );
+        Visitor<LogVersionedStoreChannel,Exception> recoverer = spi.getRecoverer();
         while ( logFiles.hasNext() )
         {
             try ( LogVersionedStoreChannel toRecover = logFiles.next() )

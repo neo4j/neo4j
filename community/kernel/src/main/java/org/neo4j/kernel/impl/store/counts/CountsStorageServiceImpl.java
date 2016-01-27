@@ -33,6 +33,7 @@ public class CountsStorageServiceImpl implements CountsStorageService
     private IndexStatsUpdater indexStatsUpdater;
     private final UpdaterFactory updaterFactory = new UpdaterFactory();
 
+    @Override
     public CountsSnapshot snapshot( long txId )
     {
         return countsStore.snapshot( txId );

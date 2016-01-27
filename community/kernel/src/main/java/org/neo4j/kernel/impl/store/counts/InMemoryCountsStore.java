@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.function.Predicates.awaitForever;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 class InMemoryCountsStore implements CountsStore
 {
@@ -41,7 +42,7 @@ class InMemoryCountsStore implements CountsStore
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     //TODO Always return long, not long[]. This requires splitting index keys into 4 keys, one for each value.
     private final ConcurrentHashMap<CountsKey,long[]> map;
-    private final OutOfOrderSequence lastTxId = new ArrayQueueOutOfOrderSequence( 0L, 100, EMPTY_METADATA );
+    private final OutOfOrderSequence lastTxId = new ArrayQueueOutOfOrderSequence( BASE_TX_ID, 100, EMPTY_METADATA );
     private CountsSnapshot snapshot;
 
     public InMemoryCountsStore( CountsSnapshot snapshot )
@@ -53,7 +54,6 @@ class InMemoryCountsStore implements CountsStore
     public InMemoryCountsStore()
     {
         map = new ConcurrentHashMap<>();
-        lastTxId.set( 0, EMPTY_METADATA );
     }
 
     @Override
@@ -70,7 +70,6 @@ class InMemoryCountsStore implements CountsStore
         {
             if ( snapshot != null )
             {
-                //TODO verify this is desirable.
                 throw new IllegalStateException(
                         "Cannot alter count store outside of a transaction while a snapshot is processing." );
             }
@@ -188,7 +187,7 @@ class InMemoryCountsStore implements CountsStore
 
         try
         {
-            //TODO We should NOT blindly wait forever. We also shouldn't have a timeout. The proposed solution is to
+            // We should NOT blindly wait forever. We also shouldn't have a timeout. The proposed solution is to
             // wait forever unless the database has failed in the background. In that case we want to fail as well.
             // This will allow us to not timeout prematurely but also not hang when the database is broken.
             awaitForever( () -> lastTxId.getHighestGapFreeNumber() >= snapshot.getTxId(), 100, MILLISECONDS );

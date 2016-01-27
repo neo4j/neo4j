@@ -24,6 +24,9 @@ import org.junit.Test;
 import java.util.Optional;
 
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+import org.neo4j.kernel.impl.store.counts.CountsStorageService;
+import org.neo4j.kernel.impl.store.counts.CountsStorageServiceImpl;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -33,6 +36,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class CountsStoreTransactionApplierTest
 {
@@ -41,10 +45,14 @@ public class CountsStoreTransactionApplierTest
     {
         // GIVEN
         final CountsTracker tracker = mock( CountsTracker.class );
+        final CountsStorageService countsStorageService = new CountsStorageServiceImpl();
+        countsStorageService.initialize( new CountsSnapshot( BASE_TX_ID) );
+
         final CountsAccessor.Updater updater = mock( CountsAccessor.Updater.class );
         when( tracker.apply( anyLong() ) ).thenReturn( Optional.of( updater ) );
-        final CountsStoreBatchTransactionApplier applier = new CountsStoreBatchTransactionApplier( tracker,
-                TransactionApplicationMode.INTERNAL );
+        final CountsStoreBatchTransactionApplier applier =
+                new CountsStoreBatchTransactionApplier( tracker, countsStorageService,
+                        TransactionApplicationMode.INTERNAL );
 
         // WHEN
         try ( TransactionApplier txApplier = applier.startTx( new TransactionToApply( null, 2L ) ) )
