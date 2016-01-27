@@ -27,6 +27,7 @@ import org.neo4j.server.BaseBootstrapperTest;
 import org.neo4j.server.Bootstrapper;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.neo4j.server.CommunityBootstrapper.start;
 
 public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
@@ -37,21 +38,42 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         return new EnterpriseBootstrapper();
     }
 
-    @Override
-    protected String[] baseConfig()
+    @Test
+    public void shouldBeAbleToStartInSingleMode() throws Exception
     {
-        return new String[]
-                {
-                        "-c", configOption( ClusterSettings.server_id.name(), "1" ),
-                        "-c", configOption( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" )
-                };
+        // When
+        int resultCode = start( bootstrapper, commandLineConfig(
+                "-c", configOption( EnterpriseServerSettings.mode.name(), "SINGLE" )
+        ));
+
+        // Then
+        assertEquals( Bootstrapper.OK, resultCode );
+        assertNotNull( bootstrapper.getServer() );
     }
 
     @Test
-    public void shouldMigrateFixedPushStrategy() throws Exception
+    public void shouldBeAbleToStartInHAMode() throws Exception
     {
         // When
-        start( bootstrapper, completeCommandLineConfig(
+        int resultCode = start( bootstrapper, commandLineConfig(
+                "-c", configOption( EnterpriseServerSettings.mode.name(), "HA" ),
+                "-c", configOption( ClusterSettings.server_id.name(), "1" ),
+                "-c", configOption( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" )
+        ));
+
+        // Then
+        assertEquals( Bootstrapper.OK, resultCode );
+        assertNotNull( bootstrapper.getServer() );
+    }
+
+    @Test
+    public void shouldMigrateFixedPushStrategyInHA() throws Exception
+    {
+        // When
+        start( bootstrapper, commandLineConfig(
+                "-c", configOption( EnterpriseServerSettings.mode.name(), "HA" ),
+                "-c", configOption( ClusterSettings.server_id.name(), "1" ),
+                "-c", configOption( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ),
                 "-c", configOption( HaSettings.tx_push_strategy.name(), "fixed" )
         ));
 

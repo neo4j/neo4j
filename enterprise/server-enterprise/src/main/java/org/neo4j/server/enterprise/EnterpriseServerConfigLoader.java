@@ -36,7 +36,10 @@ public class EnterpriseServerConfigLoader extends BaseServerConfigLoader
     public Config loadConfig( File configFile, File legacyConfigFile, Log log, Pair<String,String>... configOverrides )
     {
         Config config = super.loadConfig( configFile, legacyConfigFile, log, configOverrides );
-        config.registerSettingsClasses( asList( HaSettings.class, ClusterSettings.class ) );
+        if ( config.get( EnterpriseServerSettings.mode ).equals( "HA" ) )
+        {
+            config.registerSettingsClasses( asList( HaSettings.class, ClusterSettings.class ) );
+        }
         return config;
     }
 }
