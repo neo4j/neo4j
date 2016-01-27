@@ -38,7 +38,10 @@ class IndexLookupBuilder extends PlanBuilder {
     val hint: SchemaIndex = querylessHint.token
 
     val propertyPredicates: Seq[(QueryToken[Predicate], QueryExpression[Expression])] =
-      findPropertyPredicates(plan, hint) ++ findStartsWithPredicates(plan, hint) ++ findInequalityPredicates(plan, hint)
+      findPropertyPredicates(plan, hint) ++
+      findStartsWithPredicates(plan, hint) ++
+      findContainsPredicates(plan, hint) ++
+      findInequalityPredicates(plan, hint)
     val labelPredicates = findLabelPredicates(plan, hint)
 
     if (propertyPredicates.isEmpty || labelPredicates.isEmpty)
@@ -86,6 +89,13 @@ class IndexLookupBuilder extends PlanBuilder {
       case predicate@QueryToken(StartsWith(Property(Variable(id), prop), rhs))
        if id == hint.variable && prop.name == hint.property =>
         (predicate, RangeQueryExpression(PrefixSeekRangeExpression(PrefixRange(rhs))))
+    }
+
+  private def findContainsPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
+    plan.query.where.collect {
+      case predicate@QueryToken(Contains(Property(Variable(id), prop), rhs))
+        if id == hint.variable && prop.name == hint.property =>
+        (predicate, ScanQueryExpression(rhs))
     }
 
   private def findInequalityPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =

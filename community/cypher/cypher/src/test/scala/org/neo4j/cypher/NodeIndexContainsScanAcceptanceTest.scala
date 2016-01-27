@@ -68,6 +68,82 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
     result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
   }
 
+  test("should be case sensitive for CONTAINS with multiple indexes and predicates") {
+    System.setProperty("pickBestPlan.VERBOSE", "true")
+    val london = createLabeledNode(Map("name" -> "London", "country" -> "UK"), "Location")
+    createLabeledNode(Map("name" -> "LONDON", "country" -> "UK"), "Location")
+    graph.inTx {
+      (1 to 100).foreach { _ =>
+        createLabeledNode("Location")
+      }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("name" -> i.toString, "country" -> "UK"), "Location")
+      }
+    }
+
+    graph.createIndex("Location", "name")
+    graph.createIndex("Location", "country")
+
+    val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
+
+    val result = executeWithAllPlanners(query)
+
+    println(result.executionPlanDescription())
+
+    result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
+  }
+
+  test("should not use contains index with multiple indexes and predicates where other index is more selective") {
+    System.setProperty("pickBestPlan.VERBOSE", "true")
+    val london = createLabeledNode(Map("name" -> "London", "country" -> "UK"), "Location")
+    createLabeledNode(Map("name" -> "LONDON", "country" -> "UK"), "Location")
+    graph.inTx {
+      (1 to 100).foreach { _ =>
+        createLabeledNode("Location")
+      }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("name" -> i.toString), "Location")
+      }
+    }
+
+    graph.createIndex("Location", "name")
+    graph.createIndex("Location", "country")
+
+    val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
+
+    val result = executeWithAllPlanners(query)
+
+    println(result.executionPlanDescription())
+
+    result should (use("NodeIndexSeek") and evaluateTo(List(Map("l" -> london))))
+  }
+
+  test("should use contains index with multiple indexes and predicates where other index is more selective but we add index hint") {
+    System.setProperty("pickBestPlan.VERBOSE", "true")
+    val london = createLabeledNode(Map("name" -> "London", "country" -> "UK"), "Location")
+    createLabeledNode(Map("name" -> "LONDON", "country" -> "UK"), "Location")
+    graph.inTx {
+      (1 to 100).foreach { _ =>
+        createLabeledNode("Location")
+      }
+      (1 to 300).map { i =>
+        createLabeledNode(Map("name" -> i.toString), "Location")
+      }
+    }
+
+    graph.createIndex("Location", "name")
+    graph.createIndex("Location", "country")
+
+    val query = "MATCH (l:Location) USING INDEX l:Location(name) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
+
+    // RULE has bug with this query
+    val result = executeWithCostPlannerOnly(query)
+
+    println(result.executionPlanDescription())
+
+    result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
+  }
+
   test("should return nothing when invoked with a null value") {
     createLabeledNode(Map("name" -> "London"), "Location")
     createLabeledNode(Map("name" -> "LONDON"), "Location")
