@@ -50,6 +50,8 @@ case object PlanUpdates
       solvedWithEstimate
     }
 
+    val alwaysEager = context.config.updateStrategy.alwaysEager
+
     def planAllUpdatesRecursively(query: PlannerQuery, plan: LogicalPlan): LogicalPlan = {
       query.allPlannerQueries.foldLeft(plan) {
         // We need to plan the read-part of merge separately
@@ -62,7 +64,14 @@ case object PlanUpdates
           val readPlan = planMergeReadPart(plan, matchGraph.get)
           this.apply(pq, readPlan)
 
-        case (acc, plannerQuery) => this.apply(plannerQuery, acc)
+        case (acc, plannerQuery) =>
+          val updatePlan = this.apply(plannerQuery, acc)
+          val eagerPlan =
+            // TODO:H Fix eagerness
+            if (alwaysEager /* || Eagerness.conflictInTail(plannerQuery, plannerQuery) ... */)
+              context.logicalPlanProducer.planEager(updatePlan)
+            else updatePlan
+          updatePlan
       }
     }
 

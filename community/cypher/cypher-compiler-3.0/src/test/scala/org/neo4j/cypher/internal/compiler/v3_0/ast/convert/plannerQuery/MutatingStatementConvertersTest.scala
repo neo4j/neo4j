@@ -125,4 +125,18 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     third.queryGraph.patternNodes should equal(Set(IdName("o")))
     third.queryGraph.readOnly should be(true)
   }
+
+  test("Foreach with create node") {
+    val query = buildPlannerQuery("FOREACH (i in [1] | CREATE (a))")
+    query.queryGraph shouldBe 'isEmpty
+    val second = query.tail.get
+    second.queryGraph.mutatingPatterns should equal(
+      Seq(ForeachPattern(IdName("i"),
+          Collection(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos),
+          RegularPlannerQuery(QueryGraph(Set.empty, Set.empty, Set(IdName("i")),
+                                         Selections(Set.empty), Seq.empty, Set.empty, Set.empty,
+                                         Seq(CreateNodePattern(IdName("a"), Seq.empty, None))),
+                              QueryProjection.empty, None)))
+    )
+  }
 }

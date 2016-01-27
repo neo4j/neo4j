@@ -1772,7 +1772,7 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     result.columnAs[Int]("count").next should equal(12)
     assertStats(result, propertiesWritten = 12, nodesCreated = 2)
-    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
+    assertNumberOfEagerness(query, 1)
   }
 
   test("setting property in tail should be eager if overlap first tail") {
@@ -1793,7 +1793,7 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     result.columnAs[Int]("count").next should equal(14)
     assertStats(result, propertiesWritten = 14, nodesCreated = 3)
-    assertNumberOfEagerness(query, 3, optimalEagerCount = 1)
+    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   test("setting property in tail should not be eager if no overlap") {
@@ -1977,7 +1977,7 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 0)
   }
 
-  // Tests with UNWIND
+  // UNWIND TESTS
 
   test("eagerness should work with match - unwind - delete") {
     val a = createNode()
@@ -2096,8 +2096,91 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
-  // LOAD CSV
+  // FOREACH TESTS
+  test("should be eager between conflicting read and write inside FOREACH") {
+    createNode()
+    createNode()
 
+    //val query = "UNWIND [0] as u MATCH (a), (b) FOREACH(i in range(0, 1) | DELETE a) RETURN count(*)"
+    val query = "MATCH (a), (b) FOREACH(i in range(0, 1) | DELETE a) RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next() should equal(4)
+    assertStats(result, nodesDeleted = 2)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager between conflicting CREATE and MERGE node with FOREACH") {
+    createLabeledNode("A")
+    createLabeledNode("A")
+
+    val query =
+      """MATCH (a:A)
+        |CREATE (b:B)
+        |FOREACH(i in range(0, 1) |
+        |  MERGE (b2:B)
+        |  ON MATCH SET b2.matched = true
+        |)
+        |RETURN count(*)""".stripMargin
+
+    val result = updateWithBothPlanners(query)
+    println(result.executionPlanDescription())
+    result.columnAs[Long]("count(*)").next() should equal(2)
+    assertStats(result, nodesCreated = 2, labelsAdded = 2, propertiesWritten = 8)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager between DELETE and MERGE node with FOREACH") {
+    createLabeledNode(Map("value" -> 0, "deleted" -> true), "B")
+    createLabeledNode(Map("value" -> 1, "deleted" -> true), "B")
+
+    val query =
+      """
+        |MATCH (b:B)
+        |DELETE b
+        |FOREACH (i in [0] |
+        |  MERGE (b2:B { value: 1, deleted: true })
+        |  ON MATCH
+        |    SET b2.matched = true
+        |  ON CREATE
+        |    SET b2.deleted = false
+        |)
+        |RETURN count(*), b.deleted
+      """.stripMargin
+
+    println(executeWithCostPlannerOnly(s"EXPLAIN $query").executionPlanDescription())
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, nodesCreated = 2, nodesDeleted = 2, propertiesWritten = 6, labelsAdded = 2)
+    result.columnAs[Long]("count(*)").next shouldBe 2
+    assertNumberOfEagerness(query, 1)
+  }
+
+  // TODO:H FIXME
+  ignore("should be eager between conflicting CREATE and MERGE node with nested FOREACH") {
+    createLabeledNode("A")
+    createLabeledNode("A")
+
+    val query =
+      """MATCH (a:A)
+        |FOREACH (i in [0] |
+        |  CREATE (b:B)
+        |  FOREACH(j in range(0, 1) |
+        |    MERGE (b2:B)
+        |    ON MATCH SET b2.matched = true
+        |  )
+        |)
+        |RETURN count(*)""".stripMargin
+
+    val result = updateWithBothPlanners(query)
+    println(result.executionPlanDescription())
+    result.columnAs[Long]("count(*)").next() should equal(2)
+    assertStats(result, nodesCreated = 2, labelsAdded = 2, propertiesWritten = 8)
+    assertNumberOfEagerness(query, 1)
+  }
+
+
+  // LOAD CSV
   test("should not be eager for LOAD CSV followed by MERGE") {
     val query = "LOAD CSV FROM 'file:///something' AS line MERGE (b:B {p:line[0]}) RETURN b"
 

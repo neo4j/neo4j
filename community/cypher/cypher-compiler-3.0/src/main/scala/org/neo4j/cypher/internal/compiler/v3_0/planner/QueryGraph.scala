@@ -75,6 +75,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     mergeNodePatterns.map(_.createNodePattern.nodeName) ++
     mergeRelationshipPatterns.flatMap(_.createNodePatterns.map(_.nodeName))
 
+  def allPatternNodesRead: Set[IdName] =
+    patternNodes ++ optionalMatches.flatMap(_.allPatternNodesRead)
+
   def addShortestPaths(shortestPaths: ShortestPathPattern*): QueryGraph = shortestPaths.foldLeft(this)((qg, p) => qg.addShortestPath(p))
   def addArgumentId(newId: IdName): QueryGraph = copy(argumentIds = argumentIds + newId)
   def addArgumentIds(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
@@ -255,13 +258,6 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   }
 
   def writeOnly = !containsReads && containsUpdates
-
-  def createsNodes: Boolean = mutatingPatterns.exists {
-    case _: CreateNodePattern => true
-    case _: MergeNodePattern => true
-    case MergeRelationshipPattern(nodesToCreate, _, _, _, _) => nodesToCreate.nonEmpty
-    case _ => false
-  }
 
   def addMutatingPatterns(patterns: MutatingPattern*): QueryGraph =
     copy(mutatingPatterns = mutatingPatterns ++ patterns)

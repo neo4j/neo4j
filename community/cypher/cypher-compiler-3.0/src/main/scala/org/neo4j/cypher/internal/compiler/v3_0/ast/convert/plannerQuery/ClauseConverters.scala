@@ -414,7 +414,16 @@ object ClauseConverters {
       expression = clause.expression,
       innerUpdates = innerPlannerQuery)
 
-    builder.amendQueryGraph(_.addMutatingPatterns(foreachPattern))
+    val foreachGraph = QueryGraph(
+      argumentIds = builder.currentlyAvailableVariables,
+      mutatingPatterns = Seq(foreachPattern)
+    )
+
+    // Since foreach can contain reads (via inner merge) we put it in its own separate planner query
+    // to maintain the strict ordering of reads followed by writes within a single planner query
+    builder
+      .withTail(RegularPlannerQuery(queryGraph = foreachGraph))
+      .withTail(RegularPlannerQuery())
   }
 
   private def addStartToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Start): PlannerQueryBuilder = {
