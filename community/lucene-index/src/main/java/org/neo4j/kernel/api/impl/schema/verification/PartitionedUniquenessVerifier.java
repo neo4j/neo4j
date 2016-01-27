@@ -78,7 +78,7 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
                 continue;
             }
 
-            TermsEnum terms = termsForField( field ).iterator();
+            TermsEnum terms = LuceneDocumentStructure.originalTerms( termsForField( field ), field );
             BytesRef termsRef;
             while ( (termsRef = terms.next()) != null )
             {

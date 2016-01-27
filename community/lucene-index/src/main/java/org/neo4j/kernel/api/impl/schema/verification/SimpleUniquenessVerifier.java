@@ -72,7 +72,7 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
                         continue;
                     }
 
-                    TermsEnum terms = fields.terms( field ).iterator();
+                    TermsEnum terms = LuceneDocumentStructure.originalTerms( fields.terms( field ), field );
                     BytesRef termsRef;
                     while ( (termsRef = terms.next()) != null )
                     {

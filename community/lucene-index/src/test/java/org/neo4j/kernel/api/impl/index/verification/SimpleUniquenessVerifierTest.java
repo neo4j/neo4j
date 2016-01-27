@@ -21,6 +21,9 @@ package org.neo4j.kernel.api.impl.index.verification;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
@@ -33,6 +36,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.TestPropertyAccessor;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
@@ -48,8 +52,12 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class SimpleUniquenessVerifierTest
 {
@@ -152,6 +160,75 @@ public class SimpleUniquenessVerifierTest
         insert( data );
 
         assertDuplicatesCreated( propertyAccessor, asList( (float) -99.99999, 'a', -10, "div" ) );
+    }
+
+    @Test
+    public void numericIndexVerificationNoDuplicates() throws Exception
+    {
+        List<Object> data = asList( Integer.MAX_VALUE - 2, Integer.MAX_VALUE - 1, Integer.MAX_VALUE );
+        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+
+        insert( data );
+
+        IndexSearcher indexSearcher = spy( searcherManager.acquire() );
+        runUniquenessVerification( propertyAccessor, indexSearcher );
+
+        verify( indexSearcher, never() ).search( any( Query.class ), any( Collector.class ) );
+    }
+
+    @Test
+    public void numericIndexVerificationSomePossibleDuplicates() throws Exception
+    {
+        List<Object> data = asList( 42, Long.MAX_VALUE - 1, Long.MAX_VALUE );
+        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+
+        insert( data );
+
+        IndexSearcher indexSearcher = spy( searcherManager.acquire() );
+        runUniquenessVerification( propertyAccessor, indexSearcher );
+
+        verify( indexSearcher ).search( any( Query.class ), any( Collector.class ) );
+    }
+
+    @Test
+    public void numericIndexVerificationSomeWithDuplicates() throws Exception
+    {
+        List<Object> data = asList( Integer.MAX_VALUE, Long.MAX_VALUE, 42, Long.MAX_VALUE );
+        PropertyAccessor propertyAccessor = newPropertyAccessor( data );
+
+        insert( data );
+
+        IndexSearcher indexSearcher = spy( searcherManager.acquire() );
+        try
+        {
+            runUniquenessVerification( propertyAccessor, indexSearcher );
+            fail( "Exception expected" );
+        }
+        catch ( Throwable t )
+        {
+            assertThat( t, instanceOf( PreexistingIndexEntryConflictException.class ) );
+        }
+
+        verify( indexSearcher ).search( any( Query.class ), any( Collector.class ) );
+    }
+
+    private void runUniquenessVerification( PropertyAccessor propertyAccessor, IndexSearcher indexSearcher )
+            throws IOException, IndexEntryConflictException
+    {
+        try
+        {
+            PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
+            when( partitionSearcher.getIndexSearcher() ).thenReturn( indexSearcher );
+
+            try ( UniquenessVerifier verifier = new SimpleUniquenessVerifier( partitionSearcher ) )
+            {
+                verifier.verify( propertyAccessor, PROPERTY_KEY_ID );
+            }
+        }
+        finally
+        {
+            searcherManager.release( indexSearcher );
+        }
     }
 
     private void assertNoDuplicates( PropertyAccessor propertyAccessor ) throws Exception

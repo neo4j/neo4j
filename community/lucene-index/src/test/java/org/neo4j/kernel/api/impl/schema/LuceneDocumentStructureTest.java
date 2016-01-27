@@ -31,10 +31,10 @@ import org.junit.Test;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.TestCase.assertEquals;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
-import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.ValueEncoding.Array;
-import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.ValueEncoding.Bool;
-import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.ValueEncoding.Number;
-import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.ValueEncoding.String;
+import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Array;
+import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Bool;
+import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Number;
+import static org.neo4j.kernel.api.impl.schema.ValueEncoding.String;
 
 public class LuceneDocumentStructureTest
 {

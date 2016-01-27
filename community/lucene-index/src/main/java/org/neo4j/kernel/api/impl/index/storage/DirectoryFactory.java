@@ -25,6 +25,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.File;
@@ -37,6 +38,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.Math.min;
 
@@ -52,12 +54,17 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
 
     DirectoryFactory PERSISTENT = new DirectoryFactory()
     {
-        @SuppressWarnings("ResultOfMethodCallIgnored")
+        private final int MAX_MERGE_SIZE_MB =
+                FeatureToggles.getInteger( DirectoryFactory.class, "max_merge_size_mb", 5 );
+        private final int MAX_CACHED_MB =
+                FeatureToggles.getInteger( DirectoryFactory.class, "max_cached_mb", 50 );
+
+        @SuppressWarnings( "ResultOfMethodCallIgnored" )
         @Override
         public Directory open( File dir ) throws IOException
         {
             dir.mkdirs();
-            return FSDirectory.open( dir.toPath() );
+            return new NRTCachingDirectory( FSDirectory.open( dir.toPath() ), MAX_MERGE_SIZE_MB, MAX_CACHED_MB );
         }
 
         @Override
