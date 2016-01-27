@@ -102,6 +102,7 @@ sin({expr})
 ###
 
 Trigonometric functions, also `cos`, `tan`, `cot`, `asin`, `acos`, `atan`, `atan2`, `haversin`.
+All arguments for the trigonometric functions should be in radians, if not otherwise specified.
 
 ###assertion=returns-one parameters=expression
 RETURN
