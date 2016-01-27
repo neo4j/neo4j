@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compiler.v3_0._
+import org.neo4j.cypher.internal.compatibility.exceptionHandlerFor3_0
 import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.GraphDatabaseService
@@ -90,7 +91,7 @@ class CypherCompiler(graph: GraphDatabaseService,
   private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled))
 
   @throws(classOf[SyntaxException])
-  def preParseQuery(queryText: String): PreParsedQuery = {
+  def preParseQuery(queryText: String): PreParsedQuery = exceptionHandlerFor3_0.runSafely{
     val logger = new RecordingNotificationLogger
     val preParsedStatement = CypherPreParser(queryText)
     val CypherStatementWithOptions(statement, offset, version, planner, runtime, updateStrategy, mode) =

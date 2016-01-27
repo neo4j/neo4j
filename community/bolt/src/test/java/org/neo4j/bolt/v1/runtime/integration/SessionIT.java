@@ -58,6 +58,20 @@ public class SessionIT
     private final RecordingCallback<Void, ?> discarding = new RecordingCallback<>();
 
     @Test
+    public void shouldHandleEmptyString() throws Throwable
+    {
+        // Given
+        Session session = env.newSession();
+        session.init( "TestClient/1.0", null, null );
+
+        // When
+        session.run( "", Collections.<String,Object>emptyMap(), null, responses );
+
+        // Then
+        assertThat( responses.next(), failedWith( Status.Statement.InvalidSyntax ) );
+    }
+
+    @Test
     public void shouldExecuteStatement() throws Throwable
     {
         // Given
