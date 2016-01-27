@@ -83,14 +83,9 @@ public class ReplicatedTransaction<MEMBER> implements ReplicatedContent
     @Override
     public String toString()
     {
-        try
-        {
-            TransactionRepresentation tx = ReplicatedTransactionFactory.extractTransactionRepresentation( this, new byte[0] );
-            return format( "ReplicatedTransaction{globalSession=%s, localOperationId=%s, tx=%s}", globalSession, localOperationId, tx );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+
+        return format( "ReplicatedTransaction{globalSession=%s, localOperationId=%s}",
+                globalSession, localOperationId );
+
     }
 }
