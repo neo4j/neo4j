@@ -45,7 +45,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.ServerConfigFactory;
+import org.neo4j.server.configuration.BaseServerConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase;
@@ -124,7 +124,8 @@ public class CommunityServerBuilder
         final File configFile = buildBefore();
 
         Log log = logProvider.getLog( getClass() );
-        Config config = ServerConfigFactory.loadConfig( null, configFile, log );
+        BaseServerConfigLoader configLoader = new BaseServerConfigLoader();
+        Config config = configLoader.loadConfig( null, configFile, log );
         return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
                 .monitors( new Monitors() ) );
     }

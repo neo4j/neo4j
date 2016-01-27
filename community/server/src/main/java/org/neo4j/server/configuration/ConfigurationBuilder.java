@@ -71,7 +71,7 @@ public interface ConfigurationBuilder
             serverProperties.put( ServerSettings.third_party_packages.name(),
                     toStringForThirdPartyPackageProperty( configurator.getThirdpartyJaxRsPackages() ) );
 
-            this.serverConfig = new Config( serverProperties, ServerConfigFactory.getDefaultSettingsClasses() );
+            this.serverConfig = new Config( serverProperties, BaseServerConfigLoader.getDefaultSettingsClasses() );
             // use the db properties directly
             this.dbProperties = configurator.getDatabaseTuningProperties();
         }

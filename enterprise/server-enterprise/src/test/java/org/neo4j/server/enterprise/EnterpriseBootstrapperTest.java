@@ -19,8 +19,15 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.junit.Test;
+
+import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.server.BaseBootstrapperTest;
 import org.neo4j.server.Bootstrapper;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.CommunityBootstrapper.start;
 
 public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
 {
@@ -28,5 +35,27 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
     protected Bootstrapper newBootstrapper()
     {
         return new EnterpriseBootstrapper();
+    }
+
+    @Override
+    protected String[] baseConfig()
+    {
+        return new String[]
+                {
+                        "-c", configOption( ClusterSettings.server_id.name(), "1" ),
+                        "-c", configOption( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" )
+                };
+    }
+
+    @Test
+    public void shouldMigrateFixedPushStrategy() throws Exception
+    {
+        // When
+        start( bootstrapper, completeCommandLineConfig(
+                "-c", configOption( HaSettings.tx_push_strategy.name(), "fixed" )
+        ));
+
+        // Then
+        assertEquals( HaSettings.TxPushStrategy.fixed_descending, bootstrapper.getServer().getConfig().get( HaSettings.tx_push_strategy ) );
     }
 }
