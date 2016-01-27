@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{ExclusiveBound, InclusiveBound, 
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  test("should plan index seek by prefix for simple prefix search based on STARTS WITH with %") {
+  test("should plan index seek by prefix for simple prefix search based on STARTS WITH with prefix") {
     (new given {
       indexOn("Person", "name")
       cost = nodeIndexScanCost
@@ -48,8 +48,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  ignore("should plan index seek by prefix for simple prefix search based on CONTAINS with %") {
-    System.setProperty("pickBestPlan.VERBOSE", "true")
+  test("should plan index seek by prefix for simple prefix search based on CONTAINS substring") {
     (new given {
       indexOn("Person", "name")
       cost = nodeIndexScanCost

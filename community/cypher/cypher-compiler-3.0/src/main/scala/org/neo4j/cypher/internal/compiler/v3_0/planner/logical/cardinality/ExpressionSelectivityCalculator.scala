@@ -54,13 +54,21 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case AsPropertySeekable(seekable) =>
       calculateSelectivityForPropertyEquality(seekable.name, seekable.args.sizeHint, selections, seekable.propertyKey)
 
-    // WHERE x.prop STARTS WITH ...
+    // WHERE x.prop STARTS WITH 'prefix'
     case AsStringRangeSeekable(seekable@PrefixRangeSeekable(PrefixRange(StringLiteral(prefix)), _, _, _)) =>
-      calculateSelectivityForPrefixRangeSeekable(seekable.name, selections, seekable.propertyKey, Some(prefix))
+      calculateSelectivityForSubstringSargable(seekable.name, selections, seekable.propertyKey, Some(prefix))
 
-    // WHERE x.prop STARTS WITH ...
+    // WHERE x.prop STARTS WITH expression
     case AsStringRangeSeekable(seekable@PrefixRangeSeekable(_:PrefixRange[_], _, _, _)) =>
-      calculateSelectivityForPrefixRangeSeekable(seekable.name, selections, seekable.propertyKey, None)
+      calculateSelectivityForSubstringSargable(seekable.name, selections, seekable.propertyKey, None)
+
+    // WHERE x.prop CONTAINS 'substring'
+    case Contains(Property(Variable(name), propertyKey), StringLiteral(substring)) =>
+      calculateSelectivityForSubstringSargable(name, selections, propertyKey, Some(substring))
+
+    // WHERE x.prop CONTAINS expression
+    case Contains(Property(Variable(name), propertyKey), expr) =>
+      calculateSelectivityForSubstringSargable(name, selections, propertyKey, None)
 
     // WHERE x.prop <, <=, >=, > that could benefit from an index
     case AsValueRangeSeekable(seekable@InequalityRangeSeekable(_, _, _)) =>
@@ -134,7 +142,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     selectivity
   }
 
-  private def calculateSelectivityForPrefixRangeSeekable(variable: String,
+  private def calculateSelectivityForSubstringSargable(variable: String,
                                                    selections: Selections,
                                                    propertyKey: PropertyKeyName,
                                                    prefix: Option[String])
