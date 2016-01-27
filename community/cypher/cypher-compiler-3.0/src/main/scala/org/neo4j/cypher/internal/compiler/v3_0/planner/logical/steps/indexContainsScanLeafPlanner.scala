@@ -32,7 +32,7 @@ object indexContainsScanLeafPlanner extends LeafPlanner {
     val lpp = context.logicalPlanProducer
 
     val resultPlans = predicates.collect {
-      // MATCH (n:User) WHERE exists(n.prop) RETURN n
+      // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
       case predicate@Contains(Property(Variable(name), propertyKey), expr) =>
         val propertyKeyName = propertyKey.name
 
