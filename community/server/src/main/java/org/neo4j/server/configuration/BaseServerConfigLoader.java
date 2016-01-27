@@ -46,16 +46,16 @@ import static org.neo4j.server.configuration.ServerSettings.legacy_db_config;
  * [neo4j-server.properties, neo4j.properties]. But both config files are now consolidated internally - the config
  * from both is combined into one config instance.
  */
-public class ServerConfigFactory
+public class BaseServerConfigLoader
 {
-    public static Config loadConfig( File configFile, File legacyConfigFile, Log log, Pair<String, String> ... configOverrides )
+    public Config loadConfig( File configFile, File legacyConfigFile, Log log, Pair<String, String> ... configOverrides )
     {
         return loadConfig( configFile, legacyConfigFile,
                 new File( legacyConfigFile.getParentFile(), ServerSettings.DB_TUNING_CONFIG_FILE_NAME ),
                 log, configOverrides );
     }
 
-    public static Config loadConfig( File configFile, File legacyConfigFile, File legacyDbTuningDefaultFile, Log log, Pair<String, String> ... configOverrides )
+    public Config loadConfig( File configFile, File legacyConfigFile, File legacyDbTuningDefaultFile, Log log, Pair<String, String> ... configOverrides )
     {
         if ( log == null )
         {
@@ -84,7 +84,7 @@ public class ServerConfigFactory
         return config;
     }
 
-    private static void applyUserOverrides( Config config, Pair<String,String>[] configOverrides )
+    private void applyUserOverrides( Config config, Pair<String,String>[] configOverrides )
     {
         Map<String,String> params = config.getParams();
         for ( Pair<String,String> configOverride : configOverrides )
@@ -121,7 +121,7 @@ public class ServerConfigFactory
         config.applyChanges( params );
     }
 
-    public static Iterable<Class<?>> getDefaultSettingsClasses()
+    protected static Iterable<Class<?>> getDefaultSettingsClasses()
     {
         return asList( ServerSettings.class, GraphDatabaseSettings.class );
     }

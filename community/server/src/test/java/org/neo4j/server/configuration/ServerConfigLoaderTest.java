@@ -37,14 +37,14 @@ import org.neo4j.server.ServerTestUtils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.server.configuration.ServerConfigFactory.loadConfig;
 
-public class ServerConfigTest
+public class ServerConfigLoaderTest
 {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    public final Log log = NullLog.getInstance();
+    private final Log log = NullLog.getInstance();
+    private final BaseServerConfigLoader configLoader = new BaseServerConfigLoader();
 
     @Test
     public void shouldProvideAConfiguration() throws IOException
@@ -54,7 +54,7 @@ public class ServerConfigTest
                 .build();
 
         // when
-        Config config = loadConfig( null, configFile, log );
+        Config config = configLoader.loadConfig( null, configFile, log );
 
         // then
         assertNotNull( config );
@@ -69,7 +69,7 @@ public class ServerConfigTest
                 .build();
 
         // when
-        Config testConf = loadConfig( null, configFile, log );
+        Config testConf = configLoader.loadConfig( null, configFile, log );
 
         // then
         final String EXPECTED_VALUE = "bar";
@@ -86,7 +86,7 @@ public class ServerConfigTest
                 .build();
 
         // when
-        Config testConf = loadConfig( null, configFile, log );
+        Config testConf = configLoader.loadConfig( null, configFile, log );
 
         // then
         assertNotNull( testConf );
@@ -106,7 +106,7 @@ public class ServerConfigTest
                 .build();
 
         // when
-        Config config = loadConfig( null, propertyFileWithDbTuningProperty, log );
+        Config config = configLoader.loadConfig( null, propertyFileWithDbTuningProperty, log );
 
         // then
         assertNotNull( config );
@@ -130,7 +130,7 @@ public class ServerConfigTest
         }
 
         // when
-        Config config = loadConfig( null, file, log );
+        Config config = configLoader.loadConfig( null, file, log );
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );

@@ -37,7 +37,7 @@ public class ConfigWrappingConfigurationTest
     public void shouldGetDefaultPropertyByKey() throws Exception
     {
         // GIVEN
-        Config config = new Config( new HashMap<String,String>(), ServerConfigFactory.getDefaultSettingsClasses() );
+        Config config = new Config( new HashMap<String,String>(), BaseServerConfigLoader.getDefaultSettingsClasses() );
         ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
 
         // WHEN
@@ -51,7 +51,7 @@ public class ConfigWrappingConfigurationTest
     public void shouldGetPropertyInRightFormat() throws Exception
     {
         // GIVEN
-        Config config = new Config( new HashMap<String,String>(), ServerConfigFactory.getDefaultSettingsClasses() );
+        Config config = new Config( new HashMap<String,String>(), BaseServerConfigLoader.getDefaultSettingsClasses() );
         ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
 
         // WHEN
@@ -68,7 +68,7 @@ public class ConfigWrappingConfigurationTest
     {
         // GIVEN
 
-        Config config = new Config( new HashMap<String,String>(), ServerConfigFactory.getDefaultSettingsClasses() );
+        Config config = new Config( new HashMap<String,String>(), BaseServerConfigLoader.getDefaultSettingsClasses() );
         ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
 
         // THEN
@@ -78,7 +78,7 @@ public class ConfigWrappingConfigurationTest
     @Test
     public void shouldAbleToAccessRegisteredPropertyByName()
     {
-        Config config = new Config( new HashMap<String,String>(), ServerConfigFactory.getDefaultSettingsClasses() );
+        Config config = new Config( new HashMap<String,String>(), BaseServerConfigLoader.getDefaultSettingsClasses() );
         ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
 
         assertEquals( 60000L, wrappingConfiguration.getProperty( ServerSettings.transaction_timeout.name() ) );

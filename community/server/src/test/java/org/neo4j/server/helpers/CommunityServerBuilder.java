@@ -44,7 +44,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.ServerConfigFactory;
+import org.neo4j.server.configuration.BaseServerConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase;
@@ -56,6 +56,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
@@ -122,7 +123,8 @@ public class CommunityServerBuilder
         final File configFile = buildBefore();
 
         Log log = logProvider.getLog( getClass() );
-        Config config = ServerConfigFactory.loadConfig( null, configFile, log );
+        BaseServerConfigLoader configLoader = new BaseServerConfigLoader();
+        Config config = configLoader.loadConfig( null, configFile, log );
         return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
                 .monitors( new Monitors() ) );
     }

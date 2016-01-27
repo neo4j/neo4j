@@ -34,12 +34,12 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.configuration.BaseServerConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.server.logging.Netty4LogBridge;
 import static java.lang.String.format;
-import static org.neo4j.server.configuration.ServerConfigFactory.loadConfig;
 import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE;
 import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE_KEY;
 
@@ -195,7 +195,6 @@ public abstract class Bootstrapper
      */
     protected Config createConfig( Log log, File file, Pair<String, String>[] configOverrides ) throws IOException
     {
-        return loadConfig( file, new File( System.getProperty( SERVER_CONFIG_FILE_KEY, SERVER_CONFIG_FILE ) ), log, configOverrides );
+        return new BaseServerConfigLoader().loadConfig( file, new File( System.getProperty( SERVER_CONFIG_FILE_KEY, SERVER_CONFIG_FILE ) ), log, configOverrides );
     }
-
 }
