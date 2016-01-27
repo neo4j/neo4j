@@ -20,31 +20,28 @@
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, SemanticState, replace}
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, SemanticState, bottomUp}
 
 case class expandStar(state: SemanticState) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val instance = replace(replacer => {
-    case expr: Expression =>
-      replacer.stop(expr)
+  private val rewriter = Rewriter.lift {
+    case clause@With(_, ri, _, _, _, _) if ri.includeExisting =>
+      clause.copy(returnItems = returnItems(clause, ri.items))(clause.position)
 
-    case astNode =>
-      replacer.expand(astNode) match {
-        case clause@With(_, ri, _, _, _, _) if ri.includeExisting =>
-          clause.copy(returnItems = returnItems(clause, ri.items))(clause.position)
+    case clause: PragmaWithout =>
+      With(distinct = false, returnItems = returnItems(clause, Seq.empty, clause.excludedNames),
+        orderBy = None, skip = None, limit = None, where = None)(clause.position)
 
-        case clause: PragmaWithout =>
-          With(distinct = false, returnItems = returnItems(clause, Seq.empty, clause.excludedNames), orderBy = None, skip = None, limit = None, where = None)(clause.position)
+    case clause@Return(_, ri, _, _, _) if ri.includeExisting =>
+      clause.copy(returnItems = returnItems(clause, ri.items))(clause.position)
 
-        case clause@Return(_, ri, _, _, _) if ri.includeExisting =>
-          clause.copy(returnItems = returnItems(clause, ri.items))(clause.position)
+    case expandedAstNode =>
+      expandedAstNode
+  }
 
-        case expandedAstNode =>
-          expandedAstNode
-      }
-  })
+  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
   private def returnItems(clause: Clause, listedItems: Seq[ReturnItem], excludedNames: Set[String] = Set.empty): ReturnItems = {
     val scope = state.scope(clause).getOrElse {

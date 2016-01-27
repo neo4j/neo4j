@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.AggregationNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, replace, topDown}
+import org.neo4j.cypher.internal.frontend.v3_0.{bottomUp, Rewriter, topDown}
 
 /**
  * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so
@@ -43,11 +43,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, replace, topDown}
 case object isolateAggregation extends Rewriter {
   def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val instance = replace(replacer => {
-
-    case expr: Expression =>
-      replacer.stop(expr)
-
+  private val rewriter = Rewriter.lift {
     case q@SingleQuery(clauses) =>
 
       val newClauses = clauses.flatMap {
@@ -94,10 +90,9 @@ case object isolateAggregation extends Rewriter {
       }
 
       q.copy(clauses = newClauses)(q.position)
+  }
 
-    case astNode =>
-      replacer.expand(astNode)
-  })
+  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
   private def getExpressions(c: Clause): Set[Expression] = c match {
     case clause: Return => clause.returnItems.items.map(_.expression).toSet

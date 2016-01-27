@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.frontend.v3_0
 
 import java.lang.reflect.Method
 
-
-import scala.annotation.tailrec
-import scala.collection.mutable.{HashMap => MutableHashMap}
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_0.Rewritable._
+
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.collection.mutable.{HashMap => MutableHashMap}
 
 object Rewriter {
   def lift(f: PartialFunction[AnyRef, AnyRef]): Rewriter = f.orElse(PartialFunction(identity[AnyRef]))
@@ -104,9 +105,8 @@ trait Rewritable {
 }
 
 object inSequence {
-
-  class InSequenceRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
-    def apply(that: AnyRef): AnyRef = {
+  private class InSequenceRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
+    override def apply(that: AnyRef): AnyRef = {
       val it = rewriters.iterator
       //this piece of code is used a lot and has been through profiling
       //please don't just remove it because it is ugly looking
@@ -119,82 +119,86 @@ object inSequence {
     }
   }
 
-  def apply(rewriters: Rewriter*) = new InSequenceRewriter(rewriters)
+  def apply(rewriters: Rewriter*): Rewriter = new InSequenceRewriter(rewriters)
 }
 
 object topDown {
+  private class TopDownRewriter(rewriter: Rewriter, val stopper: AnyRef => Boolean) extends Rewriter {
+    override def apply(that: AnyRef): AnyRef = {
+      val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
+      val result = rec(initialStack)
+      assert(result.size == 1)
+      result.head
+    }
 
-  class TopDownRewriter(rewriter: Rewriter) extends Rewriter {
-    def apply(that: AnyRef): AnyRef = {
-      val rewrittenThat = that.rewrite(rewriter)
-      //this piece of code is used a lot and has been through profiling
-      //please don't just remove it because it is ugly looking
-      val children = rewrittenThat.children.toList
-      val buffer = new Array[AnyRef](children.size)
-      val it = children.iterator
-      var index = 0
-      while (it.hasNext) {
-        buffer(index) = apply(it.next())
-        index += 1
+    @tailrec
+    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+      val (currentJobs, _) = stack.top
+      if (currentJobs.isEmpty) {
+        val (_, newChildren) = stack.pop()
+        if (stack.isEmpty) {
+          newChildren
+        } else {
+          val (job :: jobs, doneJobs) = stack.pop()
+          val doneJob = job.dup(newChildren)
+          stack.push((jobs, doneJobs += doneJob))
+          rec(stack)
+        }
+      } else {
+        val (newJob :: jobs, doneJobs) = stack.pop()
+        if (stopper(newJob)) {
+          stack.push((jobs, doneJobs += newJob))
+        } else {
+          val rewrittenJob = newJob.rewrite(rewriter)
+          stack.push((rewrittenJob :: jobs, doneJobs))
+          stack.push((rewrittenJob.children.toList, new mutable.MutableList()))
+        }
+        rec(stack)
       }
-
-      rewrittenThat.dup(buffer)
     }
   }
 
-  def apply(rewriter: Rewriter) = new TopDownRewriter(rewriter)
+  def apply(rewriter: Rewriter, stopper: (AnyRef) => Boolean = _ => false): Rewriter =
+    new TopDownRewriter(rewriter, stopper)
 }
 
 object bottomUp {
 
-  class BottomUpRewriter(val rewriter: Rewriter) extends Rewriter {
-    def apply(that: AnyRef): AnyRef = {
-      //this piece of code is used a lot and has been through profiling
-      //please don't just remove it because it is ugly looking
-      val children = that.children.toList
-      val buffer = new Array[AnyRef](children.size)
-      val it = children.iterator
-      var index = 0
-      while (it.hasNext) {
-        buffer(index) = apply(it.next())
-        index += 1
-      }
+  private class BottomUpRewriter(val rewriter: Rewriter, val stopper: AnyRef => Boolean) extends Rewriter {
+    override def apply(that: AnyRef): AnyRef = {
+      val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
+      val result = rec(initialStack)
+      assert(result.size == 1)
+      result.head
+    }
 
-      val rewrittenThat = that.dup(buffer)
-      rewriter.apply(rewrittenThat)
+    @tailrec
+    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+      val (currentJobs, _) = stack.top
+      if (currentJobs.isEmpty) {
+        val (_, newChildren) = stack.pop()
+        if (stack.isEmpty) {
+          newChildren
+        } else {
+          val (job :: jobs, doneJobs) = stack.pop()
+          val doneJob = job.dup(newChildren)
+          val rewrittenDoneJob = doneJob.rewrite(rewriter)
+          stack.push((jobs, doneJobs += rewrittenDoneJob))
+          rec(stack)
+        }
+      } else {
+        val next = currentJobs.head
+        if (stopper(next)) {
+          val (job :: jobs, doneJobs) = stack.pop()
+          stack.push((jobs, doneJobs += job))
+        } else {
+          stack.push((next.children.toList, new mutable.MutableList()))
+        }
+        rec(stack)
+      }
     }
   }
 
-  def apply(rewriter: Rewriter) = new BottomUpRewriter(rewriter)
-}
-
-trait Replacer {
-  def expand(replacement: AnyRef): AnyRef
-  def stop(replacement: AnyRef): AnyRef
-}
-
-case class replace(strategy: (Replacer => (AnyRef => AnyRef))) extends Rewriter {
-
-  self =>
-
-  private val cont = strategy(new Replacer {
-    def expand(replacement: AnyRef) = {
-      //this piece of code is used a lot and has been through profiling
-      //please don't just remove it because it is ugly looking
-      val children = replacement.children.toList
-      val buffer = new Array[AnyRef](children.size)
-      val it = children.iterator
-      var index = 0
-      while (it.hasNext) {
-        buffer(index) = apply(it.next())
-        index += 1
-      }
-
-      replacement.dup(buffer)
-    }
-
-    def stop(replacement: AnyRef) = replacement
-  })
-
-  def apply(that: AnyRef): AnyRef = cont(that)
+  def apply(rewriter: Rewriter, stopper: (AnyRef) => Boolean = _ => false): Rewriter =
+    new BottomUpRewriter(rewriter, stopper)
 }

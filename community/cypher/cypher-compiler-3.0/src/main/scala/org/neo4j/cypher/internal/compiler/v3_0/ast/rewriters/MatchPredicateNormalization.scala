@@ -20,16 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.{topDown, InputPosition, Rewriter, replace}
+import org.neo4j.cypher.internal.frontend.v3_0._
 
 class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val instance = replace(replacer => {
-    case expr: Expression =>
-      replacer.stop(expr)
-
+  private val rewriter = Rewriter.lift {
     case m@Match(_, pattern, _, where) =>
       val predicates = pattern.fold(Vector.empty[Expression]) {
         case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
@@ -58,8 +55,7 @@ class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends 
           where = newWhere
         )(m.position)
       }
+  }
 
-    case astNode =>
-      replacer.expand(astNode)
-  })
+  private val instance = topDown(rewriter, _.isInstanceOf[Expression])
 }

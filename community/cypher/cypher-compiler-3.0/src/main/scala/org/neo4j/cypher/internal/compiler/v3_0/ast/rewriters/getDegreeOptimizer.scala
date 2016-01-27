@@ -21,39 +21,31 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_0.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, SemanticDirection, replace}
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, SemanticDirection, bottomUp}
 
 // Rewrites queries to allow using the much faster getDegree method on the nodes
 case object getDegreeOptimizer extends Rewriter {
   def apply(that: AnyRef): AnyRef = instance(that)
 
-  val instance = replace(replacer => {
-    // Top-Down:
+  private val rewriter = Rewriter.lift {
+
+    // LENGTH( (a)-[]->() )
+    case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None))))))
+      if func.function.contains(functions.Length) || func.function.contains(functions.Size) =>
+      calculateUsingGetDegree(func, node, types, dir)
+
+    // LENGTH( ()-[]->(a) )
+    case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None))))))
+      if func.function.contains(functions.Length) || func.function.contains(functions.Size) =>
+      calculateUsingGetDegree(func, node, types, dir.reversed)
+
+  }
+
+  private val instance = bottomUp(rewriter,
     // Do not traverse into NestedPlanExpressions as they have been optimized already by an earlier call to plan
-    case that: NestedPlanExpression =>
-      replacer.stop(that)
+    _.isInstanceOf[NestedPlanExpression])
 
-    case that =>
-      // Bottom-up:
-      // Replace function invocations with more efficient expressions
-      replacer.expand(that) match {
-
-        // LENGTH( (a)-[]->() )
-        case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None))))))
-          if func.function == Some(functions.Length) || func.function == Some(functions.Size) =>
-          calculateUsingGetDegree(func, node, types, dir)
-
-        // LENGTH( ()-[]->(a) )
-        case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None))))))
-          if func.function == Some(functions.Length) || func.function == Some(functions.Size) =>
-          calculateUsingGetDegree(func, node, types, dir.reversed)
-
-        case rewritten =>
-          rewritten
-      }
-  })
-
-  def calculateUsingGetDegree(func: FunctionInvocation, node: Variable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
+  private def calculateUsingGetDegree(func: FunctionInvocation, node: Variable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
     types
       .map(typ => GetDegree(node.copyId, Some(typ), dir)(typ.position))
       .reduceOption[Expression](Add(_, _)(func.position))

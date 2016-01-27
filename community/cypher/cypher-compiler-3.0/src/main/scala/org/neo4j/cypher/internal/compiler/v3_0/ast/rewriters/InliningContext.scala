@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.InliningContext._
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp, TypedRewriter}
-import org.neo4j.cypher.internal.frontend.v3_0.bottomUp.BottomUpRewriter
+import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, TypedRewriter, bottomUp}
 
 case class InliningContext(projections: Map[Variable, Expression] = Map.empty,
                            seenVariables: Set[Variable] = Set.empty,
@@ -52,7 +51,7 @@ case class InliningContext(projections: Map[Variable, Expression] = Map.empty,
   def spoilVariable(variable: Variable): InliningContext =
     copy(projections = projections - variable)
 
-  def variableRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
+  def variableRewriter: Rewriter = bottomUp(Rewriter.lift {
     case variable: Variable if okToRewrite(variable) =>
       projections.get(variable).map(_.endoRewrite(copyVariables)).getOrElse(variable.copyId)
   })
@@ -61,7 +60,7 @@ case class InliningContext(projections: Map[Variable, Expression] = Map.empty,
     projections.contains(i) &&
     usageCount.withDefaultValue(0)(i) < INLINING_THRESHOLD
 
-  def patternRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
+  def patternRewriter: Rewriter = bottomUp(Rewriter.lift {
     case node @ NodePattern(Some(ident), _, _) if okToRewrite(ident) =>
       alias(ident) match {
         case alias @ Some(_) => node.copy(variable = alias)(node.position)

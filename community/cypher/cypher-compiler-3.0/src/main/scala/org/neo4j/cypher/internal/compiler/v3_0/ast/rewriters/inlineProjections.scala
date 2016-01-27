@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_0.{replace, Rewriter, TypedRewriter}
+import org.neo4j.cypher.internal.frontend.v3_0.{topDown, Rewriter, TypedRewriter}
 
 case object inlineProjections extends Rewriter {
 
-  def apply(in: AnyRef): AnyRef = instance.apply(in)
+  def apply(in: AnyRef): AnyRef = instance(in)
 
-  val instance = Rewriter.lift { case input: Statement =>
+  private val instance = Rewriter.lift { case input: Statement =>
     val context = inliningContextCreator(input)
 
     val inlineVariables = TypedRewriter[ASTNode](context.variableRewriter)
@@ -36,10 +36,7 @@ case object inlineProjections extends Rewriter {
     val inlineReturnItemsInWith = Rewriter.lift(aliasedReturnItemRewriter(inlineVariables.narrowed, context, inlineAliases = true))
     val inlineReturnItemsInReturn = Rewriter.lift(aliasedReturnItemRewriter(inlineVariables.narrowed, context, inlineAliases = false))
 
-    val inliningRewriter: Rewriter = replace(replacer => {
-      case expr: Expression =>
-        replacer.stop(expr)
-
+    val inliningRewriter: Rewriter = Rewriter.lift {
       case withClause: With if !withClause.distinct =>
         withClause.copy(
           returnItems = withClause.returnItems.rewrite(inlineReturnItemsInWith).asInstanceOf[ReturnItems],
@@ -64,13 +61,11 @@ case object inlineProjections extends Rewriter {
 
       case clause: Clause =>
         inlineVariables.narrowed(clause)
+    }
 
-      case astNode =>
-        replacer.expand(astNode)
-    })
-
-    input.endoRewrite(inliningRewriter)
+    input.endoRewrite(topDown(inliningRewriter, _.isInstanceOf[Expression]))
   }
+
 
   private def findAllDependencies(variable: Variable, context: InliningContext): Set[Variable] = {
     val (dependencies, _) = fixedPoint[(Set[Variable], List[Variable])]({

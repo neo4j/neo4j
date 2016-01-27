@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_0.bottomUp.BottomUpRewriter
 import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
-
 
 /**
  * Runs through LogicalPlan and copies duplicate plans to make sure the
@@ -34,7 +32,7 @@ case object removeIdenticalPlans extends Rewriter {
   override def apply(input: AnyRef) = {
     var seenPlans = IdentitySet.empty[LogicalPlan]
 
-    val rewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
+    val rewriter: Rewriter = bottomUp(Rewriter.lift {
       case plan: LogicalPlan if seenPlans(plan) => plan.copyPlan()
       case plan: LogicalPlan => seenPlans = seenPlans + plan ; plan
     })
