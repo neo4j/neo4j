@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -eu
 
+[[ "${FAKE_JAVA_DISABLE_RECORD_ARGS:-}" ]] || echo -n "$@" >../java-args
+
 if [ "$1" == "-version" ]; then
   echo "java version \"${FAKE_JAVA_VERSION:-1.8.0_51}\"
 Java(TM) SE Runtime Environment (build 1.8.0_51-b16)
@@ -14,5 +16,3 @@ echo "stderr from java" >&2
 if [[ "${FAKE_JAVA_SLEEP:-}" ]]; then
   sleep "${FAKE_JAVA_SLEEP}"
 fi
-
-echo -n "$@" >../java-args

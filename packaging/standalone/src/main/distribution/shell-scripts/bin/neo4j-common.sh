@@ -83,14 +83,16 @@ find_java_cmd() {
 check_java() {
   find_java_cmd
 
-  JAVA_VERSION=$("${JAVA_CMD}" -version 2>&1 | awk -F '"' '/version/ {print $2}')
+  version_command="${JAVA_CMD} -version ${JAVA_MEMORY_OPTS} 2>&1"
+
+  JAVA_VERSION=$(${version_command} | awk -F '"' '/version/ {print $2}')
   if [[ "${JAVA_VERSION}" < "1.8" ]]; then
     echo "ERROR! Neo4j cannot be started using java version ${JAVA_VERSION}. "
     show_java_help
     exit 1
   fi
 
-  if ! ("${JAVA_CMD}" -version 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM"); then
+  if ! (${version_command} | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM"); then
     echo "WARNING! You are using an unsupported Java runtime. "
     show_java_help
   fi
@@ -176,10 +178,13 @@ setup_paths() {
 }
 
 setup_java_opts() {
+  JAVA_MEMORY_OPTS=""
+  [[ "${wrapper_java_initmemory:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xms${wrapper_java_initmemory}m"
+  [[ "${wrapper_java_maxmemory:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xmx${wrapper_java_maxmemory}m"
+
   JAVA_OPTS="-server"
+  [[ "${JAVA_MEMORY_OPTS}" ]] && JAVA_OPTS="${JAVA_OPTS} ${JAVA_MEMORY_OPTS}"
   [[ "${wrapper_java_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${wrapper_java_additional}"
-  [[ "${wrapper_java_initmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xms${wrapper_java_initmemory}m"
-  [[ "${wrapper_java_maxmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xmx${wrapper_java_maxmemory}m"
   return 0
 }
 
