@@ -992,6 +992,13 @@ public class ClusterManager
             members.remove( serverId );
             life.remove( db );
             db.shutdown();
+            // Sleep a little to help ensure that the shutdown thread has completed before we return
+            try
+            {
+                Thread.sleep( 50L );
+            }
+            catch ( InterruptedException ignored )
+            {}
             return wrap( new StartDatabaseAgainKit( this, serverId ) );
         }
 
