@@ -48,6 +48,21 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
+  ignore("should plan index seek by prefix for simple prefix search based on CONTAINS with %") {
+    System.setProperty("pickBestPlan.VERBOSE", "true")
+    (new given {
+      indexOn("Person", "name")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (a:Person) WHERE a.name CONTAINS 'substring' RETURN a").plan should equal(
+      NodeIndexContainsScan(
+        "a",
+        LabelToken("Person", LabelId(0)),
+        PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+        StringLiteral("substring")_,
+        Set.empty)(solved)
+    )
+  }
+
   test("should plan index seek by prefix for prefix search based on multiple STARTS WITHSs combined with AND, and choose the longer prefix") {
     (new given {
       indexOn("Person", "name")
@@ -243,6 +258,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     case (_: AllNodesScan, _) => 1000.0
     case (_: NodeByLabelScan, _) => 50.0
     case (_: NodeIndexScan, _) => 10.0
+    case (_: NodeIndexContainsScan, _) => 10.0
     case (_: NodeIndexSeek, _) => 1.0
     case (Selection(_, plan), input) => nodeIndexScanCost((plan, input))
     case _ => Double.MaxValue
