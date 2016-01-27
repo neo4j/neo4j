@@ -52,23 +52,13 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 
     protected Bootstrapper bootstrapper;
 
-    protected String[] baseConfig()
-    {
-        return new String[]{};
-    }
-
-    protected String[] completeCommandLineConfig( String... additional )
+    protected String[] commandLineConfig( String... params )
     {
         ArrayList<String> config = new ArrayList<>();
 
-        for ( String baseConfig : baseConfig() )
+        for ( String param : params )
         {
-            config.add( baseConfig );
-        }
-
-        for ( String extra : additional )
-        {
-            config.add( extra );
+            config.add( param );
         }
 
         return config.toArray( new String[config.size()] );
@@ -95,7 +85,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     public void shouldStartStopNeoServerWithoutAnyConfigFiles()
     {
         // When
-        int resultCode = start( bootstrapper, completeCommandLineConfig( "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
+        int resultCode = start( bootstrapper, commandLineConfig( "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
 
         // Then
         assertEquals( Bootstrapper.OK, resultCode );
@@ -113,7 +103,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         ), configFile );
 
         // When
-        start( bootstrapper, completeCommandLineConfig(
+        start( bootstrapper, commandLineConfig(
                 "-C", configFile.getAbsolutePath(),
                 "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
 
@@ -132,7 +122,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         ), configFile );
 
         // When
-        start( bootstrapper, completeCommandLineConfig(
+        start( bootstrapper, commandLineConfig(
                 "-C", configFile.getAbsolutePath(),
                 "-c", configOption( forced_kernel_id.name(), "mycustomvalue" ),
                 "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
