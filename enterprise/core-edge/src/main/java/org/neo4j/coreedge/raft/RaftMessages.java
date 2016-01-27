@@ -78,6 +78,12 @@ public interface RaftMessages
         {
             return message;
         }
+
+        @Override
+        public String toString()
+        {
+            return format( "Directed{to=%s, message=%s}", to, message );
+        }
     }
 
     interface Vote
@@ -355,7 +361,7 @@ public interface RaftMessages
             @Override
             public String toString()
             {
-                return String.format( "AppendEntries.Response from %s {term=%d, success=%s, matchIndex=%d, appendIndex=%d}",
+                return format( "AppendEntries.Response from %s {term=%d, success=%s, matchIndex=%d, appendIndex=%d}",
                         from, term, success, matchIndex, appendIndex );
             }
         }

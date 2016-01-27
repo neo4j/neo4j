@@ -23,11 +23,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.neo4j.coreedge.raft.roles.Voting;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(MockitoJUnitRunner.class)
-public class BallotTest
+public class VotingTest
 {
     Object candidate = new Object();
     Object otherMember = new Object();
@@ -39,7 +41,7 @@ public class BallotTest
     @Test
     public void shouldAcceptRequestWithIdenticalLog()
     {
-        assertTrue( Ballot.shouldVoteFor(
+        assertTrue( Voting.shouldVoteFor(
                 candidate,
                 currentTerm,
                 currentTerm,
@@ -54,7 +56,7 @@ public class BallotTest
     @Test
     public void shouldRejectRequestFromOldTerm()
     {
-        assertFalse( Ballot.shouldVoteFor(
+        assertFalse( Voting.shouldVoteFor(
                 candidate,
                 currentTerm,
                 currentTerm - 1,
@@ -69,7 +71,7 @@ public class BallotTest
     @Test
     public void shouldRejectRequestIfCandidateLogEndsAtLowerTerm()
     {
-        assertFalse( Ballot.shouldVoteFor(
+        assertFalse( Voting.shouldVoteFor(
                 candidate,
                 currentTerm,
                 currentTerm,
@@ -84,7 +86,7 @@ public class BallotTest
     @Test
     public void shouldRejectRequestIfLogsEndInSameTermButCandidateLogIsShorter()
     {
-        assertFalse( Ballot.shouldVoteFor(
+        assertFalse( Voting.shouldVoteFor(
                 candidate,
                 currentTerm,
                 currentTerm,
@@ -99,7 +101,7 @@ public class BallotTest
     @Test
     public void shouldAcceptRequestIfLogsEndInSameTermAndCandidateLogIsSameLength()
     {
-        assertTrue( Ballot.shouldVoteFor(
+        assertTrue( Voting.shouldVoteFor(
                 candidate,
                 currentTerm,
                 currentTerm,
@@ -114,7 +116,7 @@ public class BallotTest
     @Test
     public void shouldAcceptRequestIfLogsEndInSameTermAndCandidateLogIsLonger()
     {
-        assertTrue( Ballot.shouldVoteFor(
+        assertTrue( Voting.shouldVoteFor(
                 candidate,
                 currentTerm,
                 currentTerm,
@@ -129,7 +131,7 @@ public class BallotTest
     @Test
     public void shouldAcceptRequestIfLogsEndInHigherTermAndCandidateLogIsShorter()
     {
-        assertTrue( Ballot.shouldVoteFor(
+        assertTrue( Voting.shouldVoteFor(
                 candidate,
                 currentTerm,
                 currentTerm,
@@ -144,7 +146,7 @@ public class BallotTest
     @Test
     public void shouldAcceptRequestIfLogEndsAtHigherTermAndCandidateLogIsSameLength()
     {
-        assertTrue( Ballot.shouldVoteFor(
+        assertTrue( Voting.shouldVoteFor(
                 candidate,
                 currentTerm,
                 currentTerm,
@@ -159,7 +161,7 @@ public class BallotTest
     @Test
     public void shouldAcceptRequestIfLogEndsAtHigherTermAndCandidateLogIsLonger()
     {
-        assertTrue( Ballot.shouldVoteFor(
+        assertTrue( Voting.shouldVoteFor(
                 candidate,
                 currentTerm,
                 currentTerm,
@@ -174,7 +176,7 @@ public class BallotTest
     @Test
     public void shouldRejectRequestIfAlreadyVotedForOtherCandidate()
     {
-        assertFalse( Ballot.shouldVoteFor(
+        assertFalse( Voting.shouldVoteFor(
                 candidate,
                 currentTerm,
                 currentTerm,
@@ -189,7 +191,7 @@ public class BallotTest
     @Test
     public void shouldAcceptRequestIfAlreadyVotedForCandidate()
     {
-        assertTrue( Ballot.shouldVoteFor(
+        assertTrue( Voting.shouldVoteFor(
                 candidate,
                 currentTerm,
                 currentTerm,

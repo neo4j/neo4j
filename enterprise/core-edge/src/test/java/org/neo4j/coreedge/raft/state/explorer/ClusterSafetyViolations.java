@@ -91,7 +91,7 @@ public class ClusterSafetyViolations
         Set<Long> termThatHaveALeader = new HashSet<>();
         for ( Map.Entry<RaftTestMember, Role> entry : state.roles.entrySet() )
         {
-            RaftMessageHandler role = entry.getValue().role;
+            RaftMessageHandler role = entry.getValue().handler;
             if ( role instanceof Leader )
             {
                 long term = state.states.get( entry.getKey() ).term();

@@ -53,7 +53,7 @@ public class ProcessMessage implements Action
         }
         ComparableRaftState memberState = previous.states.get( member );
         ComparableRaftState newMemberState = new ComparableRaftState( memberState );
-        Outcome<RaftTestMember> outcome = previous.roles.get( member ).role.handle( message, memberState, log );
+        Outcome<RaftTestMember> outcome = previous.roles.get( member ).handler.handle( message, memberState, log );
         newMemberState.update( outcome );
 
         for ( RaftMessages.Directed<RaftTestMember> outgoingMessage : outcome.getOutgoingMessages() )

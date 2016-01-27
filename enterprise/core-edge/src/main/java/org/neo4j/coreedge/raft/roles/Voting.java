@@ -17,10 +17,40 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft;
+package org.neo4j.coreedge.raft.roles;
 
-public class Ballot
+import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.raft.log.RaftStorageException;
+import org.neo4j.coreedge.raft.outcome.Outcome;
+import org.neo4j.coreedge.raft.state.ReadableRaftState;
+
+public class Voting
 {
+    public static <MEMBER> void handleVoteRequest( ReadableRaftState<MEMBER> state, Outcome<MEMBER> outcome,
+                                                   RaftMessages.Vote.Request<MEMBER> voteRequest ) throws RaftStorageException
+    {
+        if ( voteRequest.term() > state.term() )
+        {
+            outcome.setNextTerm( voteRequest.term() );
+            outcome.setVotedFor( null );
+        }
+
+        boolean willVoteForCandidate = shouldVoteFor( voteRequest.candidate(), outcome.getTerm(), voteRequest.term(),
+                state.entryLog().readEntryTerm( state.entryLog().appendIndex() ), voteRequest.lastLogTerm(),
+                state.entryLog().appendIndex(), voteRequest.lastLogIndex(),
+                outcome.getVotedFor() );
+
+        if ( willVoteForCandidate )
+        {
+            outcome.setVotedFor( voteRequest.from() );
+            outcome.renewElectionTimeout();
+        }
+
+        outcome.addOutgoingMessage( new RaftMessages.Directed<>( voteRequest.from(), new RaftMessages.Vote.Response<>(
+                state.myself(), outcome.getTerm(),
+                willVoteForCandidate ) ) );
+    }
+
     public static <MEMBER> boolean shouldVoteFor( MEMBER candidate, long contextTerm, long requestTerm,
                                                   long contextLastLogTerm, long requestLastLogTerm,
                                                   long contextLastAppended, long requestLastLogIndex,

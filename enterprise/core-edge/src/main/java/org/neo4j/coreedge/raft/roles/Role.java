@@ -27,10 +27,10 @@ public enum Role
     CANDIDATE( new Candidate() ),
     LEADER( new Leader() );
 
-    public final RaftMessageHandler role;
+    public final RaftMessageHandler handler;
 
-    Role( RaftMessageHandler role )
+    Role( RaftMessageHandler handler )
     {
-        this.role = role;
+        this.handler = handler;
     }
 }
