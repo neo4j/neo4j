@@ -24,11 +24,8 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.junit.rules.RuleChain;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -41,6 +38,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -104,6 +102,7 @@ import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.MutableInteger;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.test.FailureOutput;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -129,12 +128,14 @@ import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
-import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule
+        .nodePropertyExistenceConstraintRule;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
-import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule
+        .relPropertyExistenceConstraintRule;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -147,7 +148,6 @@ public class FullCheckIntegrationTest
     private int key, mandatory;
     private int C, T, M;
 
-    private final ByteArrayOutputStream out = new ByteArrayOutputStream();
     private final List<Long> indexedNodes = new ArrayList<>();
 
     private static final Map<Class<?>,Set<String>> allReports = new HashMap<>();
@@ -192,8 +192,8 @@ public class FullCheckIntegrationTest
         }
     }
 
-    @Rule
-    public final GraphStoreFixture fixture = new GraphStoreFixture()
+
+    private final GraphStoreFixture fixture = new GraphStoreFixture()
     {
         @Override
         protected void generateInitialData( GraphDatabaseService db )
@@ -203,6 +203,11 @@ public class FullCheckIntegrationTest
                 db.schema().indexFor( label( "label3" ) ).on( "key" ).create();
                 db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( "key" ).create();
                 tx.success();
+            }
+
+            try ( org.neo4j.graphdb.Transaction ignored = db.beginTx() )
+            {
+                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             }
 
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -234,30 +239,9 @@ public class FullCheckIntegrationTest
         }
     };
 
+    private final FailureOutput failureOutput = new FailureOutput();
     @Rule
-    public final TestRule printLogOnFailure = new TestRule()
-    {
-        @Override
-        public Statement apply( final Statement base, Description description )
-        {
-            return new Statement()
-            {
-                @Override
-                public void evaluate() throws Throwable
-                {
-                    try
-                    {
-                        base.evaluate();
-                    }
-                    catch ( Throwable t )
-                    {
-                        System.out.write( out.toByteArray() );
-                        throw t;
-                    }
-                }
-            };
-        }
-    };
+    public RuleChain ruleChain = RuleChain.outerRule( failureOutput ).around( fixture );
 
     @Test
     public void shouldCheckConsistencyOfAConsistentStore() throws Exception
@@ -1948,16 +1932,17 @@ public class FullCheckIntegrationTest
         Config config = config();
         FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE, fixture.getAccessStatistics(),
                 defaultConsistencyCheckThreadsNumber() );
-        return checker.execute( stores, FormattedLog.toOutputStream( out ), new ConsistencyReporter.Monitor()
-        {
-            @Override
-            public void reported( Class<?> report, String method, String message )
-            {
-                Set<String> types = allReports.get( report );
-                assert types != null;
-                types.remove( method );
-            }
-        } );
+        return checker.execute( stores, FormattedLog.toOutputStream( failureOutput.stream() ),
+                new ConsistencyReporter.Monitor()
+                {
+                    @Override
+                    public void reported( Class<?> report, String method, String message )
+                    {
+                        Set<String> types = allReports.get( report );
+                        assert types != null;
+                        types.remove( method );
+                    }
+                } );
     }
 
     protected static RelationshipGroupRecord withRelationships( RelationshipGroupRecord group, long out,

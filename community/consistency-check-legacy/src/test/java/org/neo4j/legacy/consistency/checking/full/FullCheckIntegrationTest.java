@@ -22,15 +22,12 @@ package org.neo4j.legacy.consistency.checking.full;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.model.Statement;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +37,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -100,6 +98,7 @@ import org.neo4j.legacy.consistency.checking.GraphStoreFixture;
 import org.neo4j.legacy.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.test.FailureOutput;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
@@ -142,14 +141,9 @@ public class FullCheckIntegrationTest
     private int key, mandatory;
     private int C, T, M;
 
-    private final ByteArrayOutputStream out = new ByteArrayOutputStream();
     private final List<Long> indexedNodes = new ArrayList<>();
 
-    @Parameter
-    public TaskExecutionOrder taskExecutionOrder;
-
-    @Rule
-    public final GraphStoreFixture fixture = new GraphStoreFixture()
+    private final GraphStoreFixture fixture = new GraphStoreFixture()
     {
         @Override
         protected void generateInitialData( GraphDatabaseService db )
@@ -159,6 +153,11 @@ public class FullCheckIntegrationTest
                 db.schema().indexFor( label( "label3" ) ).on( "key" ).create();
                 db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( "key" ).create();
                 tx.success();
+            }
+
+            try ( org.neo4j.graphdb.Transaction ignored = db.beginTx() )
+            {
+                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             }
 
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -189,39 +188,17 @@ public class FullCheckIntegrationTest
             }
         }
     };
-
+    private final FailureOutput failureOutput = new FailureOutput();
     @Rule
-    public final TestRule printLogOnFailure = new TestRule()
-    {
-        @Override
-        public Statement apply( final Statement base, Description description )
-        {
-            return new Statement()
-            {
-                @Override
-                public void evaluate() throws Throwable
-                {
-                    try
-                    {
-                        base.evaluate();
-                    }
-                    catch ( Throwable t )
-                    {
-                        System.out.write( out.toByteArray() );
-                        throw t;
-                    }
-                }
-            };
-        }
-    };
+    public RuleChain ruleChain = RuleChain.outerRule( failureOutput ).around( fixture );
+
+    @Parameter
+    public TaskExecutionOrder taskExecutionOrder;
 
     @Parameters( name = "execution_order={0}" )
-    public static Iterable<Object[]> taskExecutions()
+    public static Iterable<TaskExecutionOrder> taskExecutions()
     {
-        return Arrays.asList( new Object[][]{
-                {TaskExecutionOrder.SINGLE_THREADED},
-                {TaskExecutionOrder.MULTI_PASS}
-        } );
+        return Arrays.asList( TaskExecutionOrder.SINGLE_THREADED, TaskExecutionOrder.MULTI_PASS );
     }
 
     @Test
@@ -1876,7 +1853,7 @@ public class FullCheckIntegrationTest
     {
         Config config = config( taskExecutionOrder );
         FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE );
-        return checker.execute( stores, FormattedLog.toOutputStream( out ) );
+        return checker.execute( stores, FormattedLog.toOutputStream( failureOutput.stream() ) );
     }
 
     protected static RelationshipGroupRecord withRelationships( RelationshipGroupRecord group, long out,
