@@ -72,7 +72,6 @@ public class FailureStorage
         {
             channel.write( ByteBuffer.wrap( new byte[MAX_FAILURE_SIZE] ) );
             channel.force( true );
-            channel.close();
         }
     }
 

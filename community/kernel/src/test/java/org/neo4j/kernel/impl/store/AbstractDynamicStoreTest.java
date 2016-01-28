@@ -30,9 +30,9 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -59,17 +59,12 @@ public class AbstractDynamicStoreTest
     {
         fs = fsr.get();
         pageCache = pageCacheRule.getPageCache( fsr.get() );
-        StoreChannel channel = fs.create( fileName );
-        try
+        try ( StoreChannel channel = fs.create( fileName ) )
         {
             ByteBuffer buffer = ByteBuffer.allocate( 4 );
             buffer.putInt( BLOCK_SIZE );
             buffer.flip();
             channel.write( buffer );
-        }
-        finally
-        {
-            channel.close();
         }
     }
 

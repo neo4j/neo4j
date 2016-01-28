@@ -19,13 +19,13 @@
  */
 package org.neo4j.coreedge.raft.state;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -69,10 +69,8 @@ public class OnDiskTermStateTest
     public void shouldCallWriteAllAndForceOnVoteUpdate() throws Exception
     {
         // Given
-        StoreFileChannel channel = mock( StoreFileChannel.class );
-        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
-        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
-        when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
+        StoreFileChannel channel = newFileChannelMock();
+        FileSystemAbstraction fsa = newFileSystemMock( channel );
 
         OnDiskTermState state = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
 
@@ -88,10 +86,8 @@ public class OnDiskTermStateTest
     public void termShouldRemainUnchangedOnFailureToWriteToDisk() throws Exception
     {
         // Given
-        StoreFileChannel channel = mock( StoreFileChannel.class );
-        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
-        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
-        when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
+        StoreFileChannel channel = newFileChannelMock();
+        FileSystemAbstraction fsa = newFileSystemMock( channel );
         doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ) );
 
         OnDiskTermState store = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
@@ -118,10 +114,8 @@ public class OnDiskTermStateTest
     public void shouldFlushAndCloseOnShutdown() throws Throwable
     {
         // Given
-        StoreFileChannel channel = mock( StoreFileChannel.class );
-        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
-        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
-        when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
+        StoreFileChannel channel = newFileChannelMock();
+        FileSystemAbstraction fsa = newFileSystemMock( channel );
 
         OnDiskTermState store = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
 
@@ -132,5 +126,20 @@ public class OnDiskTermStateTest
         // Then
         verify( channel ).flush();
         verify( channel ).close();
+    }
+
+    private static StoreFileChannel newFileChannelMock() throws IOException
+    {
+        StoreFileChannel channel = mock( StoreFileChannel.class );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
+        return channel;
+    }
+
+    private static FileSystemAbstraction newFileSystemMock( StoreFileChannel channel ) throws IOException
+    {
+        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
+        when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
+        when( fsa.fileExists( any( File.class ) ) ).thenReturn( true );
+        return fsa;
     }
 }

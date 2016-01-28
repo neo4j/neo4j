@@ -19,14 +19,14 @@
  */
 package org.neo4j.coreedge.raft.state;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.stubbing.Stubber;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.stubbing.Stubber;
 
 import org.neo4j.coreedge.raft.state.vote.OnDiskVoteState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
@@ -81,10 +81,8 @@ public class OnDiskVoteStateTest
     public void shouldCallWriteAndFlushOnVoteUpdate() throws Exception
     {
         // Given
-        StoreFileChannel channel = mock( StoreFileChannel.class );
-        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
-        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
-        when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
+        StoreFileChannel channel = newFileChannelMock();
+        FileSystemAbstraction fsa = newFileSystemMock( channel );
 
         // This has to be real because it will be serialized
         AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "localhost:" + 1234 );
@@ -106,11 +104,8 @@ public class OnDiskVoteStateTest
     public void termShouldRemainUnchangedOnFailureToWriteToDisk() throws Exception
     {
         // Given
-        StoreFileChannel channel = mock( StoreFileChannel.class );
-        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
-
-        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
-        when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
+        StoreFileChannel channel = newFileChannelMock();
+        FileSystemAbstraction fsa = newFileSystemMock( channel );
 
         final Stubber stubber = doNothing();
         stubber.when( channel ).writeAll( any( ByteBuffer.class ) );
@@ -157,11 +152,8 @@ public class OnDiskVoteStateTest
     public void shouldFlushAndCloseOnShutdown() throws Throwable
     {
         // Given
-        StoreFileChannel channel = mock( StoreFileChannel.class );
-        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
-
-        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
-        when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
+        StoreFileChannel channel = newFileChannelMock();
+        FileSystemAbstraction fsa = newFileSystemMock( channel );
 
         OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( fsa,
                 new File( testDir.directory(), "on.disk.state" ), 100, mock( Supplier.class ),
@@ -173,5 +165,20 @@ public class OnDiskVoteStateTest
         // Then
         verify( channel ).flush();
         verify( channel ).close();
+    }
+
+    private static StoreFileChannel newFileChannelMock() throws IOException
+    {
+        StoreFileChannel channel = mock( StoreFileChannel.class );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
+        return channel;
+    }
+
+    private static FileSystemAbstraction newFileSystemMock( StoreFileChannel channel ) throws IOException
+    {
+        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
+        when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
+        when( fsa.fileExists( any( File.class ) ) ).thenReturn( true );
+        return fsa;
     }
 }

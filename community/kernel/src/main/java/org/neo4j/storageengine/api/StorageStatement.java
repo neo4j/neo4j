@@ -109,6 +109,10 @@ public interface StorageStatement extends AutoCloseable
     /**
      * Returns an {@link IndexReader} for searching entity ids given property values. One reader is allocated
      * and kept per index throughout the life of a statement, making the returned reader repeatable-read isolation.
+     * <p>
+     * <b>NOTE:</b>
+     * Reader returned from this method should not be closed. All such readers will be closed during {@link #close()}
+     * of the current statement.
      *
      * @param index {@link IndexDescriptor} to get reader for.
      * @return {@link IndexReader} capable of searching entity ids given property values.
@@ -120,6 +124,9 @@ public interface StorageStatement extends AutoCloseable
      * Returns an {@link IndexReader} for searching entity ids given property values. A new reader is allocated
      * every call to this method, which means that newly committed data since the last call to this method
      * will be visible in the returned reader.
+     * <p>
+     * <b>NOTE:</b>
+     * It is caller's responsibility to close the returned reader.
      *
      * @param index {@link IndexDescriptor} to get reader for.
      * @return {@link IndexReader} capable of searching entity ids given property values.
