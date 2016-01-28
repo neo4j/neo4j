@@ -158,6 +158,19 @@ class EagerizationAcceptanceTest
 
   // TESTS FOR DELETE AND MERGE
 
+  test("should delete all nodes before merge tries to read") {
+    createNode("p" -> 0)
+    createNode("p" -> 0)
+
+    val query = "MATCH (n) DELETE n MERGE (m {p: 0}) ON CREATE SET m.p = 1 RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesCreated = 2, propertiesWritten = 4, nodesDeleted = 2)
+    result.columnAs[Long]("count(*)").next shouldBe 2
+    assertNumberOfEagerness(query, 1)
+  }
+
   test("should introduce eagerness between DELETE and MERGE for node also with UNWIND") {
     createLabeledNode(Map("value" -> 0, "deleted" -> true), "B")
     createLabeledNode(Map("value" -> 1, "deleted" -> true), "B")
@@ -964,6 +977,20 @@ class EagerizationAcceptanceTest
     result.columnAs[Long]("count(*)").next shouldBe 7
     assertStats(result, nodesDeleted = 2, relationshipsDeleted = 7)
     assertNumberOfEagerness(query, 1)
+  }
+
+  test("should introduce eagerness when deleting relationship on optional expand into") {
+    val node0 = createLabeledNode("Person")
+    val node1 = createNode()
+    relate(node0, node1)
+    relate(node0, node1)
+
+    val query = "MATCH (a:Person) MERGE (b) WITH * OPTIONAL MATCH (a)-[r1]-(b) DELETE r1 RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next shouldBe 3
+    assertStats(result, relationshipsDeleted = 2)
+    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   test("should introduce eagerness when deleting things from an optional match which is a cartesian product") {
@@ -1793,7 +1820,7 @@ class EagerizationAcceptanceTest
     val result = updateWithBothPlanners(query)
     result.columnAs[Int]("count").next should equal(14)
     assertStats(result, propertiesWritten = 14, nodesCreated = 3)
-    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
+    assertNumberOfEagerness(query, 1)
   }
 
   test("setting property in tail should not be eager if no overlap") {
@@ -2021,7 +2048,7 @@ class EagerizationAcceptanceTest
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, nodesCreated = 2, relationshipsDeleted = 1)
     // this assertion depends on unnestApply and cleanUpEager
-    assertNumberOfEagerness(query, 1)
+    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   test("should be eager between conflicting read/write separated by empty UNWIND") {
@@ -2156,8 +2183,7 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 1)
   }
 
-  // TODO:H FIXME
-  ignore("should be eager between conflicting CREATE and MERGE node with nested FOREACH") {
+  test("should not be eager between conflicting CREATE and MERGE node with nested FOREACH") {
     createLabeledNode("A")
     createLabeledNode("A")
 
@@ -2173,10 +2199,51 @@ class EagerizationAcceptanceTest
         |RETURN count(*)""".stripMargin
 
     val result = updateWithBothPlanners(query)
-    println(result.executionPlanDescription())
     result.columnAs[Long]("count(*)").next() should equal(2)
-    assertStats(result, nodesCreated = 2, labelsAdded = 2, propertiesWritten = 8)
-    assertNumberOfEagerness(query, 1)
+    assertStats(result, nodesCreated = 2, labelsAdded = 2, propertiesWritten = 6)
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("should be eager between conflicting MERGEs in nested FOREACH") {
+    createLabeledNode("A")
+    createLabeledNode("A")
+
+    val query =
+      """MATCH (a:A)
+        |FOREACH (i in [0] |
+        |  MERGE (:A)
+        |  CREATE (:B)
+        |  FOREACH(j in range(0, 1) |
+        |    MERGE (b:B)
+        |    ON MATCH SET b.matched = true
+        |  )
+        |)
+        |RETURN count(*)""".stripMargin
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next() should equal(2)
+    assertStats(result, nodesCreated = 4, labelsAdded = 4, propertiesWritten = 24)
+    assertNumberOfEagerness(query, 2)
+  }
+
+  test("should not be eager between non-conflicting updates in nested FOREACH") {
+    createLabeledNode("A")
+
+    val query =
+      """MATCH (a:A)
+        |FOREACH (i in [0] |
+        |  CREATE (:B)
+        |  FOREACH(j in range(0, 1) |
+        |    CREATE (:B)
+        |  )
+        |  CREATE (:B)
+        |)
+        |RETURN count(*)""".stripMargin
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next() should equal(1)
+    assertStats(result, nodesCreated = 4, labelsAdded = 4)
+    assertNumberOfEagerness(query, 0)
   }
 
 
@@ -2275,12 +2342,14 @@ class EagerizationAcceptanceTest
     }
     val msg = if (eagers == optimalEagerCount) {
       s"Optimal eager count $optimalEagerCount achieved! Please change the test expectation (if this is a stable solution) "
+    } else if (optimalEagerCount > -1 && eagers < expectedEagerCount && eagers > optimalEagerCount) {
+      s"Eager count improved! But still not the optimal $optimalEagerCount. Please change the test expectation (if this is a stable solution) "
     } else if (eagers < expectedEagerCount) {
       "Too few eagers: "
     } else {
       "Too many eagers: "
     }
-    withClue(msg) {
+    withClue(s"$plan\n$msg") {
       eagers shouldBe expectedEagerCount
     }
   }

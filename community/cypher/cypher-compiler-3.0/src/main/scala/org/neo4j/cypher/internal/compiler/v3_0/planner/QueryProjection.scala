@@ -104,6 +104,14 @@ object QueryShuffle {
   val empty = QueryShuffle()
 }
 
+final case class PassthroughAllHorizon() extends QueryHorizon {
+  override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds
+
+  override def dependingExpressions = Seq.empty
+
+  override def preferredStrictness = None
+}
+
 final case class RegularQueryProjection(projections: Map[String, Expression] = Map.empty,
                                         shuffle: QueryShuffle = QueryShuffle.empty) extends QueryProjection {
   def keySet: Set[String] = projections.keySet

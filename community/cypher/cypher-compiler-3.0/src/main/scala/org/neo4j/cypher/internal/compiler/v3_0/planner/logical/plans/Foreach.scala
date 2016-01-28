@@ -28,5 +28,5 @@ case class Foreach(left: LogicalPlan, right: LogicalPlan, variable: String, expr
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols ++ right.availableSymbols + IdName(variable)
+  def availableSymbols = left.availableSymbols // NOTE: right.availableSymbols and variable are not available outside
 }

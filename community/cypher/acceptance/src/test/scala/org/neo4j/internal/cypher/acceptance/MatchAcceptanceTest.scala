@@ -1673,7 +1673,7 @@ return b
     //WHEN
     val first = eengine.execute(query).toList
     val second = eengine.execute(query).toList
-    val check = executeWithAllPlannersAndRuntimes("MATCH (f:Folder) RETURN f.name").toSet
+    val check = updateWithBothPlanners("MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -1704,7 +1704,7 @@ return b
     //WHEN
     val first = eengine.execute(query).toList
     val second = eengine.execute(query).toList
-    val check = executeWithAllPlannersAndRuntimes("MATCH (f:Folder) RETURN f.name").toSet
+    val check = updateWithBothPlanners("MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -2108,6 +2108,18 @@ return b
     val result = executeWithAllPlanners("MATCH (n {prop: 'start'})-[:R*]->(m {prop: 'end'}) RETURN m")
 
     result.toList should equal(List(Map("m" -> end)))
+  }
+
+  test("should produce the same amount of rows on all planners") {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+    relate(b, a)
+
+    val query = "MATCH (a) MERGE (b) WITH * OPTIONAL MATCH (a)--(b) RETURN count(*)"
+
+    val result = executeWithAllPlanners(query)
+    result.columnAs[Long]("count(*)").next shouldBe 6
   }
 
   /**

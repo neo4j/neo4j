@@ -39,16 +39,16 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     copy(q = q.updateTailOrSelf(_.withTail(newTail)))
   }
 
-  def currentlyAvailableVariables: Set[IdName] = q.allPlannerQueries.flatMap(pq =>
-    pq.allQueryGraphs.flatMap(_.allCoveredIds) ++ pq.horizon.exposedSymbols(pq.queryGraph)).toSet
-
-  def currentQueryGraph: QueryGraph = {
-    var current = q
-    while (current.tail.nonEmpty) {
-      current = current.tail.get
+  def currentlyAvailableVariables: Set[IdName] = {
+    val lastPQWithNonEmptyHorizon = q.allPlannerQueries.foldLeft(q) {
+      case (acc, next) if next.horizon.exposedSymbols(next.queryGraph).nonEmpty => next
+      case (acc, _) => acc
     }
-    current.queryGraph
+    lastPQWithNonEmptyHorizon.horizon.exposedSymbols(lastPQWithNonEmptyHorizon.queryGraph) ++
+      lastPQWithNonEmptyHorizon.queryGraph.allCoveredIds
   }
+
+  def currentQueryGraph: QueryGraph = q.lastQueryGraph
 
   def allSeenPatternNodes: Set[IdName] =
     q.allPlannerQueries.flatMap(_.queryGraph.allPatternNodes).toSet
@@ -65,6 +65,16 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
       plannerQuery
         .amendQueryGraph(_.withOptionalMatches(newOptionalMatches))
         .updateTail(fixArgumentIdsOnOptionalMatch)
+    }
+
+    def fixArgumentIdsOnMerge(plannerQuery: PlannerQuery): PlannerQuery = {
+      val mergeMatchGraph = plannerQuery.queryGraph.mergeQueryGraph
+      val newMergeMatchGraph = mergeMatchGraph.map {
+        qg =>
+          val requiredArguments = qg.coveredIdsExceptArguments intersect qg.argumentIds
+          qg.withArgumentIds(requiredArguments)
+      }
+      plannerQuery.amendQueryGraph(qg => newMergeMatchGraph.map(qg.withMergeMatch).getOrElse(qg)).updateTail(fixArgumentIdsOnMerge)
     }
 
     val fixedArgumentIds = q.foldMap {
@@ -89,8 +99,9 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
       .updateTail(groupInequalities)
     }
 
-    val withFixedArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
-    groupInequalities(withFixedArgumentIds)
+    val withFixedOptionalMatchArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
+    val withFixedMergeArgumentIds = fixArgumentIdsOnMerge(withFixedOptionalMatchArgumentIds)
+    groupInequalities(withFixedMergeArgumentIds)
   }
 }
 

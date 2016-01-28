@@ -23,9 +23,18 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, LabelName, PropertyKeyName, RelTypeName}
 
-sealed trait MutatingPattern
+sealed trait MutatingPattern {
+  def coveredIds: Set[IdName]
+}
 
-case class CreateNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Option[Expression]) extends MutatingPattern
+sealed trait NoSymbols {
+  self : MutatingPattern =>
+  override def coveredIds = Set.empty[IdName]
+}
+
+case class CreateNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Option[Expression]) extends MutatingPattern {
+  override def coveredIds = Set(nodeName)
+}
 
 case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType: RelTypeName, rightNode: IdName,
                                      properties: Option[Expression], direction: SemanticDirection) extends  MutatingPattern {
@@ -35,9 +44,11 @@ case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType:
 
   //WHEN merging we can have an undirected CREATE, it is interpreted left-to-right
   def inOrder =  if (direction == SemanticDirection.OUTGOING || direction == SemanticDirection.BOTH) (leftNode, rightNode) else (rightNode, leftNode)
+
+  override def coveredIds = Set(relName)
 }
 
-sealed trait SetMutatingPattern extends MutatingPattern
+sealed trait SetMutatingPattern extends MutatingPattern with NoSymbols
 
 case class SetLabelPattern(idName: IdName, labels: Seq[LabelName]) extends SetMutatingPattern
 
@@ -49,15 +60,24 @@ case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyK
 
 case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern
 
-case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern
+case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern with NoSymbols
 
-case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern
+case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern with NoSymbols
+
+trait MergePattern {
+  self : MutatingPattern =>
+  def matchGraph: QueryGraph
+}
 
 case class MergeNodePattern(createNodePattern: CreateNodePattern, matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern],
-                            onMatch: Seq[SetMutatingPattern]) extends MutatingPattern
+                            onMatch: Seq[SetMutatingPattern]) extends MutatingPattern with MergePattern {
+  override def coveredIds = matchGraph.allCoveredIds
+}
 
 case class MergeRelationshipPattern(createNodePatterns: Seq[CreateNodePattern], createRelPatterns: Seq[CreateRelationshipPattern],
-                                    matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern], onMatch: Seq[SetMutatingPattern]) extends MutatingPattern
+                                    matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern], onMatch: Seq[SetMutatingPattern]) extends MutatingPattern with MergePattern {
+  override def coveredIds = matchGraph.allCoveredIds
+}
 
-case class ForeachPattern(variable: IdName, expression: Expression, innerUpdates: PlannerQuery) extends MutatingPattern
+case class ForeachPattern(variable: IdName, expression: Expression, innerUpdates: PlannerQuery) extends MutatingPattern with NoSymbols
 

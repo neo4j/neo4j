@@ -38,6 +38,7 @@ case object unnestApply extends Rewriter {
     LOJ: Left Outer Join
     SR : SingleRow - operator that produces single row with no columns
     CN : CreateNode
+    FE : Foreach
    */
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
@@ -56,6 +57,14 @@ case object unnestApply extends Rewriter {
     // L Ax (Arg Ax R) => L Ax R
     case original@Apply(lhs, Apply(_: Argument, rhs)) =>
       Apply(lhs, rhs)(original.solved)
+
+    // L Ax (Arg FE R) => L FE R
+    case original@Apply(lhs, foreach@Foreach(_: Argument, rhs, _, _)) =>
+      foreach.copy(left = lhs, right = rhs)(original.solved)
+
+    // L Ax (SR FE R) => L FE R
+    case original@Apply(lhs, foreach@Foreach(_: SingleRow, rhs, _, _)) =>
+      foreach.copy(left = lhs, right = rhs)(original.solved)
 
     // L Ax (Arg Ax R) => L Ax R
     case original@AntiConditionalApply(lhs, Apply(_: Argument, rhs), _) =>

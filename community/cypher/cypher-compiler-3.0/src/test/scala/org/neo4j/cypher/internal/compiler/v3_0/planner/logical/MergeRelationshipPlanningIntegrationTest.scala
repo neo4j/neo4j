@@ -64,7 +64,8 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
 
     val onCreate = MergeCreateRelationship(createNodeB, rId, aId, LazyType("R"), bId, None)(solved)
 
-    val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))(solved)
+    val optionalApply = Apply(argument, optional)(solved)
+    val mergeNode = AntiConditionalApply(optionalApply, onCreate, Seq(aId, bId, rId))(solved)
     val apply = Apply(projection, mergeNode)(solved)
     val emptyResult = EmptyResult(apply)(solved)
 
