@@ -28,6 +28,7 @@ import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static org.mockito.Mockito.mock;
@@ -41,6 +42,7 @@ public class OnDiskTermStateContractTest extends TermStateContractTest
     public TermState createTermStore() throws IOException
     {
         FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        return new OnDiskTermState( fileSystem, testDir.directory(), 100, mock( Supplier.class ) );
+        return new OnDiskTermState( fileSystem, testDir.directory(), 100, mock( Supplier.class ),
+                NullLogProvider.getInstance() );
     }
 }

@@ -30,6 +30,7 @@ import org.neo4j.coreedge.server.core.locks.InMemoryReplicatedLockTokenState.InM
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.LogProvider;
 
 public class OnDiskReplicatedLockTokenState<MEMBER> extends LifecycleAdapter implements ReplicatedLockTokenState<MEMBER>
 {
@@ -38,11 +39,9 @@ public class OnDiskReplicatedLockTokenState<MEMBER> extends LifecycleAdapter imp
     private InMemoryReplicatedLockTokenState<MEMBER> inMemoryReplicatedLockTokenState;
     private final StatePersister<InMemoryReplicatedLockTokenState<MEMBER>> statePersister;
 
-    public OnDiskReplicatedLockTokenState( FileSystemAbstraction fileSystemAbstraction,
-                                           File stateDir,
-                                           int numberOfEntriesBeforeRotation,
-                                           ChannelMarshal<MEMBER> channelMarshal,
-                                           Supplier<DatabaseHealth> databaseHealthSupplier )
+    public OnDiskReplicatedLockTokenState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
+                                           int numberOfEntriesBeforeRotation, ChannelMarshal<MEMBER> channelMarshal,
+                                           Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
             throws IOException
     {
         File fileA = new File( stateDir, FILENAME + "a" );
@@ -61,6 +60,9 @@ public class OnDiskReplicatedLockTokenState<MEMBER> extends LifecycleAdapter imp
 
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
                 marshal, recoveryStatus.previouslyInactive(), databaseHealthSupplier );
+
+        logProvider.getLog( getClass() ).info( "State restored, last index is %d",
+                inMemoryReplicatedLockTokenState.logIndex() );
     }
 
     @Override

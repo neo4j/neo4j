@@ -37,6 +37,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -64,13 +65,13 @@ public class OnDiskVoteStateTest
 
         OnDiskVoteState<RaftTestMember> oldOnDiskVoteState =
                 new OnDiskVoteState<>( fsa, testDir.directory(), 100, mock( Supplier.class ),
-                        new RaftTestMemberMarshal() );
+                        new RaftTestMemberMarshal(), NullLogProvider.getInstance() );
 
         oldOnDiskVoteState.votedFor( RaftTestMember.member(1), 1 );
 
         // when
         OnDiskVoteState<RaftTestMember> newOnDiskVoteState = new OnDiskVoteState<>( fsa, testDir.directory(), 100,
-                mock( Supplier.class ), new RaftTestMemberMarshal() );
+                mock( Supplier.class ), new RaftTestMemberMarshal(), NullLogProvider.getInstance() );
 
         // then
         assertEquals( oldOnDiskVoteState.term(), newOnDiskVoteState.term() );
@@ -90,7 +91,7 @@ public class OnDiskVoteStateTest
 
         OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( fsa,
                 new File( testDir.directory(), "on.disk.state" ), 100, mock( Supplier.class ),
-                new CoreMemberMarshal() );
+                new CoreMemberMarshal(), NullLogProvider.getInstance() );
 
         // When
         state.votedFor( member, 0 );
@@ -116,7 +117,7 @@ public class OnDiskVoteStateTest
 
         OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( fsa,
                 new File( testDir.directory(), "on.disk.state" ), 100, databaseHealthSupplier,
-                new CoreMemberMarshal() );
+                new CoreMemberMarshal(), NullLogProvider.getInstance() );
 
         // This has to be real because it will be serialized
         AdvertisedSocketAddress firstLocalhost = new AdvertisedSocketAddress( "localhost:" + 1234 );
@@ -157,7 +158,7 @@ public class OnDiskVoteStateTest
 
         OnDiskVoteState<CoreMember> state = new OnDiskVoteState<>( fsa,
                 new File( testDir.directory(), "on.disk.state" ), 100, mock( Supplier.class ),
-                new CoreMemberMarshal() );
+                new CoreMemberMarshal(), NullLogProvider.getInstance() );
 
         // When
         state.shutdown();

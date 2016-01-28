@@ -36,6 +36,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -53,7 +54,7 @@ public class TermStateAdversarialTest
         final Supplier mock = mock( Supplier.class );
         when(mock.get()).thenReturn( mock( DatabaseHealth.class) );
 
-        return new OnDiskTermState( fileSystem, testDir.directory(), 100, mock );
+        return new OnDiskTermState( fileSystem, testDir.directory(), 100, mock, NullLogProvider.getInstance() );
     }
 
     @Test

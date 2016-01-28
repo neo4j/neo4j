@@ -31,6 +31,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static junit.framework.TestCase.fail;
@@ -60,14 +61,14 @@ public class OnDiskIdAllocationStateTest
         fsa.mkdir( testDir.directory() );
 
         OnDiskIdAllocationState store = new OnDiskIdAllocationState( fsa, testDir.directory(), 1,
-                mock( Supplier.class ) );
+                mock( Supplier.class ), NullLogProvider.getInstance() );
 
         store.firstUnallocated( someType, 1024 );
         store.logIndex( 1 );
 
         // when
         OnDiskIdAllocationState restoredOne = new OnDiskIdAllocationState( fsa, testDir
-                .directory(), 1, mock( Supplier.class ) );
+                .directory(), 1, mock( Supplier.class ), NullLogProvider.getInstance() );
 
         // then
         assertEquals( 1024, restoredOne.firstUnallocated( someType ) );
@@ -81,7 +82,7 @@ public class OnDiskIdAllocationStateTest
         fsa.mkdir( testDir.directory() );
 
         OnDiskIdAllocationState store = new OnDiskIdAllocationState( fsa, testDir.directory(), 100,
-                mock( Supplier.class ) );
+                mock( Supplier.class ), NullLogProvider.getInstance() );
 
         final int numberOfAllocationsToAppend = 3;
 
@@ -105,7 +106,7 @@ public class OnDiskIdAllocationStateTest
         fsa.mkdir( testDir.directory() );
 
         OnDiskIdAllocationState store = new OnDiskIdAllocationState( fsa, testDir.directory(),
-                numberOfEntiesBeforeSwitchingFiles, mock( Supplier.class ) );
+                numberOfEntiesBeforeSwitchingFiles, mock( Supplier.class ), NullLogProvider.getInstance() );
 
         // and a store that has two entries in the store file
         for ( int i = 1; i < 3; i++ )
@@ -117,7 +118,7 @@ public class OnDiskIdAllocationStateTest
         // then
         // we restore it and see the last of the two entries
         OnDiskIdAllocationState restoredOne = new OnDiskIdAllocationState( fsa, testDir.directory(), 1,
-                mock( Supplier.class ) );
+                mock( Supplier.class ), NullLogProvider.getInstance() );
 
         assertEquals( 1024 * 2, restoredOne.lastIdRangeLength( someType ) );
         assertEquals( 2, restoredOne.logIndex() );
@@ -131,7 +132,7 @@ public class OnDiskIdAllocationStateTest
         fsa.mkdir( testDir.directory() );
 
         OnDiskIdAllocationState store = new OnDiskIdAllocationState( fsa, testDir.directory(), 10,
-                mock( Supplier.class ) );
+                mock( Supplier.class ), NullLogProvider.getInstance() );
 
         for ( int i = 1; i <= 3; i++ )
         {
@@ -140,7 +141,8 @@ public class OnDiskIdAllocationStateTest
         }
 
         // when
-        store = new OnDiskIdAllocationState( fsa, testDir.directory(), 10, mock( Supplier.class ) );
+        store = new OnDiskIdAllocationState( fsa, testDir.directory(), 10, mock( Supplier.class ),
+                NullLogProvider.getInstance() );
         store.firstUnallocated( someType, 1024 * 4 );
         store.logIndex( 4 );
 
@@ -163,7 +165,8 @@ public class OnDiskIdAllocationStateTest
         final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
         Supplier<DatabaseHealth> supplier = () -> databaseHealth;
 
-        OnDiskIdAllocationState store = new OnDiskIdAllocationState( fsa, testDir.directory(), 100, supplier );
+        OnDiskIdAllocationState store = new OnDiskIdAllocationState( fsa, testDir.directory(), 100, supplier,
+                NullLogProvider.getInstance() );
 
         // when
         try

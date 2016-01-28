@@ -30,6 +30,7 @@ import org.neo4j.coreedge.raft.state.term.InMemoryTermState.InMemoryTermStateCha
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.LogProvider;
 
 public class OnDiskTermState extends LifecycleAdapter implements TermState
 {
@@ -41,7 +42,8 @@ public class OnDiskTermState extends LifecycleAdapter implements TermState
     private final StatePersister<InMemoryTermState> statePersister;
 
     public OnDiskTermState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
-                            int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier )
+                            int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier,
+                            LogProvider logProvider )
             throws IOException
     {
         File fileA = new File( stateDir, FILENAME + "a" );
@@ -59,6 +61,8 @@ public class OnDiskTermState extends LifecycleAdapter implements TermState
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
                 marshal, recoveryStatus.previouslyInactive(),
                 databaseHealthSupplier );
+
+        logProvider.getLog( getClass() ).info( "State restored, last term is %d", inMemoryTermState.currentTerm() );
     }
 
     @Override

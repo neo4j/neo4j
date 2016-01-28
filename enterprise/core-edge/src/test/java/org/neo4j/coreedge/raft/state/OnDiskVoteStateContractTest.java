@@ -30,6 +30,7 @@ import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static org.mockito.Mockito.mock;
@@ -46,7 +47,8 @@ public class OnDiskVoteStateContractTest extends VoteStateContractTest
         File directory = testDirectory.directory( "raft-log" );
         try
         {
-            return new OnDiskVoteState<>( fileSystem, directory, 100, mock( Supplier.class ), new CoreMember.CoreMemberMarshal() );
+            return new OnDiskVoteState<>( fileSystem, directory, 100, mock( Supplier.class ),
+                    new CoreMember.CoreMemberMarshal(), NullLogProvider.getInstance() );
         }
         catch ( IOException e )
         {

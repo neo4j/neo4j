@@ -31,6 +31,7 @@ import org.neo4j.coreedge.raft.state.membership.InMemoryRaftMembershipState.InMe
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.LogProvider;
 
 public class OnDiskRaftMembershipState<MEMBER> extends LifecycleAdapter implements RaftMembershipState<MEMBER>
 {
@@ -42,11 +43,9 @@ public class OnDiskRaftMembershipState<MEMBER> extends LifecycleAdapter implemen
 
     private InMemoryRaftMembershipState<MEMBER> inMemoryRaftMembershipState;
 
-    public OnDiskRaftMembershipState( FileSystemAbstraction fileSystemAbstraction,
-                                      File stateDir,
-                                      int numberOfEntriesBeforeRotation,
-                                      Supplier<DatabaseHealth> databaseHealthSupplier,
-                                      ChannelMarshal<MEMBER> channelMarshal ) throws IOException
+    public OnDiskRaftMembershipState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
+                                      int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier,
+                                      ChannelMarshal<MEMBER> channelMarshal, LogProvider logProvider ) throws IOException
     {
 
         InMemoryRaftMembershipStateChannelMarshal<MEMBER> marshal =
@@ -63,9 +62,10 @@ public class OnDiskRaftMembershipState<MEMBER> extends LifecycleAdapter implemen
         inMemoryRaftMembershipState = recoveryManager.readLastEntryFrom( recoveryStatus.previouslyActive() );
 
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
-                marshal,
-                recoveryStatus.previouslyInactive(),
-                databaseHealthSupplier );
+                marshal, recoveryStatus.previouslyInactive(), databaseHealthSupplier );
+
+        logProvider.getLog( getClass() ).info( "State restored, last index is %d",
+                inMemoryRaftMembershipState.logIndex() );
     }
 
     @Override

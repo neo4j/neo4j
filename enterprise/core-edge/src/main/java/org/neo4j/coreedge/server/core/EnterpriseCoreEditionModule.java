@@ -198,7 +198,7 @@ public class EnterpriseCoreEditionModule
         {
             OnDiskTermState onDiskTermState = life.add( new OnDiskTermState( fileSystem,
                     new File( clusterStateDirectory, OnDiskTermState.DIRECTORY_NAME ),
-                    config.get( CoreEdgeClusterSettings.term_state_size ), databaseHealthSupplier ) );
+                    config.get( CoreEdgeClusterSettings.term_state_size ), databaseHealthSupplier, logProvider ) );
             termState = new MonitoredTermState( onDiskTermState, platformModule.monitors );
         }
         catch ( IOException e )
@@ -212,7 +212,7 @@ public class EnterpriseCoreEditionModule
             voteState = life.add( new OnDiskVoteState<>( fileSystem,
                     new File( clusterStateDirectory, OnDiskVoteState.DIRECTORY_NAME ),
                     config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
-                    new CoreMemberMarshal() ) );
+                    new CoreMemberMarshal(), logProvider ) );
         }
         catch ( IOException e )
         {
@@ -226,7 +226,7 @@ public class EnterpriseCoreEditionModule
             raftMembershipState = life.add( new OnDiskRaftMembershipState<>( fileSystem,
                     new File( clusterStateDirectory, OnDiskRaftMembershipState.DIRECTORY_NAME ),
                     config.get( CoreEdgeClusterSettings.raft_membership_state_size ),
-                    databaseHealthSupplier, new CoreMemberMarshal() ) );
+                    databaseHealthSupplier, new CoreMemberMarshal(), logProvider ) );
         }
         catch ( IOException e )
         {
@@ -253,7 +253,7 @@ public class EnterpriseCoreEditionModule
             onDiskReplicatedLockTokenState = life.add( new OnDiskReplicatedLockTokenState<>( fileSystem,
                     new File( clusterStateDirectory, OnDiskReplicatedLockTokenState.DIRECTORY_NAME ),
                     config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ),
-                    new CoreMember.CoreMemberMarshal(), databaseHealthSupplier ) );
+                    new CoreMember.CoreMemberMarshal(), databaseHealthSupplier, logProvider ) );
         }
         catch ( IOException e )
         {
@@ -270,7 +270,7 @@ public class EnterpriseCoreEditionModule
                     new File( clusterStateDirectory, OnDiskGlobalSessionTrackerState.DIRECTORY_NAME ),
                     new CoreMemberMarshal(),
                     config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ),
-                    databaseHealthSupplier );
+                    databaseHealthSupplier, logProvider );
         }
         catch ( IOException e )
         {
@@ -286,7 +286,7 @@ public class EnterpriseCoreEditionModule
         {
             idAllocationState = life.add( new OnDiskIdAllocationState( fileSystem,
                     new File( clusterStateDirectory, OnDiskIdAllocationState.DIRECTORY_NAME ),
-                    config.get( CoreEdgeClusterSettings.id_alloc_state_size ), databaseHealthSupplier ) );
+                    config.get( CoreEdgeClusterSettings.id_alloc_state_size ), databaseHealthSupplier, logProvider ) );
         }
         catch ( IOException e )
         {

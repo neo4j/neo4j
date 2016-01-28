@@ -31,6 +31,7 @@ import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -42,7 +43,8 @@ public class VoteStateDurabilityTest
     {
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
-        return new OnDiskVoteState<>( fileSystem, directory, 100, mock(Supplier.class), new CoreMember.CoreMemberMarshal() );
+        return new OnDiskVoteState<>( fileSystem, directory, 100, mock(Supplier.class),
+                new CoreMember.CoreMemberMarshal(), NullLogProvider.getInstance() );
     }
 
     @Test

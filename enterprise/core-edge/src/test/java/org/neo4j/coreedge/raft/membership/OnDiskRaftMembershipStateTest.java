@@ -29,6 +29,7 @@ import org.neo4j.coreedge.raft.state.membership.OnDiskRaftMembershipState;
 import org.neo4j.coreedge.server.RaftTestMarshal;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -48,7 +49,7 @@ public class OnDiskRaftMembershipStateTest
 
         OnDiskRaftMembershipState<RaftTestMember> onDiskRaftMembershipState =
                 new OnDiskRaftMembershipState<>( fsa, testDir.directory(), 100, mock( Supplier.class ),
-                        new RaftTestMarshal() );
+                        new RaftTestMarshal(), NullLogProvider.getInstance() );
 
         final Set<RaftTestMember> members = new RaftTestGroup( 1, 2, 3, 4 ).getMembers();
 
@@ -71,14 +72,14 @@ public class OnDiskRaftMembershipStateTest
 
         OnDiskRaftMembershipState<RaftTestMember> initial = new
                 OnDiskRaftMembershipState<>( fsa, testDir.directory(), 100, mock( Supplier.class ),
-                new RaftTestMarshal() );
+                new RaftTestMarshal(), NullLogProvider.getInstance() );
         initial.setVotingMembers( raftTestGroup.getMembers() );
         initial.logIndex( atLogIndex );
 
         // when
         final OnDiskRaftMembershipState<RaftTestMember> state =
                 new OnDiskRaftMembershipState<>( fsa, testDir.directory(), 100, mock( Supplier.class ),
-                        new RaftTestMarshal() );
+                        new RaftTestMarshal(), NullLogProvider.getInstance() );
 
         // then
         assertEquals( raftTestGroup.getMembers(), state.votingMembers() );
@@ -98,7 +99,7 @@ public class OnDiskRaftMembershipStateTest
         int numberOfEntriesBeforeRotation = 5;
         OnDiskRaftMembershipState<RaftTestMember> state = new
                 OnDiskRaftMembershipState<>( fsa, testDir.directory(), numberOfEntriesBeforeRotation,
-                mock( Supplier.class ), new RaftTestMarshal() );
+                mock( Supplier.class ), new RaftTestMarshal(), NullLogProvider.getInstance() );
 
         // When
         // we write enough entries to cause rotation
@@ -107,7 +108,7 @@ public class OnDiskRaftMembershipStateTest
         // And we restore from that
         OnDiskRaftMembershipState<RaftTestMember> restored = new
                 OnDiskRaftMembershipState<>( fsa, testDir.directory(), numberOfEntriesBeforeRotation,
-                mock( Supplier.class ), new RaftTestMarshal() );
+                mock( Supplier.class ), new RaftTestMarshal(), NullLogProvider.getInstance() );
 
         // Then
         // The last entry should be what it was last written
@@ -130,7 +131,7 @@ public class OnDiskRaftMembershipStateTest
 
         OnDiskRaftMembershipState<RaftTestMember> state = new
                 OnDiskRaftMembershipState<>( fsa, testDir.directory(), 10, mock( Supplier.class ),
-                new RaftTestMarshal() );
+                new RaftTestMarshal(), NullLogProvider.getInstance() );
 
         // when
         // we write one entry
@@ -144,7 +145,7 @@ public class OnDiskRaftMembershipStateTest
         // The last state read is the one that had the log index written
         OnDiskRaftMembershipState<RaftTestMember> restored = new
                 OnDiskRaftMembershipState<>( fsa, testDir.directory(), 10, mock( Supplier.class ),
-                new RaftTestMarshal() );
+                new RaftTestMarshal(), NullLogProvider.getInstance() );
         assertEquals( raftTestGroup.getMembers(), restored.votingMembers() );
         assertEquals( atLogIndex, restored.logIndex() );
     }

@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.neo4j.coreedge.server.RaftTestMarshal;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -48,14 +49,14 @@ public class OnDiskReplicatedLockTokenStateTest
 
         OnDiskReplicatedLockTokenState<RaftTestMember> oldState =
                 new OnDiskReplicatedLockTokenState<>( fsa, testDir.directory(), 100, new RaftTestMarshal(),
-                        mock( Supplier.class ) );
+                        mock( Supplier.class ), NullLogProvider.getInstance() );
 
         oldState.set( new ReplicatedLockTokenRequest<>( member( 1 ), 99 ), 0 );
 
         // when
         OnDiskReplicatedLockTokenState<RaftTestMember> newState =
                 new OnDiskReplicatedLockTokenState<>( fsa, testDir.directory(), 100, new RaftTestMarshal(),
-                        mock( Supplier.class ) );
+                        mock( Supplier.class ), NullLogProvider.getInstance() );
 
         // then
         assertEquals( oldState.get().owner(), newState.get().owner() );

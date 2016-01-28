@@ -31,6 +31,7 @@ import org.neo4j.coreedge.raft.state.StateRecoveryManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.LogProvider;
 
 public class OnDiskGlobalSessionTrackerState<MEMBER> extends LifecycleAdapter implements GlobalSessionTrackerState<MEMBER>
 {
@@ -43,7 +44,7 @@ public class OnDiskGlobalSessionTrackerState<MEMBER> extends LifecycleAdapter im
 
     public OnDiskGlobalSessionTrackerState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
                                             ChannelMarshal<MEMBER> memberMarshal, int numberOfEntriesBeforeRotation,
-                                            Supplier<DatabaseHealth> databaseHealthSupplier )
+                                            Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
             throws IOException
     {
         InMemoryGlobalSessionTrackerStateChannelMarshal<MEMBER> marshal =
@@ -62,6 +63,9 @@ public class OnDiskGlobalSessionTrackerState<MEMBER> extends LifecycleAdapter im
 
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
                 marshal, recoveryStatus.previouslyInactive(), databaseHealthSupplier );
+
+        logProvider.getLog( getClass() ).info( "State restored, last index is %d",
+                inMemoryGlobalSessionTrackerState.logIndex() );
     }
 
     @Override

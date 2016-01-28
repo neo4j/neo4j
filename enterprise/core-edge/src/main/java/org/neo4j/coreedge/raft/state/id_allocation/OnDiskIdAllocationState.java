@@ -31,6 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.LogProvider;
 
 /**
  * The OnDiskAllocationState is a decorator around InMemoryIdAllocationState providing on-disk persistence of
@@ -49,7 +50,8 @@ public class OnDiskIdAllocationState extends LifecycleAdapter implements IdAlloc
     private final StatePersister<InMemoryIdAllocationState> statePersister;
 
     public OnDiskIdAllocationState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
-                                    int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier )
+                                    int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier,
+                                    LogProvider logProvider )
             throws IOException
     {
         File fileA = new File( stateDir, FILENAME + "a" );
@@ -66,6 +68,9 @@ public class OnDiskIdAllocationState extends LifecycleAdapter implements IdAlloc
 
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
                 marshal, recoveryStatus.previouslyInactive(), databaseHealthSupplier );
+
+        logProvider.getLog( getClass() ).info( "State restored, last index is %d",
+                inMemoryIdAllocationState.logIndex() );
     }
 
     @Override

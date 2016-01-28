@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMember.RaftTestMemberMarshal;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.UUID.randomUUID;
@@ -60,7 +61,8 @@ public class OnDiskGlobalSessionTrackerStateTest extends BaseGlobalSessionTracke
 
         // when
         OnDiskGlobalSessionTrackerState<RaftTestMember> newState = new OnDiskGlobalSessionTrackerState<>( fsa,
-                testDir.directory(), new RaftTestMemberMarshal(), 100, mock( Supplier.class ) );
+                testDir.directory(), new RaftTestMemberMarshal(), 100, mock( Supplier.class ),
+                NullLogProvider.getInstance() );
 
         // then
         assertTrue( oldState.validateOperation( globalSession, new LocalOperationId( 1, 1 ) ) );
@@ -111,7 +113,8 @@ public class OnDiskGlobalSessionTrackerStateTest extends BaseGlobalSessionTracke
 
         try
         {
-            return new OnDiskGlobalSessionTrackerState<>( fsa, testDir.directory(), new RaftTestMemberMarshal(), 100, mock( Supplier.class ) );
+            return new OnDiskGlobalSessionTrackerState<>( fsa, testDir.directory(), new RaftTestMemberMarshal(), 100,
+                    mock( Supplier.class ), NullLogProvider.getInstance() );
         }
         catch ( IOException e )
         {

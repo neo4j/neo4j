@@ -31,6 +31,7 @@ import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -55,11 +56,12 @@ public class OnDiskTermStateTest
         fsa.mkdir( testDir.directory() );
 
         OnDiskTermState oldOnDiskTermState =
-                new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
+                new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ), NullLogProvider.getInstance() );
         oldOnDiskTermState.update( 99 );
 
         // when
-        OnDiskTermState newOnDiskTermState = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
+        OnDiskTermState newOnDiskTermState = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ),
+                NullLogProvider.getInstance() );
 
         // then
         assertEquals( oldOnDiskTermState.currentTerm(), newOnDiskTermState.currentTerm() );
@@ -72,7 +74,8 @@ public class OnDiskTermStateTest
         StoreFileChannel channel = newFileChannelMock();
         FileSystemAbstraction fsa = newFileSystemMock( channel );
 
-        OnDiskTermState state = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
+        OnDiskTermState state = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ),
+                NullLogProvider.getInstance() );
 
         // When
         state.update( 100L );
@@ -90,7 +93,8 @@ public class OnDiskTermStateTest
         FileSystemAbstraction fsa = newFileSystemMock( channel );
         doThrow( new IOException() ).when( channel ).writeAll( any( ByteBuffer.class ) );
 
-        OnDiskTermState store = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
+        OnDiskTermState store = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ),
+                NullLogProvider.getInstance() );
 
         // Then
         // Sanity check more than anything else, to make sure the failed update below will retain the value
@@ -117,7 +121,8 @@ public class OnDiskTermStateTest
         StoreFileChannel channel = newFileChannelMock();
         FileSystemAbstraction fsa = newFileSystemMock( channel );
 
-        OnDiskTermState store = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ) );
+        OnDiskTermState store = new OnDiskTermState( fsa, testDir.directory(), 100, mock( Supplier.class ),
+                NullLogProvider.getInstance() );
 
         // When
         // We shut it down

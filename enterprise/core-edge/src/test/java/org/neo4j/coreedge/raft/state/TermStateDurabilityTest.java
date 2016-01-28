@@ -30,6 +30,7 @@ import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -40,7 +41,7 @@ public class TermStateDurabilityTest
     {
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
-        return new OnDiskTermState( fileSystem, directory, 100, mock( Supplier.class ) );
+        return new OnDiskTermState( fileSystem, directory, 100, mock( Supplier.class ), NullLogProvider.getInstance() );
     }
 
     @Test

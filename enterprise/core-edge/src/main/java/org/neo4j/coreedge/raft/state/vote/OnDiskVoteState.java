@@ -31,6 +31,7 @@ import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState.InMemoryVoteStateCha
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.LogProvider;
 
 public class OnDiskVoteState<MEMBER> extends LifecycleAdapter implements VoteState<MEMBER>
 {
@@ -43,7 +44,7 @@ public class OnDiskVoteState<MEMBER> extends LifecycleAdapter implements VoteSta
 
     public OnDiskVoteState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
                             int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier,
-                            ChannelMarshal<MEMBER> memberByteBufferMarshal ) throws IOException
+                            ChannelMarshal<MEMBER> memberByteBufferMarshal, LogProvider logProvider ) throws IOException
     {
         File fileA = new File( stateDir, FILENAME + "a" );
         File fileB = new File( stateDir, FILENAME + "b" );
@@ -56,13 +57,14 @@ public class OnDiskVoteState<MEMBER> extends LifecycleAdapter implements VoteSta
 
         StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
 
-
         this.inMemoryVoteState = recoveryManager.readLastEntryFrom( fileSystemAbstraction, recoveryStatus
                 .previouslyActive() );
 
-
         this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction, numberOfEntriesBeforeRotation,
                 marshal, recoveryStatus.previouslyInactive(), databaseHealthSupplier );
+
+        logProvider.getLog( getClass() ).info( "State restored, last term is %d",
+                inMemoryVoteState.term() );
     }
 
     @Override
