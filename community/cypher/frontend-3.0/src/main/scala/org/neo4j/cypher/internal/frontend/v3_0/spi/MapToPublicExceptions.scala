@@ -71,4 +71,6 @@ trait MapToPublicExceptions[T <: Throwable] {
   def cypherTypeException(message: String, cause: Throwable): T
 
   def cypherExecutionException(message: String, cause: Throwable): T
+
+  def shortestPathFallbackDisableRuntimeException(message: String, cause: Throwable): T
 }

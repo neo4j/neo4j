@@ -96,6 +96,14 @@ public abstract class GraphDatabaseSettings
             + "If true, then non-conformance will result in an error, otherwise only a warning is generated." )
     public static final Setting<Boolean> cypher_hints_error = setting( "dbms.cypher.hints.error", BOOLEAN, FALSE );
 
+    @Description( "If set to true it will disable the shortest path fallback. That means that no full path enumeration" +
+                  "will be performed in case shortest path algorithms cannot be used. This might happen in case of" +
+                  "existential predicates on the path, e.g., when searching for the shortest path containing a node" +
+                  "with property 'name=Emil'. The problem is that graph algorithms work only on universal predicates," +
+                  "e.g., when searching for the shortest where all nodes have label 'Person'.  Note that disabling " +
+                  "shortest path fallback (i.e., setting this property to true) might cause errors at runtime." )
+    public static final Setting<Boolean> forbid_exhaustive_shortestpath = setting( "dbms.cypher.forbid.exhaustive.shortestpath", BOOLEAN, FALSE );
+
     @Description( "Set this to specify the default runtime for the default language version." )
     @Internal
     public static final Setting<String> cypher_runtime = setting(

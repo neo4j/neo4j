@@ -53,7 +53,8 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     useErrorsOverWarnings = false,
     idpMaxTableSize = 128,
     idpIterationDuration = 1000,
-    nonIndexedLabelWarningThreshold = 10000
+    nonIndexedLabelWarningThreshold = 10000,
+    errorIfShortestPathFallbackUsedAtRuntime = true
   )
 
   val compilers = Seq[(String, GraphDatabaseService => CypherCompiler)](

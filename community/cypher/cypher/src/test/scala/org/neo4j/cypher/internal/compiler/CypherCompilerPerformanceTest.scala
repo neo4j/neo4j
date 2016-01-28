@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_0
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, InfoLogger, _}
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
-import org.neo4j.kernel.impl.core.NodeManager
 
 class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
@@ -169,8 +168,6 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
   }
 
   def createCurrentCompiler = {
-    val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
-
     CypherCompilerFactory.costBasedCompiler(
       graph = graph,
       CypherCompilerConfiguration(
@@ -180,6 +177,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
         useErrorsOverWarnings = false,
         idpMaxTableSize = 128,
         idpIterationDuration = 1000,
+        errorIfShortestPathFallbackUsedAtRuntime = false,
         nonIndexedLabelWarningThreshold = 10000L
       ),
       clock = CLOCK,

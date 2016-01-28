@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0
 
+import org.neo4j.cypher.internal.frontend.v3_0.ExhaustiveShortestPathForbiddenException.ERROR_MSG
 import org.neo4j.cypher.internal.frontend.v3_0.spi.MapToPublicExceptions
 
-abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
+abstract class CypherException(protected val message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this() = this(null, null)
 
   def this(message: String) = this(message, null)
@@ -138,3 +139,22 @@ class SyntaxException(message: String, val query: String, val offset: Option[Int
 class CypherExecutionException(message: String, cause: Throwable) extends CypherException(message, cause) {
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T = mapper.cypherExecutionException(message, this)
 }
+
+class ExhaustiveShortestPathForbiddenException extends CypherExecutionException(ERROR_MSG, null) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
+    mapper.shortestPathFallbackDisableRuntimeException(message, this)
+}
+
+object ExhaustiveShortestPathForbiddenException {
+  val ERROR_MSG: String =
+    s"""Shortest path fallback has been explicitly disabled. That means that no full path enumeration is performed in
+       |case shortest path algorithms cannot be used. This might happen in case of existential predicates on the path,
+       |e.g., when searching for the shortest path containing a node with property 'name=Emil'. The problem is that
+       |graph algorithms work only on universal predicates, e.g., when searching for the shortest where all nodes have
+       |label 'Person'. In case this is an unexpected error please either disable the runtime error in the Neo4j
+       |configuration or please improve your query by consulting the Neo4j manual.  In order to avoid planning the
+       |shortest path fallback a WITH clause can be introduced to separate the MATCH describing the shortest paths and
+       |the existential predicates on the path; note though that in this case all shortest paths are computed before
+       |start filtering.""".stripMargin
+}
+

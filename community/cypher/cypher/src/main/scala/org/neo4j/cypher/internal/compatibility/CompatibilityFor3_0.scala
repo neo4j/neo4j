@@ -95,6 +95,9 @@ object exceptionHandlerFor3_0 extends MapToPublicExceptions[CypherException] {
 
   def cypherExecutionException(message: String, cause: Throwable) = throw new CypherExecutionException(message, cause)
 
+  override def shortestPathFallbackDisableRuntimeException(message: String, cause: Throwable): CypherException =
+    throw new ExhaustiveShortestPathForbiddenException(message, cause)
+
   def labelScanHintException(variable: String, label: String, message: String, cause: Throwable) =
     throw new LabelScanHintException(variable, label, message, cause)
 
