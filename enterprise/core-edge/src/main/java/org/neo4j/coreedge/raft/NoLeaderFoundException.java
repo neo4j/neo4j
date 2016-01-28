@@ -19,6 +19,14 @@
  */
 package org.neo4j.coreedge.raft;
 
-public class NoLeaderTimeoutException extends Exception
+public class NoLeaderFoundException extends Exception
 {
+    public NoLeaderFoundException()
+    {
+    }
+
+    public NoLeaderFoundException( Throwable cause )
+    {
+        super( cause );
+    }
 }

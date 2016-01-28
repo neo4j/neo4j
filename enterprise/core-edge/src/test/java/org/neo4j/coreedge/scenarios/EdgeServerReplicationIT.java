@@ -27,7 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.raft.NoLeaderTimeoutException;
+import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
@@ -200,7 +200,7 @@ public class EdgeServerReplicationIT
         return dir;
     }
 
-    private GraphDatabaseService executeOnLeaderWithRetry( Workload workload ) throws NoLeaderTimeoutException
+    private GraphDatabaseService executeOnLeaderWithRetry( Workload workload ) throws NoLeaderFoundException
     {
         CoreGraphDatabase coreDB;
         while ( true )

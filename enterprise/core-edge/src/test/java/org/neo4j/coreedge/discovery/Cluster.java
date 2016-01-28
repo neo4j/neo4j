@@ -34,7 +34,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.coreedge.raft.NoLeaderTimeoutException;
+import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
@@ -351,7 +351,7 @@ public class Cluster
         return null;
     }
 
-    public CoreGraphDatabase findLeader( long leaderWaitTimeout ) throws NoLeaderTimeoutException
+    public CoreGraphDatabase findLeader( long leaderWaitTimeout ) throws NoLeaderFoundException
     {
         long leaderWaitEndTime = leaderWaitTimeout + System.currentTimeMillis();
         CoreGraphDatabase leader;
@@ -362,7 +362,7 @@ public class Cluster
 
         if ( leader == null )
         {
-            throw new NoLeaderTimeoutException();
+            throw new NoLeaderFoundException();
         }
 
         return leader;
