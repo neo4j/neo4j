@@ -173,13 +173,13 @@ Function Initialize-Neo4jServer
      
     $settings = @"
 "ConfigurationFile","IsDefault","Name","Value","Neo4jHome"
-"neo4j-server.properties","False","org.neo4j.server.webserver.port","$($HTTPPort)",""
-"neo4j-server.properties","False","dbms.security.auth_enabled","$((-not $DisableAuthentication).ToString().ToLower())",""
-"neo4j-server.properties","False","org.neo4j.server.webserver.https.enabled","$($EnableHTTPS.ToString().ToLower())",""
-"neo4j-server.properties","False","org.neo4j.server.webserver.https.port","$($HTTPSPort)",""
+"neo4j.properties","False","org.neo4j.server.webserver.port","$($HTTPPort)",""
+"neo4j.properties","False","dbms.security.auth_enabled","$((-not $DisableAuthentication).ToString().ToLower())",""
+"neo4j.properties","False","org.neo4j.server.webserver.https.enabled","$($EnableHTTPS.ToString().ToLower())",""
+"neo4j.properties","False","org.neo4j.server.webserver.https.port","$($HTTPSPort)",""
 "neo4j.properties","False","remote_shell_enabled","$($EnableRemoteShell.ToString().ToLower())",""
 "neo4j.properties","False","remote_shell_port","$($RemoteShellPort)",""
-"neo4j-server.properties","False","org.neo4j.server.webserver.address","$($ListenOnIPAddress)",""
+"neo4j.properties","False","org.neo4j.server.webserver.address","$($ListenOnIPAddress)",""
 "neo4j.properties","False","online_backup_enabled","$(-not $DisableOnlineBackup -and ($OnlineBackupServer -ne ''))",""
 "neo4j.properties","False","online_backup_server","$($OnlineBackupServer)",""
 "@ | ConvertFrom-CSV | `
@@ -188,7 +188,7 @@ Function Initialize-Neo4jServer
 
     if ($ClearExistingDatabase)
     {
-      $dbSetting = ($thisServer | Get-Neo4jSetting | ? { (($_.ConfigurationFile -eq 'neo4j-server.properties') -and ($_.Name -eq 'org.neo4j.server.database.location')) })
+      $dbSetting = ($thisServer | Get-Neo4jSetting | ? { (($_.ConfigurationFile -eq 'neo4j.properties') -and ($_.Name -eq 'org.neo4j.server.database.location')) })
       $dbPath = Join-Path -Path $thisServer.Home -ChildPath $dbSetting.Value
       if (Test-Path -Path $dbPath) { Remove-Item -Path $dbPath -Recurse -Force }
     }

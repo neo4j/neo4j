@@ -53,10 +53,7 @@ public class DesktopConfigurator
                 null,
 
                 /** Server config file */
-                installation.getServerConfigurationsFile(),
-
-                /** Database tuning file */
-                getDatabaseConfigurationFile(),
+                installation.getConfigurationsFile(),
 
                 FormattedLog.toOutputStream( System.out ),
 
@@ -83,9 +80,5 @@ public class DesktopConfigurator
 
     public int getServerPort() {
         return config.get( ServerSettings.webserver_port );
-    }
-
-    public File getDatabaseConfigurationFile() {
-        return new File( dbDir, Installation.NEO4J_PROPERTIES_FILENAME );
     }
 }

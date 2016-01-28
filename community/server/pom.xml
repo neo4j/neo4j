@@ -388,8 +388,8 @@
           <classpathScope>test</classpathScope>
           <systemProperties>
             <systemProperty>
-              <key>org.neo4j.server.properties</key>
-              <value>${basedir}/neo4j-home/conf/neo4j-server.properties</value>
+              <key>org.neo4j.config.file</key>
+              <value>${basedir}/neo4j-home/conf/neo4j.properties</value>
             </systemProperty>
           </systemProperties>
         </configuration>

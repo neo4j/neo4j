@@ -29,7 +29,6 @@ import org.neo4j.server.ServerTestUtils;
 
 public class PropertyFileBuilder
 {
-    private String dbTuningPropertyFile = null;
     private final ArrayList<Tuple> nameValuePairs = new ArrayList<>();
     private final File directory;
 
@@ -63,18 +62,10 @@ public class PropertyFileBuilder
                 ServerSettings.management_api_path.name(), "http://localhost:7474/db/manage/",
                 ServerSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
         properties.put( ServerSettings.webserver_port.name(), "7474" );
-        if ( dbTuningPropertyFile != null )
-            properties.put( ServerSettings.legacy_db_config.name(), dbTuningPropertyFile );
         for ( Tuple t : nameValuePairs )
             properties.put( t.name, t.value );
         ServerTestUtils.writePropertiesToFile( properties, file );
         return file;
-    }
-
-    public PropertyFileBuilder withDbTuningPropertyFile( File f )
-    {
-        dbTuningPropertyFile = f.getAbsolutePath();
-        return this;
     }
 
     public PropertyFileBuilder withNameValue( String name, String value )

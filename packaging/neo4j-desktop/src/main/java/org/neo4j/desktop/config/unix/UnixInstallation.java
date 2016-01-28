@@ -48,9 +48,9 @@ public class UnixInstallation extends PortableInstallation
     }
 
     @Override
-    public File getServerConfigurationsFile()
+    public File getConfigurationsFile()
     {
-        return new File( getConfigurationDirectory(), "." + NEO4J_SERVER_PROPERTIES_FILENAME );
+        return new File( getConfigurationDirectory(), "." + NEO4J_PROPERTIES_FILENAME );
     }
 
     @Override

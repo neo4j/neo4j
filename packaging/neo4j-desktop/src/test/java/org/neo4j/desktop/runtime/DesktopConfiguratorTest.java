@@ -53,7 +53,7 @@ public class DesktopConfiguratorTest
     {
         // Given
         Installation installation = mock( Installation.class );
-        when( installation.getServerConfigurationsFile() ).thenReturn( emptyServerConfigFile );
+        when( installation.getConfigurationsFile() ).thenReturn( emptyServerConfigFile );
 
         File storeDir = new File( "graph.db" ).getAbsoluteFile(); // will not create any file
 

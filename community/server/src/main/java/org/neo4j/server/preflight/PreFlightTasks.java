@@ -32,13 +32,9 @@ import org.neo4j.logging.LogProvider;
  * add could be auto-generating config files if they don't exist and creating required
  * directories.
  *
- * All of these (including auto-generating neo4j.properties and creating directories)
- * except validating and potentially generating neo4j-server.properties depend on having
- * the server configuration available. Eg. we can't both ensure that file exists within these
+ * All of these except generating neo4j.properties depend on having
+ * the configuration available. Eg. we can't both ensure that file exists within these
  * tests, while at the same time depending on that file existing.
- *
- * The validation is not a problem, because we will refactor the server config to use the
- * new configuration system from the kernel, which automatically validates itself.
  *
  * Ensuring the config file exists (and potentially auto-generating it) is a problem.
  * Either this need to be split into tasks that have dependencies, and tasks that don't.

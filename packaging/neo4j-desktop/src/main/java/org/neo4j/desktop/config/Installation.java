@@ -31,9 +31,7 @@ public interface Installation
 {
     String NEO4J_PROPERTIES_FILENAME = "neo4j.properties";
     String NEO4J_VMOPTIONS_FILENAME = "neo4j-community.vmoptions";
-    String NEO4J_SERVER_PROPERTIES_FILENAME = "neo4j-server.properties";
-    String DEFAULT_DATABASE_CONFIG_RESOURCE_NAME = "/org/neo4j/desktop/config/neo4j-default.properties";
-    String DEFAULT_SERVER_CONFIG_RESOURCE_NAME = "/org/neo4j/desktop/config/neo4j-server-default.properties";
+    String DEFAULT_SERVER_CONFIG_RESOURCE_NAME = "/org/neo4j/desktop/config/neo4j-default.properties";
     String DEFAULT_VMOPTIONS_TEMPLATE_RESOURCE_NAME = "/org/neo4j/desktop/config/vmoptions.template";
     String INSTALL_PROPERTIES_FILENAME = "install.properties";
 
@@ -58,25 +56,15 @@ public interface Installation
     File getVmOptionsFile();
 
     /**
-     * Get the abstract path name that points to the neo4j-server.properties file.
+     * Get the abstract path name that points to the neo4j.properties file.
      */
-    File getServerConfigurationsFile();
+    File getConfigurationsFile();
 
     /**
      * Initialize the installation, such that we make sure that the various configuration files
      * exist where we expect them to.
      */
     void initialize() throws Exception;
-
-    /**
-     * Get the abstract path name that points to the neo4j.properties database configuration file.
-     */
-    File getDatabaseConfigurationFile();
-
-    /**
-     * Get the contents for a default neo4j-server.properties file.
-     */
-    InputStream getDefaultServerConfiguration();
 
     /**
      * Get the contents for a default neo4j.properties file.

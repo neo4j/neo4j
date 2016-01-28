@@ -105,11 +105,7 @@ ha.server_id = 1
 ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 # Alternatively, use IP addresses:
 #ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
-----
-+
-[source, properties]
-.conf/neo4j-server.properties
-----
+
 # HA - High Availability
 # SINGLE - Single mode, default.
 org.neo4j.server.database.mode=HA
@@ -131,11 +127,7 @@ ha.server_id = 2
 ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 # Alternatively, use IP addresses:
 #ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
-----
-+
-[source, properties]
-.conf/neo4j-server.properties
-----
+
 # HA - High Availability
 # SINGLE - Single mode, default.
 org.neo4j.server.database.mode=HA
@@ -157,11 +149,7 @@ ha.server_id = 3
 ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 # Alternatively, use IP addresses:
 #ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
-----
-+
-[source, properties]
-.conf/neo4j-server.properties
-----
+
 # HA - High Availability
 # SINGLE - Single mode, default.
 org.neo4j.server.database.mode=HA
@@ -253,11 +241,7 @@ ha.cluster_server = 127.0.0.1:5001
 # IP and port for this instance to bind to for communicating data with the
 # other neo4j instances in the cluster.
 ha.server = 127.0.0.1:6363
-----
-+
-[source, properties]
-.conf/neo4j-server.properties
-----
+
 # HA - High Availability
 # SINGLE - Single mode, default.
 org.neo4j.server.database.mode=HA
@@ -294,11 +278,7 @@ ha.cluster_server = 127.0.0.1:5002
 # IP and port for this instance to bind to for communicating data with the
 # other neo4j instances in the cluster.
 ha.server = 127.0.0.1:6364
-----
-+
-[source, properties]
-.conf/neo4j-server.properties
-----
+
 # HA - High Availability
 # SINGLE - Single mode, default.
 org.neo4j.server.database.mode=HA
@@ -335,11 +315,7 @@ ha.cluster_server = 127.0.0.1:5003
 # IP and port for this instance to bind to for communicating data with the
 # other neo4j instances in the cluster.
 ha.server = 127.0.0.1:6365
-----
-+
-[source, properties]
-.conf/neo4j-server.properties
-----
+
 # HA - High Availability
 # SINGLE - Single mode, default.
 org.neo4j.server.database.mode=HA

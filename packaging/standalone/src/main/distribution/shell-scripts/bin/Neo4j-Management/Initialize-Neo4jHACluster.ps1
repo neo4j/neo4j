@@ -132,7 +132,7 @@ Function Initialize-Neo4jHACluster
 
     $settings = @"
 "ConfigurationFile","IsDefault","Name","Value","Neo4jHome"
-"neo4j-server.properties","False","org.neo4j.server.database.mode","HA",""
+"neo4j.properties","False","org.neo4j.server.database.mode","HA",""
 "neo4j.properties","False","ha.server_id","$ServerID",""
 "neo4j.properties","False","ha.initial_hosts","$InitialHosts",""
 "neo4j.properties","False","ha.cluster_server","$ClusterServer",""

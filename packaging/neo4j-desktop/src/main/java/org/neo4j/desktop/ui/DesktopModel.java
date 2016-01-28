@@ -21,7 +21,6 @@ package org.neo4j.desktop.ui;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -87,12 +86,7 @@ public class DesktopModel
 
     public File getDatabaseConfigurationFile()
     {
-        return serverConfigurator.getDatabaseConfigurationFile();
-    }
-
-    public File getServerConfigurationFile()
-    {
-        return installation.getServerConfigurationsFile();
+        return installation.getConfigurationsFile();
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -105,7 +99,7 @@ public class DesktopModel
             databaseDirectory.mkdirs();
         }
 
-        File configurationFile = serverConfigurator.getDatabaseConfigurationFile();
+        File configurationFile = installation.getConfigurationsFile();
         if ( !configurationFile.exists() )
         {
             try
@@ -132,13 +126,7 @@ public class DesktopModel
             throw new UnsuitableDirectoryException( "%s is not writeable", dir );
         }
 
-        String[] fileNames = dir.list( new FilenameFilter()
-        {
-            @Override public boolean accept( File dir, String name )
-            {
-                return ! name.startsWith( "." );
-            }
-        } );
+        String[] fileNames = dir.list( ( dir1, name ) -> ! name.startsWith( "." ) );
 
         if ( 0 == fileNames.length )
         {
@@ -175,12 +163,6 @@ public class DesktopModel
     public void writeDefaultDatabaseConfiguration( File file ) throws IOException
     {
         InputStream defaults = installation.getDefaultDatabaseConfiguration();
-        writeInto( file, defaults );
-    }
-
-    public void writeDefaultServerConfiguration( File file ) throws IOException
-    {
-        InputStream defaults = installation.getDefaultServerConfiguration();
         writeInto( file, defaults );
     }
 
