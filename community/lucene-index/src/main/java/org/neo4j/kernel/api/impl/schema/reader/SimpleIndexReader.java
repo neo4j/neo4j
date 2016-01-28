@@ -111,6 +111,12 @@ public class SimpleIndexReader implements IndexReader
     }
 
     @Override
+    public PrimitiveLongIterator containsString( String exactTerm )
+    {
+        return query( LuceneDocumentStructure.newWildCardStringQuery( exactTerm ) );
+    }
+
+    @Override
     public long countIndexedNodes( long nodeId, Object propertyValue )
     {
         Query nodeIdQuery = new TermQuery( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );

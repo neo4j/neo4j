@@ -253,6 +253,12 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
+                public PrimitiveLongIterator containsString( String exactTerm )
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
                 public long countIndexedNodes( long nodeId, Object propertyValue )
                 {
                     long[] candidates = entries.get( propertyValue );

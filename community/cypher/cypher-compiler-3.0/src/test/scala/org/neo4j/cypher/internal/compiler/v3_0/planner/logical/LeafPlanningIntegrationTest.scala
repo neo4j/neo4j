@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{ExclusiveBound, InclusiveBound, 
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  test("should plan index seek by prefix for simple prefix search based on STARTS WITH with %") {
+  test("should plan index seek by prefix for simple prefix search based on STARTS WITH with prefix") {
     (new given {
       indexOn("Person", "name")
       cost = nodeIndexScanCost
@@ -44,6 +44,20 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         LabelToken("Person", LabelId(0)),
         PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
         RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("prefix")_)) _),
+        Set.empty)(solved)
+    )
+  }
+
+  test("should plan index seek by prefix for simple prefix search based on CONTAINS substring") {
+    (new given {
+      indexOn("Person", "name")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (a:Person) WHERE a.name CONTAINS 'substring' RETURN a").plan should equal(
+      NodeIndexContainsScan(
+        "a",
+        LabelToken("Person", LabelId(0)),
+        PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+        StringLiteral("substring")_,
         Set.empty)(solved)
     )
   }
@@ -243,6 +257,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     case (_: AllNodesScan, _) => 1000.0
     case (_: NodeByLabelScan, _) => 50.0
     case (_: NodeIndexScan, _) => 10.0
+    case (_: NodeIndexContainsScan, _) => 10.0
     case (_: NodeIndexSeek, _) => 1.0
     case (Selection(_, plan), input) => nodeIndexScanCost((plan, input))
     case _ => Double.MaxValue

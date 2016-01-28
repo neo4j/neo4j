@@ -207,6 +207,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       val startItem = StatementConverters.StartItemConverter(hint).asCommandStartItem
       val ep = entityProducerFactory.readNodeStartItems((planContext, startItem))
       NodeStartPipe(source, id.name, ep, Effects(ReadsAllNodes))()
+
+    case NodeIndexContainsScan(IdName(id), label, propertyKey, valueExpr, _) =>
+      NodeIndexContainsScanPipe(id, label, propertyKey, buildExpression(valueExpr))()
   }
 
   def build(plan: LogicalPlan, source: Pipe): RonjaPipe = plan match {

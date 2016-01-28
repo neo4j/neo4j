@@ -105,8 +105,8 @@ class HashBasedIndex extends InMemoryIndexImplementation
             Object key = entry.getKey();
             if ( STRING.isSuperTypeOf( key ) )
             {
-                boolean lowerFilter = false;
-                boolean upperFilter = false;
+                boolean lowerFilter;
+                boolean upperFilter;
 
                 if ( lower == null )
                 {
@@ -160,6 +160,24 @@ class HashBasedIndex extends InMemoryIndexImplementation
     {
         Iterable<Long> all = Iterables.flattenIterable( data.values() );
         return toPrimitiveIterator( all.iterator() );
+    }
+
+    @Override
+    public PrimitiveLongIterator containsString( String exactTerm )
+    {
+        Set<Long> nodeIds = new HashSet<>();
+        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        {
+            Object key = entry.getKey();
+            if ( key instanceof String )
+            {
+                if ( key.toString().contains( exactTerm ) )
+                {
+                    nodeIds.addAll( entry.getValue() );
+                }
+            }
+        }
+        return toPrimitiveIterator( nodeIds.iterator() );
     }
 
     @Override

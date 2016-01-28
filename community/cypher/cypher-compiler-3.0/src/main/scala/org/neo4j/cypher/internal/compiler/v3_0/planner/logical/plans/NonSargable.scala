@@ -51,6 +51,9 @@ object AsDynamicPropertyNonScannable {
     case StartsWith(ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
 
+    case Contains(ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
+
     case RegexMatch(ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
 
@@ -66,6 +69,8 @@ object AsDynamicPropertyNonScannable {
 object AsStringRangeNonSeekable {
   def unapply(v: Any) = v match {
     case startsWith@StartsWith(prop@ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
+    case contains@Contains(prop@ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
     case _ =>
       None

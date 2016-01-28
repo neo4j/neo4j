@@ -64,6 +64,12 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
+    public PrimitiveLongIterator containsString( String exactTerm )
+    {
+        return delegate.containsString( exactTerm );
+    }
+
+    @Override
     public long countIndexedNodes( long nodeId, Object propertyValue )
     {
         return delegate.countIndexedNodes( nodeId, propertyValue );
