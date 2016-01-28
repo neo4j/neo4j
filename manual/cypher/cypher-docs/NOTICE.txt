@@ -27,16 +27,9 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
-  ConcurrentLinkedHashMap
   Lucene Core
-  opencsv
-  parboiled-core
-  parboiled-scala
+  Lucene Memory
 
 BSD - Scala License
   Scala Library
-
-BSD License
-  ASM Core
-  Scala Compiler
 

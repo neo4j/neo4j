@@ -143,6 +143,13 @@
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-cypher-docs</artifactId>
       <version>${neo4j.version}</version>
+      <classifier>sources</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-cypher-docs</artifactId>
+      <version>${neo4j.version}</version>
       <classifier>test-sources</classifier>
       <scope>provided</scope>
     </dependency>
@@ -374,7 +381,7 @@
               <excludes>META-INF,META-INF/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.sourcecode}</outputDirectory>
-              <includeArtifactIds>neo4j-examples,neo4j-server-examples</includeArtifactIds>
+              <includeArtifactIds>neo4j-examples,neo4j-server-examples,neo4j-cypher-docs</includeArtifactIds>
             </configuration>
           </execution>
         </executions>
