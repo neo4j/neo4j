@@ -40,7 +40,8 @@ The following `<field_type>` settings can be used for both nodes and relationshi
 Property value:: Use one of `int`, `long`, `float`, `double`, `boolean`, `byte`, `short`, `char`, `string` to designate the data type.
   If no data type is given, this defaults to `string`.
   To define an array type, append `[]` to the type.
-  Array values are by default delimited by a `;`, but a different delimiter can be specified.
+  By default, array values are separated by `;`.
+  A different delimiter can be specified with `--array-delimiter`.
 IGNORE::
   Ignore this field completely.
 
@@ -57,7 +58,7 @@ ID::
   Note that the id has to be unique across all nodes in the import, even nodes with different labels.
 LABEL::
   Read one or more labels from this field.
-  For multiple labels, the values are separated by the array delimiter.
+  Like array values, multiple labels are separated by `;`, or by the character specified with `--array-delimiter`.
 
 [[import-tool-header-format-rels]]
 === Relationships
