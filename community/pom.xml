@@ -54,12 +54,10 @@
     <module>neo4j-community</module>
     <module>shell</module>
     <module>import-tool</module>
-    <module>embedded-examples</module>
     <module>server-api</module>
     <module>graphviz</module>
     <module>bolt</module>
     <module>server</module>
-    <module>server-examples</module>
     <module>server-plugin-test</module>
     <module>consistency-check-legacy</module>
     <module>consistency-check</module>
@@ -172,16 +170,6 @@ the relevant Commercial Agreement.
         <dependency>
           <groupId>org.neo4j.app</groupId>
           <artifactId>neo4j-server</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j.examples</groupId>
-          <artifactId>neo4j-examples</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.neo4j.examples</groupId>
-          <artifactId>neo4j-server-examples</artifactId>
           <version>${project.version}</version>
         </dependency>
         <dependency>
