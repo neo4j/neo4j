@@ -1003,28 +1003,36 @@ public class BatchInserterImpl implements BatchInserter
 
         rebuildCounts();
 
+        boolean clean = false;
         try
         {
             repopulateAllIndexes();
+            clean = true;
         }
         catch ( IOException | IndexEntryConflictException e )
         {
             throw new RuntimeException( e );
         }
-
-        neoStores.close();
-
-        try
+        finally
         {
-            storeLocker.release();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Could not release store lock", e );
+            neoStores.close();
+
+            try
+            {
+                storeLocker.release();
+                clean &= true;
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( "Could not release store lock", e );
+            }
+            if ( clean )
+            {
+                msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
+            }
+            life.shutdown();
         }
 
-        msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
-        life.shutdown();
     }
 
     @Override

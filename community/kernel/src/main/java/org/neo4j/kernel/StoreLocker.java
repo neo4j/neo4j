@@ -81,6 +81,19 @@ public class StoreLocker
         }
         catch ( OverlappingFileLockException | IOException e )
         {
+            if ( storeLockFileChannel != null )
+            {
+                try
+                {
+                    storeLockFileChannel.close();
+                }
+                catch ( IOException ee )
+                {
+                    System.err.println( "After opening " + storeLockFile +
+                            " and failing to lock it (since most likely another process owns this database right now) "
+                            + "I failed to close the file channel for the lock file" );
+                }
+            }
             String message = "Unable to obtain lock on store lock file: " + storeLockFile;
             throw storeLockException( message, e );
         }
