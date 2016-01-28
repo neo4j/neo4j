@@ -348,7 +348,7 @@ public class RaftInstanceTest
             fail( "Should have thrown exception" );
         }
         // Then
-        catch ( NoLeaderTimeoutException e )
+        catch ( NoLeaderFoundException e )
         {
             // expected
         }
@@ -490,7 +490,7 @@ public class RaftInstanceTest
             fail( "Should have thrown exception" );
         }
         // Then
-        catch ( NoLeaderTimeoutException e )
+        catch ( NoLeaderFoundException e )
         {
             // expected
             assertEquals(1, leaderNotFoundMonitor.leaderNotFoundExceptions());

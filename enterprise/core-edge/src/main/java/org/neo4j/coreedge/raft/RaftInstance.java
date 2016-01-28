@@ -21,9 +21,10 @@ package org.neo4j.coreedge.raft;
 
 import java.io.Serializable;
 import java.util.Set;
-import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
@@ -45,8 +46,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
 /**
@@ -93,6 +92,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private Clock clock;
+    private final VolatileFuture<MEMBER> volatileLeader = new VolatileFuture<>( null, member -> member != null );
 
     private final Outbound<MEMBER> outbound;
     private final Log log;
@@ -187,21 +187,30 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     }
 
     @Override
-    public MEMBER getLeader() throws NoLeaderTimeoutException
+    public MEMBER getLeader() throws NoLeaderFoundException
     {
-        long leaderWaitEndTime = leaderWaitTimeout + clock.currentTimeMillis();
-        while ( state.leader() == null && (clock.currentTimeMillis() < leaderWaitEndTime) )
-        {
-            LockSupport.parkNanos( MILLISECONDS.toNanos( electionTimeout ) / 2 );
-        }
+        return getLeader( leaderWaitTimeout );
+    }
 
-        if ( state.leader() == null )
+    @Override
+    public MEMBER getLeader( long timeoutMillis ) throws NoLeaderFoundException
+    {
+        try
+        {
+            return volatileLeader.get( timeoutMillis );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+
+            leaderNotFoundMonitor.increment();
+            throw new NoLeaderFoundException( e );
+        }
+        catch ( TimeoutException e )
         {
             leaderNotFoundMonitor.increment();
-            throw new NoLeaderTimeoutException();
+            throw new NoLeaderFoundException( e );
         }
-
-        return state.leader();
     }
 
     public ReadableRaftState<MEMBER> state()
@@ -209,16 +218,16 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         return state;
     }
 
-    protected void handleOutcome( Outcome<MEMBER> outcome ) throws RaftStorageException
+    private synchronized void handleOutcome( Outcome<MEMBER> outcome ) throws RaftStorageException
     {
         // Save interesting pre-state
         MEMBER oldLeader = state.leader();
 
-        if( outcome.getLeader() != null && outcome.getLeader().equals( myself ) )
+        if ( myself.equals( outcome.getLeader() ) )
         {
             LeaderContext leaderContext = new LeaderContext( outcome.getTerm(), outcome.getLeaderCommit() );
 
-            if ( oldLeader == null || !oldLeader.equals( myself ) )
+            if ( !myself.equals( oldLeader ) )
             {
                 // We became leader, start the log shipping.
                 logShipping.start( leaderContext );
@@ -226,13 +235,14 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
             logShipping.handleCommands( outcome.getShipCommands(), leaderContext );
         }
-        else if ( oldLeader != null && oldLeader.equals( myself ) && !outcome.getLeader().equals( myself ) ) // TODO: inspect the reported issue
+        else if ( myself.equals( oldLeader ) && !myself.equals( outcome.getLeader() ) )
         {
             logShipping.stop();
         }
 
         // Update state
         state.update( outcome );
+        volatileLeader.set( outcome.getLeader() );
     }
 
     public synchronized void handle( Serializable incomingMessage )
