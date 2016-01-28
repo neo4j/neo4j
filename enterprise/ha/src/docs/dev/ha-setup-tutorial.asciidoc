@@ -94,7 +94,7 @@ Note that this usage is not permitted when the hostname is specified as +0.0.0.0
 
 Neo4j instance #1 -- neo4j-01.local::
 +
-[source,properties]
+[source, properties]
 .conf/neo4j.properties
 ----
 # Unique server id for this Neo4j instance
@@ -107,7 +107,7 @@ ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 #ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
 ----
 +
-[source,properties]
+[source, properties]
 .conf/neo4j-server.properties
 ----
 # HA - High Availability
@@ -120,7 +120,7 @@ org.neo4j.server.webserver.address=0.0.0.0
 
 Neo4j instance #2 -- neo4j-02.local::
 +
-[source,properties]
+[source, properties]
 .conf/neo4j.properties
 ----
 # Unique server id for this Neo4j instance
@@ -133,7 +133,7 @@ ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 #ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
 ----
 +
-[source,properties]
+[source, properties]
 .conf/neo4j-server.properties
 ----
 # HA - High Availability
@@ -146,12 +146,12 @@ org.neo4j.server.webserver.address=0.0.0.0
 
 Neo4j instance #3 -- neo4j-03.local::
 +
-[source,properties]
+[source, properties]
 .conf/neo4j.properties
 ----
 # Unique server id for this Neo4j instance
 # can not be negative id and must be unique
-ha.server_id = 1
+ha.server_id = 3
 
 # List of other known instances in this cluster
 ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
@@ -159,7 +159,7 @@ ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 #ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
 ----
 +
-[source,properties]
+[source, properties]
 .conf/neo4j-server.properties
 ----
 # HA - High Availability
@@ -175,15 +175,15 @@ org.neo4j.server.webserver.address=0.0.0.0
 Start the Neo4j servers as usual.
 Note that the startup order does not matter.
 
-[source,shell]
+[source, shell]
 ----
 neo4j-01$ ./bin/neo4j start
 ----
-[source,shell]
+[source, shell]
 ----
 neo4j-02$ ./bin/neo4j start
 ----
-[source,shell]
+[source, shell]
 ----
 neo4j-03$ ./bin/neo4j start
 ----
@@ -230,7 +230,7 @@ If we in this example assume that the machine has 4 gigabytes of memory, and tha
 
 Neo4j instance #1 -- ~/neo4j-01::
 +
-[source,properties]
+[source, properties]
 .conf/neo4j.properties
 ----
 # Reduce the default page cache memory allocation
@@ -255,7 +255,7 @@ ha.cluster_server = 127.0.0.1:5001
 ha.server = 127.0.0.1:6363
 ----
 +
-[source,properties]
+[source, properties]
 .conf/neo4j-server.properties
 ----
 # HA - High Availability
@@ -271,7 +271,7 @@ org.neo4j.server.webserver.https.port=7484
 
 Neo4j instance #2 -- ~/neo4j-02::
 +
-[source,properties]
+[source, properties]
 .conf/neo4j.properties
 ----
 # Reduce the default page cache memory allocation
@@ -296,7 +296,7 @@ ha.cluster_server = 127.0.0.1:5002
 ha.server = 127.0.0.1:6364
 ----
 +
-[source,properties]
+[source, properties]
 .conf/neo4j-server.properties
 ----
 # HA - High Availability
@@ -312,7 +312,7 @@ org.neo4j.server.webserver.https.port=7485
 
 Neo4j instance #3 -- ~/neo4j-03::
 +
-[source,properties]
+[source, properties]
 .conf/neo4j.properties
 ----
 # Reduce the default page cache memory allocation
@@ -337,7 +337,7 @@ ha.cluster_server = 127.0.0.1:5003
 ha.server = 127.0.0.1:6365
 ----
 +
-[source,properties]
+[source, properties]
 .conf/neo4j-server.properties
 ----
 # HA - High Availability
@@ -356,15 +356,15 @@ org.neo4j.server.webserver.https.port=7486
 Start the Neo4j servers as usual.
 Note that the startup order does not matter.
 
-[source,shell]
+[source, shell]
 ----
 localhost:~/neo4j-01$ ./bin/neo4j start
 ----
-[source,shell]
+[source, shell]
 ----
 localhost:~/neo4j-02$ ./bin/neo4j start
 ----
-[source,shell]
+[source, shell]
 ----
 localhost:~/neo4j-03$ ./bin/neo4j start
 ----
