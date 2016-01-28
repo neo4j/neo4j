@@ -31,12 +31,15 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.logging.LogProvider;
 
 public class ReplicatedRelationshipTypeTokenHolder extends ReplicatedTokenHolder<RelationshipTypeToken,RelationshipTypeTokenRecord> implements RelationshipTypeTokenHolder
 {
-    public ReplicatedRelationshipTypeTokenHolder( Replicator replicator, IdGeneratorFactory idGeneratorFactory, Dependencies dependencies, long timeoutMillis )
+    public ReplicatedRelationshipTypeTokenHolder( Replicator replicator, IdGeneratorFactory idGeneratorFactory,
+                                                  Dependencies dependencies, long timeoutMillis, LogProvider logProvider )
     {
-        super( replicator, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_TOKEN, dependencies, new RelationshipTypeToken.Factory(), TokenType.RELATIONSHIP, timeoutMillis );
+        super( replicator, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_TOKEN, dependencies,
+                new RelationshipTypeToken.Factory(), TokenType.RELATIONSHIP, timeoutMillis, logProvider );
     }
 
     @Override

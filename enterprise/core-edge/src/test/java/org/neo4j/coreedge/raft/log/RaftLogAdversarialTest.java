@@ -54,18 +54,18 @@ public class RaftLogAdversarialTest
         log.registerListener( new RaftLog.Listener()
         {
             @Override
-            public void onAppended( ReplicatedContent content, long index )
+            public void onAppended( ReplicatedContent content, long logIndex )
             {
             }
 
             @Override
-            public void onCommitted( ReplicatedContent raftableContent, long index )
+            public void onCommitted( ReplicatedContent raftableContent, long logIndex )
             {
                 throw new RuntimeException( "Fail to accept the content" );
             }
 
             @Override
-            public void onTruncated( long fromIndex )
+            public void onTruncated( long fromLogIndex )
             {
             }
         } );

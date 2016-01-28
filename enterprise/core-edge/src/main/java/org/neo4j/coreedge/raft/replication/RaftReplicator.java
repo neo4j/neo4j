@@ -77,21 +77,21 @@ public class RaftReplicator<MEMBER> implements Replicator, RaftLog.Listener
     }
 
     @Override
-    public void onAppended( ReplicatedContent content, long index )
+    public void onAppended( ReplicatedContent content, long logIndex )
     {
     }
 
     @Override
-    public void onCommitted( ReplicatedContent content, long index )
+    public void onCommitted( ReplicatedContent content, long logIndex )
     {
         for ( ReplicatedContentListener listener : listeners )
         {
-            listener.onReplicated( content, index );
+            listener.onReplicated( content, logIndex );
         }
     }
 
     @Override
-    public void onTruncated( long fromIndex )
+    public void onTruncated( long fromLogIndex )
     {
     }
 }

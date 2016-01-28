@@ -79,38 +79,54 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Ra
     }
 
     @Override
-    public void onAppended( ReplicatedContent content, long index )
+    public void onAppended( ReplicatedContent content, long logIndex )
     {
-        if ( content instanceof RaftGroup && index > raftMembershipState.logIndex() )
+        if ( content instanceof RaftGroup)
         {
-            assert uncommittedMemberChanges >= 0;
-
-            uncommittedMemberChanges++;
-
-            RaftGroup<MEMBER> raftGroup = (RaftGroup) content;
-            raftMembershipState.setVotingMembers( raftGroup.getMembers() );
-        }
-    }
-
-    @Override
-    public void onCommitted( ReplicatedContent content, long index )
-    {
-        if ( content instanceof RaftGroup && index > raftMembershipState.logIndex() )
-        {
-            assert uncommittedMemberChanges > 0;
-
-            uncommittedMemberChanges--;
-
-            if ( uncommittedMemberChanges == 0 )
+            if ( logIndex > raftMembershipState.logIndex() )
             {
-                membershipStateMachine.onRaftGroupCommitted();
+                assert uncommittedMemberChanges >= 0;
+
+                uncommittedMemberChanges++;
+
+                RaftGroup<MEMBER> raftGroup = (RaftGroup) content;
+                raftMembershipState.setVotingMembers( raftGroup.getMembers() );
             }
-            raftMembershipState.logIndex( index );
+            else
+            {
+                log.info( "Ignoring content at index %d, since already appended up to %d",
+                        logIndex, raftMembershipState.logIndex() );
+            }
         }
     }
 
     @Override
-    public void onTruncated( long fromIndex )
+    public void onCommitted( ReplicatedContent content, long logIndex )
+    {
+        if ( content instanceof RaftGroup )
+        {
+            if ( logIndex > raftMembershipState.logIndex() )
+            {
+                assert uncommittedMemberChanges > 0;
+
+                uncommittedMemberChanges--;
+
+                if ( uncommittedMemberChanges == 0 )
+                {
+                    membershipStateMachine.onRaftGroupCommitted();
+                }
+                raftMembershipState.logIndex( logIndex );
+            }
+            else
+            {
+                log.info( "Ignoring content at index %d, since already committed up to %d",
+                        logIndex, raftMembershipState.logIndex() );
+            }
+        }
+    }
+
+    @Override
+    public void onTruncated( long fromLogIndex )
     {
         try
         {

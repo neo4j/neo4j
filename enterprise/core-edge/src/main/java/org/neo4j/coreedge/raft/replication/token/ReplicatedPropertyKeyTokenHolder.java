@@ -30,13 +30,16 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.Token;
 
 public class ReplicatedPropertyKeyTokenHolder extends ReplicatedTokenHolder<Token,PropertyKeyTokenRecord> implements PropertyKeyTokenHolder
 {
-    public ReplicatedPropertyKeyTokenHolder( Replicator replicator, IdGeneratorFactory idGeneratorFactory, Dependencies dependencies, long timeoutMillis )
+    public ReplicatedPropertyKeyTokenHolder( Replicator replicator, IdGeneratorFactory idGeneratorFactory,
+                                             Dependencies dependencies, long timeoutMillis, LogProvider logProvider )
     {
-        super( replicator, idGeneratorFactory, IdType.PROPERTY_KEY_TOKEN, dependencies, new Token.Factory(), TokenType.PROPERTY, timeoutMillis );
+        super( replicator, idGeneratorFactory, IdType.PROPERTY_KEY_TOKEN,
+                dependencies, new Token.Factory(), TokenType.PROPERTY, timeoutMillis, logProvider );
     }
 
     @Override

@@ -44,11 +44,11 @@ public interface RaftLog extends ReadableRaftLog
 
     interface Listener
     {
-        void onAppended( ReplicatedContent content, long index );
+        void onAppended( ReplicatedContent content, long logIndex );
 
-        void onCommitted( ReplicatedContent content, long index );
+        void onCommitted( ReplicatedContent content, long logIndex );
 
-        void onTruncated( long fromIndex );
+        void onTruncated( long fromLogIndex );
     }
 
     /**

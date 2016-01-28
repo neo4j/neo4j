@@ -24,6 +24,8 @@ import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
@@ -46,11 +48,14 @@ public class ReplicatedIdAllocationStateMachine implements Replicator.Replicated
 {
     private final CoreMember me;
     private final IdAllocationState idAllocationState;
+    private final Log log;
 
-    public ReplicatedIdAllocationStateMachine( CoreMember me, IdAllocationState idAllocationState )
+    public ReplicatedIdAllocationStateMachine( CoreMember me, IdAllocationState idAllocationState,
+                                               LogProvider logProvider )
     {
         this.me = me;
         this.idAllocationState = idAllocationState;
+        this.log = logProvider.getLog( getClass() );
     }
 
     public synchronized long getFirstNotAllocated( IdType idType )
@@ -87,27 +92,35 @@ public class ReplicatedIdAllocationStateMachine implements Replicator.Replicated
     @Override
     public synchronized void onReplicated( ReplicatedContent content, long logIndex )
     {
-        if ( content instanceof ReplicatedIdAllocationRequest && logIndex > idAllocationState.logIndex() )
+        if ( content instanceof ReplicatedIdAllocationRequest )
         {
-            ReplicatedIdAllocationRequest request = (ReplicatedIdAllocationRequest) content;
-
-            IdType idType = request.idType();
-
-            if ( request.idRangeStart() == idAllocationState.firstUnallocated( idType ) )
+            if ( logIndex > idAllocationState.logIndex() )
             {
-                if ( request.owner().equals( me ) )
-                {
-                    idAllocationState.lastIdRangeStart( idType, request.idRangeStart() );
-                    idAllocationState.lastIdRangeLength( idType, request.idRangeLength() );
-                }
-                updateFirstNotAllocated( idType, request.idRangeStart() + request.idRangeLength() );
+                ReplicatedIdAllocationRequest request = (ReplicatedIdAllocationRequest) content;
 
+                IdType idType = request.idType();
+
+                if ( request.idRangeStart() == idAllocationState.firstUnallocated( idType ) )
+                {
+                    if ( request.owner().equals( me ) )
+                    {
+                        idAllocationState.lastIdRangeStart( idType, request.idRangeStart() );
+                        idAllocationState.lastIdRangeLength( idType, request.idRangeLength() );
+                    }
+                    updateFirstNotAllocated( idType, request.idRangeStart() + request.idRangeLength() );
+
+                }
+                /*
+                 * We update regardless of whether this content was meant for us or not. Even if it isn't content we
+                 * care about, any content before it has already been applied so it is safe to ignore.
+                 */
+                idAllocationState.logIndex( logIndex );
             }
-            /*
-             * We update regardless of whether this content was meant for us or not. Even if it isn't content we
-             * care about, any content before it has already been applied so it is safe to ignore.
-             */
-            idAllocationState.logIndex( logIndex );
+            else
+            {
+                log.info( "Ignoring content at index %d, since already applied up to %d",
+                        logIndex, idAllocationState.logIndex() );
+            }
         }
     }
 

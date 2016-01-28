@@ -293,8 +293,8 @@ public class EnterpriseCoreEditionModule
             throw new RuntimeException( e );
         }
 
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( myself,
-                idAllocationState );
+        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine(
+                myself, idAllocationState, logProvider );
 
         replicator.subscribe( idAllocationStateMachine );
 
@@ -316,11 +316,11 @@ public class EnterpriseCoreEditionModule
 
         Long tokenCreationTimeout = config.get( CoreEdgeClusterSettings.token_creation_timeout );
         ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder = new ReplicatedRelationshipTypeTokenHolder(
-                replicator, this.idGeneratorFactory, dependencies, tokenCreationTimeout );
+                replicator, this.idGeneratorFactory, dependencies, tokenCreationTimeout, logProvider );
         ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder = new ReplicatedPropertyKeyTokenHolder(
-                replicator, this.idGeneratorFactory, dependencies, tokenCreationTimeout );
+                replicator, this.idGeneratorFactory, dependencies, tokenCreationTimeout, logProvider );
         ReplicatedLabelTokenHolder labelTokenHolder = new ReplicatedLabelTokenHolder(
-                replicator, this.idGeneratorFactory, dependencies, tokenCreationTimeout );
+                replicator, this.idGeneratorFactory, dependencies, tokenCreationTimeout, logProvider );
 
         LifeSupport tokenLife = new LifeSupport();
         this.relationshipTypeTokenHolder = tokenLife.add( relationshipTypeTokenHolder );

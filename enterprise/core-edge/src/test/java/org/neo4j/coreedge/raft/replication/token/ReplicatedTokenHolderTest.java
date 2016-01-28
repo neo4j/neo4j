@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.Token;
@@ -107,7 +108,7 @@ public class ReplicatedTokenHolderTest
         when( dependencies.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
-                idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
+                idGeneratorFactory, dependencies, TIMEOUT_MILLIS, NullLogProvider.getInstance() );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
@@ -136,7 +137,7 @@ public class ReplicatedTokenHolderTest
         when( dependencies.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
-                idGeneratorFactory, dependencies, 10 );
+                idGeneratorFactory, dependencies, 10, NullLogProvider.getInstance() );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
@@ -171,7 +172,7 @@ public class ReplicatedTokenHolderTest
         when( dependencies.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder(
-                new StubReplicator(), idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
+                new StubReplicator(), idGeneratorFactory, dependencies, TIMEOUT_MILLIS, NullLogProvider.getInstance() );
         tokenHolder.setLastCommittedIndex( -1 );
 
         // when
@@ -190,7 +191,7 @@ public class ReplicatedTokenHolderTest
     {
         // given
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder =
-                new ReplicatedLabelTokenHolder( null, null, dependencies, TIMEOUT_MILLIS );
+                new ReplicatedLabelTokenHolder( null, null, dependencies, TIMEOUT_MILLIS, NullLogProvider.getInstance() );
 
         // when
         tokenHolder.setInitialTokens( asList( new Token( "name1", 1 ), new Token( "name2", 2 ) ) );
@@ -204,7 +205,7 @@ public class ReplicatedTokenHolderTest
     {
         // given
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( null,
-                null, dependencies, TIMEOUT_MILLIS );
+                null, dependencies, TIMEOUT_MILLIS, NullLogProvider.getInstance() );
 
         // when
         try
@@ -231,7 +232,7 @@ public class ReplicatedTokenHolderTest
         Replicator replicator = new StubReplicator();
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
-                idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
+                idGeneratorFactory, dependencies, TIMEOUT_MILLIS, NullLogProvider.getInstance() );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
@@ -261,7 +262,7 @@ public class ReplicatedTokenHolderTest
         RaceConditionSimulatingReplicator replicator = new RaceConditionSimulatingReplicator();
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
-                idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
+                idGeneratorFactory, dependencies, TIMEOUT_MILLIS, NullLogProvider.getInstance() );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
@@ -291,7 +292,7 @@ public class ReplicatedTokenHolderTest
         RaceConditionSimulatingReplicator replicator = new RaceConditionSimulatingReplicator();
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
-                idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
+                idGeneratorFactory, dependencies, TIMEOUT_MILLIS, NullLogProvider.getInstance() );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();

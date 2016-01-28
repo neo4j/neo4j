@@ -52,6 +52,8 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.Token;
@@ -75,13 +77,14 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
     private final long timeoutMillis;
 
     private final TokenFutures tokenFutures = new TokenFutures();
+    private final Log log;
     private long lastCommittedIndex = Long.MAX_VALUE;
 
     // TODO: Clean up all the resolving, which now happens every time with special selection strategies.
 
     public ReplicatedTokenHolder( Replicator replicator, IdGeneratorFactory idGeneratorFactory, IdType tokenIdType,
-            Dependencies dependencies, TokenFactory<TOKEN> tokenFactory, TokenType type,
-                                  long timeoutMillis)
+                                  Dependencies dependencies, TokenFactory<TOKEN> tokenFactory, TokenType type,
+                                  long timeoutMillis, LogProvider logProvider )
     {
         this.replicator = replicator;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -91,6 +94,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         this.type = type;
         this.timeoutMillis = timeoutMillis;
         this.tokenCache = new InMemoryTokenCache<>( this.getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -209,32 +213,36 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
     @Override
     public void onReplicated( ReplicatedContent content, long logIndex )
     {
-        if ( logIndex <= lastCommittedIndex )
-        {
-            return;
-        }
         if ( content instanceof ReplicatedTokenRequest && ((ReplicatedTokenRequest) content).type().equals( type ) )
         {
-            ReplicatedTokenRequest tokenRequest = (ReplicatedTokenRequest) content;
-
-            Integer tokenId = tokenCache.getId( tokenRequest.tokenName() );
-
-            if ( tokenId == null )
+            if ( logIndex > lastCommittedIndex )
             {
-                try
+                ReplicatedTokenRequest tokenRequest = (ReplicatedTokenRequest) content;
+
+                Integer tokenId = tokenCache.getId( tokenRequest.tokenName() );
+
+                if ( tokenId == null )
                 {
-                    Collection<StorageCommand> commands =  ReplicatedTokenRequestSerializer.extractCommands( tokenRequest.commandBytes() );
-                    tokenId = applyToStore( commands, logIndex );
-                }
-                catch ( NoSuchEntryException e )
-                {
-                    throw new IllegalStateException( "Commands did not contain token command" );
+                    try
+                    {
+                        Collection<StorageCommand> commands =  ReplicatedTokenRequestSerializer.extractCommands( tokenRequest.commandBytes() );
+                        tokenId = applyToStore( commands, logIndex );
+                    }
+                    catch ( NoSuchEntryException e )
+                    {
+                        throw new IllegalStateException( "Commands did not contain token command" );
+                    }
+
+                    tokenCache.put( tokenFactory.newToken( tokenRequest.tokenName(), tokenId ) );
                 }
 
-                tokenCache.put( tokenFactory.newToken( tokenRequest.tokenName(), tokenId ) );
+                tokenFutures.complete( tokenRequest.tokenName(), tokenId );
             }
-
-            tokenFutures.complete( tokenRequest.tokenName(), tokenId );
+            else
+            {
+                log.info( "Ignoring content at index %d, since already applied up to %d",
+                        logIndex, lastCommittedIndex );
+            }
         }
     }
 

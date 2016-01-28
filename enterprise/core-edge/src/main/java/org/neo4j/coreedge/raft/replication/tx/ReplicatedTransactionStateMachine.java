@@ -97,7 +97,11 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements Replicator.Rep
          * may still need to persist the session state (as we may crashed in between), which happens outside this
          * if check.
          */
-        if ( !txAlreadyCommitted( logIndex ) )
+        if ( logIndex <= lastCommittedIndex )
+        {
+            log.info( "Ignoring transaction at log index %d since already committed up to %d", logIndex, lastCommittedIndex );
+        }
+        else
         {
             TransactionRepresentation tx;
             try
@@ -165,11 +169,6 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements Replicator.Rep
     private boolean operationValid( ReplicatedTransaction<MEMBER> replicatedTx )
     {
         return sessionTracker.validateOperation( replicatedTx.globalSession(), replicatedTx.localOperationId() );
-    }
-
-    private boolean txAlreadyCommitted( long logIndex )
-    {
-        return logIndex <= lastCommittedIndex;
     }
 
     public void setLastCommittedIndex( long lastCommittedIndex )

@@ -61,23 +61,15 @@ public class ReplicatedTransactionStateMachinePersistenceTest
         when( commitProcess.commit( any(), any(), any() ) ).thenThrow( new TransactionFailureException( "testing" ) )
                 .thenReturn( 123L );
 
-        ReplicatedTransactionStateMachine<RaftTestMember> rtsm = new ReplicatedTransactionStateMachine<>(
-                commitProcess,
-                new GlobalSession<>( UUID.randomUUID(), RaftTestMember.member( 1 ) ),
-                mock( LockTokenManager.class, RETURNS_MOCKS ),
-                new CommittingTransactionsRegistry(),
-                new InMemoryGlobalSessionTrackerState<>(), NullLogProvider.getInstance() );
+        ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = stateMachine( commitProcess, new InMemoryGlobalSessionTrackerState<RaftTestMember>() );
 
-        TransactionRepresentation tx = new PhysicalTransactionRepresentation( Collections.emptySet() );
-        ReplicatedTransaction<RaftTestMember> rtx =
-                ReplicatedTransactionFactory.createImmutableReplicatedTransaction( tx, new GlobalSession<>( UUID
-                        .randomUUID(), RaftTestMember.member( 2 ) ), new LocalOperationId( 1, 0 ) );
-        rtsm.setLastCommittedIndex( 99 );
+        ReplicatedTransaction<RaftTestMember> rtx = replicatedTx();
+        stateMachine.setLastCommittedIndex( 99 );
 
         // when
         try
         {
-            rtsm.onReplicated( rtx, 100 );
+            stateMachine.onReplicated( rtx, 100 );
             fail( "test design throws exception here" );
         }
         catch ( TransactionFailureException thrownByTestDesign )
@@ -85,8 +77,8 @@ public class ReplicatedTransactionStateMachinePersistenceTest
             // expected
         }
         reset( commitProcess ); // ignore all previous interactions, we care what happens from now on
-        rtsm.setLastCommittedIndex( 99 );
-        rtsm.onReplicated( rtx, 100 );
+        stateMachine.setLastCommittedIndex( 99 );
+        stateMachine.onReplicated( rtx, 100 );
 
         // then
         verify( commitProcess, times( 1 ) ).commit( any(), any(), any() );
@@ -105,25 +97,16 @@ public class ReplicatedTransactionStateMachinePersistenceTest
         stubber.when( sessionTracker ).update( any(), any(), anyLong() );
         stubber.doNothing().when( sessionTracker ).update( any(), any(), anyLong() );
 
-        ReplicatedTransactionStateMachine<RaftTestMember> rtsm = new ReplicatedTransactionStateMachine<>(
-                commitProcess,
-                new GlobalSession<>( UUID.randomUUID(), RaftTestMember.member( 1 ) ),
-                mock( LockTokenManager.class, RETURNS_MOCKS ),
-                new CommittingTransactionsRegistry(),
-                sessionTracker, NullLogProvider.getInstance() );
+        ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = stateMachine( commitProcess, sessionTracker );
 
-        TransactionRepresentation tx = new PhysicalTransactionRepresentation( Collections.emptySet() );
-        ReplicatedTransaction<RaftTestMember> rtx =
-                ReplicatedTransactionFactory.createImmutableReplicatedTransaction( tx,
-                        new GlobalSession<>( UUID.randomUUID(), RaftTestMember.member( 2 ) ),
-                        new LocalOperationId( 1, 0 ) );
+        ReplicatedTransaction<RaftTestMember> rtx = replicatedTx();
 
         // when
         // we try to commit but fail on session update, and then try to do recovery
         try
         {
             // transaction gets committed at log index 99. It will reach the tx log but not the session state
-            rtsm.onReplicated( rtx, 99 );
+            stateMachine.onReplicated( rtx, 99 );
             fail( "test setup should have resulted in an exception by now" );
         }
         catch ( RuntimeException totallyExpectedByTestSetup )
@@ -134,11 +117,11 @@ public class ReplicatedTransactionStateMachinePersistenceTest
         reset( commitProcess );
 
         // now let's do recovery. The log contains the last tx, so the last committed log index is the previous: 99
-        rtsm.setLastCommittedIndex( 99 );
+        stateMachine.setLastCommittedIndex( 99 );
 
         // however, the raft log will give us the same tx, as we did not return successfully from the last
         // onReplicated()
-        rtsm.onReplicated( rtx, 99 );
+        stateMachine.onReplicated( rtx, 99 );
 
         // then
         // there should be no commit of tx, but an update on the session state
@@ -154,32 +137,41 @@ public class ReplicatedTransactionStateMachinePersistenceTest
 
         InMemoryGlobalSessionTrackerState<RaftTestMember> sessionTrackerState = spy( new
                 InMemoryGlobalSessionTrackerState<>() );
-        ReplicatedTransactionStateMachine<RaftTestMember> rtsm = new ReplicatedTransactionStateMachine<>(
-                commitProcess,
-                new GlobalSession<>( UUID.randomUUID(), RaftTestMember.member( 1 ) ),
-                mock( LockTokenManager.class, RETURNS_MOCKS ),
-                new CommittingTransactionsRegistry(),
-                sessionTrackerState, NullLogProvider.getInstance() );
+        ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = stateMachine( commitProcess, sessionTrackerState );
 
-        TransactionRepresentation tx = new PhysicalTransactionRepresentation( Collections.emptySet() );
-        ReplicatedTransaction<RaftTestMember> rtx =
-                ReplicatedTransactionFactory.createImmutableReplicatedTransaction( tx,
-                        new GlobalSession<>( UUID.randomUUID(), RaftTestMember.member( 2 ) ),
-                        new LocalOperationId( 1, 0 ) );
+        ReplicatedTransaction<RaftTestMember> rtx = replicatedTx();
 
         // when
         // we commit a tx normally
         final int commitAtRaftLogIndex = 99;
-        rtsm.onReplicated( rtx, commitAtRaftLogIndex );
+        stateMachine.onReplicated( rtx, commitAtRaftLogIndex );
 
         // simply verify that things were properly updated
         assertEquals( commitAtRaftLogIndex, sessionTrackerState.logIndex() );
 
         // when the same replicated content is passed in again
-        rtsm.onReplicated( rtx, commitAtRaftLogIndex );
+        stateMachine.onReplicated( rtx, commitAtRaftLogIndex );
 
         // then
         verify( commitProcess, times( 1 ) ).commit( any(), any(), any() );
         verify( sessionTrackerState, times( 1 ) ).update( any(), any(), eq( 99L ) );
+    }
+
+    public ReplicatedTransactionStateMachine<RaftTestMember> stateMachine( TransactionCommitProcess commitProcess,
+                                                                           GlobalSessionTrackerState<RaftTestMember> sessionTrackerState )
+    {
+        return new ReplicatedTransactionStateMachine<>(
+                commitProcess,
+                new GlobalSession<>( UUID.randomUUID(), RaftTestMember.member( 1 ) ),
+                mock( LockTokenManager.class, RETURNS_MOCKS ),
+                new CommittingTransactionsRegistry(),
+                sessionTrackerState, NullLogProvider.getInstance() );
+    }
+
+    private ReplicatedTransaction<RaftTestMember> replicatedTx() throws java.io.IOException
+    {
+        TransactionRepresentation tx = new PhysicalTransactionRepresentation( Collections.emptySet() );
+        return ReplicatedTransactionFactory.createImmutableReplicatedTransaction( tx, new GlobalSession<>( UUID
+                .randomUUID(), RaftTestMember.member( 2 ) ), new LocalOperationId( 1, 0 ) );
     }
 }
