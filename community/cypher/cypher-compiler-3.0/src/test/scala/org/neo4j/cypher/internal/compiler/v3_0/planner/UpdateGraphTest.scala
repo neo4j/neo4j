@@ -149,7 +149,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
     val qg = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
     val ug = QueryGraph(mutatingPatterns = Seq(
-      DeleteExpression(Variable("a")(pos), forced = false),
+      DeleteExpressionPattern(Variable("a")(pos), forced = false),
       MergeNodePattern(
         CreateNodePattern(IdName("b"), Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None),
         QueryGraph.empty, Seq.empty, Seq.empty)
@@ -162,7 +162,7 @@ class UpdateGraphTest extends CypherFunSuite {
     //... WITH collect(a) as col DELETE col[0]
     val qg = QueryGraph(argumentIds = Set(IdName("col")))
     val ug = QueryGraph(mutatingPatterns = Seq(
-      DeleteExpression(Variable("col")(pos), forced = false)
+      DeleteExpressionPattern(Variable("col")(pos), forced = false)
     ))
 
     ug.overlaps(qg) shouldBe true

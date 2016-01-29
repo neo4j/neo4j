@@ -104,7 +104,7 @@ case object PlanUpdates
       //REMOVE n:Foo:Bar
       case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(source, pattern)
       //DELETE a
-      case p: DeleteExpression =>
+      case p: DeleteExpressionPattern =>
         val delete = p.expression match {
           //DELETE user
           case Variable(n) if context.semanticTable.isNode(n) =>

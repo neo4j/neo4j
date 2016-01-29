@@ -66,11 +66,11 @@ trait UpdateGraph {
    */
   def identifiersToDelete = (deleteExpressions flatMap {
     // DELETE n
-    case DeleteExpression(identifier: Variable, _) => Seq(IdName.fromVariable(identifier))
+    case DeleteExpressionPattern(identifier: Variable, _) => Seq(IdName.fromVariable(identifier))
     // DELETE (n)-[r]-()
-    case DeleteExpression(PathExpression(e), _) => e.dependencies.map(IdName.fromVariable)
+    case DeleteExpressionPattern(PathExpression(e), _) => e.dependencies.map(IdName.fromVariable)
     // DELETE expr
-    case DeleteExpression(expr, _) => Seq(findVariableInNestedStructure(expr))
+    case DeleteExpressionPattern(expr, _) => Seq(findVariableInNestedStructure(expr))
   }).toSet
 
   @tailrec
@@ -349,7 +349,7 @@ trait UpdateGraph {
   }
 
   private def deleteExpressions = mutatingPatterns.collect {
-    case p: DeleteExpression => p
+    case p: DeleteExpressionPattern => p
   }
 
   private def removeLabelPatterns = mutatingPatterns.collect {
