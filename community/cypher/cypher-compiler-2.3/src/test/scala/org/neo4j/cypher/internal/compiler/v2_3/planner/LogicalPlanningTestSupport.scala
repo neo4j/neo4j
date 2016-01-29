@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast
-import org.neo4j.cypher.internal.compiler.v2_3.parser
 import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy.{GreedyPlanTable, GreedyQueryGraphSolver, expandsOnly, expandsOrJoins}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
@@ -170,8 +169,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, monitors)),
       semanticChecker = semanticChecker,
       useErrorsOverWarnings = false,
-      idpMaxTableSize = 128,
-      idpIterationDuration = 1000)
+      idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
+      idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit)
   }
 
   def produceLogicalPlan(queryText: String)(implicit planner: CostBasedExecutablePlanBuilder, planContext: PlanContext): LogicalPlan = {
