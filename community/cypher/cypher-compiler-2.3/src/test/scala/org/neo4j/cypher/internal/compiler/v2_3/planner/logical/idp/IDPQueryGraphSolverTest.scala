@@ -508,13 +508,17 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         qg = QueryGraph(patternNodes = patternNodes.toSet, patternRelationships = patternRels.toSet)
       }.withLogicalPlanningContext { (cfg, ctx) =>
         implicit val x = ctx
-        val plan = queryGraphSolver.plan(cfg.qg)
-        val minJoinsExpected = solverConfig match {
-          case ExpandOnlyIDPSolverConfig => 0
-          case ExpandOnlyWhenPatternIsLong => 0
-          case _ => 1
+        try {
+          val plan = queryGraphSolver.plan(cfg.qg)
+          val minJoinsExpected = solverConfig match {
+            case ExpandOnlyIDPSolverConfig => 0
+            case ExpandOnlyWhenPatternIsLong => 0
+            case _ => 1
+          }
+          assertMinExpandsAndJoins(plan, Map("expands" -> numberOfPatternRelationships, "joins" -> minJoinsExpected))
+        } catch {
+          case e: Exception => fail(s"Failed to plan with config '$solverConfig': ${e.getMessage}")
         }
-        assertMinExpandsAndJoins(plan, Map("expands" -> numberOfPatternRelationships, "joins" -> minJoinsExpected))
       }
     }
   }
