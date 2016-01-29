@@ -91,12 +91,6 @@ trait StringHelper {
   def repeat(x: String, size: Int): String = (1 to size).map((i) => x).mkString
 }
 
-case class StrFunction(argument: Expression) extends StringFunction(argument) with StringHelper  {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = text(argument(m), state.query)
-
-  def rewrite(f: (Expression) => Expression) = f(StrFunction(argument.rewrite(f)))
-}
-
 case class LowerFunction(argument: Expression) extends StringFunction(argument) with StringHelper {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toLowerCase
 
