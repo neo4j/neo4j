@@ -365,6 +365,8 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
     override def releaseExclusiveLock(obj: Long) =
       _statement.readOperations().releaseExclusive(ResourceTypes.NODE, obj)
+
+    override def exists(n: Node) = _statement.readOperations().nodeExists(n.getId)
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
@@ -411,6 +413,8 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
     override def releaseExclusiveLock(obj: Long) =
       _statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
+
+    override def exists(r: Relationship) = _statement.readOperations().relationshipExists(r.getId)
   }
 
   override def getOrCreatePropertyKeyId(propertyKey: String) =

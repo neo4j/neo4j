@@ -229,4 +229,6 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   override def acquireExclusiveLock(obj: Long): Unit = inner.acquireExclusiveLock(obj)
 
   override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
+
+  override def exists(obj: T): Boolean = inner.exists(obj)
 }

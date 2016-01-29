@@ -188,6 +188,8 @@ trait Operations[T <: PropertyContainer] {
 
   def isDeletedInThisTx(obj: T): Boolean
 
+  def exists(obj: T): Boolean
+
   def all: Iterator[T]
 
   def acquireExclusiveLock(obj: Long): Unit
