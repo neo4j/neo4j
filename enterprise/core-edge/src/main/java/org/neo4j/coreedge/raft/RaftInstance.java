@@ -337,6 +337,11 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         return currentRole;
     }
 
+    public MEMBER identity()
+    {
+        return myself;
+    }
+
     @Override
     public String toString()
     {
