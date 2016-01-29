@@ -166,9 +166,10 @@ public class EnterpriseCoreEditionModule
         life.add( dependencies.satisfyDependency( discoveryService ) );
 
         final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
+        int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
         final SenderService senderService = new SenderService(
                 new ExpiryScheduler( platformModule.jobScheduler ), new Expiration( SYSTEM_CLOCK ),
-                new RaftChannelInitializer( marshal ), logProvider );
+                new RaftChannelInitializer( marshal ), logProvider, platformModule.monitors, maxQueueSize );
         life.add( senderService );
 
         final CoreMember myself = new CoreMember(
@@ -347,7 +348,7 @@ public class EnterpriseCoreEditionModule
 
         CoreToCoreClient.ChannelInitializer channelInitializer = new CoreToCoreClient.ChannelInitializer( logProvider );
         CoreToCoreClient coreToCoreClient = life.add( new CoreToCoreClient( logProvider, expiryScheduler, expiration,
-                channelInitializer, platformModule.monitors ) );
+                channelInitializer, platformModule.monitors, maxQueueSize ) );
         channelInitializer.setOwner( coreToCoreClient );
 
         long leaderLockTokenTimeout = config.get( CoreEdgeClusterSettings.leader_lock_token_timeout );

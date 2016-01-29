@@ -159,4 +159,8 @@ public class CoreEdgeClusterSettings
     @Description("The maximum file size before the replicated lock token state file is rotated (in unit of entries)")
     public static final Setting<Integer> replicated_lock_token_state_size =
             setting( "core_edge.replicated_lock_token_state_size", INTEGER, "1000" );
+
+    @Description("The number of messages waiting to be sent to other servers in the cluster")
+    public static final Setting<Integer> outgoing_queue_size =
+            setting( "core_edge.outgoing_queue_size", INTEGER, "64" );
 }

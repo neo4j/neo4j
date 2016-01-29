@@ -37,11 +37,8 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import org.junit.Test;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.ExpiryScheduler;
-import org.neo4j.coreedge.server.Expiration;
-import org.neo4j.coreedge.server.SenderService;
 import org.neo4j.helpers.FakeClock;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 
@@ -117,7 +114,8 @@ public class ChannelKeepAliveTest
 
         OnDemandJobScheduler onDemandJobScheduler = new OnDemandJobScheduler();
         SenderService senderService = new SenderService( new ExpiryScheduler( onDemandJobScheduler ),
-                new Expiration( fakeClock, 2, MINUTES ), discardClientInitializer(), NullLogProvider.getInstance() );
+                new Expiration( fakeClock, 2, MINUTES ), discardClientInitializer(), NullLogProvider.getInstance(),
+                new Monitors(), 64);
 
         senderService.start();
         senderService.send( new AdvertisedSocketAddress( serverAddress ), "GO!" );

@@ -35,6 +35,7 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
+import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.Expiration;
 import org.neo4j.coreedge.server.ExpiryScheduler;
 import org.neo4j.graphdb.DependencyResolver;
@@ -145,8 +146,9 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         Expiration expiration = new Expiration( SYSTEM_CLOCK );
 
         EdgeToCoreClient.ChannelInitializer channelInitializer = new EdgeToCoreClient.ChannelInitializer( logProvider );
+        int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
         EdgeToCoreClient edgeToCoreClient = life.add( new EdgeToCoreClient( logProvider, expiryScheduler, expiration,
-                channelInitializer, platformModule.monitors ) );
+                channelInitializer, platformModule.monitors, maxQueueSize ) );
         channelInitializer.setOwner( edgeToCoreClient );
 
         Supplier<TransactionIdStore> transactionIdStoreSupplier =

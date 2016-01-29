@@ -52,9 +52,10 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     private SenderService senderService;
 
     public CoreClient( LogProvider logProvider, ExpiryScheduler expiryScheduler, Expiration expiration,
-                       ChannelInitializer<SocketChannel> channelInitializer, Monitors monitors )
+                       ChannelInitializer<SocketChannel> channelInitializer, Monitors monitors, int maxQueueSize )
     {
-        this.senderService = new SenderService( expiryScheduler, expiration, channelInitializer, logProvider );
+        this.senderService = new SenderService( expiryScheduler, expiration, channelInitializer, logProvider,
+                monitors, maxQueueSize );
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 

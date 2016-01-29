@@ -51,6 +51,10 @@ public class CoreMetrics extends LifecycleAdapter
     public static final String TX_RETRIES = name( CORE_EDGE_PREFIX, "tx_retries" );
     @Documented("Is this server the leader?")
     public static final String IS_LEADER = name( CORE_EDGE_PREFIX, "is_leader" );
+    @Documented("How many RAFT messages were dropped?")
+    public static final String DROPPED_MESSAGES = name( CORE_EDGE_PREFIX, "dropped_messages" );
+    @Documented("How many RAFT messages are queued up?")
+    public static final String QUEUE_SIZE = name( CORE_EDGE_PREFIX, "queue_sizes" );
 
     private Monitors monitors;
     private MetricRegistry registry;
@@ -62,6 +66,7 @@ public class CoreMetrics extends LifecycleAdapter
     private final LeaderNotFoundMetric leaderNotFoundMetric = new LeaderNotFoundMetric();
     private final TxPullRequestsMetric txPullRequestsMetric = new TxPullRequestsMetric();
     private final TxRetryMetric txRetryMetric = new TxRetryMetric();
+    private final MessageQueueMonitorMetric messageQueueMetric = new MessageQueueMonitorMetric();
 
     public CoreMetrics( Monitors monitors, MetricRegistry registry, Supplier<CoreMetaData> coreMetaData )
     {
@@ -79,6 +84,7 @@ public class CoreMetrics extends LifecycleAdapter
         monitors.addMonitorListener( leaderNotFoundMetric );
         monitors.addMonitorListener( txPullRequestsMetric );
         monitors.addMonitorListener( txRetryMetric );
+        monitors.addMonitorListener( messageQueueMetric );
 
         registry.register( COMMIT_INDEX, (Gauge<Long>) raftLogCommitIndexMetric::commitIndex );
         registry.register( APPEND_INDEX, (Gauge<Long>) raftLogAppendIndexMetric::appendIndex );
@@ -87,6 +93,8 @@ public class CoreMetrics extends LifecycleAdapter
         registry.register( TX_PULL_REQUESTS_RECEIVED, (Gauge<Long>) txPullRequestsMetric::txPullRequestsReceived );
         registry.register( TX_RETRIES, (Gauge<Long>) txRetryMetric::transactionsRetries );
         registry.register( IS_LEADER, new LeaderGauge() );
+        registry.register( DROPPED_MESSAGES, (Gauge<Long>) messageQueueMetric::droppedMessages );
+        registry.register( QUEUE_SIZE, (Gauge<Long>) messageQueueMetric::queueSizes );
     }
 
     @Override
@@ -99,6 +107,8 @@ public class CoreMetrics extends LifecycleAdapter
         registry.remove( TX_PULL_REQUESTS_RECEIVED );
         registry.remove( TX_RETRIES );
         registry.remove( IS_LEADER );
+        registry.remove( DROPPED_MESSAGES );
+        registry.remove( QUEUE_SIZE );
 
         monitors.removeMonitorListener( raftLogCommitIndexMetric );
         monitors.removeMonitorListener( raftLogAppendIndexMetric );
@@ -106,6 +116,7 @@ public class CoreMetrics extends LifecycleAdapter
         monitors.removeMonitorListener( leaderNotFoundMetric );
         monitors.removeMonitorListener( txPullRequestsMetric );
         monitors.removeMonitorListener( txRetryMetric );
+        monitors.removeMonitorListener( messageQueueMetric );
     }
 
     private class LeaderGauge implements Gauge<Integer>
