@@ -190,7 +190,7 @@ trait Operations[T <: PropertyContainer] {
 
   def indexQuery(name: String, query: Any): Iterator[T]
 
-  def isDeleted(obj: T): Boolean
+  def isDeletedInThisTx(obj: T): Boolean
 
   def all: Iterator[T]
 

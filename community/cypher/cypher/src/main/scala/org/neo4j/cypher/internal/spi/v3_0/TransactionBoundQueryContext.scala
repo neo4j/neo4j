@@ -358,7 +358,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     override def indexQuery(name: String, query: Any): Iterator[Node] =
       graph.index.forNodes(name).query(query).iterator().asScala
 
-    override def isDeleted(n: Node): Boolean =
+    override def isDeletedInThisTx(n: Node): Boolean =
       kernelStatement.hasTxStateWithChanges && kernelStatement.txState().nodeIsDeletedInThisTx(n.getId)
 
     override def acquireExclusiveLock(obj: Long) =
@@ -404,7 +404,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     override def indexQuery(name: String, query: Any): Iterator[Relationship] =
       graph.index.forRelationships(name).query(query).iterator().asScala
 
-    override def isDeleted(r: Relationship): Boolean =
+    override def isDeletedInThisTx(r: Relationship): Boolean =
       kernelStatement.hasTxStateWithChanges && kernelStatement.txState().relationshipIsDeletedInThisTx(r.getId)
 
     override def acquireExclusiveLock(obj: Long) =
