@@ -41,8 +41,8 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
                          projectingSelector: ProjectingSelector[Result], // pick best from a set of candidates
                          registryFactory: () => IdRegistry[Solvable] = () => IdRegistry[Solvable], // maps from Set[S] to BitSet
                          tableFactory: (IdRegistry[Solvable], Seed[Solvable, Result]) => IDPTable[Result] = (registry: IdRegistry[Solvable], seed: Seed[Solvable, Result]) => IDPTable(registry, seed),
-                         maxTableSize: Int, // limits computation effort by reducing result quality
-                         iterationDurationLimit: Long, // limits computation effort by reducing result quality
+                         maxTableSize: Int, // limits computation effort, reducing result quality
+                         iterationDurationLimit: Long, // limits computation effort, reducing result quality
                          monitor: IDPSolverMonitor) {
 
   def apply(seed: Seed[Solvable, Result], initialToDo: Set[Solvable])(implicit context: Context): Iterator[(Set[Solvable], Result)] = {
