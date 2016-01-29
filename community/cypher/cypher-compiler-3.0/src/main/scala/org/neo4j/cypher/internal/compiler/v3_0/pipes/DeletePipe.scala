@@ -51,7 +51,7 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)(val es
     }
   }
 
-  private def deleteNode(n: Node)(implicit state: QueryState) = if (!state.query.nodeOps.isDeleted(n)) {
+  private def deleteNode(n: Node)(implicit state: QueryState) = if (!state.query.nodeOps.isDeletedInThisTx(n)) {
     if (forced) {
       val relationships = state.query.getRelationshipsForIds(n, SemanticDirection.BOTH, None)
       relationships.foreach(deleteRelationship)
@@ -60,7 +60,7 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)(val es
   }
 
   private def deleteRelationship(r: Relationship)(implicit state: QueryState) =
-    if (!state.query.relationshipOps.isDeleted(r)) state.query.relationshipOps.delete(r)
+    if (!state.query.relationshipOps.isDeletedInThisTx(r)) state.query.relationshipOps.delete(r)
 
   private def deletePath(p: Path)(implicit state: QueryState) = p.iterator().asScala.foreach {
     case n: Node =>
