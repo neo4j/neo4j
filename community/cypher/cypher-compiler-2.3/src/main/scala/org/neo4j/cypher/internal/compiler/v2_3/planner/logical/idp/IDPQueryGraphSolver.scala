@@ -52,7 +52,7 @@ object IDPQueryGraphSolver {
  * written by Donald Kossmann and Konrad Stocker
  */
 case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
-                               solverConfig: IDPSolverConfig = DefaultIDPSolverConfig(),
+                               solverConfig: IDPSolverConfig = DefaultIDPSolverConfig,
                                leafPlanFinder: LogicalLeafPlan.Finder = leafPlanOptions,
                                config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
                                optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin))

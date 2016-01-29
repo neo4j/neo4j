@@ -42,13 +42,13 @@ object CostBasedPipeBuilderFactory {
 
     def createQueryGraphSolver(n: CostBasedPlannerName): QueryGraphSolver = n match {
       case IDPPlannerName =>
-        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), solverConfig = DefaultIDPSolverConfig(
+        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), solverConfig = ConfigurableIDPSolverConfig(
           maxTableSize = idpMaxTableSize,
           iterationDuration = idpIterationDuration
         ))
 
       case DPPlannerName =>
-        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), solverConfig = DPSolverConfig())
+        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), solverConfig = DPSolverConfig)
 
       case GreedyPlannerName =>
         new CompositeQueryGraphSolver(
