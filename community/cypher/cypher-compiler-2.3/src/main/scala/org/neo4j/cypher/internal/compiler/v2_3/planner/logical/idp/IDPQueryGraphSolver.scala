@@ -116,7 +116,7 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
           generator = generator,
           projectingSelector = kit.pickBest,
           maxTableSize = solverConfig.maxTableSize,
-          iterationDurationLimit = solverConfig.iterationDurationLimit(qg),
+          iterationDurationLimit = solverConfig.iterationDurationLimit,
           monitor = monitor
         )
 

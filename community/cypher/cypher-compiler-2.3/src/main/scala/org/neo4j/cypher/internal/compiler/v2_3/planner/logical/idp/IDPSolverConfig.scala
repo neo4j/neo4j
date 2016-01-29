@@ -28,14 +28,14 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{PatternRel
  */
 trait IDPSolverConfig {
   def maxTableSize: Int = 128
-  def iterationDurationLimit(queryGraph: QueryGraph): Long = 1000
+  def iterationDurationLimit: Long = 1000
   def solvers(queryGraph: QueryGraph): Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]]
 }
 
 /* The Dynamic Programming (DP) approach is IDP with no optimizations */
 case object DPSolverConfig extends IDPSolverConfig {
   override def maxTableSize = Integer.MAX_VALUE
-  override def iterationDurationLimit(queryGraph: QueryGraph) = Long.MaxValue
+  override def iterationDurationLimit = Long.MaxValue
   override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_), expandSolverStep(_))
 }
 
@@ -48,7 +48,7 @@ case object DefaultIDPSolverConfig extends IDPSolverConfig {
 /* The default settings for IDP uses a maxTableSize and a inner loop duration threshold
    to improve planning performance with minimal impact of plan quality */
 case class ConfigurableIDPSolverConfig(override val maxTableSize: Int, iterationDuration: Long) extends IDPSolverConfig {
-  override def iterationDurationLimit(queryGraph: QueryGraph) = iterationDuration
+  override def iterationDurationLimit = iterationDuration
   override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_), expandSolverStep(_))
 }
 
@@ -65,21 +65,6 @@ case object JoinOnlyIDPSolverConfig extends IDPSolverConfig {
 /* One approach to optimizing planning of very long patterns is to only allow expands.
    This making planning very fast, but can lead to non-optimal plans where joins make more sense */
 case object ExpandOnlyWhenPatternIsLong extends IDPSolverConfig {
-  override def solvers(queryGraph: QueryGraph) =
-    if(queryGraph.patternRelationships.size > 10) Seq(expandSolverStep(_))
-    else Seq(joinSolverStep(_), expandSolverStep(_))
-}
-
-/* Another approach to optimizing planning of very long patterns is to reduce the inner loop time threshold, making IDP less exhaustive.
-   This making planning very fast, but can lead to non-optimal plans due to local minima. */
-case class ReducingTimeBoxPatternConfig(patternLengthThreshold: Int = 10) extends IDPSolverConfig {
-
-  override def iterationDurationLimit(queryGraph: QueryGraph) =
-    if(queryGraph.patternRelationships.size > patternLengthThreshold * 2) 100
-    else if(queryGraph.patternRelationships.size > patternLengthThreshold) 500
-    else if(queryGraph.patternRelationships.size > patternLengthThreshold / 2) 1000
-    else 5000
-
   override def solvers(queryGraph: QueryGraph) =
     if(queryGraph.patternRelationships.size > 10) Seq(expandSolverStep(_))
     else Seq(joinSolverStep(_), expandSolverStep(_))

@@ -35,8 +35,6 @@ import scala.language.reflectiveCalls
 class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   case class EmptySolverConfig() extends IDPSolverConfig() {
-    override def maxTableSize: Int = DefaultIDPSolverConfig.maxTableSize
-    override def iterationDurationLimit(queryGraph: QueryGraph) = DefaultIDPSolverConfig.iterationDurationLimit(queryGraph)
     override def solvers(queryGraph: QueryGraph) = Seq.empty
   }
 
