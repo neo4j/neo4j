@@ -35,8 +35,7 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
         val values = makeTraversable(expression(outerContext)(state))
         values.foreach { v =>
           val innerState = state.withInitialContext(outerContext.newWith1(variable, v))
-          // do we need to exhaust this iterator?
-          inner.createResults(innerState).length
+          inner.createResults(innerState).length // exhaust the iterator, in case there's a merge read increasing cardinality inside the foreach
         }
         outerContext
     }
