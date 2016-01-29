@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.desktop.ui;
+package org.neo4j.desktop.model;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,7 +31,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.desktop.config.Installation;
+import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 import org.neo4j.desktop.runtime.DesktopConfigurator;
+import org.neo4j.desktop.ui.DesktopModelListener;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
 
@@ -39,9 +41,9 @@ import static java.lang.String.format;
 
 public class DesktopModel
 {
+    private final Installation installation;
     private final DesktopConfigurator serverConfigurator;
     private final List<DesktopModelListener> listeners = new ArrayList<>();
-    private final Installation installation;
 
     public DesktopModel( Installation installation )
     {
@@ -49,9 +51,12 @@ public class DesktopModel
         this.serverConfigurator = new DesktopConfigurator( installation, installation.getDatabaseDirectory() );
     }
 
-    public Config getConfig() {
+    public Config getConfig()
+    {
         serverConfigurator.refresh();
-        for(DesktopModelListener listener : listeners) {
+
+        for(DesktopModelListener listener : listeners)
+        {
             listener.desktopModelChanged(this);
         }
 
@@ -129,7 +134,7 @@ public class DesktopModel
 
         if ( !dir.canWrite() )
         {
-            throw new UnsuitableDirectoryException( "%s is not writeable", dir );
+            throw new UnsuitableDirectoryException( "%s is not writable", dir );
         }
 
         String[] fileNames = dir.list( new FilenameFilter()
@@ -169,7 +174,7 @@ public class DesktopModel
 
     public void openBrowser( String url ) throws IOException, URISyntaxException
     {
-        installation.getEnvironment().openBrowser( url );
+        installation.getEnvironment().browse( url );
     }
 
     public void writeDefaultDatabaseConfiguration( File file ) throws IOException
@@ -186,20 +191,17 @@ public class DesktopModel
 
     private void writeInto( File file, InputStream data ) throws IOException
     {
-        if ( data == null )
+        if ( data != null )
         {
-            // Don't bother writing any files if we somehow don't have any default data for them
-            return;
-        }
-
-        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( data ) );
-              PrintWriter writer = new PrintWriter( file ) )
-        {
-            String input = reader.readLine();
-            while ( input != null )
+            try( BufferedReader reader = new BufferedReader( new InputStreamReader( data ) );
+                 PrintWriter writer = new PrintWriter( file ) )
             {
-                writer.println( input );
-                input = reader.readLine();
+                String input = reader.readLine();
+                while ( input != null )
+                {
+                    writer.println( input );
+                    input = reader.readLine();
+                }
             }
         }
     }

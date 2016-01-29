@@ -21,61 +21,27 @@ package org.neo4j.desktop.config.osx;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 
-import org.neo4j.desktop.config.portable.PortableEnvironment;
+import org.neo4j.desktop.config.portable.Environment;
 
-class DarwinEnvironment extends PortableEnvironment
+class DarwinEnvironment extends Environment
 {
     @Override
-    public void openBrowser( String url ) throws IOException, URISyntaxException
+    public void editFile( File file ) throws IOException, SecurityException
     {
-        if ( isPortableBrowseSupported() )
+        try
         {
-            portableBrowse( url );
-            return;
+            super.editFile( file );
         }
-
-        throw new UnsupportedOperationException( "Cannot browse to URL: " + url );
-    }
-
-    @Override
-    public void editFile( File file ) throws IOException
-    {
-        if ( isPortableEditFileSupported() )
+        catch( IOException|UnsupportedOperationException ex )
         {
-            try
-            {
-                portableEditFile(file);
-            }
-            catch( IOException ioe )
-            {
-                String commands[] = { "open", "-nt", file.getAbsolutePath() };
-                Runtime.getRuntime().exec( commands );
-            }
-
-            return;
+            Runtime.getRuntime().exec( new String[] { "openDirectory", "-nt", file.getAbsolutePath() } );
         }
-
-        throw new UnsupportedOperationException( "Cannot edit file: " + file );
-    }
-
-    @Override
-    public void openDirectory( File directory ) throws IOException
-    {
-        if ( isPortableOpenSupported() )
-        {
-            portableOpen( directory );
-            return;
-        }
-
-        throw new UnsupportedOperationException( "Cannot open directory: " + directory );
     }
 
     @Override
     public void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory ) throws IOException
     {
-        String commands[] = { "open", "-na", "Terminal", "openNeoTerminal.sh" };
-        Runtime.getRuntime().exec( commands );
+        Runtime.getRuntime().exec( new String[] { "openDirectory", "-na", "Terminal", "openNeoTerminal.sh" } );
     }
 }

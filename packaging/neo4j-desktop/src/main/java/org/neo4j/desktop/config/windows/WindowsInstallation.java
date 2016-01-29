@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.Properties;
 
-import org.neo4j.desktop.config.Environment;
+import org.neo4j.desktop.config.portable.Environment;
 import org.neo4j.desktop.config.portable.PortableInstallation;
 
 import static javax.swing.filechooser.FileSystemView.getFileSystemView;
@@ -35,8 +35,9 @@ public class WindowsInstallation extends PortableInstallation
 
     public WindowsInstallation() throws Exception
     {
-        environment = new WindowsEnvironment();
         installProperties = new Properties();
+        environment = new WindowsEnvironment();
+
         File installPropertiesFile = new File( getInstallationBinDirectory(), INSTALL_PROPERTIES_FILENAME );
         installProperties.load( new FileInputStream( installPropertiesFile ) );
     }
@@ -50,7 +51,6 @@ public class WindowsInstallation extends PortableInstallation
     @Override
     protected File getDefaultDirectory()
     {
-        // cf. http://stackoverflow.com/questions/1503555/how-to-find-my-documents-folder
         return getFileSystemView().getDefaultDirectory();
     }
 

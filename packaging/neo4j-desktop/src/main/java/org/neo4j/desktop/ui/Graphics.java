@@ -52,6 +52,7 @@ public final class Graphics
                 icons.add( image );
             }
         }
+
         return icons;
     }
 

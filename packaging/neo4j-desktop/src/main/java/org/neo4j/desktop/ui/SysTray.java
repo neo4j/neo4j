@@ -24,175 +24,107 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import javax.swing.JFrame;
 
-import static javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE;
+import org.neo4j.desktop.model.SysTrayListener;
 
 import static org.neo4j.desktop.ui.DatabaseStatus.STOPPED;
 import static org.neo4j.desktop.ui.Graphics.loadImage;
 
-/**
- * Adds {@link SystemTray} integration to Neo4j Desktop. Call {@link #install(org.neo4j.desktop.ui.SysTray.Actions,
- * javax.swing.JFrame)} to install it
- * where a {@link Enabled} instance will be returned if the system tray functionality is supported on this system.
- */
-public abstract class SysTray
+public class SysTray
 {
-    public static SysTray install( Actions actions, JFrame mainWindow )
-    {
-        SysTray sysTray = null;
+    private TrayIcon trayIcon;
+    private SysTrayListener listener;
+    private final String iconResourceBaseName = Graphics.SYSTEM_TRAY_ICON;
 
-        try
+    public SysTray ( SysTrayListener listener )
+    {
+        this.listener = listener;
+
+        if ( SystemTray.isSupported() )
         {
-            if ( SystemTray.isSupported() )
+            try
             {
-                sysTray = new SysTray.Enabled( Graphics.SYSTEM_TRAY_ICON, actions, mainWindow );
+                init();
             }
-            else
+            catch( AWTException ex )
             {
-                sysTray = new SysTray.Disabled( actions, mainWindow );
+                System.err.println( ex );
             }
         }
-        catch ( AWTException e )
-        {
-            // What to do here?
-            e.printStackTrace( System.out );
-        }
-        
-        // Fall back to still being able to function, but without the systray support.
-        return sysTray;
     }
-    
-    public abstract void changeStatus( DatabaseStatus status );
-    
-    private static class Enabled extends SysTray
+
+    private void init( ) throws AWTException
     {
-        private final TrayIcon trayIcon;
-        private final String iconResourceBaseName;
+        trayIcon = new TrayIcon( loadImage( iconResourceBaseName ), formatTitle( STOPPED ) );
 
-        Enabled( String iconResourceBaseName, Actions actions, JFrame mainWindow ) throws AWTException
-        {
-            this.iconResourceBaseName = iconResourceBaseName;
-
-            this.trayIcon = init( actions, mainWindow );
-        }
-
-        @Override
-        public void changeStatus( DatabaseStatus status )
-        {
-            trayIcon.setImage( loadImage( tryStatusSpecific( status ) ) );
-            trayIcon.setToolTip( title( status ) );
-        }
-
-        private String tryStatusSpecific( DatabaseStatus status )
-        {
-            String iconResource = status.name() + "-" + iconResourceBaseName;
-            return SysTray.class.getResource( iconResource ) != null ? iconResource : iconResourceBaseName;
-        }
-
-        private TrayIcon init( final Actions actions, JFrame mainWindow )
-                throws AWTException
-        {
-            TrayIcon trayIcon = new TrayIcon( loadImage( tryStatusSpecific( STOPPED ) ), title( STOPPED ) );
-
-            PopupMenu popUpMenu = new PopupMenu(  );
-
-            MenuItem menuItemOpen = new MenuItem( "Open" );
-            menuItemOpen.addActionListener( new ActionListener()
-            {
-                @Override
-                public void actionPerformed( ActionEvent actionEvent )
-                {
-                    actions.open();
-                }
-            } );
-            popUpMenu.add( menuItemOpen );
-
-            MenuItem menuItemExit = new MenuItem( "Exit" );
-            menuItemExit.addActionListener( new ActionListener()
-            {
-                @Override
-                public void actionPerformed( ActionEvent actionEvent )
-                {
-                    actions.exit();
-                }
-            } );
-
-            popUpMenu.add( menuItemExit );
-            trayIcon.setPopupMenu( popUpMenu );
-
-            trayIcon.addActionListener( new ActionListener()
-            {
-                @Override
-                public void actionPerformed( ActionEvent e )
-                {
-                    actions.clickSysTray();
-                }
-            } );
-            trayIcon.addMouseListener( new MouseAdapter()
-            {
-                @Override
-                public void mouseClicked( MouseEvent e )
-                {
-                    actions.clickSysTray();
-                }
-            } );
-
-            mainWindow.setDefaultCloseOperation( DO_NOTHING_ON_CLOSE );
-            mainWindow.addWindowListener( new WindowAdapter()
-            {
-                @Override
-                public void windowClosing( WindowEvent e )
-                {
-                    actions.clickCloseButton();
-                }
-            } );
-
-            SystemTray.getSystemTray().add( trayIcon );
-
-            return trayIcon;
-        }
-
-        private String title( DatabaseStatus status )
-        {
-            return "Neo4j Community (" + status.name() + ")";
-        }
+        setupTrayIcon();
+        SystemTray.getSystemTray().add( trayIcon );
     }
-    
-    private static class Disabled extends SysTray
+
+    private void setupTrayIcon()
     {
-        Disabled( final Actions actions, JFrame mainWindow )
+        PopupMenu popUpMenu = createPopupMenu();
+        trayIcon.setPopupMenu( popUpMenu );
+
+        trayIcon.addActionListener( new ActionListener()
         {
-            mainWindow.setDefaultCloseOperation( DO_NOTHING_ON_CLOSE );
-            mainWindow.addWindowListener( new WindowAdapter()
+            @Override
+            public void actionPerformed( ActionEvent e )
             {
-                @Override
-                public void windowClosing( WindowEvent e )
-                {
-                    actions.closeForReal();
-                }
-            } );
-        }
-        
-        @Override
-        public void changeStatus( DatabaseStatus status )
+                listener.open();
+            }
+        } );
+
+        trayIcon.addMouseListener( new MouseAdapter()
         {
-            // Don't do anything.
-        }
+            @Override
+            public void mouseClicked( MouseEvent e )
+            {
+                listener.open();
+            }
+        } );
     }
-    
-    public interface Actions
+
+    private PopupMenu createPopupMenu()
     {
-        void clickCloseButton();
-        
-        void clickSysTray();
-        
-        void closeForReal();
+        PopupMenu popUpMenu = new PopupMenu();
+        MenuItem menuItemOpen = new MenuItem( "Open" );
+        MenuItem menuItemExit = new MenuItem( "Exit" );
 
-        void open();
+        menuItemOpen.addActionListener( new ActionListener()
+        {
+            @Override
+            public void actionPerformed( ActionEvent actionEvent )
+            {
+                listener.open();
+            }
+        } );
 
-        void exit();
+        menuItemExit.addActionListener( new ActionListener()
+        {
+            @Override
+            public void actionPerformed( ActionEvent actionEvent )
+            {
+                listener.exit();
+            }
+        } );
+
+        popUpMenu.add( menuItemOpen );
+        popUpMenu.add( menuItemExit );
+
+        return popUpMenu;
+    }
+
+    public void changeStatus( DatabaseStatus status )
+    {
+        trayIcon.setToolTip( formatTitle( status ) );
+    }
+
+    private String formatTitle( DatabaseStatus status )
+    {
+        String title = "Neo4j Community Edition";
+        String formattedStatus = status.name().substring( 0, 1 ) + status.name().substring( 1 ).toLowerCase();
+
+        return title + " - " + formattedStatus ;
     }
 }

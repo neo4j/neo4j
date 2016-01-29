@@ -17,22 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.desktop.config;
+package org.neo4j.desktop.model.exceptions;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
 
-/**
- * Interacts with the environment in a way that abstracts away the specifics of the current operating system.
- */
-public interface Environment
+import static java.lang.String.format;
+
+public class UnsuitableDirectoryException extends Exception
 {
-    void openBrowser( String url ) throws IOException, URISyntaxException;
-
-    void editFile( File file ) throws IOException;
-
-    void openDirectory( File directory ) throws IOException;
-
-    void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory ) throws IOException;
+    public UnsuitableDirectoryException(String message, File dir)
+    {
+        super( format( message, dir.getAbsolutePath() ) );
+    }
 }

@@ -25,6 +25,8 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.desktop.model.DesktopModel;
+
 import static java.lang.String.format;
 import static javax.swing.JOptionPane.ERROR_MESSAGE;
 import static javax.swing.JOptionPane.showMessageDialog;
@@ -64,7 +66,7 @@ public abstract class EditFileActionListener implements ActionListener
         {
             e.printStackTrace( System.out );
             showWrappedMessageDialog( parentComponent,
-                    format( "Couldn't open %s, please open the file manually",
+                    format( "Couldn't openDirectory %s, please openDirectory the file manually",
                             file.getAbsolutePath() ),
                     "Error",
                     ERROR_MESSAGE );

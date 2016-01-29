@@ -29,6 +29,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import javax.swing.*;
 
+import org.neo4j.desktop.model.DesktopModel;
+import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
+
 import static javax.swing.JFileChooser.APPROVE_OPTION;
 import static javax.swing.JFileChooser.CUSTOM_DIALOG;
 import static javax.swing.JFileChooser.DIRECTORIES_ONLY;
@@ -45,9 +48,9 @@ class BrowseForDatabaseActionListener implements ActionListener
 
     public BrowseForDatabaseActionListener( JFrame frame, JTextField directoryDisplay, DesktopModel model )
     {
+        this.model = model;
         this.frame = frame;
         this.directoryDisplay = directoryDisplay;
-        this.model = model;
     }
 
     @Override

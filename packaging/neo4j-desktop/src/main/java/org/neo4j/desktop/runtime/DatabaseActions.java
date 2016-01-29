@@ -23,9 +23,9 @@ import java.net.BindException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.desktop.ui.DesktopModel;
+import org.neo4j.desktop.model.DesktopModel;
 import org.neo4j.desktop.ui.MainWindow;
-import org.neo4j.desktop.ui.UnableToStartServerException;
+import org.neo4j.desktop.model.exceptions.UnableToStartServerException;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
@@ -62,7 +62,10 @@ public class DatabaseActions
         Monitors monitors = new Monitors();
 
         LogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out );
-        server = new CommunityNeoServer( config, GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider ).monitors( monitors ), userLogProvider );
+        GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider ).monitors( monitors );
+
+        server = new CommunityNeoServer( config, dependencies, userLogProvider );
+
         try
         {
             server.start();
@@ -85,17 +88,6 @@ public class DatabaseActions
         }
     }
 
-    private Set<Class> extractCauseTypes( Throwable e )
-    {
-        Set<Class> types = new HashSet<>();
-        types.add( e.getClass() );
-        if ( e.getCause() != null )
-        {
-            types.addAll( extractCauseTypes( e.getCause() ) );
-        }
-        return types;
-    }
-
     public void stop()
     {
         if ( isRunning() )
@@ -105,16 +97,21 @@ public class DatabaseActions
         }
     }
 
-    public void shutdown()
-    {
-        if ( isRunning() )
-        {
-            stop();
-        }
-    }
-
-    public boolean isRunning()
+    private boolean isRunning()
     {
         return server != null;
+    }
+
+    private Set<Class> extractCauseTypes( Throwable e )
+    {
+        Set<Class> types = new HashSet<>();
+        types.add( e.getClass() );
+
+        if ( e.getCause() != null )
+        {
+            types.addAll( extractCauseTypes( e.getCause() ) );
+        }
+
+        return types;
     }
 }

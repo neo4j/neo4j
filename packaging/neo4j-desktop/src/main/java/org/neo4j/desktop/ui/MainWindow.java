@@ -24,11 +24,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.Scanner;
 import javax.swing.*;
 
+import org.neo4j.desktop.model.DesktopModel;
+import org.neo4j.desktop.model.LastLocation;
+import org.neo4j.desktop.model.SysTrayListener;
 import org.neo4j.desktop.runtime.DatabaseActions;
 
 import static javax.swing.SwingUtilities.invokeLater;
@@ -49,68 +49,41 @@ import static org.neo4j.desktop.ui.Graphics.loadImage;
  * The main window of the Neo4j Desktop. Able to start/stop a database as well as providing access to some
  * advanced configuration options, such as heap size and database properties.
  */
-public class MainWindow
+
+public class MainWindow extends JFrame
 {
     private final DesktopModel model;
 
-    private final JFrame frame;
-    private final DatabaseActions databaseActions;
-    private final JButton browseButton;
-    private final JButton startButton;
-    private final JButton stopButton;
-    private final CardLayout statusPanelLayout;
-    private final JPanel statusPanel;
-    private final JTextField directoryDisplay;
-    private final SystemOutDebugWindow debugWindow;
-    private final SysTray sysTray;
+    private JPanel rootPanel;
+
+    private JButton optionsButton;
+    private JButton browseButton;
+    private JButton startButton;
+    private JButton stopButton;
+
+    private JTextField directoryDisplay;
+
+    private JPanel statusPanel;
+    private CardLayout statusPanelLayout;
+
+    private SystemOutDebugWindow debugWindow;
+
+    private SysTray sysTray;
+
+    private DatabaseActions databaseActions;
 
     private DatabaseStatus databaseStatus;
 
     public MainWindow( DatabaseActions databaseActions, DesktopModel model )
     {
+        super( "Neo4j Community Edition" );
+
         this.model = model;
-        this.debugWindow = new SystemOutDebugWindow();
         this.databaseActions = databaseActions;
+        this.debugWindow = new SystemOutDebugWindow();
 
-        this.frame = new JFrame( "Neo4j Community Edition" );
-        this.frame.setIconImages( Graphics.loadIcons() );
-        this.sysTray = SysTray.install( new SysTrayActions(), frame );
-
-        String location = model.getDatabaseDirectory().getAbsolutePath();
-        File file = new File( ".dblocation" );
-
-        if ( file.exists() && file.canRead() )
-        {
-            try
-            {
-                try ( Scanner scanner = new Scanner( file ) )
-                {
-                    if ( scanner.hasNextLine() )
-                    {
-                        location = scanner.nextLine();
-                    }
-                }
-            }
-            catch ( FileNotFoundException e )
-            {
-                e.printStackTrace();
-            }
-        }
-
-        this.directoryDisplay = createUnmodifiableTextField( location, 35 );
-        this.browseButton = createBrowseButton();
-        this.statusPanelLayout = new CardLayout();
-        this.statusPanel = createStatusPanel( statusPanelLayout );
-        this.startButton = createStartButton();
-        this.stopButton = createStopButton();
-
-        JButton optionsButton = createOptionsButton();
-        JPanel root =
-                createRootPanel( directoryDisplay, browseButton, statusPanel, startButton, stopButton, optionsButton );
-
-        frame.add( root );
-        frame.pack();
-        frame.setResizable( false );
+        createComponents();
+        setupComponents();
 
         updateStatus( STOPPED );
     }
@@ -123,16 +96,41 @@ public class MainWindow
                          createVerticalSpacing(), createActionPanel( startButton, stopButton, settingsButton ) ) ) );
     }
 
+    private void createComponents()
+    {
+        directoryDisplay = createUnmodifiableTextField( LastLocation.getLastLocation( model.getDatabaseDirectory().getAbsolutePath() ), 35 );
+
+        optionsButton = createOptionsButton();
+        browseButton = createBrowseButton();
+        startButton = createStartButton();
+        stopButton = createStopButton();
+
+        statusPanelLayout = new CardLayout();
+        statusPanel = createStatusPanel( statusPanelLayout );
+
+        rootPanel = createRootPanel( directoryDisplay, browseButton, statusPanel, startButton, stopButton, optionsButton );
+
+    }
+
+    private void setupComponents()
+    {
+        setIconImages( Graphics.loadIcons() );
+        sysTray = new SysTray( new SysTrayHandler() );
+
+        add( rootPanel );
+        pack();
+        setResizable( false );
+    }
+
     public void display()
     {
-        frame.setLocationRelativeTo( null );
-        frame.setVisible( true );
+        setLocationRelativeTo( null );
+        setVisible( true );
     }
 
     private JPanel createLogoPanel()
     {
-        return withFlowLayout( FlowLayout.LEFT, createPanel(
-                new JLabel( new ImageIcon( loadImage( Graphics.LOGO ) ) ),
+        return withFlowLayout( FlowLayout.LEFT, createPanel( new JLabel( new ImageIcon( loadImage( Graphics.LOGO ) ) ),
                 new JLabel( model.getNeo4jVersion() ) ) );
     }
 
@@ -149,7 +147,7 @@ public class MainWindow
             @Override
             public void actionPerformed( ActionEvent e )
             {
-                JDialog settingsDialog = new SettingsDialog( frame, model );
+                JDialog settingsDialog = new SettingsDialog( MainWindow.this, model );
                 settingsDialog.setLocationRelativeTo( null );
                 settingsDialog.setVisible( true );
             }
@@ -164,15 +162,17 @@ public class MainWindow
 
     protected void shutdown()
     {
-        databaseActions.shutdown();
+        databaseActions.stop();
         debugWindow.dispose();
-        frame.dispose();
+        this.dispose();
+
         System.exit( 0 );
     }
 
     private JPanel createStatusPanel( CardLayout statusPanelLayout )
     {
         JPanel panel = withLayout( statusPanelLayout, withTitledBorder( "Status", createPanel() ) );
+
         for ( DatabaseStatus status : DatabaseStatus.values() )
         {
             panel.add( status.name(), status.display( model ) );
@@ -183,7 +183,7 @@ public class MainWindow
             @Override
             public void mouseClicked( MouseEvent e )
             {
-                if ( MouseEvent.BUTTON1 == e.getButton() && e.isAltDown() )
+                if( MouseEvent.BUTTON1 == e.getButton() && e.isAltDown() )
                 {
                     debugWindow.show();
                 }
@@ -194,7 +194,7 @@ public class MainWindow
 
     private JButton createBrowseButton()
     {
-        ActionListener actionListener = new BrowseForDatabaseActionListener( frame, directoryDisplay, model );
+        ActionListener actionListener = new BrowseForDatabaseActionListener( this, directoryDisplay, model );
         return Components.createTextButton( ellipsis( "Choose" ), actionListener );
     }
 
@@ -230,42 +230,24 @@ public class MainWindow
         browseButton.setEnabled( STOPPED == status );
         startButton.setEnabled( STOPPED == status );
         stopButton.setEnabled( STARTED == status );
+
         statusPanelLayout.show( statusPanel, status.name() );
-        databaseStatus = status;
         sysTray.changeStatus( status );
+        databaseStatus = status;
     }
 
-    private class SysTrayActions implements SysTray.Actions
+    private class SysTrayHandler implements SysTrayListener
     {
         @Override
-        public void closeForReal()
+        public void open()
+        {
+            display();
+        }
+
+        @Override
+        public void exit()
         {
             shutdown();
         }
-
-        @Override
-        public void clickSysTray()
-        {
-            frame.setVisible( true );
-        }
-
-        @Override
-        public void clickCloseButton()
-        {
-            if ( databaseStatus == STOPPED )
-            {
-                shutdown();
-            }
-            else
-            {
-                frame.setVisible( false );
-            }
-        }
-
-        @Override
-        public void exit() { shutdown(); }
-
-        @Override
-        public void open() { frame.setVisible( true ); }
     }
 }

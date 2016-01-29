@@ -21,7 +21,7 @@ package org.neo4j.desktop.config.unix;
 
 import java.io.File;
 
-import org.neo4j.desktop.config.Environment;
+import org.neo4j.desktop.config.portable.Environment;
 import org.neo4j.desktop.config.portable.PortableInstallation;
 
 public class UnixInstallation extends PortableInstallation
@@ -35,8 +35,7 @@ public class UnixInstallation extends PortableInstallation
     @Override
     public File getConfigurationDirectory()
     {
-        // On UNIX derived systems it makes sense to put the configurations in the parent directory of
-        // the default.graphdb directory
+        // On UNIX derived systems it makes sense to put the configurations in the parent directory of the default.graphdb directory
         File databaseDirectory = getDatabaseDirectory();
         return databaseDirectory.getParentFile();
     }

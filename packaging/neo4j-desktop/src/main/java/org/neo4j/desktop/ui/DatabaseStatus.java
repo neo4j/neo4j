@@ -25,6 +25,8 @@ import java.awt.FlowLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import org.neo4j.desktop.model.DesktopModel;
+
 import static org.neo4j.desktop.ui.Components.createPanel;
 import static org.neo4j.desktop.ui.Components.ellipsis;
 import static org.neo4j.desktop.ui.Components.withBackground;

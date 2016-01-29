@@ -73,19 +73,23 @@ public class DesktopConfigurator
         return config;
     }
 
-    public void setDatabaseDirectory( File directory ) {
+    public void setDatabaseDirectory( File directory )
+    {
         dbDir = directory;
     }
 
-    public String getDatabaseDirectory() {
+    public String getDatabaseDirectory()
+    {
         return config.get( ServerSettings.legacy_db_location ).getAbsolutePath();
     }
 
-    public int getServerPort() {
+    public int getServerPort()
+    {
         return config.get( ServerSettings.webserver_port );
     }
 
-    public File getDatabaseConfigurationFile() {
+    public File getDatabaseConfigurationFile()
+    {
         return new File( dbDir, Installation.NEO4J_PROPERTIES_FILENAME );
     }
 }
