@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_0.{ParameterWrongTypeException, CypherTypeException}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 import scala.annotation.tailrec
@@ -48,48 +48,61 @@ case object asString extends (Any => String) {
   }
 }
 
-case class LowerFunction(argument: Expression) extends StringFunction(argument) {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toLowerCase
+case class ToStringFunction(argument: Expression) extends StringFunction(argument) {
 
-  def rewrite(f: (Expression) => Expression) = f(LowerFunction(argument.rewrite(f)))
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = argument(m) match {
+    case v: Number => v.toString
+    case v: String => v
+    case v: Boolean => v.toString
+    case v =>
+      throw new ParameterWrongTypeException("Expected a String, Number or Boolean, got: " + v.toString)
+  }
+
+  override def rewrite(f: (Expression) => Expression): Expression = f(ToStringFunction(argument.rewrite(f)))
+}
+
+case class LowerFunction(argument: Expression) extends StringFunction(argument) {
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toLowerCase
+
+  override def rewrite(f: (Expression) => Expression) = f(LowerFunction(argument.rewrite(f)))
 }
 
 case class ReverseFunction(argument: Expression) extends StringFunction(argument) {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
     val string: String = asString(argument(m))
     if (string == null) null else new java.lang.StringBuilder(string).reverse.toString
   }
 
-  def rewrite(f: (Expression) => Expression) = f(ReverseFunction(argument.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) = f(ReverseFunction(argument.rewrite(f)))
 }
 
 case class UpperFunction(argument: Expression) extends StringFunction(argument) {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toUpperCase
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toUpperCase
 
-  def rewrite(f: (Expression) => Expression) = f(UpperFunction(argument.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) = f(UpperFunction(argument.rewrite(f)))
 }
 
 case class LTrimFunction(argument: Expression) extends StringFunction(argument) {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).replaceAll("^\\s+", "")
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).replaceAll("^\\s+", "")
 
-  def rewrite(f: (Expression) => Expression) = f(LTrimFunction(argument.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) = f(LTrimFunction(argument.rewrite(f)))
 }
 
 case class RTrimFunction(argument: Expression) extends StringFunction(argument) {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).replaceAll("\\s+$", "")
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).replaceAll("\\s+$", "")
 
-  def rewrite(f: (Expression) => Expression) = f(RTrimFunction(argument.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) = f(RTrimFunction(argument.rewrite(f)))
 }
 
 case class TrimFunction(argument: Expression) extends StringFunction(argument) {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).trim
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).trim
 
-  def rewrite(f: (Expression) => Expression) = f(TrimFunction(argument.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) = f(TrimFunction(argument.rewrite(f)))
 }
 
 case class SubstringFunction(orig: Expression, start: Expression, length: Option[Expression])
   extends NullInNullOutExpression(orig) with NumericHelper {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
     val origVal = asString(orig(m))
 
     def noMoreThanMax(maxLength: Int, length: Int): Int =
@@ -112,13 +125,13 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
   }
 
 
-  def arguments = Seq(orig, start) ++ length
+  override def arguments = Seq(orig, start) ++ length
 
-  def rewrite(f: (Expression) => Expression) = f(SubstringFunction(orig.rewrite(f), start.rewrite(f), length.map(_.rewrite(f))))
+  override def rewrite(f: (Expression) => Expression) = f(SubstringFunction(orig.rewrite(f), start.rewrite(f), length.map(_.rewrite(f))))
 
-  def calculateType(symbols: SymbolTable) = CTString
+  override def calculateType(symbols: SymbolTable) = CTString
 
-  def symbolTableDependencies = {
+  override def symbolTableDependencies = {
     val a = orig.symbolTableDependencies ++
             start.symbolTableDependencies
 
@@ -130,7 +143,7 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
 
 case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Expression)
   extends NullInNullOutExpression(orig) {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
     val origVal = asString(value)
     val searchVal = asString(search(m))
     val replaceWithVal = asString(replaceWith(m))
@@ -142,19 +155,19 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
     }
   }
 
-  def arguments = Seq(orig, search, replaceWith)
+  override def arguments = Seq(orig, search, replaceWith)
 
-  def rewrite(f: (Expression) => Expression) = f(ReplaceFunction(orig.rewrite(f), search.rewrite(f), replaceWith.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) = f(ReplaceFunction(orig.rewrite(f), search.rewrite(f), replaceWith.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable) = CTString
+  override def calculateType(symbols: SymbolTable) = CTString
 
-  def symbolTableDependencies = orig.symbolTableDependencies ++
+  override def symbolTableDependencies = orig.symbolTableDependencies ++
                                 search.symbolTableDependencies ++
                                 replaceWith.symbolTableDependencies
 }
 case class SplitFunction(orig: Expression, separator: Expression)
   extends NullInNullOutExpression(orig) {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
     val origVal = asString(orig(m))
     val separatorVal = asString(separator(m))
 
@@ -180,18 +193,18 @@ case class SplitFunction(orig: Expression, separator: Expression)
       split(parts :+ string.substring(from, index), string, index + separator.length, separator)
   }
 
-  def arguments = Seq(orig, separator)
+  override def arguments = Seq(orig, separator)
 
-  def rewrite(f: (Expression) => Expression) = f(SplitFunction(orig.rewrite(f), separator.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) = f(SplitFunction(orig.rewrite(f), separator.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable) = CTCollection(CTString)
+  override def calculateType(symbols: SymbolTable) = CTCollection(CTString)
 
-  def symbolTableDependencies = orig.symbolTableDependencies ++ separator.symbolTableDependencies
+  override def symbolTableDependencies = orig.symbolTableDependencies ++ separator.symbolTableDependencies
 }
 
 case class LeftFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with NumericHelper {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
     val origVal = asString(orig(m))
     val startVal = asInt(0)
     // if length goes off the end of the string, let's be nice and handle that.
@@ -200,19 +213,19 @@ case class LeftFunction(orig: Expression, length: Expression)
     origVal.substring(startVal, startVal + lengthVal)
   }
 
-  def arguments = Seq(orig, length)
+  override def arguments = Seq(orig, length)
 
-  def rewrite(f: (Expression) => Expression) = f(LeftFunction(orig.rewrite(f), length.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) = f(LeftFunction(orig.rewrite(f), length.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable) = CTString
+  override def calculateType(symbols: SymbolTable) = CTString
 
-  def symbolTableDependencies = orig.symbolTableDependencies ++
+  override def symbolTableDependencies = orig.symbolTableDependencies ++
                                 length.symbolTableDependencies
 }
 
 case class RightFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with NumericHelper {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
     val origVal = asString(orig(m))
     // if length goes off the end of the string, let's be nice and handle that.
     val lengthVal = if (origVal.length < asInt(length(m))) origVal.length
@@ -221,12 +234,12 @@ case class RightFunction(orig: Expression, length: Expression)
     origVal.substring(startVal, startVal + lengthVal)
   }
 
-  def arguments = Seq(orig, length)
+  override def arguments = Seq(orig, length)
 
-  def rewrite(f: (Expression) => Expression) = f(RightFunction(orig.rewrite(f), length.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) = f(RightFunction(orig.rewrite(f), length.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable) = CTString
+  override def calculateType(symbols: SymbolTable) = CTString
 
-  def symbolTableDependencies = orig.symbolTableDependencies ++
+  override def symbolTableDependencies = orig.symbolTableDependencies ++
                                 length.symbolTableDependencies
 }
