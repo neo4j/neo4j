@@ -59,11 +59,11 @@ case object unnestApply extends Rewriter {
       Apply(lhs, rhs)(original.solved)
 
     // L Ax (Arg FE R) => L FE R
-    case original@Apply(lhs, foreach@Foreach(_: Argument, rhs, _, _)) =>
+    case original@Apply(lhs, foreach@ForeachApply(_: Argument, rhs, _, _)) =>
       foreach.copy(left = lhs, right = rhs)(original.solved)
 
     // L Ax (SR FE R) => L FE R
-    case original@Apply(lhs, foreach@Foreach(_: SingleRow, rhs, _, _)) =>
+    case original@Apply(lhs, foreach@ForeachApply(_: SingleRow, rhs, _, _)) =>
       foreach.copy(left = lhs, right = rhs)(original.solved)
 
     // L Ax (Arg Ax R) => L Ax R

@@ -64,7 +64,7 @@ case object PlanUpdates
         val innerLeaf = context.logicalPlanProducer
           .planArgumentRow(Set.empty, Set.empty, source.availableSymbols + foreach.variable)
         val innerUpdatePlan = planAllUpdatesRecursively(foreach.innerUpdates, innerLeaf)
-        context.logicalPlanProducer.planForeach(source, innerUpdatePlan, foreach)
+        context.logicalPlanProducer.planForeachApply(source, innerUpdatePlan, foreach)
 
       //CREATE ()
       case p: CreateNodePattern => context.logicalPlanProducer.planCreateNode(source, p)

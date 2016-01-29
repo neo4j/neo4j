@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyType, LazyTypes, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{DeleteExpression => DeleteExpressionPlan, Foreach => ForeachPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, SortDescription}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
@@ -584,12 +584,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     RemoveLabels(inner, pattern.idName, pattern.labels)(solved)
   }
 
-  def planForeach(left: LogicalPlan, innerUpdates: LogicalPlan, pattern: ForeachPattern)
+  def planForeachApply(left: LogicalPlan, innerUpdates: LogicalPlan, pattern: ForeachPattern)
                  (implicit context: LogicalPlanningContext) = {
 
     val solved = left.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
-    ForeachPlan(left, innerUpdates, pattern.variable.name, pattern.expression)(solved)
+    ForeachApply(left, innerUpdates, pattern.variable.name, pattern.expression)(solved)
   }
 
   def planRepeatableRead(inner: LogicalPlan)
