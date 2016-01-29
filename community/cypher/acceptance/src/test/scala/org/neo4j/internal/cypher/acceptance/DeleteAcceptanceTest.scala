@@ -25,7 +25,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should be able to delete nodes") {
     createNode()
 
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       s"match (n) delete n"
     )
 
@@ -37,7 +37,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(createNode(), createNode())
     relate(createNode(), createNode())
 
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       s"match ()-[r]-() delete r"
     )
 
@@ -47,7 +47,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should be able to detach delete node") {
     createNode("foo" -> "bar")
 
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       s"match (n) detach delete n"
     )
 
@@ -72,7 +72,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(x, createNode())
     relate(x, createNode())
 
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       s"match (n:X) detach delete n"
     )
 
@@ -88,7 +88,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(n1, n2)
     relate(n2, n3)
 
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       s"match p = (:X)-->()-->()-->() detach delete p"
     )
 
@@ -122,7 +122,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should be possible to create and delete in one statement") {
     createNode()
 
-    val result = updateWithBothPlanners("MATCH () CREATE (n) DELETE n")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH () CREATE (n) DELETE n")
 
     assertStats(result, nodesCreated = 1, nodesDeleted = 1)
   }
@@ -131,28 +131,28 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     createNode()
 
     val query = "MATCH (n) OPTIONAL MATCH (n)-[r]-() DELETE n,r"
-    val result = updateWithBothPlanners(query)
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
 
     assertStats(result, nodesDeleted = 1)
   }
 
   test("should be able to handle detach deleting null node") {
     val query = "OPTIONAL MATCH (n) DETACH DELETE n"
-    val result = updateWithBothPlanners(query)
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
 
     assertStats(result, nodesDeleted = 0)
   }
 
   test("should be able to handle deleting null node") {
     val query = "OPTIONAL MATCH (n) DELETE n"
-    val result = updateWithBothPlanners(query)
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
 
     assertStats(result, nodesDeleted = 0)
   }
 
   test("should be able to handle deleting null path") {
     val query = "OPTIONAL MATCH p = (n)-->() DETACH DELETE p"
-    val result = updateWithBothPlanners(query)
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
 
     assertStats(result, nodesDeleted = 0)
   }
@@ -163,7 +163,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     (0 to 3).foreach(_ => relate(user, createNode(), "FRIEND"))
 
     // When
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       """ MATCH (:User)-[:FRIEND]->(n)
         | WITH collect(n) AS friends
         | DETACH DELETE friends[{friendIndex}]""".stripMargin,
@@ -179,7 +179,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     (0 to 3).foreach(_ => relate(user, createNode(), "FRIEND"))
 
     // When
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       """ MATCH (:User)-[r:FRIEND]->()
         | WITH collect(r) AS friendships
         | DELETE friendships[{friendIndex}]""".stripMargin,
@@ -195,7 +195,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     createLabeledNode("User")
 
     // When
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       """ MATCH (u:User)
         | WITH {key: u} AS nodes
         | DELETE nodes.key""".stripMargin)
@@ -212,7 +212,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(b, a)
 
     // When
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       """ MATCH (:User)-[r]->(:User)
         | WITH {key: r} AS rels
         | DELETE rels.key""".stripMargin)
@@ -229,7 +229,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(b, a)
 
     // When
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       """ MATCH (u:User)
         | WITH {key: collect(u)} AS nodeMap
         | DETACH DELETE nodeMap.key[0]""".stripMargin)
@@ -246,7 +246,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(b, a)
 
     // When
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       """ MATCH (:User)-[r]->(:User)
         | WITH {key: {key: collect(r)}} AS rels
         | DELETE rels.key.key[0]""".stripMargin)
@@ -263,7 +263,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(b, a)
 
     // When
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       """ MATCH p=(:User)-[r]->(:User)
         | WITH {key: collect(p)} AS pathColls
         | DELETE pathColls.key[0], pathColls.key[1]""".stripMargin)

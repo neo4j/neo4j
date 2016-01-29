@@ -52,43 +52,43 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
     val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
 
-    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop STARTS WITH 'www' RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:Address) WHERE a.prop STARTS WITH 'www' RETURN a")
 
     result should (not(use(IndexSeekByRange.name)) and evaluateTo(List(Map("a" -> a1), Map("a" -> a2))))
   }
 
   test("finds exact matches") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name STARTS WITH 'ABCDEF' RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name STARTS WITH 'ABCDEF' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode)))
   }
 
   test("start of string") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name STARTS WITH 'ABC' RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name STARTS WITH 'ABC' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode)))
   }
 
   test("end of string1") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name ENDS WITH 'DEF' RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name ENDS WITH 'DEF' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode)))
   }
 
   test("end of string2") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name ENDS WITH 'AB' RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name ENDS WITH 'AB' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> bNode)))
   }
 
   test("middle of string") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name STARTS WITH 'a' and a.name ENDS WITH 'f' RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name STARTS WITH 'a' and a.name ENDS WITH 'f' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> cNode)))
   }
 
   test("all the things") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name STARTS WITH '' RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name STARTS WITH '' RETURN a")
 
     result.toList should equal(List(
       Map("a" -> aNode),
@@ -99,7 +99,7 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
   }
 
   test("middle of string is known") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name CONTAINS 'CD' RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name CONTAINS 'CD' RETURN a")
 
     result.toList should equal(Seq(
       Map("a" -> aNode))
@@ -111,7 +111,7 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     createNode(Map("name" -> "\nMats\n"))
     createNode(Map("name" -> "\tMats\t"))
 
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name STARTS WITH ' ' RETURN a.name AS name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name STARTS WITH ' ' RETURN a.name AS name")
 
     result.toSeq should equal(Seq(Map("name" -> " Mats ")))
   }
@@ -121,7 +121,7 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     createNode(Map("name" -> "\nMats\n"))
     createNode(Map("name" -> "\tMats\t"))
 
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name STARTS WITH '\n' RETURN a.name AS name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name STARTS WITH '\n' RETURN a.name AS name")
 
     result.toSeq should equal(Seq(Map("name" -> "\nMats\n")))
   }
@@ -131,7 +131,7 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     createNode(Map("name" -> "\nMats\n"))
     createNode(Map("name" -> "\tMats\t"))
 
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name ENDS WITH ' ' RETURN a.name AS name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name ENDS WITH ' ' RETURN a.name AS name")
 
     result.toSeq should equal(Seq(Map("name" -> " Mats ")))
   }
@@ -141,7 +141,7 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     createNode(Map("name" -> "\nMats\n"))
     createNode(Map("name" -> "\tMats\t"))
 
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name ENDS WITH '\n' RETURN a.name AS name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name ENDS WITH '\n' RETURN a.name AS name")
 
     result.toSeq should equal(Seq(Map("name" -> "\nMats\n")))
   }
@@ -151,7 +151,7 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     createNode(Map("name" -> "\nMats\n"))
     createNode(Map("name" -> "\tMats\t"))
 
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name CONTAINS ' ' RETURN a.name AS name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name CONTAINS ' ' RETURN a.name AS name")
 
     result.toSeq should equal(Seq(Map("name" -> " Mats ")))
   }
@@ -161,53 +161,53 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     createNode(Map("name" -> "\nMats\n"))
     createNode(Map("name" -> "\tMats\t"))
 
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name CONTAINS '\n' RETURN a.name AS name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name CONTAINS '\n' RETURN a.name AS name")
 
     result.toSeq should equal(Seq(Map("name" -> "\nMats\n")))
   }
 
   test("STARTS WITH against a null value returns no matches") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name STARTS WITH NULL RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name STARTS WITH NULL RETURN a")
 
     result.toList shouldBe empty
   }
 
 
   test("NOT STARTS WITH against a null value returns no matches") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE NOT a.name STARTS WITH NULL RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE NOT a.name STARTS WITH NULL RETURN a")
 
     result.toList shouldBe empty
   }
 
   test("ENDS WITH against a null value returns no matches") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name ENDS WITH NULL RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name ENDS WITH NULL RETURN a")
 
     result.toList shouldBe empty
   }
 
 
   test("NOT ENDS WITH against a null value returns no matches") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE NOT a.name ENDS WITH NULL RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE NOT a.name ENDS WITH NULL RETURN a")
 
     result.toList shouldBe empty
   }
 
   test("CONTAINS against a null value returns no matches") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE a.name CONTAINS NULL RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a.name CONTAINS NULL RETURN a")
 
     result.toList shouldBe empty
   }
 
 
   test("NOT CONTAINS against a null value returns no matches") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE NOT a.name CONTAINS NULL RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE NOT a.name CONTAINS NULL RETURN a")
 
     result.toList shouldBe empty
   }
 
   // *** TESTS OF FEATURE INTERACTION
   test("combining string operators") {
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       """MATCH (a)
         |WHERE a.name STARTS WITH 'A'
         |  AND a.name CONTAINS 'C'
@@ -219,7 +219,7 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
 
   // *** TESTS OF NOT
   test("NOT can be used when evaluating CONTAINS") {
-    val result = executeWithAllPlanners("MATCH (a) WHERE NOT a.name CONTAINS 'b' RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE NOT a.name CONTAINS 'b' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode), Map("a" -> bNode), Map("a" -> eNode)))
   }
@@ -239,7 +239,7 @@ class StartsWithAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
       drain(graph.execute("MATCH (u:User {name: 'Stephan'}) DELETE u"))
       drain(graph.execute("MATCH (u:User {name: 'Stefanie'}) SET u.name = 'steffi'"))
 
-      val result = executeWithAllPlanners("MATCH (u:User) WHERE u.name STARTS WITH 'Ste' RETURN u.name as name").columnAs("name").toList.toSet
+      val result = executeWithAllPlannersAndCompatibilityMode("MATCH (u:User) WHERE u.name STARTS WITH 'Ste' RETURN u.name as name").columnAs("name").toList.toSet
 
       result should equal(Set[String]("Stefan", "Steven"))
     }

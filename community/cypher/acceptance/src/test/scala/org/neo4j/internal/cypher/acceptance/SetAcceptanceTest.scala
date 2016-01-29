@@ -29,7 +29,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val node = createNode("property" -> 12)
 
     // when
-    val result = updateWithBothPlanners("MATCH (n) SET n.property = null RETURN count(*)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) SET n.property = null RETURN count(*)")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -53,7 +53,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("name" -> "Andres")
 
     // when
-    val result = updateWithBothPlanners("match (n) where n.name = 'Andres' set n.name = 'Michael'")
+    val result = updateWithBothPlannersAndCompatibilityMode("match (n) where n.name = 'Andres' set n.name = 'Michael'")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -65,7 +65,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("name" -> "Andres")
 
     // when
-    val result = updateWithBothPlanners("match (n) where n.name = 'Andres' set n.name = n.name + ' was here' return count(*)")
+    val result = updateWithBothPlannersAndCompatibilityMode("match (n) where n.name = 'Andres' set n.name = n.name + ' was here' return count(*)")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -77,7 +77,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val n = createNode("name" -> "Michael", "age" -> 35)
 
     // when
-    val result = updateWithBothPlanners("match (n) where n.name = 'Michael' set n.name = null return n.age")
+    val result = updateWithBothPlannersAndCompatibilityMode("match (n) where n.name = 'Michael' set n.name = null return n.age")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -108,7 +108,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     createNode()
 
     // when
-    val result = updateWithBothPlanners("match (n) where id(n) = 0 set n:FOO return n")
+    val result = updateWithBothPlannersAndCompatibilityMode("match (n) where id(n) = 0 set n:FOO return n")
 
     // then
     val createdNode = result.columnAs[Node]("n").next()
@@ -121,7 +121,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     createNode()
 
     // when
-    val result = updateWithBothPlanners( "match (n) where id(n) = 0 set n.x=[1,2,3] return extract (i in n.x | i/2.0) as x")
+    val result = updateWithBothPlannersAndCompatibilityMode( "match (n) where id(n) = 0 set n.x=[1,2,3] return extract (i in n.x | i/2.0) as x")
 
     // then
     result.toList should equal(List(Map("x" -> List(0.5, 1.0, 1.5))))
@@ -131,7 +131,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     // given
 
     // when
-    val result = executeScalarWithAllPlanners[Array[Long]]("create (a {foo:[1,2,3]}) set a.foo = a.foo + [4,5] return a.foo")
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Array[Long]]("create (a {foo:[1,2,3]}) set a.foo = a.foo + [4,5] return a.foo")
 
     // then
     result.toList should equal(List(1, 2, 3, 4, 5))
@@ -141,7 +141,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     // given
 
     // when
-    val result = executeScalarWithAllPlanners[Array[Long]]("create (a {foo:[3,4,5]}) set a.foo = [1,2] + a.foo return a.foo")
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Array[Long]]("create (a {foo:[3,4,5]}) set a.foo = [1,2] + a.foo return a.foo")
 
     // then
     result.toList should equal(List(1, 2, 3, 4, 5))
@@ -152,7 +152,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("foo"->"A", "bar"->"B")
 
     // when
-    val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n += {bar:'C'} RETURN count(*)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n {foo:'A'}) SET n += {bar:'C'} RETURN count(*)")
 
     // then
     a should haveProperty("foo").withValue("A")
@@ -164,7 +164,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("foo"->"A")
 
     // when
-    val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n += {bar:'B'} RETURN count(*)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n {foo:'A'}) SET n += {bar:'B'} RETURN count(*)")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -177,7 +177,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("foo"->"A", "bar"->"B")
 
     // when
-    val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n += {foo:null} RETURN count(*)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n {foo:'A'}) SET n += {foo:null} RETURN count(*)")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -208,7 +208,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("foo"->"A", "bar"->"B")
 
     // when
-    val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n = {foo:'B', baz:'C'} RETURN count(*)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n {foo:'A'}) SET n = {foo:'B', baz:'C'} RETURN count(*)")
 
     assertStats(result, propertiesWritten = 3)
     // then

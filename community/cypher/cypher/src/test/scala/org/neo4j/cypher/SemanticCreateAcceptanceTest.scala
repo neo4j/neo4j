@@ -43,14 +43,14 @@ class SemanticCreateAcceptanceTest extends ExecutionEngineFunSuite with PatternG
         val patternString = pattern.map(_.string).mkString
         withClue(s"failing on pattern $patternString") {
           //update
-          updateWithBothPlanners(s"CREATE $patternString")
+          updateWithBothPlannersAndCompatibilityMode(s"CREATE $patternString")
 
           //find created pattern (cannot return * since everything might be unnamed)
-          val result = executeWithAllPlannersAndRuntimes(s"MATCH $patternString RETURN 42")
+          val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"MATCH $patternString RETURN 42")
           result.toList should have size 1
 
           //clean up
-          updateWithBothPlanners(s"MATCH (n) DETACH DELETE n")
+          updateWithBothPlannersAndCompatibilityMode(s"MATCH (n) DETACH DELETE n")
         }
       }
     }

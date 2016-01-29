@@ -35,7 +35,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(generation(2) ++ generation(3) ++ generation(4))
   }
@@ -44,7 +44,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(Set(nodes("n0")))
   }
@@ -53,7 +53,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0..2]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0..2]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(generation(1) ++ generation(2) ++ generation(3))
   }
@@ -62,7 +62,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*..]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*..]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(generation(2) ++ generation(3) ++ generation(4))
   }
@@ -72,7 +72,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     makeTreeModel(maxNodeDepth = 4)
     //Then
     a[SyntaxException] should be thrownBy {
-      executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES..]->(c) RETURN c")
+      executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES..]->(c) RETURN c")
     }
   }
 
@@ -80,7 +80,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(generation(2))
   }
@@ -89,7 +89,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1..2]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1..2]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(generation(2) ++ generation(3))
   }
@@ -98,7 +98,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0..0]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0..0]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(Set(nodes("n0")))
   }
@@ -107,7 +107,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1..1]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1..1]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(generation(2))
   }
@@ -116,7 +116,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2..2]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2..2]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(generation(3))
   }
@@ -125,7 +125,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2..1]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2..1]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(empty)
   }
@@ -134,7 +134,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(generation(3))
   }
@@ -144,7 +144,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //Then
     a [SyntaxException] should be thrownBy {
-      executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*-2]->(c) RETURN c")
+      executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*-2]->(c) RETURN c")
     }
   }
 
@@ -152,7 +152,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners( "MATCH (p { id:'A' }) MATCH (p)-[:LIKES*..0]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode( "MATCH (p { id:'A' }) MATCH (p)-[:LIKES*..0]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(empty)
   }
@@ -161,7 +161,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners( "MATCH (p { id:'A' }) MATCH (p)-[:LIKES*1..0]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode( "MATCH (p { id:'A' }) MATCH (p)-[:LIKES*1..0]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(empty)
   }
@@ -170,7 +170,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*..1]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*..1]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(generation(2))
   }
@@ -179,7 +179,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*..2]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*..2]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(generation(2) ++ generation(3))
   }
@@ -188,7 +188,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0..]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0..]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(generation(1) ++ generation(2) ++ generation(3) ++ generation(4))
   }
@@ -197,7 +197,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1..]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1..]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(generation(2) ++ generation(3) ++ generation(4))
 
@@ -207,7 +207,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2..]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2..]->(c) RETURN c")
     //Then
     result.columnAs("c").toSet should be(generation(3) ++ generation(4))
 
@@ -217,7 +217,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0]->()-[r:LIKES]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0]->()-[r:LIKES]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
     result.columnAs("c").toSet should be(generation(2))
@@ -227,7 +227,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*0]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*0]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
     result.columnAs("c").toSet should be(generation(2))
@@ -237,7 +237,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1]->()-[r:LIKES]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1]->()-[r:LIKES]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
     result.columnAs("c").toSet should be(generation(3))
@@ -247,7 +247,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*1]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*1]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
     result.columnAs("c").toSet should be(generation(3))
@@ -257,7 +257,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2]->()-[r:LIKES]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2]->()-[r:LIKES]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
     result.columnAs("c").toSet should be(generation(4))
@@ -267,7 +267,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*2]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*2]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
     result.columnAs("c").toSet should be(generation(4))
@@ -277,7 +277,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 5)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*3]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*3]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
     result.columnAs("c").toSet should be(generation(5))
@@ -287,7 +287,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 5, directions = Seq(INCOMING))
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)<-[:LIKES]-()-[r:LIKES*3]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)<-[:LIKES]-()-[r:LIKES*3]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
     result.columnAs("c").toSet should be(generation(5))
@@ -297,7 +297,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 5, directions = Seq(OUTGOING, INCOMING, INCOMING, INCOMING))
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()<-[r:LIKES*3]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()<-[r:LIKES*3]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
     result.columnAs("c").toSet should be(generation(5))
@@ -307,7 +307,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 5)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1]->()-[:LIKES]->()-[r:LIKES*2]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1]->()-[:LIKES]->()-[r:LIKES*2]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
     result.columnAs("c").toSet should be(generation(5))
@@ -317,7 +317,7 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 5)
     //When
-    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[:LIKES*2]->()-[r:LIKES]->(c) RETURN c")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[:LIKES*2]->()-[r:LIKES]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
     result.columnAs("c").toSet should be(generation(5))

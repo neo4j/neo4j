@@ -39,7 +39,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     graph.createIndex("C", "id")
 
     // when
-    val result = executeWithAllPlanners("MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 RETURN count(*)")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 RETURN count(*)")
 
     result.toList should equal(List(Map("count(*)" -> 3)))
 
@@ -64,7 +64,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     graph.createIndex("C", "id")
 
     // when
-    val result = executeWithAllPlanners("MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 OPTIONAL MATCH (a)-[:T]->() RETURN count(*)")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 OPTIONAL MATCH (a)-[:T]->() RETURN count(*)")
 
     result.toList should equal(List(Map("count(*)" -> 3)))
 

@@ -27,7 +27,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     given()
 
     // When
-    val result = executeWithAllPlanners("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
 
     // Then
     result.executionPlanDescription().toString should include("NodeUniqueIndexSeek")
@@ -39,7 +39,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     given()
 
     // When
-    val result = executeWithAllPlanners("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
 
     // Then
     result shouldBe empty
@@ -51,7 +51,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     given()
 
     // When
-    val result = executeWithAllPlanners("MATCH (n:Matrix:Crew) WHERE n.name = 'Cypher' RETURN n")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Matrix:Crew) WHERE n.name = 'Cypher' RETURN n")
 
     // Then
     result.executionPlanDescription().toString should include("NodeUniqueIndexSeek")
@@ -68,7 +68,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     for (i <- 4 to 30) createLabeledNode(Map("id" -> i), "Prop")
 
     // When
-    val result = executeWithAllPlanners("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
+    val result = executeWithAllPlannersAndCompatibilityMode("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
 
     // Then
     result.toList should equal(List(Map("n" -> n1), Map("n" -> n2), Map("n" -> n3)))
@@ -117,7 +117,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
         |RETURN m""".stripMargin
 
     // When
-    val result = executeWithAllPlanners(query)
+    val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
     result.toList should equal(List(

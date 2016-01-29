@@ -32,7 +32,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("create a single node") {
     val before = graph.inTx(graph.getAllNodes.asScala.size)
 
-    val result = updateWithBothPlanners("create (a)")
+    val result = updateWithBothPlannersAndCompatibilityMode("create (a)")
 
     assertStats(result, nodesCreated = 1)
     graph.inTx {
@@ -43,7 +43,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("create a single node with props and return it") {
     val before = graph.inTx(graph.getAllNodes.asScala.size)
 
-    val result = updateWithBothPlanners("create (a {name : 'Andres'}) return a.name")
+    val result = updateWithBothPlannersAndCompatibilityMode("create (a {name : 'Andres'}) return a.name")
 
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
     graph.inTx {
@@ -56,7 +56,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("start with a node and create a new node with the same properties") {
     createNode("age" -> 15)
 
-    val result = updateWithBothPlanners("match (a) where id(a) = 0 with a create (b {age : a.age * 2}) return b.age")
+    val result = updateWithBothPlannersAndCompatibilityMode("match (a) where id(a) = 0 with a create (b {age : a.age * 2}) return b.age")
 
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
 
@@ -64,13 +64,13 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("create two nodes and a relationship between them") {
-    val result = updateWithBothPlanners("create (a), (b), (a)-[r:REL]->(b)")
+    val result = updateWithBothPlannersAndCompatibilityMode("create (a), (b), (a)-[r:REL]->(b)")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
   test("create one node and dumpToString") {
-    val result = updateWithBothPlanners("create (a {name:'Cypher'})")
+    val result = updateWithBothPlannersAndCompatibilityMode("create (a {name:'Cypher'})")
 
     assertStats(result,
       nodesCreated = 1,
@@ -81,7 +81,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("deletes single node") {
     val a = createNode().getId
 
-    val result = updateWithBothPlanners("match (a) where id(a) = 0 delete a")
+    val result = updateWithBothPlannersAndCompatibilityMode("match (a) where id(a) = 0 delete a")
     assertStats(result, nodesDeleted = 1)
 
     result.toList shouldBe empty
@@ -91,7 +91,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("multiple deletes should not break anything") {
     (1 to 4).foreach(i => createNode())
 
-    val result = updateWithBothPlanners("match (a), (b) where id(a) = 0 AND id(b) IN [1, 2, 3] delete a")
+    val result = updateWithBothPlannersAndCompatibilityMode("match (a), (b) where id(a) = 0 AND id(b) IN [1, 2, 3] delete a")
     assertStats(result, nodesDeleted = 1)
 
     result.toList shouldBe empty
@@ -107,7 +107,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(a, c)
     relate(a, d)
 
-    val result = updateWithBothPlanners("match (a) where id(a) = 0 match (a)-[r]->() delete r")
+    val result = updateWithBothPlannersAndCompatibilityMode("match (a) where id(a) = 0 match (a)-[r]->() delete r")
     assertStats( result, relationshipsDeleted = 3  )
 
     graph.inTx {
@@ -138,7 +138,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     createNode("Michael")
     createNode("Peter")
 
-    val result = updateWithBothPlanners("MATCH (n) with collect(n.name) as names create (m {name : names}) RETURN m.name")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) with collect(n.name) as names create (m {name : names}) RETURN m.name")
     assertStats(result,
       propertiesWritten = 1,
       nodesCreated = 1
@@ -148,7 +148,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("set a property to an empty collection") {
-    val result = updateWithBothPlanners("create (n {x : []}) return n.x")
+    val result = updateWithBothPlannersAndCompatibilityMode("create (n {x : []}) return n.x")
     assertStats(result,
       propertiesWritten = 1,
       nodesCreated = 1
@@ -157,7 +157,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("create node from map values") {
-    val result = updateWithBothPlanners("create (n {a}) return n.age, n.name", "a" -> Map("name" -> "Andres", "age" -> 66))
+    val result = updateWithBothPlannersAndCompatibilityMode("create (n {a}) return n.age, n.name", "a" -> Map("name" -> "Andres", "age" -> 66))
 
     result.toList should equal(List(Map("n.age" -> 66, "n.name" -> "Andres")))
   }
@@ -167,7 +167,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     createNode()
 
 
-    val result = updateWithBothPlanners("match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[r:REL {param}]->(b) return r.name, r.age", "param" -> Map("name" -> "Andres", "age" -> 66))
+    val result = updateWithBothPlannersAndCompatibilityMode("match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[r:REL {param}]->(b) return r.name, r.age", "param" -> Map("name" -> "Andres", "age" -> 66))
 
     result.toList should equal(List(Map("r.name" -> "Andres", "r.age" -> 66)))
   }
@@ -196,7 +196,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
       Map("name" -> "Michael", "prefers" -> "Java"),
       Map("name" -> "Peter", "prefers" -> "Java"))
 
-    val result = updateWithBothPlanners("unwind {params} as m create (x) set x = m ", "params" -> maps)
+    val result = updateWithBothPlannersAndCompatibilityMode("unwind {params} as m create (x) set x = m ", "params" -> maps)
 
     assertStats(result,
       nodesCreated = 3,
@@ -232,7 +232,12 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
       Map("name" -> "Michael"),
       Map("name" -> "Peter"))
 
-    intercept[CypherTypeException](updateWithBothPlanners("create (a {params1}), (b {params2})", "params1" -> maps1, "params2" -> maps2))
+    try {
+      updateWithBothPlannersAndCompatibilityMode("create (a {params1}), (b {params2})", "params1" -> maps1, "params2" -> maps2)
+    } catch {
+      case e: CypherTypeException => e.getCause shouldBe a [org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException]
+      case e: ParameterWrongTypeException => e.getCause shouldBe a [org.neo4j.cypher.internal.frontend.v2_3.ParameterWrongTypeException]
+    }
   }
 
   test("first read then write") {
@@ -245,9 +250,9 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(root, b)
     relate(root, c)
 
-    updateWithBothPlanners("match (root) where id(root) = 0 match (root)-->(other) create (new {name:other.name}), (root)-[:REL]->(new)")
+    updateWithBothPlannersAndCompatibilityMode("match (root) where id(root) = 0 match (root)-->(other) create (new {name:other.name}), (root)-[:REL]->(new)")
 
-    val result = executeWithAllPlanners("match (root) where id(root) = 0 match (root)-->(other) return other.name order by other.name").columnAs[String]("other.name").toList
+    val result = executeWithAllPlannersAndCompatibilityMode("match (root) where id(root) = 0 match (root)-->(other) return other.name order by other.name").columnAs[String]("other.name").toList
     result should equal(List("Alfa", "Alfa", "Beta", "Beta", "Gamma", "Gamma"))
   }
 
@@ -278,7 +283,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     val b = createNode()
     relate(a,b)
 
-    updateWithBothPlanners("""match (n) where id(n) = 0 match p=(n)-->() delete p""")
+    updateWithBothPlannersAndCompatibilityMode("""match (n) where id(n) = 0 match p=(n)-->() delete p""")
 
     graph.inTx {
       graph.getAllNodes.asScala shouldBe empty
@@ -287,7 +292,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
 
   test("string literals should not be mistaken for variables") {
     //https://github.com/neo4j/community/issues/523
-    updateWithBothPlanners("EXPLAIN create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
+    updateWithBothPlannersAndCompatibilityMode("EXPLAIN create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
     val result = executeScalar[List[Node]]("create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
     result should have size 2
   }
@@ -303,12 +308,12 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     val q = "create (a{param}) return a.arrayProp"
     val result =  executeScalar[Array[String]](q, "param" -> map)
 
-    assertStats(updateWithBothPlanners(q, "param"->map), nodesCreated = 1, propertiesWritten = 1)
+    assertStats(updateWithBothPlannersAndCompatibilityMode(q, "param"->map), nodesCreated = 1, propertiesWritten = 1)
     result.toList should equal(List("foo","bar"))
   }
 
   test("failed query should not leave dangling transactions") {
-    intercept[RuntimeException](executeWithAllPlannersAndRuntimes("RETURN 1 / 0"))
+    intercept[RuntimeException](executeWithAllPlannersAndRuntimesAndCompatibilityMode("RETURN 1 / 0"))
 
     val contextBridge : ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
     contextBridge.getTopLevelTransactionBoundToThisThread( false ) should be(null)
@@ -352,7 +357,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("full path in one create") {
     createNode()
     createNode()
-    val result = updateWithBothPlanners("match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[:KNOWS]->()-[:LOVES]->(b)")
+    val result = updateWithBothPlannersAndCompatibilityMode("match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[:KNOWS]->()-[:LOVES]->(b)")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
   }
@@ -383,7 +388,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("create with parameters is not ok when variable already exists") {
-    intercept[SyntaxException](updateWithBothPlanners("create a with a create (a {name:\"Foo\"})-[:BAR]->()").toList)
+    intercept[SyntaxException](updateWithBothPlannersAndCompatibilityMode("create a with a create (a {name:\"Foo\"})-[:BAR]->()").toList)
   }
 
   test("failure_only_fails_inner_transaction") {
@@ -397,13 +402,13 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("create two rels in one command should work") {
-    val result = updateWithBothPlanners("create (a{name:'a'})-[:test]->(b), (a)-[:test2]->(c)")
+    val result = updateWithBothPlannersAndCompatibilityMode("create (a{name:'a'})-[:test]->(b), (a)-[:test2]->(c)")
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2, propertiesWritten = 1)
   }
 
   test("cant set properties after node is already created") {
-    intercept[SyntaxException](updateWithBothPlanners("create (a)-[:test]->(b), (a {name:'a'})-[:test2]->c"))
+    intercept[SyntaxException](updateWithBothPlannersAndCompatibilityMode("create (a)-[:test]->(b), (a {name:'a'})-[:test2]->c"))
   }
 
   test("cant set properties after node is already created2") {
@@ -425,7 +430,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("should be able to create node with labels") {
-    val result = updateWithBothPlanners("create (n:FOO:BAR) return labels(n) as l")
+    val result = updateWithBothPlannersAndCompatibilityMode("create (n:FOO:BAR) return labels(n) as l")
 
     assertStats(result, nodesCreated = 1, labelsAdded = 2)
     result.toList should equal(List(Map("l" -> List("FOO", "BAR"))))
@@ -459,7 +464,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("should be possible to remove nodes created in the same query") {
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       """CREATE (a)-[:FOO]->(b)
          WITH *
          MATCH (x)-[r]-(y)
