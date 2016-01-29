@@ -133,10 +133,10 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
   }
 
   private def asCypherProcMode(mode: KernelProcedureSignature.Mode): ProcedureMode = mode match {
-    case KernelProcedureSignature.Mode.READ_ONLY => procReadOnly
-    case KernelProcedureSignature.Mode.READ_WRITE => procReadWrite
+    case KernelProcedureSignature.Mode.READ_ONLY => ProcReadOnly
+    case KernelProcedureSignature.Mode.READ_WRITE => ProcReadWrite
     case _ => throw new CypherExecutionException(
-      "Unable to execute procedure, because it requires an unrecognized excution mode: " + mode.name(), null )
+      "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null )
   }
 
   private def asCypherType(neoType: AnyType): CypherType = neoType match {

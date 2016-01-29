@@ -147,6 +147,8 @@ public class OutputMappers
 
     public OutputMapper mapper( Class<?> userClass ) throws ProcedureException
     {
+        assertIsValidRecordClass( userClass );
+
         List<Field> fields = instanceFields( userClass );
         FieldSignature[] signature = new FieldSignature[fields.size()];
         FieldMapper[] fieldMappers = new FieldMapper[fields.size()];
@@ -183,6 +185,24 @@ public class OutputMappers
         }
 
         return new OutputMapper( signature, fieldMappers );
+    }
+
+    private void assertIsValidRecordClass( Class<?> userClass ) throws ProcedureException
+    {
+        if( userClass.isPrimitive() || userClass.isArray()
+            || userClass.getPackage() != null && userClass.getPackage().getName().startsWith( "java." ) )
+        {
+            throw new ProcedureException( Status.Procedure.TypeError,
+                    "Procedures must return a Stream of records, where a record is a concrete class " +
+                    "that you define, with public non-final fields defining the fields in the record. " +
+                    "If you'd like your procedure to return `%s`, you could define a record class like:\n" +
+                    "public class Output {\n" +
+                    "    public %s out;\n" +
+                    "}\n" +
+                    "\n" +
+                    "And then define your procedure as returning `Stream<Output>`.",
+                    userClass.getSimpleName(), userClass.getSimpleName() );
+        }
     }
 
     private List<Field> instanceFields( Class<?> userClass )

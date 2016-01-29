@@ -140,7 +140,7 @@ public class Neo4jRule implements TestRule, TestServerBuilder
     }
 
     @Override
-    public TestServerBuilder withProcedure( Class<?> procedureClass )
+    public Neo4jRule withProcedure( Class<?> procedureClass )
     {
         builder = builder.withProcedure( procedureClass );
         return this;

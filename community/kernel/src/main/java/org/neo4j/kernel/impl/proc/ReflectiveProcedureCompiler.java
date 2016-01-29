@@ -134,7 +134,9 @@ public class ReflectiveProcedureCompiler
 
     private ProcedureName extractName( Class<?> procDefinition, Method m )
     {
-        String[] namespace = procDefinition.getPackage().getName().split( "\\." );
+        Package pkg = procDefinition.getPackage();
+        // Package is null if class is in root package
+        String[] namespace = pkg == null ? new String[0] : pkg.getName().split( "\\." );
         String name = m.getName();
         return new ProcedureName( namespace, name );
     }
