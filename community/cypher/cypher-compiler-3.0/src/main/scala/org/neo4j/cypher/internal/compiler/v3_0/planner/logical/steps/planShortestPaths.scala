@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Ascending, Logic
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{Predicate, QueryGraph}
+import org.neo4j.cypher.internal.frontend.v3_0.notification.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.frontend.v3_0.{ExhaustiveShortestPathForbiddenException, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Length
@@ -73,6 +74,9 @@ case object planShortestPaths {
                                             unsafePredicates: Seq[Expression],
                                             queryGraph: QueryGraph)
                                            (implicit context: LogicalPlanningContext): LogicalPlan = {
+    // create warning for planning a shortest path fallback
+    context.notificationLogger += ExhaustiveShortestPathForbiddenNotification(shortestPath.expr.position)
+
     val lpp = context.logicalPlanProducer
 
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when

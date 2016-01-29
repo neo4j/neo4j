@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
+import javax.crypto.ShortBufferException;
+
 import static java.lang.String.format;
 
 import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientError;
@@ -176,7 +178,12 @@ public interface Status
         LabelMissingWarning( ClientNotification, "The provided label is not in the database." ),
         RelTypeMissingWarning( ClientNotification, "The provided relationship type is not in the database." ),
         PropertyNameMissingWarning( ClientNotification, "The provided property name is not in the database" ),
-        UnboundedPatternWarning( ClientNotification, "The provided pattern is unbounded, consider adding an upper limit to the number of node hops."  );
+        UnboundedPatternWarning( ClientNotification, "The provided pattern is unbounded, consider adding an upper limit to the number of node hops."  ),
+        ExhaustiveShortestPathWarning( ClientNotification, "Exhaustive shortest path has been planned for your query " +
+                                                           "that means that shortest path graph algorithm might not be " +
+                                                           "used to find the shortest path.  Hence an exhaustive " +
+                                                           "enumeration of all paths might be used in order to find " +
+                                                           "the requested shortest path." );
 
         private final Code code;
 

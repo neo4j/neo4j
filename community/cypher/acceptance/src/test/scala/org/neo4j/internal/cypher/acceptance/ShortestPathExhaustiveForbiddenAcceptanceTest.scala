@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.frontend.v3_0.{ExhaustiveShortestPathForbiddenException => InternalExhaustiveShortestPathForbiddenException}
+import org.neo4j.cypher.internal.frontend.v3_0.notification.ExhaustiveShortestPathForbiddenNotification
+import org.neo4j.cypher.internal.frontend.v3_0.{ExhaustiveShortestPathForbiddenException => InternalExhaustiveShortestPathForbiddenException, InputPosition}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, ExhaustiveShortestPathForbiddenException}
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.config.Setting
@@ -41,6 +42,19 @@ class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSu
 
     // then
     exception should have message InternalExhaustiveShortestPathForbiddenException.ERROR_MSG
+  }
+
+  test("should warn if shortest path fallback is planned") {
+    // when
+    val result = executeWithCostPlannerOnly(
+      s"""EXPLAIN MATCH p = shortestPath((src:$topLeft)-[*0..]-(dst:$topLeft))
+          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
+          |RETURN nodes(p) AS nodes""".stripMargin)
+
+    // then
+    result.notifications.toSeq should equal(
+      Seq(new ExhaustiveShortestPathForbiddenNotification(new InputPosition(10,1,11)))
+    )
   }
 
   val dim = 4
