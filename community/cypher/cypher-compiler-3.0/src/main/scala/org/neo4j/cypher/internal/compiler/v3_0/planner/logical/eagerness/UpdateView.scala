@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.eagerness
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
 
 import scala.annotation.tailrec
 
@@ -39,7 +40,7 @@ case class UpdateView(mutatingPatterns: Seq[MutatingPattern]) extends Update {
 
     mutatingPatterns.exists {
       case DeleteExpressionPattern(Variable(id), _) if id == name.name => true
-      case DeleteExpressionPattern(PathExpression(pathStep), _) if matches(pathStep) => true
+      case DeleteExpressionPattern(_:PathExpression, _) => true // Conservative (because we do not know the nodes). Any delete against a path will trigger Eagerness
       case _ => false
     }
   }
@@ -66,32 +67,25 @@ case class UpdateView(mutatingPatterns: Seq[MutatingPattern]) extends Update {
     case x: RemoveLabelPattern if x.idName != id => x.labels
   }).flatten.toSet
 
-  private def updatesRelationshipProperties = {
-    @tailrec
-    def toRelPropertyPattern(patterns: Seq[MutatingPattern], acc: CreatesPropertyKeys): CreatesPropertyKeys = {
+  override def containsDeletes = mutatingPatterns.exists(_.isInstanceOf[DeleteExpressionPattern])
 
-      def extractPropertyKey(patterns: Seq[SetMutatingPattern]): CreatesPropertyKeys = patterns.collect {
-        case SetRelationshipPropertyPattern(_, key, _) => CreatesKnownPropertyKeys(key)
-        case SetRelationshipPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
-      }.foldLeft[CreatesPropertyKeys](CreatesNoPropertyKeys)(_ + _)
+  override def deletesOtherThan(ids: Set[IdName]): Boolean = {
+    // Recursively go down FOREACHs to fetch all DELETEs
 
-      patterns match {
-        case Nil => acc
-        case SetRelationshipPropertiesFromMapPattern(_, expression, _) :: tl => CreatesPropertyKeys(expression)
-        case SetRelationshipPropertyPattern(_, key, _) :: tl => toRelPropertyPattern(tl, acc + CreatesKnownPropertyKeys(key))
-        case MergeNodePattern(_, _, onCreate, onMatch) :: tl =>
-          toRelPropertyPattern(tl, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
-        case MergeRelationshipPattern(_, _, _, onCreate, onMatch) :: tl =>
-          toRelPropertyPattern(tl, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
+    val deleteActions = fixedPoint((patterns: Seq[MutatingPattern]) => patterns.collect {
+      case x: DeleteExpressionPattern => Seq(x)
+      case ForeachPattern(_, _, pq) => pq.allQueryGraphs.flatMap(_.mutatingPatterns)
+      case _ => Seq.empty
+    }.flatten)(mutatingPatterns)
 
-        case hd :: tl => toRelPropertyPattern(tl, acc)
-      }
+
+    val onlySafeDeletes = deleteActions forall {
+      case DeleteExpressionPattern(Variable(name), _) if ids(IdName(name)) => true
+      case _ => false
     }
 
-    toRelPropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
+    !onlySafeDeletes
   }
-
-  override def containsDeletes = mutatingPatterns.exists(_.isInstanceOf[DeleteExpressionPattern])
 
   override def createsNodes = mutatingPatterns.exists(_.isInstanceOf[CreateNodePattern])
 

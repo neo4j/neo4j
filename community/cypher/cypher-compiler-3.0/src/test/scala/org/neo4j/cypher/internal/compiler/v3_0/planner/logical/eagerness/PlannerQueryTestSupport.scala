@@ -77,7 +77,13 @@ trait PlannerQueryTestSupport {
     matchRel(pattern.from.variableName.name, pattern.rel.variableName.name, pattern.to.variableName.name, readTypes(pattern), pattern.dir)
   }
 
-  def merge(pattern: Pattern): QueryGraph = {
+  def pathExpression(pattern: Pattern): Expression = {
+    val rel: SingleRelationshipPathStep = SingleRelationshipPathStep(varFor(pattern.rel.variableName.name), SemanticDirection.OUTGOING, NilPathStep)
+    val startNode: NodePathStep = NodePathStep(varFor(pattern.from.variableName.name), rel)
+    PathExpression(startNode)(pos)
+  }
+
+  def merge(pattern: Pattern): MergeRelationshipPattern = {
     val readQG = MATCH(pattern)
     val from = IdName(pattern.from.variableName.name)
     val r = IdName(pattern.rel.variableName.name)
@@ -86,7 +92,13 @@ trait PlannerQueryTestSupport {
     val relationshipPattern = CreateRelationshipPattern(r, from, typ, to, None, SemanticDirection.OUTGOING)
     val fromP = createNode(from.name)
     val toP = createNode(to.name)
-    QueryGraph.empty withMutation MergeRelationshipPattern(Seq(fromP, toP), Seq(relationshipPattern), readQG, Seq.empty, Seq.empty)
+    MergeRelationshipPattern(Seq(fromP, toP), Seq(relationshipPattern), readQG, Seq.empty, Seq.empty)
+  }
+
+  def merge(node: String): MergeNodePattern = {
+    val readQG = matchNode(node)
+    val relationshipPattern = CreateNodePattern(node, Seq.empty, None)
+    MergeNodePattern(relationshipPattern, readQG, Seq.empty, Seq.empty)
   }
 
   def readTypes(xx: Pattern) = xx.rel match {
@@ -100,6 +112,9 @@ trait PlannerQueryTestSupport {
 
   def createRel(pattern: Pattern) =
     CreateRelationshipPattern(pattern.rel.variableName, pattern.from.variableName, writeType(pattern), pattern.to.variableName, None, SemanticDirection.OUTGOING)
+
+  def foreach(varName: String, collection: Expression, inner: MutatingPattern) =
+    ForeachPattern(IdName(varName), collection, PlannerQuery.empty.withQueryGraph(QueryGraph.empty withMutation inner))
 
   def eager(inner: LogicalPlan) = Eager(inner)(solved)
 

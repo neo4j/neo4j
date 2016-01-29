@@ -30,18 +30,16 @@ trait Update {
 
   private def nodeOverlaps(read: Read): Boolean = {
     val ids = read.nodeIds
-    read.readsNodes && ids.exists { nodeId =>
+    read.readsNodes && (deletesOtherThan(read.graphEntities) || ids.exists { nodeId =>
       val readLabels = read.labelsOn(nodeId)
       val readProps = read.propertiesOn(nodeId)
 
-      val a = {
-        if (read.relationships.isEmpty || createsRelationships) {
-
-          val readsNoLabels = readLabels.isEmpty
-          val readsNoProps = readProps.isEmpty
-          readsNoLabels && readsNoProps && createsNodes
-        } else
-          false // Looking for rels, but not creating any
+      val a = if (read.readsRelationships)
+        false
+      else {
+        val readsNoLabels = readLabels.isEmpty
+        val readsNoProps = readProps.isEmpty
+        readsNoLabels && readsNoProps && createsNodes
       }
 
       val b = {
@@ -55,7 +53,7 @@ trait Update {
       }
 
       a || b || c || deletes(nodeId)
-    }
+    })
   }
 
   private def relOverlaps(read: Read): Boolean = {
@@ -106,6 +104,7 @@ trait Update {
   def relationshipPropertyUpdatesNotOn(id: IdName): CreatesPropertyKeys
   def allRelationshipPropertyUpdates: CreatesPropertyKeys
   def containsDeletes: Boolean
+  def deletesOtherThan(ids: Set[IdName]): Boolean
 
   def relTypesCreated: Set[RelTypeName]
 

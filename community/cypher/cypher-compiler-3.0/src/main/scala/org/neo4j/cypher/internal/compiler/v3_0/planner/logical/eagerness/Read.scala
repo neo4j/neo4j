@@ -31,4 +31,5 @@ trait Read {
   def typesOn(x: IdName): Set[RelTypeName]
   def propertiesOn(x: IdName): Set[PropertyKeyName]
   def readsProperties: Set[PropertyKeyName]
+  def graphEntities: Set[IdName]
 }

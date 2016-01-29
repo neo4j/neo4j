@@ -43,4 +43,6 @@ case class ReadView(qg: QueryGraph) extends Read {
 
   override def propertiesOn(x: IdName): Set[PropertyKeyName] =
     qg.knownProperties(x).map(_.propertyKey)
+
+  override def graphEntities: Set[IdName] = qg.patternRelationships.flatMap(p => Seq(p.left, p.right, p.name))
 }

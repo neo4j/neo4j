@@ -147,14 +147,14 @@ trait UpdateGraph {
     containsUpdates && {
       val readQg = qg.mergeQueryGraph.getOrElse(qg)
 
-      (createNodeOverlap(readQg) ||
+      createNodeOverlap(readQg) ||
         createRelationshipOverlap(readQg) ||
         deleteOverlap(readQg) ||
         removeLabelOverlap(readQg) ||
         setLabelOverlap(readQg) ||
         setPropertyOverlap(readQg) ||
         deleteOverlapWithMergeIn(qg) ||
-        foreachOverlap(readQg))
+        foreachOverlap(readQg)
     }
   }
 

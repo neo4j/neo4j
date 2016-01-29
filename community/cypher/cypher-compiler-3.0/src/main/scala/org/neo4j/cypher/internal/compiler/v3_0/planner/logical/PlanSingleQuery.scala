@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.eagerness.PlanEagerness
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{countStorePlanner, verifyBestPlan}
 import org.neo4j.cypher.internal.frontend.v3_0.Rewriter
@@ -32,7 +33,7 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
                            planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
                            expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
                            planWithTail: LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] = PlanWithTail(),
-                           planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanUpdates) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
+                           planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanEagerness(PlanUpdates)) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
 
   override def apply(in: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val partPlan = countStorePlanner(in).getOrElse(planPart(in, context, None))

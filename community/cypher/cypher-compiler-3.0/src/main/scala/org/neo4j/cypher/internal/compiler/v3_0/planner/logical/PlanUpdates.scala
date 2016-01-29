@@ -30,24 +30,11 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{ContainerIndex, PathExpressi
 case object PlanUpdates
   extends LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] {
 
-  override def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    // Eagerness pass 1 -- does previously planned reads conflict with future writes?
-    val plan = if (firstPlannerQuery)
-      Eagerness.headReadWriteEagerize(in, query)
-    else
-      //// NOTE: tailReadWriteEagerizeRecursive is done after updates, below
-      Eagerness.tailReadWriteEagerizeNonRecursive(in, query)
-
-    val updatePlan = query.queryGraph.mutatingPatterns.foldLeft(plan) {
+  override def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean)
+                    (implicit context: LogicalPlanningContext): LogicalPlan =
+    query.queryGraph.mutatingPatterns.foldLeft(in) {
       case (acc, pattern) => planUpdate(query, acc, pattern, firstPlannerQuery)
     }
-
-    if (firstPlannerQuery)
-      Eagerness.headWriteReadEagerize(updatePlan, query)
-    else {
-      Eagerness.tailWriteReadEagerize(Eagerness.tailReadWriteEagerizeRecursive(updatePlan, query), query)
-    }
-  }
 
   private def planUpdate(query: PlannerQuery, source: LogicalPlan, pattern: MutatingPattern, first: Boolean)
                           (implicit context: LogicalPlanningContext): LogicalPlan = {
