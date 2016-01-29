@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.eagerness.PlanEagerness
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.eagerness.{unnestEager, PlanEagerness}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_0.Rewriter
 
@@ -54,7 +54,7 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
           projectedPlan.endoRewrite(expressionRewriter)
         }
 
-        val superCompletePlan = completePlan.endoRewrite(Eagerness.unnestEager)
+        val superCompletePlan = completePlan.endoRewrite(unnestEager)
 
         this.apply(superCompletePlan, plannerQuery.tail)(projectedContext)
 
