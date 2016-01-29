@@ -27,7 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.desktop.config.Installation;
-import org.neo4j.desktop.ui.DesktopModel;
+import org.neo4j.desktop.model.DesktopModel;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertTrue;
