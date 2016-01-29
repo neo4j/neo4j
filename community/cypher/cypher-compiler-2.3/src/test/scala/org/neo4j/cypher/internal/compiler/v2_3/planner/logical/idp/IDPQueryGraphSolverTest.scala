@@ -489,8 +489,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       ExpandOnlyWhenPatternIsLong,
       ConfigurableIDPSolverConfig(maxTableSize = 32, iterationDuration = Long.MaxValue), // table limited
       ConfigurableIDPSolverConfig(maxTableSize = Int.MaxValue, iterationDuration = 500), // time limited
-      AdaptiveChainPatternConfig(8),
-      AdaptiveChainPatternConfig(12)
+      AdaptiveChainPatternConfig(10)
     )
 
     solverConfigsToTest.foreach { solverConfig =>

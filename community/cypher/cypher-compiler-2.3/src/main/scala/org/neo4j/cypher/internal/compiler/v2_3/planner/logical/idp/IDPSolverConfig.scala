@@ -76,7 +76,7 @@ case object ExpandOnlyWhenPatternIsLong extends IDPSolverConfig {
    where best to draw the line, and it is probable that the joins might be planned in
    sub-optimal positions. We should consider this for a future default once we have the
    time to develop more confidence in the approach. */
-case class AdaptiveChainPatternConfig(patternLengthThreshold: Int = 10) extends IDPSolverConfig {
+case class AdaptiveChainPatternConfig(patternLengthThreshold: Int) extends IDPSolverConfig {
   override def solvers(queryGraph: QueryGraph) =
     Seq(AdaptiveSolverStep(_, patternLengthThreshold))
 }
