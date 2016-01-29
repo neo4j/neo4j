@@ -23,7 +23,6 @@ import org.w3c.dom.Document;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -67,10 +66,10 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
@@ -97,6 +96,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 
@@ -381,7 +382,7 @@ public class ClusterManager
 
                     for ( ClusterMember clusterMember : members.getMembers() )
                     {
-                        if ( clusterMember.getHARole().equals( HighAvailabilityModeSwitcher.UNKNOWN ) )
+                        if ( !cluster.isAvailable( clusterMember ) )
                         {
                             return false;
                         }
@@ -389,9 +390,10 @@ public class ClusterManager
                 }
 
                 // Everyone sees everyone else as available!
-                for( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
+                for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
                 {
-                    Log log = database.getDependencyResolver().resolveDependency( LogService.class ).getInternalLog( getClass() );
+                    Log log = database.getDependencyResolver().resolveDependency( LogService.class ).getInternalLog(
+                            getClass() );
                     log.debug( this.toString() );
                 }
                 return true;
@@ -480,6 +482,32 @@ public class ClusterManager
         };
     }
 
+    public static Predicate<ManagedCluster> entireClusterSeesMemberAsNotAvailable(
+            final HighlyAvailableGraphDatabase observed )
+    {
+        return cluster -> {
+            InstanceId observedServerId = observed.getDependencyResolver().resolveDependency( Config.class ).get(
+                    ClusterSettings.server_id );
+
+            for ( HighlyAvailableGraphDatabase observer : cluster.getAllMembers( observed ) )
+            {
+                for ( ClusterMember member : observer.getDependencyResolver().resolveDependency( ClusterMembers.class )
+                        .getMembers() )
+                {
+                    if ( member.getInstanceId().equals( observedServerId ) )
+                    {
+                        if ( cluster.isAvailable( member ) )
+                        {
+                            return false;
+                        } // else, keep looping to see if anyone else sees it as alive
+                    }
+                }
+            }
+            // No one could see it as alive
+            return true;
+        };
+    }
+
     public static Predicate<ManagedCluster> memberThinksItIsRole(
             final HighlyAvailableGraphDatabase member, final String role )
     {
@@ -521,10 +549,7 @@ public class ClusterManager
             clusterMap.put( cluster.getName(), managedCluster );
             life.add( managedCluster );
 
-            for ( Predicate<ManagedCluster> availabilityCheck : availabilityChecks )
-            {
-                managedCluster.await( availabilityCheck );
-            }
+            availabilityChecks.forEach( managedCluster::await );
 
             if ( initialDatasetCreator != null )
             {
@@ -546,26 +571,6 @@ public class ClusterManager
         life.shutdown();
     }
 
-    @SuppressWarnings( "unchecked" )
-    private <T> T instance( Class<T> classToFind, Iterable<?> from )
-    {
-        for ( Object item : from )
-        {
-            if ( classToFind.isAssignableFrom( item.getClass() ) )
-            {
-                return (T) item;
-            }
-        }
-        throw new AssertionError( "Couldn't find the network instance to fail. "
-                + "Internal field, so fragile sensitive to changes though" );
-    }
-
-    private Field accessible( Field field )
-    {
-        field.setAccessible( true );
-        return field;
-    }
-
     public ManagedCluster getCluster( String name )
     {
         if ( !clusterMap.containsKey( name ) )
@@ -578,14 +583,6 @@ public class ClusterManager
     public ManagedCluster getDefaultCluster()
     {
         return getCluster( "neo4j.ha" );
-    }
-
-    protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
-    {
-    }
-
-    protected void insertInitialData( GraphDatabaseService db, String name, InstanceId serverId )
-    {
     }
 
     public interface ClusterBuilder<SELF>
@@ -886,7 +883,6 @@ public class ClusterManager
             {
                 HighlyAvailableGraphDatabase graphDatabase = member.get( DEFAULT_TIMEOUT_SECONDS );
                 Config config = graphDatabase.getDependencyResolver().resolveDependency( Config.class );
-                insertInitialData( graphDatabase, name, config.get( ClusterSettings.server_id ) );
             }
         }
 
@@ -914,16 +910,42 @@ public class ClusterManager
         /**
          * @return all started members in this cluster.
          */
-        public Iterable<HighlyAvailableGraphDatabase> getAllMembers()
+        public Iterable<HighlyAvailableGraphDatabase> getAllMembers( HighlyAvailableGraphDatabase... except )
         {
-            return Iterables.map( from -> {
+            Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<>( asList( except ) );
+            return filter( db -> !exceptSet.contains( db ), map( from -> {
                 return from.get( DEFAULT_TIMEOUT_SECONDS );
-            }, members.values() );
+            }, members.values() ) );
         }
 
         public Iterable<ObservedClusterMembers> getArbiters()
         {
             return arbiters;
+        }
+
+        public boolean isArbiter( ClusterMember clusterMember )
+        {
+            for ( ObservedClusterMembers arbiter : arbiters )
+            {
+                if ( arbiter.getCurrentMember().getInstanceId().equals( clusterMember.getInstanceId() ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public boolean isAvailable( ClusterMember clusterMember )
+        {
+            if ( isArbiter( clusterMember ) )
+            {
+                return clusterMember.isAlive();
+            }
+            else
+            {
+                return clusterMember.isAlive() && !clusterMember.getHARole().equals(
+                        HighAvailabilityModeSwitcher.UNKNOWN );
+            }
         }
 
         /**
@@ -980,7 +1002,8 @@ public class ClusterManager
 
         /**
          * Shuts down a member of this cluster. A {@link RepairKit} is returned
-         * which is able to restore the instance (i.e. start it again).
+         * which is able to restore the instance (i.e. start it again). This method
+         * does not return until the rest of the cluster sees the member as not available.
          *
          * @param db the {@link HighlyAvailableGraphDatabase} to shut down.
          * @return a {@link RepairKit} which can start it again.
@@ -994,13 +1017,7 @@ public class ClusterManager
             members.remove( serverId );
             life.remove( db );
             db.shutdown();
-            // Sleep a little to help ensure that the shutdown thread has completed before we return
-            try
-            {
-                Thread.sleep( 50L );
-            }
-            catch ( InterruptedException ignored )
-            {}
+            await( entireClusterSeesMemberAsNotAvailable( db ) );
             return wrap( new StartDatabaseAgainKit( this, serverId ) );
         }
 
@@ -1017,23 +1034,49 @@ public class ClusterManager
                                                 stateToString( this ) );
         }
 
+        /**
+         * Fails a member of this cluster by making it not receive/respond to heartbeats.
+         * A {@link RepairKit} is returned which is able to repair the instance  (i.e start the network) again. This
+         * method does not return until the rest of the cluster sees the member as not available.
+         *
+         * @param db the {@link HighlyAvailableGraphDatabase} to fail.
+         * @return a {@link RepairKit} which can repair the failure.
+         */
         public RepairKit fail( HighlyAvailableGraphDatabase db ) throws Throwable
         {
             return fail( db, NetworkFlag.values() );
         }
 
         /**
-         * WARNING: beware of hacks.
-         * <p>
-         * Fails a member of this cluster by making it not respond to heart beats.
-         * A {@link RepairKit} is returned which is able to repair the instance
-         * (i.e start the network) again.
+         * Fails a member of this cluster by making it either not respond to heartbeats, or not receive them, or both.
+         * A {@link RepairKit} is returned which is able to repair the instance  (i.e start the network) again.
+         * This method does not return until the rest of the cluster sees the member as not available.
          *
          * @param db the {@link HighlyAvailableGraphDatabase} to fail.
+         * @param flags which part of networking to fail (IN/OUT/BOTH)
          * @return a {@link RepairKit} which can repair the failure.
          * @throws IllegalArgumentException if the given db isn't a member of this cluster.
          */
         public RepairKit fail( HighlyAvailableGraphDatabase db, NetworkFlag... flags ) throws Throwable
+        {
+            return fail( db, true, flags );
+        }
+
+        /**
+         * WARNING: beware of hacks.
+         * <p>
+         * Fails a member of this cluster by making it either not respond to heartbeats, or not receive them, or both.
+         * A {@link RepairKit} is returned which is able to repair the instance  (i.e start the network) again.
+         * This method optionally does not return until the rest of the cluster sees the member as not available.
+         *
+         * @param db the {@link HighlyAvailableGraphDatabase} to fail.
+         * @param waitUntilDown if true, will not return until rest of cluster reports member as not available
+         * @param flags which part of networking to fail (IN/OUT)
+         * @return a {@link RepairKit} which can repair the failure.
+         * @throws IllegalArgumentException if the given db isn't a member of this cluster.
+         */
+        public RepairKit fail( HighlyAvailableGraphDatabase db, boolean waitUntilDown, NetworkFlag... flags )
+                throws Throwable
         {
             assertMember( db );
 
@@ -1049,25 +1092,24 @@ public class ClusterManager
                 networkSender.setPaused( true );
             }
 
+            if ( waitUntilDown )
+            {
+                await( entireClusterSeesMemberAsNotAvailable( db ) );
+            }
             return wrap( new StartNetworkAgainKit( db, networkReceiver, networkSender, flags ) );
         }
 
         private RepairKit wrap( final RepairKit actual )
         {
             pendingRepairs.add( actual );
-            return new RepairKit()
-            {
-                @Override
-                public HighlyAvailableGraphDatabase repair() throws Throwable
+            return () -> {
+                try
                 {
-                    try
-                    {
-                        return actual.repair();
-                    }
-                    finally
-                    {
-                        pendingRepairs.remove( actual );
-                    }
+                    return actual.repair();
+                }
+                finally
+                {
+                    pendingRepairs.remove( actual );
                 }
             };
         }
@@ -1103,8 +1145,6 @@ public class ClusterManager
                 {
                     builder.setConfig( conf.getKey(), conf.getValue().apply( serverId.toIntegerIndex() ) );
                 }
-
-                config( builder, name, serverId );
 
                 final HighlyAvailableGraphDatabaseProxy graphDatabase =
                         new HighlyAvailableGraphDatabaseProxy( builder );

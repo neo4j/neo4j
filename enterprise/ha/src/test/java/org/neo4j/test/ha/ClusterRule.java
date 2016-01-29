@@ -147,7 +147,8 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     }
 
     /**
-     * Starts cluster with the configuration provided at instantiation time.
+     * Starts cluster with the configuration provided at instantiation time. This method will not return until the
+     * cluster is up and all members report each other as available.
      */
     public ClusterManager.ManagedCluster startCluster() throws Exception
     {
@@ -165,7 +166,9 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
         {
             throw new RuntimeException( throwable );
         }
-        return this.cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getDefaultCluster();
+        cluster.await( allSeesAllAsAvailable() );
+        return cluster;
     }
 
     @Override
