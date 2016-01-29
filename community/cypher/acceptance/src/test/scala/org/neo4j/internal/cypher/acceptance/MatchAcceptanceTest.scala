@@ -1655,8 +1655,8 @@ return b
     //GIVEN
     createLabeledNode("User")
 
-    val query = """MATCH (:User)
-                  |MERGE (project:Project)
+    val query = """MATCH (user:User)
+                  |MERGE (project:Project {p: 'Test'})
                   |MERGE (user)-[:HAS_PROJECT]->(project)
                   |WITH project
                   |    // delete the current relations to be able to replace them with new ones
@@ -1668,12 +1668,13 @@ return b
                   |FOREACH (el in[{name:"Dir1"}, {name:"Dir2"}] |
                   |  MERGE (folder:Folder{ name: el.name })
                   |  MERGE (project)–[:HAS_FOLDER]->(folder))
-                  |RETURN DISTINCT project""".stripMargin
+                  |WITH DISTINCT project
+                  |RETURN project.p""".stripMargin
 
     //WHEN
-    val first = eengine.execute(query).toList
-    val second = eengine.execute(query).toList
-    val check = updateWithBothPlanners("MATCH (f:Folder) RETURN f.name").toSet
+    val first = updateWithBothPlanners(query).length
+    val second = updateWithBothPlanners(query).length
+    val check = executeWithAllPlannersAndRuntimes("MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -1685,8 +1686,8 @@ return b
     createLabeledNode("User")
 
 
-    val query = """MATCH (:User)
-                  |MERGE (project:Project)
+    val query = """MATCH (user:User)
+                  |MERGE (project:Project {p: 'Test'})
                   |MERGE (user)-[:HAS_PROJECT]->(project)
                   |WITH project
                   |    // delete the current relations to be able to replace them with new ones
@@ -1699,12 +1700,13 @@ return b
                   |FOREACH (el in[{name:"Dir1"}, {name:"Dir2"}] |
                   |  MERGE (folder:Folder{ name: el.name })
                   |  MERGE (project)–[:HAS_FOLDER]->(folder))
-                  |RETURN DISTINCT project""".stripMargin
+                  |WITH DISTINCT project
+                  |RETURN project.p""".stripMargin
 
     //WHEN
-    val first = eengine.execute(query).toList
-    val second = eengine.execute(query).toList
-    val check = updateWithBothPlanners("MATCH (f:Folder) RETURN f.name").toSet
+    val first = updateWithBothPlanners(query).length
+    val second = updateWithBothPlanners(query).length
+    val check = executeWithAllPlannersAndRuntimes("MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
