@@ -253,12 +253,12 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("create node and rel in foreach") {
-    executeWithRulePlanner("""
-create (center)
-foreach(x in range(1,10) |
-  create (leaf1 {number : x}) , (center)-[:X]->(leaf1)
-)
-return distinct center""")
+    updateWithBothPlanners("""
+      |create (center {name: "center"})
+      |foreach(x in range(1,10) |
+      |  create (leaf1 {number : x}) , (center)-[:X]->(leaf1)
+      |)
+      |return distinct center.name""".stripMargin)
   }
 
   test("delete optionals") {
@@ -360,7 +360,7 @@ return distinct center""")
 
   test("delete and delete again") {
     createNode()
-    val result = executeWithRulePlanner("match (a) where id(a) = 0 delete a foreach( x in [1] | delete a)")
+    val result = updateWithBothPlanners("match (a) where id(a) = 0 delete a foreach( x in [1] | delete a)")
 
     assertStats(result, nodesDeleted = 1)
   }
@@ -413,14 +413,14 @@ return distinct center""")
 
   test("can create anonymous nodes inside foreach") {
     createNode()
-    val result = executeWithRulePlanner("match (me) where id(me) = 0 foreach (i in range(1,10) | create (me)-[:FRIEND]->())")
+    val result = updateWithBothPlanners("match (me) where id(me) = 0 foreach (i in range(1,10) | create (me)-[:FRIEND]->())")
 
     result.toList shouldBe empty
   }
 
   test("should be able to use external variables inside foreach") {
     createNode()
-    val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 0 foreach(x in [b] | create (x)-[:FOO]->(a)) ")
+    val result = updateWithBothPlanners("match (a), (b) where id(a) = 0 AND id(b) = 0 foreach(x in [b] | create (x)-[:FOO]->(a)) ")
 
     result.toList shouldBe empty
   }
@@ -434,7 +434,7 @@ return distinct center""")
 
   test("complete graph") {
     val result =
-      executeWithRulePlanner("""CREATE (center { count:0 })
+      updateWithBothPlanners("""CREATE (center { count:0 })
                  FOREACH (x IN range(1,6) | CREATE (leaf { count : x }),(center)-[:X]->(leaf))
                  WITH center
                  MATCH (leaf1)<--(center)-->(leaf2)
@@ -448,13 +448,13 @@ return distinct center""")
   }
 
   test("for each applied to null should never execute") {
-    val result = executeWithRulePlanner("foreach(x in null| create ())")
+    val result = updateWithBothPlanners("foreach(x in null| create ())")
 
     assertStats(result, nodesCreated = 0)
   }
 
   test("should execute when null is contained in a collection") {
-    val result = executeWithRulePlanner("foreach(x in [null]| create ())")
+    val result = updateWithBothPlanners("foreach(x in [null]| create ())")
 
     assertStats(result, nodesCreated = 1)
   }

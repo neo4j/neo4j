@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{DeleteExpr
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, SortDescription}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast, symbols}
+import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast}
 
 
 /*
@@ -330,14 +330,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     planArgumentRow(patternNodes, patternRels, otherIds)
   }
 
-  def planArgumentRowFrom(plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val types: Map[String, CypherType] = plan.availableSymbols.map {
-      case n if context.semanticTable.isNode(n.name) => n.name -> symbols.CTNode
-      case r if context.semanticTable.isRelationship(r.name) => r.name -> symbols.CTRelationship
-      case v => v.name -> symbols.CTAny
-    }.toMap
-    Argument(plan.availableSymbols)(plan.solved)(types)
-  }
+  def planArgumentRowFrom(plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
+    Argument(plan.availableSymbols)(plan.solved)(Map.empty)
 
   def planArgumentRow(patternNodes: Set[IdName], patternRels: Set[PatternRelationship] = Set.empty, other: Set[IdName] = Set.empty)
                      (implicit context: LogicalPlanningContext): LogicalPlan = {
@@ -402,6 +396,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planUnwind(inner: LogicalPlan, name: IdName, expression: Expression)(implicit context: LogicalPlanningContext) = {
     val solved = inner.solved.updateTailOrSelf(_.withHorizon(UnwindProjection(name, expression)))
     UnwindCollection(inner, name, expression)(solved)
+  }
+
+  def planPassAll(inner: LogicalPlan)(implicit context: LogicalPlanningContext) = {
+    val solved = inner.solved.updateTailOrSelf(_.withHorizon(PassthroughAllHorizon()))
+    inner.updateSolved(solved)
   }
 
   def planLimit(inner: LogicalPlan, count: Expression, ties: Ties = DoNotIncludeTies)(implicit context: LogicalPlanningContext) = {
@@ -583,6 +582,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
 
     RemoveLabels(inner, pattern.idName, pattern.labels)(solved)
+  }
+
+  def planForeachApply(left: LogicalPlan, innerUpdates: LogicalPlan, pattern: ForeachPattern)
+                 (implicit context: LogicalPlanningContext) = {
+
+    val solved = left.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
+
+    ForeachApply(left, innerUpdates, pattern.variable.name, pattern.expression)(solved)
   }
 
   def planRepeatableRead(inner: LogicalPlan)

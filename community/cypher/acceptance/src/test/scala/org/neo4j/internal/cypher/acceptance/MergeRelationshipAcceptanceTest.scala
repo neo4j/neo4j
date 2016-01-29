@@ -264,16 +264,16 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val a = createLabeledNode("Start")
     relate(a, createNode("prop" -> 2), "FOO")
 
-    val result = executeWithRulePlanner("match (a:Start) foreach(x in [1,2,3] | merge (a)-[:FOO]->({prop: x}) )")
+    val result = updateWithBothPlanners("match (a:Start) foreach(x in [1,2,3] | merge (a)-[:FOO]->({prop: x}) )")
     assertStats(result, nodesCreated = 2, propertiesWritten = 2, relationshipsCreated = 2)
   }
 
-  test("should_handle_two_merges_inside_foreach") {
+  test("should handle two merges inside foreach") {
     val a = createLabeledNode("Start")
     val b = createLabeledNode(Map("prop" -> 42), "End")
 
 
-    val result = executeWithRulePlanner("match (a:Start) foreach(x in [42] | merge (b:End {prop: x}) merge (a)-[:FOO]->(b) )")
+    val result = updateWithBothPlanners("match (a:Start) foreach(x in [42] | merge (b:End {prop: x}) merge (a)-[:FOO]->(b) )")
     assertStats(result, nodesCreated = 0, propertiesWritten = 0, relationshipsCreated = 1)
 
     graph.inTx {
@@ -283,15 +283,15 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     }
   }
 
-  test("should_handle_two_merges_inside_bare_foreach") {
+  test("should handle two merges inside bare foreach") {
     createNode("x" -> 1)
 
-    val result = executeWithRulePlanner("foreach(v in [1, 2] | merge (a {x: v}) merge (b {y: v}) merge (a)-[:FOO]->(b))")
+    val result = updateWithBothPlanners("foreach(v in [1, 2] | merge (a {x: v}) merge (b {y: v}) merge (a)-[:FOO]->(b))")
     assertStats(result, nodesCreated = 3, propertiesWritten = 3, relationshipsCreated = 2)
   }
 
-  test("should_handle_two_merges_inside_foreach_after_with") {
-    val result = executeWithRulePlanner("with 3 as y " +
+  test("should handle two merges inside foreach after with") {
+    val result = updateWithBothPlanners("with 3 as y " +
       "foreach(x in [1, 2] | " +
       "merge (a {x: x, y: y}) " +
       "merge (b {x: x+1, y: y}) " +
@@ -325,7 +325,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     resultList.head.head._2.isInstanceOf[Path] should be(true)
   }
 
-  test("should_handle_foreach_in_foreach_game_of_life_ftw") {
+  test("should handle foreach in foreach game of life ftw") {
 
     /* creates a grid 4 nodes wide and 4 nodes deep.
      o-o-o-o
@@ -337,7 +337,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
      o-o-o-o
      */
 
-    val result = executeWithRulePlanner(
+    val result = updateWithBothPlanners(
       "foreach(x in [0,1,2] |" +
         "foreach(y in [0,1,2] |" +
         "  merge (a {x:x, y:y})" +
@@ -358,7 +358,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 2)
   }
 
-  test("should_handle_foreach_in_foreach_game_without_known_points") {
+  test("should handle foreach in foreach game without known points") {
 
     /* creates a grid 4 nodes wide and 4 nodes deep.
      o-o o-o o-o
@@ -370,7 +370,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
      o-o o-o o-o
      */
 
-    val result = executeWithRulePlanner(
+    val result = updateWithBothPlanners(
       "foreach(x in [0,1,2] |" +
         "foreach(y in [0,1,2] |" +
         "  merge (a {x:x, y:y})-[:R]->(b {x:x+1, y:y})" +

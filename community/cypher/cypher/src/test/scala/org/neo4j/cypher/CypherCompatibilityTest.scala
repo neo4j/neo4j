@@ -83,7 +83,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
   }
 
 
-  private val queryThatCannotRunWithCostPlanner = "FOREACH( n in range( 0, 1 ) | CREATE (p:Person) )"
+  private val queryThatCannotRunWithCostPlanner = "MATCH (a), (b) CREATE UNIQUE (a)-[r:X]->(b)"
 
   private val querySupportedByCostButNotCompiledRuntime = "MATCH (n:Movie)--(b), (a:A)--(c:C)--(d:D) RETURN count(*)"
 

@@ -594,7 +594,7 @@ order by a.COL1""")
 
   test("can use variables created inside the foreach") {
     createNode()
-    val result = executeWithRulePlanner("match (n) where id(n) = 0 foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
+    val result = updateWithBothPlanners("match (n) where id(n) = 0 foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
 
     result.toList shouldBe empty
   }

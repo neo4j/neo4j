@@ -75,6 +75,12 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     mergeNodePatterns.map(_.createNodePattern.nodeName) ++
     mergeRelationshipPatterns.flatMap(_.createNodePatterns.map(_.nodeName))
 
+  def allPatternRelationshipsRead: Set[PatternRelationship] =
+    patternRelationships ++ optionalMatches.flatMap(_.allPatternRelationshipsRead)
+
+  def allPatternNodesRead: Set[IdName] =
+    patternNodes ++ optionalMatches.flatMap(_.allPatternNodesRead)
+
   def addShortestPaths(shortestPaths: ShortestPathPattern*): QueryGraph = shortestPaths.foldLeft(this)((qg, p) => qg.addShortestPath(p))
   def addArgumentId(newId: IdName): QueryGraph = copy(argumentIds = argumentIds + newId)
   def addArgumentIds(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
@@ -103,17 +109,30 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     copy(optionalMatches = optionalMatches)
   }
 
+  def withMergeMatch(matchGraph: QueryGraph): QueryGraph = {
+    if (mergeQueryGraph.isEmpty) throw new IllegalArgumentException("Don't add a merge to this non-merge QG")
+
+    // NOTE: Merge can only contain one mutating pattern
+    assert(mutatingPatterns.length == 1)
+    val newMutatingPattern = mutatingPatterns.collectFirst {
+      case p: MergeNodePattern => p.copy(matchGraph = matchGraph)
+      case p: MergeRelationshipPattern => p.copy(matchGraph = matchGraph)
+    }.get
+
+    copy(argumentIds = matchGraph.argumentIds, mutatingPatterns = Seq(newMutatingPattern))
+  }
+
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
 
   def knownProperties(idName: IdName): Set[Property] =
     selections.propertyPredicatesForSet.getOrElse(idName, Set.empty)
 
-  def knownLabelsOnNode(node: IdName): Seq[LabelName] =
+  private def knownLabelsOnNode(node: IdName): Set[LabelName] =
     selections
-      .labelPredicates.getOrElse(node, Seq.empty)
-      .flatMap(_.labels).toSeq
+      .labelPredicates.getOrElse(node, Set.empty)
+      .flatMap(_.labels)
 
-  def allKnownLabelsOnNode(node: IdName): Seq[LabelName] =
+  def allKnownLabelsOnNode(node: IdName): Set[LabelName] =
     knownLabelsOnNode(node) ++ optionalMatches.flatMap(_.allKnownLabelsOnNode(node))
 
   def allKnownPropertiesOnIdentifier(idName: IdName): Set[Property] =
@@ -132,7 +151,15 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     patternRelationships.filter { r => r.left == id || r.right == id }
 
   def allPatternRelationships: Set[PatternRelationship] =
-    patternRelationships ++ optionalMatches.flatMap(_.allPatternRelationships)
+    patternRelationships ++ optionalMatches.flatMap(_.allPatternRelationships) ++
+    // Recursively add relationships from the merge-read-part
+    mergeNodePatterns.flatMap(_.matchGraph.allPatternRelationships) ++
+    mergeRelationshipPatterns.flatMap(_.matchGraph.allPatternRelationships)
+
+  def coveredIdsExceptArguments: Set[IdName] = {
+    val patternIds = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships)
+    patternIds ++ selections.predicates.flatMap(_.dependencies)
+  }
 
   def coveredIds: Set[IdName] = {
     val patternIds = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships)
@@ -140,8 +167,8 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   }
 
   def allCoveredIds: Set[IdName] = {
-    val optionalMatchIds = optionalMatches.flatMap(_.allCoveredIds)
-    coveredIds ++ optionalMatchIds
+    val otherSymbols = optionalMatches.flatMap(_.allCoveredIds) ++ mutatingPatterns.flatMap(_.coveredIds)
+    coveredIds ++ otherSymbols
   }
 
   val allHints: Set[Hint] =
@@ -251,17 +278,11 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     patternRelationships.nonEmpty ||
     selections.nonEmpty ||
     shortestPathPatterns.nonEmpty ||
-    optionalMatches.nonEmpty
+    optionalMatches.nonEmpty ||
+    containsMergeRecursive
   }
 
   def writeOnly = !containsReads && containsUpdates
-
-  def createsNodes: Boolean = mutatingPatterns.exists {
-    case _: CreateNodePattern => true
-    case _: MergeNodePattern => true
-    case MergeRelationshipPattern(nodesToCreate, _, _, _, _) => nodesToCreate.nonEmpty
-    case _ => false
-  }
 
   def addMutatingPatterns(patterns: MutatingPattern*): QueryGraph =
     copy(mutatingPatterns = mutatingPatterns ++ patterns)

@@ -95,7 +95,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     // when
     val q = "MATCH p=(a)-->(b)-->(c) WHERE id(a) = 0 AND id(c) = 2 WITH p FOREACH(n in nodes(p) | SET n.marked = true)"
 
-    executeWithRulePlanner(q)
+    updateWithBothPlanners(q)
 
     // then
     a should haveProperty("marked").withValue(true)
@@ -192,7 +192,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val c = createNode("c"->"C")
 
     // when
-    val result = executeWithRulePlanner("MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x += {x:'X'})")
+    val result = updateWithBothPlanners("MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x += {x:'X'})")
 
     // then
     a should haveProperty("a").withValue("A")
@@ -224,7 +224,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val c = createNode("c"->"C")
 
     // when
-    executeWithRulePlanner("MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x = {a:'D', x:'X'})")
+    updateWithBothPlanners("MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x = {a:'D', x:'X'})")
 
     // then
     a should haveProperty("a").withValue("D")
