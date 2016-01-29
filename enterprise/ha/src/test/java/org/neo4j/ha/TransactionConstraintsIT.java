@@ -63,10 +63,12 @@ import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
 
 public class TransactionConstraintsIT
 {
+    private static final int SLAVE_ONLY_ID = 1;
+
     @ClassRule
     public static final ClusterRule clusterRule = new ClusterRule( TransactionConstraintsIT.class )
             .withSharedSetting( HaSettings.pull_interval, "0" )
-            .withInstanceSetting( HaSettings.slave_only,  (serverId) -> serverId == 1 ? "true" : "false" );
+            .withInstanceSetting( HaSettings.slave_only,  (serverId) -> serverId == SLAVE_ONLY_ID ? "true" : "false" );
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -152,7 +154,7 @@ public class TransactionConstraintsIT
     private HighlyAvailableGraphDatabase getSlaveOnlySlave()
     {
         HighlyAvailableGraphDatabase db = first( cluster.getAllMembers() );
-        assertEquals( 1, cluster.getServerId( db ).toIntegerIndex() );
+        assertEquals( SLAVE_ONLY_ID, cluster.getServerId( db ).toIntegerIndex() );
         assertFalse( db.isMaster() );
         return db;
     }
