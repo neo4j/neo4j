@@ -32,8 +32,14 @@ trait UpdateGraph {
 
   def containsUpdates = !readOnly
 
-  def containsMergeRecursive: Boolean = mergeNodePatterns.nonEmpty || mergeRelationshipPatterns.nonEmpty ||
-    foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(_.containsMergeRecursive))
+  def containsMergeRecursive: Boolean = exists(qg => qg.mergeNodePatterns.nonEmpty || qg.mergeRelationshipPatterns.nonEmpty)
+
+  def containsDeleteRecursive: Boolean = exists(qg => qg.deleteExpressions.nonEmpty)
+
+  /**
+    * Recursively inspects UpdateGraphs
+    */
+  def exists(f: UpdateGraph => Boolean): Boolean = f(this) || foreachPatterns.exists(p => p.innerUpdates.allQueryGraphs.exists(f))
 
   /*
    * Finds all nodes being created with CREATE (a)
@@ -348,7 +354,7 @@ trait UpdateGraph {
     propertiesToRead.exists(propertiesToSet.overlaps)
   }
 
-  private def deleteExpressions = mutatingPatterns.collect {
+  def deleteExpressions = mutatingPatterns.collect {
     case p: DeleteExpressionPattern => p
   }
 

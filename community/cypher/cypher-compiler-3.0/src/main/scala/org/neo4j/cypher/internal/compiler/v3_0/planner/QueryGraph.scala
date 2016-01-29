@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.eagerness.{ReadView, Read, UpdateView, Update}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.perty._
@@ -290,6 +291,30 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def addMutatingPatterns(patterns: MutatingPattern*): QueryGraph =
     copy(mutatingPatterns = mutatingPatterns ++ patterns)
+
+  def withoutPatternNode(patterns: IdName): QueryGraph =
+    copy(patternNodes = patternNodes - patterns)
+
+  def reads: Read = {
+    val queryGraph = if (containsMergeRecursive)
+      mutatingPatterns.head.asInstanceOf[MergePattern].matchGraph
+    else
+      optionalMatches.foldLeft(this) {
+        case (acc, qg) => acc ++ qg
+      }
+    ReadView(queryGraph)
+  }
+
+  def updates: Update = {
+    val updateActions = if (containsMergeRecursive) {
+      mutatingPatterns.collect {
+        case x: MergeNodePattern => Seq(x.createNodePattern) ++ x.onCreate ++ x.onMatch
+        case x: MergeRelationshipPattern => x.createNodePatterns ++ x.createRelPatterns ++ x.onCreate ++ x.onMatch
+      }.flatten
+    } else mutatingPatterns
+
+    UpdateView(updateActions)
+  }
 
   // This is here to stop usage of copy from the outside
   private def copy(patternRelationships: Set[PatternRelationship] = patternRelationships,
