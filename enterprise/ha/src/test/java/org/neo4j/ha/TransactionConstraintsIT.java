@@ -104,11 +104,12 @@ public class TransactionConstraintsIT
         }
         finally
         {
-            cluster.shutdown( cluster.getMaster() );
+            HighlyAvailableGraphDatabase oldMaster = cluster.getMaster();
+            cluster.shutdown( oldMaster );
+            // Wait for new master
+            cluster.await( masterAvailable( oldMaster ) );
             assertFinishGetsTransactionFailure( tx );
         }
-
-        cluster.await( masterAvailable() );
 
         // THEN
         assertEquals( db, cluster.getMaster() );
@@ -122,7 +123,7 @@ public class TransactionConstraintsIT
     {
         // GIVEN
         HighlyAvailableGraphDatabase db = getSlaveOnlySlave();
-        HighlyAvailableGraphDatabase oldMaster = cluster.getMaster();
+        HighlyAvailableGraphDatabase oldMaster;
 
         // WHEN
         Transaction tx = db.beginTx();
@@ -133,16 +134,12 @@ public class TransactionConstraintsIT
         }
         finally
         {
+            oldMaster = cluster.getMaster();
             cluster.shutdown( oldMaster );
+            // Wait for new master
+            cluster.await( masterAvailable( oldMaster ) );
             // THEN
             assertFinishGetsTransactionFailure( tx );
-        }
-
-        try
-        {
-            cluster.await( ClusterManager.masterAvailable() );
-        } catch (Exception e) {
-            throw e;
         }
 
         assertFalse( db.isMaster() );
