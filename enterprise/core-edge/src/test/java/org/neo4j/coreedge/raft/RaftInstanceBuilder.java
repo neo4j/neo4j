@@ -108,7 +108,7 @@ public class RaftInstanceBuilder<MEMBER>
 
     public RaftInstanceBuilder<MEMBER> heartbeatInterval( long heartbeatInterval )
     {
-        this.electionTimeout = heartbeatInterval;
+        this.heartbeatInterval = heartbeatInterval;
         return this;
     }
 

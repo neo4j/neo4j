@@ -342,6 +342,11 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         return myself;
     }
 
+    public RaftLogShippingManager logShippingManager()
+    {
+        return logShipping;
+    }
+
     @Override
     public String toString()
     {
