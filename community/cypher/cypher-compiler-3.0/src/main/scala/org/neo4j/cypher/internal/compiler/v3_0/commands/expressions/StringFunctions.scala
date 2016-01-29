@@ -20,17 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, IsCollection, IsMap}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.annotation.tailrec
-import scala.collection.Map
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) {
   def innerExpectedType = CTString
@@ -51,50 +46,6 @@ case object asString extends (Any => String) {
       "Expected a string value for %s, but got: %s; perhaps you'd like to cast to a string it with str()."
         .format(toString(), a.toString))
   }
-}
-
-trait StringHelper {
-
-  protected def props(x: PropertyContainer, qtx: QueryContext): String = {
-    val (ops, id) = x match {
-      case n: Node => (qtx.nodeOps, n.getId)
-      case r: Relationship => (qtx.relationshipOps, r.getId)
-    }
-
-    val keyValStrings = ops.propertyKeyIds(id).
-      map(pkId => qtx.getPropertyKeyName(pkId) + ":" + text(ops.getProperty(id, pkId), qtx))
-
-    keyValStrings.mkString("{", ",", "}")
-  }
-
-  protected def text(a: Any, qtx: QueryContext): String = a match {
-    case x: Node            => x.toString + props(x, qtx)
-    case x: Relationship    => ":" + x.getType.name() + "[" + x.getId + "]" + props(x, qtx)
-    case IsMap(m)           => makeString(m, qtx)
-    case IsCollection(coll) => coll.map(elem => text(elem, qtx)).mkString("[", ",", "]")
-    case x: String          => "\"" + x + "\""
-    case v: KeyToken        => v.name
-    case Some(x)            => x.toString
-    case null               => "<null>"
-    case x                  => x.toString
-  }
-
-  protected def textWithType(x: Any)(implicit qs: QueryState) = s"${text(x, qs.query)} (${x.getClass.getSimpleName})"
-
-  private def makeString(m: QueryContext => Map[String, Any], qtx: QueryContext) = m(qtx).map {
-    case (k, v) => k + " -> " + text(v, qtx)
-  }.mkString("{", ", ", "}")
-
-  def makeSize(txt: String, wantedSize: Int): String = {
-    val actualSize = txt.length()
-    if (actualSize > wantedSize) {
-      txt.slice(0, wantedSize)
-    } else if (actualSize < wantedSize) {
-      txt + repeat(" ", wantedSize - actualSize)
-    } else txt
-  }
-
-  def repeat(x: String, size: Int): String = (1 to size).map((i) => x).mkString
 }
 
 case class LowerFunction(argument: Expression) extends StringFunction(argument) {

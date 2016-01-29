@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.StringHelper
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.IncomparableValuesException
 
 /**
  * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.
  */
-trait Comparer extends StringHelper {
+trait Comparer extends CypherSerializer {
 
   import Comparer._
 
@@ -35,10 +34,10 @@ trait Comparer extends StringHelper {
       if ((isString(l) && isString(r)) || (isNumber(l) && isNumber(r)) || (isBoolean(l) && isBoolean(r)))
         CypherOrdering.DEFAULT.compare(l, r)
       else
-        throw new IncomparableValuesException(textWithType(l), textWithType(r))
+        throw new IncomparableValuesException(serializeWithType(l), serializeWithType(r))
     } catch {
       case _: IllegalArgumentException =>
-        throw new IncomparableValuesException(textWithType(l), textWithType(r))
+        throw new IncomparableValuesException(serializeWithType(l), serializeWithType(r))
     }
   }
 }
