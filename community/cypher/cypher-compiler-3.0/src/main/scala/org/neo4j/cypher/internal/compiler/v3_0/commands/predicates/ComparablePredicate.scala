@@ -83,7 +83,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
   }
 
   private def incomparable(lhs: Any, rhs: Any)(implicit state: QueryState): Nothing =
-    throw new IncomparableValuesException(textWithType(lhs), textWithType(rhs))
+    throw new IncomparableValuesException(serializeWithType(lhs), serializeWithType(rhs))
 
   override def toString = s"$a == $b"
 

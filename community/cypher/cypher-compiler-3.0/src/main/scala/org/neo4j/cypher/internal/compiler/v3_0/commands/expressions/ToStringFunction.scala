@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v3_0.{CypherSerializer, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.ParameterWrongTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
-case class ToStringFunction(a: Expression) extends NullInNullOutExpression(a) with StringHelper {
+case class ToStringFunction(a: Expression) extends NullInNullOutExpression(a) with CypherSerializer {
   def symbolTableDependencies: Set[String] = a.symbolTableDependencies
 
   protected def calculateType(symbols: SymbolTable): CypherType = CTString
