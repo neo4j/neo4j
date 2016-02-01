@@ -19,13 +19,7 @@
  */
 package org.neo4j.cypher
 
-import java.nio.file.{Files, Path}
-import java.util
-
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.EnterpriseGraphDatabase
-import org.neo4j.graphdb.factory.{GraphDatabaseFactoryState, GraphDatabaseSettings}
-import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
