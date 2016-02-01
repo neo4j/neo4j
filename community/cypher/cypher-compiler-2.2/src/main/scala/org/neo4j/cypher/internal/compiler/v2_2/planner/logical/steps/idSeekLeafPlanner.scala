@@ -29,13 +29,13 @@ import org.neo4j.graphdb.Direction.{BOTH, INCOMING, OUTGOING}
 object idSeekLeafPlanner extends LeafPlanner {
   def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) = {
     val predicates: Seq[Expression] = queryGraph.selections.flatPredicates
+    val arguments = queryGraph.argumentIds.map(n => Identifier(n.name)(null))
 
     val idSeekPredicates: Seq[(In, Identifier, EntityByIdRhs)] = predicates.collect {
       // MATCH (a)-[r]->b WHERE id(r) IN value
       // MATCH a WHERE id(a) IN value
       case predicate@In(func@FunctionInvocation(_, _, IndexedSeq(idExpr: Identifier)), idsExpr@Collection(idValueExprs))
-        if func.function == Some(functions.Id) &&
-           idValueExprs.forall(ConstantExpression.unapply(_).isDefined) =>
+        if func.function == Some(functions.Id) && idValueExprs.flatMap(_.dependencies).forall(arguments) && !arguments(idExpr) =>
         (predicate, idExpr, EntityByIdExprs(idValueExprs))
 
       // MATCH (a)-[r]->b WHERE id(r) IN {param}
