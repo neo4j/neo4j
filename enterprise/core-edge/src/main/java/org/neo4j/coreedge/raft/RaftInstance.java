@@ -70,7 +70,6 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
  */
 public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.MessageHandler, CoreMetaData
 {
-
     private final LeaderNotFoundMonitor leaderNotFoundMonitor;
 
     public enum Timeouts implements RenewableTimeoutService.TimeoutName
@@ -91,7 +90,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     private final long leaderWaitTimeout;
 
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
-    private Clock clock;
     private final VolatileFuture<MEMBER> volatileLeader = new VolatileFuture<>( null, member -> member != null );
 
     private final Outbound<MEMBER> outbound;
@@ -107,8 +105,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
                          LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
                          RaftLogShippingManager<MEMBER> logShipping,
                          Supplier<DatabaseHealth> databaseHealthSupplier,
-                         Clock clock, Monitors monitors )
-
+                         Monitors monitors )
     {
         this.myself = myself;
         this.entryLog = entryLog;
@@ -121,7 +118,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         this.outbound = outbound;
         this.logShipping = logShipping;
         this.databaseHealthSupplier = databaseHealthSupplier;
-        this.clock = clock;
         this.log = logProvider.getLog( getClass() );
 
         this.membershipManager = membershipManager;
