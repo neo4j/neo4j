@@ -34,11 +34,13 @@ class IDPSolverTest extends CypherFunSuite {
   private implicit val context = ()
 
   test("Solves a small toy problem") {
+    val monitor = mock[IDPSolverMonitor]
     val solver = new IDPSolver[Char, String, Unit](
-      monitor = mock[IDPSolverMonitor],
+      monitor = monitor,
       generator = stringAppendingSolverStep,
       projectingSelector = firstLongest,
-      maxTableSize = 16
+      maxTableSize = 16,
+      iterationDurationLimit = Int.MaxValue
     )
 
     val seed = Seq(
@@ -51,6 +53,7 @@ class IDPSolverTest extends CypherFunSuite {
     val solution = solver(seed, Set('a', 'b', 'c', 'd'))
 
     solution.toList should equal(List(Set('a', 'b', 'c', 'd') -> "abcd"))
+    verify(monitor).foundPlanAfter(1)
   }
 
   test("Compacts table at size limit") {
@@ -64,7 +67,8 @@ class IDPSolverTest extends CypherFunSuite {
         table = spy(IDPTable(registry, seed))
         table
       },
-      maxTableSize = 4
+      maxTableSize = 4,
+      iterationDurationLimit = Int.MaxValue
     )
 
     val seed = Seq(
@@ -103,6 +107,53 @@ class IDPSolverTest extends CypherFunSuite {
     verify(table).removeAllTracesOf(BitSet(7, 13))
     verify(monitor).foundPlanAfter(7)
     verifyNoMoreInteractions(monitor)
+  }
+
+  case class TestIDPSolverMonitor() extends IDPSolverMonitor {
+    var maxStartIteration = 0
+    var foundPlanIteration = 0
+
+    override def startIteration(iteration: Int): Unit = maxStartIteration = iteration
+
+    override def foundPlanAfter(iterations: Int): Unit = foundPlanIteration = iterations
+
+    override def endIteration(iteration: Int, depth: Int, tableSize: Int): Unit = {}
+  }
+
+  def runTimeLimitedSolver(iterationDuration: Int): Int = {
+    var table: IDPTable[String] = null
+    val monitor = TestIDPSolverMonitor()
+    val solver = new IDPSolver[Char, String, Unit](
+      monitor = monitor,
+      generator = stringAppendingSolverStep,
+      projectingSelector = firstLongest,
+      tableFactory = (registry: IdRegistry[Char], seed: Seed[Char, String]) => {
+        table = spy(IDPTable(registry, seed))
+        table
+      },
+      maxTableSize = Int.MaxValue,
+      iterationDurationLimit = iterationDuration
+    )
+
+    val seed: Seq[(Set[Char], String)] = ('a'.toInt to 'm'.toInt).foldLeft(Seq.empty[(Set[Char], String)]) { (acc, i) =>
+      val c = i.toChar
+      acc :+ (Set(c) -> c.toString)
+    }
+    val result = seed.foldLeft(Seq.empty[Char]) { (acc, t) =>
+      acc ++ t._1
+    }.toSet
+
+    solver(seed, result)
+
+    monitor.maxStartIteration should equal(monitor.foundPlanIteration)
+    println(monitor.maxStartIteration)
+    monitor.maxStartIteration
+  }
+
+  test("Compacts table at time limit") {
+    val shortSolverIterations = runTimeLimitedSolver(10)
+    val longSolverIterations = runTimeLimitedSolver(1000)
+    shortSolverIterations should be > longSolverIterations
   }
 
   private object firstLongest extends ProjectingSelector[String] {

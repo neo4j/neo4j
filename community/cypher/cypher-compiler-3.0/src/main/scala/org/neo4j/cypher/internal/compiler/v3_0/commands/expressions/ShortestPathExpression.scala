@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{PathExtractor, Pattern, ShortestPath, SingleNode, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
@@ -29,25 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.SyntaxException
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.graphalgo.GraphAlgoFactory
-import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
-import org.neo4j.graphdb.RelationshipType.withName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
-//import java.util.function.{Predicate => KernelPredicate}
-//=======
-//package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
-//
-//import org.neo4j.cypher.internal.compiler.v2_3._
-//import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates._
-//import org.neo4j.cypher.internal.compiler.v2_3.commands.{PathExtractor, Pattern, ShortestPath, SingleNode, _}
-//import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsAllNodes, ReadsRelationships}
-//import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-//import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-//import org.neo4j.cypher.internal.frontend.v2_3.SyntaxException
-//import org.neo4j.cypher.internal.frontend.v2_3.helpers.NonEmptyList
-//import org.neo4j.cypher.internal.frontend.v2_3.symbols._
-//import org.neo4j.graphdb.{Node, Path, PropertyContainer}
-//>>>>>>> upstream/2.3:community/cypher/cypher-compiler-2.3/src/main/scala/org/neo4j/cypher/internal/compiler/v2_3/commands/expressions/ShortestPathExpression.scala
 
 import scala.collection.Map
 

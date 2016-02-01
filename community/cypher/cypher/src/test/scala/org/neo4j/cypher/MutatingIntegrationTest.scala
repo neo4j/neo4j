@@ -162,7 +162,6 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     result.toList should equal(List(Map("n.age" -> 66, "n.name" -> "Andres")))
   }
 
-
   test("create rel from map values") {
     createNode()
     createNode()
@@ -483,6 +482,5 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     val firstMatch = 4
     val secondMatch = 12 // The already existing 4 nodes, plus the now created 8
     result.toList should equal(List(Map("count" -> unwind * firstMatch * secondMatch)))
-   }
-
+  }
 }
