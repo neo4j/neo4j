@@ -45,6 +45,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -96,8 +97,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 
@@ -913,9 +912,9 @@ public class ClusterManager
         public Iterable<HighlyAvailableGraphDatabase> getAllMembers( HighlyAvailableGraphDatabase... except )
         {
             Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<>( asList( except ) );
-            return filter( db -> !exceptSet.contains( db ), map( from -> {
-                return from.get( DEFAULT_TIMEOUT_SECONDS );
-            }, members.values() ) );
+
+            return members.values().stream().map( proxy -> proxy.get( DEFAULT_TIMEOUT_SECONDS ) )
+                    .filter( db -> !exceptSet.contains( db ) ).collect( Collectors.toList());
         }
 
         public Iterable<ObservedClusterMembers> getArbiters()
