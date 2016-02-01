@@ -190,7 +190,7 @@ public class EnterpriseCoreEditionModule
 
         NaiveDurableRaftLog raftLog = life.add( new NaiveDurableRaftLog( fileSystem,
                 new File( clusterStateDirectory, NaiveDurableRaftLog.DIRECTORY_NAME ),
-                new RaftContentSerializer() ) );
+                new RaftContentSerializer(), logProvider ) );
 
         MonitoredRaftLog monitoredRaftLog = new MonitoredRaftLog( raftLog, platformModule.monitors );
 

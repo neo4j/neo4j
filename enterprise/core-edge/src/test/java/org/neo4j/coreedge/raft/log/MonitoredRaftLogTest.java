@@ -29,6 +29,7 @@ import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.*;
 
@@ -51,7 +52,8 @@ public class MonitoredRaftLogTest
         monitors.addMonitorListener( commitMonitor );
 
         MonitoredRaftLog log = new MonitoredRaftLog(
-                new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer() ), monitors );
+                new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(),
+                        NullLogProvider.getInstance() ), monitors );
 
         // When
         log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );

@@ -31,6 +31,8 @@ import org.neo4j.coreedge.raft.replication.Serializer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Writes a raft log to disk using 3 files:
@@ -74,12 +76,14 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     private final StoreChannel commitChannel;
 
     private final Serializer serializer;
+    private final Log log;
     private long appendIndex = -1;
     private long contentOffset;
     private long commitIndex = -1;
     private long term = -1;
 
-    public NaiveDurableRaftLog( FileSystemAbstraction fileSystem, File directory, Serializer serializer )
+    public NaiveDurableRaftLog( FileSystemAbstraction fileSystem, File directory, Serializer serializer,
+                                LogProvider logProvider )
     {
         this.serializer = serializer;
 
@@ -93,6 +97,9 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             appendIndex = entriesChannel.size() / ENTRY_RECORD_LENGTH - 1;
             contentOffset = contentChannel.size();
             commitIndex = readCommitIndex();
+            log = logProvider.getLog( getClass() );
+
+            log.info( "Raft log created. AppendIndex: %d, commitIndex: %d", appendIndex, commitIndex );
         }
         catch ( IOException e )
         {
@@ -153,6 +160,17 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
          * This change is effectively equivalent to truncating/compacting the raft log.
          */
         long index = Math.max( 0, commitIndex - 1 ); // new instances have a commit index of -1, which should be ignored
+        log.info( "Starting replay at index %d", index );
+        for(; index <= commitIndex; index++ )
+        {
+            ReplicatedContent content = readEntryContent( index );
+            for ( Listener listener : listeners )
+            {
+                listener.onAppended( content, index );
+                listener.onCommitted( content, index );
+            }
+            log.info( "Index %d replayed as committed", index );
+        }
         for (; index <= appendIndex; index++ )
         {
             ReplicatedContent content = readEntryContent( index );
@@ -160,6 +178,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             {
                 listener.onAppended( content, index );
             }
+            log.info( "Index %d replayed as appended", index );
         }
     }
 

@@ -32,6 +32,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,7 +44,8 @@ public class RaftLogAdversarialTest
     {
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
-        return new NaiveDurableRaftLog( fileSystem, directory, new DummyRaftableContentSerializer());
+        return new NaiveDurableRaftLog( fileSystem, directory, new DummyRaftableContentSerializer(),
+                NullLogProvider.getInstance());
     }
 
     @Test

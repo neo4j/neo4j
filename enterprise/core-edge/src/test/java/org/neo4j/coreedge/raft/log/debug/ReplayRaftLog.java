@@ -32,6 +32,7 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 
 public class ReplayRaftLog
@@ -49,7 +50,7 @@ public class ReplayRaftLog
         File logDirectory = new File( from );
         System.out.println( "logDirectory = " + logDirectory );
         NaiveDurableRaftLog log = new NaiveDurableRaftLog( new DefaultFileSystemAbstraction(),
-                logDirectory, new RaftContentSerializer() );
+                logDirectory, new RaftContentSerializer(), NullLogProvider.getInstance() );
 
         long totalCommittedEntries = log.commitIndex();
 

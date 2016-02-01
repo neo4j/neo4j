@@ -29,6 +29,7 @@ import org.mockito.Matchers;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreFileChannel;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -63,7 +64,8 @@ public class NaiveDurableRaftLogTest
         when( fsa.open( Matchers.eq( contentFile ), anyString() ) ).thenReturn( contentChannel );
         when( fsa.open( Matchers.eq( commitFile ), anyString() ) ).thenReturn( commitChannel );
 
-        NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer());
+        NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(),
+                NullLogProvider.getInstance());
 
         // When
         log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );
@@ -101,7 +103,8 @@ public class NaiveDurableRaftLogTest
         when( fsa.open( Matchers.eq( contentFile ), anyString() ) ).thenReturn( contentChannel );
         when( fsa.open( Matchers.eq( commitFile ), anyString() ) ).thenReturn( commitChannel );
 
-        NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer());
+        NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(),
+                NullLogProvider.getInstance());
 
         // When
         log.shutdown();
@@ -142,7 +145,8 @@ public class NaiveDurableRaftLogTest
         when( fsa.open( Matchers.eq( contentFile ), anyString() ) ).thenReturn( contentChannel );
         when( fsa.open( Matchers.eq( commitFile ), anyString() ) ).thenReturn( commitChannel );
 
-        NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer());
+        NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(),
+                NullLogProvider.getInstance());
 
         // When
         try
