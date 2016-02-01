@@ -2151,7 +2151,6 @@ class EagerizationAcceptanceTest
         |RETURN count(*)""".stripMargin
 
     val result = updateWithBothPlanners(query)
-    println(result.executionPlanDescription())
     result.columnAs[Long]("count(*)").next() should equal(2)
     assertStats(result, nodesCreated = 2, labelsAdded = 2, propertiesWritten = 8)
     assertNumberOfEagerness(query, 1)
@@ -2174,8 +2173,6 @@ class EagerizationAcceptanceTest
         |)
         |RETURN count(*), b.deleted
       """.stripMargin
-
-    println(executeWithCostPlannerOnly(s"EXPLAIN $query").executionPlanDescription())
 
     val result = updateWithBothPlanners(query)
     assertStats(result, nodesCreated = 2, nodesDeleted = 2, propertiesWritten = 6, labelsAdded = 2)

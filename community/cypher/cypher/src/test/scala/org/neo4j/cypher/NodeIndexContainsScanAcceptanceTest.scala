@@ -88,8 +88,6 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
 
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
-    println(result.executionPlanDescription())
-
     result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
   }
 
@@ -112,8 +110,6 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
     val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
 
     val result = executeWithAllPlannersAndCompatibilityMode(query)
-
-    println(result.executionPlanDescription())
 
     result should (use("NodeIndexSeek") and evaluateTo(List(Map("l" -> london))))
   }
@@ -138,8 +134,6 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
 
     // RULE has bug with this query
     val result = executeWithCostPlannerOnly(query)
-
-    println(result.executionPlanDescription())
 
     result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
   }
