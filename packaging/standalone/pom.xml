@@ -276,6 +276,9 @@
             <configuration>
               <executable>./run-tests.sh</executable>
               <workingDirectory>src/tests/shell-scripts</workingDirectory>
+              <arguments>
+                <argument>--verbose</argument>
+              </arguments>
             </configuration>
           </execution>
         </executions>
