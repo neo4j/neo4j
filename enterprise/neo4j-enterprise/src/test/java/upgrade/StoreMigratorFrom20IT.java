@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.current.Current;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -188,7 +188,7 @@ public class StoreMigratorFrom20IT
         assertEquals( 1317392957120L, metaDataStore.getCreationTime() );
         assertEquals( -472309512128245482l, metaDataStore.getRandomNumber() );
         assertEquals( 5l, metaDataStore.getCurrentLogVersion() );
-        assertEquals( Current.STORE_VERSION, MetaDataStore.versionLongToString(
+        assertEquals( LowLimit.STORE_VERSION, MetaDataStore.versionLongToString(
                 metaDataStore.getStoreVersion() ) );
         assertEquals( 1042l, metaDataStore.getLastCommittedTransactionId() );
     }

@@ -38,7 +38,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
@@ -56,6 +55,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class DuplicatePropertyRemoverTest
@@ -135,7 +135,7 @@ public class DuplicatePropertyRemoverTest
             int propertyKeyId = indexedPropertyKeys.get( propertyName );
 
             // remove the property from the node by the given property key
-            NodeRecord nodeRecord = CommonAbstractStore.getRecord( nodeStore, nodeId );
+            NodeRecord nodeRecord = getRecord( nodeStore, nodeId );
             removeProperty( nodeRecord, propertyKeyId );
 
             // check the integrity of the property chain:
@@ -154,7 +154,7 @@ public class DuplicatePropertyRemoverTest
         int propBlockCount = 0;
         while( nextPropId != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = CommonAbstractStore.getRecord( propertyStore, nextPropId );
+            PropertyRecord propRecord = getRecord( propertyStore, nextPropId );
             PropertyBlock propertyBlock = propRecord.getPropertyBlock( propertyKeyId );
             assertNull( propertyBlock );
             nextPropId = propRecord.getNextProp();
@@ -205,7 +205,7 @@ public class DuplicatePropertyRemoverTest
     {
         long nextPropId = propRecord.getNextProp();
         return nextPropId != Record.NO_NEXT_PROPERTY.intValue()
-                ? CommonAbstractStore.getRecord( propertyStore, nextPropId )
+                ? getRecord( propertyStore, nextPropId )
                 : null;
     }
 

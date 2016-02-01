@@ -47,6 +47,7 @@ import org.neo4j.legacy.consistency.store.DiffRecordAccess;
 import org.neo4j.legacy.consistency.store.DirectRecordAccess;
 import org.neo4j.logging.Log;
 
+import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class FullCheck
@@ -163,9 +164,8 @@ public class FullCheck
         T[] records = (T[]) Array.newInstance( type, (int) store.getHighId() );
         for ( int i = 0; i < records.length; i++ )
         {
-            records[i] = store.getRecord( i, store.newRecord(), FORCE );
+            records[i] = getRecord( store, i, FORCE );
         }
         return records;
     }
-
 }

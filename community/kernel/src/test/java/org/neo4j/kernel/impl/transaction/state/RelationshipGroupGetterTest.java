@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.mockito.InOrder;
 
 import java.io.File;
@@ -48,10 +49,10 @@ import static org.mockito.Mockito.times;
 
 public class RelationshipGroupGetterTest
 {
+    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final PageCacheRule pageCache = new PageCacheRule();
     @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule
-    public final PageCacheRule pageCache = new PageCacheRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( pageCache );
 
     @Test
     public void shouldAbortLoadingGroupChainIfComeTooFar() throws Exception

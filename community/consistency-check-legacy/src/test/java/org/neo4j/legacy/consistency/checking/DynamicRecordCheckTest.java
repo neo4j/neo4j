@@ -26,7 +26,7 @@ import org.junit.runners.Suite;
 
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.format.current.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.legacy.consistency.report.ConsistencyReport;
 

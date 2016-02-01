@@ -43,10 +43,11 @@ public class RelationshipStore extends ComposableRecordStore<RelationshipRecord,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            RecordFormat<RelationshipRecord> recordFormat )
+            RecordFormat<RelationshipRecord> recordFormat,
+            String storeVersion )
     {
         super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
-                pageCache, logProvider, TYPE_DESCRIPTOR, recordFormat, NO_STORE_HEADER_FORMAT );
+                pageCache, logProvider, TYPE_DESCRIPTOR, recordFormat, storeVersion, NO_STORE_HEADER_FORMAT );
     }
 
     @Override

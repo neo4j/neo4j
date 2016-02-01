@@ -163,7 +163,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
             public void visitNodeCount( int labelId, long count )
             {
                 nodeEntries.incrementAndGet();
-                reporter.forCounts( new CountsEntry().initialize( nodeKey( labelId ), count ), CHECK_NODE_COUNT );
+                reporter.forCounts( new CountsEntry( nodeKey( labelId ), count ), CHECK_NODE_COUNT );
                 listener.add( 1 );
             }
 
@@ -172,15 +172,15 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
             {
                 relationshipEntries.incrementAndGet();
                 reporter.forCounts(
-                        new CountsEntry().initialize( relationshipKey( startLabelId, relTypeId, endLabelId ), count ),
+                        new CountsEntry( relationshipKey( startLabelId, relTypeId, endLabelId ), count ),
                         CHECK_RELATIONSHIP_COUNT );
                 listener.add( 1 );
             }
         } );
         reporter.forCounts(
-                new CountsEntry().initialize( nodeKey( WILDCARD ), nodeEntries.get() ), CHECK_NODE_KEY_COUNT );
+                new CountsEntry( nodeKey( WILDCARD ), nodeEntries.get() ), CHECK_NODE_KEY_COUNT );
         reporter.forCounts(
-                new CountsEntry().initialize( relationshipKey( WILDCARD, WILDCARD, WILDCARD ),
+                new CountsEntry( relationshipKey( WILDCARD, WILDCARD, WILDCARD ),
                         relationshipEntries.get() ), CHECK_RELATIONSHIP_KEY_COUNT );
         listener.done();
     }

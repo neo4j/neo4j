@@ -23,10 +23,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.impl.store.format.current.DynamicRecordFormat;
-import org.neo4j.kernel.impl.store.format.current.NodeRecordFormat;
-import org.neo4j.kernel.impl.store.format.current.PropertyRecordFormat;
-import org.neo4j.kernel.impl.store.format.current.RelationshipRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
 import org.neo4j.test.docs.DocsIncludeFile;
 
 import static java.util.Arrays.asList;

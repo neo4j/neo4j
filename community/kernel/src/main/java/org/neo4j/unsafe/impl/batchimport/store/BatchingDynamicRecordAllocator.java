@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import static java.lang.Integer.parseInt;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.string_block_size;
-import static org.neo4j.kernel.impl.store.format.current.DynamicRecordFormat.RECORD_HEADER_SIZE;
+import static org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat.RECORD_HEADER_SIZE;
 
 /**
  * {@link DynamicRecordAllocator} that allocates records using a {@link BatchingIdSequence}

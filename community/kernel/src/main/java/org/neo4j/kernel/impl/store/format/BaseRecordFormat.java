@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.store.record.Record;
  */
 public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD>
 {
-    public static final int IN_USE_BIT_1 = 0x1;
+    public static final int IN_USE_BIT = 0x1;
     public static final Function<StoreHeader,Integer> INT_STORE_HEADER_READER =
             (header) -> ((IntStoreHeader)header).value();
 

@@ -130,7 +130,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.getRecord;
+import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 
 @RunWith( Parameterized.class )
 public class BatchInsertTest

@@ -36,12 +36,6 @@ public class PropertyKeyTokenRecord extends TokenRecord
     }
 
     @Override
-    public void setId( long id )
-    {
-        super.setId( id );
-    }
-
-    @Override
     public void clear()
     {
         super.clear();
@@ -69,7 +63,6 @@ public class PropertyKeyTokenRecord extends TokenRecord
     {
         buf.append( ",propCount=" ).append( propCount );
     }
-
 
     @Override
     public PropertyKeyTokenRecord clone()

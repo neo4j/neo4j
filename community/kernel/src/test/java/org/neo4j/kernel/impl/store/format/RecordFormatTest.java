@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StoreHeader;
-import org.neo4j.kernel.impl.store.format.current.Current;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -58,7 +58,7 @@ import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
-import static org.neo4j.kernel.impl.store.format.current.DynamicRecordFormat.RECORD_HEADER_SIZE;
+import static org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat.RECORD_HEADER_SIZE;
 
 @RunWith( Parameterized.class )
 public class RecordFormatTest
@@ -82,7 +82,7 @@ public class RecordFormatTest
     public static Collection<Object[]> data()
     {
         Collection<Object[]> data = new ArrayList<>();
-        data.add( array( Current.RECORD_FORMATS, LOW_LIMITS ) );
+        data.add( array( LowLimit.RECORD_FORMATS, LOW_LIMITS ) );
         return data;
     }
 

@@ -42,10 +42,11 @@ public class ComposableRecordStore<RECORD extends AbstractBaseRecord, HEADER ext
 
     public ComposableRecordStore( File fileName, Config configuration, IdType idType,
             IdGeneratorFactory idGeneratorFactory, PageCache pageCache, LogProvider logProvider, String typeDescriptor,
-            RecordFormat<RECORD> recordFormat,
+            RecordFormat<RECORD> recordFormat, String storeVersion,
             StoreHeaderFormat<HEADER> storeHeaderFormat )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor );
+        super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
+                storeVersion );
         this.recordFormat = recordFormat;
         this.storeHeaderFormat = storeHeaderFormat;
     }

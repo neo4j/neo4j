@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.current.Current;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -243,7 +243,7 @@ public class StoreMigratorFrom19IT
         assertEquals( 1409818980890L, metaDataStore.getCreationTime() );
         assertEquals( 7528833218632030901L, metaDataStore.getRandomNumber() );
         assertEquals( 1L, metaDataStore.getCurrentLogVersion() );
-        assertEquals( Current.STORE_VERSION, MetaDataStore.versionLongToString(
+        assertEquals( LowLimit.STORE_VERSION, MetaDataStore.versionLongToString(
                 metaDataStore.getStoreVersion() ) );
         assertEquals( 8L + 3, metaDataStore.getLastCommittedTransactionId() ); // prior verifications add 3 transactions
     }

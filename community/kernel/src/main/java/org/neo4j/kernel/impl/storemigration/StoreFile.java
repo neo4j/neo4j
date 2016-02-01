@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.format.current.Current;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
@@ -264,7 +264,7 @@ public enum StoreFile
     public static void removeTrailers( String version, FileSystemAbstraction fs, File storeDir, int pageSize )
             throws IOException
     {
-        for ( StoreFile storeFile : legacyStoreFilesForVersion( Current.STORE_VERSION ) )
+        for ( StoreFile storeFile : legacyStoreFilesForVersion( LowLimit.STORE_VERSION ) )
         {
             String trailer = storeFile.forVersion( version );
             byte[] encodedTrailer = UTF8.encode( trailer );

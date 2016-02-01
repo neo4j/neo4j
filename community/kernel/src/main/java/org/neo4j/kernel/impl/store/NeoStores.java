@@ -464,14 +464,15 @@ public class NeoStores implements AutoCloseable
     {
         File storeFile = getStoreFile( storeName );
         return initialize( new DynamicArrayStore( storeFile, config, idType, idGeneratorFactory, pageCache,
-                logProvider, blockSize, recordFormats.dynamic() ) );
+                logProvider, blockSize, recordFormats.dynamic(), recordFormats.storeVersion() ) );
     }
 
     CommonAbstractStore createNodeStore( String storeName )
     {
         File storeFile = getStoreFile( storeName );
         return initialize( new NodeStore( storeFile, config, idGeneratorFactory, pageCache, logProvider,
-                (DynamicArrayStore) getOrCreateStore( StoreType.NODE_LABEL ), recordFormats.node() ) );
+                (DynamicArrayStore) getOrCreateStore( StoreType.NODE_LABEL ), recordFormats.node(),
+                recordFormats.storeVersion() ) );
     }
 
     CommonAbstractStore createPropertyKeyTokenStore( String storeName )
@@ -479,7 +480,7 @@ public class NeoStores implements AutoCloseable
         File storeFile = getStoreFile( storeName );
         return initialize( new PropertyKeyTokenStore( storeFile, config, idGeneratorFactory,
                 pageCache, logProvider, (DynamicStringStore) getOrCreateStore( StoreType.PROPERTY_KEY_TOKEN_NAME ),
-                recordFormats.propertyKeyToken() ) );
+                recordFormats.propertyKeyToken(), recordFormats.storeVersion() ) );
     }
 
     CommonAbstractStore createPropertyStore( String storeName )
@@ -488,14 +489,15 @@ public class NeoStores implements AutoCloseable
         return initialize( new PropertyStore( storeFile, config, idGeneratorFactory, pageCache, logProvider,
                 (DynamicStringStore) getOrCreateStore( StoreType.PROPERTY_STRING ),
                 (PropertyKeyTokenStore) getOrCreateStore( StoreType.PROPERTY_KEY_TOKEN ),
-                (DynamicArrayStore) getOrCreateStore( StoreType.PROPERTY_ARRAY ), recordFormats.property() ) );
+                (DynamicArrayStore) getOrCreateStore( StoreType.PROPERTY_ARRAY ), recordFormats.property(),
+                recordFormats.storeVersion() ) );
     }
 
     CommonAbstractStore createRelationshipStore( String storeName )
     {
         File file = getStoreFile( storeName );
         return initialize( new RelationshipStore( file, config, idGeneratorFactory, pageCache, logProvider,
-                recordFormats.relationship() ) );
+                recordFormats.relationship(), recordFormats.storeVersion() ) );
     }
 
     CommonAbstractStore createDynamicStringStore( String storeName, IdType idType,
@@ -508,7 +510,7 @@ public class NeoStores implements AutoCloseable
     {
         File storeFile = getStoreFile( storeName );
         return initialize( new DynamicStringStore( storeFile, config, idType, idGeneratorFactory,
-                pageCache, logProvider, blockSize, recordFormats.dynamic() ) );
+                pageCache, logProvider, blockSize, recordFormats.dynamic(), recordFormats.storeVersion() ) );
     }
 
     CommonAbstractStore createRelationshipTypeTokenStore( String storeName )
@@ -517,7 +519,7 @@ public class NeoStores implements AutoCloseable
         return initialize( new RelationshipTypeTokenStore( storeFile, config, idGeneratorFactory,
                 pageCache, logProvider,
                 (DynamicStringStore) getOrCreateStore( StoreType.RELATIONSHIP_TYPE_TOKEN_NAME ),
-                recordFormats.relationshipTypeToken() ) );
+                recordFormats.relationshipTypeToken(), recordFormats.storeVersion() ) );
     }
 
     CommonAbstractStore createLabelTokenStore( String storeName )
@@ -525,21 +527,21 @@ public class NeoStores implements AutoCloseable
         File fileName = getStoreFile( storeName );
         return initialize( new LabelTokenStore( fileName, config, idGeneratorFactory, pageCache,
                 logProvider, (DynamicStringStore) getOrCreateStore( StoreType.LABEL_TOKEN_NAME ),
-                recordFormats.labelToken() ) );
+                recordFormats.labelToken(), recordFormats.storeVersion() ) );
     }
 
     CommonAbstractStore createSchemaStore( String storeName )
     {
         File fileName = getStoreFile( storeName );
         return initialize( new SchemaStore( fileName, config, IdType.SCHEMA, idGeneratorFactory, pageCache,
-                logProvider, recordFormats.dynamic() ) );
+                logProvider, recordFormats.dynamic(), recordFormats.storeVersion() ) );
     }
 
     CommonAbstractStore createRelationshipGroupStore( String storeName )
     {
         File storeFile = getStoreFile( storeName );
         return initialize( new RelationshipGroupStore( storeFile, config, idGeneratorFactory, pageCache, logProvider,
-                recordFormats.relationshipGroup() ) );
+                recordFormats.relationshipGroup(), recordFormats.storeVersion() ) );
     }
 
     CountsTracker createCountStore( String storeName )
@@ -582,7 +584,8 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createMetadataStore()
     {
-        return initialize( new MetaDataStore( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider ) );
+        return initialize( new MetaDataStore( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
+                recordFormats.storeVersion() ) );
     }
 
     public void registerDiagnostics( DiagnosticsManager diagnosticsManager )

@@ -33,33 +33,20 @@ public class CountsEntry extends AbstractBaseRecord
     private CountsKey key;
     private long count;
 
-    // ========= TRANSITIONAL CONSTRUCTORS =============
-    public CountsEntry()
-    {
-        super( -1 );
-    }
-
     public CountsEntry( CountsKey key, long count )
     {
         super( -1 );
-        initialize( key, count );
-    }
-    // ========= TRANSITIONAL CONSTRUCTORS =============
-
-    public CountsEntry initialize( CountsKey key, long count )
-    {
-        super.initialize( true );
         this.key = key;
         this.count = count;
-        return this;
+        setInUse( true );
     }
 
     @Override
     public void clear()
     {
-        super.initialize( false );
-        this.key = null;
-        this.count = 0;
+        super.clear();
+        key = null;
+        count = 0;
     }
 
     @Override

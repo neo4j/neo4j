@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.ShortArray;
-import org.neo4j.kernel.impl.store.format.current.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.util.Bits;

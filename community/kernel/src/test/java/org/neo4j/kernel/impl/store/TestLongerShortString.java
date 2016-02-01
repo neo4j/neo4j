@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.kernel.impl.store.format.current.PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE;
+import static org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE;
 
 public class TestLongerShortString
 {

@@ -57,9 +57,9 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.format.current.Current;
-import org.neo4j.kernel.impl.store.format.current.NodeRecordFormat;
-import org.neo4j.kernel.impl.store.format.current.RelationshipRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -875,7 +875,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
         // Upgrade version in NeoStore
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.STORE_VERSION,
-                MetaDataStore.versionStringToLong( Current.STORE_VERSION ) );
+                MetaDataStore.versionStringToLong( LowLimit.STORE_VERSION ) );
     }
 
     @Override

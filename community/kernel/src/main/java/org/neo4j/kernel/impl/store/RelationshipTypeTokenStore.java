@@ -47,10 +47,12 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             PageCache pageCache,
             LogProvider logProvider,
             DynamicStringStore nameStore,
-            RecordFormat<RelationshipTypeTokenRecord> recordFormat )
+            RecordFormat<RelationshipTypeTokenRecord> recordFormat,
+            String storeVersion )
     {
         super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache,
-                logProvider, nameStore, TYPE_DESCRIPTOR, new RelationshipTypeToken.Factory(), recordFormat );
+                logProvider, nameStore, TYPE_DESCRIPTOR, new RelationshipTypeToken.Factory(), recordFormat,
+                storeVersion );
     }
 
     @Override

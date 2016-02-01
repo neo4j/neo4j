@@ -38,7 +38,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -235,7 +234,7 @@ public class RsdrMain
 
                 try
                 {
-                    AbstractBaseRecord record = CommonAbstractStore.getRecord( store, i, CHECK );
+                    AbstractBaseRecord record = RecordStore.getRecord( store, i, CHECK );
                     use = record.inUse()? "+" : "-";
                     str = record.toString();
                 }

@@ -48,7 +48,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.getRecord;
+import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 
 public class IndexConsultedPropertyBlockSweeperTest
 {

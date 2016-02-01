@@ -40,11 +40,12 @@ public class RelationshipGroupStore extends ComposableRecordStore<RelationshipGr
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            RecordFormat<RelationshipGroupRecord> recordFormat )
+            RecordFormat<RelationshipGroupRecord> recordFormat,
+            String storeVersion )
     {
         super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache,
                 logProvider, TYPE_DESCRIPTOR, recordFormat,
-                new IntStoreHeaderFormat( config.get( GraphDatabaseSettings.dense_node_threshold ) ) );
+                storeVersion, new IntStoreHeaderFormat( config.get( GraphDatabaseSettings.dense_node_threshold ) ) );
     }
 
     @Override

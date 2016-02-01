@@ -33,14 +33,14 @@ public class LabelScanDocument extends AbstractBaseRecord
     public LabelScanDocument( NodeLabelRange nodeLabelRange )
     {
         super( nodeLabelRange.id() );
-        initialize( true );
         this.nodeLabelRange = nodeLabelRange;
+        setInUse( true );
     }
 
     @Override
     public void clear()
     {
-        initialize( false );
+        super.clear();
         this.nodeLabelRange = null;
     }
 

@@ -33,6 +33,9 @@ public class DynamicRecord extends AbstractBaseRecord
     private int type;
     private boolean startRecord;
 
+    /**
+     * @deprecated use {@link #initialize(boolean, boolean, long, int, int)} instead.
+     */
     @Deprecated
     public static DynamicRecord dynamicRecord( long id, boolean inUse )
     {
@@ -41,6 +44,9 @@ public class DynamicRecord extends AbstractBaseRecord
         return record;
     }
 
+    /**
+     * @deprecated use {@link #initialize(boolean, boolean, long, int, int)} instead.
+     */
     @Deprecated
     public static DynamicRecord dynamicRecord( long id, boolean inUse, boolean isStartRecord, long nextBlock, int type,
                                                byte [] data )

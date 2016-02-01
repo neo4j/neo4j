@@ -26,13 +26,13 @@ import java.io.ObjectOutput;
 import java.security.SecureRandom;
 import java.util.Random;
 
-import org.neo4j.kernel.impl.store.format.current.Current;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 
 public final class StoreId implements Externalizable
 {
-    public static final long CURRENT_STORE_VERSION = versionStringToLong( Current.STORE_VERSION );
+    public static final long CURRENT_STORE_VERSION = versionStringToLong( LowLimit.STORE_VERSION );
 
     public static final StoreId DEFAULT = new StoreId( -1, -1, -1, -1 );
 

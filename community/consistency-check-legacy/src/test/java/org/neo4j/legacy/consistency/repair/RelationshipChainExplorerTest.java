@@ -42,7 +42,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.getRecord;
+import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 
 public class RelationshipChainExplorerTest
 {

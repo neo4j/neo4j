@@ -30,7 +30,7 @@ public class IndexEntry extends AbstractBaseRecord
     public IndexEntry( long nodeId )
     {
         super( nodeId );
-        initialize( true );
+        setInUse( true );
     }
 
     @Override

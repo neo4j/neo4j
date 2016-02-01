@@ -38,11 +38,10 @@ public class SchemaRecord extends AbstractBaseRecord implements Iterable<Dynamic
 
     public SchemaRecord initialize( Collection<DynamicRecord> records )
     {
+        initialize( true );
         Iterator<DynamicRecord> iterator = records.iterator();
         long id = iterator.hasNext() ? iterator.next().getId() : NULL_REFERENCE.intValue();
-        super.initialize( true );
         setId( id );
-        setInUse( true );
         this.records = records;
         return this;
     }
@@ -56,7 +55,7 @@ public class SchemaRecord extends AbstractBaseRecord implements Iterable<Dynamic
     @Override
     public void clear()
     {
-        super.initialize( false );
+        super.clear();
         this.records = null;
     }
 

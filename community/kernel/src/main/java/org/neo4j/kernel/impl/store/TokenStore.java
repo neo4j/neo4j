@@ -61,10 +61,11 @@ public abstract class TokenStore<RECORD extends TokenRecord,TOKEN extends Token>
             DynamicStringStore nameStore,
             String typeDescriptor,
             TokenFactory<TOKEN> tokenFactory,
-            RecordFormat<RECORD> recordFormat )
+            RecordFormat<RECORD> recordFormat,
+            String storeVersion )
     {
         super( file, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
-                recordFormat, NO_STORE_HEADER_FORMAT );
+                recordFormat, storeVersion, NO_STORE_HEADER_FORMAT );
         this.nameStore = nameStore;
         this.tokenFactory = tokenFactory;
     }

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 import java.util.Collection;
@@ -37,7 +36,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.current.Current;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -55,13 +53,11 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
- * Contains common implementation for {@link AbstractStore} and
- * {@link AbstractDynamicStore}.
+ * Contains common implementation of {@link RecordStore}.
  */
 public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         implements RecordStore<RECORD>, AutoCloseable
 {
-    public static final String ALL_STORES_VERSION = "v0.A.7";
     public static final String UNKNOWN_VERSION = "Unknown";
 
     protected final Config configuration;
@@ -75,6 +71,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
     private final String typeDescriptor;
+
+    private final String storeVersion;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -98,7 +96,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            String typeDescriptor )
+            String typeDescriptor,
+            String storeVersion )
     {
         this.storageFileName = fileName;
         this.configuration = configuration;
@@ -106,20 +105,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         this.pageCache = pageCache;
         this.idType = idType;
         this.typeDescriptor = typeDescriptor;
+        this.storeVersion = storeVersion;
         this.log = logProvider.getLog( getClass() );
     }
 
     protected static long longFromIntAndMod( long base, long modifier )
     {
         return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
-    }
-
-    protected ByteBuffer intHeaderData( int value )
-    {
-        ByteBuffer data = ByteBuffer.allocate( 4 );
-        data.putInt( value );
-        data.flip();
-        return data;
     }
 
     void initialise( boolean createIfNotExists )
@@ -209,18 +201,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         }
 
         File idFileName = new File( storageFileName.getPath() + ".id" );
-        idGeneratorFactory.create( idFileName, 0, true );
-        IdGenerator idGenerator = idGeneratorFactory.open( idFileName, 1, idType, 0 );
-        initialiseNewIdGenerator( idGenerator );
-        idGenerator.close();
-    }
-
-    protected void initialiseNewIdGenerator( IdGenerator idGenerator )
-    {
-        for ( int i = 0; i < getNumberOfReservedLowIds(); i++ )
-        {
-            idGenerator.nextId();
-        }
+        idGeneratorFactory.create( idFileName, getNumberOfReservedLowIds(), true );
     }
 
     protected void createHeaderRecord( PageCursor cursor )
@@ -857,7 +838,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
 
     public void logVersions( Logger logger )
     {
-        logger.log( "  " + getTypeDescriptor() + " " + Current.STORE_VERSION );
+        logger.log( "  " + getTypeDescriptor() + " " + storeVersion );
     }
 
     public void logIdUsage( Logger logger )
@@ -1138,7 +1119,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         };
     }
 
-    @SuppressWarnings( "resource" )
     @Override
     public RecordCursor<RECORD> placeRecordCursor( final long id, final RecordCursor<RECORD> cursor,
             final RecordLoad mode )
@@ -1159,18 +1139,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     public void ensureHeavy( RECORD record )
     {
         // Do nothing by default. Some record stores have this.
-    }
-
-    public static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id, RecordLoad mode )
-    {
-        R record = store.newRecord();
-        store.getRecord( id, record, mode );
-        return record;
-    }
-
-    public static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
-    {
-        return getRecord( store, id, RecordLoad.NORMAL );
     }
 
     @Override

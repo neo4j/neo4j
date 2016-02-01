@@ -86,7 +86,7 @@ public class CommonAbstractStoreTest
         public TheStore( File fileName, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory,
                 PageCache pageCache, LogProvider logProvider )
         {
-            super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType" );
+            super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType", "v1" );
         }
 
         @Override

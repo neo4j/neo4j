@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.impl.store.format.current.Current;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 
 /**
@@ -42,7 +42,7 @@ public class Legacy21Store implements LegacyStore
     public Legacy21Store( File storageFileName ) throws IOException
     {
         this.storageFileName = storageFileName;
-        assertLegacyAndCurrentVersionHaveSameLength( LEGACY_VERSION, Current.STORE_VERSION );
+        assertLegacyAndCurrentVersionHaveSameLength( LEGACY_VERSION, LowLimit.STORE_VERSION );
     }
 
     /**

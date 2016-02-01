@@ -55,10 +55,11 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            RecordFormat<DynamicRecord> recordFormat )
+            RecordFormat<DynamicRecord> recordFormat,
+            String storeVersion )
     {
         super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, BLOCK_SIZE,
-                recordFormat );
+                recordFormat, storeVersion );
     }
 
     @Override

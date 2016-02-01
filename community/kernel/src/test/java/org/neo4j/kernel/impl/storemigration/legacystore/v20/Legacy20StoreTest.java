@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.store.format.current.Current;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -37,7 +37,7 @@ public class Legacy20StoreTest
         try
         {
             // WHEN
-            assertLegacyAndCurrentVersionHaveSameLength( "111", Current.STORE_VERSION );
+            assertLegacyAndCurrentVersionHaveSameLength( "111", LowLimit.STORE_VERSION );
             fail( "Should have thrown exception" );
         }
         catch ( IllegalStateException e )

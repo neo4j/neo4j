@@ -44,10 +44,11 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord, Token>
             PageCache pageCache,
             LogProvider logProvider,
             DynamicStringStore nameStore,
-            RecordFormat<LabelTokenRecord> recordFormat )
+            RecordFormat<LabelTokenRecord> recordFormat,
+            String storeVersion )
     {
         super( file, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
-                logProvider, nameStore, TYPE_DESCRIPTOR, new Token.Factory(), recordFormat );
+                logProvider, nameStore, TYPE_DESCRIPTOR, new Token.Factory(), recordFormat, storeVersion );
     }
 
     @Override

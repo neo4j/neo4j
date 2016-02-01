@@ -77,10 +77,11 @@ public class PropertyStore extends ComposableRecordStore<PropertyRecord,NoStoreH
             DynamicStringStore stringPropertyStore,
             PropertyKeyTokenStore propertyKeyTokenStore,
             DynamicArrayStore arrayPropertyStore,
-            RecordFormat<PropertyRecord> recordFormat )
+            RecordFormat<PropertyRecord> recordFormat,
+            String storeVersion )
     {
         super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
-                recordFormat, NO_STORE_HEADER_FORMAT );
+                recordFormat, storeVersion, NO_STORE_HEADER_FORMAT );
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;

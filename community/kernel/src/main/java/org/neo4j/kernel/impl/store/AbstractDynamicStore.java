@@ -70,10 +70,12 @@ public abstract class AbstractDynamicStore extends ComposableRecordStore<Dynamic
             LogProvider logProvider,
             String typeDescriptor,
             int dataSizeFromConfiguration,
-            RecordFormat<DynamicRecord> recordFormat )
+            RecordFormat<DynamicRecord> recordFormat,
+            String storeVersion )
     {
         super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
                 recordFormat,
+                storeVersion,
                 new IntStoreHeaderFormat( dataSizeFromConfiguration + recordFormat.getRecordHeaderSize() )
                 {
                     @Override

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.current;
+package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
@@ -31,7 +31,7 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
 
     protected TokenRecordFormat( int recordSize )
     {
-        super( fixedRecordSize( recordSize ), 0, IN_USE_BIT_1 );
+        super( fixedRecordSize( recordSize ), 0, IN_USE_BIT );
     }
 
     @Override

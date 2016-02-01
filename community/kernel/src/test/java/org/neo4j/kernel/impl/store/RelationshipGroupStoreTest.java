@@ -60,7 +60,7 @@ import static org.junit.Assert.assertThat;
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
 
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.getRecord;
+import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class RelationshipGroupStoreTest
@@ -266,7 +266,7 @@ public class RelationshipGroupStoreTest
         assertFalse( groupRecord.getNext() == -1 );
         assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(), rel2.getId(), rel3.getId() );
 
-        RelationshipGroupRecord otherGroupRecord = CommonAbstractStore.getRecord( groupStore, groupRecord.getNext() );
+        RelationshipGroupRecord otherGroupRecord = RecordStore.getRecord( groupStore, groupRecord.getNext() );
         assertEquals( -1, otherGroupRecord.getNext() );
         assertRelationshipChain( neoStores.getRelationshipStore(), node, otherGroupRecord.getFirstOut(), rel4.getId(), rel5.getId(), rel6.getId() );
     }

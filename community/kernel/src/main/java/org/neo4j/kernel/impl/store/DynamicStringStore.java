@@ -45,10 +45,11 @@ public class DynamicStringStore extends AbstractDynamicStore
             PageCache pageCache,
             LogProvider logProvider,
             int dataSizeFromConfiguration,
-            RecordFormat<DynamicRecord> recordFormat )
+            RecordFormat<DynamicRecord> recordFormat,
+            String storeVersion )
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormat );
+                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormat, storeVersion );
     }
 
     @Override

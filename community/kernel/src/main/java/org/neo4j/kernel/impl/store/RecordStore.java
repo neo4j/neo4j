@@ -109,6 +109,8 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param target record where data will be loaded into. This record will have its id set to the specified
      * {@code id} as part of this method call.
      * @param mode loading behaviour, read more in method description.
+     * @return the record that was passed in, for convenience.
+     * @throws InvalidRecordException if record not in use and the {@code mode} is allows for throwing.
      */
     RECORD getRecord( long id, RECORD target, RecordLoad mode ) throws InvalidRecordException;
 
@@ -116,6 +118,8 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * For stores that have other stores coupled underneath, the "top level" record will have a flag
      * saying whether or not it's light. Light means that no records from the coupled store have been loaded yet.
      * This method can load those records and enrich the target record with those, marking it as heavy.
+     *
+     * @param record record to make heavy, if not already.
      */
     void ensureHeavy( RECORD record );
 
@@ -125,6 +129,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @param firstId record id of the first record to start loading from.
      * @param mode {@link RecordLoad} mode.
      * @return {@link Collection} of records in the loaded chain.
+     * @throws InvalidRecordException if some record not in use and the {@code mode} is allows for throwing.
      */
     Collection<RECORD> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException;
 
@@ -510,5 +515,27 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
                 }
             };
         }
+    }
+
+    /**
+     * Utility methods for reading records. These are not on the interface itself since it should be
+     * an explicit choice when to create the record instances passed into it.
+     * Also for mocking purposes it's less confusing and error prone having only a single method.
+     */
+    public static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id, RecordLoad mode )
+    {
+        R record = store.newRecord();
+        store.getRecord( id, record, mode );
+        return record;
+    }
+
+    /**
+     * Utility methods for reading records. These are not on the interface itself since it should be
+     * an explicit choice when to create the record instances passed into it.
+     * Also for mocking purposes it's less confusing and error prone having only a single method.
+     */
+    public static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
+    {
+        return getRecord( store, id, RecordLoad.NORMAL );
     }
 }

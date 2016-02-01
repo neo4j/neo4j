@@ -42,12 +42,12 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.current.Current;
-import org.neo4j.kernel.impl.store.format.current.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -349,7 +349,8 @@ public class UpgradeStoreIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names" ), config,
                 IdType.RELATIONSHIP_TYPE_TOKEN_NAME, new DefaultIdGeneratorFactory( fs ), pageCache,
-                NullLogProvider.getInstance(), TokenStore.NAME_STORE_BLOCK_SIZE, Current.RECORD_FORMATS.dynamic() );
+                NullLogProvider.getInstance(), TokenStore.NAME_STORE_BLOCK_SIZE, LowLimit.RECORD_FORMATS.dynamic(),
+                LowLimit.STORE_VERSION );
         RelationshipTypeTokenStore store =
                 new RelationshipTypeTokenStoreWithOneOlderVersion( fileName, stringStore, fs, pageCache );
         for ( int i = 0; i < numberOfTypes; i++ )
@@ -379,7 +380,7 @@ public class UpgradeStoreIT
                 PageCache pageCache )
         {
             super( fileName, config, new NoLimitIdGeneratorFactory( fs ), pageCache, NullLogProvider.getInstance(),
-                    stringStore, Current.RECORD_FORMATS.relationshipTypeToken() );
+                    stringStore, LowLimit.RECORD_FORMATS.relationshipTypeToken(), LowLimit.STORE_VERSION );
         }
 
         @Override

@@ -71,10 +71,11 @@ public class NodeStore extends ComposableRecordStore<NodeRecord,NoStoreHeader>
             PageCache pageCache,
             LogProvider logProvider,
             DynamicArrayStore dynamicLabelStore,
-            RecordFormat<NodeRecord> recordFormat )
+            RecordFormat<NodeRecord> recordFormat,
+            String storeVersion )
     {
         super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
-                recordFormat, NO_STORE_HEADER_FORMAT );
+                recordFormat, storeVersion, NO_STORE_HEADER_FORMAT );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 

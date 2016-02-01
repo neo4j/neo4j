@@ -28,11 +28,10 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.current.Current;
-import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.record.NeoStoreActualRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -139,9 +138,11 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
 
     MetaDataStore( File fileName, Config conf,
                    IdGeneratorFactory idGeneratorFactory,
-                   PageCache pageCache, LogProvider logProvider )
+                   PageCache pageCache, LogProvider logProvider,
+                   String storeVersion )
     {
-        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR );
+        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider,
+                TYPE_DESCRIPTOR, storeVersion );
         this.transactionCloseWaitLogger = new CappedLogger( logProvider.getLog( MetaDataStore.class ) );
         transactionCloseWaitLogger.setTimeLimit( 30, SECONDS, Clock.SYSTEM_CLOCK );
     }
@@ -163,7 +164,7 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
         setCurrentLogVersion( 0 );
         setLastCommittedAndClosedTransactionId(
                 BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
-        setStoreVersion( MetaDataStore.versionStringToLong( Current.STORE_VERSION ) );
+        setStoreVersion( MetaDataStore.versionStringToLong( LowLimit.STORE_VERSION ) );
         setGraphNextProp( -1 );
         setLatestConstraintIntroducingTx( 0 );
 
@@ -172,18 +173,15 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
     }
 
     @Override
-    protected void initialiseNewIdGenerator( IdGenerator idGenerator )
+    protected void createHeaderRecord( PageCursor cursor )
     {
-        super.initialiseNewIdGenerator( idGenerator );
+        // We aren't creating a header, but we have said that we have reserved low ids.
+    }
 
-        /*
-         * created time | random long | backup version | tx id | store version | next prop | latest constraint tx |
-         * upgrade time | upgrade id
-         */
-        for ( int i = 0; i < META_DATA_RECORD_COUNT; i++ )
-        {
-            idGenerator.nextId();
-        }
+    @Override
+    public int getNumberOfReservedLowIds()
+    {
+        return META_DATA_RECORD_COUNT;
     }
 
     // Only for initialization and recovery, so we don't need to lock the records
