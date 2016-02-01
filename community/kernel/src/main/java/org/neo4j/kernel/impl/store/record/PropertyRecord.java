@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.neo4j.kernel.impl.api.store.PropertyBlockCursor;
 import org.neo4j.kernel.impl.store.PropertyType;
 
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -45,8 +45,21 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
 
     private long nextProp;
     private long prevProp;
+    // Holds the purely physical representation of the loaded properties in this record. This is so that
+    // StorePropertyCursor is able to use this raw data without the rather heavy and bloated data structures
+    // of PropertyBlock and thereabouts. So when a property record is loaded only these blocks are read,
+    // the construction of all PropertyBlock instances are loaded lazile when they are first needed, loaded
+    // by ensureBlocksLoaded().
+    // Modifications to a property record are still done on the PropertyBlock abstraction and so it's also
+    // that data that gets written to the log and record when it's time to do so.
+    private final long[] blocks = new long[PropertyType.getPayloadSizeLongs()];
+    private int blocksCursor;
+
+    // These MUST ONLY be populated if we're accessing PropertyBlocks. On just loading this record only the
+    // next/prev and blocks should be filled.
     private final PropertyBlock[] blockRecords =
             new PropertyBlock[PropertyType.getPayloadSizeLongs() /*we can have at most these many*/];
+    private boolean blocksLoaded;
     private int blockRecordsCursor;
     private long entityId;
     private byte entityType;
@@ -67,15 +80,14 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         primitive.setIdTo( this );
     }
 
-    public PropertyRecord initialize( boolean inUse, PrimitiveRecord primitive, long prevProp, long nextProp )
+    public PropertyRecord initialize( boolean inUse, long prevProp, long nextProp )
     {
         super.initialize( inUse );
-        setCreated(); // TODO why?
-        primitive.setIdTo( this );
         this.prevProp = prevProp;
         this.nextProp = nextProp;
         this.deletedRecords = null;
-        this.blockRecordsCursor = 0;
+        this.blockRecordsCursor = blocksCursor = 0;
+        this.blocksLoaded = false;
         return this;
     }
 
@@ -88,7 +100,8 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         this.prevProp = NO_PREVIOUS_PROPERTY.intValue();
         this.nextProp = NO_NEXT_PROPERTY.intValue();
         this.deletedRecords = null;
-        this.blockRecordsCursor = 0;
+        this.blockRecordsCursor = blocksCursor = 0;
+        this.blocksLoaded = false;
     }
 
     public void setNodeId( long nodeId )
@@ -136,6 +149,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
      */
     public int size()
     {
+        ensureBlocksLoaded();
         int result = 0;
         for ( int i = 0; i < blockRecordsCursor; i++ )
         {
@@ -152,6 +166,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     @Override
     public Iterator<PropertyBlock> iterator()
     {
+        ensureBlocksLoaded();
         blockRecordsIteratorCursor = 0;
         canRemoveFromIterator = false;
         return this;
@@ -207,12 +222,37 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
 
     public void addPropertyBlock( PropertyBlock block )
     {
+        ensureBlocksLoaded();
         assert size() + block.getSize() <= PropertyType.getPayloadSize() :
                 "Exceeded capacity of property record " + this
                 + ". My current size is reported as " + size() + "The added block was " + block +
                 " (note that size is " + block.getSize() + ")";
 
         blockRecords[blockRecordsCursor++] = block;
+    }
+
+    /**
+     * Reads blocks[] and constructs {@link PropertyBlock} instances from them, making that abstraction
+     * available to the outside. Done the first time any PropertyBlock is needed or manipulated.
+     */
+    private void ensureBlocksLoaded()
+    {
+        if ( !blocksLoaded )
+        {
+            assert blockRecordsCursor == 0;
+            // We haven't loaded the blocks yet, please do so now
+            int index = 0;
+            while ( index < blocksCursor )
+            {
+                PropertyType type = PropertyType.getPropertyType( blocks[index], false );
+                PropertyBlock block = new PropertyBlock();
+                int length = type.calculateNumberOfBlocksUsed( blocks[index] );
+                block.setValueBlocks( Arrays.copyOfRange( blocks, index, index + length ) );
+                blockRecords[blockRecordsCursor++] = block;
+                index += length;
+            }
+            blocksLoaded = true;
+        }
     }
 
     public void setPropertyBlock( PropertyBlock block )
@@ -223,6 +263,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
 
     public PropertyBlock getPropertyBlock( int keyIndex )
     {
+        ensureBlocksLoaded();
         for ( int i = 0; i < blockRecordsCursor; i++ )
         {
             PropertyBlock block = blockRecords[i];
@@ -236,6 +277,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
 
     public PropertyBlock removePropertyBlock( int keyIndex )
     {
+        ensureBlocksLoaded();
         for ( int i = 0; i < blockRecordsCursor; i++ )
         {
             if ( blockRecords[i].getKeyIndexId() == keyIndex )
@@ -269,6 +311,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     @Override
     public String toString()
     {
+        ensureBlocksLoaded();
         StringBuilder buf = new StringBuilder();
         buf.append( "Property[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",prev=" ).append(
                 prevProp ).append( ",next=" ).append( nextProp );
@@ -314,11 +357,14 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         result.prevProp = prevProp;
         result.entityId = entityId;
         result.entityType = entityType;
+        System.arraycopy( blocks, 0, result.blocks, 0, blocks.length );
+        result.blocksCursor = blocksCursor;
         for ( int i = 0; i < blockRecordsCursor; i++ )
         {
             result.blockRecords[i] = blockRecords[i].clone();
         }
         result.blockRecordsCursor = blockRecordsCursor;
+        result.blocksLoaded = blocksLoaded;
         if ( deletedRecords != null )
         {
             for ( DynamicRecord deletedRecord : deletedRecords )
@@ -329,9 +375,19 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         return result;
     }
 
-    public PropertyBlockCursor getPropertyBlockCursor( PropertyBlockCursor cursor )
+    public long[] getBlocks()
     {
-        cursor.init( blockRecords, blockRecordsCursor );
-        return cursor;
+        return blocks;
+    }
+
+    public void addLoadedBlock( long block )
+    {
+        assert blocksCursor + 1 <= blocks.length : "Capacity of " + blocks.length + " exceeded";
+        blocks[blocksCursor++] = block;
+    }
+
+    public int getNumberOfBlocks()
+    {
+        return blocksCursor;
     }
 }

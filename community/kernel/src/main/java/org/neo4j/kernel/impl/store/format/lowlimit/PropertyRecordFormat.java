@@ -52,8 +52,6 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
     @Override
     public void read( PropertyRecord record, PageCursor cursor, RecordLoad mode, int recordSize )
     {
-        record.clearPropertyBlocks();
-
         int offsetAtBeginning = cursor.getOffset();
 
         /*
@@ -64,51 +62,27 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
         long nextMod = (modifiers & 0x0FL) << 32;
         long prevProp = cursor.getUnsignedInt();
         long nextProp = cursor.getUnsignedInt();
-        record.setPrevProp( BaseRecordFormat.longFromIntAndMod( prevProp, prevMod ) );
-        record.setNextProp( BaseRecordFormat.longFromIntAndMod( nextProp, nextMod ) );
-
-        record.setInUse( false );
+        record.initialize( false,
+                BaseRecordFormat.longFromIntAndMod( prevProp, prevMod ),
+                BaseRecordFormat.longFromIntAndMod( nextProp, nextMod ) );
         while ( cursor.getOffset() - offsetAtBeginning < RECORD_SIZE )
         {
-            PropertyBlock newBlock = getPropertyBlock( cursor );
-            if ( newBlock != null )
-            {
-                record.addPropertyBlock( newBlock );
-                record.setInUse( true );
-            }
-            else
+            long block = cursor.getLong();
+            PropertyType type = PropertyType.getPropertyType( block, true );
+            if ( type == null )
             {
                 // We assume that storage is defragged
                 break;
             }
-        }
-    }
 
-    /*
-     * It is assumed that the argument does hold a property block - all zeros is
-     * a valid (not in use) block, so even if the Bits object has been exhausted a
-     * result is returned, that has inUse() return false. Also, the argument is not
-     * touched.
-     */
-    private PropertyBlock getPropertyBlock( PageCursor cursor )
-    {
-        long header = cursor.getLong();
-        PropertyType type = PropertyType.getPropertyType( header, true );
-        if ( type == null )
-        {
-            return null;
+            record.setInUse( true );
+            record.addLoadedBlock( block );
+            int additionalBlocks = type.calculateNumberOfBlocksUsed( block ) - 1;
+            while ( additionalBlocks --> 0 )
+            {
+                record.addLoadedBlock( cursor.getLong() );
+            }
         }
-        PropertyBlock toReturn = new PropertyBlock();
-        // toReturn.setInUse( true );
-        int numBlocks = type.calculateNumberOfBlocksUsed( header );
-        long[] blockData = new long[numBlocks];
-        blockData[0] = header; // we already have that
-        for ( int i = 1; i < numBlocks; i++ )
-        {
-            blockData[i] = cursor.getLong();
-        }
-        toReturn.setValueBlocks( blockData );
-        return toReturn;
     }
 
     @Override

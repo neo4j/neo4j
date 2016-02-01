@@ -26,15 +26,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -55,7 +52,6 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.store.StorePropertyCursor.payloadValueAsObject;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.param;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.paramArg;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Params.params;
@@ -223,7 +219,7 @@ public class StorePropertyPayloadCursorTest
             // Then
             assertTrue( next );
             assertEquals( param.type, cursor.type() );
-            assertObjectOrArrayEquals( param.value, payloadValueAsObject( cursor ) );
+            assertObjectOrArrayEquals( param.value, cursor.value() );
         }
     }
 
@@ -403,7 +399,7 @@ public class StorePropertyPayloadCursorTest
                 // Then
                 assertTrue( next );
                 assertEquals( param.type, cursor.type() );
-                assertObjectOrArrayEquals( param.value, payloadValueAsObject( cursor ) );
+                assertObjectOrArrayEquals( param.value, cursor.value() );
             }
         }
     }
@@ -436,18 +432,18 @@ public class StorePropertyPayloadCursorTest
     {
         StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor( dynamicStringStore, dynamicArrayStore );
 
-        PageCursor pageCursor = newPageCursor( values );
-        cursor.init( pageCursor );
+        long[] blocks = asBlocks( values );
+        cursor.init( blocks, blocks.length );
 
         return cursor;
     }
 
-    private static PageCursor newPageCursor( Object... values )
+    private static long[] asBlocks( Object... values )
     {
         RecordAllocator stringAllocator = new RecordAllocator();
         RecordAllocator arrayAllocator = new RecordAllocator();
-
-        ByteBuffer page = ByteBuffer.allocateDirect( StorePropertyPayloadCursor.MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY * 8 );
+        long[] blocks = new long[PropertyType.getPayloadSizeLongs()];
+        int cursor = 0;
         for ( int i = 0; i < values.length; i++ )
         {
             Object value = values[i];
@@ -455,17 +451,10 @@ public class StorePropertyPayloadCursorTest
             PropertyBlock block = new PropertyBlock();
             PropertyStore.encodeValue( block, i, value, stringAllocator, arrayAllocator );
             long[] valueBlocks = block.getValueBlocks();
-            for ( long valueBlock : valueBlocks )
-            {
-                page.putLong( valueBlock );
-            }
+            System.arraycopy( valueBlocks, 0, blocks, cursor, valueBlocks.length );
+            cursor += valueBlocks.length;
         }
-        while ( page.remaining() > 0 )
-        {
-            page.put( (byte) 0 );
-        }
-
-        return new StubPageCursor( 1, page );
+        return blocks;
     }
 
     @SuppressWarnings( "unchecked" )

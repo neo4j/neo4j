@@ -320,7 +320,7 @@ public class BatchInserterImpl implements BatchInserter
                 new RelationshipGroupGetter( relationshipGroupStore ), relationshipGroupStore.getStoreHeaderInt() );
         propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( propertyStore, propertyTraverser );
-        propertyDeletor = new PropertyDeleter( propertyStore, propertyTraverser );
+        propertyDeletor = new PropertyDeleter( propertyTraverser );
 
         flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
                 .batch_inserter_batch_size ) );

@@ -238,7 +238,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             relationshipCreator = new RelationshipCreator( relationshipGroupGetter,
                     config.get( GraphDatabaseSettings.dense_node_threshold ) );
             PropertyTraverser propertyTraverser = new PropertyTraverser();
-            propertyDeleter = new PropertyDeleter( neoStores.getPropertyStore(), propertyTraverser );
+            propertyDeleter = new PropertyDeleter( propertyTraverser );
             relationshipDeleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter );
             propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser );
         }

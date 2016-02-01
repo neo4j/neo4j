@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
-
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.pagecache.PageCursor;
@@ -85,8 +83,9 @@ class StorePropertyPayloadCursor
     private RecordCursor<DynamicRecord> arrayRecordCursor;
     private ByteBuffer buffer = cachedBuffer;
 
-    private final long[] data = new long[MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY];
+    private long[] data;
     private int position = INITIAL_POSITION;
+    private int numberOfBlocks;
 
     StorePropertyPayloadCursor( DynamicStringStore stringStore, DynamicArrayStore arrayStore )
     {
@@ -94,21 +93,17 @@ class StorePropertyPayloadCursor
         this.arrayStore = arrayStore;
     }
 
-    void init( PageCursor cursor )
+    void init( long[] blocks, int numberOfBlocks )
     {
-        for ( int i = 0; i < data.length; i++ )
-        {
-            data[i] = cursor.getLong();
-        }
+        position = INITIAL_POSITION;
+        buffer = cachedBuffer;
+        data = blocks;
+        this.numberOfBlocks = numberOfBlocks;
     }
 
     void clear()
     {
-        position = INITIAL_POSITION;
-        buffer = cachedBuffer;
-        // Array of data should be filled with '0' because it is possible to call next() without calling init().
-        // In such case 'false' should be returned, which might not be the case if there is stale data in the buffer.
-        Arrays.fill( data, 0 );
+        position = numberOfBlocks;
     }
 
     boolean next()
@@ -121,7 +116,7 @@ class StorePropertyPayloadCursor
         {
             position += currentBlocksUsed();
         }
-        if ( position >= data.length )
+        if ( position >= numberOfBlocks )
         {
             return false;
         }
@@ -228,6 +223,40 @@ class StorePropertyPayloadCursor
         buffer.flip();
         return readArrayFromBuffer( buffer );
     }
+
+    Object value()
+    {
+        switch ( type() )
+        {
+        case BOOL:
+            return booleanValue();
+        case BYTE:
+            return byteValue();
+        case SHORT:
+            return shortValue();
+        case CHAR:
+            return charValue();
+        case INT:
+            return intValue();
+        case LONG:
+            return longValue();
+        case FLOAT:
+            return floatValue();
+        case DOUBLE:
+            return doubleValue();
+        case SHORT_STRING:
+            return shortStringValue();
+        case STRING:
+            return stringValue();
+        case SHORT_ARRAY:
+            return shortArrayValue();
+        case ARRAY:
+            return arrayValue();
+        default:
+            throw new IllegalStateException( "No such type:" + type() );
+        }
+    }
+
 
     private long currentHeader()
     {
