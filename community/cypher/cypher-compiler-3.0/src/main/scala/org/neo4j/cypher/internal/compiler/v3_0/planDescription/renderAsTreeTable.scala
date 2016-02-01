@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planDescription
 
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 
+import scala.Predef
 import scala.collection.{Map, mutable}
 
 object renderAsTreeTable extends (InternalPlanDescription => String) {
@@ -30,15 +31,27 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   private val ROWS = "Rows"
   private val HITS = "DB Hits"
   private val TIME = "Time (ms)"
-  private val VARIABLES = "Variables"
+  val VARIABLES = "Variables"
   private val OTHER = "Other"
   private val HEADERS = Seq(OPERATOR, ESTIMATED_ROWS, ROWS, HITS, TIME, VARIABLES, OTHER)
+  val newLine = System.lineSeparator()
 
   def apply(plan: InternalPlanDescription): String = {
 
     implicit val columns = new mutable.HashMap[String, Int]()
     val lines = accumulate(plan)
-    val newLine = System.lineSeparator()
+
+    def compactLine(line: Line, previous: Seq[(Line,Line)]) = {
+      val repeatedVariables: Set[String] = if (previous.size > 0) previous.head._1.variables.intersect(line.variables) else Set.empty
+      if (repeatedVariables.size > 0) {
+        line.copy(variables = line.variables -- repeatedVariables, compacted = true)
+      } else
+        line
+    }
+    val compactedLines = lines.reverse.foldLeft(Seq.empty[(Line, Line)]){(acc,line) =>
+      val compacted = compactLine(line, acc)
+      (line,compacted) +: acc
+    } map(_._2)
 
     val headers = HEADERS.filter(columns.contains)
 
@@ -65,7 +78,8 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
       result.append("+").append(newLine)
     }
 
-    for ( line <- Seq(Line( OPERATOR, headers.map(header => header -> Left(header)).toMap)) ++ lines ) {
+    for ( line <- Seq(Line( OPERATOR, headers.map(header => header -> Left(header)).toMap, Set(VARIABLES))) ++
+      compactedLines ) {
       divider(line)
       for ( header <- headers ) {
         val detail = line(header)
@@ -87,17 +101,32 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     result.toString()
   }
 
-  private def accumulate(plan: InternalPlanDescription, level: Level = Root)(implicit columns: mutable.Map[String,Int]): Seq[Line] = {
+  private def accumulate(incoming: InternalPlanDescription, level: Level = Root)(implicit columns: mutable.Map[String,
+    Int]): Seq[Line] = {
+    val plan = compactPlan(incoming)
     val line = level.line + plan.name
     mapping(OPERATOR, Left(line))
-    Seq(Line(line, details(plan), level.connector)) ++ (plan.children match {
+    Seq(Line(line, details(plan), plan.variables, level.connector)) ++ (plan.children match {
       case NoChildren => Seq.empty
       case SingleChild(inner) => accumulate(inner, level.child)
       case TwoChildren(lhs, rhs) => accumulate(rhs, level.fork) ++ accumulate(lhs, level.child)
     })
   }
 
-  private def details(description: InternalPlanDescription)(implicit columns: mutable.Map[String,Int]) = description.arguments.flatMap {
+  private def compactPlan(plan: InternalPlanDescription): InternalPlanDescription = {
+    def compactPlanAcc(acc: Seq[InternalPlanDescription], plan: InternalPlanDescription):
+    Seq[InternalPlanDescription] = {
+      plan.children match {
+        case SingleChild(inner) if otherFields(plan).isEmpty && otherFields(inner).isEmpty && inner.name == plan.name =>
+          compactPlanAcc(acc :+ plan, inner)
+        case _ => acc :+ plan
+      }
+    }
+    val similar = compactPlanAcc(Seq.empty[InternalPlanDescription], plan)
+    new CompactedPlanDescription(similar).planDescription
+  }
+
+  private def details(description: InternalPlanDescription)(implicit columns: mutable.Map[String,Int]): Predef.Map[String, Justified] = description.arguments.flatMap {
     case EstimatedRows(count) => mapping(ESTIMATED_ROWS, Right(format(count)))
     case Rows(count) => mapping(ROWS, Right(count.toString))
     case DbHits(count) => mapping(HITS, Right(count.toString))
@@ -123,8 +152,9 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     }
     result
   }
-  private def other(description: InternalPlanDescription)(implicit columns: mutable.Map[String,Int]): String = {
-    val result: String = description.arguments.collect { case x
+
+  private def otherFields(description: InternalPlanDescription) = {
+    description.arguments.collect { case x
       if !x.isInstanceOf[Rows] &&
         !x.isInstanceOf[DbHits] &&
         !x.isInstanceOf[EstimatedRows] &&
@@ -135,7 +165,11 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
         !x.isInstanceOf[Time] &&
         !x.isInstanceOf[RuntimeImpl] &&
         !x.isInstanceOf[Version] => PlanDescriptionArgumentSerializer.serialize(x)
-    }.mkString("; ").replaceAll(UNNAMED_PATTERN, "")
+    }
+  }
+
+  private def other(description: InternalPlanDescription)(implicit columns: mutable.Map[String,Int]): String = {
+    val result = otherFields(description).mkString("; ").replaceAll(UNNAMED_PATTERN, "")
     if (result.nonEmpty) {
       update(columns, OTHER, result.length)
     }
@@ -145,9 +179,11 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   private def format(v: Double) = if (v.isNaN) v.toString else math.round(v).toString
 }
 
-case class Line(tree:String, details:Map[String,Justified], connection:Option[String]=None) {
-  def apply(key:String):Justified = if (key == renderAsTreeTable.OPERATOR) {
+case class Line(tree: String, details: Map[String, Justified], variables: Set[String], connection: Option[String] = None, compacted: Boolean = false) {
+  def apply(key: String): Justified = if (key == renderAsTreeTable.OPERATOR) {
     Left(tree)
+  } else if (key == renderAsTreeTable.VARIABLES) {
+    Left(variables.toSeq.sorted.map(PlanDescriptionArgumentSerializer.removeGeneratedNames).mkString(", ") + (if(compacted && variables.size > 0) ", ..." else ""))
   } else {
     details.getOrElse(key, Left(""))
   }
