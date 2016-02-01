@@ -182,6 +182,8 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
         statsDivergenceThreshold = DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD,
         queryPlanTTL = DEFAULT_QUERY_PLAN_TTL,
         useErrorsOverWarnings = false,
+        idpMaxTableSize = 128,
+        idpIterationDuration = 1000,
         nonIndexedLabelWarningThreshold = 10000L
       ),
       clock = CLOCK,

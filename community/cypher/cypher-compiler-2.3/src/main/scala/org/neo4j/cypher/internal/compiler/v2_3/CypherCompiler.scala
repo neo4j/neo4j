@@ -62,6 +62,8 @@ case class CypherCompilerConfiguration(queryCacheSize: Int,
                                        statsDivergenceThreshold: Double,
                                        queryPlanTTL: Long,
                                        useErrorsOverWarnings: Boolean,
+                                       idpMaxTableSize: Int,
+                                       idpIterationDuration: Long,
                                        nonIndexedLabelWarningThreshold: Long)
 
 object CypherCompilerFactory {
@@ -94,7 +96,9 @@ object CypherCompilerFactory {
       plannerName = plannerName,
       runtimeBuilder = runtimeBuilder,
       semanticChecker = checker,
-      useErrorsOverWarnings = config.useErrorsOverWarnings
+      useErrorsOverWarnings = config.useErrorsOverWarnings,
+      idpMaxTableSize = config.idpMaxTableSize,
+      idpIterationDuration = config.idpIterationDuration
     )
     val rulePlanProducer = new LegacyExecutablePlanBuilder(monitors, rewriterSequencer)
 

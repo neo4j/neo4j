@@ -63,6 +63,8 @@ class CypherCompiler(graph: GraphDatabaseService,
                      configuredPlanner: CypherPlanner,
                      configuredRuntime: CypherRuntime,
                      useErrorsOverWarnings: Boolean,
+                     idpMaxTableSize: Int,
+                     idpIterationDuration: Long,
                      logProvider: LogProvider) {
   import org.neo4j.cypher.internal.CypherCompiler._
 
@@ -73,6 +75,8 @@ class CypherCompiler(graph: GraphDatabaseService,
     statsDivergenceThreshold = getStatisticsDivergenceThreshold,
     queryPlanTTL = getMinimumTimeBeforeReplanning,
     useErrorsOverWarnings = useErrorsOverWarnings,
+    idpMaxTableSize = idpMaxTableSize,
+    idpIterationDuration = idpIterationDuration,
     nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold
   )
 
