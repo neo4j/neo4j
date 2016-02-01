@@ -34,12 +34,12 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.register.Register.DoubleLong;
 
-public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneIndexPopulator
+public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     private final IndexDescriptor descriptor;
     private final UniqueIndexSampler sampler;
 
-    public DeferredConstraintVerificationUniqueLuceneIndexPopulator(LuceneSchemaIndex index, IndexDescriptor descriptor )
+    public UniqueLuceneIndexPopulator(LuceneSchemaIndex index, IndexDescriptor descriptor )
     {
         super( index );
         this.descriptor = descriptor;

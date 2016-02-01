@@ -34,8 +34,8 @@ import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.impl.schema.populator.DeferredConstraintVerificationUniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.impl.schema.populator.NonUniqueLuceneIndexPopulator;
+import org.neo4j.kernel.api.impl.schema.populator.UniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -81,7 +81,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
                                         .build();
         if ( config.isUnique() )
         {
-            return new DeferredConstraintVerificationUniqueLuceneIndexPopulator( luceneIndex, descriptor );
+            return new UniqueLuceneIndexPopulator( luceneIndex, descriptor );
         }
         else
         {

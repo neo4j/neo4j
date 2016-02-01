@@ -32,9 +32,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-class AllNodesCollector extends SimpleCollector
+public class AllNodesCollector extends SimpleCollector
 {
-    static List<Long> getAllNodes( Directory directory, Object propertyValue ) throws IOException
+    public static List<Long> getAllNodes( Directory directory, Object propertyValue ) throws IOException
     {
         try ( SearcherManager manager = new SearcherManager( directory, new SearcherFactory() ) )
         {

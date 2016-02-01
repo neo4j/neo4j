@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.schema;
+package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.apache.lucene.store.Directory;
 import org.junit.After;
@@ -37,7 +37,8 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.impl.schema.populator.DeferredConstraintVerificationUniqueLuceneIndexPopulator;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -63,7 +64,7 @@ import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.api.properties.Property.longProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
-public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
+public class UniqueLuceneIndexPopulatorTest
 {
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
@@ -81,7 +82,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 
     private PartitionedIndexStorage indexStorage;
     private LuceneSchemaIndex index;
-    private DeferredConstraintVerificationUniqueLuceneIndexPopulator populator;
+    private UniqueLuceneIndexPopulator populator;
 
     @Before
     public void setUp() throws Exception
@@ -547,16 +548,15 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         }
     }
 
-    private DeferredConstraintVerificationUniqueLuceneIndexPopulator newPopulator() throws IOException
+    private UniqueLuceneIndexPopulator newPopulator() throws IOException
     {
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator =
-                new DeferredConstraintVerificationUniqueLuceneIndexPopulator( index, descriptor );
+        UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( index, descriptor );
         populator.create();
         return populator;
     }
 
-    private static void addUpdate( DeferredConstraintVerificationUniqueLuceneIndexPopulator populator, long nodeId,
-            Object value ) throws IOException, IndexEntryConflictException
+    private static void addUpdate( UniqueLuceneIndexPopulator populator, long nodeId, Object value )
+            throws IOException, IndexEntryConflictException
     {
         NodePropertyUpdate update = NodePropertyUpdate.add( nodeId, 0, value, new long[]{0} );
         populator.add( Collections.singletonList( update ) );
