@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.api.TransactionApplierFacade;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.api.store.DiskLayer;
@@ -207,8 +206,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( indexProvider );
             indexStoreView = new NeoStoreIndexStoreView( lockService, neoStores );
-            indexingService = IndexingServiceFactory.createIndexingService(
-                    new IndexSamplingConfig( config ), scheduler, schemaIndexProviderMap,
+            indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, schemaIndexProviderMap,
                     indexStoreView, tokenNameLookup,
                     toList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() ), logProvider,
                     indexingServiceMonitor, schemaStateChangeCallback );

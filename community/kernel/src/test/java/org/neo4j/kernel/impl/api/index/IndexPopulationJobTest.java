@@ -26,8 +26,10 @@ import org.junit.Test;
 import org.mockito.Matchers;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -75,13 +77,14 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.String.format;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -89,12 +92,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.String.format;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
@@ -117,7 +118,7 @@ public class IndexPopulationJobTest
 
         // THEN
         verify( populator ).create();
-        verify( populator ).add( nodeId, value );
+        verify( populator ).add( singletonList( add( nodeId, 0, value, new long[]{0} ) ) );
         verify( populator ).verifyDeferredConstraints( indexStoreView );
         verify( populator ).sampleResult( any( DoubleLong.Out.class) );
         verify( populator ).close( true );
@@ -160,8 +161,8 @@ public class IndexPopulationJobTest
 
         // THEN
         verify( populator ).create();
-        verify( populator ).add( node1, value );
-        verify( populator ).add( node4, value );
+        verify( populator ).add( Collections.singletonList( add( node1, 0, value, new long[]{0} ) ) );
+        verify( populator ).add( Collections.singletonList( add( node4, 0, value, new long[]{0} ) ) );
         verify( populator ).verifyDeferredConstraints( indexStoreView );
         verify( populator ).sampleResult( any( DoubleLong.Out.class) );
         verify( populator ).close( true );
@@ -225,7 +226,7 @@ public class IndexPopulationJobTest
     {
         // GIVEN
         IndexPopulator failingPopulator = mock( IndexPopulator.class );
-        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( anyLong(), any() );
+        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( any() );
 
         FlippableIndexProxy index = new FlippableIndexProxy();
 
@@ -447,14 +448,17 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( long nodeId, Object propertyValue )
+        public void add( List<NodePropertyUpdate> updates )
         {
-            if ( nodeId == 2 )
+            for ( NodePropertyUpdate update : updates )
             {
-                long[] labels = new long[]{label};
-                job.update( change( nodeToChange, propertyKeyId, previousValue, labels, newValue, labels ) );
+                if ( update.getNodeId() == 2 )
+                {
+                    long[] labels = new long[]{label};
+                    job.update( change( nodeToChange, propertyKeyId, previousValue, labels, newValue, labels ) );
+                }
+                added.add( Pair.of( update.getNodeId(), update.getValueAfter() ) );
             }
-            added.add( Pair.of( nodeId, propertyValue ) );
         }
 
         @Override
@@ -520,13 +524,16 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( long nodeId, Object propertyValue )
+        public void add( List<NodePropertyUpdate> updates )
         {
-            if ( nodeId == 2 )
+            for ( NodePropertyUpdate update : updates )
             {
-                job.update( remove( nodeToDelete, propertyKeyId, valueToDelete, new long[]{label} ) );
+                if ( update.getNodeId() == 2 )
+                {
+                    job.update( remove( nodeToDelete, propertyKeyId, valueToDelete, new long[]{label} ) );
+                }
+                added.put( update.getNodeId(), update.getValueAfter() );
             }
-            added.put( nodeId, propertyValue );
         }
 
         @Override
@@ -637,7 +644,8 @@ public class IndexPopulationJobTest
         IndexDescriptor descriptor = indexDescriptor( label, propertyKey );
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
-        IndexPopulationJob job = new IndexPopulationJob( storeView, logProvider, NO_MONITOR, stateHolder::clear );
+        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider );
+        IndexPopulationJob job = new IndexPopulationJob( storeView, multiPopulator, NO_MONITOR, stateHolder::clear );
         job.addPopulator( populator, descriptor, IndexConfiguration.of( constraint ), PROVIDER_DESCRIPTOR,
                 format( ":%s(%s)", label.name(), propertyKey ), flipper, failureDelegateFactory );
         return job;

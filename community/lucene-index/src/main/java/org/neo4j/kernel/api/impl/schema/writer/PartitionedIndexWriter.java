@@ -58,6 +58,12 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
     }
 
     @Override
+    public void addDocuments( Iterable<Document> documents ) throws IOException
+    {
+        getIndexWriter().addDocuments( documents );
+    }
+
+    @Override
     public void updateDocument( Term term, Document doc ) throws IOException
     {
         List<IndexPartition> partitions = index.getPartitions();

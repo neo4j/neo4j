@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -64,7 +65,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -215,13 +215,14 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void add( long nodeId, Object propertyValue )
+        public void add( List<NodePropertyUpdate> updates )
         {
-            ReadOperations statement = ctxSupplier.get().readOperations();
-            updatesCommitted.add( NodePropertyUpdate.add(
-                    nodeId, statement.propertyKeyGetForName( propertyKey ),
-                    propertyValue, new long[]{statement.labelGetForName( myLabel.name() )} ) );
-            addValueToSample( nodeId, propertyValue );
+            for ( NodePropertyUpdate update : updates )
+            {
+                ReadOperations statement = ctxSupplier.get().readOperations();
+                updatesCommitted.add( update );
+                addValueToSample( update.getNodeId(), update.getValueAfter() );
+            }
         }
 
         @Override

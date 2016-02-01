@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
-import org.apache.lucene.document.Document;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,12 +53,9 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
     }
 
     @Override
-    public void add( long nodeId, Object propertyValue )
-            throws IndexEntryConflictException, IOException
+    protected void includeSamples( List<NodePropertyUpdate> updates )
     {
-        sampler.increment( 1 );
-        Document doc = LuceneDocumentStructure.documentRepresentingProperty( nodeId, propertyValue );
-        writer.addDocument( doc );
+        sampler.increment( updates.size() );
     }
 
     @Override

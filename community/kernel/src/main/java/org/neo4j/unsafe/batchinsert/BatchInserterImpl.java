@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.LongFunction;
+
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -534,7 +535,7 @@ public class BatchInserterImpl implements BatchInserter
                         {
                             try
                             {
-                                populators[i].add( update.getNodeId(), update.getValueAfter() );
+                                populators[i].add( Collections.singletonList( update ) );
                             }
                             catch ( IndexEntryConflictException conflict )
                             {

@@ -22,6 +22,8 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -30,6 +32,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
@@ -55,8 +58,8 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.create();
-        populator.add( 1, "value1" );
-        populator.add( 2, "value1" );
+        populator.add( Arrays.asList( NodePropertyUpdate.add( 1, 0, "value1", new long[]{0} ),
+                NodePropertyUpdate.add( 2, 0, "value1", new long[]{0} ) ) );
         populator.close( true );
 
         // then
@@ -139,7 +142,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         };
 
         // this update (using add())...
-        populator.add( nodeId, propertyValue );
+        populator.add( singletonList( NodePropertyUpdate.add( nodeId, 0, propertyValue, new long[]{0} ) ) );
         // ...is the same as this update (using update())
         try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
         {

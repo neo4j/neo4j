@@ -49,10 +49,12 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void add( long nodeId, Object propertyValue ) throws IOException
+    protected void includeSamples( List<NodePropertyUpdate> updates )
     {
-        sampler.include( LuceneDocumentStructure.encodedStringValue( propertyValue ) );
-        writer.addDocument( LuceneDocumentStructure.documentRepresentingProperty( nodeId, propertyValue ) );
+        for ( NodePropertyUpdate update : updates )
+        {
+            sampler.include( LuceneDocumentStructure.encodedStringValue( update.getValueAfter() ) );
+        }
     }
 
     @Override

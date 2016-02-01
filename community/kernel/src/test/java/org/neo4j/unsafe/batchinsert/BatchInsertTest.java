@@ -60,6 +60,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -98,6 +99,8 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.Integer.parseInt;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
@@ -114,9 +117,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Integer.parseInt;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -1069,7 +1069,7 @@ public class BatchInsertTest
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( nodeId, "Jakewins" );
+        verify( populator ).add( singletonList( NodePropertyUpdate.add( nodeId, 0, "Jakewins", new long[]{0} ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -1104,7 +1104,7 @@ public class BatchInsertTest
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( nodeId, "Jakewins" );
+        verify( populator ).add( singletonList( NodePropertyUpdate.add( nodeId, 0, "Jakewins", new long[]{0} ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -1139,8 +1139,8 @@ public class BatchInsertTest
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( jakewins, "Jakewins" );
-        verify( populator ).add( boggle, "b0ggl3" );
+        verify( populator ).add( singletonList( NodePropertyUpdate.add( jakewins, 0, "Jakewins", new long[]{0} ) ) );
+        verify( populator ).add( singletonList( NodePropertyUpdate.add( boggle, 0, "b0ggl3", new long[]{0} ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();

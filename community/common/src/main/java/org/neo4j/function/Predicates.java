@@ -144,7 +144,15 @@ public class Predicates
     public static void await( Supplier<Boolean> condition, long timeout, TimeUnit unit )
             throws TimeoutException, InterruptedException
     {
-        long sleep = Math.max( unit.toMillis( timeout ) / 100, 1 );
+        long checkIntervalMillis = Math.max( unit.toMillis( timeout ) / 100, 10 );
+        long timeoutMillis = unit.toMillis( timeout );
+        await( condition, timeoutMillis, checkIntervalMillis, TimeUnit.MILLISECONDS );
+    }
+
+    public static void await( Supplier<Boolean> condition, long timeout, long checkInterval, TimeUnit unit )
+            throws TimeoutException, InterruptedException
+    {
+        long sleep = unit.toMillis( checkInterval );
         long deadline = System.currentTimeMillis() + unit.toMillis( timeout );
         do
         {

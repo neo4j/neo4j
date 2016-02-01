@@ -61,7 +61,6 @@ import org.neo4j.register.Registers;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
 import static org.neo4j.helpers.collection.Iterables.toList;
@@ -94,6 +93,7 @@ public class IndexingService extends LifecycleAdapter
     private final Iterable<IndexRule> indexRules;
     private final Log log;
     private final TokenNameLookup tokenNameLookup;
+    private final MultiPopulatorFactory multiPopulatorFactory;
     private final LogProvider logProvider;
     private final Monitor monitor;
     private final PrimitiveLongSet recoveredNodeIds = Primitive.longSet( 20 );
@@ -163,6 +163,7 @@ public class IndexingService extends LifecycleAdapter
             TokenNameLookup tokenNameLookup,
             JobScheduler scheduler,
             Runnable schemaStateChangeCallback,
+            MultiPopulatorFactory multiPopulatorFactory,
             LogProvider logProvider,
             Monitor monitor )
     {
@@ -175,6 +176,7 @@ public class IndexingService extends LifecycleAdapter
         this.tokenNameLookup = tokenNameLookup;
         this.scheduler = scheduler;
         this.schemaStateChangeCallback = schemaStateChangeCallback;
+        this.multiPopulatorFactory = multiPopulatorFactory;
         this.logProvider = logProvider;
         this.monitor = monitor;
         this.log = logProvider.getLog( getClass() );
@@ -746,12 +748,13 @@ public class IndexingService extends LifecycleAdapter
         return concatResourceIterators( snapshots.iterator() );
     }
 
-    public IndexPopulationJob newIndexPopulationJob()
+    private IndexPopulationJob newIndexPopulationJob()
     {
-        return new IndexPopulationJob( storeView, logProvider, monitor, schemaStateChangeCallback );
+        MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create( storeView, logProvider );
+        return new IndexPopulationJob( storeView, multiPopulator, monitor, schemaStateChangeCallback );
     }
 
-    public void startIndexPopulation( IndexPopulationJob job )
+    private void startIndexPopulation( IndexPopulationJob job )
     {
         scheduler.schedule( indexPopulation, job );
     }

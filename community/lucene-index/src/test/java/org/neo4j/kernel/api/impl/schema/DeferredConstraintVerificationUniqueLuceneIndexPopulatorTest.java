@@ -20,14 +20,21 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import org.apache.lucene.store.Directory;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.populator.DeferredConstraintVerificationUniqueLuceneIndexPopulator;
@@ -36,6 +43,9 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -43,6 +53,7 @@ import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -63,21 +74,45 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     private static final int PROPERTY_KEY_ID = 2;
     private static final String INDEX_IDENTIFIER = "42";
 
-    private final DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+    private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final IndexDescriptor descriptor = new IndexDescriptor( LABEL_ID, PROPERTY_KEY_ID );
 
     private final PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+
     private PartitionedIndexStorage indexStorage;
+    private LuceneSchemaIndex index;
+    private DeferredConstraintVerificationUniqueLuceneIndexPopulator populator;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        File folder = testDir.directory( "folder" );
+        indexStorage = new PartitionedIndexStorage( directoryFactory, fs, folder, INDEX_IDENTIFIER );
+        index = LuceneSchemaIndexBuilder.create()
+                .withIndexStorage( indexStorage )
+                .build();
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        if ( populator != null )
+        {
+            populator.close( false );
+        }
+        IOUtils.closeAll( index, directoryFactory );
+    }
 
     @Test
     public void shouldVerifyThatThereAreNoDuplicates() throws Exception
     {
         // given
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
-        populator.add( 1, "value1" );
-        populator.add( 2, "value2" );
-        populator.add( 3, "value3" );
+        addUpdate( populator, 1, "value1" );
+        addUpdate( populator, 2, "value2" );
+        addUpdate( populator, 3, "value3" );
 
         // when
         populator.verifyDeferredConstraints( propertyAccessor );
@@ -99,9 +134,9 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void shouldUpdateEntryForNodeThatHasAlreadyBeenIndexed() throws Exception
     {
         // given
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
-        populator.add( 1, "value1" );
+        addUpdate( populator, 1, "value1" );
 
         // when
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
@@ -119,9 +154,9 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void shouldUpdateEntryForNodeThatHasPropertyRemovedAndThenAddedAgain() throws Exception
     {
         // given
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
-        populator.add( 1, "value1" );
+        addUpdate( populator, 1, "value1" );
 
         // when
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
@@ -139,9 +174,9 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void shouldRemoveEntryForNodeThatHasAlreadyBeenIndexed() throws Exception
     {
         // given
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
-        populator.add( 1, "value1" );
+        addUpdate( populator, 1, "value1" );
 
         // when
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
@@ -158,10 +193,10 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void shouldBeAbleToHandleSwappingOfIndexValues() throws Exception
     {
         // given
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
-        populator.add( 1, "value1" );
-        populator.add( 2, "value2" );
+        addUpdate( populator, 1, "value1" );
+        addUpdate( populator, 2, "value2" );
 
         // when
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
@@ -180,12 +215,12 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void shouldFailAtVerificationStageWithAlreadyIndexedStringValue() throws Exception
     {
         // given
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
         String value = "value1";
-        populator.add( 1, value );
-        populator.add( 2, "value2" );
-        populator.add( 3, value );
+        addUpdate( populator, 1, value );
+        addUpdate( populator, 2, "value2" );
+        addUpdate( populator, 3, value );
 
         when( propertyAccessor.getProperty( 1, PROPERTY_KEY_ID ) ).thenReturn(
                 stringProperty( PROPERTY_KEY_ID, value ) );
@@ -212,11 +247,11 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void shouldFailAtVerificationStageWithAlreadyIndexedNumberValue() throws Exception
     {
         // given
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
-        populator.add( 1, 1 );
-        populator.add( 2, 2 );
-        populator.add( 3, 1 );
+        addUpdate( populator, 1, 1 );
+        addUpdate( populator, 2, 2 );
+        addUpdate( populator, 3, 1 );
 
 
         when( propertyAccessor.getProperty( 1, PROPERTY_KEY_ID ) ).thenReturn( intProperty( PROPERTY_KEY_ID, 1 ) );
@@ -242,10 +277,10 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void shouldRejectDuplicateEntryWhenUsingPopulatingUpdater() throws Exception
     {
         // given
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
-        populator.add( 1, "value1" );
-        populator.add( 2, "value2" );
+        addUpdate( populator, 1, "value1" );
+        addUpdate( populator, 2, "value2" );
 
         when( propertyAccessor.getProperty( 1, PROPERTY_KEY_ID ) ).thenReturn(
                 stringProperty( PROPERTY_KEY_ID, "value1" ) );
@@ -274,12 +309,12 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void shouldRejectDuplicateEntryAfterUsingPopulatingUpdater() throws Exception
     {
         // given
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
         String value = "value1";
         IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
         updater.process( NodePropertyUpdate.add( 1, PROPERTY_KEY_ID, value, new long[]{} ) );
-        populator.add( 2, value );
+        addUpdate( populator, 2, value );
 
         when( propertyAccessor.getProperty( 1, PROPERTY_KEY_ID ) ).thenReturn(
                 stringProperty( PROPERTY_KEY_ID, value ) );
@@ -306,7 +341,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void shouldNotRejectDuplicateEntryOnSameNodeIdAfterUsingPopulatingUpdater() throws Exception
     {
         // given
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
         when( propertyAccessor.getProperty( 1, PROPERTY_KEY_ID ) ).thenReturn(
                 stringProperty( PROPERTY_KEY_ID, "value1" ) );
@@ -315,8 +350,8 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         updater.process( NodePropertyUpdate.add( 1, PROPERTY_KEY_ID, "value1", new long[]{} ) );
         updater.process( NodePropertyUpdate.change( 1, PROPERTY_KEY_ID, "value1", new long[]{}, "value1", new long[]{} ) );
         updater.close();
-        populator.add( 2, "value2" );
-        populator.add( 3, "value3" );
+        addUpdate( populator, 2, "value2" );
+        addUpdate( populator, 3, "value3" );
 
         // when
         populator.verifyDeferredConstraints( propertyAccessor );
@@ -332,12 +367,12 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void shouldNotRejectIndexCollisionsCausedByPrecisionLossAsDuplicates() throws Exception
     {
         // given
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
         // Given we have a collision in our index...
-        populator.add( 1, 1000000000000000001L );
-        populator.add( 2, 2 );
-        populator.add( 3, 1000000000000000001L );
+        addUpdate( populator, 1, 1000000000000000001L );
+        addUpdate( populator, 2, 2 );
+        addUpdate( populator, 3, 1000000000000000001L );
 
         // ... but the actual data in the store does not collide
         when( propertyAccessor.getProperty( 1, PROPERTY_KEY_ID ) ).thenReturn(
@@ -353,7 +388,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void shouldCheckAllCollisionsFromPopulatorAdd() throws Exception
     {
         // given
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
         int iterations = 228; // This value has to be high enough to stress the EntrySet implementation
         long[] labels = new long[0];
@@ -390,19 +425,19 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void shouldCheckAllCollisionsFromUpdaterClose() throws Exception
     {
         // given
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
         int iterations = 228; // This value has to be high enough to stress the EntrySet implementation
 
         for ( int nodeId = 0; nodeId < iterations; nodeId++ )
         {
-            populator.add( nodeId, 1 );
+            addUpdate( populator, nodeId, 1 );
             when( propertyAccessor.getProperty( nodeId, PROPERTY_KEY_ID ) ).thenReturn(
                     intProperty( PROPERTY_KEY_ID, nodeId ) );
         }
 
         // ... and the actual conflicting property:
-        populator.add( iterations, 1 );
+        addUpdate( populator, iterations, 1 );
         when( propertyAccessor.getProperty( iterations, PROPERTY_KEY_ID ) ).thenReturn(
                 intProperty( PROPERTY_KEY_ID, 1 ) ); // This collision is real!!!
 
@@ -425,7 +460,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     public void shouldReleaseSearcherProperlyAfterVerifyingDeferredConstraints() throws Exception
     {
         // given
-        final DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator();
+        populator = newPopulator();
 
         /*
          * This test was created due to a problem in closing an index updater after deferred constraints
@@ -456,19 +491,74 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         }, 5, SECONDS );
     }
 
+    @Test
+    public void sampleEmptyIndex() throws Exception
+    {
+        populator = newPopulator();
+
+        Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
+        long indexSize = populator.sampleResult( register );
+        long uniqueElements = register.readFirst();
+        long sampleSize = register.readSecond();
+
+        assertEquals( 0, indexSize );
+        assertEquals( 0, uniqueElements );
+        assertEquals( 0, sampleSize );
+    }
+
+    @Test
+    public void sampleAddedUpdates() throws Exception
+    {
+        populator = newPopulator();
+        List<NodePropertyUpdate> updates = Arrays.asList(
+                NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} ),
+                NodePropertyUpdate.add( 2, 1, "bar", new long[]{1} ),
+                NodePropertyUpdate.add( 3, 1, "baz", new long[]{1} ),
+                NodePropertyUpdate.add( 4, 1, "qux", new long[]{1} ) );
+
+        populator.add( updates );
+
+        Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
+        long indexSize = populator.sampleResult( register );
+        long uniqueElements = register.readFirst();
+        long sampleSize = register.readSecond();
+
+        assertEquals( 4, indexSize );
+        assertEquals( 4, uniqueElements );
+        assertEquals( 4, sampleSize );
+    }
+
+    @Test
+    public void addUpdates() throws Exception
+    {
+        populator = newPopulator();
+
+        List<NodePropertyUpdate> updates = Arrays.asList(
+                NodePropertyUpdate.add( 1, 1, "aaa", new long[]{1} ),
+                NodePropertyUpdate.add( 2, 1, "bbb", new long[]{1} ),
+                NodePropertyUpdate.add( 3, 1, "ccc", new long[]{1} ) );
+
+        populator.add( updates );
+
+        index.maybeRefreshBlocking();
+        try ( IndexReader reader = index.getIndexReader() )
+        {
+            assertArrayEquals( new long[]{1, 2, 3}, PrimitiveLongCollections.asArray( reader.scan() ) );
+        }
+    }
+
     private DeferredConstraintVerificationUniqueLuceneIndexPopulator newPopulator() throws IOException
     {
-        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystem,
-                testDir.directory( "folder" ), INDEX_IDENTIFIER );
-        LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
-                .withIndexStorage( indexStorage )
-                .build();
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
-                DeferredConstraintVerificationUniqueLuceneIndexPopulator( index, descriptor );
-
+        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator =
+                new DeferredConstraintVerificationUniqueLuceneIndexPopulator( index, descriptor );
         populator.create();
-
         return populator;
+    }
+
+    private static void addUpdate( DeferredConstraintVerificationUniqueLuceneIndexPopulator populator, long nodeId,
+            Object value ) throws IOException, IndexEntryConflictException
+    {
+        NodePropertyUpdate update = NodePropertyUpdate.add( nodeId, 0, value, new long[]{0} );
+        populator.add( Collections.singletonList( update ) );
     }
 }

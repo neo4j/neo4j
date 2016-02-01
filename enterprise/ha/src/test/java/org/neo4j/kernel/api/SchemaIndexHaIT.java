@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,6 +55,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
@@ -434,10 +436,10 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void add( long nodeId, Object propertyValue )
+        public void add( List<NodePropertyUpdate> updates )
                 throws IndexEntryConflictException, IOException
         {
-            delegate.add(nodeId, propertyValue);
+            delegate.add( updates );
             latch.startAndAwaitFinish();
         }
 

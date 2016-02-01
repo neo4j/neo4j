@@ -261,6 +261,11 @@ public abstract class GraphDatabaseSettings
     @Description( "The maximum number of open Lucene index searchers." )
     public static Setting<Integer> lucene_searcher_cache_size = setting("lucene_searcher_cache_size",INTEGER, Integer.toString( Integer.MAX_VALUE ), min( 1 ));
 
+    // Lucene schema indexes
+    @Internal
+    public static final Setting<Boolean> multi_threaded_schema_index_population_enabled =
+            setting( "multi_threaded_schema_index_population_enabled", BOOLEAN, TRUE );
+
     // Store settings
     @Description("Make Neo4j keep the logical transaction logs for being able to backup the database. " +
             "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +

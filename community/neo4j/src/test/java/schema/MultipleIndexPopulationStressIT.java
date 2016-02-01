@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -47,9 +48,14 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.CleanupRule;
+import org.neo4j.test.RandomRule;
+import org.neo4j.test.Randoms;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -64,24 +70,20 @@ import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
-import org.neo4j.test.CleanupRule;
-import org.neo4j.test.RandomRule;
-import org.neo4j.test.Randoms;
-import org.neo4j.test.TargetDirectory;
 
 /**
- * Idea is to test a {@link MultipleIndexPopulator} with a bunch of indexes, some which can fail randomly.
+ * Idea is to test a {@link MultipleIndexPopulator} and {@link BatchingMultipleIndexPopulator} with a bunch of indexes,
+ * some which can fail randomly.
  * Also updates are randomly streaming in during population. In the end all the indexes should have been populated
  * with correct data.
  */
@@ -98,7 +100,30 @@ public class MultipleIndexPopulationStressIT
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Test
-    public void shouldPopulateMultipleIndexPopulatorsUnderStress() throws Exception
+    public void shouldPopulateMultipleIndexPopulatorsUnderStressSingleThreaded() throws Exception
+    {
+        readConfigAndRunTest( false );
+    }
+
+    @Test
+    public void shouldPopulateMultipleIndexPopulatorsUnderStressMultiThreaded() throws Exception
+    {
+        int concurrentUpdatesQueueFlushThreshold = ThreadLocalRandom.current().nextInt( 100, 5000 );
+        System.out.println( "Concurrent Updates Queue Threshold: " + concurrentUpdatesQueueFlushThreshold );
+        FeatureToggles.set( BatchingMultipleIndexPopulator.class, BatchingMultipleIndexPopulator.QUEUE_THRESHOLD_NAME,
+                concurrentUpdatesQueueFlushThreshold );
+        try
+        {
+            readConfigAndRunTest( true );
+        }
+        finally
+        {
+            FeatureToggles.clear( BatchingMultipleIndexPopulator.class,
+                    BatchingMultipleIndexPopulator.QUEUE_THRESHOLD_NAME );
+        }
+    }
+
+    private void readConfigAndRunTest( boolean multiThreaded ) throws Exception
     {
         // GIVEN a database with random data in it
         int nodeCount = (int) Config.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "1m" ) );
@@ -109,11 +134,11 @@ public class MultipleIndexPopulationStressIT
         // WHEN/THEN run tests for at least the specified duration
         for ( int i = 0; currentTimeMillis() < endTime; i++ )
         {
-            runTest( nodeCount, i );
+            runTest( nodeCount, i, multiThreaded );
         }
     }
 
-    private void runTest( int nodeCount, int run ) throws Exception
+    private void runTest( int nodeCount, int run, boolean multiThreaded ) throws Exception
     {
         if ( run > 0 )
         {   // To only have the dedicated stress test run see this message
@@ -124,6 +149,7 @@ public class MultipleIndexPopulationStressIT
         final GraphDatabaseService db = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.absolutePath() )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
+                .setConfig( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreaded + "" )
                 .newGraphDatabase();
         createIndexes( db );
         final AtomicBoolean end = new AtomicBoolean();
