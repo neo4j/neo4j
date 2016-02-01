@@ -21,12 +21,14 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -63,9 +65,9 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
 
     public LuceneSchemaIndex( PartitionedIndexStorage indexStorage, IndexConfiguration config,
-            IndexSamplingConfig samplingConfig )
+            IndexSamplingConfig samplingConfig, Supplier<IndexWriterConfig> writerConfigSupplier )
     {
-        super( indexStorage );
+        super( indexStorage, writerConfigSupplier );
         this.config = config;
         this.samplingConfig = samplingConfig;
     }

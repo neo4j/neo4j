@@ -30,6 +30,7 @@ import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
@@ -76,6 +77,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
                                         .withIndexConfig( config )
                                         .withSamplingConfig( samplingConfig )
                                         .withIndexStorage( getIndexStorage( indexId ) )
+                                        .withWriterConfig( IndexWriterConfigs::population )
                                         .build();
         if ( config.isUnique() )
         {

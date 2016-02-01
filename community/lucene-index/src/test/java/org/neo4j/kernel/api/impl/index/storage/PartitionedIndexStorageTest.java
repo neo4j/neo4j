@@ -186,7 +186,7 @@ public class PartitionedIndexStorageTest
         File folder = createRandomFolder( rootFolder );
         DirectoryFactory directoryFactory = getOrCreateDirFactory( fs );
         Directory directory = directoryFactory.open( folder );
-        try ( IndexWriter writer = new IndexWriter( directory, IndexWriterConfigs.standardConfig() ) )
+        try ( IndexWriter writer = new IndexWriter( directory, IndexWriterConfigs.standard() ) )
         {
             writer.addDocument( randomDocument() );
             writer.commit();

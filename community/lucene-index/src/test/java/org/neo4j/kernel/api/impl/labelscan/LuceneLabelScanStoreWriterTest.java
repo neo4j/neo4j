@@ -51,10 +51,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.locks.Lock;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.impl.index.IndexReaderStub;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -344,7 +344,7 @@ public class LuceneLabelScanStoreWriterTest
 
         StubIndexPartition( File folder, Directory directory ) throws IOException
         {
-            super( folder, directory );
+            super( folder, directory, IndexWriterConfigs.standard() );
             this.directory = directory;
         }
 

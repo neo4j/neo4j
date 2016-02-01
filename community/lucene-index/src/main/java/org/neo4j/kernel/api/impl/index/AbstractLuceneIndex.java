@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 
 import java.io.Closeable;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ArrayUtil;
@@ -58,12 +60,14 @@ public abstract class AbstractLuceneIndex implements Closeable
     protected final ReentrantLock partitionsLock = new ReentrantLock();
 
     protected final PartitionedIndexStorage indexStorage;
+    private final Supplier<IndexWriterConfig> writerConfigSupplier;
     private List<IndexPartition> partitions = new CopyOnWriteArrayList<>();
     private volatile boolean open;
 
-    public AbstractLuceneIndex( PartitionedIndexStorage indexStorage )
+    public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, Supplier<IndexWriterConfig> writerConfigSupplier )
     {
         this.indexStorage = indexStorage;
+        this.writerConfigSupplier = writerConfigSupplier;
     }
 
     /**
@@ -93,7 +97,8 @@ public abstract class AbstractLuceneIndex implements Closeable
         Map<File,Directory> indexDirectories = indexStorage.openIndexDirectories();
         for ( Map.Entry<File,Directory> indexDirectory : indexDirectories.entrySet() )
         {
-            partitions.add( new IndexPartition( indexDirectory.getKey(), indexDirectory.getValue() ) );
+            partitions.add( new IndexPartition( indexDirectory.getKey(), indexDirectory.getValue(),
+                    writerConfigSupplier.get() ) );
         }
         open = true;
     }
@@ -363,8 +368,8 @@ public abstract class AbstractLuceneIndex implements Closeable
         try
         {
             File partitionFolder = createNewPartitionFolder();
-            IndexPartition indexPartition = new IndexPartition( partitionFolder,
-                    indexStorage.openDirectory( partitionFolder ) );
+            Directory directory = indexStorage.openDirectory( partitionFolder );
+            IndexPartition indexPartition = new IndexPartition( partitionFolder, directory, writerConfigSupplier.get() );
             partitions.add( indexPartition );
             return indexPartition;
         }

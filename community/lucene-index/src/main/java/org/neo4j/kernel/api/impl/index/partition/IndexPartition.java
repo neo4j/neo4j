@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index.partition;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
@@ -30,7 +31,6 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshotFileIterator;
 
 /**
@@ -45,11 +45,12 @@ public class IndexPartition implements Closeable
     private final SearcherManager searcherManager;
     private final File indexFolder;
 
-    public IndexPartition( File partitionFolder, Directory directory ) throws IOException
+    public IndexPartition( File partitionFolder, Directory directory, IndexWriterConfig writerConfig )
+            throws IOException
     {
         this.indexFolder = partitionFolder;
         this.directory = directory;
-        this.indexWriter = new IndexWriter( directory, IndexWriterConfigs.standardConfig() );
+        this.indexWriter = new IndexWriter( directory, writerConfig );
         this.searcherManager = new SearcherManager( indexWriter, true, new SearcherFactory() );
     }
 

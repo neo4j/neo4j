@@ -59,7 +59,7 @@ public class LuceneIndexSnapshotFileIteratorTest
     {
         indexDir = testDir.directory();
         dir = new RAMDirectory();
-        writer = new IndexWriter( dir, IndexWriterConfigs.standardConfig() );
+        writer = new IndexWriter( dir, IndexWriterConfigs.standard() );
     }
 
     @After

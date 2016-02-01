@@ -40,12 +40,15 @@ public final class IndexWriterConfigs
     private static final double MERGE_POLICY_MIN_MERGE_MB =
             FeatureToggles.getDouble( IndexWriterConfigs.class, "min.merge", 0.1 );
 
+    private static final int POPULATION_RAM_BUFFER_SIZE_MB =
+            FeatureToggles.getInteger( IndexWriterConfigs.class, "population.ram.buffer.size", 50 );
+
     private IndexWriterConfigs()
     {
         throw new AssertionError( "Not for instantiation!" );
     }
 
-    public static IndexWriterConfig standardConfig()
+    public static IndexWriterConfig standard()
     {
         IndexWriterConfig writerConfig = new IndexWriterConfig( LuceneDataSource.KEYWORD_ANALYZER );
 
@@ -59,6 +62,14 @@ public final class IndexWriterConfigs
         mergePolicy.setMergeFactor( MERGE_POLICY_MERGE_FACTOR );
         writerConfig.setMergePolicy( mergePolicy );
 
+        return writerConfig;
+    }
+
+    public static IndexWriterConfig population()
+    {
+        IndexWriterConfig writerConfig = standard();
+        writerConfig.setMaxBufferedDocs( IndexWriterConfig.DISABLE_AUTO_FLUSH );
+        writerConfig.setRAMBufferSizeMB( POPULATION_RAM_BUFFER_SIZE_MB );
         return writerConfig;
     }
 }
