@@ -65,6 +65,7 @@ case class CypherCompilerConfiguration(queryCacheSize: Int,
                                        useErrorsOverWarnings: Boolean,
                                        idpMaxTableSize: Int,
                                        idpIterationDuration: Long,
+                                       errorIfShortestPathFallbackUsedAtRuntime: Boolean,
                                        nonIndexedLabelWarningThreshold: Long)
 
 object CypherCompilerFactory {

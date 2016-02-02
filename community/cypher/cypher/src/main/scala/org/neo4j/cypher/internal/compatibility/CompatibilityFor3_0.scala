@@ -95,6 +95,9 @@ object exceptionHandlerFor3_0 extends MapToPublicExceptions[CypherException] {
 
   def cypherExecutionException(message: String, cause: Throwable) = throw new CypherExecutionException(message, cause)
 
+  override def shortestPathFallbackDisableRuntimeException(message: String, cause: Throwable): CypherException =
+    throw new ExhaustiveShortestPathForbiddenException(message, cause)
+
   def labelScanHintException(variable: String, label: String, message: String, cause: Throwable) =
     throw new LabelScanHintException(variable, label, message, cause)
 
@@ -347,6 +350,8 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
       NotificationCode.MISSING_PROPERTY_NAME.notification(pos.asInputPosition, NotificationDetail.Factory.propertyName(name))
     case UnboundedShortestPathNotification(pos) =>
       NotificationCode.UNBOUNDED_SHORTEST_PATH.notification(pos.asInputPosition)
+    case ExhaustiveShortestPathForbiddenNotification(pos) =>
+      NotificationCode.EXHAUSTIVE_SHORTEST_PATH.notification(pos.asInputPosition)
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor3_0.runSafely {

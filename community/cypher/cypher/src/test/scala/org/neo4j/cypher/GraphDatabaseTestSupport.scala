@@ -236,6 +236,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     useErrorsOverWarnings = false,
     nonIndexedLabelWarningThreshold = 10000,
     idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
-    idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit
+    idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
+    errorIfShortestPathFallbackUsedAtRuntime = false
   )
 }

@@ -177,9 +177,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     statsDivergenceThreshold = 0.5,
     queryPlanTTL = 1000,
     useErrorsOverWarnings = false,
-    nonIndexedLabelWarningThreshold = 10000,
     idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
-    idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit
+    idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
+    errorIfShortestPathFallbackUsedAtRuntime = false,
+    nonIndexedLabelWarningThreshold = 10000
   )
 
   def produceLogicalPlan(queryText: String)(implicit planner: CostBasedExecutablePlanBuilder, planContext: PlanContext): LogicalPlan = {

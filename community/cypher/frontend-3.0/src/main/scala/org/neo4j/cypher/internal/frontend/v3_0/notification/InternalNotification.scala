@@ -53,3 +53,5 @@ case class MissingRelTypeNotification(position: InputPosition, relType: String) 
 case class MissingPropertyNameNotification(position: InputPosition, name: String) extends InternalNotification
 
 case class UnboundedShortestPathNotification(position: InputPosition) extends InternalNotification
+
+case class ExhaustiveShortestPathForbiddenNotification(position: InputPosition) extends InternalNotification

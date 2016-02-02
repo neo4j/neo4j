@@ -86,6 +86,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
 
     val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable,
       queryGraphSolver, notificationLogger = notificationLogger, useErrorsOverWarnings = config.useErrorsOverWarnings,
+      errorIfShortestPathFallbackUsedAtRuntime = config.errorIfShortestPathFallbackUsedAtRuntime,
       config = QueryPlannerConfiguration.default.withUpdateStrategy(updateStrategy))
 
     val plan = queryPlanner.plan(unionQuery)(context)

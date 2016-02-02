@@ -49,6 +49,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
         useErrorsOverWarnings = false,
         idpMaxTableSize = 128,
         idpIterationDuration = 1000,
+        errorIfShortestPathFallbackUsedAtRuntime = false,
         nonIndexedLabelWarningThreshold = 10000L
       ),
       clock, GeneratedQueryStructure,

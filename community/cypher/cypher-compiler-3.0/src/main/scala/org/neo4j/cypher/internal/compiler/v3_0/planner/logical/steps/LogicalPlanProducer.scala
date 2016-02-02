@@ -28,8 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{DeleteExpr
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, SortDescription}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast}
-
+import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast, _}
 
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.
@@ -600,6 +599,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
   def planEager(inner: LogicalPlan) =
     Eager(inner)(inner.solved)
+
+  def planError(inner: LogicalPlan, exception: ExhaustiveShortestPathForbiddenException) =
+    ErrorPlan(inner, exception)(inner.solved)
 
   implicit def estimatePlannerQuery(plannerQuery: PlannerQuery)(implicit context: LogicalPlanningContext): PlannerQuery with CardinalityEstimation = {
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)

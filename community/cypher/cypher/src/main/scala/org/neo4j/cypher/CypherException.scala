@@ -152,3 +152,5 @@ class LoadExternalResourceException(message: String, cause: Throwable) extends C
 class LoadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException) extends CypherException(s"${cause.getMessage} (${extraInfo})", cause) {
   val status = cause.status
 }
+
+class ExhaustiveShortestPathForbiddenException(message: String, cause: Throwable) extends CypherExecutionException(message, cause)

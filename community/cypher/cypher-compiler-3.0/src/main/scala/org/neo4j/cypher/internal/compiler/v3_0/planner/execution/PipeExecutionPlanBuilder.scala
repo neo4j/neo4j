@@ -369,6 +369,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case Eager(_) =>
       EagerPipe(source)()
 
+    case ErrorPlan(_, ex) =>
+      ErrorPipe(source, ex)()
+
     case RepeatableRead(_) =>
       RepeatableReadPipe(source)()
 
