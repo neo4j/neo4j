@@ -26,25 +26,59 @@ class NiceHasher(val original: Seq[Any]) {
 
     val other = p1.asInstanceOf[NiceHasher]
 
-    hash == other.hash && comperableValues.equals(other.comperableValues)
+    hash == other.hash && comparableValues.equals(other.comparableValues)
   }
 
-  lazy val comperableValues = original.map {
-    case x:Array[_] => x.deep
+  private def comparableValuesFun(y: Seq[Any]): Seq[Any] = y map {
+    case x: Array[_] => x.deep
+    case x: Map[String, _] => x.keys.toSeq ++ comparableValuesFun(x.values.toSeq)
     case x => x
   }
 
+  lazy val comparableValues = comparableValuesFun(original)
+
   override def toString = hashCode() + " : " + original.toString
 
-  lazy val hash = original.foldLeft(0) ((hashValue,element) => { element match {
+  lazy val hash = NiceHasherValue.seqHashFun(original)
+
+  override def hashCode() = hash
+}
+
+object NiceHasherValue {
+  def seqHashFun(seq: Seq[Any]): Int = seq.foldLeft(0) ((hashValue, element) => hashFun(element) + hashValue * 31 )
+
+  def hashFun(y: Any): Int = y match {
     case x: Array[Int] => java.util.Arrays.hashCode(x)
     case x: Array[Long] => java.util.Arrays.hashCode(x)
     case x: Array[Byte] => java.util.Arrays.hashCode(x)
     case x: Array[AnyRef] => java.util.Arrays.deepHashCode(x)
     case null => 0
+    case x: Map[String, _] => x.keySet.hashCode() * 31 + seqHashFun(x.values.toSeq)
     case x => x.hashCode()
   }
-  } + hashValue * 31 )
+}
+
+class NiceHasherValue(val original: Any) {
+  override def equals(p1: Any): Boolean = {
+    if(p1 == null || !p1.isInstanceOf[NiceHasherValue])
+      return false
+
+    val other = p1.asInstanceOf[NiceHasherValue]
+
+    hash == other.hash && (comparableValue equals other.comparableValue)
+  }
+
+  private def comparableValuesFun(y: Any): Any = y match {
+    case x: Array[_] => x.deep
+    case x: Map[String, _] => x.keys.toSeq ++ new NiceHasher(x.values.toSeq).comparableValues
+    case x => x
+  }
+
+  lazy val comparableValue = comparableValuesFun(original)
+
+  override def toString = hashCode() + " : " + original.toString
+
+  lazy val hash = NiceHasherValue.hashFun(original)
 
   override def hashCode() = hash
 }

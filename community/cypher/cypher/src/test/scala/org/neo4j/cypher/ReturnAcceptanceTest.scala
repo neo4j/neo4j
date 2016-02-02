@@ -535,4 +535,24 @@ return coalesce(a.title, a.name)""")
 
     result shouldBe empty
   }
+
+  test("distinct inside aggregation should work with collections inside maps") {
+    val propertyCollection = Array("A", "B")
+    createNode("array" -> propertyCollection)
+    createNode("array" -> propertyCollection)
+
+    val result = executeWithAllPlanners("MATCH (n) RETURN count(distinct {foo: n.array}) as count")
+
+    result.toList should equal(List(Map("count" -> 1)))
+  }
+
+  test("distinct should work with collections inside maps") {
+    val propertyCollection = Array("A", "B")
+    createNode("array" -> propertyCollection)
+    createNode("array" -> propertyCollection)
+
+    val result = executeWithAllPlanners("MATCH (n) WITH distinct {foo: n.array} as map RETURN count(*)")
+
+    result.toList should equal(List(Map("count(*)" -> 1)))
+  }
 }

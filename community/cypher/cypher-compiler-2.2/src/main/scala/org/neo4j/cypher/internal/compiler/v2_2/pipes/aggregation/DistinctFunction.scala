@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import commands.expressions.Expression
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{NiceHasherValue, QueryState}
 
 class DistinctFunction(value: Expression, inner: AggregationFunction) extends AggregationFunction {
-  val seen = scala.collection.mutable.Set[Any]()
+  val seen = scala.collection.mutable.Set[NiceHasherValue]()
   var seenNull = false
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState) {
-    val data = value(ctx)
+    val data = new NiceHasherValue(value(ctx))
 
     if (data == null) {
       if (!seenNull) {
