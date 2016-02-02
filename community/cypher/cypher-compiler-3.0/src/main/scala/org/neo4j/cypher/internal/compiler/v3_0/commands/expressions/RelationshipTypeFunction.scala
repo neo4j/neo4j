@@ -23,12 +23,21 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, EntityNotFoundException}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphdb.Relationship
 
 case class RelationshipTypeFunction(relationship: Expression) extends NullInNullOutExpression(relationship) {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) =
-    value.asInstanceOf[Relationship].getType.name()
+
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): String =
+    value match {
+      case r: Relationship => if (state.query.relationshipOps.isDeletedInThisTx(r)) {
+        throw new EntityNotFoundException(s"Relationship with id ${r.getId} has been deleted in this transaction")
+      } else {
+        r.getType.name()
+      }
+      case x => throw new CypherTypeException(s"Expected a relationship, but found $x")
+    }
 
   def rewrite(f: (Expression) => Expression) = f(RelationshipTypeFunction(relationship.rewrite(f)))
 

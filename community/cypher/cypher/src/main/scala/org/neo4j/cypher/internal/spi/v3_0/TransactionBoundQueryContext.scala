@@ -135,8 +135,15 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   override def getOrCreateRelTypeId(relTypeName: String): Int =
     _statement.tokenWriteOperations().relationshipTypeGetOrCreateForName(relTypeName)
 
-  override def getLabelsForNode(node: Long) =
+  override def getLabelsForNode(node: Long) = try {
     JavaConversionSupport.asScala(_statement.readOperations().nodeGetLabels(node))
+  } catch {
+    case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
+      if (nodeOps.isDeletedInThisTx(node))
+        throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction", e)
+      else
+        null
+  }
 
   override def getPropertiesForNode(node: Long) =
     JavaConversionSupport.asScala(_statement.readOperations().nodeGetPropertyKeys(node))
@@ -329,7 +336,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
       _statement.readOperations().nodeGetProperty(id, propertyKeyId)
     } catch {
-      case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null
+      case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
+        if (isDeletedInThisTx(id))
+          throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction", e)
+        else
+          null
     }
 
     override def hasProperty(id: Long, propertyKey: Int) =
@@ -357,8 +368,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     override def indexQuery(name: String, query: Any): Iterator[Node] =
       graph.index.forNodes(name).query(query).iterator().asScala
 
-    override def isDeletedInThisTx(n: Node): Boolean =
-      kernelStatement.hasTxStateWithChanges && kernelStatement.txState().nodeIsDeletedInThisTx(n.getId)
+    override def isDeletedInThisTx(n: Node): Boolean = isDeletedInThisTx(n.getId)
+
+    def isDeletedInThisTx(id: Long): Boolean =
+      kernelStatement.hasTxStateWithChanges && kernelStatement.txState().nodeIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long) =
       _statement.readOperations().acquireExclusive(ResourceTypes.NODE, obj)
@@ -370,6 +383,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
+
     override def delete(obj: Relationship) {
       _statement.dataWriteOperations().relationshipDelete(obj.getId)
     }
@@ -377,8 +391,15 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     override def propertyKeyIds(id: Long): Iterator[Int] =
       asScala(_statement.readOperations().relationshipGetPropertyKeys(id))
 
-    override def getProperty(id: Long, propertyKeyId: Int): Any =
+    override def getProperty(id: Long, propertyKeyId: Int): Any = try {
       _statement.readOperations().relationshipGetProperty(id, propertyKeyId)
+    } catch {
+      case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
+        if (isDeletedInThisTx(id))
+          throw new EntityNotFoundException(s"Relationship with id $id has been deleted in this transaction", e)
+        else
+          null
+    }
 
     override def hasProperty(id: Long, propertyKey: Int) =
       _statement.readOperations().relationshipHasProperty(id, propertyKey)
@@ -406,7 +427,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       graph.index.forRelationships(name).query(query).iterator().asScala
 
     override def isDeletedInThisTx(r: Relationship): Boolean =
-      kernelStatement.hasTxStateWithChanges && kernelStatement.txState().relationshipIsDeletedInThisTx(r.getId)
+      isDeletedInThisTx(r.getId)
+
+    def isDeletedInThisTx(id: Long): Boolean =
+      kernelStatement.hasTxStateWithChanges && kernelStatement.txState().relationshipIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long) =
       _statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)

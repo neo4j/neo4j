@@ -42,6 +42,38 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.dumpToString() should include("Node[0]{deleted}")
   }
 
+  test("returning properties of deleted nodes should throw exception") {
+    createNode("p" -> 0)
+
+    val query = "MATCH (n) DELETE n RETURN n.p"
+
+    an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
+  }
+
+  test("returning labels of deleted nodes should throw exception") {
+    createLabeledNode("A")
+
+    val query = "MATCH (n:A) DELETE n RETURN labels(n)"
+
+    an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
+  }
+
+  test("returning properties of deleted relationships should throw exception") {
+    relate(createNode(), createNode(), "T", Map("p" -> "a property"))
+
+    val query = "MATCH ()-[r]->() DELETE r RETURN r.p"
+
+    an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
+  }
+
+  test("returning the type of deleted relationships should throw exception") {
+    relate(createNode(), createNode(), "T")
+
+    val query = "MATCH ()-[r:T]->() DELETE r RETURN type(r)"
+
+    an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
+  }
+
   test("deleted relationships should be returned marked as such") {
     relate(createNode(), createNode(), "T")
 

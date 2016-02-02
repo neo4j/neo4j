@@ -108,7 +108,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
     {
         return ValueRepresentation.template( path( "/relationships/out/{-list|&|types}" ) );
     }
-    
+
     @Mapping( "labels" )
     public ValueRepresentation labelsUriTemplate()
     {

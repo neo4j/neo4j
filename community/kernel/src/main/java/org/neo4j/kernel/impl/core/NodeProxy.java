@@ -48,11 +48,11 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.NodeItem;
@@ -423,8 +423,15 @@ public class NodeProxy
             {
                 if ( !node.next() )
                 {
-                    throw new NotFoundException( "Node not found",
-                            new EntityNotFoundException( EntityType.NODE, getId() ) );
+                    if ( ((KernelStatement) statement).txState().nodeIsDeletedInThisTx( nodeId ) )
+                    {
+                        return Collections.emptyMap();
+                    }
+                    else
+                    {
+                        throw new NotFoundException( "Node not found",
+                                new EntityNotFoundException( EntityType.NODE, getId() ) );
+                    }
                 }
 
                 try ( Cursor<PropertyItem> propertyCursor = node.get().properties() )
