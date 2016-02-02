@@ -19,22 +19,23 @@
  */
 package org.neo4j.procedure;
 
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation marks a {@link Procedure} as performing updates to the graph.
- * <p>
- * This is <i>required</i> if the procedure performs write operations.
+ * This marks a field in a class with {@link Procedure} methods as part of the context the procedure is invoked in.
+ * Practically, this means that before the procedure is called, fields with this annotation are automatically
+ * populated with implementations of the specified APIs.
+ *
+ * In fact, apart from static fields, <i>only</i> fields with this annotation are allowed in classses that
+ * define procedure. Each of the fields must be public and non-final.
+ *
+ * @see Procedure
  */
-@Target( ElementType.METHOD )
+@Target( ElementType.FIELD )
 @Retention( RetentionPolicy.RUNTIME )
-public @interface PerformsWriteOperations
+public @interface Context
 {
-    // Implementation note: this is not yet enforced, but is an important part of the
-    // contract with the user. Without this annotation, we do not guarantee writes will
-    // work.
 }

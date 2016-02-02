@@ -1,0 +1,34 @@
+[[query-call]]
+= Call
+
+[abstract]
+The `CALL` clause is used to call a procedure deployed in the database.
+
+The examples showing how to use arguments when invoking procedures all use the following procedure:
+
+[snippet,java]
+----
+component=neo4j-cypher-docs
+source=org/neo4j/procedure/example/IndexingProcedure.java
+classifier=sources
+tag=indexingProcedure
+----
+
+[NOTE]
+This clause cannot be combined with other clauses.
+
+:leveloffset: 2
+
+include::call-a-procedure.asciidoc[]
+
+:leveloffset: 2
+
+include::call-a-procedure-with-literal-arguments.asciidoc[]
+
+:leveloffset: 2
+
+include::call-a-procedure-with-parameter-arguments.asciidoc[]
+
+:leveloffset: 2
+
+include::call-a-procedure-with-mixed-literal-and-parameter-arguments.asciidoc[]

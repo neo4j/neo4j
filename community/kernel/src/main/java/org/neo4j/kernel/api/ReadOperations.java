@@ -561,9 +561,6 @@ public interface ReadOperations
     //== PROCEDURE OPERATIONS ===================
     //===========================================
 
-    /** For read procedures, this key will be available in the invocation context as a means to access the current read statement. */
-    CallableProcedure.Key<ReadOperations> readOperations = CallableProcedure.Key.key("statementContext.read", ReadOperations.class );
-
     /** For managed procedures, this gives access to the current statement. */
     CallableProcedure.Key<Statement> statement = CallableProcedure.Key.key("statement", Statement.class );
 

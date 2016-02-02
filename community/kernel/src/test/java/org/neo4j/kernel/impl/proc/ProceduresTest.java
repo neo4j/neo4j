@@ -17,27 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.proc;
-
-import java.util.List;
+package org.neo4j.kernel.impl.proc;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.List;
+
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
 import static org.neo4j.kernel.api.proc.CallableProcedure.Key.key;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ProceduresTest

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import junit.framework.TestCase;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
@@ -34,15 +33,17 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicContext;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.procedure.Resource;
+import org.neo4j.procedure.Context;
 
+import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.Matchers.contains;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
@@ -86,7 +87,7 @@ public class ReflectiveProcedureTest
         List<CallableProcedure> procedures = compile( SingleReadOnlyProcedure.class );
 
         // Then
-        TestCase.assertEquals( 1, procedures.size() );
+        assertEquals( 1, procedures.size() );
         Assert.assertThat( procedures.get( 0 ).signature(), Matchers.equalTo(
                 procedureSignature( "org", "neo4j", "kernel", "impl", "proc", "listCoolPeople" )
                         .out( "name", Neo4jTypes.NTString )
@@ -104,7 +105,7 @@ public class ReflectiveProcedureTest
         RawIterator<Object[],ProcedureException> out = proc.apply( new BasicContext(), new Object[0] );
 
         // Then
-        Assert.assertThat( asList( out ), Matchers.contains(
+        Assert.assertThat( asList( out ), contains(
                 new Object[]{"Bonnie"},
                 new Object[]{"Clyde"}
         ) );
@@ -117,7 +118,7 @@ public class ReflectiveProcedureTest
         List<CallableProcedure> procedures = compile( PrivateConstructorButNoProcedures.class );
 
         // Then
-        TestCase.assertEquals( 0, procedures.size() );
+        assertEquals( 0, procedures.size() );
     }
 
     @Test
@@ -133,12 +134,12 @@ public class ReflectiveProcedureTest
         RawIterator<Object[],ProcedureException> bananaOut = bananaPeople.apply( new BasicContext(), new Object[0] );
 
         // Then
-        Assert.assertThat( asList( coolOut ), Matchers.contains(
+        Assert.assertThat( asList( coolOut ), contains(
                 new Object[]{"Bonnie"},
                 new Object[]{"Clyde"}
         ) );
 
-        Assert.assertThat( asList( bananaOut ), Matchers.contains(
+        Assert.assertThat( asList( bananaOut ), contains(
                 new Object[]{"Jake", 18L},
                 new Object[]{"Pontus", 2L}
         ) );
@@ -170,6 +171,17 @@ public class ReflectiveProcedureTest
         compile( PrivateConstructorProcedure.class );
     }
 
+    @Test
+    public void shouldAllowVoidOutput() throws Throwable
+    {
+        // When
+        CallableProcedure proc = compile( ProcedureWithVoidOutput.class ).get( 0 );
+
+        // Then
+        assertEquals( 0, proc.signature().outputSignature().size() );
+        assertFalse( proc.apply( null, new Object[0] ).hasNext() );
+    }
+
     public static class MyOutputRecord
     {
         public String name;
@@ -195,7 +207,7 @@ public class ReflectiveProcedureTest
 
     public static class LoggingProcedure
     {
-        @Resource
+        @Context
         public Log log;
 
         @Procedure
@@ -217,6 +229,14 @@ public class ReflectiveProcedureTest
             return Stream.of(
                     new MyOutputRecord( "Bonnie" ),
                     new MyOutputRecord( "Clyde" ) );
+        }
+    }
+
+    public static class ProcedureWithVoidOutput
+    {
+        @Procedure
+        public void voidOutput()
+        {
         }
     }
 

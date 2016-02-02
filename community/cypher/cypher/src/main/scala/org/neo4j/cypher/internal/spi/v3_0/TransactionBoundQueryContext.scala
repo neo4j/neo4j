@@ -51,7 +51,6 @@ import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.api.{KernelStatement => InternalKernelStatement}
 import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.locking.ResourceTypes
-import org.neo4j.kernel.api.proc
 import org.neo4j.graphdb.security.URLAccessValidationError
 
 import scala.collection.Iterator
@@ -561,10 +560,17 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
-  def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]) = {
+  override def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]) =
+    callProcedure(signature, args, statement.readOperations().procedureCallRead )
+
+  override def callReadWriteProcedure(signature: ProcedureSignature, args: Seq[Any]) =
+    callProcedure(signature, args, statement.dataWriteOperations().procedureCallWrite )
+
+  private def callProcedure(signature: ProcedureSignature, args: Seq[Any],
+                            call: (proc.ProcedureSignature.ProcedureName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]) = {
     val kn = new proc.ProcedureSignature.ProcedureName(signature.name.namespace.asJava, signature.name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
-    val read: RawIterator[Array[AnyRef], ProcedureException] = _statement.readOperations().procedureCallRead(kn, toArray)
+    val read: RawIterator[Array[AnyRef], ProcedureException] = call(kn, toArray)
     new scala.Iterator[Array[AnyRef]] {
       override def hasNext: Boolean = read.hasNext
       override def next(): Array[AnyRef] = read.next

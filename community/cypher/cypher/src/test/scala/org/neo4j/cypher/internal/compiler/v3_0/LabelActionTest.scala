@@ -205,4 +205,6 @@ class SnitchingQueryContext extends QueryContext {
   override def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
 
   override def indexSeekByContains(index: IndexDescriptor, value: String): scala.Iterator[Node] = ???
+
+  override def callReadWriteProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
 }

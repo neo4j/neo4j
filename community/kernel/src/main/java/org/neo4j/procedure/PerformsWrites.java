@@ -19,23 +19,19 @@
  */
 package org.neo4j.procedure;
 
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This marks a field in a class with {@link Procedure} methods as a resource for the procedures to use.
- * What this means is that before the procedure is called, fields with this annotation will be automatically
- * populated with the appropriate resource.
- *
- * In fact, apart from static fields, <i>only</i> fields with this annotation are allowed in classses that
- * define procedure. Each of the fields must be public and non-final.
- *
- * @see Procedure
+ * This annotation marks a {@link Procedure} as performing updates to the graph.
+ * <p>
+ * This is <i>required</i> if the procedure performs write operations.
  */
-@Target( ElementType.FIELD )
+@Target( ElementType.METHOD )
 @Retention( RetentionPolicy.RUNTIME )
-public @interface Resource
+public @interface PerformsWrites
 {
 }

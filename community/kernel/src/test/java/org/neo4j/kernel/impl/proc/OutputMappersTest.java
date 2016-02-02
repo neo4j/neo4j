@@ -147,6 +147,29 @@ public class OutputMappersTest
         mapper( RecordWithNonStringKeyMap.class );
     }
 
+    @Test
+    public void shouldWarnAgainstStdLibraryClassesSinceTheseIndicateUserError() throws Throwable
+    {
+        // Impl note: We may want to change this behavior and actually allow procedures to return `Long` etc,
+        //            with a default column name. So Stream<Long> would become records like (out: Long)
+        //            Drawback of that is that it'd cause cognitive dissonance, it's not obvious what's a record
+        //            and what is a primitive value..
+
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class that you define, with public non-final " +
+                                 "fields defining the fields in the record. If you'd like your procedure to return `Long`, you could define a record class " +
+                                 "like:\n" +
+                                 "public class Output {\n" +
+                                 "    public Long out;\n" +
+                                 "}\n" +
+                                 "\n" +
+                                 "And then define your procedure as returning `Stream<Output>`." );
+
+        // When
+        mapper(Long.class);
+    }
+
     private OutputMapper mapper( Class<?> clazz ) throws ProcedureException
     {
         return new OutputMappers( new TypeMappers() ).mapper( clazz );

@@ -31,10 +31,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -48,7 +44,6 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.guard.Guard;
@@ -85,7 +80,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -159,13 +153,12 @@ import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements Lifecycle, IndexProviders
 {
+    private final Procedures procedures;
+
     private interface TransactionLogModule
     {
         LogicalTransactionStore logicalTransactionStore();
@@ -333,7 +326,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             PageCache pageCache,
             ConstraintSemantics constraintSemantics,
             Monitors monitors,
-            Tracers tracers )
+            Tracers tracers,
+            Procedures procedures )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -360,6 +354,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.constraintSemantics = constraintSemantics;
         this.monitors = monitors;
         this.tracers = tracers;
+        this.procedures = procedures;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -761,8 +756,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 storeLayer, autoIndexing, constraintIndexCreator, updateableSchemaState, guard,
                 legacyIndexStore ) );
 
-        Procedures procedures = setupProcedures( logService );
-
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( locks, constraintIndexCreator,
                 statementOperations, schemaWriteGuard, transactionHeaderInformationFactory,
@@ -803,26 +796,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 return fileListing;
             }
         };
-    }
-
-    // register graph types, set up built-in procedures and scan for procedures on disk
-    private Procedures setupProcedures( final LogService logService ) throws KernelException, IOException
-    {
-        Procedures procedures = dependencies.satisfyDependency( new Procedures( msgLog ) );
-        procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class ) );
-        procedures.registerType( Relationship.class, new SimpleConverter( NTRelationship, Relationship.class ) );
-        procedures.registerType( Path.class, new SimpleConverter( NTPath, Path.class ) );
-
-        //register API
-        procedures.registerComponent( GraphDatabaseService.class,
-                (ctx) -> dependencyResolver.resolveDependency( GraphDatabaseService.class ) );
-
-        Log proceduresLog = logService.getUserLog( Procedures.class  );
-        procedures.registerComponent( Log.class, (ctx) -> proceduresLog );
-
-        BuiltInProcedures.addTo( procedures );
-        procedures.loadFromDirectory( config.get( GraphDatabaseSettings.plugin_dir ) );
-        return procedures;
     }
 
     // We do this last to ensure no one is cheating with dependency access

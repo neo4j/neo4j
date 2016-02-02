@@ -52,7 +52,7 @@ public class KernelStatement implements TxStateHolder, Statement
         this.locks = locks;
         this.txStateHolder = txStateHolder;
         this.storeStatement = storeStatement;
-        this.facade = new OperationsFacade( this, operations, procedures );
+        this.facade = new OperationsFacade( transaction, this, operations, procedures );
     }
 
     @Override

@@ -122,7 +122,7 @@ object CypherCompilerFactory {
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
-    val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer)
+    val pipeBuilder = new DelegatingProcedureExecutablePlanBuilder(new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer))
 
     val execPlanBuilder = new ExecutionPlanBuilder(graph, clock, pipeBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](config.queryCacheSize)

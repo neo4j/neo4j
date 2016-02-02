@@ -30,7 +30,7 @@ import java.util.function.Function;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.procedure.Resource;
+import org.neo4j.procedure.Context;
 
 /**
  * Injects annotated fields with appropriate values.
@@ -129,7 +129,7 @@ public class FieldInjections
 
     private void assertValidForInjection( Class<?> cls, Field field ) throws ProcedureException
     {
-        if( !field.isAnnotationPresent( Resource.class ) )
+        if( !field.isAnnotationPresent( Context.class ) )
         {
             throw new ProcedureException(  Status.Procedure.FailedRegistration,
                     "Field `%s` on `%s` is not annotated as a @Resource and is not static. " +

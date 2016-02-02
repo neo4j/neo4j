@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -91,7 +92,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new StartupStatisticsProvider(), null,
                 new CommunityCommitProcessFactory(), mock( AutoIndexing.class ), pageCache,
                 new StandardConstraintSemantics(), monitors,
-                new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ) );
+                new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ), mock(Procedures.class) );
 
         return dataSource;
     }

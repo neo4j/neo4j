@@ -48,7 +48,7 @@ case class ProcedureExecutionResult[E <: Exception](taskCloser: TaskCloser,
   override def javaColumns: java.util.List[String] = signature.outputSignature.seq.map(_.name).asJava
 
   override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
-    context.callReadOnlyProcedure(signature, args.map(asJavaCompatible)).foreach { res =>
+    signature.mode.call(context, signature, args.map(asJavaCompatible)).foreach { res =>
       var i = 0
       val row = new ResultRowImpl
       signature.outputSignature.foreach { f =>
@@ -57,13 +57,14 @@ case class ProcedureExecutionResult[E <: Exception](taskCloser: TaskCloser,
       }
       visitor.visit(row)
     }
-    taskCloser.close(success = true)
+    close()
   }
 
-  //TODO so far we have only read-only procedures, but when we have updating procedures this
-  //will probably not work since the updates will be done directly on GraphDatabaseService
+  //TODO Look into having the kernel track updates, rather than cypher middle-layers, only sensible way I can think
+  //     of to get accurate stats for procedure code
   override def queryStatistics() = context.getOptStatistics.getOrElse(InternalQueryStatistics())
 
-  //TODO so far only read-only queries, change when we have updating procedures
-  override def executionType: InternalQueryType = READ_ONLY
+  override def executionType: InternalQueryType = signature.mode.queryType
+
+  override def close() = taskCloser.close(success = true)
 }

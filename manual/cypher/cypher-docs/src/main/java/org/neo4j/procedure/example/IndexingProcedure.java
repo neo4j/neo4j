@@ -17,46 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.impl;
-
-import java.util.stream.Stream;
+package org.neo4j.procedure.example;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.procedure.Name;
+import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.Context;
 
-public class ProcedureExample
+// START SNIPPET: indexingProcedure
+public class IndexingProcedure
 {
     @Context
     public GraphDatabaseService db;
 
     /**
-     * Finds all nodes in the database with more relationships than the specified threshold.
-     * @param threshold only include nodes with at least this many relationships
-     * @return a stream of records describing supernodes in this database
+     * Adds a node to a named legacy index. Useful to, for instance, update
+     * a full-text index through cypher.
+     * @param indexName the name of the index in question
+     * @param nodeId id of the node to add to the index
+     * @param propKey property to index (value is read from the node)
      */
     @Procedure
-    public Stream<SuperNode> findSuperNodes( @Name("threshold") long threshold )
+    @PerformsWrites
+    public void addNodeToIndex( @Name("indexName") String indexName,
+                                @Name("node") long nodeId,
+                                @Name("propKey" ) String propKey )
     {
-        return db.getAllNodes().stream()
-                .filter( (node) -> node.getDegree() > threshold )
-                .map( SuperNode::new );
-    }
-
-    /**
-     * Output record for {@link #findSuperNodes(long)}.
-     */
-    public static class SuperNode
-    {
-        public long nodeId;
-        public long degree;
-
-        public SuperNode( Node node )
-        {
-            this.nodeId = node.getId();
-            this.degree = node.getDegree();
-        }
+        Node node = db.getNodeById( nodeId );
+        db.index()
+          .forNodes( indexName )
+          .add( node, propKey, node.getProperty( propKey ) );
     }
 }
+// END SNIPPET: indexingProcedure
