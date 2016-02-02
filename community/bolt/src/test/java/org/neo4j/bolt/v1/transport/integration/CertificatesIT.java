@@ -32,7 +32,6 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Set;
 
-import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.helpers.HostnamePort;
@@ -40,7 +39,8 @@ import org.neo4j.helpers.HostnamePort;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
+import static org.neo4j.bolt.BoltKernelExtension.Settings.tls_certificate_file;
+import static org.neo4j.bolt.BoltKernelExtension.Settings.tls_key_file;
 
 public class CertificatesIT
 {
@@ -50,8 +50,8 @@ public class CertificatesIT
 
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( settings -> {
-        settings.put( connector( 0, BoltKernelExtension.Settings.tls_certificate_file ), certFile.getAbsolutePath() );
-        settings.put( connector( 0, BoltKernelExtension.Settings.tls_key_file ), keyFile.getAbsolutePath() );
+        settings.put( tls_certificate_file, certFile.getAbsolutePath() );
+        settings.put( tls_key_file, keyFile.getAbsolutePath() );
     } );
 
     @Test

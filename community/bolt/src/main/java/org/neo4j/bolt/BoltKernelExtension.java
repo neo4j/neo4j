@@ -19,11 +19,6 @@
  */
 package org.neo4j.bolt;
 
-import io.netty.channel.Channel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import org.bouncycastle.operator.OperatorCreationException;
-
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -31,6 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import io.netty.channel.Channel;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import org.bouncycastle.operator.OperatorCreationException;
 
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
@@ -208,7 +208,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                     requireEncryption = true;
                     // no break here
                 case OPTIONAL:
-                    KeyStoreInformation keyStore = createKeyStore( connector, log );
+                    KeyStoreInformation keyStore = createKeyStore( config, log );
                     sslCtx = SslContextBuilder.forServer( keyStore.getCertificatePath(), keyStore.getPrivateKeyPath() ).build();
                     break;
                 default:
