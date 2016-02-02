@@ -555,4 +555,24 @@ return coalesce(a.title, a.name)""")
 
     result.toList should equal(List(Map("count(*)" -> 1)))
   }
+
+  test("distinct inside aggregation should work with nested collections inside map") {
+    val propertyCollection = Array("A", "B")
+    createNode("array" -> propertyCollection)
+    createNode("array" -> propertyCollection)
+
+    val result = executeWithAllPlanners("MATCH (n) RETURN count(distinct {foo: [[n.array, n.array], [n.array, n.array]]}) as count")
+
+    result.toList should equal(List(Map("count" -> 1)))
+  }
+
+  test("distinct inside aggregation should work with nested collections of maps inside map") {
+    val propertyCollection = Array("A", "B")
+    createNode("array" -> propertyCollection)
+    createNode("array" -> propertyCollection)
+
+    val result = executeWithAllPlanners("MATCH (n) RETURN count(distinct {foo: [{bar: n.array}, {baz: {apa: n.array}}]}) as count")
+
+    result.toList should equal(List(Map("count" -> 1)))
+  }
 }

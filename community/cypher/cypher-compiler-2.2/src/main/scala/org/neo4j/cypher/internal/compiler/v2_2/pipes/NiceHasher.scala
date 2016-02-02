@@ -29,13 +29,7 @@ class NiceHasher(val original: Seq[Any]) {
     hash == other.hash && comparableValues.equals(other.comparableValues)
   }
 
-  private def comparableValuesFun(y: Seq[Any]): Seq[Any] = y map {
-    case x: Array[_] => x.deep
-    case x: Map[String, _] => x.keys.toSeq ++ comparableValuesFun(x.values.toSeq)
-    case x => x
-  }
-
-  lazy val comparableValues = comparableValuesFun(original)
+  lazy val comparableValues = original.map(NiceHasherValue.comparableValuesFun)
 
   override def toString = hashCode() + " : " + original.toString
 
@@ -53,8 +47,16 @@ object NiceHasherValue {
     case x: Array[Byte] => java.util.Arrays.hashCode(x)
     case x: Array[AnyRef] => java.util.Arrays.deepHashCode(x)
     case null => 0
+    case x: List[_] => seqHashFun(x)
     case x: Map[String, _] => x.keySet.hashCode() * 31 + seqHashFun(x.values.toSeq)
     case x => x.hashCode()
+  }
+
+  def comparableValuesFun(y: Any): Any = y match {
+    case x: Array[_] => x.deep
+    case x: List[_] => x.map(comparableValuesFun)
+    case x: Map[String, _] => x.keys.toSeq ++ x.values.map(comparableValuesFun)
+    case x => x
   }
 }
 
@@ -68,13 +70,7 @@ class NiceHasherValue(val original: Any) {
     hash == other.hash && (comparableValue equals other.comparableValue)
   }
 
-  private def comparableValuesFun(y: Any): Any = y match {
-    case x: Array[_] => x.deep
-    case x: Map[String, _] => x.keys.toSeq ++ new NiceHasher(x.values.toSeq).comparableValues
-    case x => x
-  }
-
-  lazy val comparableValue = comparableValuesFun(original)
+  lazy val comparableValue = NiceHasherValue.comparableValuesFun(original)
 
   override def toString = hashCode() + " : " + original.toString
 
