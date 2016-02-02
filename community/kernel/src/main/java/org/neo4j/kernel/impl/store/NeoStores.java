@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.logging.Log;
@@ -59,7 +60,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
  */
 public class NeoStores implements AutoCloseable
 {
-
     private static final String STORE_ALREADY_CLOSED_MESSAGE = "Specified store was already closed.";
     private static final String STORE_NOT_INITIALIZED_TEMPLATE = "Specified store was not initialized. Please specify" +
                                                                  " %s as one of the stores types that should be open" +
@@ -203,7 +203,7 @@ public class NeoStores implements AutoCloseable
      * @return store of requested type
      * @throws IllegalStateException if opened store not found
      */
-    private Object getStore(StoreType storeType)
+    private Object getStore( StoreType storeType )
     {
         Object store = stores[storeType.ordinal()];
         if ( store == null )
@@ -586,5 +586,10 @@ public class NeoStores implements AutoCloseable
     public void registerDiagnostics( DiagnosticsManager diagnosticsManager )
     {
         diagnosticsManager.registerAll( NeoStoresDiagnostics.class, this );
+    }
+
+    public <RECORD extends AbstractBaseRecord> RecordStore<RECORD> getRecordStore( StoreType type )
+    {
+        return (RecordStore<RECORD>) getStore( type );
     }
 }

@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.LegacyIndexMigrator;
@@ -52,12 +53,14 @@ public class DatabaseMigrator
     private final LabelScanStoreProvider labelScanStoreProvider;
     private final Map<String,IndexImplementation> indexProviders;
     private final PageCache pageCache;
+    private final RecordFormats format;
 
     public DatabaseMigrator(
             MigrationProgressMonitor progressMonitor, FileSystemAbstraction fs,
             Config config, LogService logService, SchemaIndexProvider schemaIndexProvider,
             LabelScanStoreProvider labelScanStoreProvider,
-            Map<String,IndexImplementation> indexProviders, PageCache pageCache )
+            Map<String,IndexImplementation> indexProviders, PageCache pageCache,
+            RecordFormats format )
     {
         this.progressMonitor = progressMonitor;
         this.fs = fs;
@@ -67,6 +70,7 @@ public class DatabaseMigrator
         this.labelScanStoreProvider = labelScanStoreProvider;
         this.indexProviders = indexProviders;
         this.pageCache = pageCache;
+        this.format = format;
     }
 
     /**
@@ -78,7 +82,8 @@ public class DatabaseMigrator
     {
         LogProvider logProvider = logService.getInternalLogProvider();
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ),
+                        format );
         StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs,
                 logProvider );
 
@@ -90,6 +95,6 @@ public class DatabaseMigrator
         storeUpgrader.addParticipant( schemaMigrator );
         storeUpgrader.addParticipant( legacyIndexMigrator );
         storeUpgrader.addParticipant( storeMigrator );
-        storeUpgrader.migrateIfNeeded(storeDir );
+        storeUpgrader.migrateIfNeeded( storeDir );
     }
 }

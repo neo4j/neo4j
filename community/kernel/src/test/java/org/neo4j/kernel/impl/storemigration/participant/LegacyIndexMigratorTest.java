@@ -29,7 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.logging.Log;
@@ -48,7 +49,6 @@ import static org.mockito.Mockito.when;
 
 public class LegacyIndexMigratorTest
 {
-
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LogProvider logProvider = mock( LogProvider.class );
     private final MigrationProgressMonitor.Section progressMonitor = mock( MigrationProgressMonitor.Section.class );
@@ -73,7 +73,8 @@ public class LegacyIndexMigratorTest
         HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
         LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, Legacy23Store.LEGACY_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, LowLimitV2_3.STORE_VERSION,
+                LowLimitV3_0.STORE_VERSION );
 
         verify( fs, never() ).deleteRecursively( originalIndexStore );
         verify( fs, never() ).moveToDirectory( migratedIndexStore, storeDir );
@@ -85,7 +86,8 @@ public class LegacyIndexMigratorTest
         HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
         LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, Legacy23Store.LEGACY_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, LowLimitV2_3.STORE_VERSION,
+                LowLimitV3_0.STORE_VERSION );
 
         verify( fs ).copyRecursively( originalIndexStore, migratedIndexStore );
     }
@@ -96,10 +98,11 @@ public class LegacyIndexMigratorTest
         HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
         LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, Legacy23Store.LEGACY_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, LowLimitV2_3.STORE_VERSION,
+                LowLimitV3_0.STORE_VERSION );
         reset( fs );
 
-        indexMigrator.moveMigratedFiles( migrationDir, storeDir, "any" );
+        indexMigrator.moveMigratedFiles( migrationDir, storeDir, "any", "any" );
 
         verify( fs ).deleteRecursively( originalIndexStore );
         verify( fs ).moveToDirectory( migratedIndexStore, storeDir );
@@ -115,7 +118,8 @@ public class LegacyIndexMigratorTest
         try
         {
             LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, false );
-            indexMigrator.migrate( storeDir, migrationDir, progressMonitor, Legacy23Store.LEGACY_VERSION );
+            indexMigrator.migrate( storeDir, migrationDir, progressMonitor, LowLimitV2_3.STORE_VERSION,
+                    LowLimitV3_0.STORE_VERSION );
 
             fail( "Index migration should fail" );
         }
@@ -135,7 +139,8 @@ public class LegacyIndexMigratorTest
 
         HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
         LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, Legacy23Store.LEGACY_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, LowLimitV2_3.STORE_VERSION,
+                LowLimitV3_0.STORE_VERSION );
         indexMigrator.cleanup( migrationDir );
 
         verify( fs ).deleteRecursively( migratedIndexStore );

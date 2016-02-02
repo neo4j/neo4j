@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
@@ -80,7 +81,8 @@ public class ParallelBatchImporter implements BatchImporter
      */
     public ParallelBatchImporter( File storeDir, FileSystemAbstraction fileSystem, Configuration config,
             LogService logService, ExecutionMonitor executionMonitor,
-            AdditionalInitialIds additionalInitialIds, Config dbConfig )
+            AdditionalInitialIds additionalInitialIds,
+            Config dbConfig )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
@@ -117,8 +119,8 @@ public class ParallelBatchImporter implements BatchImporter
         boolean hasBadEntries = false;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
-        try ( BatchingNeoStores neoStore =
-                      new BatchingNeoStores( fileSystem, storeDir, config, logService, additionalInitialIds, dbConfig );
+        try ( BatchingNeoStores neoStore = new BatchingNeoStores( fileSystem, storeDir, config, logService,
+                additionalInitialIds, dbConfig );
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
                     neoStore.getLastCommittedTransactionId() );
               InputCache inputCache = new InputCache( fileSystem, storeDir ) )

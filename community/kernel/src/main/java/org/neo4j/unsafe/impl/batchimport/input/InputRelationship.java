@@ -36,7 +36,7 @@ public class InputRelationship extends InputEntity
     private final Object startNode;
     private final Object endNode;
     private String type;
-    private final Integer typeId;
+    private Integer typeId;
     private final Group startNodeGroup;
     private final Group endNodeGroup;
 
@@ -119,6 +119,7 @@ public class InputRelationship extends InputEntity
     public void setType( String type )
     {
         this.type = type;
+        this.typeId = null;
     }
 
     @Override

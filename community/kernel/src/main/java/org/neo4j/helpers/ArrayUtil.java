@@ -22,6 +22,7 @@ package org.neo4j.helpers;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static java.util.Arrays.copyOf;
 
@@ -483,6 +484,27 @@ public abstract class ArrayUtil
             }
         }
         return length == result.length ? result : Arrays.copyOf( result, length );
+    }
+
+    /**
+     * Filters an array, only including the items that passes the {@code filter}.
+     *
+     * @param array items to filter.
+     * @param filter {@link Predicate} to match each item.
+     * @return a new array with the items that passed the filter.
+     */
+    public static <T> T[] filter( T[] array, Predicate<T> filter )
+    {
+        T[] result = array.clone();
+        int cursor = 0;
+        for ( T item : array )
+        {
+            if ( filter.test( item ) )
+            {
+                result[cursor++] = item;
+            }
+        }
+        return cursor == result.length ? result : Arrays.copyOf( result, cursor );
     }
 
     private ArrayUtil()

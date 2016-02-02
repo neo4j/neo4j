@@ -42,11 +42,10 @@ import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
-
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 
 public enum StoreFile
@@ -55,91 +54,91 @@ public enum StoreFile
     NODE_STORE(
             NodeStore.TYPE_DESCRIPTOR,
             StoreFactory.NODE_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     ),
 
     NODE_LABEL_STORE(
             DynamicArrayStore.TYPE_DESCRIPTOR,
             StoreFactory.NODE_LABELS_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     ),
 
     PROPERTY_STORE(
             PropertyStore.TYPE_DESCRIPTOR,
             StoreFactory.PROPERTY_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     ),
 
     PROPERTY_ARRAY_STORE(
             DynamicArrayStore.TYPE_DESCRIPTOR,
             StoreFactory.PROPERTY_ARRAYS_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     ),
 
     PROPERTY_STRING_STORE(
             DynamicStringStore.TYPE_DESCRIPTOR,
             StoreFactory.PROPERTY_STRINGS_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     ),
 
     PROPERTY_KEY_TOKEN_STORE(
             PropertyKeyTokenStore.TYPE_DESCRIPTOR,
             StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     ),
 
     PROPERTY_KEY_TOKEN_NAMES_STORE(
             DynamicStringStore.TYPE_DESCRIPTOR,
             StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     ),
 
     RELATIONSHIP_STORE(
             RelationshipStore.TYPE_DESCRIPTOR,
             StoreFactory.RELATIONSHIP_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     ),
 
     RELATIONSHIP_GROUP_STORE(
             RelationshipGroupStore.TYPE_DESCRIPTOR,
             StoreFactory.RELATIONSHIP_GROUP_STORE_NAME,
-            Legacy21Store.LEGACY_VERSION
+            LowLimitV2_1.STORE_VERSION
     ),
 
     RELATIONSHIP_TYPE_TOKEN_STORE(
             RelationshipTypeTokenStore.TYPE_DESCRIPTOR,
             StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     ),
 
     RELATIONSHIP_TYPE_TOKEN_NAMES_STORE(
             DynamicStringStore.TYPE_DESCRIPTOR,
             StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     ),
 
     LABEL_TOKEN_STORE(
             LabelTokenStore.TYPE_DESCRIPTOR,
             StoreFactory.LABEL_TOKEN_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     ),
 
     LABEL_TOKEN_NAMES_STORE(
             DynamicStringStore.TYPE_DESCRIPTOR,
             StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     ),
 
     SCHEMA_STORE(
             SchemaStore.TYPE_DESCRIPTOR,
             StoreFactory.SCHEMA_STORE_NAME,
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     ),
 
     COUNTS_STORE_LEFT(
             CountsTracker.TYPE_DESCRIPTOR,
             StoreFactory.COUNTS_STORE + CountsTracker.LEFT,
-            Legacy22Store.LEGACY_VERSION,
+            LowLimitV2_2.STORE_VERSION,
             false
     )
             {
@@ -152,7 +151,7 @@ public enum StoreFile
     COUNTS_STORE_RIGHT(
             CountsTracker.TYPE_DESCRIPTOR,
             StoreFactory.COUNTS_STORE + CountsTracker.RIGHT,
-            Legacy22Store.LEGACY_VERSION,
+            LowLimitV2_2.STORE_VERSION,
             false
     )
             {
@@ -166,7 +165,7 @@ public enum StoreFile
     NEO_STORE(
             MetaDataStore.TYPE_DESCRIPTOR,
             "",
-            Legacy20Store.LEGACY_VERSION
+            LowLimitV2_0.STORE_VERSION
     );
 
     private final String typeDescriptor;
@@ -263,7 +262,7 @@ public enum StoreFile
     public static void removeTrailers( String version, FileSystemAbstraction fs, File storeDir, int pageSize )
             throws IOException
     {
-        for ( StoreFile storeFile : legacyStoreFilesForVersion( LowLimit.STORE_VERSION ) )
+        for ( StoreFile storeFile : legacyStoreFilesForVersion( LowLimitV3_0.STORE_VERSION ) )
         {
             String trailer = storeFile.forVersion( version );
             byte[] encodedTrailer = UTF8.encode( trailer );

@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -27,11 +32,6 @@ import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -45,7 +45,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -351,8 +351,8 @@ public class UpgradeStoreIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names" ), config,
                 IdType.RELATIONSHIP_TYPE_TOKEN_NAME, new DefaultIdGeneratorFactory( fs ), pageCache,
-                NullLogProvider.getInstance(), TokenStore.NAME_STORE_BLOCK_SIZE, LowLimit.RECORD_FORMATS.dynamic(),
-                LowLimit.STORE_VERSION );
+                NullLogProvider.getInstance(), TokenStore.NAME_STORE_BLOCK_SIZE, LowLimitV3_0.RECORD_FORMATS.dynamic(),
+                LowLimitV3_0.STORE_VERSION );
         RelationshipTypeTokenStore store =
                 new RelationshipTypeTokenStoreWithOneOlderVersion( fileName, stringStore, fs, pageCache );
         for ( int i = 0; i < numberOfTypes; i++ )
@@ -381,7 +381,7 @@ public class UpgradeStoreIT
                 PageCache pageCache )
         {
             super( fileName, Config.defaults(), new NoLimitIdGeneratorFactory( fs ), pageCache,
-                    NullLogProvider.getInstance(), stringStore, 
+                    NullLogProvider.getInstance(), stringStore,
                     select( Config.defaults(), NullLogService.getInstance() ) );
         }
 

@@ -85,6 +85,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
@@ -420,7 +421,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         life.add( new Delegate( Lifecycles.multiple( indexProviders.values() ) ) );
 
         // Upgrade the store before we begin
-        upgradeStore();
+        RecordFormats format = InternalRecordFormatSelector.select( config, logService );
+        upgradeStore( format );
 
         // Build all modules and their services
         StorageEngine storageEngine = null;
@@ -433,7 +435,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
             storageEngine = buildStorageEngine(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
-                    indexConfigStore, updateableSchemaState::clear, legacyIndexTransactionOrdering );
+                    indexConfigStore, updateableSchemaState::clear, legacyIndexTransactionOrdering, format );
 
             // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
             // true it's not entirely true for the time being. As long as we need this call below, which
@@ -528,7 +530,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         databaseHealth.healed();
     }
 
-    private void upgradeStore()
+    private void upgradeStore( RecordFormats format )
     {
         LabelScanStoreProvider labelScanStoreProvider =
                 dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
@@ -544,14 +546,16 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 schemaIndexProvider,
                 labelScanStoreProvider,
                 indexProviders,
-                pageCache ).migrate( storeDir );
+                pageCache,
+                format ).migrate( storeDir );
     }
 
     private StorageEngine buildStorageEngine(
             PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
             LegacyIndexProviderLookup legacyIndexProviderLookup, IndexConfigStore indexConfigStore,
-            Runnable schemaStateChangeCallback, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering )
+            Runnable schemaStateChangeCallback, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering,
+            RecordFormats format )
     {
         LabelScanStoreProvider labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                 HighestSelectionStrategy.getInstance());
@@ -560,7 +564,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                         labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
                         tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
                         labelScanStore, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
-                        InternalRecordFormatSelector.select(config, logService) ) );
+                        format ) );
     }
 
     private TransactionLogModule buildTransactionLogs(

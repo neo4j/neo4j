@@ -122,7 +122,7 @@ public class StoreUpgrader
         // and it's just a matter of moving over the files to the storeDir.
         if ( MigrationStatus.migrating.isNeededFor( migrationStatus ) )
         {
-            versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
+            versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
             cleanMigrationDirectory( migrationDirectory );
             MigrationStatus.migrating.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
             migrateToIsolatedDirectory( storeDirectory, migrationDirectory, versionToMigrateFrom );
@@ -133,7 +133,8 @@ public class StoreUpgrader
         {
             versionToMigrateFrom =
                     MigrationStatus.moving.maybeReadInfo( fileSystem, migrationStateFile, versionToMigrateFrom );
-            moveMigratedFilesToStoreDirectory( participants, migrationDirectory, storeDirectory, versionToMigrateFrom );
+            moveMigratedFilesToStoreDirectory( participants, migrationDirectory, storeDirectory,
+                    versionToMigrateFrom, upgradableDatabase.currentVersion() );
             MigrationStatus.countsRebuilding.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
         }
 
@@ -191,13 +192,14 @@ public class StoreUpgrader
     }
 
     private void moveMigratedFilesToStoreDirectory( Iterable<StoreMigrationParticipant> participants,
-            File migrationDirectory, File storeDirectory, String versionToMigrateFrom )
+            File migrationDirectory, File storeDirectory, String versionToMigrateFrom, String versionToMigrateTo )
     {
         try
         {
             for ( StoreMigrationParticipant participant : participants )
             {
-                participant.moveMigratedFiles( migrationDirectory, storeDirectory, versionToMigrateFrom );
+                participant.moveMigratedFiles( migrationDirectory, storeDirectory, versionToMigrateFrom,
+                        versionToMigrateTo );
             }
         }
         catch ( IOException e )
@@ -231,7 +233,8 @@ public class StoreUpgrader
             {
                 Section section = progressMonitor.startSection(
                         format( "%s (%d/%d)", participant.getName(), index, participants.size() ) );
-                participant.migrate( storeDir, migrationDirectory, section, versionToMigrateFrom );
+                participant.migrate( storeDir, migrationDirectory, section, versionToMigrateFrom,
+                        upgradableDatabase.currentVersion() );
                 section.completed();
                 index++;
             }
@@ -311,12 +314,11 @@ public class StoreUpgrader
 
     public static class UnexpectedUpgradingStoreVersionException extends UnableToUpgradeException
     {
-        private static final String MESSAGE =
-                "'%s' has a store version number that we cannot upgrade from. Expected '%s' but file is version '%s'.";
+        private static final String MESSAGE = "'%s' has a store version '%s' that we cannot upgrade from.";
 
-        public UnexpectedUpgradingStoreVersionException( String filename, String expectedVersion, String actualVersion )
+        public UnexpectedUpgradingStoreVersionException( String filename, String actualVersion )
         {
-            super( String.format( MESSAGE, filename, expectedVersion, actualVersion ) );
+            super( String.format( MESSAGE, filename, actualVersion ) );
         }
     }
 

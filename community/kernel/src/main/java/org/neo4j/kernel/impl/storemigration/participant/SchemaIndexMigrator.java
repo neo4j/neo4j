@@ -25,10 +25,9 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
+import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 
 /**
@@ -57,25 +56,21 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 
     @Override
     public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
-            String versionToMigrateFrom ) throws IOException
+            String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
-        switch ( versionToMigrateFrom )
+        RecordFormats from = InternalRecordFormatSelector.fromVersion( versionToMigrateFrom );
+        RecordFormats to = InternalRecordFormatSelector.fromVersion( versionToMigrateTo );
+        if ( !from.hasSameCapabilities( to, Capability.TYPE_INDEX ) )
         {
-        case Legacy20Store.LEGACY_VERSION:
-        case Legacy21Store.LEGACY_VERSION:
-        case Legacy22Store.LEGACY_VERSION:
-        case Legacy23Store.LEGACY_VERSION:
             schemaIndexDirectory = schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir );
             labelIndexDirectory = labelScanStoreProvider.getStoreDirectory( storeDir );
             deleteObsoleteIndexes = true;
-            break;
-        default:
-            throw new IllegalStateException( "Unknown version to upgrade from: " + versionToMigrateFrom );
         }
     }
 
     @Override
-    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom ) throws IOException
+    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom,
+            String versionToMigrateTo ) throws IOException
     {
         if ( deleteObsoleteIndexes )
         {

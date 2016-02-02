@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -31,7 +32,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 public interface RecordFormats
 {
-
     abstract class Factory extends Service
     {
         public Factory( String key, String... altKeys )
@@ -46,7 +46,7 @@ public interface RecordFormats
 
     RecordFormat<NodeRecord> node();
 
-    RecordFormat<DynamicRecord> dynamic();
+    RecordFormat<RelationshipGroupRecord> relationshipGroup();
 
     RecordFormat<RelationshipRecord> relationship();
 
@@ -58,5 +58,22 @@ public interface RecordFormats
 
     RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken();
 
-    RecordFormat<RelationshipGroupRecord> relationshipGroup();
+    RecordFormat<DynamicRecord> dynamic();
+
+    boolean hasStore( StoreType store );
+
+    /**
+     * Use when comparing one format to another, for example for migration purposes.
+     *
+     * @return array of {@link Capability capabilities} for comparison.
+     */
+    Capability[] capabilities();
+
+    /**
+     * @param capability {@link Capability} to check for.
+     * @return whether or not this format has a certain {@link Capability}.
+     */
+    boolean hasCapability( Capability capability );
+
+    boolean hasSameCapabilities( RecordFormats other, int types );
 }

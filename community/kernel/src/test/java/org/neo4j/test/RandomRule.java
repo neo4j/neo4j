@@ -42,10 +42,17 @@ public class RandomRule implements TestRule
     private long seed;
     private Random random;
     private Randoms randoms;
+    private Configuration config = Randoms.DEFAULT;
 
     public RandomRule withSeed( long seed )
     {
         this.specificSeed = seed;
+        return this;
+    }
+
+    public RandomRule withConfiguration( Randoms.Configuration config )
+    {
+        this.config = config;
         return this;
     }
 
@@ -171,7 +178,7 @@ public class RandomRule implements TestRule
     public void reset()
     {
         random = new Random( seed );
-        randoms = new Randoms( random, Randoms.DEFAULT );
+        randoms = new Randoms( random, config );
     }
 
     public Randoms fork( Configuration configuration )

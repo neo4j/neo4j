@@ -38,12 +38,12 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -55,7 +55,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasLatestVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasCurrentFormatVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
@@ -78,10 +78,10 @@ public class StoreUpgradeOnStartupTest
     public static Collection<Object[]> versions()
     {
         return Arrays.asList(
-                new Object[]{Legacy20Store.LEGACY_VERSION},
-                new Object[]{Legacy21Store.LEGACY_VERSION},
-                new Object[]{Legacy22Store.LEGACY_VERSION},
-                new Object[]{Legacy23Store.LEGACY_VERSION}
+                new Object[]{LowLimitV2_0.STORE_VERSION},
+                new Object[]{LowLimitV2_1.STORE_VERSION},
+                new Object[]{LowLimitV2_2.STORE_VERSION},
+                new Object[]{LowLimitV2_3.STORE_VERSION}
         );
     }
 
@@ -93,7 +93,7 @@ public class StoreUpgradeOnStartupTest
         check = new StoreVersionCheck( pageCache );
         File prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDirectory, prepareDirectory );
-        assertEquals( !Legacy23Store.LEGACY_VERSION.equals( version ),
+        assertEquals( !LowLimitV2_3.STORE_VERSION.equals( version ),
                 allLegacyStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
     }
 
@@ -106,7 +106,7 @@ public class StoreUpgradeOnStartupTest
 
         // then
         assertTrue( "Some store files did not have the correct version",
-                checkNeoStoreHasLatestVersion( check, workingDirectory ) );
+                checkNeoStoreHasCurrentFormatVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fileSystem, workingDirectory ) );
         assertConsistentStore( workingDirectory );
     }
@@ -133,7 +133,7 @@ public class StoreUpgradeOnStartupTest
 
     private void makeDbNotCleanlyShutdown() throws IOException
     {
-        if ( Legacy23Store.LEGACY_VERSION.equals( version ) )
+        if ( LowLimitV2_3.STORE_VERSION.equals( version ) )
         {
             removeCheckPointFromTxLog( fileSystem, workingDirectory );
         }

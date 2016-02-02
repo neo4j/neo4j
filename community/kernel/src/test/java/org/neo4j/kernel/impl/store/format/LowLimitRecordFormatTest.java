@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.kernel.impl.store.format.LimitedRecordGenerators;
+import org.neo4j.kernel.impl.store.format.RecordFormatTest;
+import org.neo4j.kernel.impl.store.format.RecordGenerators;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 
 public class LowLimitRecordFormatTest extends RecordFormatTest
 {
@@ -27,6 +30,6 @@ public class LowLimitRecordFormatTest extends RecordFormatTest
 
     public LowLimitRecordFormatTest()
     {
-        super( LowLimit.RECORD_FORMATS, LOW_LIMITS );
+        super( LowLimitV3_0.RECORD_FORMATS, LOW_LIMITS );
     }
 }

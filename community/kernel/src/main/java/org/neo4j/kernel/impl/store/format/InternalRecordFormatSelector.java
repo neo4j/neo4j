@@ -24,7 +24,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV1_9;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 
 /**
  * Selects format to use for databases in this JVM, using a system property. By default uses the safest
@@ -33,6 +39,22 @@ import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
  */
 public class InternalRecordFormatSelector
 {
+    private static final RecordFormats FALLBACK = LowLimitV3_0.RECORD_FORMATS;
+
+    private static final RecordFormats[] KNOWN_FORMATS = new RecordFormats[] {
+            LowLimitV1_9.RECORD_FORMATS,
+            LowLimitV2_0.RECORD_FORMATS,
+            LowLimitV2_1.RECORD_FORMATS,
+            LowLimitV2_2.RECORD_FORMATS,
+            LowLimitV2_3.RECORD_FORMATS,
+            LowLimitV3_0.RECORD_FORMATS
+    };
+
+    public static RecordFormats select()
+    {
+        return select( Config.empty(), NullLogService.getInstance() );
+    }
+
     public static RecordFormats select( Config config, LogService logging )
     {
         String key = config.get( GraphDatabaseFacadeFactory.Configuration.record_format );
@@ -41,7 +63,7 @@ public class InternalRecordFormatSelector
             String candidateId = candidate.getKeys().iterator().next();
             if ( candidateId.equals( key ) )
             {
-                return LowLimit.RECORD_FORMATS;
+                return FALLBACK;
                 //todo: uncomment and return correct format after migration PR is merged.
                 //return candidate.newInstance();
             }
@@ -49,7 +71,7 @@ public class InternalRecordFormatSelector
             {
                 logging.getInternalLog( CommunityFacadeFactory.class )
                         .info( "No record format specified, defaulting to '" + candidateId + "'" );
-                return LowLimit.RECORD_FORMATS;
+                return FALLBACK;
                 //todo: uncomment and return correct format after migration PR is merged.
                 //return candidate.newInstance();
             }
@@ -59,13 +81,25 @@ public class InternalRecordFormatSelector
         {
             logging.getInternalLog( CommunityFacadeFactory.class )
                     .info( "No record format specified, defaulting to 'community'" );
-            return LowLimit.RECORD_FORMATS;
+            return FALLBACK;
         }
         else if ( key.equals( "community" ) )
         {
-            return LowLimit.RECORD_FORMATS;
+            return FALLBACK;
         }
 
         throw new IllegalArgumentException( "No record format found with the name '" + key + "'." );
+    }
+
+    public static RecordFormats fromVersion( String storeVersion )
+    {
+        for ( RecordFormats format : KNOWN_FORMATS )
+        {
+            if ( format.storeVersion().equals( storeVersion ) )
+            {
+                return format;
+            }
+        }
+        throw new IllegalArgumentException( "Unknown store version '" + storeVersion + "'" );
     }
 }

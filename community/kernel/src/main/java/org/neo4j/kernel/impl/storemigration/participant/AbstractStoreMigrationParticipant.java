@@ -42,12 +42,13 @@ public class AbstractStoreMigrationParticipant implements StoreMigrationParticip
 
     @Override
     public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
-            String versionToMigrateFrom ) throws IOException
+            String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
     }
 
     @Override
-    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToMigrateFrom ) throws IOException
+    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToMigrateFrom,
+            String versionToMigrateTo ) throws IOException
     {
     }
 

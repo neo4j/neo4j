@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
+import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
+import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -30,20 +32,10 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-public class LowLimit implements RecordFormats
+public class LowLimitV3_0 extends BaseRecordFormats
 {
-    public static final RecordFormats RECORD_FORMATS = new LowLimit();
+    public static final RecordFormats RECORD_FORMATS = new LowLimitV3_0();
     public static final String STORE_VERSION = "v0.A.7";
-
-    private final RecordFormat<NodeRecord> node = new NodeRecordFormat();
-    private final DynamicRecordFormat dynamic = new DynamicRecordFormat();
-    private final RecordFormat<RelationshipRecord> relationship = new RelationshipRecordFormat();
-    private final RecordFormat<PropertyRecord> property = new PropertyRecordFormat();
-    private final RecordFormat<LabelTokenRecord> labelToken = new LabelTokenRecordFormat();
-    private final RecordFormat<PropertyKeyTokenRecord> propertyKeyToken = new PropertyKeyTokenRecordFormat();
-    private final RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken =
-            new RelationshipTypeTokenRecordFormat();
-    private final RecordFormat<RelationshipGroupRecord> relationshipGroup = new RelationshipGroupRecordFormat();
 
     @Override
     public String storeVersion()
@@ -54,54 +46,54 @@ public class LowLimit implements RecordFormats
     @Override
     public RecordFormat<NodeRecord> node()
     {
-        return node;
-    }
-
-    @Override
-    public RecordFormat<DynamicRecord> dynamic()
-    {
-        return dynamic;
-    }
-
-    @Override
-    public RecordFormat<RelationshipRecord> relationship()
-    {
-        return relationship;
-    }
-
-    @Override
-    public RecordFormat<PropertyRecord> property()
-    {
-        return property;
-    }
-
-    @Override
-    public RecordFormat<LabelTokenRecord> labelToken()
-    {
-        return labelToken;
-    }
-
-    @Override
-    public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken()
-    {
-        return propertyKeyToken;
-    }
-
-    @Override
-    public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
-    {
-        return relationshipTypeToken;
+        return new NodeRecordFormat();
     }
 
     @Override
     public RecordFormat<RelationshipGroupRecord> relationshipGroup()
     {
-        return relationshipGroup;
+        return new RelationshipGroupRecordFormat();
     }
 
     @Override
-    public String toString()
+    public RecordFormat<RelationshipRecord> relationship()
     {
-        return "RecordFormat[" + storeVersion() + "]";
+        return new RelationshipRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<PropertyRecord> property()
+    {
+        return new PropertyRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<LabelTokenRecord> labelToken()
+    {
+        return new LabelTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken()
+    {
+        return new PropertyKeyTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
+    {
+        return new RelationshipTypeTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<DynamicRecord> dynamic()
+    {
+        return new DynamicRecordFormat();
+    }
+
+    @Override
+    public Capability[] capabilities()
+    {
+        return new Capability[] { Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_5 };
     }
 }

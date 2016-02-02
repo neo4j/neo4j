@@ -17,22 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore;
+package org.neo4j.kernel.impl.store.format.lowlimit;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Iterator;
+import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-
-public interface LegacyNodeStoreReader extends Closeable
+public class LowLimitV2_3 extends LowLimitV3_0
 {
-    long getMaxId();
-
-    int getRecordSize();
-
-    Iterator<NodeRecord> iterator() throws IOException;
+    public static final RecordFormats RECORD_FORMATS = new LowLimitV2_3();
+    public static final String STORE_VERSION = "v0.A.6";
 
     @Override
-    void close() throws IOException;
+    public String storeVersion()
+    {
+        return STORE_VERSION;
+    }
+
+    @Override
+    public Capability[] capabilities()
+    {
+        return new Capability[] { Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_3 };
+    }
 }

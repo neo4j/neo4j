@@ -19,7 +19,6 @@
  */
 package org.neo4j.tools.migration;
 
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -66,5 +65,4 @@ public class StoreMigrationTest
             database.shutdown();
         }
     }
-
 }

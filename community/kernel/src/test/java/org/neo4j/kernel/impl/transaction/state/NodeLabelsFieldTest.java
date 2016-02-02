@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -64,6 +65,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
@@ -459,7 +461,8 @@ public class NodeLabelsFieldTest
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
-        StoreFactory storeFactory = new StoreFactory( storeDir, Config.empty(), new DefaultIdGeneratorFactory( fs.get() ),
+        Config config = new Config( stringMap( GraphDatabaseSettings.label_block_size.name(), "60" ) );
+        StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();

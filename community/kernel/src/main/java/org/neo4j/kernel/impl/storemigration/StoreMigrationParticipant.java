@@ -44,22 +44,25 @@ public interface StoreMigrationParticipant
      * @param migrationDir place to migrate to.
      * @param progress migration progress monitor
      * @param versionToMigrateFrom the version to migrate from
+     * @param versionToMigrateTo the version to migrate to
      * @throws IOException if there was an error migrating.
      * @throws UnsatisfiedDependencyException if one or more dependencies were unsatisfied.
      */
     void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progress,
-            String versionToMigrateFrom ) throws IOException;
+            String versionToMigrateFrom, String versionToMigrateTo ) throws IOException;
 
     /**
      * After a successful migration, move all affected files from {@code upgradeDirectory} over to
      * the {@code workingDirectory}, effectively activating the migration changes.
      * @param migrationDir directory where the
-     * {@link #migrate(File, File, MigrationProgressMonitor.Section, String) migration} put its files.
+     * {@link #migrate(File, File, MigrationProgressMonitor.Section, String, String) migration} put its files.
      * @param storeDir directory the store directory of the to move the migrated files to.
      * @param versionToMigrateFrom the version we have migrated from
+     * @param versionToMigrateTo the version we want to migrate to
      * @throws IOException if unable to move one or more files.
      */
-    void moveMigratedFiles( File migrationDir, File storeDir, String versionToMigrateFrom ) throws IOException;
+    void moveMigratedFiles( File migrationDir, File storeDir, String versionToMigrateFrom, String versionToMigrateTo )
+            throws IOException;
 
     /**
      * After a successful migration, and having moved all affected files from {@code upgradeDirectory} over to
