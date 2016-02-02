@@ -29,6 +29,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -65,24 +67,34 @@ public class StoreFactory
     private LogProvider logProvider;
     private File neoStoreFileName;
     private PageCache pageCache;
+    private RecordFormats recordFormats;
 
     public StoreFactory()
     {
     }
 
-    @SuppressWarnings( "deprecation" )
     public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, LogProvider logProvider )
     {
-        this( storeDir, new Config(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
+        this( storeDir, new Config(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
+                logProvider );
     }
 
     public StoreFactory( File storeDir, Config config,
             IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider )
     {
+        this( storeDir, config, idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider,
+                LowLimit.RECORD_FORMATS );
+    }
+
+    public StoreFactory( File storeDir, Config config,
+            IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, RecordFormats recordFormats )
+    {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
+        this.recordFormats = recordFormats;
         setLogProvider( logProvider );
         setStoreDir( storeDir );
         this.pageCache = pageCache;
@@ -116,6 +128,11 @@ public class StoreFactory
     public void setPageCache( PageCache pageCache )
     {
         this.pageCache = pageCache;
+    }
+
+    public void setRecordFormat( RecordFormats formats )
+    {
+        this.recordFormats = formats;
     }
 
     /**
@@ -171,7 +188,7 @@ public class StoreFactory
             }
         }
         return new NeoStores( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
-                fileSystemAbstraction, createStoreIfNotExists, storeTypes );
+                fileSystemAbstraction, recordFormats, createStoreIfNotExists, storeTypes );
     }
 
     public abstract static class Configuration

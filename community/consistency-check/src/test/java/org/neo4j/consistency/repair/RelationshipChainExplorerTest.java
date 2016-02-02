@@ -42,6 +42,8 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+
 public class RelationshipChainExplorerTest
 {
     private static final int NDegreeTwoNodes = 10;
@@ -74,7 +76,7 @@ public class RelationshipChainExplorerTest
         int relationshipIdInMiddleOfChain = 10;
         RecordSet<RelationshipRecord> records = new RelationshipChainExplorer( relationshipStore )
                 .exploreRelationshipRecordChainsToDepthTwo(
-                        relationshipStore.getRecord( relationshipIdInMiddleOfChain ) );
+                        relationshipStore.getRecord( relationshipIdInMiddleOfChain, relationshipStore.newRecord(), NORMAL ) );
 
         // then
         assertEquals( NDegreeTwoNodes * 2, records.size() );
@@ -91,7 +93,7 @@ public class RelationshipChainExplorerTest
         int relationshipIdInMiddleOfChain = 10;
         RecordSet<RelationshipRecord> records = new RelationshipChainExplorer( relationshipStore )
                 .exploreRelationshipRecordChainsToDepthTwo(
-                        relationshipStore.getRecord( relationshipIdInMiddleOfChain ) );
+                        relationshipStore.getRecord( relationshipIdInMiddleOfChain, relationshipStore.newRecord(), NORMAL ) );
 
         // then
         int recordsInaccessibleBecauseOfBrokenChain = 3;

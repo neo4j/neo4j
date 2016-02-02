@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.LogProvider;
@@ -38,7 +39,6 @@ import org.neo4j.logging.LogProvider;
 public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeTokenRecord, RelationshipTypeToken>
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
-    public static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
     public RelationshipTypeTokenStore(
             File fileName,
@@ -46,10 +46,13 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            DynamicStringStore nameStore )
+            DynamicStringStore nameStore,
+            RecordFormat<RelationshipTypeTokenRecord> recordFormat,
+            String storeVersion )
     {
-        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
-                new RelationshipTypeToken.Factory() );
+        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache,
+                logProvider, nameStore, TYPE_DESCRIPTOR, new RelationshipTypeToken.Factory(), recordFormat,
+                storeVersion );
     }
 
     @Override
@@ -57,24 +60,6 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             throws FAILURE
     {
         processor.processRelationshipTypeToken( this, record );
-    }
-
-    @Override
-    protected RelationshipTypeTokenRecord newRecord( int id )
-    {
-        return new RelationshipTypeTokenRecord( id );
-    }
-
-    @Override
-    public int getRecordSize()
-    {
-        return RECORD_SIZE;
-    }
-
-    @Override
-    public String getTypeDescriptor()
-    {
-        return TYPE_DESCRIPTOR;
     }
 
     @Override

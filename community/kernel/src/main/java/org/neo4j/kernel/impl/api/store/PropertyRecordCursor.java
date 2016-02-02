@@ -23,6 +23,8 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+
 /**
  * Cursor over {@link PropertyRecord} instances.
  *
@@ -32,9 +34,8 @@ import org.neo4j.kernel.impl.store.record.Record;
 public class PropertyRecordCursor
 {
     private long currentRecordId;
-    private PropertyStore propertyStore;
-
-    private PropertyRecord record;
+    private final PropertyStore propertyStore;
+    private final PropertyRecord record;
 
     public PropertyRecordCursor( PropertyRecord record, PropertyStore propertyStore  )
     {
@@ -49,17 +50,13 @@ public class PropertyRecordCursor
 
     public boolean next()
     {
-        if (currentRecordId != Record.NO_NEXT_PROPERTY.intValue())
+        if ( currentRecordId != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            record.setId( currentRecordId );
-            propertyStore.getRecord( record );
+            propertyStore.getRecord( currentRecordId, record, NORMAL );
             currentRecordId = record.getNextProp();
-
             return true;
-        } else
-        {
-            return false;
         }
+        return false;
     }
 
     public PropertyRecord getRecord()

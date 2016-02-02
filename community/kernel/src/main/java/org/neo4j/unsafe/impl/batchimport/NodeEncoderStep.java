@@ -34,6 +34,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 
+import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
@@ -76,9 +77,8 @@ public final class NodeEncoderStep extends ProcessorStep<Batch<InputNode,NodeRec
                 // later on, that's all. Anonymous nodes have null id.
                 idMapper.put( batchNode.id(), nodeId, batchNode.group() );
             }
-            NodeRecord nodeRecord = batch.records[i] = new NodeRecord( nodeId, false,
-                    NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
-            nodeRecord.setInUse( true );
+            NodeRecord nodeRecord = batch.records[i] = new NodeRecord( nodeId ).initialize( true,
+                    NO_NEXT_PROPERTY.intValue(), false, NO_NEXT_RELATIONSHIP.intValue(), NO_LABELS_FIELD.intValue() );
 
             // Labels
             if ( batchNode.hasLabelField() )

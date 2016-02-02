@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.util.Collection;
-
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -30,6 +27,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -40,7 +38,7 @@ public class RecordChangeSet implements RecordAccessSet
     private final RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords;
     private final RecordAccess<Long, RelationshipRecord, Void> relRecords;
     private final RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords;
-    private final RecordAccess<Long, Collection<DynamicRecord>, SchemaRule> schemaRuleChanges;
+    private final RecordAccess<Long, SchemaRecord, SchemaRule> schemaRuleChanges;
     private final RecordAccess<Integer, PropertyKeyTokenRecord, Void> propertyKeyTokenChanges;
     private final RecordAccess<Integer, LabelTokenRecord, Void> labelTokenChanges;
     private final RecordAccess<Integer, RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
@@ -63,7 +61,7 @@ public class RecordChangeSet implements RecordAccessSet
             Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader,
             Loader<Long,RelationshipRecord,Void> relationshipLoader,
             Loader<Long,RelationshipGroupRecord,Integer> relationshipGroupLoader,
-            Loader<Long,Collection<DynamicRecord>,SchemaRule> schemaRuleLoader,
+            Loader<Long,SchemaRecord,SchemaRule> schemaRuleLoader,
             Loader<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenLoader,
             Loader<Integer,LabelTokenRecord,Void> labelTokenLoader,
             Loader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader )
@@ -103,7 +101,7 @@ public class RecordChangeSet implements RecordAccessSet
     }
 
     @Override
-    public RecordAccess<Long, Collection<DynamicRecord>, SchemaRule> getSchemaRuleChanges()
+    public RecordAccess<Long, SchemaRecord, SchemaRule> getSchemaRuleChanges()
     {
         return schemaRuleChanges;
     }

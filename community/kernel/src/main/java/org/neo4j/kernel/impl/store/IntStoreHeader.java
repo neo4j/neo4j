@@ -17,35 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.record;
+package org.neo4j.kernel.impl.store;
 
-public abstract class Abstract64BitRecord extends AbstractBaseRecord
+/**
+ * Contains an {@code int} extracted from the first 4 bytes of the first record of a store.
+ */
+public class IntStoreHeader implements StoreHeader
 {
-    private long id;
+    private final int value;
 
-    protected Abstract64BitRecord()
+    public IntStoreHeader( int value )
     {
-
+        this.value = value;
     }
 
-    protected Abstract64BitRecord( long id )
+    public int value()
     {
-        this.id = id;
-    }
-
-    public long getId()
-    {
-        return id;
-    }
-
-    public void setId( long id )
-    {
-        this.id = id;
-    }
-    
-    @Override
-    public long getLongId()
-    {
-        return id;
+        return this.value;
     }
 }

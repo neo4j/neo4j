@@ -23,6 +23,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
 import org.neo4j.test.docs.DocsIncludeFile;
 
 import static java.util.Arrays.asList;
@@ -46,9 +50,9 @@ public class RecordSizesDocTest
         writer.println( "|======================================" );
         writer.println( "| Store file  | Record size  | Contents" );
         for ( Store store : asList(
-                store( NODE_STORE_NAME, NodeStore.RECORD_SIZE, "Nodes" ),
-                store( RELATIONSHIP_STORE_NAME, RelationshipStore.RECORD_SIZE, "Relationships" ),
-                store( PROPERTY_STORE_NAME, PropertyStore.RECORD_SIZE, "Properties for nodes and relationships" ),
+                store( NODE_STORE_NAME, NodeRecordFormat.RECORD_SIZE, "Nodes" ),
+                store( RELATIONSHIP_STORE_NAME, RelationshipRecordFormat.RECORD_SIZE, "Relationships" ),
+                store( PROPERTY_STORE_NAME, PropertyRecordFormat.RECORD_SIZE, "Properties for nodes and relationships" ),
                 dynamicStore( PROPERTY_STRINGS_STORE_NAME, string_block_size, "Values of string properties" ),
                 dynamicStore( PROPERTY_ARRAYS_STORE_NAME, array_block_size, "Values of array properties" )
         ) )
@@ -71,7 +75,7 @@ public class RecordSizesDocTest
 
     private static int defaultDynamicSize( Setting<Integer> setting )
     {
-        return AbstractDynamicStore.BLOCK_HEADER_SIZE + Integer.parseInt( setting.getDefaultValue() );
+        return DynamicRecordFormat.RECORD_HEADER_SIZE + Integer.parseInt( setting.getDefaultValue() );
     }
 
     private static class Store

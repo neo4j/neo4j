@@ -32,6 +32,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+
 public class DirectRecordAccess implements DiffRecordAccess
 {
     final StoreAccess access;
@@ -127,7 +129,7 @@ public class DirectRecordAccess implements DiffRecordAccess
 
     <RECORD extends AbstractBaseRecord> RecordReference<RECORD> referenceTo( RecordStore<RECORD> store, long id )
     {
-        return new DirectRecordReference<>( store.forceGetRecord( id ), this );
+        return new DirectRecordReference<>( store.getRecord( id, store.newRecord(), FORCE ), this );
     }
 
     @Override

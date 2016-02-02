@@ -27,6 +27,8 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+
 /**
  * Action to be manipulate the {@link CacheAccess} in some way.
  */
@@ -103,8 +105,9 @@ public abstract class CacheTask extends ConsistencyCheckerTask
             {
                 if ( client.getFromCache( nodeId, CacheSlots.NextRelationhip.SLOT_FIRST_IN_TARGET ) == 0 )
                 {
-                    NodeRecord node = nodeStore.forceGetRecord( nodeId );
-                    if ( !node.isDense() )
+                    // TODO reuse record instances?
+                    NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
+                    if ( node.inUse() && !node.isDense() )
                     {
                         storeProcessor.processNode( nodeStore, node );
                     }

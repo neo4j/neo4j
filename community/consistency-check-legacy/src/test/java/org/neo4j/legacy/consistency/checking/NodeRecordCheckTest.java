@@ -99,7 +99,7 @@ public class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, 11 ) );
-        RelationshipRecord relationship = add( notInUse( new RelationshipRecord( 7, 0, 0, 0 ) ) );
+        RelationshipRecord relationship = add( new RelationshipRecord( 7, 0, 0, 0 ) );
         add( inUse( new PropertyRecord( 11 ) ) );
 
         // when

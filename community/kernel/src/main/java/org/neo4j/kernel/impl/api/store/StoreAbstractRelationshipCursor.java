@@ -24,16 +24,17 @@ import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Base cursor for relationships.
@@ -43,7 +44,7 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
 {
     protected final RelationshipRecord relationshipRecord;
     protected final RelationshipStore relationshipStore;
-    protected final RelationshipGroupStore relationshipGroupStore;
+    protected final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final LockService lockService;
     protected StoreStatement storeStatement;
 
@@ -124,8 +125,7 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
             try
             {
                 // It's safer to re-read the relationship record here, specifically nextProp, after acquiring the lock
-                relationshipStore.fillRecord( relationshipRecord.getId(), relationshipRecord, FORCE );
-                if ( !relationshipRecord.inUse() )
+                if ( !relationshipStore.getRecord( relationshipRecord.getId(), relationshipRecord, CHECK ).inUse() )
                 {
                     // So it looks like the node has been deleted. The current behavior of RelationshipStore#fillRecord
                     // w/ FORCE is to only set the inUse field on loading an unused record. This should (and will)

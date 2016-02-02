@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -92,9 +93,11 @@ public class NeoTransactionIndexApplierTest
 
     private IndexBatchTransactionApplier newIndexTransactionApplier()
     {
+        PropertyStore propertyStore = mock( PropertyStore.class );
         return new IndexBatchTransactionApplier( indexingService,
-                labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), mock( PropertyStore.class ), mock(
-                PropertyLoader.class ), TransactionApplicationMode.INTERNAL );
+                labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), propertyStore, mock(
+                PropertyLoader.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
+                TransactionApplicationMode.INTERNAL );
     }
 
     @Test

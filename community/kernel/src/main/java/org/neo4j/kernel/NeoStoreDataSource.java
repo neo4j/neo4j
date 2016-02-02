@@ -84,6 +84,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
@@ -556,7 +557,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 new RecordStorageEngine( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider, propertyKeyTokenHolder,
                         labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
                         tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
-                        labelScanStore, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering ) );
+                        labelScanStore, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
+                        LowLimit.RECORD_FORMATS ) );
     }
 
     private TransactionLogModule buildTransactionLogs(

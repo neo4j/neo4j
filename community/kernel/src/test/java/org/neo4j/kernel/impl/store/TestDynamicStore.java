@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,30 +33,26 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
-import static java.util.Collections.singletonMap;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import static java.util.Collections.singletonMap;
+
 import static org.neo4j.function.Functions.map;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class TestDynamicStore
 {
@@ -125,7 +126,7 @@ public class TestDynamicStore
         neoStores = null;
         try
         {
-            store.getArrayFor( store.getRecords( blockId ) );
+            store.getArrayFor( store.getRecords( blockId, NORMAL ) );
             fail( "Closed store should throw exception" );
         }
         catch ( RuntimeException e )
@@ -133,7 +134,7 @@ public class TestDynamicStore
         }
         try
         {
-            store.getLightRecords( 0 );
+            store.getRecords( 0, NORMAL );
             fail( "Closed store should throw exception" );
         }
         catch ( RuntimeException e )
@@ -176,11 +177,10 @@ public class TestDynamicStore
             {
                 long blockId = idsTaken.remove(
                         random.nextInt( currentCount ) );
-                store.getLightRecords( blockId );
-                byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId ) );
+                store.getRecords( blockId, NORMAL );
+                byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId, NORMAL ) );
                 validateData( bytes, byteData.remove( blockId ) );
-                Collection<DynamicRecord> records = store
-                        .getLightRecords( blockId );
+                Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL );
                 for ( DynamicRecord record : records )
                 {
                     record.setInUse( false );
@@ -249,11 +249,11 @@ public class TestDynamicStore
         DynamicArrayStore store = createDynamicArrayStore();
         byte[] emptyToWrite = createBytes( 0 );
         long blockId = create( store, emptyToWrite );
-        store.getLightRecords( blockId );
-        byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId ) );
+        store.getRecords( blockId, NORMAL );
+        byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId, NORMAL ) );
         assertEquals( 0, bytes.length );
 
-        Collection<DynamicRecord> records = store.getLightRecords( blockId );
+        Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL );
         for ( DynamicRecord record : records )
         {
             record.setInUse( false );
@@ -266,11 +266,11 @@ public class TestDynamicStore
     {
         DynamicArrayStore store = createDynamicArrayStore();
         long blockId = create( store, new String[0] );
-        store.getLightRecords( blockId );
-        String[] readBack = (String[]) store.getArrayFor( store.getRecords( blockId ) );
+        store.getRecords( blockId, NORMAL );
+        String[] readBack = (String[]) store.getArrayFor( store.getRecords( blockId, NORMAL ) );
         assertEquals( 0, readBack.length );
 
-        Collection<DynamicRecord> records = store.getLightRecords( blockId );
+        Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL );
         for ( DynamicRecord record : records )
         {
             record.setInUse( false );

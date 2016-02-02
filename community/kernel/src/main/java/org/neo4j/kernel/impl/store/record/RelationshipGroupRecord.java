@@ -19,33 +19,37 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
 import java.util.Objects;
 
-public class RelationshipGroupRecord extends Abstract64BitRecord
+public class RelationshipGroupRecord extends AbstractBaseRecord
 {
     private int type;
-    private long next = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private long firstOut = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private long firstIn = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private long firstLoop = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private long owningNode = Record.NO_NEXT_RELATIONSHIP.intValue();
+    private long next;
+    private long firstOut;
+    private long firstIn;
+    private long firstLoop;
+    private long owningNode;
 
     // Not stored, just kept in memory temporarily when loading the group chain
-    private long prev = Record.NO_NEXT_RELATIONSHIP.intValue();
+    private long prev;
 
+    @Deprecated
     public RelationshipGroupRecord( long id, int type )
     {
         super( id );
         this.type = type;
     }
 
+    @Deprecated
     public RelationshipGroupRecord( long id, int type, long firstOut, long firstIn, long firstLoop, long owningNode,
             boolean inUse )
     {
         this( id, type, firstOut, firstIn, firstLoop, owningNode, Record.NO_NEXT_RELATIONSHIP.intValue(), inUse );
     }
 
+    @Deprecated
     public RelationshipGroupRecord( long id, int type, long firstOut, long firstIn, long firstLoop, long owningNode,
             long next, boolean inUse )
     {
@@ -57,6 +61,33 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
         this.firstLoop = firstLoop;
         this.owningNode = owningNode;
         this.next = next;
+    }
+
+    public RelationshipGroupRecord( long id )
+    {
+        super( id );
+    }
+
+    public RelationshipGroupRecord initialize( boolean inUse, int type,
+            long firstOut, long firstIn, long firstLoop, long owningNode, long next )
+    {
+        super.initialize( inUse );
+        this.type = type;
+        this.firstOut = firstOut;
+        this.firstIn = firstIn;
+        this.firstLoop = firstLoop;
+        this.owningNode = owningNode;
+        this.next = next;
+        this.prev = NO_NEXT_RELATIONSHIP.intValue();
+        return this;
+    }
+
+    @Override
+    public void clear()
+    {
+        initialize( false, -1, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue(),
+                NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue() );
+        prev = NO_NEXT_RELATIONSHIP.intValue();
     }
 
     public int getType()
@@ -160,7 +191,8 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
     @Override
     public RelationshipGroupRecord clone()
     {
-        return new RelationshipGroupRecord( getId(), type, firstOut, firstIn, firstLoop, owningNode, next, inUse() );
+        return new RelationshipGroupRecord( getId() ).initialize( inUse(), type, firstOut, firstIn, firstLoop,
+                owningNode, next );
     }
 
     @Override
@@ -178,8 +210,8 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
                firstOut == that.firstOut &&
                firstIn == that.firstIn &&
                firstLoop == that.firstLoop &&
-               owningNode == that.owningNode &&
-               prev == that.prev;
+               owningNode == that.owningNode;
+               // don't compare prev since it's not persisted
     }
 
     @Override

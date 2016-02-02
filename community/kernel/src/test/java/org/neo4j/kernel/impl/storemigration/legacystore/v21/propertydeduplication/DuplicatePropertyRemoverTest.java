@@ -55,6 +55,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class DuplicatePropertyRemoverTest
 {
@@ -133,7 +135,7 @@ public class DuplicatePropertyRemoverTest
             int propertyKeyId = indexedPropertyKeys.get( propertyName );
 
             // remove the property from the node by the given property key
-            NodeRecord nodeRecord = nodeStore.getRecord( nodeId );
+            NodeRecord nodeRecord = getRecord( nodeStore, nodeId );
             removeProperty( nodeRecord, propertyKeyId );
 
             // check the integrity of the property chain:
@@ -152,7 +154,7 @@ public class DuplicatePropertyRemoverTest
         int propBlockCount = 0;
         while( nextPropId != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = propertyStore.getRecord( nextPropId );
+            PropertyRecord propRecord = getRecord( propertyStore, nextPropId );
             PropertyBlock propertyBlock = propRecord.getPropertyBlock( propertyKeyId );
             assertNull( propertyBlock );
             nextPropId = propRecord.getNextProp();
@@ -164,12 +166,13 @@ public class DuplicatePropertyRemoverTest
 
     private boolean hasLoop( long firstId )
     {
-        PropertyRecord slow, fast, first;
+        PropertyRecord slow = propertyStore.newRecord(), fast = propertyStore.newRecord(),
+                first = propertyStore.newRecord();
         if ( firstId == Record.NO_NEXT_PROPERTY.intValue() )
         {
             return false;
         }
-        first = propertyStore.getRecord( firstId );
+        propertyStore.getRecord( firstId, first, NORMAL );
 
         slow = fast = first;
 
@@ -201,15 +204,9 @@ public class DuplicatePropertyRemoverTest
     private PropertyRecord getNextPropertyRecord( PropertyRecord propRecord )
     {
         long nextPropId = propRecord.getNextProp();
-        if ( nextPropId != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            propRecord = propertyStore.getRecord( nextPropId );
-        }
-        else
-        {
-            propRecord = null;
-        }
-        return propRecord;
+        return nextPropId != Record.NO_NEXT_PROPERTY.intValue()
+                ? getRecord( propertyStore, nextPropId )
+                : null;
     }
 
     private void removeProperty( NodeRecord nodeRecord, int propertyKeyId )
@@ -217,9 +214,10 @@ public class DuplicatePropertyRemoverTest
         long nextProp = nodeRecord.getNextProp();
         assertTrue( nextProp != Record.NO_NEXT_PROPERTY.intValue() );
         boolean found = false;
+        PropertyRecord propertyRecord = propertyStore.newRecord();
         while( nextProp != Record.NO_NEXT_PROPERTY.intValue() && !found )
         {
-            PropertyRecord propertyRecord = propertyStore.getRecord( nextProp );
+            propertyStore.getRecord( nextProp, propertyRecord, NORMAL );
             PropertyBlock propertyBlock = propertyRecord.removePropertyBlock( propertyKeyId );
             if( propertyBlock != null )
             {

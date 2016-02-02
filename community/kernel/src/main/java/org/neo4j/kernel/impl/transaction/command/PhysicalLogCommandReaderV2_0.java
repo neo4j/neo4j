@@ -134,8 +134,7 @@ public class PhysicalLogCommandReaderV2_0 extends BaseCommandReader
         }
         else
         {
-            record = new RelationshipRecord( id, -1, -1, -1 );
-            record.setInUse( false );
+            record = new RelationshipRecord( id );
         }
         return new Command.RelationshipCommand( null, record );
     }
@@ -298,8 +297,7 @@ public class PhysicalLogCommandReaderV2_0 extends BaseCommandReader
         }
         else
         {
-            record = new NodeRecord( id, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
-                    Record.NO_NEXT_PROPERTY.intValue() );
+            record = new NodeRecord( id );
         }
         record.setInUse( inUse );
         return record;

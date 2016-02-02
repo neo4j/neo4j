@@ -21,8 +21,9 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
@@ -33,7 +34,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 public class NodeFirstRelationshipStage extends Stage
 {
     public NodeFirstRelationshipStage( Configuration config, NodeStore nodeStore,
-            RelationshipGroupStore relationshipGroupStore, NodeRelationshipCache cache, final Collector collector,
+            RecordStore<RelationshipGroupRecord> relationshipGroupStore, NodeRelationshipCache cache, final Collector collector,
             LabelScanStore labelScanStore )
     {
         super( "Node --> Relationship", config );

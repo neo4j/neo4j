@@ -23,6 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -35,8 +38,9 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
@@ -44,15 +48,18 @@ import org.neo4j.logging.Logger;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
- * Contains common implementation for {@link AbstractStore} and
- * {@link AbstractDynamicStore}.
+ * Contains common implementation of {@link RecordStore}.
  */
-public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
+public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
+        implements RecordStore<RECORD>, AutoCloseable
 {
-    public static final String ALL_STORES_VERSION = "v0.A.7";
     public static final String UNKNOWN_VERSION = "Unknown";
+
     protected final Config configuration;
     protected final PageCache pageCache;
     protected final File storageFileName;
@@ -63,6 +70,9 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     private IdGenerator idGenerator;
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
+    private final String typeDescriptor;
+
+    private final String storeVersion;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -85,14 +95,23 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            LogProvider logProvider )
+            LogProvider logProvider,
+            String typeDescriptor,
+            String storeVersion )
     {
         this.storageFileName = fileName;
         this.configuration = configuration;
         this.idGeneratorFactory = idGeneratorFactory;
         this.pageCache = pageCache;
         this.idType = idType;
+        this.typeDescriptor = typeDescriptor;
+        this.storeVersion = storeVersion;
         this.log = logProvider.getLog( getClass() );
+    }
+
+    protected static long longFromIntAndMod( long base, long modifier )
+    {
+        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
     }
 
     void initialise( boolean createIfNotExists )
@@ -121,14 +140,15 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
-    protected static long longFromIntAndMod( long base, long modifier )
+    /**
+     * Returns the type and version that identifies this store.
+     *
+     * @return This store's implementation type and version identifier
+     */
+    public String getTypeDescriptor()
     {
-        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
+        return typeDescriptor;
     }
-
-    protected abstract String getTypeDescriptor();
-
-    protected abstract void initialiseNewStoreFile( PagedFile file ) throws IOException;
 
     /**
      * This method is called by constructors.
@@ -162,6 +182,33 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
+    protected void initialiseNewStoreFile( PagedFile file ) throws IOException
+    {
+        if ( getNumberOfReservedLowIds() > 0 )
+        {
+            try ( PageCursor pageCursor = file.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                if ( pageCursor.next() )
+                {
+                    do
+                    {
+                        pageCursor.setOffset( 0 );
+                        createHeaderRecord( pageCursor );
+                    }
+                    while ( pageCursor.shouldRetry() );
+                }
+            }
+        }
+
+        File idFileName = new File( storageFileName.getPath() + ".id" );
+        idGeneratorFactory.create( idFileName, getNumberOfReservedLowIds(), true );
+    }
+
+    protected void createHeaderRecord( PageCursor cursor )
+    {
+        assert getNumberOfReservedLowIds() == 0;
+    }
+
     /**
      * Should do first validation on store validating stuff like version and id
      * generator. This method is called by constructors.
@@ -174,22 +221,41 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     {
         try
         {
-            readAndVerifyBlockSize();
-            try
-            {
-                int filePageSize = pageCache.pageSize() - pageCache.pageSize() % getRecordSize();
-                storeFile = pageCache.map( getStorageFileName(), filePageSize );
-            }
-            catch ( IOException e )
-            {
-                // TODO: Just throw IOException, add proper handling further up
-                throw new UnderlyingStorageException( e );
-            }
-            loadIdGenerator();
+            extractHeaderRecord();
+            int filePageSize = pageCache.pageSize() - pageCache.pageSize() % getRecordSize();
+            storeFile = pageCache.map( getStorageFileName(), filePageSize );
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( "Unable to load storage " + getStorageFileName(), e );
+            // TODO: Just throw IOException, add proper handling further up
+            throw new UnderlyingStorageException( e );
+        }
+        loadIdGenerator();
+    }
+
+    private void extractHeaderRecord() throws IOException
+    {
+        if ( getNumberOfReservedLowIds() > 0 )
+        {
+            try ( PagedFile pagedFile = pageCache.map( getStorageFileName(), pageCache.pageSize() ) )
+            {
+                try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+                {
+                    if ( pageCursor.next() )
+                    {
+                        do
+                        {
+                            pageCursor.setOffset( 0 );
+                            readHeaderAndInitializeRecordFormat( pageCursor );
+                        }
+                        while ( pageCursor.shouldRetry() );
+                    }
+                }
+            }
+        }
+        else
+        {
+            readHeaderAndInitializeRecordFormat( null );
         }
     }
 
@@ -203,6 +269,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         return (int) (id * getRecordSize() % storeFile.pageSize());
     }
 
+    @Override
     public int getRecordsPerPage()
     {
         return storeFile.pageSize() / getRecordSize();
@@ -228,10 +295,18 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
 
     /**
-     * Note: This method runs before the file has been mapped by the page cache, and therefore needs to
-     * operate on the store files directly. This method is called by constructors.
+     * This method is called when opening the store to extract header data and determine things like
+     * record size of the specific record format for this store. Some formats rely on information
+     * in the store header, that's why it happens at this stage.
+     *
+     * @param cursor {@link PageCursor} initialized at the start of the store header where header information
+     * can be read if need be. This can be {@code null} if this store has no store header. The initialization
+     * of the record format still happens in here.
+     * @throws IOException if there were problems reading header information.
      */
-    protected abstract void readAndVerifyBlockSize() throws IOException;
+    protected void readHeaderAndInitializeRecordFormat( PageCursor cursor ) throws IOException
+    {
+    }
 
     private void loadIdGenerator()
     {
@@ -259,7 +334,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     protected int getHeaderRecord() throws IOException
     {
-        int headerRecord = 0 ;
+        int headerRecord = 0;
         try ( PagedFile pagedFile = pageCache.map( getStorageFileName(), pageCache.pageSize() ) )
         {
             try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
@@ -274,15 +349,38 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
                 }
             }
         }
-
         if ( headerRecord <= 0 )
         {
-            throw new InvalidRecordException( "Illegal block size: " + headerRecord + " in " + getStorageFileName() );
+            throw new InvalidRecordException( "Illegal block size: " +
+                    headerRecord + " in " + getStorageFileName() );
         }
         return headerRecord;
     }
 
-    protected abstract boolean isInUse( byte inUseByte );
+    public boolean isInUse( long id )
+    {
+        long pageId = pageIdForRecord( id );
+        int offset = offsetForId( id );
+
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
+        {
+            boolean recordIsInUse = false;
+            if ( cursor.next() )
+            {
+                do
+                {
+                    cursor.setOffset( offset );
+                    recordIsInUse = isInUse( cursor );
+                }
+                while ( cursor.shouldRetry() );
+            }
+            return recordIsInUse;
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
 
     /**
      * Should rebuild the id generator from scratch.
@@ -292,7 +390,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * map their own temporary PagedFile for the store file, and do their file IO through that,
      * if they need to access the data in the store file.
      */
-    // accessible only for testing
     final void rebuildIdGenerator()
     {
         int blockSize = getRecordSize();
@@ -315,7 +412,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             setHighId( foundHighId );
             if ( !fastRebuild )
             {
-                try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK | PF_READ_AHEAD ) )
+                try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_WRITE_LOCK | PF_READ_AHEAD ) )
                 {
                     defraggedCount = rebuildIdGeneratorSlow( cursor, getRecordsPerPage(), blockSize, foundHighId );
                 }
@@ -366,7 +463,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
                         break;
                     }
 
-                    if ( !isRecordInUse( cursor ) )
+                    if ( !isInUse( cursor ) )
                     {
                         freedBatch[defragged++] = recordId;
                     }
@@ -419,11 +516,11 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     /**
      * Throws cause of not being OK if {@link #getStoreOk()} returns {@code false}.
      */
-    protected final void checkStoreOk()
+    protected void checkStoreOk()
     {
         if ( !storeOk )
         {
-            throw new UnderlyingStorageException( "Store is not OK", causeOfStoreNotOk );
+            throw launderedException( causeOfStoreNotOk );
         }
     }
 
@@ -453,12 +550,12 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     }
 
     /**
-     * Return the highest id in use.
-     * If this store is not OK yet, the high id is calculated from the highest in use record on the store,
-     * using {@link #scanForHighId()}.
+     * Return the highest id in use. If this store is not OK yet, the high id is calculated from the highest
+     * in use record on the store, using {@link #scanForHighId()}.
      *
-     * @return The high id, highest id in use + 1
+     * @return The high id, i.e. highest id in use + 1.
      */
+    @Override
     public long getHighId()
     {
         return idGenerator != null ? idGenerator.getHighId() : scanForHighId();
@@ -487,13 +584,13 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     /**
      * If store is not ok a call to this method will rebuild the {@link
-     * IdGenerator} used by this store and if successful mark it as.
+     * IdGenerator} used by this store and if successful mark it as OK.
      *
      * WARNING: this method must NOT be called if recovery is required, but hasn't performed.
      * To remove all negations from the above statement: Only call this method if store is in need of
      * recovery and recovery has been performed.
      */
-    public final void makeStoreOk()
+    public void makeStoreOk()
     {
         if ( !storeOk )
         {
@@ -508,6 +605,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      *
      * @return The name of this store
      */
+    @Override
     public File getStorageFileName()
     {
         return storageFileName;
@@ -569,7 +667,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
                     {
                         cursor.setOffset( currentRecord * recordSize );
                         long recordId = (cursor.getCurrentPageId() * recordsPerPage) + currentRecord;
-                        if ( isRecordInUse( cursor ) )
+                        if ( isInUse( cursor ) )
                         {
                             // We've found the highest id in use
                             return recordId + 1 /*+1 since we return the high id*/;
@@ -588,12 +686,16 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
+    @Override
     public abstract int getRecordSize();
 
-    protected boolean isRecordInUse( PageCursor cursor )
+    @Override
+    public int getRecordDataSize()
     {
-        return isInUse( cursor.getByte() );
+        return getRecordSize();
     }
+
+    protected abstract boolean isInUse( PageCursor cursor );
 
     protected boolean isRecordReserved( PageCursor cursor )
     {
@@ -614,6 +716,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
+    @Override
     public void flush()
     {
         try
@@ -643,6 +746,10 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * Closes this store. This will cause all buffers and channels to be closed.
      * Requesting an operation from after this method has been invoked is
      * illegal and an exception will be thrown.
+     * <p>
+     * This method will start by invoking the {@link #closeStorage} method
+     * giving the implementing store way to do anything that it needs to do
+     * before the pagedFile is closed.
      */
     @Override
     public void close()
@@ -691,17 +798,10 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     }
 
     /** @return The highest possible id in use, -1 if no id in use. */
+    @Override
     public long getHighestPossibleIdInUse()
     {
-        if ( idGenerator != null )
-        {
-            return idGenerator.getHighestPossibleIdInUse();
-        }
-        else
-        {   // If we ask for this before we've recovered we can only make a best-effort guess
-            // about the highest possible id in use.
-            return scanForHighId() - 1;
-        }
+        return idGenerator != null ? idGenerator.getHighestPossibleIdInUse() : scanForHighId() - 1;
     }
 
     /**
@@ -709,6 +809,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      *
      * @param highId The highest id in use to set.
      */
+    @Override
     public void setHighestPossibleIdInUse( long highId )
     {
         setHighId( highId + 1 );
@@ -724,6 +825,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * @return the number of records at the beginning of the store file that are reserved for other things
      * than actual records. Stuff like permanent configuration data.
      */
+    @Override
     public int getNumberOfReservedLowIds()
     {
         return 0;
@@ -734,15 +836,15 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         return idType;
     }
 
-    public final void logVersions( Logger logger )
+    public void logVersions( Logger logger )
     {
-        logger.log( getTypeDescriptor() + " " + ALL_STORES_VERSION );
+        logger.log( "  " + getTypeDescriptor() + " " + storeVersion );
     }
 
-    public final void logIdUsage( Logger logger )
+    public void logIdUsage( Logger logger )
     {
         logger.log( String.format( "  %s: used=%s high=%s",
-                getTypeDescriptor() + " " + ALL_STORES_VERSION, getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
+                getTypeDescriptor(), getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
     }
 
     /**
@@ -755,7 +857,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * {@link #logVersions(Logger)}
      * For a good samaritan to pick up later.
      */
-    public final void visitStore( Visitor<CommonAbstractStore,RuntimeException> visitor )
+    public void visitStore( Visitor<CommonAbstractStore,RuntimeException> visitor )
     {
         visitor.visit( this );
     }
@@ -779,9 +881,276 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     }
 
     @Override
+    public long getNextRecordReference( RECORD record )
+    {
+        return Record.NULL_REFERENCE.intValue();
+    }
+
+    /**
+     * Acquires a {@link PageCursor} from the {@link PagedFile store file} and reads the requested record
+     * in the correct page and offset.
+     *
+     * @param id the record id.
+     * @param record the record instance to load the data into.
+     * @param mode how strict to be when loading, f.ex {@link RecordLoad#FORCE} will always read what's there
+     * and load into the record, whereas {@link RecordLoad#NORMAL} will throw {@link InvalidRecordException}
+     * if not in use.
+     */
+    @Override
+    public RECORD getRecord( long id, RECORD record, RecordLoad mode )
+    {
+        long pageId = pageIdForRecord( id );
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
+        {
+            return getRecord( id, record, mode, cursor, pageId );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
+    protected RECORD getRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor, long pageId )
+    {
+        int offset = offsetForId( id );
+        try
+        {
+            if ( cursor.next( pageId ) )
+            {
+                // There is a page in the store that covers this record, go read it
+                readRecordWithRetry( cursor, id, record, mode, offset );
+            }
+            else
+            {
+                // There was no page in the store covering this record. We mark the record with
+                // the correct id because often the caller depends on the id to be correct regardless
+                // of whether the record is in use or not. Clear the rest of the data.
+                record.setId( id );
+                record.clear();
+                mode.verify( record );
+            }
+            return record;
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
+    protected void readRecordWithRetry( PageCursor cursor, long id, RECORD record, RecordLoad mode, int offset )
+            throws IOException
+    {
+        do
+        {
+            // Mark the record with this id regardless of whether or not we load the contents of it.
+            record.setId( id );
+
+            // Mark this record as unused. This to simplify implementations of readRecord.
+            // readRecord can behave differently depending on RecordLoad argument and so it may be that
+            // contents of a record may be loaded even if that record is unused, where the contents
+            // can still be initialized data. Know that for many record stores, deleting a record means
+            // just setting one byte or bit in that record.
+            record.setInUse( false );
+            cursor.setOffset( offset );
+            readRecord( cursor, record, mode );
+        }
+        while ( cursor.shouldRetry() );
+        if ( !mode.verify( record ) )
+        {
+            record.clear();
+        }
+    }
+
+    /**
+     * Reads data from {@link PageCursor} into the record.
+     */
+    protected abstract void readRecord( PageCursor cursor, RECORD record, RecordLoad mode );
+
+    @Override
+    public void updateRecord( RECORD record )
+    {
+        long id = record.getId();
+        long pageId = pageIdForRecord( id );
+        int offset = offsetForId( id );
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
+        {
+            if ( cursor.next() )
+            {
+                do
+                {
+                    cursor.setOffset( offset );
+                    writeRecord( cursor, record );
+                }
+                while ( cursor.shouldRetry() );
+                if ( !record.inUse() )
+                {
+                    freeId( id );
+                }
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
+    protected abstract void writeRecord( PageCursor cursor, RECORD record );
+
+    /**
+     * Scan the given range of records both inclusive, and pass all the in-use ones to the given processor, one by one.
+     *
+     * The record passed to the NodeRecordScanner is reused instead of reallocated for every record, so it must be
+     * cloned if you want to save it for later.
+     */
+    public void scanAllRecords( Visitor<RECORD,IOException> visitor ) throws IOException
+    {
+        long startPageId = pageIdForRecord( 0 );
+        long currentPageId = startPageId;
+        long endPageId = pageIdForRecord( getHighestPossibleIdInUse() );
+        long currentRecordId = 0;
+        RECORD record = newRecord();
+        int recordsPerPage = storeFile.pageSize() / getRecordSize();
+
+        try ( PageCursor cursor = storeFile.io( startPageId, PF_SHARED_READ_LOCK | PF_READ_AHEAD ) )
+        {
+            while ( currentPageId <= endPageId && cursor.next() )
+            {
+                for ( int i = 0; i < recordsPerPage; i++ )
+                {
+                    if ( getRecord( currentRecordId, record, CHECK, cursor, currentPageId ).inUse() )
+                    {
+                        if ( visitor.visit( record ) )
+                        {
+                            return;
+                        }
+                    }
+                    currentRecordId++;
+                }
+                currentPageId++;
+            }
+        }
+    }
+
+    @Override
+    public Collection<RECORD> getRecords( long firstId, RecordLoad mode )
+    {
+        // TODO we should instead be passed in a consumer of records, so we don't have to spend memory building up
+        // this list
+        List<RECORD> recordList = new LinkedList<>();
+        long currentId = firstId;
+        try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            while ( !NULL_REFERENCE.is( currentId ) && cursor.next( pageIdForRecord( currentId ) ) )
+            {
+                RECORD record = newRecord();
+                readRecordWithRetry( cursor, currentId, record, mode, offsetForId( currentId ) );
+                if ( !record.inUse() )
+                {
+                    break;
+                }
+                recordList.add( record );
+                currentId = getNextRecordReference( record );
+            }
+            return recordList;
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
+    @Override
+    public RecordCursor<RECORD> newRecordCursor( final RECORD record )
+    {
+        return new RecordCursor<RECORD>()
+        {
+            private long currentId;
+            private RecordLoad mode;
+            private PageCursor pageCursor;
+
+            @Override
+            public boolean next()
+            {
+                if ( NULL_REFERENCE.is( currentId ) )
+                {
+                    return false;
+                }
+
+                try
+                {
+                    return getRecord( currentId, record, mode, pageCursor, pageIdForRecord( currentId ) ).inUse();
+                }
+                finally
+                {
+                    currentId = record.inUse() ? getNextRecordReference( record ) : NULL_REFERENCE.intValue();
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                assert pageCursor != null;
+                this.pageCursor.close();
+                this.pageCursor = null;
+            }
+
+            @Override
+            public RECORD get()
+            {
+                return record;
+            }
+
+            @Override
+            public boolean next( long id )
+            {
+                currentId = id;
+                return next();
+            }
+
+            @Override
+            public RecordCursor<RECORD> init( long id, RecordLoad mode, PageCursor pageCursor )
+            {
+                assert this.pageCursor == null;
+                this.currentId = id;
+                this.mode = mode;
+                this.pageCursor = pageCursor;
+                return this;
+            }
+        };
+    }
+
+    @Override
+    public RecordCursor<RECORD> placeRecordCursor( final long id, final RecordCursor<RECORD> cursor,
+            final RecordLoad mode )
+    {
+        try
+        {
+            PageCursor pageCursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_READ_LOCK );
+            cursor.init( id, mode, pageCursor );
+            return cursor;
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
+    @Override
+    public void ensureHeavy( RECORD record )
+    {
+        // Do nothing by default. Some record stores have this.
+    }
+
+    @Override
     public String toString()
     {
         return getClass().getSimpleName();
+    }
+
+    @Override
+    public int getStoreHeaderInt()
+    {
+        throw new UnsupportedOperationException( "No header" );
     }
 
     public static abstract class Configuration

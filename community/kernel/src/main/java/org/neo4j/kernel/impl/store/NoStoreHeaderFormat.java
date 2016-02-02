@@ -19,7 +19,33 @@
  */
 package org.neo4j.kernel.impl.store;
 
-public interface DynamicBlockSize
+import org.neo4j.io.pagecache.PageCursor;
+
+import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
+
+public class NoStoreHeaderFormat implements StoreHeaderFormat<NoStoreHeader>
 {
-    int getBlockSize();
+    public static final NoStoreHeaderFormat NO_STORE_HEADER_FORMAT = new NoStoreHeaderFormat();
+
+    private NoStoreHeaderFormat()
+    {
+    }
+
+    @Override
+    public int numberOfReservedRecords()
+    {
+        return 0;
+    }
+
+    @Override
+    public void writeHeader( PageCursor cursor )
+    {
+        throw new UnsupportedOperationException( "Should not be called" );
+    }
+
+    @Override
+    public NoStoreHeader readHeader( PageCursor cursor )
+    {
+        return NO_STORE_HEADER;
+    }
 }

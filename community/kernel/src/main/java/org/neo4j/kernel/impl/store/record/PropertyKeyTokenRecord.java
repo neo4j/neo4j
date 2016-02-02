@@ -19,14 +19,27 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-
 public class PropertyKeyTokenRecord extends TokenRecord
 {
-    private int propCount = 0;
+    private int propCount;
 
     public PropertyKeyTokenRecord( int id )
     {
         super( id );
+    }
+
+    public PropertyKeyTokenRecord initialize( boolean inUse, int nameId, int propertyCount )
+    {
+        super.initialize( inUse, nameId );
+        this.propCount = propertyCount;
+        return this;
+    }
+
+    @Override
+    public void clear()
+    {
+        super.clear();
+        propCount = 0;
     }
 
     @Override
@@ -51,17 +64,15 @@ public class PropertyKeyTokenRecord extends TokenRecord
         buf.append( ",propCount=" ).append( propCount );
     }
 
-
     @Override
     public PropertyKeyTokenRecord clone()
     {
-        PropertyKeyTokenRecord propertyKeyTokenRecord = new PropertyKeyTokenRecord( getId() );
+        PropertyKeyTokenRecord propertyKeyTokenRecord = new PropertyKeyTokenRecord( getIntId() );
         propertyKeyTokenRecord.setInUse( inUse() );
         if ( isCreated() )
         {
             propertyKeyTokenRecord.setCreated();
         }
-        propertyKeyTokenRecord.setIsLight( isLight() );
         propertyKeyTokenRecord.setNameId( getNameId() );
         propertyKeyTokenRecord.addNameRecords( getNameRecords() );
         propertyKeyTokenRecord.setPropertyCount( getPropertyCount() );

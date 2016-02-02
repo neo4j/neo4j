@@ -29,8 +29,8 @@ import java.util.Collection;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
@@ -62,7 +62,7 @@ public class Legacy19Store implements LegacyStore
     {
         this.fs = fs;
         this.storageFileName = storageFileName;
-        assertLegacyAndCurrentVersionHaveSameLength( LEGACY_VERSION, CommonAbstractStore.ALL_STORES_VERSION );
+        assertLegacyAndCurrentVersionHaveSameLength( LEGACY_VERSION, LowLimit.STORE_VERSION );
         initStorage();
     }
 

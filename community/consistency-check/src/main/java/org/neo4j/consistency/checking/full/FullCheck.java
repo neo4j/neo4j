@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class FullCheck
 {
@@ -165,7 +166,7 @@ public class FullCheck
         T[] records = (T[]) Array.newInstance( type, (int) store.getHighId() );
         for ( int i = 0; i < records.length; i++ )
         {
-            records[i] = store.forceGetRecord( i );
+            records[i] = store.getRecord( i, store.newRecord(), FORCE );
         }
         return records;
     }

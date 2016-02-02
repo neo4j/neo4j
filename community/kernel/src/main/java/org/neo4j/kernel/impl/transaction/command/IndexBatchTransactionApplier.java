@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
+import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -59,6 +60,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
     private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync;
     private final SingleTransactionApplier transactionApplier;
+    private final PropertyPhysicalToLogicalConverter indexUpdateConverter;
 
     private List<NodeLabelUpdate> labelUpdates;
     private IndexUpdates indexUpdates;
@@ -67,11 +69,13 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
             WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync,
             NodeStore nodeStore, PropertyStore propertyStore, PropertyLoader propertyLoader,
+            PropertyPhysicalToLogicalConverter indexUpdateConverter,
             TransactionApplicationMode mode )
     {
         this.indexingService = indexingService;
         this.labelScanStoreSync = labelScanStoreSync;
         this.indexUpdatesSync = indexUpdatesSync;
+        this.indexUpdateConverter = indexUpdateConverter;
         this.transactionApplier = new SingleTransactionApplier( nodeStore, propertyStore, propertyLoader, mode );
     }
 
@@ -159,8 +163,8 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 
         private IndexUpdates createIndexUpdates()
         {
-            return mode == TransactionApplicationMode.RECOVERY ?
-                    new RecoveryIndexUpdates() : new OnlineIndexUpdates( nodeStore, propertyStore, propertyLoader );
+            return mode == TransactionApplicationMode.RECOVERY ? new RecoveryIndexUpdates() :
+                new OnlineIndexUpdates( nodeStore, propertyStore, propertyLoader, indexUpdateConverter );
         }
 
         @Override

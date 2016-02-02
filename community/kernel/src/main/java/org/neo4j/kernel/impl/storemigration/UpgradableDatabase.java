@@ -24,8 +24,8 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
@@ -179,7 +179,7 @@ public class UpgradableDatabase
     public boolean hasCurrentVersion( File storeDir )
     {
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
-        Result result = storeVersionCheck.hasVersion( neoStore, CommonAbstractStore.ALL_STORES_VERSION );
+        Result result = storeVersionCheck.hasVersion( neoStore, LowLimit.STORE_VERSION );
         switch ( result.outcome )
         {
         case ok:

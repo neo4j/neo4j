@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -51,14 +52,14 @@ public class StoreNodeRelationshipCursorTest
         NeoStores stores = mock( NeoStores.class );
         NodeStore nodeStore = mock( NodeStore.class );
         when( stores.getNodeStore() ).thenReturn( nodeStore );
-        RelationshipGroupStore relationshipGroupStore = mock( RelationshipGroupStore.class );
+        RecordStore<RelationshipGroupRecord> relationshipGroupStore = mock( RelationshipGroupStore.class );
         when( stores.getRelationshipGroupStore() ).thenReturn( relationshipGroupStore );
 
         @SuppressWarnings( "unchecked" )
         StoreNodeRelationshipCursor cursor = new StoreNodeRelationshipCursor(
                 new RelationshipRecord( -1 ),
                 stores,
-                new RelationshipGroupRecord( -1, -1 ),
+                new RelationshipGroupRecord( -1 ),
                 mock( StoreStatement.class ),
                 mock( Consumer.class ),
                 NO_LOCK_SERVICE );

@@ -1,0 +1,102 @@
+/*
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.store.format;
+
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.StoreHeader;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
+
+/**
+ * Specifies a particular {@link AbstractBaseRecord record} format, used to read and write records in a
+ * {@link RecordStore} from and to a {@link PageCursor}.
+ *
+ * @param <RECORD> type of {@link AbstractBaseRecord} this format handles.
+ */
+public interface RecordFormat<RECORD extends AbstractBaseRecord>
+{
+    /**
+     * Instantiates a new record to use in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int)}
+     * and {@link #write(AbstractBaseRecord, PageCursor)}. Records may be reused, which is why the instantiation
+     * is separated from reading and writing.
+     *
+     * @return a new record instance, usable in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int)}
+     * and {@link #write(AbstractBaseRecord, PageCursor)}.
+     */
+    RECORD newRecord();
+
+    /**
+     * Returns the record size for this format. Supplied here is the {@link StoreHeader store header} of the
+     * owning store, which may contain data affecting the record size.
+     *
+     * @param storeHeader {@link StoreHeader} with header information from the store.
+     * @return record size of records of this format and store.
+     */
+    int getRecordSize( StoreHeader storeHeader );
+
+    /**
+     * @deprecated since only being applicable to {@link DynamicRecord} formats.
+     * @return header size of records of this format. This is only applicable to {@link DynamicRecord}
+     * format and may not need to be in this interface.
+     */
+    @Deprecated
+    int getRecordHeaderSize();
+
+    /**
+     * Quickly determines whether or not record starting right at where the {@code cursor} is placed
+     * is in use or not.
+     *
+     * @param cursor {@link PageCursor} to read data from, placed at the start of record to determine
+     * in use status of.
+     * @return whether or not the record at where the {@code cursor} is placed is in use.
+     */
+    boolean isInUse( PageCursor cursor );
+
+    /**
+     * Reads data from {@code cursor} of the format specified by this implementation into {@code record}.
+     * The cursor is placed at the beginning of the record id, which also {@code record}
+     * {@link AbstractBaseRecord#getId() refers to}.
+     *
+     * @param record to put read data into, replacing any existing data in that record object.
+     * @param cursor {@link PageCursor} to read data from.
+     * @param mode {@link RecordLoad} mode of reading.
+     * See {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)} for more information.
+     * @param recordSize size of records of this format. This is passed in like this since not all formats
+     * know the record size in advance, but may be read from store header when opening the store.
+     */
+    void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize );
+
+    /**
+     * Writes record contents to the {@code cursor} in the format specified by this implementation.
+     *
+     * @param record containing data to write.
+     * @param cursor {@link PageCursor} to write the record data into.
+     */
+    void write( RECORD record, PageCursor cursor );
+
+    /**
+     * @param record to obtain "next" reference from.
+     * @return "next" reference of records of this type.
+     * @see RecordStore#getNextRecordReference(AbstractBaseRecord)
+     */
+    long getNextRecordReference( RECORD record );
+}

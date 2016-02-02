@@ -19,7 +19,7 @@
  */
 package org.neo4j.tools.txlog.checktypes;
 
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
@@ -27,13 +27,13 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 /**
  * Type of command ({@link NodeCommand}, {@link PropertyCommand}, ...) to check during transaction log verification.
  * This class exists to mitigate the absence of interfaces for commands with before and after state.
- * It also provides an alternative equality check instead of {@link Abstract64BitRecord#equals(Object)} that only
- * checks {@linkplain Abstract64BitRecord#getLongId() entity id}.
+ * It also provides an alternative equality check instead of {@link AbstractBaseRecord#equals(Object)} that only
+ * checks {@linkplain AbstractBaseRecord#getId() entity id}.
  *
  * @param <C> the type of command to check
  * @param <R> the type of records that this command contains
  */
-public abstract class CheckType<C extends Command, R extends Abstract64BitRecord>
+public abstract class CheckType<C extends Command, R extends AbstractBaseRecord>
 {
     private final Class<C> recordClass;
 

@@ -44,6 +44,9 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+
 public class PropertyDeduplicator
 {
     private final FileSystemAbstraction fileSystem;
@@ -85,12 +88,13 @@ public class PropertyDeduplicator
         final PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters = Primitive.longObjectMap();
 
         long highId = store.getHighId();
+        PropertyRecord head = store.newRecord(), tail = store.newRecord();
         for ( long headRecordId = 0; headRecordId < highId; ++headRecordId )
         {
-            PropertyRecord record = store.forceGetRecord( headRecordId );
+            store.getRecord( headRecordId, head, FORCE );
             // Skip property propertyRecordIds that are not in use.
             // Skip property propertyRecordIds that are not at the start of a chain.
-            if ( !record.inUse() || record.getPrevProp() != Record.NO_NEXT_PROPERTY.intValue() )
+            if ( !head.inUse() || head.getPrevProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
                 continue;
             }
@@ -98,12 +102,12 @@ public class PropertyDeduplicator
             long propertyId = headRecordId;
             while ( propertyId != Record.NO_NEXT_PROPERTY.intValue() )
             {
-                record = store.getRecord( propertyId );
+                store.getRecord( propertyId, tail, NORMAL );
 
-                Iterable<PropertyBlock> propertyBlocks = record;
+                Iterable<PropertyBlock> propertyBlocks = tail;
                 scanForDuplicates( propertyId, propertyBlocks );
 
-                propertyId = record.getNextProp();
+                propertyId = tail.getNextProp();
             }
 
             final long localHeadRecordId = headRecordId;

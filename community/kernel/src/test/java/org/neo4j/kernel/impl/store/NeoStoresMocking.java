@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -35,7 +37,7 @@ public class NeoStoresMocking
         when( propertyStore.getStringStore() ).thenReturn( stringStore );
         DynamicArrayStore arrayStore = mock( DynamicArrayStore.class );
         when( propertyStore.getArrayStore() ).thenReturn( arrayStore );
-        RelationshipGroupStore relationshipGroupStore = mock( RelationshipGroupStore.class );
+        RecordStore<RelationshipGroupRecord> relationshipGroupStore = mock( RelationshipGroupStore.class );
         when( mockStore.getRelationshipGroupStore() ).thenReturn( relationshipGroupStore );
         return mockStore;
     }

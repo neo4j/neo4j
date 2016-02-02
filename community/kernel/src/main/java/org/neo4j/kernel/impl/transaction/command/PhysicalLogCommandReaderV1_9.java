@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.command;
 
 import java.io.IOException;
+
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.CommandReading.DynamicRecordAdder;
 import org.neo4j.storageengine.api.ReadableChannel;
+
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
@@ -108,8 +110,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         }
         else
         {
-            record = new RelationshipRecord( id, -1, -1, -1 );
-            record.setInUse( false );
+            record = new RelationshipRecord( id );
         }
         return new Command.RelationshipCommand( null, record );
     }
@@ -209,8 +210,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         }
         else
         {
-            record = new NodeRecord( id, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
-                    Record.NO_NEXT_PROPERTY.intValue() );
+            record = new NodeRecord( id );
         }
         record.setInUse( inUse );
         return record;

@@ -20,21 +20,28 @@
 package org.neo4j.legacy.consistency.store.synthetic;
 
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
  * Synthetic record type that stands in for a real record to fit in conveniently
  * with consistency checking
  */
-public class LabelScanDocument extends Abstract64BitRecord
+public class LabelScanDocument extends AbstractBaseRecord
 {
-    private final NodeLabelRange nodeLabelRange;
+    private NodeLabelRange nodeLabelRange;
 
     public LabelScanDocument( NodeLabelRange nodeLabelRange )
     {
         super( nodeLabelRange.id() );
         this.nodeLabelRange = nodeLabelRange;
         setInUse( true );
+    }
+
+    @Override
+    public void clear()
+    {
+        super.clear();
+        this.nodeLabelRange = null;
     }
 
     public NodeLabelRange getNodeLabelRange()

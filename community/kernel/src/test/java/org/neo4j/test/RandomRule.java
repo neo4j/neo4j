@@ -24,7 +24,6 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.util.Random;
-
 import org.neo4j.test.Randoms.Configuration;
 
 import static java.lang.System.currentTimeMillis;
@@ -114,6 +113,11 @@ public class RandomRule implements TestRule
     public long nextLong()
     {
         return random.nextLong();
+    }
+
+    public long nextLong( long n )
+    {
+        return Math.abs( nextLong() ) % n;
     }
 
     // ============================

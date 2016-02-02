@@ -33,6 +33,8 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+
 public class PropertyLoader
 {
     private final NodeStore nodeStore;
@@ -50,7 +52,7 @@ public class PropertyLoader
 
     public <RECEIVER extends PropertyReceiver> RECEIVER nodeLoadProperties( long nodeId, RECEIVER receiver )
     {
-        NodeRecord nodeRecord = nodeStore.getRecord( nodeId );
+        NodeRecord nodeRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
         loadProperties( nodeRecord.getNextProp(), receiver );
         return receiver;
     }
@@ -63,7 +65,7 @@ public class PropertyLoader
 
     public <RECEIVER extends PropertyReceiver> RECEIVER relLoadProperties( long relId, RECEIVER receiver )
     {
-        RelationshipRecord relRecord = relationshipStore.getRecord( relId );
+        RelationshipRecord relRecord = relationshipStore.getRecord( relId, relationshipStore.newRecord(), NORMAL );
         return loadProperties( relRecord.getNextProp(), receiver );
     }
 

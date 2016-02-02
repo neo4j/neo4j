@@ -141,14 +141,16 @@ public class Legacy20NodeStoreReader implements LegacyNodeStoreReader
             long lsbLabels = Legacy20Store.getUnsignedInt( buffer );
             long hsbLabels = buffer.get() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
             long labels = lsbLabels | (hsbLabels << 32);
-            nodeRecord = new NodeRecord( id, false, Legacy20Store.longFromIntAndMod( nextRel, relModifier ),
-                    Legacy20Store.longFromIntAndMod( nextProp, propModifier ) );
+            nodeRecord = new NodeRecord( id ).initialize( true,
+                    Legacy20Store.longFromIntAndMod( nextProp, propModifier ),
+                    false,
+                    Legacy20Store.longFromIntAndMod( nextRel, relModifier ),
+                    Record.NO_LABELS_FIELD.intValue() );
             nodeRecord.setLabelField( labels, Collections.<DynamicRecord>emptyList() ); // no need to load 'em heavy
         }
         else
         {
-            nodeRecord = new NodeRecord( id, false,
-                    Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() );
+            nodeRecord = new NodeRecord( id );
         }
         nodeRecord.setInUse( inUse );
 

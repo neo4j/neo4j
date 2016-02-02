@@ -27,6 +27,7 @@ import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -38,9 +39,11 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class TestGrowingFileMemoryMapping
 {
@@ -57,7 +60,8 @@ public class TestGrowingFileMemoryMapping
 
         File storeDir = testDirectory.graphDbDir();
         Config config = new Config( stringMap(
-                pagecache_memory.name(), mmapSize( NUMBER_OF_RECORDS, NodeStore.RECORD_SIZE ) ), NodeStore.Configuration.class );
+                pagecache_memory.name(), mmapSize( NUMBER_OF_RECORDS, NodeRecordFormat.RECORD_SIZE ) ),
+                NodeStore.Configuration.class );
         DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystemAbstraction );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction, config );
@@ -84,7 +88,7 @@ public class TestGrowingFileMemoryMapping
         for ( int i = 0; i < iterations; i++ )
         {
             record.setId( startingId + i );
-            nodeStore.getRecord( i, record );
+            nodeStore.getRecord( i, record, NORMAL );
             assertTrue( "record[" + i + "] should be in use", record.inUse() );
             assertThat( "record[" + i + "] should have nextRelId of " + i,
                     record.getNextRel(), is( (long) i ) );
@@ -107,5 +111,4 @@ public class TestGrowingFileMemoryMapping
     public PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-
 }

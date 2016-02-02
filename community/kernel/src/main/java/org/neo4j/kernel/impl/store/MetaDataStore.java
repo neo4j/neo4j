@@ -28,12 +28,14 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.record.NeoStoreActualRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
@@ -48,7 +50,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
-public class MetaDataStore extends AbstractStore implements TransactionIdStore, LogVersionRepository
+public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
+        implements TransactionIdStore, LogVersionRepository
 {
     public static final String TYPE_DESCRIPTOR = "NeoStore";
     // This value means the field has not been refreshed from the store. Normally, this should happen only once
@@ -135,10 +138,11 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
     MetaDataStore( File fileName, Config conf,
                    IdGeneratorFactory idGeneratorFactory,
-                   PageCache pageCache, LogProvider logProvider )
+                   PageCache pageCache, LogProvider logProvider,
+                   String storeVersion )
     {
-        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider );
-
+        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider,
+                TYPE_DESCRIPTOR, storeVersion );
         this.transactionCloseWaitLogger = new CappedLogger( logProvider.getLog( MetaDataStore.class ) );
         transactionCloseWaitLogger.setTimeLimit( 30, SECONDS, Clock.SYSTEM_CLOCK );
     }
@@ -160,7 +164,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         setCurrentLogVersion( 0 );
         setLastCommittedAndClosedTransactionId(
                 BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
-        setStoreVersion( MetaDataStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
+        setStoreVersion( MetaDataStore.versionStringToLong( LowLimit.STORE_VERSION ) );
         setGraphNextProp( -1 );
         setLatestConstraintIntroducingTx( 0 );
 
@@ -169,18 +173,15 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     }
 
     @Override
-    protected void initialiseNewIdGenerator( IdGenerator idGenerator )
+    protected void createHeaderRecord( PageCursor cursor )
     {
-        super.initialiseNewIdGenerator( idGenerator );
+        // We aren't creating a header, but we have said that we have reserved low ids.
+    }
 
-        /*
-         * created time | random long | backup version | tx id | store version | next prop | latest constraint tx |
-         * upgrade time | upgrade id
-         */
-        for ( int i = 0; i < META_DATA_RECORD_COUNT; i++ )
-        {
-            nextId();
-        }
+    @Override
+    public int getNumberOfReservedLowIds()
+    {
+        return META_DATA_RECORD_COUNT;
     }
 
     // Only for initialization and recovery, so we don't need to lock the records
@@ -197,12 +198,6 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         lastCommittingTxField.set( transactionId );
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
         highestCommittedTransaction.set( transactionId, checksum );
-    }
-
-    @Override
-    public String getTypeDescriptor()
-    {
-        return TYPE_DESCRIPTOR;
     }
 
     @Override
@@ -548,7 +543,6 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     private void setRecord( Position position, long value )
     {
         long id = position.id;
-        long pageId = pageIdForRecord( id );
 
         // We need to do a little special handling of high id in neostore since it's not updated in the same
         // way as other stores. Other stores always gets updates via commands where records are updated and
@@ -557,17 +551,17 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         // unclear from the outside which record id that refers to, so here we need to manage high id ourselves.
         setHighestPossibleIdInUse( id );
 
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
-        {
-            if ( cursor.next() )
-            {
-                setRecord( cursor, position, value );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
+        NeoStoreActualRecord record = new NeoStoreActualRecord();
+        record.initialize( true, value );
+        record.setId( id );
+        updateRecord( record );
+    }
+
+    @Override
+    protected void writeRecord( PageCursor cursor, NeoStoreActualRecord record )
+    {
+        cursor.putByte( Record.IN_USE.byteValue() );
+        cursor.putLong( record.getValue() );
     }
 
     private void setRecord( PageCursor cursor, Position position, long value ) throws IOException
@@ -825,5 +819,31 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
                 return false;
             }
         } );
+    }
+
+    @Override
+    public NeoStoreActualRecord newRecord()
+    {
+        return new NeoStoreActualRecord();
+    }
+
+    @Override
+    public <FAILURE extends Exception> void accept(
+            org.neo4j.kernel.impl.store.RecordStore.Processor<FAILURE> processor, NeoStoreActualRecord record )
+                    throws FAILURE
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected void readRecord( PageCursor cursor, NeoStoreActualRecord record, RecordLoad mode )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected boolean isInUse( PageCursor cursor )
+    {
+        return cursor.getByte() == Record.IN_USE.byteValue();
     }
 }

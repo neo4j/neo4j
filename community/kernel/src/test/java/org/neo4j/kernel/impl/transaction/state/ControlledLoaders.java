@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -32,6 +30,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -44,7 +43,7 @@ public class ControlledLoaders
     private final ControlledLoader<Long,PropertyRecord,PrimitiveRecord> properties = new ControlledLoader<>();
     private final ControlledLoader<Long,RelationshipRecord,Void> relationships = new ControlledLoader<>();
     private final ControlledLoader<Long,RelationshipGroupRecord,Integer> relationshipGroups = new ControlledLoader<>();
-    private final ControlledLoader<Long,Collection<DynamicRecord>,SchemaRule> schemaRules = new ControlledLoader<>();
+    private final ControlledLoader<Long,SchemaRecord,SchemaRule> schemaRules = new ControlledLoader<>();
     private final ControlledLoader<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokens = new ControlledLoader<>();
     private final ControlledLoader<Integer,LabelTokenRecord,Void> labelTokens = new ControlledLoader<>();
     private final ControlledLoader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokens = new ControlledLoader<>();

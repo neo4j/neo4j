@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -58,9 +59,11 @@ public class IndexBatchTransactionApplierTest
                 spy( new WorkSync<>( singletonProvider( writer ) ) );
         WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexing );
         TransactionToApply tx = mock( TransactionToApply.class );
+        PropertyStore propertyStore = mock( PropertyStore.class );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexing, labelScanSync,
-                indexUpdatesSync, mock( NodeStore.class ), mock( PropertyStore.class ),
-                mock( PropertyLoader.class ), TransactionApplicationMode.INTERNAL ) )
+                indexUpdatesSync, mock( NodeStore.class ), propertyStore,
+                mock( PropertyLoader.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
+                TransactionApplicationMode.INTERNAL ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( tx ) )
             {

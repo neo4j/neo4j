@@ -57,7 +57,7 @@ public class NodeDynamicLabelOrphanChainStartCheck
                     {
                         // if this node record is in use but doesn't point to the dynamic label record
                         // that label record has an invalid owner
-                        long recordId = record.getLongId();
+                        long recordId = record.getId();
                         if ( fieldPointsToDynamicRecordOfLabels( nodeRecord.getLabelField() ) )
                         {
                             long dynamicLabelRecordId = firstDynamicLabelRecordId( nodeRecord.getLabelField() );

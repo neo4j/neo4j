@@ -26,11 +26,14 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -83,29 +86,12 @@ public class CommonAbstractStoreTest
         public TheStore( File fileName, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory,
                 PageCache pageCache, LogProvider logProvider )
         {
-            super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider );
-        }
-
-        @Override
-        protected String getTypeDescriptor()
-        {
-            return null;
+            super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType", "v1" );
         }
 
         @Override
         protected void initialiseNewStoreFile( PagedFile file ) throws IOException
         {
-        }
-
-        @Override
-        protected void readAndVerifyBlockSize() throws IOException
-        {
-        }
-
-        @Override
-        protected boolean isInUse( byte inUseByte )
-        {
-            return false;
         }
 
         @Override
@@ -118,6 +104,33 @@ public class CommonAbstractStoreTest
         public long scanForHighId()
         {
             return 42;
+        }
+
+        @Override
+        public AbstractBaseRecord newRecord()
+        {
+            return null;
+        }
+
+        @Override
+        public void accept( Processor processor, AbstractBaseRecord record ) throws Exception
+        {
+        }
+
+        @Override
+        protected void readRecord( PageCursor cursor, AbstractBaseRecord record, RecordLoad mode )
+        {
+        }
+
+        @Override
+        protected void writeRecord( PageCursor cursor, AbstractBaseRecord record )
+        {
+        }
+
+        @Override
+        protected boolean isInUse( PageCursor cursor )
+        {
+            return false;
         }
     }
 }

@@ -46,7 +46,7 @@ public class RelativeIdRecordAllocator implements DynamicRecordAllocator
     }
 
     @Override
-    public int dataSize()
+    public int getRecordDataSize()
     {
         return dataSize;
     }

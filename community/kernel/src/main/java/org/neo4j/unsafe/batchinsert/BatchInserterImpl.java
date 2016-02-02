@@ -105,13 +105,14 @@ import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
@@ -126,6 +127,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -179,6 +181,7 @@ public class BatchInserterImpl implements BatchInserter
     private final BatchInserterImpl.BatchSchemaActions actions;
     private final StoreLocker storeLocker;
     private boolean labelsTouched;
+    private boolean isShutdown;
 
     private final LongFunction<Label> labelIdToLabelFunction = new LongFunction<Label>()
     {
@@ -188,8 +191,6 @@ public class BatchInserterImpl implements BatchInserter
             return label( labelTokens.byId( safeCastLongToInt( from ) ).name() );
         }
     };
-
-    private boolean isShutdown = false;
 
     private final FlushStrategy flushStrategy;
     // Helper structure for setNodeProperty
@@ -204,7 +205,7 @@ public class BatchInserterImpl implements BatchInserter
     private final RelationshipTypeTokenStore relationshipTypeTokenStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final PropertyStore propertyStore;
-    private final RelationshipGroupStore relationshipGroupStore;
+    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final SchemaStore schemaStore;
     private final NeoStoreIndexStoreView indexStoreView;
 
@@ -270,7 +271,7 @@ public class BatchInserterImpl implements BatchInserter
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
         StoreFactory sf = new StoreFactory( this.storeDir, config, idGeneratorFactory, pageCache, fileSystem,
-                logService.getInternalLogProvider() );
+                logService.getInternalLogProvider(), LowLimit.RECORD_FORMATS );
 
         if ( dump )
         {
@@ -316,7 +317,7 @@ public class BatchInserterImpl implements BatchInserter
         // Record access
         recordAccess = new DirectRecordAccessSet( neoStores );
         relationshipCreator = new RelationshipCreator(
-                new RelationshipGroupGetter( relationshipGroupStore ), relationshipGroupStore.getDenseNodeThreshold() );
+                new RelationshipGroupGetter( relationshipGroupStore ), relationshipGroupStore.getStoreHeaderInt() );
         propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( propertyStore, propertyTraverser );
         propertyDeletor = new PropertyDeleter( propertyStore, propertyTraverser );
@@ -826,7 +827,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new IllegalArgumentException( "id " + id + " is reserved for internal use" );
         }
-        if ( nodeStore.loadLightNode( id ) != null )
+        if ( nodeStore.isInUse( id ) )
         {
             throw new IllegalArgumentException( "id=" + id + " already in use" );
         }
@@ -928,7 +929,7 @@ public class BatchInserterImpl implements BatchInserter
     public boolean nodeExists( long nodeId )
     {
         flushStrategy.forceFlush();
-        return nodeStore.loadLightNode( nodeId ) != null;
+        return nodeStore.isInUse( nodeId );
     }
 
     @Override

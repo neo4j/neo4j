@@ -22,6 +22,8 @@ package org.neo4j.legacy.consistency.repair;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.legacy.consistency.repair.RelationshipChainDirection.NEXT;
 import static org.neo4j.legacy.consistency.repair.RelationshipChainDirection.PREV;
 
@@ -63,7 +65,7 @@ public class RelationshipChainExplorer
 
     protected RecordSet<RelationshipRecord> followChainFromNode(long nodeId, long relationshipId )
     {
-        RelationshipRecord record = recordStore.getRecord( relationshipId );
+        RelationshipRecord record = recordStore.getRecord( relationshipId, recordStore.newRecord(), NORMAL );
         return expandChain( record, nodeId, NEXT );
     }
 
@@ -76,7 +78,7 @@ public class RelationshipChainExplorer
         long nextRelId = direction.fieldFor( nodeId, currentRecord ).relOf( currentRecord );
         while ( currentRecord.inUse() && !direction.fieldFor( nodeId, currentRecord ).endOfChain( currentRecord ) )
         {
-            currentRecord = recordStore.forceGetRecord( nextRelId );
+            currentRecord = recordStore.getRecord( nextRelId, recordStore.newRecord(), FORCE );
             chain.add( currentRecord );
             nextRelId = direction.fieldFor( nodeId, currentRecord ).relOf( currentRecord );
         }

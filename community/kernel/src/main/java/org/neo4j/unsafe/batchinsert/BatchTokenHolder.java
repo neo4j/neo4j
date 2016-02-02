@@ -54,24 +54,4 @@ class BatchTokenHolder
     {
         return nameToToken.get( name );
     }
-
-//    int idOf( String stringKey )
-//    {
-//        Integer id = nameToToken.get( stringKey );
-//        if ( id != null )
-//        {
-//            return id;
-//        }
-//        return -1;
-//    }
-//
-//    String nameOf( int id )
-//    {
-//        String name = idToName.get( id );
-//        if ( name == null )
-//        {
-//            throw new NotFoundException( "No token with id:" + id );
-//        }
-//        return name;
-//    }
 }

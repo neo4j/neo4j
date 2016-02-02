@@ -24,9 +24,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 
-import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.legacy.consistency.report.ConsistencyReport;
 
@@ -330,8 +330,8 @@ public abstract class DynamicRecordCheckTest
     {
         @SuppressWarnings( "unchecked" )
         RecordStore<DynamicRecord> mock = mock( RecordStore.class );
-        when( mock.getRecordSize() ).thenReturn( blockSize + AbstractDynamicStore.BLOCK_HEADER_SIZE );
-        when( mock.getRecordHeaderSize() ).thenReturn( AbstractDynamicStore.BLOCK_HEADER_SIZE );
+        when( mock.getRecordSize() ).thenReturn( blockSize + DynamicRecordFormat.RECORD_HEADER_SIZE );
+        when( mock.getRecordDataSize() ).thenReturn( blockSize );
         return mock;
     }
 }

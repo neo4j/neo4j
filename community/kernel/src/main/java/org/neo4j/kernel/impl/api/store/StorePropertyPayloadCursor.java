@@ -19,22 +19,21 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-import org.neo4j.cursor.GenericCursor;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LongerShortString;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.ShortArray;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.util.Bits;
@@ -51,6 +50,7 @@ import static org.neo4j.kernel.impl.store.PropertyType.SHORT;
 import static org.neo4j.kernel.impl.store.PropertyType.SHORT_ARRAY;
 import static org.neo4j.kernel.impl.store.PropertyType.SHORT_STRING;
 import static org.neo4j.kernel.impl.store.PropertyType.STRING;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
  * Cursor that provides a view on property blocks of a particular property record.
@@ -66,7 +66,7 @@ import static org.neo4j.kernel.impl.store.PropertyType.STRING;
  */
 class StorePropertyPayloadCursor
 {
-    static final int MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY = PropertyStore.DEFAULT_PAYLOAD_SIZE / 8;
+    static final int MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY = PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE / 8;
 
     private static final long PROPERTY_KEY_ID_BITMASK = 0xFFFFFFL;
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
@@ -81,8 +81,8 @@ class StorePropertyPayloadCursor
     private final DynamicStringStore stringStore;
     private final DynamicArrayStore arrayStore;
 
-    private AbstractDynamicStore.DynamicRecordCursor stringRecordCursor;
-    private AbstractDynamicStore.DynamicRecordCursor arrayRecordCursor;
+    private RecordCursor<DynamicRecord> stringRecordCursor;
+    private RecordCursor<DynamicRecord> arrayRecordCursor;
     private ByteBuffer buffer = cachedBuffer;
 
     private final long[] data = new long[MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY];
@@ -201,18 +201,11 @@ class StorePropertyPayloadCursor
     String stringValue()
     {
         assertOfType( STRING );
-        try
+        if ( stringRecordCursor == null )
         {
-            if ( stringRecordCursor == null )
-            {
-                stringRecordCursor = stringStore.newDynamicRecordCursor();
-            }
-            readFromStore( stringStore, stringRecordCursor );
+            stringRecordCursor = stringStore.newRecordCursor( stringStore.newRecord() );
         }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Unable to read string value", e );
-        }
+        readFromStore( stringStore, stringRecordCursor );
         buffer.flip();
         return UTF8.decode( buffer.array(), 0, buffer.limit() );
     }
@@ -227,18 +220,11 @@ class StorePropertyPayloadCursor
     Object arrayValue()
     {
         assertOfType( ARRAY );
-        try
+        if ( arrayRecordCursor == null )
         {
-            if ( arrayRecordCursor == null )
-            {
-                arrayRecordCursor = arrayStore.newDynamicRecordCursor();
-            }
-            readFromStore( arrayStore, arrayRecordCursor );
+            arrayRecordCursor = arrayStore.newRecordCursor( arrayStore.newRecord() );
         }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Unable to read array value", e );
-        }
+        readFromStore( arrayStore, arrayRecordCursor );
         buffer.flip();
         return readArrayFromBuffer( buffer );
     }
@@ -264,12 +250,11 @@ class StorePropertyPayloadCursor
         return bits;
     }
 
-    private void readFromStore( AbstractDynamicStore store, AbstractDynamicStore.DynamicRecordCursor cursor )
-            throws IOException
+    private void readFromStore( AbstractDynamicStore store, RecordCursor<DynamicRecord> cursor )
     {
         buffer.clear();
         long startBlockId = PropertyBlock.fetchLong( currentHeader() );
-        try ( GenericCursor<DynamicRecord> records = store.getRecordsCursor( startBlockId, true, cursor ) )
+        try ( Cursor<DynamicRecord> records = store.placeRecordCursor( startBlockId, cursor, NORMAL ) )
         {
             while ( records.next() )
             {

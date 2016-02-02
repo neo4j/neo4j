@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
@@ -205,6 +206,7 @@ public class SchemaStorage implements SchemaRuleAccess
             private final long highestId = schemaStore.getHighestPossibleIdInUse();
             private long currentId = 1; /*record 0 contains the block size*/
             private final byte[] scratchData = newRecordBuffer();
+            private final DynamicRecord record = schemaStore.newRecord();
 
             @Override
             protected SchemaRule fetchNextOrNull()
@@ -212,7 +214,7 @@ public class SchemaStorage implements SchemaRuleAccess
                 while ( currentId <= highestId )
                 {
                     long id = currentId++;
-                    DynamicRecord record = schemaStore.forceGetRecord( id );
+                    schemaStore.getRecord( id, record, RecordLoad.FORCE );
                     if ( record.inUse() && record.isStartRecord() )
                     {
                         try
@@ -247,7 +249,7 @@ public class SchemaStorage implements SchemaRuleAccess
         Collection<DynamicRecord> records;
         try
         {
-            records = schemaStore.getRecords( id );
+            records = schemaStore.getRecords( id, RecordLoad.NORMAL );
         }
         catch ( Exception e )
         {

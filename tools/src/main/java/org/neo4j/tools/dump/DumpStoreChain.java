@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -39,12 +40,14 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
  * Tool to dump content of {@link StoreType#NODE}, {@link StoreType#PROPERTY}, {@link StoreType#RELATIONSHIP} stores
@@ -121,9 +124,10 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
             try ( NeoStores neoStores = storeFactory.openNeoStores( getStoreTypes() ) )
             {
                 RecordStore<RECORD> store = store( neoStores );
+                RECORD record = store.newRecord();
                 for ( long next = first; next != -1; )
                 {
-                    RECORD record = store.forceGetRecord( next );
+                    store.getRecord( next, record, RecordLoad.FORCE );
                     System.out.println( record );
                     next = next( record );
                 }
@@ -191,7 +195,8 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
 
     private static NodeRecord nodeRecord( NeoStores neoStores, long id )
     {
-        return neoStores.getNodeStore().forceGetRecord( id );
+        NodeStore nodeStore = neoStores.getNodeStore();
+        return nodeStore.getRecord( id, nodeStore.newRecord(), FORCE );
     }
 
     private static void verifyFilesExists( File... files )

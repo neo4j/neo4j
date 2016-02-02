@@ -25,8 +25,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.api.store.PropertyBlockCursor;
+import org.neo4j.kernel.impl.store.PropertyType;
+
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
 
 /**
  * PropertyRecord is a container for PropertyBlocks. PropertyRecords form
@@ -35,17 +38,17 @@ import org.neo4j.kernel.impl.api.store.PropertyBlockCursor;
  * variable length, a full PropertyRecord can be holding just one
  * PropertyBlock.
  */
-public class PropertyRecord extends Abstract64BitRecord implements Iterable<PropertyBlock>, Iterator<PropertyBlock>
+public class PropertyRecord extends AbstractBaseRecord implements Iterable<PropertyBlock>, Iterator<PropertyBlock>
 {
     private static final byte TYPE_NODE = 1;
     private static final byte TYPE_REL = 2;
 
-    private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
-    private long prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
+    private long nextProp;
+    private long prevProp;
     private final PropertyBlock[] blockRecords =
             new PropertyBlock[PropertyType.getPayloadSizeLongs() /*we can have at most these many*/];
     private int blockRecordsCursor;
-    private long entityId = -1;
+    private long entityId;
     private byte entityType;
     private List<DynamicRecord> deletedRecords;
 
@@ -61,8 +64,31 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
     public PropertyRecord( long id, PrimitiveRecord primitive )
     {
         super( id );
-        setCreated();
         primitive.setIdTo( this );
+    }
+
+    public PropertyRecord initialize( boolean inUse, PrimitiveRecord primitive, long prevProp, long nextProp )
+    {
+        super.initialize( inUse );
+        setCreated(); // TODO why?
+        primitive.setIdTo( this );
+        this.prevProp = prevProp;
+        this.nextProp = nextProp;
+        this.deletedRecords = null;
+        this.blockRecordsCursor = 0;
+        return this;
+    }
+
+    @Override
+    public void clear()
+    {
+        super.initialize( false );
+        this.entityId = -1;
+        this.entityType = 0;
+        this.prevProp = NO_PREVIOUS_PROPERTY.intValue();
+        this.nextProp = NO_NEXT_PROPERTY.intValue();
+        this.deletedRecords = null;
+        this.blockRecordsCursor = 0;
     }
 
     public void setNodeId( long nodeId )
@@ -283,8 +309,7 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
     @Override
     public PropertyRecord clone()
     {
-        PropertyRecord result = new PropertyRecord( getLongId() );
-        result.setInUse( inUse() );
+        PropertyRecord result = (PropertyRecord) new PropertyRecord( getId() ).initialize( inUse() );
         result.nextProp = nextProp;
         result.prevProp = prevProp;
         result.entityId = entityId;
@@ -304,10 +329,9 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
         return result;
     }
 
-    public PropertyBlockCursor getPropertyBlockCursor(PropertyBlockCursor cursor)
+    public PropertyBlockCursor getPropertyBlockCursor( PropertyBlockCursor cursor )
     {
-        cursor.init(blockRecords, blockRecordsCursor);
-
+        cursor.init( blockRecords, blockRecordsCursor );
         return cursor;
     }
 }

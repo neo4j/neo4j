@@ -48,6 +48,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
+
 public class IndexConsultedPropertyBlockSweeperTest
 {
     @Rule
@@ -104,7 +106,7 @@ public class IndexConsultedPropertyBlockSweeperTest
         propertyKeys = PropertyDeduplicatorTestUtil.indexPropertyKeys( propertyKeyTokenStore );
 
         propertyStore = neoStores.getPropertyStore();
-        nodeRecord = nodeStore.getRecord( nodeId );
+        nodeRecord = getRecord( nodeStore, nodeId );
         propertyId = nodeRecord.getNextProp();
 
         indexMock = mock( IndexLookup.Index.class );
@@ -122,7 +124,7 @@ public class IndexConsultedPropertyBlockSweeperTest
         assertFalse( sweeper.visited( propertyId ) );
 
         // Verify that the property is still there
-        PropertyRecord propertyRecord = propertyStore.getRecord( propertyId );
+        PropertyRecord propertyRecord = getRecord( propertyStore, propertyId );
         assertNotNull( propertyRecord.getPropertyBlock( propertyKeyId ) );
     }
 
@@ -135,7 +137,7 @@ public class IndexConsultedPropertyBlockSweeperTest
         assertFalse( sweeper.visited( propertyId ) );
 
         // Verify that the property block was removed
-        PropertyRecord propertyRecord = propertyStore.getRecord( propertyId );
+        PropertyRecord propertyRecord = getRecord( propertyStore, propertyId );
         assertNull( propertyRecord.getPropertyBlock( propertyKeyId ) );
     }
 
@@ -143,7 +145,7 @@ public class IndexConsultedPropertyBlockSweeperTest
     public void shouldFixThePropertyChainAfterAllTheBlocksInRecordAreRemoved() throws IOException
     {
         int propertyKeyId = propertyKeys.get( indexedPropKey );
-        PropertyRecord propertyRecord = propertyStore.getRecord( propertyId );
+        PropertyRecord propertyRecord = getRecord( propertyStore, propertyId );
         for ( PropertyBlock propertyBlock : propertyRecord )
         {
             long[] valueBlocks = propertyBlock.getValueBlocks();

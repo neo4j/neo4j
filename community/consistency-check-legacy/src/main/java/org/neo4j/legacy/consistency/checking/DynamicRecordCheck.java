@@ -36,7 +36,7 @@ class DynamicRecordCheck
 
     DynamicRecordCheck( RecordStore<DynamicRecord> store, DynamicStore dereference )
     {
-        this.blockSize = store.getRecordSize() - store.getRecordHeaderSize();
+        this.blockSize = store.getRecordDataSize();
         this.dereference = dereference;
         this.store = store;
     }

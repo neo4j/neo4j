@@ -198,7 +198,7 @@ enum NodeField implements
         else
         {
             // build the node record from cached values with only valid fields as id, inUse, and nextRel.
-            NodeRecord node = new NodeRecord(valueFrom( relationship ));
+            NodeRecord node = new NodeRecord( valueFrom( relationship ) );
             CacheAccess.Client client = records.cacheAccess().client();
             node.setInUse( client.getFromCache( node.getId(), SLOT_SOURCE_OR_TARGET ) != RelationshipLink.SOURCE );
             node.setNextRel( client.getFromCache( node.getId(), SLOT_RELATIONSHIP_ID ) );
