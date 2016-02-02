@@ -66,19 +66,26 @@ class GraphExtractionWriter implements ResultDataContentWriter
                 try
                 {
                     out.writeStringField( "id", Long.toString( node.getId() ) );
-                    out.writeArrayFieldStart( "labels" );
-                    try
+                    if ( node.isDeleted() )
                     {
-                        for ( Label label : node.getLabels() )
+                        markDeleted( out );
+                    }
+                    else
+                    {
+                        out.writeArrayFieldStart( "labels" );
+                        try
                         {
-                            out.writeString( label.name() );
+                            for ( Label label : node.getLabels() )
+                            {
+                                out.writeString( label.name() );
+                            }
                         }
+                        finally
+                        {
+                            out.writeEndArray();
+                        }
+                        writeProperties( out, node );
                     }
-                    finally
-                    {
-                        out.writeEndArray();
-                    }
-                    writeProperties( out, node );
                 }
                 finally
                 {
@@ -92,6 +99,11 @@ class GraphExtractionWriter implements ResultDataContentWriter
         }
     }
 
+    private void markDeleted( JsonGenerator out ) throws IOException
+    {
+        out.writeBooleanField( "deleted", Boolean.TRUE );
+    }
+
     private void writeRelationships( JsonGenerator out, Iterable<Relationship> relationships ) throws IOException
     {
         out.writeArrayFieldStart( "relationships" );
@@ -103,10 +115,17 @@ class GraphExtractionWriter implements ResultDataContentWriter
                 try
                 {
                     out.writeStringField( "id", Long.toString( relationship.getId() ) );
-                    out.writeStringField( "type", relationship.getType().name() );
-                    out.writeStringField( "startNode", Long.toString( relationship.getStartNode().getId() ) );
-                    out.writeStringField( "endNode", Long.toString( relationship.getEndNode().getId() ) );
-                    writeProperties( out, relationship );
+                    if ( relationship.isDeleted() )
+                    {
+                        markDeleted( out );
+                    }
+                    else
+                    {
+                        out.writeStringField( "type", relationship.getType().name() );
+                        out.writeStringField( "startNode", Long.toString( relationship.getStartNode().getId() ) );
+                        out.writeStringField( "endNode", Long.toString( relationship.getEndNode().getId() ) );
+                        writeProperties( out, relationship );
+                    }
                 }
                 finally
                 {
