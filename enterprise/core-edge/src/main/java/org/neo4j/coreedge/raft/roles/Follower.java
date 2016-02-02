@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
-import java.util.Set;
-
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
@@ -32,7 +30,6 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.logging.Log;
 
 import static java.lang.Long.min;
-
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 
@@ -90,28 +87,10 @@ public class Follower implements RaftMessageHandler
 
             case ELECTION_TIMEOUT:
             {
-                Set<MEMBER> currentMembers = ctx.votingMembers();
-                if ( currentMembers == null || !currentMembers.contains( ctx.myself() ) )
+                if ( Election.start( ctx, outcome ) )
                 {
-                    break;
+                    outcome.setNextRole( CANDIDATE );
                 }
-
-                outcome.setNextTerm( ctx.term() + 1 );
-
-                RaftMessages.Vote.Request<MEMBER> voteForMe =
-                        new RaftMessages.Vote.Request<>( ctx.myself(), outcome.getTerm(), ctx.myself(), ctx.entryLog()
-                                .appendIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ) );
-
-                for ( MEMBER member : currentMembers )
-                {
-                    if ( !member.equals( ctx.myself() ) )
-                    {
-                        outcome.addOutgoingMessage( new RaftMessages.Directed<>( member, voteForMe ) );
-                    }
-                }
-
-                outcome.setVotedFor( ctx.myself() );
-                outcome.setNextRole( CANDIDATE );
                 break;
             }
         }
