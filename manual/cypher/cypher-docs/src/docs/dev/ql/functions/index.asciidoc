@@ -180,7 +180,7 @@ include::tan.asciidoc[]
 == String functions ==
 
 These functions all operate on string expressions only, and will return an error if used on any other values.
-The exception to this rule is `TOSTRING()`, which also accepts numbers.
+The exception to this rule is `TOSTRING()`, which also accepts numbers and booleans.
 
 See also <<query-operators-string>>.
 
@@ -188,12 +188,6 @@ See also <<query-operators-string>>.
 include::includes/cypher-functions-graph.asciidoc[]
 
 :leveloffset: 2
-
-include::str.asciidoc[]
-
-[NOTE]
-The `STR()` function is deprecated from Neo4j version 2.3 and onwards.
-This means it may be removed in a future Neo4j major release.
 
 include::replace.asciidoc[]
 

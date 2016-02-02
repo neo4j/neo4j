@@ -793,20 +793,6 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
     )
   }
 
-  @Test def str() {
-    testThis(
-      title = "STR",
-      syntax = "STR( expression )",
-      arguments = List("expression" -> "An expression that returns anything"),
-      text = "`STR` returns a string representation of the expression. If the expression returns a string the result will" +
-        "be wrapped in quotation marks.",
-      queryText = "return str(1), str(\"hello\")",
-      returns = "",
-      assertions = (p) => assert(List(Map("str(1)" -> "1",
-                                          "str(\"hello\")" -> "\"hello\"")) === p.toList)
-    )
-  }
-
   @Test def toInt() {
     testThis(
       title = "TOINT",
@@ -837,11 +823,13 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
     testThis(
       title = "TOSTRING",
       syntax = "TOSTRING( expression )",
-      arguments = List("expression" -> "An expression that returns a number or a string"),
-      text = "`TOSTRING` converts the argument to a string. It converts integral and floating point numbers to strings, and if called with a string will leave it unchanged.",
-      queryText = "return toString(11.5), toString(\"already a string\")",
+      arguments = List("expression" -> "An expression that returns a number, a boolean, or a string"),
+      text = "`TOSTRING` converts the argument to a string. It converts integral and floating point numbers and booleans to strings, and if called with a string will leave it unchanged.",
+      queryText = "return toString(11.5), toString(\"already a string\"), toString(true)",
       returns = "",
-      assertions = (p) => assert(List(Map("toString(11.5)" -> "11.5", "toString(\"already a string\")" -> "already a string")) === p.toList)
+      assertions = (p) => assert(List(Map("toString(11.5)" -> "11.5",
+                                          "toString(\"already a string\")" -> "already a string",
+                                          "toString(true)" -> "true")) === p.toList)
     )
   }
 
