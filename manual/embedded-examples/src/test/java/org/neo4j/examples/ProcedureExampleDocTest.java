@@ -1,23 +1,22 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Licensed to Neo Technology under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Neo Technology licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This file is part of Neo4j.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
-package org.neo4j.procedure.impl;
+package org.neo4j.examples;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -38,7 +37,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class ProcedureExampleTest
+public class ProcedureExampleDocTest
 {
     @Rule
     public TemporaryFolder plugins = new TemporaryFolder();
@@ -49,7 +48,7 @@ public class ProcedureExampleTest
     private GraphDatabaseService db;
 
     @Test
-    public void listSuperNodesShouldWork() throws Throwable
+    public void listDenseNodesShouldWork() throws Throwable
     {
         // Given
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ProcedureExample.class );
@@ -69,7 +68,7 @@ public class ProcedureExampleTest
             node1.createRelationshipTo( node3, RelationshipType.withName( "KNOWS" ) );
 
             // When
-            Result res = db.execute( "CALL org.neo4j.procedure.impl.findSuperNodes(2)" );
+            Result res = db.execute( "CALL org.neo4j.examples.findDenseNodes(2)" );
 
             // Then
             assertEquals( map( "degree", 3l, "nodeId", node1.getId() ), res.next() );

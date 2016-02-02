@@ -1,16 +1,22 @@
 [[server-extending]]
-Extending the Neo4j Server
-==========================
+= Extending Neo4j
 
-The Neo4j Server can be extended by either plugins or unmanaged extensions.
+Neo4j provides a pluggable infrastructure for extensions.
+Procedures extend the capabilities of the Cypher query language.
+Server plugins and extensions allow new surfaces to be created in the REST API.
+All three require the user to be familiar with the Java programming language and to have an environment set up for compiling Java code.
 
 :leveloffset: 2
 
-include::server-plugins.asciidoc[]
+include::{importdir}/neo4j-examples-docs-jar/dev/procedures.asciidoc[]
 
 :leveloffset: 2
 
 include::server-unmanaged-extensions.asciidoc[]
+
+:leveloffset: 2
+
+include::server-plugins.asciidoc[]
 
 :leveloffset: 2
 

@@ -2,7 +2,9 @@
 = Call
 
 [abstract]
+--
 The `CALL` clause is used to call a procedure deployed in the database.
+--
 
 The examples showing how to use arguments when invoking procedures all use the following procedure:
 

@@ -1,24 +1,31 @@
 [[server-plugins]]
-Server Plugins
-==============
+= Server Plugins
 
-.Quick info
-***********
-* The server's functionality can be extended by adding plugins.
-* Plugins are user-specified code which extend the capabilities of the database, nodes, or relationships.
-* The neo4j server will then advertise the plugin functionality within representations as clients interact via HTTP.
-***********
+:maven-dependency: http://search.maven.org/#search|gav|1|g%3A%22org.neo4j%22%20AND%20a%3A%22server-api%22
+// TODO: Does below macro work?
+:url-getall-example: https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/src/main/java/org/neo4j/examples/server/plugins/GetAll.java
+:url-shortestpath-example: https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/src/main/java/org/neo4j/examples/server/plugins/ShortestPath.java
 
-Plugins provide an easy way to extend the Neo4j REST API with new functionality, without the need to
-invent your own API.
+Plugins provide an easy way to extend the Neo4j REST API with new functionality, without the need to invent your own API.
 Think of plugins as server-side scripts that can add functions for retrieving and manipulating nodes, relationships, paths, properties or indices.
 
 [TIP]
-If you want to have full control over your API, and are willing to put in the effort, and understand the risks, then Neo4j server also provides hooks for <<server-unmanaged-extensions,unmanaged extensions>> based on JAX-RS.
+--
+Want full control over your API and are willing to put in the effort?
+Neo4j server also provides hooks for <<server-unmanaged-extensions,unmanaged extensions>> based on JAX-RS.
+--
 
-The needed classes reside in the http://search.maven.org/#search|gav|1|g%3A%22org.neo4j%22%20AND%20a%3A%22server-api%22[org.neo4j:server-api] jar file.
+.Quick info
+****
+* The server's functionality can be extended by adding plugins.
+* Plugins are Java classes extending link:javadocs/org/neo4j/server/plugins/ServerPlugin.html[org.neo4j].
+* Plugins are user-specified code which extend the capabilities of the database, nodes, or relationships.
+* The neo4j advertises the plugin functionality within representations as clients interact via HTTP.
+****
+
+The needed classes reside in the {maven-dependency}[org.neo4j:server-api] jar file.
 See the linked page for downloads and instructions on how to include it using dependency management.
-For Maven projects, add the Server API dependencies in your +pom.xml+ like this:
+For Maven projects, add the Server API dependencies in your +pom.xml+:
 
 ["source","xml","unnumbered","2",presubs="attributes"]
 ----
@@ -39,7 +46,9 @@ Your plugin should also:
 * make sure that the discovery point type in the +@PluginTarget+ and the +@Source+ parameter are of the same type.
 
 [NOTE]
+--
 If your plugin class has any constructors defined it must also have a no-arguments constructor defined.
+--
 
 // link Node/Rel/Path javadocs here?
 
@@ -67,20 +76,11 @@ classifier=sources
 ----
 
 The full source code is found here:
-https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/src/main/java/org/neo4j/examples/server/plugins/ShortestPath.java[ShortestPath.java]
+{url-shortestpath-example}[ShortestPath.java]
 
 
 To deploy the code, simply compile it into a .jar file and place it onto the server classpath (which by
 convention is the plugins directory under the Neo4j server home directory).
-
-[CAUTION]
-Whilst Neo4j is tested to run on JVM 8, Neo4j server is currently compiled using
-JDK 7, to ensure compatibility for JVM 7 deployments. When compiling plugins for
-Neo4j Server, we strongly recommend using JDK 7 also.
-
-[TIP]
-Make sure the directories listings are retained in the jarfile by either building with default Maven, or with `jar -cvf myext.jar *`, making sure
-to jar directories instead of specifying single files.
 
 The '.jar' file must include the file 'META-INF/services/org.neo4j.server.plugins.ServerPlugin' with the fully qualified name of the implementation class.
 This is an example with multiple entries, each on a separate line:
@@ -149,6 +149,7 @@ curl http://localhost:7474/db/data/ext/GetAll/graphdb/get_all_nodes
 
 To use it, just +POST+ to this URL, with parameters as specified in the description and encoded as JSON data content.
 For example for calling the +shortest path+ extension (URI gotten from a +GET+ to http://localhost:7474/db/data/node/123):
+
 [source,bash]
 ----
 curl -X POST http://localhost:7474/db/data/ext/ShortestPath/node/123/shortestPath \
@@ -162,7 +163,6 @@ If the extension throws an exception response code +500+ and a detailed error me
 Extensions that do any kind of database operation will have to manage their own transactions, i.e. transactions aren't managed automatically.
 Note that the results of traversals or execution of graph algorithms should be exhausted inside the transaction before returning the result.
 
-Through this model, any plugin can naturally fit into the general hypermedia scheme that Neo4j espouses -- meaning that
-clients can still take advantage of abstractions like  Nodes, Relationships and Paths with a straightforward upgrade
+Through this model, any plugin can naturally fit into the general hypermedia scheme that Neo4j exposes -- meaning that clients can still take advantage of abstractions like Nodes, Relationships and Paths with a straightforward upgrade
 path as servers are enriched with plugins (old clients don't break).
 
