@@ -86,7 +86,7 @@ public class CheckPointerImplTest
         checkPointing.start();
 
         // When
-        long txId = checkPointing.checkPointIfNeeded( INFO );
+        long txId = checkPointing.checkPointIfNeeded( INFO ).lastClosedTransactionId();
 
         // Then
         assertEquals( -1, txId );
@@ -106,7 +106,7 @@ public class CheckPointerImplTest
         checkPointing.start();
 
         // When
-        long txId = checkPointing.checkPointIfNeeded( INFO );
+        long txId = checkPointing.checkPointIfNeeded( INFO ).lastClosedTransactionId();
 
         // Then
         assertEquals( transactionId, txId );
@@ -133,7 +133,7 @@ public class CheckPointerImplTest
         checkPointing.start();
 
         // When
-        long txId = checkPointing.forceCheckPoint( INFO );
+        long txId = checkPointing.forceCheckPoint( INFO ).lastClosedTransactionId();
 
         // Then
         assertEquals( transactionId, txId );
@@ -160,7 +160,7 @@ public class CheckPointerImplTest
         checkPointing.start();
 
         // When
-        long txId = checkPointing.tryCheckPoint( INFO );
+        long txId = checkPointing.tryCheckPoint( INFO ).lastClosedTransactionId();
 
         // Then
         assertEquals( transactionId, txId );

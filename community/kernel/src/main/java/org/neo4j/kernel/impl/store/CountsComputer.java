@@ -58,8 +58,7 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     }
 
     public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,
-            int highLabelId,
-            int highRelationshipTypeId )
+            int highLabelId, int highRelationshipTypeId )
     {
         this.lastCommittedTransactionId = lastCommittedTransactionId;
         this.nodes = nodes;

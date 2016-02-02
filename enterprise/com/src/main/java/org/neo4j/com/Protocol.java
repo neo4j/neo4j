@@ -31,15 +31,17 @@ import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 
+import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshotDeserializer;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -55,7 +57,8 @@ public abstract class Protocol
 {
     public static final int MEGA = 1024 * 1024;
     public static final int DEFAULT_FRAME_LENGTH = 16 * MEGA;
-    public static final ObjectSerializer<Integer> INTEGER_SERIALIZER = ( responseObject, result ) -> result.writeInt( responseObject );
+    public static final ObjectSerializer<Integer> INTEGER_SERIALIZER =
+            ( responseObject, result ) -> result.writeInt( responseObject );
     public static final ObjectSerializer<Long> LONG_SERIALIZER = new ObjectSerializer<Long>()
     {
         @Override
@@ -95,6 +98,7 @@ public abstract class Protocol
         {
         }
     };
+
     public static class TransactionRepresentationDeserializer implements Deserializer<TransactionRepresentation>
     {
         private final LogEntryReader<ReadableClosablePositionAwareChannel> reader;
@@ -105,8 +109,7 @@ public abstract class Protocol
         }
 
         @Override
-        public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
-                throws IOException
+        public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
             NetworkReadableClosableChannel channel = new NetworkReadableClosableChannel( buffer );
 
@@ -128,11 +131,12 @@ public abstract class Protocol
             }
 
             PhysicalTransactionRepresentation toReturn = new PhysicalTransactionRepresentation( commands );
-            toReturn.setHeader( header, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
-                    timeCommitted, -1 );
+            toReturn.setHeader( header, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted,
+                    -1 );
             return toReturn;
         }
     }
+
     private final int chunkSize;
 
     /* ========================
@@ -150,8 +154,7 @@ public abstract class Protocol
 
     public static void addLengthFieldPipes( ChannelPipeline pipeline, int frameLength )
     {
-        pipeline.addLast( "frameDecoder",
-                new LengthFieldBasedFrameDecoder( frameLength + 4, 0, 4, 0, 4 ) );
+        pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( frameLength + 4, 0, 4, 0, 4 ) );
         pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
     }
 
@@ -205,30 +208,29 @@ public abstract class Protocol
         if ( chunkSize > frameLength )
         {
             throw new IllegalArgumentException( "Chunk size " + chunkSize +
-                                                " needs to be equal or less than frame length " + frameLength );
+                    " needs to be equal or less than frame length " + frameLength );
         }
     }
 
     public void serializeRequest( Channel channel, ChannelBuffer buffer, RequestType<?> type, RequestContext ctx,
-                                  Serializer payload ) throws IOException
+            Serializer payload ) throws IOException
     {
         buffer.clear();
-        ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( buffer,
-                channel, chunkSize, internalProtocolVersion, applicationProtocolVersion );
+        ChunkingChannelBuffer chunkingBuffer =
+                new ChunkingChannelBuffer( buffer, channel, chunkSize, internalProtocolVersion,
+                        applicationProtocolVersion );
         chunkingBuffer.writeByte( type.id() );
         writeContext( ctx, chunkingBuffer );
         payload.write( chunkingBuffer );
         chunkingBuffer.done();
     }
 
-    public <PAYLOAD> Response<PAYLOAD> deserializeResponse( BlockingReadHandler<ChannelBuffer> reader,
-            ByteBuffer input, long timeout,
-            Deserializer<PAYLOAD> payloadDeserializer,
-            ResourceReleaser channelReleaser,
+    public <PAYLOAD> Response<PAYLOAD> deserializeResponse( BlockingReadHandler<ChannelBuffer> reader, ByteBuffer input,
+            long timeout, Deserializer<PAYLOAD> payloadDeserializer, ResourceReleaser channelReleaser,
             final LogEntryReader<ReadableClosablePositionAwareChannel> entryReader ) throws IOException
     {
-        final DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, timeout,
-                internalProtocolVersion, applicationProtocolVersion );
+        final DechunkingChannelBuffer dechunkingBuffer =
+                new DechunkingChannelBuffer( reader, timeout, internalProtocolVersion, applicationProtocolVersion );
 
         PAYLOAD response = payloadDeserializer.read( dechunkingBuffer, input );
         StoreId storeId = readStoreId( dechunkingBuffer, input );
@@ -252,8 +254,8 @@ public abstract class Protocol
             {
                 NetworkReadableClosableChannel channel = new NetworkReadableClosableChannel( dechunkingBuffer );
 
-                try ( PhysicalTransactionCursor<ReadableClosablePositionAwareChannel> cursor =
-                              new PhysicalTransactionCursor<>( channel, entryReader ) )
+                try ( PhysicalTransactionCursor<ReadableClosablePositionAwareChannel> cursor = new PhysicalTransactionCursor<>(
+                        channel, entryReader ) )
                 {
                     while ( cursor.next() && !visitor.visit( cursor.get() ) )
                     {
@@ -279,16 +281,24 @@ public abstract class Protocol
     public static class FileStreamsDeserializer implements Deserializer<Void>
     {
         private final StoreWriter writer;
+        private final SnapshotWriter snapshotWriter;
 
-        public FileStreamsDeserializer( StoreWriter writer )
+        public FileStreamsDeserializer( StoreWriter writer, SnapshotWriter snapshotWriter )
         {
             this.writer = writer;
+            this.snapshotWriter = snapshotWriter;
         }
 
         // NOTICE: this assumes a "smart" ChannelBuffer that continues to next chunk
         @Override
         public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
+
+            ChannelBufferToChannel channel =
+                    new ChannelBufferToChannel( buffer );
+            CountsSnapshot snapshot = CountsSnapshotDeserializer.deserialize( channel );
+            snapshotWriter.write( snapshot );
+
             int pathLength;
             while ( 0 != (pathLength = buffer.readUnsignedShort()) )
             {
@@ -326,4 +336,5 @@ public abstract class Protocol
             new LogEntryWriter( channel ).serialize( tx );
         }
     }
+
 }

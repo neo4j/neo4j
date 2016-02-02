@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 
@@ -136,21 +137,34 @@ public class CheckPointSchedulerTest
         CheckPointer checkPointer = new CheckPointer()
         {
             @Override
-            public long checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException
+            public CheckPointInfo checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException
             {
                 checkPointerLatch.start();
                 checkPointerLatch.awaitFinish();
-                return 42;
+                return new CheckPointInfo()
+                {
+                    @Override
+                    public long lastClosedTransactionId()
+                    {
+                        return 42;
+                    }
+
+                    @Override
+                    public CountsSnapshot snapshot()
+                    {
+                        return null;
+                    }
+                };
             }
 
             @Override
-            public long tryCheckPoint( TriggerInfo triggerInfo ) throws IOException
+            public CheckPointInfo tryCheckPoint( TriggerInfo triggerInfo ) throws IOException
             {
                 throw new RuntimeException( "this should have not been called" );
             }
 
             @Override
-            public long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException
+            public CheckPointInfo forceCheckPoint( TriggerInfo triggerInfo ) throws IOException
             {
                 throw new RuntimeException( "this should have not been called" );
             }

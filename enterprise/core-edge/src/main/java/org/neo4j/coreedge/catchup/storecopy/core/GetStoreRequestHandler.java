@@ -36,6 +36,7 @@ import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponse;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequest;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 
@@ -60,9 +61,9 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, GetStoreRequest msg ) throws Exception
     {
-        long lastCheckPointedTx = checkPointerSupplier.get().tryCheckPoint(new SimpleTriggerInfo("Store copy"));
+        CheckPointInfo checkPointInfo = checkPointerSupplier.get().tryCheckPoint(new SimpleTriggerInfo("Store copy"));
         sendFiles( ctx );
-        endStoreCopy( ctx, lastCheckPointedTx );
+        endStoreCopy( ctx, checkPointInfo.lastClosedTransactionId() );
         protocol.expect( NextMessage.MESSAGE_TYPE );
     }
 

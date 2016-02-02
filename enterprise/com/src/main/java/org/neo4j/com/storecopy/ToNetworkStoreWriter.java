@@ -28,19 +28,17 @@ import java.nio.channels.ReadableByteChannel;
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Protocol;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
 
 public class ToNetworkStoreWriter implements StoreWriter
 {
-    public static final String STORE_COPIER_MONITOR_TAG = "storeCopier";
 
     private final ChannelBuffer targetBuffer;
     private final ByteCounterMonitor bufferMonitor;
 
-    public ToNetworkStoreWriter( ChannelBuffer targetBuffer, Monitors monitors )
+    public ToNetworkStoreWriter( ChannelBuffer targetBuffer, ByteCounterMonitor bufferMonitor )
     {
         this.targetBuffer = targetBuffer;
-        bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, getClass(), STORE_COPIER_MONITOR_TAG );
+        this.bufferMonitor = bufferMonitor;
     }
 
     @Override

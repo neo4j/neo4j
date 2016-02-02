@@ -64,7 +64,8 @@ import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createP
  * @see StoreMigrator
  */
 //: TODO introduce abstract tool class as soon as we will have several tools in tools module
-public class StoreMigration
+public class
+StoreMigration
 {
     private static final String HELP_FLAG = "help";
 

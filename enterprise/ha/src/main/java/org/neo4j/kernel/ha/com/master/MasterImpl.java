@@ -30,9 +30,9 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
+import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.ha.lock.LockStatus;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
@@ -80,7 +81,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         long getTransactionChecksum( long txId ) throws IOException;
 
-        RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer );
+        RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer, SnapshotWriter snapshotWriter );
 
         <T> Response<T> packEmptyResponse( T response );
 
@@ -132,7 +133,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
      * master. The epoch is the one handed out from {@link #handshake(long, StoreId)}.
      * Exceptions to the above are:
      * o {@link #handshake(long, StoreId)}
-     * o {@link #copyStore(RequestContext, StoreWriter)}
+     * o {@link #copyStore(RequestContext, StoreWriter, SnapshotWriter)}
      * o {@link #pullUpdates(RequestContext)}
      *
      * all other methods must have this.
@@ -257,12 +258,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
     }
 
     @Override
-    public Response<Void> copyStore( RequestContext requestContext, StoreWriter writer )
+    public Response<Void> copyStore( RequestContext context, StoreWriter writer, SnapshotWriter snapshotWriter )
     {
-        RequestContext context;
         try ( StoreWriter storeWriter = writer )
         {
-            context = spi.flushStoresAndStreamStoreFiles( storeWriter );
+            context = spi.flushStoresAndStreamStoreFiles( storeWriter, snapshotWriter );
         }   // close the store writer
 
         return spi.packTransactionStreamResponse( context, null );

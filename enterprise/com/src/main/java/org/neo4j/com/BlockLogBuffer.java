@@ -27,6 +27,7 @@ import java.nio.channels.ReadableByteChannel;
 import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.storageengine.api.WritableChannel;
 
 /**
  * Implementation of a LogBuffer over a ChannelBuffer. Maintains a byte buffer
@@ -38,7 +39,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
  * byte which is 0 for every non-last chunk and the actual number of bytes for
  * the last one (always &gt; 0).
  */
-public class BlockLogBuffer implements Closeable
+public class BlockLogBuffer implements WritableChannel, Closeable
 {
     // First byte of every chunk that is not the last one
     static final byte FULL_BLOCK_AND_MORE = 0;

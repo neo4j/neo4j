@@ -39,11 +39,6 @@ public class CountsStorageServiceImpl implements CountsStorageService
         return countsStore.snapshot( txId );
     }
 
-    public void setInitializer( IndexStatsUpdater indexStatsUpdater )
-    {
-        this.indexStatsUpdater = indexStatsUpdater;
-    }
-
     @Override
     public Updater updaterFor( long txId )
     {

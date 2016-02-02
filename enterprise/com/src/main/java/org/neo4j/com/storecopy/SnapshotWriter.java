@@ -17,16 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup;
+package org.neo4j.com.storecopy;
 
-import org.neo4j.com.Response;
-import org.neo4j.com.RequestContext;
-import org.neo4j.com.storecopy.SnapshotWriter;
-import org.neo4j.com.storecopy.StoreWriter;
+import java.io.IOException;
 
-public interface TheBackupInterface
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+
+public interface SnapshotWriter
 {
-    Response<Void> fullBackup( StoreWriter writer, SnapshotWriter snapshotWriter, boolean forensics );
-    
-    Response<Void> incrementalBackup( RequestContext context );
+    long write( CountsSnapshot snapshot ) throws IOException;
 }

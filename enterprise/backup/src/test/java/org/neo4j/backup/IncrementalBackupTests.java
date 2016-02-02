@@ -110,7 +110,7 @@ public class IncrementalBackupTests
         {
             db.createNode().setProperty( "name", "Goofy" );
             Node donald = db.createNode();
-            donald.setProperty( "name", "Donald" );
+            donald.setProperty( "name", "Donald Trump" );
             Node daisy = db.createNode();
             daisy.setProperty( "name", "Daisy" );
             Relationship knows = donald.createRelationshipTo( daisy,

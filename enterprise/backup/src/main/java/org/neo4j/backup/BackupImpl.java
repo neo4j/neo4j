@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.ResponsePacker;
+import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -56,11 +57,12 @@ class BackupImpl implements TheBackupInterface
     }
 
     @Override
-    public Response<Void> fullBackup( StoreWriter writer, boolean forensics )
+    public Response<Void> fullBackup( StoreWriter writer, SnapshotWriter snapshotWriter, boolean forensics )
     {
         try ( StoreWriter storeWriter = writer )
         {
-            RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter, forensics );
+            RequestContext copyStartContext =
+                    storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter, snapshotWriter, forensics );
             ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
                     transactionIdStore, logFileInformation, storeId,
                     copyStartContext.lastAppliedTransaction() + 1, storeCopyServer.monitor() ); // mandatory transaction id

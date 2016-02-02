@@ -48,6 +48,7 @@ import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -152,7 +153,9 @@ public class TestPullUpdatesApplied
         Thread.sleep( 15000 );
 
         restart( toKill ); // recovery and branching.
-        boolean hasBranchedData = new File( targetDirectory, "branched" ).listFiles().length > 0;
+        File[] branchedFiles = new File( targetDirectory, "branched" ).listFiles();
+        assertNotNull( branchedFiles );
+        boolean hasBranchedData = branchedFiles.length > 0;
         assertFalse( hasBranchedData );
     }
 

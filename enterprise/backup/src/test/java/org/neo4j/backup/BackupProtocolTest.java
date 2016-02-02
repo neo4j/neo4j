@@ -21,15 +21,24 @@ package org.neo4j.backup;
 
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Collections;
+
 import org.neo4j.backup.BackupClient.BackupRequestType;
+import org.neo4j.com.KnownDataByteChannel;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
+import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreWriter;
+import org.neo4j.com.storecopy.ToNetworkCountsSnapshotWriter;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -64,7 +73,7 @@ public class BackupProtocolTest
         TheBackupInterface backup = mock( TheBackupInterface.class );
         RequestContext ctx = new RequestContext( 0, 1, 0, -1, 12 );
         BackupRequestType.FULL_BACKUP.getTargetCaller().call( backup, ctx, EMPTY_BUFFER, null );
-        verify( backup ).fullBackup( any( StoreWriter.class ), eq( false ) );
+        verify( backup ).fullBackup( any( StoreWriter.class ),  any( SnapshotWriter.class ), eq( false ) );
     }
 
     private void shouldGatherForensicsInFullBackupRequest( boolean forensics ) throws Exception
@@ -89,10 +98,11 @@ public class BackupProtocolTest
         {
             // WHEN
             StoreWriter writer = mock( StoreWriter.class );
-            client.fullBackup( writer, forensics );
+            SnapshotWriter snapshotWriter = mock( SnapshotWriter.class );
+            client.fullBackup( writer, snapshotWriter, forensics );
 
             // THEN
-            assertEquals( forensics, backup.receivedForensics.booleanValue() );
+            assertEquals( forensics, backup.receivedForensics );
         }
         finally
         {
@@ -105,10 +115,19 @@ public class BackupProtocolTest
         private Boolean receivedForensics;
 
         @Override
-        public Response<Void> fullBackup( StoreWriter writer, boolean forensics )
+        public Response<Void> fullBackup( StoreWriter writer, SnapshotWriter snapshotWriter, boolean forensics )
         {
             this.receivedForensics = forensics;
-            writer.close();
+            try
+            {
+                snapshotWriter.write( new CountsSnapshot( 42, Collections.singletonMap( CountsKeyFactory.nodeKey( 24 ),
+                        new long[]{12} ) ) );
+                writer.close();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
             return Response.EMPTY;
         }
 
@@ -118,4 +137,5 @@ public class BackupProtocolTest
             throw new UnsupportedOperationException( "Should be required" );
         }
     }
+
 }

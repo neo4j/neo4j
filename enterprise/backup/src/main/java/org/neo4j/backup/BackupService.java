@@ -33,6 +33,7 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ExternallyManagedPageCache;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
+import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
@@ -147,13 +148,13 @@ class BackupService
                 private BackupClient client;
 
                 @Override
-                public Response<?> copyStore( StoreWriter writer )
+                public Response<?> copyStore( StoreWriter writer, SnapshotWriter snapshotWriter )
                 {
                     client = new BackupClient( sourceHostNameOrIp, sourcePort, NullLogProvider.getInstance(),
                             StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, monitors.newMonitor(
                             ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ), entryReader );
                     client.start();
-                    return client.fullBackup( writer, forensics );
+                    return client.fullBackup( writer, snapshotWriter, forensics );
                 }
 
                 @Override

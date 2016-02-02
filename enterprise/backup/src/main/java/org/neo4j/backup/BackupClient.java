@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import java.io.IOException;
-
 import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.Client;
@@ -34,7 +32,9 @@ import org.neo4j.com.Serializer;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
+import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreWriter;
+import org.neo4j.com.storecopy.ToNetworkCountsSnapshotWriter;
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
@@ -63,16 +63,12 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
     }
 
     @Override
-    public Response<Void> fullBackup( StoreWriter storeWriter, final boolean forensics )
+    public Response<Void> fullBackup( StoreWriter storeWriter, SnapshotWriter snapshotWriter, final boolean forensics )
     {
-        return sendRequest( BackupRequestType.FULL_BACKUP, RequestContext.EMPTY, new Serializer()
-        {
-            @Override
-            public void write( ChannelBuffer buffer ) throws IOException
-            {
-                buffer.writeByte( forensics ? (byte) 1 : (byte) 0 );
-            }
-        }, new Protocol.FileStreamsDeserializer( storeWriter ) );
+        Serializer serializer = buffer -> buffer.writeByte( forensics ? (byte) 1 : (byte) 0 );
+        Protocol.FileStreamsDeserializer deserializer =
+                new Protocol.FileStreamsDeserializer( storeWriter, snapshotWriter );
+        return sendRequest( BackupRequestType.FULL_BACKUP, RequestContext.EMPTY, serializer, deserializer );
     }
 
     @Override
@@ -96,8 +92,11 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
             public Response<Void> call( TheBackupInterface master, RequestContext context,
                     ChannelBuffer input, ChannelBuffer target )
             {
-                boolean forensics = input.readable() ? booleanOf( input.readByte() ) : false;
-                return master.fullBackup( new ToNetworkStoreWriter( target, new Monitors() ), forensics );
+                boolean forensics = input.readable() && booleanOf( input.readByte() );
+                ByteCounterMonitor monitor = new Monitors().newMonitor( ByteCounterMonitor.class, "storeCopier" );
+                StoreWriter writer = new ToNetworkStoreWriter( target, monitor );
+                SnapshotWriter snapshotWriter = new ToNetworkCountsSnapshotWriter( target );
+                return master.fullBackup( writer, snapshotWriter, forensics );
             }
 
             private boolean booleanOf( byte value )

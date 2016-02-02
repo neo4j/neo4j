@@ -122,7 +122,8 @@ public class TransactionRepresentationCommitProcessIT
         NeoStores neoStores = getDependency(RecordStorageEngine.class).testAccessNeoStores();
         assertThat( "Count store should be rotated once at least", neoStores.getCounts().txId(), greaterThan( 0L ) );
 
-        long lastRotationTx = getDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        long lastRotationTx = getDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) )
+                .lastClosedTransactionId();
         assertEquals( "NeoStore last closed transaction id should be equal last count store rotation transaction id.",
                 neoStores.getMetaDataStore().getLastClosedTransactionId(), lastRotationTx );
         assertEquals( "Last closed transaction should be last rotated tx in count store",

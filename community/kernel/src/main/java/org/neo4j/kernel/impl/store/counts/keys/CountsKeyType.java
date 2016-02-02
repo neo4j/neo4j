@@ -43,7 +43,8 @@ public enum CountsKeyType
         case 5:
             return CountsKeyType.INDEX_SAMPLE;
         default:
-            throw new IllegalArgumentException("Parsed key type from count store deserialization of unknown type.");
+            throw new IllegalArgumentException("Parsed key type from count store deserialization of unknown type: " +
+                    val);
         }
     }
 }

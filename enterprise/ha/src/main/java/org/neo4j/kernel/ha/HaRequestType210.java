@@ -29,6 +29,7 @@ import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
+import org.neo4j.com.storecopy.ToNetworkCountsSnapshotWriter;
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
@@ -171,7 +173,10 @@ public class HaRequestType210 extends AbstractHaRequestTypes
             public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
                     final ChannelBuffer target )
             {
-                return master.copyStore( context, new ToNetworkStoreWriter( target, new Monitors() ) );
+                ByteCounterMonitor bufferMonitor = new Monitors().newMonitor( ByteCounterMonitor.class, "storeCopier" );
+                ToNetworkCountsSnapshotWriter snapshotWriter = new ToNetworkCountsSnapshotWriter( target );
+                ToNetworkStoreWriter writer = new ToNetworkStoreWriter( target, bufferMonitor );
+                return master.copyStore( context, writer, snapshotWriter );
             }
 
         }, VOID_SERIALIZER, false );

@@ -36,6 +36,7 @@ import org.neo4j.com.Serializer;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
+import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.ha.HaRequestTypes.Type;
@@ -301,11 +302,11 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Void> copyStore( RequestContext context, final StoreWriter writer )
+    public Response<Void> copyStore( RequestContext context, StoreWriter writer, SnapshotWriter snapshotWriter )
     {
         context = stripFromTransactions( context );
         return sendRequest( requestTypes.type( Type.COPY_STORE ), context, EMPTY_SERIALIZER,
-                new Protocol.FileStreamsDeserializer( writer ) );
+                new Protocol.FileStreamsDeserializer( writer, snapshotWriter ) );
     }
 
     private RequestContext stripFromTransactions( RequestContext context )

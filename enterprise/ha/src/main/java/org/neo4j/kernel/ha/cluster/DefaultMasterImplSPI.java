@@ -24,7 +24,9 @@ import java.io.IOException;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+
 import org.neo4j.com.storecopy.ResponsePacker;
+import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -153,11 +155,11 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     }
 
     @Override
-    public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
+    public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer, SnapshotWriter snapshotWriter )
     {
-        StoreCopyServer streamer = new StoreCopyServer( neoStoreDataSource,
-                checkPointer, fileSystem, storeDir, monitors.newMonitor( StoreCopyServer.Monitor.class ) );
-        return streamer.flushStoresAndStreamStoreFiles( writer, false );
+        StoreCopyServer streamer = new StoreCopyServer( neoStoreDataSource, checkPointer, fileSystem, storeDir,
+                monitors.newMonitor( StoreCopyServer.Monitor.class ) );
+        return streamer.flushStoresAndStreamStoreFiles( writer, snapshotWriter, false );
     }
 
     @Override

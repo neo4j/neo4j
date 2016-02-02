@@ -17,16 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup;
+package org.neo4j.com.storecopy;
 
-import org.neo4j.com.Response;
-import org.neo4j.com.RequestContext;
-import org.neo4j.com.storecopy.SnapshotWriter;
-import org.neo4j.com.storecopy.StoreWriter;
+import org.jboss.netty.buffer.ChannelBuffer;
 
-public interface TheBackupInterface
+import java.io.IOException;
+
+import org.neo4j.com.ChannelBufferToChannel;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshotSerializer;
+
+public class ToNetworkCountsSnapshotWriter implements SnapshotWriter
 {
-    Response<Void> fullBackup( StoreWriter writer, SnapshotWriter snapshotWriter, boolean forensics );
-    
-    Response<Void> incrementalBackup( RequestContext context );
+    private final ChannelBuffer targetBuffer;
+
+    public ToNetworkCountsSnapshotWriter( ChannelBuffer targetBuffer )
+    {
+        this.targetBuffer = targetBuffer;
+    }
+
+    @Override
+    public long write( CountsSnapshot snapshot ) throws IOException
+    {
+        return CountsSnapshotSerializer.serialize( new ChannelBufferToChannel( targetBuffer ), snapshot );
+    }
+
 }

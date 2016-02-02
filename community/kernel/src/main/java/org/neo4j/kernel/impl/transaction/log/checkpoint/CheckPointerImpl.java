@@ -83,7 +83,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     }
 
     @Override
-    public long forceCheckPoint( TriggerInfo info ) throws IOException
+    public CheckPointInfo forceCheckPoint( TriggerInfo info ) throws IOException
     {
         lock.lock();
         try
@@ -97,7 +97,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     }
 
     @Override
-    public long tryCheckPoint( TriggerInfo info ) throws IOException
+    public CheckPointInfo tryCheckPoint( TriggerInfo info ) throws IOException
     {
         if ( lock.tryLock() )
         {
@@ -117,7 +117,20 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             {
                 msgLog.info(
                         info.describe( lastCheckPointedTx ) + " Check pointing was already running, completed now" );
-                return lastCheckPointedTx;
+                return new CheckPointInfo()
+                {
+                    @Override
+                    public long lastClosedTransactionId()
+                    {
+                        return lastCheckPointedTx;
+                    }
+
+                    @Override
+                    public CountsSnapshot snapshot()
+                    {
+                        return null;
+                    }
+                };
             }
             finally
             {
@@ -127,7 +140,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     }
 
     @Override
-    public long checkPointIfNeeded( TriggerInfo info ) throws IOException
+    public CheckPointInfo checkPointIfNeeded( TriggerInfo info ) throws IOException
     {
         lock.lock();
         try
@@ -139,7 +152,20 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
                     return doCheckPoint( info, event );
                 }
             }
-            return -1;
+            return new CheckPointInfo()
+            {
+                @Override
+                public long lastClosedTransactionId()
+                {
+                    return -1;
+                }
+
+                @Override
+                public CountsSnapshot snapshot()
+                {
+                    return null;
+                }
+            };
         }
         finally
         {
@@ -147,7 +173,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         }
     }
 
-    private long doCheckPoint( TriggerInfo triggerInfo, LogCheckPointEvent logCheckPointEvent ) throws IOException
+    private CheckPointInfo doCheckPoint( TriggerInfo triggerInfo, LogCheckPointEvent logCheckPointEvent ) throws IOException
     {
         long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
         long lastClosedTransactionId = lastClosedTransaction[0];
@@ -196,6 +222,20 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         logPruning.pruneLogs( logPosition.getLogVersion() );
 
         lastCheckPointedTx = lastClosedTransactionId;
-        return lastClosedTransactionId;
+        return new CheckPointInfo(){
+
+            @Override
+            public long lastClosedTransactionId()
+            {
+                return lastClosedTransactionId;
+            }
+
+            @Override
+            public CountsSnapshot snapshot()
+            {
+                return snapshot;
+            }
+        };
     }
+
 }

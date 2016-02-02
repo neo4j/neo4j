@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -54,7 +55,7 @@ public class StoreMigratorCheckPointer
      * @param logVersion the log version to open
      * @param lastCommittedTx the last committed tx id
      */
-    public void checkPoint( long logVersion, long lastCommittedTx ) throws IOException
+    public void checkPoint( long logVersion, long lastCommittedTx, CountsSnapshot snapshot ) throws IOException
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fileSystem );
         File logFileForVersion = logFiles.getLogFileForVersion( logVersion );
@@ -75,7 +76,7 @@ public class StoreMigratorCheckPointer
                           new PositionAwarePhysicalFlushableChannel( storeChannel ) )
             {
                 final TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
-                writer.checkPoint( new LogPosition( logVersion, offset ), NO_SNAPSHOT);
+                writer.checkPoint( new LogPosition( logVersion, offset ), snapshot);
             }
         }
     }

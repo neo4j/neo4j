@@ -38,6 +38,9 @@ import java.util.Random;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+import org.neo4j.kernel.impl.store.counts.CountsStorageServiceImpl;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -98,6 +101,7 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
@@ -309,7 +313,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         new PropertyDeduplicator( fileSystem, migrationDir, pageCache, schemaIndexProvider ).deduplicateProperties();
     }
 
-    private void rebuildCountsFromScratch( File storeDir, long lastTxId, PageCache pageCache ) throws IOException
+    private CountsSnapshot rebuildCountsFromScratch( File storeDir, long lastTxId, PageCache pageCache ) throws IOException
     {
         final File storeFileBase = new File( storeDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
@@ -328,6 +332,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 life.add( new CountsTracker(
                         logService.getInternalLogProvider(), fileSystem, pageCache, config, storeFileBase )
                         .setInitializer( initializer ) );
+
+
+                CountsStorageServiceImpl countsStorageService = new CountsStorageServiceImpl();
+                countsStorageService.initialize( new CountsSnapshot( lastTxId ) );
+                initializer.initialize( countsStorageService.updaterFor( lastTxId ) );
+                return countsStorageService.snapshot( lastTxId );
             }
         }
     }
@@ -681,11 +691,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         switch ( versionToMigrateFrom )
         {
         case Legacy20Store.LEGACY_VERSION:
-        case Legacy23Store.LEGACY_VERSION:
-            // nothing to do
-            break;
         case Legacy21Store.LEGACY_VERSION:
         case Legacy22Store.LEGACY_VERSION:
+        case Legacy23Store.LEGACY_VERSION:
             // create counters from scratch
             Iterable<StoreFile> countsStoreFiles =
                     Iterables.iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );
@@ -693,7 +701,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     countsStoreFiles, true, false, StoreFileType.STORE );
             File neoStore = new File( storeDir, DEFAULT_NAME );
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
-            rebuildCountsFromScratch( storeDir, lastTxId, pageCache );
+            CountsSnapshot snapshot = rebuildCountsFromScratch( storeDir, lastTxId, pageCache );
+            long logVersion = MetaDataStore.getRecord( pageCache, neoStore, Position.LOG_VERSION );
+            long lastCommittedTx = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
+
+            // write a check point in the log in order to make recovery work in the newer version
+            new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint( logVersion, lastCommittedTx, snapshot );
             break;
         default:
             throw new IllegalStateException( "Unknown version to upgrade from: " + versionToMigrateFrom );

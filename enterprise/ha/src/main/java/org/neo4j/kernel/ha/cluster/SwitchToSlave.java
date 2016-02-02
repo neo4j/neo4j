@@ -33,6 +33,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
+import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
@@ -525,10 +526,11 @@ public class SwitchToSlave
                     new StoreCopyClient.StoreCopyRequester()
                     {
                         @Override
-                        public Response<?> copyStore( StoreWriter writer )
+                        public Response<?> copyStore( StoreWriter writer, SnapshotWriter snapshotWriter )
                         {
-                            return masterClient.copyStore( new RequestContext( 0,
-                                config.get( ClusterSettings.server_id ).toIntegerIndex(), 0, BASE_TX_ID, 0 ), writer );
+                            int machineId = config.get( ClusterSettings.server_id ).toIntegerIndex();
+                            RequestContext context = new RequestContext( 0, machineId, 0, BASE_TX_ID, 0 );
+                            return masterClient.copyStore( context, writer, snapshotWriter );
                         }
 
                         @Override
