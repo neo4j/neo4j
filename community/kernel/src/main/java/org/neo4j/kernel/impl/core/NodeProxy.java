@@ -423,7 +423,7 @@ public class NodeProxy
             {
                 if ( !node.next() )
                 {
-                    if ( ((KernelStatement) statement).txState().nodeIsDeletedInThisTx( nodeId ) )
+                    if ( isDeleted() )
                     {
                         return Collections.emptyMap();
                     }
@@ -454,6 +454,12 @@ public class NodeProxy
         {
             throw new IllegalStateException( "Property key retrieved through kernel API should exist.", e );
         }
+    }
+
+    @Override
+    public boolean isDeleted()
+    {
+        return ((KernelStatement) actions.statement()).txState().nodeIsDeletedInThisTx( nodeId );
     }
 
     @Override

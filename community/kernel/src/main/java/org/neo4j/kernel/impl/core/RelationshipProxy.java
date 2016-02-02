@@ -293,7 +293,7 @@ public class RelationshipProxy
             {
                 if (( !relationship.next() ))
                 {
-                    if ( ((KernelStatement) statement).txState().relationshipIsDeletedInThisTx( relId ) )
+                    if ( isDeleted() )
                     {
                         return Collections.emptyMap();
                     }
@@ -324,6 +324,12 @@ public class RelationshipProxy
         {
             throw new IllegalStateException( "Property key retrieved through kernel API should exist.", e );
         }
+    }
+
+    @Override
+    public boolean isDeleted()
+    {
+        return ((KernelStatement) actions.statement()).txState().relationshipIsDeletedInThisTx( getId() );
     }
 
     @Override

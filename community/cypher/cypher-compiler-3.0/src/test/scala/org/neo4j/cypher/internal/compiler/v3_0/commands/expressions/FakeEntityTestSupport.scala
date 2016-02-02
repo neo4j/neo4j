@@ -63,6 +63,8 @@ trait FakeEntityTestSupport {
     def getAllProperties: util.Map[String, AnyRef] = null
 
     override def toString: String = "Rel"
+
+    override def isDeleted: Boolean = ???
   }
 
   class FakeNode extends Node {
@@ -136,6 +138,8 @@ trait FakeEntityTestSupport {
     def getDegree(relType: RelationshipType): Int = ???
 
     def getDegree(relType: RelationshipType, direction: Direction): Int = ???
+
+    override def isDeleted: Boolean = ???
   }
 
 }

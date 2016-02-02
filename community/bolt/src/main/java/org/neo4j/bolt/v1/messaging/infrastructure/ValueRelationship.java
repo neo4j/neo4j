@@ -132,6 +132,12 @@ public class ValueRelationship extends ValuePropertyContainer implements Relatio
     }
 
     @Override
+    public boolean isDeleted()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public GraphDatabaseService getGraphDatabase()
     {
         throw new UnsupportedOperationException();

@@ -372,6 +372,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
+        public boolean isDeleted()
+        {
+            return actual.isDeleted();
+        }
+
+        @Override
         public GraphDatabaseService getGraphDatabase()
         {
             return ReadOnlyGraphDatabaseProxy.this;
@@ -566,6 +572,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         public Map<String, Object> getAllProperties()
         {
             return actual.getAllProperties();
+        }
+
+        @Override
+        public boolean isDeleted()
+        {
+            return actual.isDeleted();
         }
 
         @Override
