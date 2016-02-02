@@ -32,6 +32,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   private val HITS = "DB Hits"
   private val TIME = "Time (ms)"
   val VARIABLES = "Variables"
+  val MAX_VARIABLE_COLUMN_WIDTH = 100
   private val OTHER = "Other"
   private val HEADERS = Seq(OPERATOR, ESTIMATED_ROWS, ROWS, HITS, TIME, VARIABLES, OTHER)
   val newLine = System.lineSeparator()
@@ -42,9 +43,10 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     val lines = accumulate(plan)
 
     def compactLine(line: Line, previous: Seq[(Line, CompactedLine)]) = {
-      val repeatedVariables: Set[String] = if (previous.size > 0) previous.head._1.variables.intersect(line.variables) else Set.empty
+      val repeatedVariables = if (previous.size > 0) previous.head._1.variables.intersect(line.variables) else Set.empty[String]
       new CompactedLine(line, repeatedVariables)
     }
+
     val compactedLines = lines.reverse.foldLeft(Seq.empty[(Line, CompactedLine)]) { (acc, line) =>
       val compacted = compactLine(line, acc)
       if (compacted.formattedVariables.nonEmpty)
@@ -132,7 +134,6 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     case Time(nanos) => mapping(TIME, Right("%.3f".format(nanos/1000000.0)))
     case _ => None
   }.toMap + (
-    VARIABLES -> Left(variables(description)),
     OTHER -> Left(other(description)))
 
   private def mapping(key: String, value: Justified)(implicit columns: mutable.Map[String,Int]) = {
@@ -142,11 +143,6 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
 
   private def update(columns: mutable.Map[String, Int], key: String, length: Int): Unit = {
     columns.put(key, math.max(columns.getOrElse(key, 0), length))
-  }
-
-  private def variables(description: InternalPlanDescription)(implicit columns: mutable.Map[String,Int]): String = {
-    val result: String = description.orderedVariables.map(PlanDescriptionArgumentSerializer.removeGeneratedNames).mkString(", ")
-    result
   }
 
   private def otherFields(description: InternalPlanDescription) = {
@@ -192,7 +188,7 @@ case class CompactedLine(line: Line, repeated: Set[String]) extends LineDetails 
   val varSep = ", "
   val typeSep = " -- "
   val suffix = ", ..."
-  val formattedVariables = formatVariables(100)
+  val formattedVariables = formatVariables(renderAsTreeTable.MAX_VARIABLE_COLUMN_WIDTH)
 
   def apply(key: String): Justified = if (key == renderAsTreeTable.VARIABLES)
     Left(formattedVariables)
@@ -201,9 +197,9 @@ case class CompactedLine(line: Line, repeated: Set[String]) extends LineDetails 
 
   def connection = line.connection
 
-  def makeVars(prefix: String, sep: String, vars: List[String]) = vars match {
+  private def formattedVars(vars: List[String], prefix: String = "") = vars match {
     case v :: Nil => List(prefix + v)
-    case v :: tail => List(prefix + v) ++ tail.map(v => sep + v)
+    case v :: tail => List(prefix + v) ++ tail.map(v => varSep + v)
     case _ => vars
   }
 
@@ -211,18 +207,17 @@ case class CompactedLine(line: Line, repeated: Set[String]) extends LineDetails 
     val newVars = (line.variables -- repeated).toList.sorted.map(PlanDescriptionArgumentSerializer.removeGeneratedNames)
     val oldVars = repeated.toList.sorted.map(PlanDescriptionArgumentSerializer.removeGeneratedNames)
     val all = if(newVars.length > 0)
-      makeVars("", varSep, newVars) ++ makeVars(typeSep, varSep, oldVars)
+      formattedVars(newVars) ++ formattedVars(oldVars, typeSep)
     else
-      makeVars("", varSep, oldVars)
-    if (all.length == 0)
-      ""
-    else if (all.length == 1)
-      all.head
-    else
-      all.head + formatting(all.tail, length - all.head.length)
+      formattedVars(oldVars)
+    all.length match {
+      case 0 => ""
+      case 1 => all.head
+      case _ => all.head + formatting(all.tail, length - all.head.length)
+    }
   }
 
-  def formatWithTail(variable: String, tail: List[String], length: Int) =
+  private def formatWithTail(variable: String, tail: List[String], length: Int) =
     if (variable.length + tail.head.length + (if (tail.length > 1) suffix.length else 0) <= length)
       variable + formatting(tail, length - variable.length)
     else if (variable.length + suffix.length <= length)
@@ -230,7 +225,7 @@ case class CompactedLine(line: Line, repeated: Set[String]) extends LineDetails 
     else
       suffix
 
-  def formatting(variables: List[String], length: Int): String =
+  private def formatting(variables: List[String], length: Int): String =
     variables match {
       case variable :: Nil =>
         if (variable.length <= length)

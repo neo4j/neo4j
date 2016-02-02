@@ -517,81 +517,21 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
         |""".stripMargin )
   }
 
-  test("no compaction on complex plan with no repeated names") {
-    val leaf1 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("a"))
-    val leaf2 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("b"))
-    val leaf3 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("c"))
-    val leaf4 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("d"))
-    val branch1 = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf1), Seq.empty, Set("a"))
-    val branch2 = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf2), Seq.empty, Set("b"))
-    val branch3 = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf3), Seq.empty, Set("c"))
-    val branch4 = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf4), Seq.empty, Set("d"))
-    val intermediate1 = PlanDescriptionImpl(new Id, "INTERMEDIATE", TwoChildren(branch1, branch2), Seq.empty, Set())
-    val intermediate2 = PlanDescriptionImpl(new Id, "INTERMEDIATE", TwoChildren(branch3, branch4), Seq.empty, Set())
-    val plan = PlanDescriptionImpl(new Id, "ROOT", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
-
-    renderAsTreeTable(plan) should equal(
-      """+-----------------+-----------+
-        || Operator        | Variables |
-        |+-----------------+-----------+
-        || +ROOT           |           |
-        || |\              +-----------+
-        || | +INTERMEDIATE |           |
-        || | |\            +-----------+
-        || | | +BRANCH     | d         |
-        || | | |           +-----------+
-        || | | +LEAF       | d         |
-        || | |             +-----------+
-        || | +BRANCH       | c         |
-        || | |             +-----------+
-        || | +LEAF         | c         |
-        || |               +-----------+
-        || +INTERMEDIATE   |           |
-        || |\              +-----------+
-        || | +BRANCH       | b         |
-        || | |             +-----------+
-        || | +LEAF         | b         |
-        || |               +-----------+
-        || +BRANCH         | a         |
-        || |               +-----------+
-        || +LEAF           | a         |
-        |+-----------------+-----------+
-        |""".stripMargin)
-  }
-
-  test("no compaction on complex plan with no repeated names 1") {
-    val leaf1 = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
-    val leaf2 = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
-    val leaf3 = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
-    val leaf4 = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
-    val branch1 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf1), Seq.empty, Set())
-    val branch2 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf2), Seq.empty, Set())
-    val branch3 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf3), Seq.empty, Set())
-    val branch4 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf4), Seq.empty, Set())
-    val intermediate1 = PlanDescriptionImpl(new Id, "NODE", TwoChildren(branch1, branch2), Seq.empty, Set())
-    val intermediate2 = PlanDescriptionImpl(new Id, "NODE", TwoChildren(branch3, branch4), Seq.empty, Set())
-    val plan = PlanDescriptionImpl(new Id, "NODE", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
-
-    renderAsTreeTable(plan) should equal(
-      """+--------------+
-        || Operator     |
-        |+--------------+
-        || +NODE        |
-        || |\           +
-        || | +NODE      |
-        || | |\         +
-        || | | +NODE(2) |
-        || | |          +
-        || | +NODE(2)   |
-        || |            +
-        || +NODE        |
-        || |\           +
-        || | +NODE(2)   |
-        || |            +
-        || +NODE(2)     |
-        |+--------------+
-        |""".stripMargin)
-  }
+  /*
+   * Tests for the query plan compaction system. This system will perform two types of compaction:
+   *  - similar consecutive operators are merged
+   *  - long list of variables are truncated
+   *
+   *  The definition of similar is:
+   *  - same operator name
+   *  - no 'other' field
+   *
+   *  When compacting variable lists:
+   *  - we truncate the list and append '...'
+   *  - total column width, including '...' is limited to threshold
+   *  - at least one variable will always be printed (and '...' if necessary)
+   *  - newly assigned variables are printed first, separated from older with ' -- '
+   */
 
   test("compact two identical nodes") {
     val leaf = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq.empty, Set())
@@ -684,28 +624,198 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
         |""".stripMargin)
   }
 
-  test("Line compaction test") {
+  test("compact only the sufficiently similar pair of two simular pairs of nodes with many repeating variables") {
+    val repeating = ('b' to 'z').toSet[Char].map(c => s"var_$c")
+    val leaf = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(LabelName("123")), Set("var_a"))
+    val plan = leaf.andThen(new Id, "NODE", repeating).andThen(new Id, "OPERATOR", Set("var_a"))
+      .andThen(new Id, "OPERATOR", repeating + "var_A" + "var_B")
+
+    renderAsTreeTable(plan) should equal(
+      """+--------------+--------------------------------------------------------------------------------------------------+-------+
+        || Operator     | Variables                                                                                        | Other |
+        |+--------------+--------------------------------------------------------------------------------------------------+-------+
+        || +OPERATOR(2) | var_A, var_B, var_a -- var_b, var_c, var_d, var_e, var_f, var_g, var_h, var_i, var_j, var_k, ... |       |
+        || |            +--------------------------------------------------------------------------------------------------+-------+
+        || +NODE        | var_b, var_c, var_d, var_e, var_f, var_g, var_h, var_i, var_j, var_k, var_l, var_m, var_n, ...   |       |
+        || |            +--------------------------------------------------------------------------------------------------+-------+
+        || +NODE        | var_a                                                                                            | :123  |
+        |+--------------+--------------------------------------------------------------------------------------------------+-------+
+        |""".stripMargin)
+  }
+
+  test("compact only the sufficiently similar pair of two simular pairs of nodes with many repeating variables and many columns") {
+    val repeating = ('b' to 'z').toSet[Char].map(c => s"var_$c")
+    val l = LabelName("123")
+    val t = Time(12345678)
+    val r = Rows(2)
+    val d = DbHits(2)
+    val leaf = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(l, t, r, d), Set("var_a"))
+    val plan = leaf.
+      andThen(new Id, "NODE", repeating, t, r, d).
+      andThen(new Id, "OPERATOR", Set("var_a"), t, r, d).
+      andThen(new Id, "OPERATOR", repeating + "var_A" + "var_B", t, r, d)
+
+    renderAsTreeTable(plan) should equal(
+      """+--------------+------+---------+-----------+--------------------------------------------------------------------------------------------------+-------+
+        || Operator     | Rows | DB Hits | Time (ms) | Variables                                                                                        | Other |
+        |+--------------+------+---------+-----------+--------------------------------------------------------------------------------------------------+-------+
+        || +OPERATOR(2) |    2 |       2 |    12.346 | var_A, var_B, var_a -- var_b, var_c, var_d, var_e, var_f, var_g, var_h, var_i, var_j, var_k, ... |       |
+        || |            +------+---------+-----------+--------------------------------------------------------------------------------------------------+-------+
+        || +NODE        |    2 |       2 |    12.346 | var_b, var_c, var_d, var_e, var_f, var_g, var_h, var_i, var_j, var_k, var_l, var_m, var_n, ...   |       |
+        || |            +------+---------+-----------+--------------------------------------------------------------------------------------------------+-------+
+        || +NODE        |    2 |       2 |    12.346 | var_a                                                                                            | :123  |
+        |+--------------+------+---------+-----------+--------------------------------------------------------------------------------------------------+-------+
+        |""".stripMargin)
+  }
+
+  test("do not compact two similar pairs of nodes with non-empty other column and many repeating variables and many columns") {
+    val repeating = ('b' to 'z').toSet[Char].map(c => s"var_$c")
+    val l = LabelName("123")
+    val t = Time(12345678)
+    val r = Rows(2)
+    val d = DbHits(2)
+    val leaf = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(l, t, r, d), Set("var_a"))
+    val plan = leaf.
+      andThen(new Id, "NODE", repeating, l, t, r, d).
+      andThen(new Id, "OPERATOR", Set("var_a"), l, t, r, d).
+      andThen(new Id, "OPERATOR", repeating + "var_A" + "var_B", l, t, r, d)
+
+    renderAsTreeTable(plan) should equal(
+      """+-----------+------+---------+-----------+------------------------------------------------------------------------------------------------+-------+
+        || Operator  | Rows | DB Hits | Time (ms) | Variables                                                                                      | Other |
+        |+-----------+------+---------+-----------+------------------------------------------------------------------------------------------------+-------+
+        || +OPERATOR |    2 |       2 |    12.346 | var_A, var_B, var_b, var_c, var_d, var_e, var_f, var_g, var_h, var_i, var_j, var_k, var_l, ... | :123  |
+        || |         +------+---------+-----------+------------------------------------------------------------------------------------------------+-------+
+        || +OPERATOR |    2 |       2 |    12.346 | var_a                                                                                          | :123  |
+        || |         +------+---------+-----------+------------------------------------------------------------------------------------------------+-------+
+        || +NODE     |    2 |       2 |    12.346 | var_b, var_c, var_d, var_e, var_f, var_g, var_h, var_i, var_j, var_k, var_l, var_m, var_n, ... | :123  |
+        || |         +------+---------+-----------+------------------------------------------------------------------------------------------------+-------+
+        || +NODE     |    2 |       2 |    12.346 | var_a                                                                                          | :123  |
+        |+-----------+------+---------+-----------+------------------------------------------------------------------------------------------------+-------+
+        |""".stripMargin)
+  }
+
+  test("no compaction on complex plan with no repeated names") {
+    val leaf1 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("a"))
+    val leaf2 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("b"))
+    val leaf3 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("c"))
+    val leaf4 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("d"))
+    val branch1 = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf1), Seq.empty, Set("a"))
+    val branch2 = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf2), Seq.empty, Set("b"))
+    val branch3 = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf3), Seq.empty, Set("c"))
+    val branch4 = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf4), Seq.empty, Set("d"))
+    val intermediate1 = PlanDescriptionImpl(new Id, "INTERMEDIATE", TwoChildren(branch1, branch2), Seq.empty, Set())
+    val intermediate2 = PlanDescriptionImpl(new Id, "INTERMEDIATE", TwoChildren(branch3, branch4), Seq.empty, Set())
+    val plan = PlanDescriptionImpl(new Id, "ROOT", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
+
+    renderAsTreeTable(plan) should equal(
+      """+-----------------+-----------+
+        || Operator        | Variables |
+        |+-----------------+-----------+
+        || +ROOT           |           |
+        || |\              +-----------+
+        || | +INTERMEDIATE |           |
+        || | |\            +-----------+
+        || | | +BRANCH     | d         |
+        || | | |           +-----------+
+        || | | +LEAF       | d         |
+        || | |             +-----------+
+        || | +BRANCH       | c         |
+        || | |             +-----------+
+        || | +LEAF         | c         |
+        || |               +-----------+
+        || +INTERMEDIATE   |           |
+        || |\              +-----------+
+        || | +BRANCH       | b         |
+        || | |             +-----------+
+        || | +LEAF         | b         |
+        || |               +-----------+
+        || +BRANCH         | a         |
+        || |               +-----------+
+        || +LEAF           | a         |
+        |+-----------------+-----------+
+        |""".stripMargin)
+  }
+
+  test("compaction on complex plan with repeated names") {
+    val leaf1 = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
+    val leaf2 = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
+    val leaf3 = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
+    val leaf4 = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
+    val branch1 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf1), Seq.empty, Set())
+    val branch2 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf2), Seq.empty, Set())
+    val branch3 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf3), Seq.empty, Set())
+    val branch4 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf4), Seq.empty, Set())
+    val intermediate1 = PlanDescriptionImpl(new Id, "NODE", TwoChildren(branch1, branch2), Seq.empty, Set())
+    val intermediate2 = PlanDescriptionImpl(new Id, "NODE", TwoChildren(branch3, branch4), Seq.empty, Set())
+    val plan = PlanDescriptionImpl(new Id, "NODE", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
+
+    renderAsTreeTable(plan) should equal(
+      """+--------------+
+        || Operator     |
+        |+--------------+
+        || +NODE        |
+        || |\           +
+        || | +NODE      |
+        || | |\         +
+        || | | +NODE(2) |
+        || | |          +
+        || | +NODE(2)   |
+        || |            +
+        || +NODE        |
+        || |\           +
+        || | +NODE(2)   |
+        || |            +
+        || +NODE(2)     |
+        |+--------------+
+        |""".stripMargin)
+  }
+
+  test("Variable line compaction with no variables") {
+    val line = Line("NODE", Map.empty, Set.empty)
+    val compacted = new CompactedLine(line, Set.empty)
+    compacted.formattedVariables should be("")
+  }
+
+  test("Variable line compaction with only new variables") {
+    val line = Line("NODE", Map.empty, Set("a", "b"))
+    val compacted = new CompactedLine(line, Set.empty)
+    compacted.formattedVariables should be("a, b")
+  }
+
+  test("Variable line compaction with only old variables") {
+    val line = Line("NODE", Map.empty, Set("a", "b"))
+    val compacted = new CompactedLine(line, Set("a", "b"))
+    compacted.formattedVariables should be("a, b")
+  }
+
+  test("Variable line compaction with old and new variables") {
+    val line = Line("NODE", Map.empty, Set("a", "b", "c", "d"))
+    val compacted = new CompactedLine(line, Set("a", "b"))
+    compacted.formattedVariables should be("c, d -- a, b")
+  }
+
+  test("Variable line compaction with many old and new variables and all compaction lengths") {
     val newvars = ('a' to 'e').toSet[Char].map(c => s"var_$c")
     val repeating = ('f' to 'z').toSet[Char].map(c => s"var_$c")
     val line = Line("NODE", Map.empty, repeating ++ newvars, None)
     val compacted = CompactedLine(line, repeating)
     val maxlen = compacted.formatVariables(1000).length
+    val mintext = "var_a, ..."
     Range(maxlen, 1, -1).foreach { length =>
       val formatted = compacted.formatVariables(length)
-      println(s"$length\t${formatted.length}\t$formatted")
+      if (formatted.length < maxlen)
+        formatted should endWith("...")
+      else
+        formatted should endWith("var_z")
+      if (length < mintext.length) {
+        formatted should be(mintext)
+      } else {
+        withClue(s"Expected formatted length to be no greater than $length.") {
+          formatted.length should be <= length
+        }
+      }
     }
-  }
-
-  test("only new") {
-    val line = Line("NODE", Map.empty, Set("a"))
-    val compacted = new CompactedLine(line, Set.empty)
-    println(compacted.formattedVariables)
-  }
-
-  test("only old") {
-    val line = Line("NODE", Map.empty, Set("a"))
-    val compacted = new CompactedLine(line, Set("a"))
-    println(compacted.formattedVariables)
   }
 
 }
