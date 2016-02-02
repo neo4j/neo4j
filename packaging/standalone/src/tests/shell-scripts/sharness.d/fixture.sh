@@ -27,4 +27,4 @@ neo4j_home() {
 }
 
 export JAVA_CMD="$(pwd)/sharness.d/fake-java"
-export NEO4J_START_WAIT=0
+export NEO4J_START_WAIT=1
