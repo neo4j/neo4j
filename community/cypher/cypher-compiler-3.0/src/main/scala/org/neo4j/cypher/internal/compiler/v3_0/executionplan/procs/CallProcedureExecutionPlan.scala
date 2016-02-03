@@ -19,16 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
-import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, InternalExecutionResult, READ_ONLY}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.Counter
+import org.neo4j.cypher.internal.compiler.v3_0.spi
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_0.spi._
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, ExecutionMode, ExplainExecutionResult, ExplainMode, ProcedurePlannerName, ProcedureRuntimeName, TaskCloser, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ParameterNotFoundException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{FieldSignature, ProcedureSignature}
 
 /**
   * Execution plan for calling procedures
@@ -61,7 +63,7 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArg
   private def createNormalExecutionResult(ctx: QueryContext, taskCloser: TaskCloser,
                                           input: Seq[Any], planType: ExecutionMode) = {
     val descriptionGenerator = () => createNormalPlan
-    new ProcedureExecutionResult(ctx, taskCloser, signature, input, descriptionGenerator, planType)
+    new ProcedureExecutionResult(ctx, taskCloser, spi.ProcedureSignature(signature), input, descriptionGenerator, planType)
   }
 
   private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any]) = {
@@ -75,7 +77,7 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArg
                                             input: Seq[Any], planType: ExecutionMode) = {
     val rowCounter = Counter()
     val descriptionGenerator = createProfilePlanGenerator(rowCounter)
-    new ProcedureExecutionResult(ctx, taskCloser, signature, input, descriptionGenerator, planType) {
+    new ProcedureExecutionResult(ctx, taskCloser, spi.ProcedureSignature(signature), input, descriptionGenerator, planType) {
       override protected def executeCall: Iterator[Array[AnyRef]] = rowCounter.track(super.executeCall)
     }
   }

@@ -97,7 +97,7 @@ trait Clauses extends Parser
       | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )
 
-  def CallInternally = rule("CALL") { ProcedureCall ~~>> (ast.CallInternally(_)) }
+  def Call = rule("CALL") { ProcedureCall ~~>> (ast.UnresolvedCall(_)) }
 
   def Pragma: Rule1[ast.Clause] = rule("") {
     keyword("_PRAGMA") ~~ (

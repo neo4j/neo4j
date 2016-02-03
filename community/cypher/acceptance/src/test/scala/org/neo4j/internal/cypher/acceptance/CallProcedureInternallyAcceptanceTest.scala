@@ -40,7 +40,7 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     createLabeledNode("C")
 
     //When
-    val result = execute("CALL db.labels RETURN *")
+    val result = execute("CALL db.labels AS label RETURN *")
 
     // Then
     result.toList should equal(
@@ -53,7 +53,7 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
   test("sys.db.labels work on an empty database") {
     // Given an empty database
     //When
-    val result = execute("CALL db.labels RETURN *")
+    val result = execute("CALL db.labels AS label RETURN *")
 
     // Then
     result.toList shouldBe empty
@@ -64,7 +64,7 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // When
-    val result = execute("CALL my.first.proc('42', 42) RETURN *")
+    val result = execute("CALL my.first.proc('42', 42) AS x, y RETURN *")
 
     // Then
     result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
@@ -75,7 +75,7 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // When
-    val result = execute("CALL my.first.proc RETURN *", "in0" -> "42", "in1" -> 42)
+    val result = execute("CALL my.first.proc AS x, y RETURN *", "in0" -> "42", "in1" -> 42)
 
     // Then
     result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
@@ -94,8 +94,8 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     register(Neo4jTypes.NTNumber)
 
     // Then
-    execute("CALL my.first.proc(42) RETURN *").toList should equal(List(Map("out0" -> 42)))
-    execute("CALL my.first.proc(42.3) RETURN *").toList should equal(List(Map("out0" -> 42.3)))
+    execute("CALL my.first.proc(42) AS x RETURN *").toList should equal(List(Map("out0" -> 42)))
+    execute("CALL my.first.proc(42.3) AS x RETURN *").toList should equal(List(Map("out0" -> 42.3)))
   }
 
   test("arguments are nullable") {
@@ -103,7 +103,7 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     register(Neo4jTypes.NTNumber)
 
     // Then
-    execute("CALL my.first.proc(NULL) RETURN *").toList should equal(List(Map("out0" -> null)))
+    execute("CALL my.first.proc(NULL) AS x RETURN *").toList should equal(List(Map("out0" -> null)))
   }
 
   test("should fail a procedure declares an integer but gets a float ") {
@@ -111,7 +111,7 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     register(Neo4jTypes.NTInteger)
 
     // Then
-    a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc(42.0) RETURN *"))
+    a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc(42.0) AS x RETURN *"))
   }
 
   test("should fail a procedure declares a float but gets an integer") {
@@ -119,7 +119,7 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     register(Neo4jTypes.NTFloat)
 
     // Then
-    a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc(42) RETURN *"))
+    a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc(42) AS x RETURN *"))
   }
 
   test("should fail if explicit argument is missing") {
@@ -127,7 +127,7 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
-    an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc('ten') RETURN *"))
+    an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc('ten') AS x, y RETURN *"))
   }
 
   test("should fail if too many arguments") {
@@ -135,7 +135,7 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
-    an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42) RETURN *"))
+    an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42) AS x, y, z RETURN *"))
   }
 
   test("should fail if implicit argument is missing") {
@@ -143,7 +143,7 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
-    an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc RETURN *", "in0" -> "42", "in42" -> 42))
+    an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc AS x, y RETURN *", "in0" -> "42", "in42" -> 42))
   }
 
   test("should be able to call a procedure with explain") {
@@ -151,14 +151,14 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     register(Neo4jTypes.NTNumber)
 
     // When
-    val result = execute("EXPLAIN CALL my.first.proc(42) RETURN *")
+    val result = execute("EXPLAIN CALL my.first.proc(42) AS x RETURN *")
 
     // Then
     result shouldBe empty
   }
 
   test("should fail if calling non-existent procedure") {
-    a [CypherExecutionException] shouldBe thrownBy(execute("CALL no.such.thing.exists(42) RETURN *"))
+    a [CypherExecutionException] shouldBe thrownBy(execute("CALL no.such.thing.exists(42) AS x RETURN *"))
   }
 
   private def register(types: Neo4jTypes.AnyType*) = {

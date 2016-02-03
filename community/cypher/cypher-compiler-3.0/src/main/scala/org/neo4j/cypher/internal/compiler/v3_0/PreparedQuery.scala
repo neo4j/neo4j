@@ -43,4 +43,10 @@ case class PreparedQuery(statement: Statement,
 
   def rewrite(rewriter: Rewriter): PreparedQuery =
     copy(statement = statement.endoRewrite(rewriter))(semanticTable, conditions, scopeTree, notificationLogger, plannerName, offset)
+
+  def rewrite(rewriter: Rewriter, tableTransformer: SemanticTable => SemanticTable): PreparedQuery =
+    copy(statement = statement.endoRewrite(rewriter))(
+      semanticTable = tableTransformer(semanticTable),
+      conditions, scopeTree, notificationLogger, plannerName, offset
+    )
 }

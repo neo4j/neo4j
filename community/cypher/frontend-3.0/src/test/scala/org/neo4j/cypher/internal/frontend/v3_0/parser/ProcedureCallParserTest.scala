@@ -21,16 +21,25 @@ package org.neo4j.cypher.internal.frontend.v3_0.parser
 
 import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, ast}
 
-class ProcedureCallParserTest extends ParserAstTest[ast.ProcedureCall] with Expressions with Literals with Base with ProcedureCalls  {
+class ProcedureCallParserTest
+  extends ParserAstTest[ast.ProcedureCall]
+    with Expressions
+    with Literals
+    with Base
+    with ProcedureCalls  {
 
   implicit val parser = ProcedureCall
 
+  test("CALL foo") {
+    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), None))
+  }
+
   test("CALL foo()") {
-    yields(ast.ProcedureCall(List.empty, ast.ProcName("foo")(pos), Some(Seq.empty)))
+    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), Some(Seq.empty)))
   }
 
   test("CALL foo('Test', 1+2)") {
-    yields(ast.ProcedureCall(List.empty, ast.ProcName("foo")(pos),
+    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos),
       Some(Vector(
         ast.StringLiteral("Test")(pos),
         ast.Add(
@@ -41,7 +50,7 @@ class ProcedureCallParserTest extends ParserAstTest[ast.ProcedureCall] with Expr
   }
 
   test("CALL foo.bar.baz('Test', 1+2)") {
-    yields(ast.ProcedureCall(List("foo", "bar"), ast.ProcName("baz")(pos),
+    yields(ast.ProcedureCall(List("foo", "bar"), ast.LiteralProcedureName("baz")(pos),
       Some(Vector(
         ast.StringLiteral("Test")(pos),
         ast.Add(
@@ -50,10 +59,26 @@ class ProcedureCallParserTest extends ParserAstTest[ast.ProcedureCall] with Expr
       )))
     )
   }
+
+  test("CALL foo AS bar") {
+    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), None, Seq(ast.Variable("bar")(pos))))
+  }
+
+  test("CALL foo AS bar, baz") {
+    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), None, Seq(ast.Variable("bar")(pos), ast.Variable("baz")(pos))))
+  }
+
+  test("CALL foo() AS bar") {
+    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), Some(Seq.empty), Seq(ast.Variable("bar")(pos))))
+  }
+
+  test("CALL foo() AS bar, baz") {
+    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), Some(Seq.empty), Seq(ast.Variable("bar")(pos), ast.Variable("baz")(pos))))
+  }
+
   private val pos = DummyPosition(-1)
 
   implicit class StringToVariable(string: String) {
-
     def asVar = id(string)(pos)
   }
 }

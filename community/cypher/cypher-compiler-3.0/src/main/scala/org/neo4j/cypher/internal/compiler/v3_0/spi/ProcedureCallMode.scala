@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.spi
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{DBMS, InternalQueryType, READ_ONLY, READ_WRITE}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_0.{spi => frontend}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -55,6 +56,21 @@ case object DbmsCallMode extends ProcedureCallMode {
 
   override def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] =
     ctx.callDbmsProcedure(signature.name, args)
+}
+
+object ProcedureSignature {
+  import ProcedureModeSupport._
+
+  def apply(signature: frontend.ProcedureSignature): ProcedureSignature =
+    ProcedureSignature(
+      ProcedureName(signature.name.namespace, signature.name.name),
+      signature.inputSignature.map(convertField),
+      signature.outputSignature.map(convertField),
+      signature.mode.callMode
+    )
+
+  def convertField(field: frontend.FieldSignature) =
+    FieldSignature(field.name, field.typ)
 }
 
 case class ProcedureSignature(name: ProcedureName,

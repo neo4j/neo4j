@@ -21,6 +21,8 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.IgnoreAllTests
+import org.neo4j.cypher.{CypherExecutionException, CypherTypeException, ExecutionEngineFunSuite, InvalidArgumentException}
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.{BasicProcedure, Context}
@@ -311,5 +313,4 @@ class CallProcedureGloballyAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   private var kernel: KernelAPI = null
-
 }
