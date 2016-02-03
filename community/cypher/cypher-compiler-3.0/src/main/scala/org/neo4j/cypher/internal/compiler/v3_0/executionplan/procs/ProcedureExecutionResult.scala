@@ -25,9 +25,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaResultValueConverter
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, ProcedureSignature, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.ProcedureModeSupport._
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics, ProfileMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.ProfilerStatisticsNotReadyException
+import org.neo4j.cypher.internal.frontend.v3_0.spi.ProcedureSignature
 
 import scala.collection.JavaConverters._
 
@@ -55,7 +57,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
   private final val outputs = signature.outputSignature
 
   protected def executeCall: Iterator[Array[AnyRef]] =
-    signature.mode.call(context, signature, args.map(javaValues.asDeepJavaResultValue))
+    signature.mode.callMode.call(context, signature, args.map(javaValues.asDeepJavaResultValue))
 
   override protected def createInner = new util.Iterator[util.Map[String, Any]]() {
     override def next(): util.Map[String, Any] =
@@ -76,7 +78,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
   // TODO Look into having the kernel track updates, rather than cypher middle-layers, only sensible way I can think
   //      of to get accurate stats for procedure code
   override def queryStatistics() = context.getOptStatistics.getOrElse(InternalQueryStatistics())
-  override def executionType: InternalQueryType = signature.mode.queryType
+  override def executionType: InternalQueryType = signature.mode.callMode.queryType
 
   private def resultAsMap(rowData: Array[AnyRef]): util.Map[String, Any] = {
     val mapData = new util.HashMap[String, Any](rowData.length)

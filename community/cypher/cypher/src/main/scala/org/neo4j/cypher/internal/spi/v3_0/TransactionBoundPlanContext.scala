@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
+import org.neo4j.cypher.internal.frontend.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
@@ -137,9 +138,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     ProcedureSignature(name, input, output, mode)
   }
 
-  private def asCypherProcMode(mode: KernelProcedureSignature.Mode): ProcedureCallMode = mode match {
-    case KernelProcedureSignature.Mode.READ_ONLY => LazyReadOnlyCallMode
-    case KernelProcedureSignature.Mode.READ_WRITE => EagerReadWriteCallMode
+  private def asCypherProcMode(mode: KernelProcedureSignature.Mode): ProcedureMode = mode match {
+    case KernelProcedureSignature.Mode.READ_ONLY => ProcReadOnly
+    case KernelProcedureSignature.Mode.READ_WRITE => ProcReadWrite
     case _ => throw new CypherExecutionException(
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null )
   }

@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutablePlanBuilder, ExecutionPlan, PlanFingerprint, PlanFingerprintReference, SCHEMA_WRITE}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, PlanContext, ProcedureName, ProcedureSignature, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, PreparedQuery}
-import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{FieldSignature, ProcedureName, ProcedureSignature}
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.TypeSpec
+import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InvalidArgumentException, SemanticTable}
 
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands

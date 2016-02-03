@@ -25,7 +25,9 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_0.NormalMode
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Add, Expression, SignedDecimalIntegerLiteral, StringLiteral}
+import org.neo4j.cypher.internal.frontend.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{ParameterNotFoundException, DummyPosition, InvalidArgumentException, symbols}
 import org.neo4j.kernel.api.Statement
@@ -99,8 +101,10 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
     Seq(FieldSignature("a", symbols.CTInteger) ),
     Seq(FieldSignature("b", symbols.CTInteger)))
 
-  private val writeSignature = ProcedureSignature( readSignature.name,
-    readSignature.inputSignature, readSignature.outputSignature, EagerReadWriteCallMode )
+  private val writeSignature = ProcedureSignature( ProcedureName(Seq.empty, "foo"),
+    Seq(FieldSignature("a", symbols.CTInteger) ),
+    Seq(FieldSignature("b", symbols.CTInteger)),
+    ProcReadWrite )
 
   private val pos = DummyPosition(-1)
   val ctx = mock[QueryContext]

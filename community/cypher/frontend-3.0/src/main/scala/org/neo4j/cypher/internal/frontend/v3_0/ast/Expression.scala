@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext.Simple
+import org.neo4j.cypher.internal.frontend.v3_0.spi.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.v3_0.{ast, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, TypeSpec, _}
@@ -207,7 +208,8 @@ trait InfixFunctionTyping extends FunctionTyping { self: Expression =>
 }
 
 case class ProcedureCall(namespace: List[String], procName: ProcName,
-                         providedArgs: Option[Seq[Expression]])(val position: InputPosition) extends Expression {
+                         providedArgs: Option[Seq[Expression]])(val position: InputPosition)
+  extends Expression {
 
   override def semanticCheck(ctx: SemanticContext): SemanticCheck =
       providedArgs.map(_.semanticCheck(ctx)).getOrElse(SemanticCheckResult.success)

@@ -19,12 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.spi
 
-import java.util
-
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType, READ_ONLY, READ_WRITE}
-import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_0.spi.ProcedureSignature
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 sealed trait ProcedureCallMode {
@@ -52,14 +49,3 @@ case object EagerReadWriteCallMode extends ProcedureCallMode {
     builder.result().iterator
   }
 }
-
-case class ProcedureSignature(name: ProcedureName,
-                              inputSignature: Seq[FieldSignature],
-                              outputSignature: Seq[FieldSignature],
-                              mode: ProcedureCallMode = LazyReadOnlyCallMode)
-
-case class ProcedureName(namespace: Seq[String], name: String) {
-  override def toString = s"""${namespace.mkString(".")}.$name"""
-}
-
-case class FieldSignature(name: String, typ: CypherType)
