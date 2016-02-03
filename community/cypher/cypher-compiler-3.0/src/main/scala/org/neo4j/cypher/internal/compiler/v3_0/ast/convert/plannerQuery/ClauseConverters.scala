@@ -36,6 +36,7 @@ object ClauseConverters {
     case c: Match => addMatchToLogicalPlanInput(acc, c)
     case c: With => addWithToLogicalPlanInput(acc, c)
     case c: Unwind => addUnwindToLogicalPlanInput(acc, c)
+    case c: ResolvedCall => addCallToLogicalPlanInput(acc, c)
     case c: Start => addStartToLogicalPlanInput(acc, c)
     case c: Create => addCreateToLogicalPlanInput(acc, c)
     case c: SetClause => addSetClauseToLogicalPlanInput(acc, c)
@@ -402,6 +403,19 @@ object ClauseConverters {
           exp = clause.expression)
       ).
       withTail(PlannerQuery.empty)
+
+  private def addCallToLogicalPlanInput(builder: PlannerQueryBuilder, clause: ResolvedCall): PlannerQueryBuilder = {
+    val signature = clause.resolvedSignature
+    val call = clause.call
+    val arguments = call.providedArgs.getOrElse(signature.inputSignature.map { field => Parameter(field.name)(call.position) } )
+    val resultFields = call.resultFields.getOrElse(throw new InternalException("Procedure call is expected to have result fields by this point"))
+
+    builder.
+      withHorizon(
+        CallProcedureProjection(signature, arguments, resultFields)
+      ).
+      withTail(PlannerQuery.empty)
+  }
 
   private def addForeachToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Foreach): PlannerQueryBuilder = {
     val currentlyAvailableVariables = builder.currentlyAvailableVariables

@@ -17,16 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v3_0.helpers
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
+import java.lang.{Iterable => JavaIterable}
+import java.util.{Map => JavaMap}
 
-case class UnwindCollection(left: LogicalPlan, variable: IdName, expression: Expression)
-                           (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
-  val lhs = Some(left)
-  def rhs = None
+import scala.collection.JavaConverters._
 
-  def availableSymbols: Set[IdName] = left.availableSymbols + variable
+object ScalaCompatibility {
+
+  // TODO: Test
+  def asScalaCompatible(value: Any): Any = value match {
+    case m: JavaMap[_, _] => m.asScala.map { case (k, v) => asScalaCompatible(k) -> asScalaCompatible(v) }
+    case c: JavaIterable[_] => c.asScala.map(asScalaCompatible)
+    case t: Traversable[_] => t.toIterable
+    case anything => anything
+  }
 }

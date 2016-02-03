@@ -89,12 +89,8 @@ public class ProcedureIT
     {
         //Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage(
-                "Parameter `name` for procedure `org.neo4j.procedure.simpleArgument`" + lineSeparator() +
-                "expects value of type Integer but got value of type String." + lineSeparator() + lineSeparator() +
-                "Usage: CALL org.neo4j.procedure.simpleArgument(<name>)" + lineSeparator() +
-                "Parameters:" + lineSeparator() +
-                "    name (type Integer)"  );
+        exception.expectMessage("Type mismatch: expected Integer but was String (line 1, column 41 (offset: 40))");
+
         // When
         try ( Transaction ignore = db.beginTx() )
         {
@@ -107,9 +103,7 @@ public class ProcedureIT
     {
         //Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage(
-                "Failed to invoke procedure `org.neo4j.procedure.simpleArgument`: Caused by: org.neo4j.kernel.api.exceptions.ProcedureException: " +
-                "Procedure `org.neo4j.procedure.simpleArgument` takes 1 arguments but 0 was provided.");
+        exception.expectMessage("Procedure call does not provide the required number of arguments (1)  (line 1, column 1 (offset: 0))");
         // When
         try ( Transaction ignore = db.beginTx() )
         {

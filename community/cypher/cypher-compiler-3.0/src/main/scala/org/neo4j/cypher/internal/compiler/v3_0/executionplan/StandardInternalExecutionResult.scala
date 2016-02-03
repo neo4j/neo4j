@@ -54,7 +54,10 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   override def hasNext = inner.hasNext
   override def next() = scalaValues.asDeepScalaResultMap(inner.next())
 
+  // Override one of them in subclasses
+  override def javaColumns: util.List[String] = columns.asJava
   override def columns: List[String] = javaColumns.asScala.toList
+
   override def columnAs[T](column: String): Iterator[T] = map { case m => extractScalaColumn(column, m).asInstanceOf[T] }
 
   override def javaIterator: ResourceIterator[util.Map[String, Any]] = new ClosingJavaIterator[util.Map[String, Any]] {

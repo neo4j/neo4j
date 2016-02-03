@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, CypherCompilerConfiguration, Monitors, PreparedQuery, devNullLogger}
+import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{Scope, SemanticTable}
@@ -96,7 +96,7 @@ class RuleExecutablePlanBuilderTest extends CypherFunSuite {
 
   private def buildExecutionPipe(q: String): Pipe = {
     val statement = parser.parse(q)
-    val parsedQ = PreparedQuery(statement, q, Map.empty)(mock[SemanticTable], Set.empty, mock[Scope], devNullLogger)
+    val parsedQ = PreparedQuerySemantics(statement, q, Map.empty, mock[SemanticTable], mock[Scope])(devNullLogger)
     planBuilder.producePipe(parsedQ, planContext, mock[CompilationPhaseTracer]).pipe
   }
 }

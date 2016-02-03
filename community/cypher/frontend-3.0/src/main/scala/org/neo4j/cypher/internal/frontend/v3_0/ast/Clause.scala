@@ -299,22 +299,15 @@ abstract class CallClause extends Clause {
 }
 
 case class UnresolvedCall(call: ProcedureCall)(val position: InputPosition) extends CallClause {
-  def resolve(signature: Try[ProcedureSignature]): ResolvedCall = ResolvedCall(call, signature)(position)
-
   override def semanticCheck = call.semanticCheck(Expression.SemanticContext.Results)
 }
 
-case class ResolvedCall(call: ProcedureCall, resolvedSignature: Try[ProcedureSignature])(val position: InputPosition) extends CallClause {
+case class ResolvedCall(call: ProcedureCall,
+                        resolvedSignature: ProcedureSignature)
+                       (val position: InputPosition)
+  extends CallClause {
 
-  override def semanticCheck = {
-    resolvedSignature match {
-      case Success(signature) =>
-        call.semanticCheck(Expression.SemanticContext.Results, signature)
-      case Failure(e) =>
-        (state: SemanticState) =>
-          SemanticCheckResult.error(state, SemanticError(e.getMessage, position))
-    }
-  }
+  override def semanticCheck = call.semanticCheck(Expression.SemanticContext.Results, resolvedSignature)
 }
 
 sealed trait HorizonClause extends Clause with SemanticChecking {
