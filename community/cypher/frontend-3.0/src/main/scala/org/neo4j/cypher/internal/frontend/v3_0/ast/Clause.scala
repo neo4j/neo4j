@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import org.neo4j.cypher.internal.frontend.v3_0._
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext.Simple
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
@@ -393,6 +394,16 @@ case class Return(
       Seq(SemanticError("RETURN * is not allowed when there are no variables in scope", position))
     else
       Seq()
+}
+
+// TODO: Make Projection clause
+case class CallInternally(call: ProcedureCall)(val position: InputPosition) extends HorizonClause {
+  override def name = "CALL"
+
+  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
+    val previousCheck: SemanticCheck = s => SemanticCheckResult.success(s.importScope(previousScope))
+    previousCheck chain call.semanticCheck(Simple)
+  }
 }
 
 case class PragmaWithout(excluded: Seq[Variable])(val position: InputPosition) extends HorizonClause {

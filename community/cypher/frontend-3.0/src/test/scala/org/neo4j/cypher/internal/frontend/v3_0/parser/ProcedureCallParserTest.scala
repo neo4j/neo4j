@@ -21,20 +21,16 @@ package org.neo4j.cypher.internal.frontend.v3_0.parser
 
 import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, ast}
 
-class CallProcedureParserTest extends ParserAstTest[ast.Command] with Command {
+class ProcedureCallParserTest extends ParserAstTest[ast.ProcedureCall] with Expressions with Literals with Base with ProcedureCalls  {
 
-  implicit val parser = Command
-
-  test("CALL foo") {
-    yields(ast.CallProcedure(List.empty, ast.ProcName("foo")(pos), None))
-  }
+  implicit val parser = ProcedureCall
 
   test("CALL foo()") {
-    yields(ast.CallProcedure(List.empty, ast.ProcName("foo")(pos), Some(Seq.empty)))
+    yields(ast.ProcedureCall(List.empty, ast.ProcName("foo")(pos), Some(Seq.empty)))
   }
 
   test("CALL foo('Test', 1+2)") {
-    yields(ast.CallProcedure(List.empty, ast.ProcName("foo")(pos),
+    yields(ast.ProcedureCall(List.empty, ast.ProcName("foo")(pos),
       Some(Vector(
         ast.StringLiteral("Test")(pos),
         ast.Add(
@@ -45,7 +41,7 @@ class CallProcedureParserTest extends ParserAstTest[ast.Command] with Command {
   }
 
   test("CALL foo.bar.baz('Test', 1+2)") {
-    yields(ast.CallProcedure(List("foo", "bar"), ast.ProcName("baz")(pos),
+    yields(ast.ProcedureCall(List("foo", "bar"), ast.ProcName("baz")(pos),
       Some(Vector(
         ast.StringLiteral("Test")(pos),
         ast.Add(
