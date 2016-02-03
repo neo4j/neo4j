@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, topDown}
 
 case object unnestApply extends Rewriter {
 
@@ -41,9 +41,13 @@ case object unnestApply extends Rewriter {
     FE : Foreach
    */
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
-    // SR Ax R => R iff Arg0 introduces no arguments
+  private val instance: Rewriter = topDown(Rewriter.lift {
+    // SR Ax R => R
     case Apply(_: SingleRow, rhs) =>
+      rhs
+
+    // Arg Ax R => R
+    case Apply(_: Argument, rhs) =>
       rhs
 
     // L Ax Arg => L
