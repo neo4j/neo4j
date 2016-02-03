@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 case class ProcedureSignature(name: ProcedureName,
                               inputSignature: Seq[FieldSignature],
                               outputSignature: Seq[FieldSignature],
-                              mode: ProcedureMode = ProcReadOnly)
+                              accessMode: ProcedureAccessMode)
 
 case class ProcedureName(namespace: Seq[String], name: String) {
   override def toString = s"""${namespace.mkString(".")}.$name"""
@@ -32,8 +32,8 @@ case class ProcedureName(namespace: Seq[String], name: String) {
 
 case class FieldSignature(name: String, typ: CypherType)
 
-sealed trait ProcedureMode
+sealed trait ProcedureAccessMode
 
-case object ProcReadOnly extends ProcedureMode
-case object ProcReadWrite extends ProcedureMode
-case object ProcDbms extends ProcedureMode
+case object ProcedureReadOnlyAccess extends ProcedureAccessMode
+case object ProcedureReadWriteAccess extends ProcedureAccessMode
+case object ProcedureDbmsAccess extends ProcedureAccessMode

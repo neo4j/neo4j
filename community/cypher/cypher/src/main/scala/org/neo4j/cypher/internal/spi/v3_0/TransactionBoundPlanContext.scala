@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
-import org.neo4j.cypher.internal.frontend.v3_0.{spi => frontend}
-import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, symbols}
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureDbmsAccess, ProcedureReadOnlyAccess, ProcedureReadWriteAccess}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, spi => frontend, symbols}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
@@ -37,7 +37,6 @@ import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProcedureSignature}
 
 import scala.collection.JavaConverters._
-import scala.util.Try
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
   extends TransactionBoundTokenContext(tc.statement) with PlanContext {
@@ -129,7 +128,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
 
   val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
-  override def procedureSignature(name: frontend.ProcedureName) = Try {
+  override def procedureSignature(name: frontend.ProcedureName) = {
+    import ProcedureModeSupport._
+
     val kn = new KernelProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
     val ks = tc.statement.readOperations().procedureGet(kn)
     val input = ks.inputSignature().asScala.map(s => frontend.FieldSignature(s.name(), asCypherType(s.neo4jType())))
@@ -139,10 +140,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     frontend.ProcedureSignature(name, input, output, mode)
   }
 
-  private def asCypherProcMode(mode: KernelProcedureSignature.Mode): frontend.ProcedureMode = mode match {
-    case KernelProcedureSignature.Mode.READ_ONLY => frontend.ProcReadOnly
-    case KernelProcedureSignature.Mode.READ_WRITE => frontend.ProcReadWrite
-    case KernelProcedureSignature.Mode.DBMS => frontend.ProcDbms
+  private def asCypherProcMode(mode: KernelProcedureSignature.Mode): frontend.ProcedureAccessMode = mode match {
+    case KernelProcedureSignature.Mode.READ_ONLY => ProcedureReadOnlyAccess
+    case KernelProcedureSignature.Mode.READ_WRITE => ProcedureReadWriteAccess
+    case KernelProcedureSignature.Mode.DBMS => ProcedureDbmsAccess
     case _ => throw new CypherExecutionException(
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null )
   }

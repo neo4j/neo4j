@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{DeleteExpr
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, SortDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{DeleteExpression, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.spi.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast, _}
 
@@ -417,6 +418,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planUnwind(inner: LogicalPlan, name: IdName, expression: Expression)(implicit context: LogicalPlanningContext) = {
     val solved = inner.solved.updateTailOrSelf(_.withHorizon(UnwindProjection(name, expression)))
     UnwindCollection(inner, name, expression)(solved)
+  }
+
+  def planCallProcedure(inner: LogicalPlan, signature: ProcedureSignature, argExprs: Seq[Expression], resultFields: Seq[Variable])(implicit context: LogicalPlanningContext) = {
+    val solved = inner.solved.updateTailOrSelf(_.withHorizon(CallProcedureProjection(signature,argExprs, resultFields)))
+    CallProcedure(inner, signature, argExprs, resultFields)(solved)
   }
 
   def planPassAll(inner: LogicalPlan)(implicit context: LogicalPlanningContext) = {

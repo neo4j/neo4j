@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, PreparedQuery, RecordingNotificationLogger}
+import org.neo4j.cypher.internal.compiler.v3_0.{PreparedQuerySemantics, CompilationPhaseTracer, PreparedQuerySyntax, RecordingNotificationLogger}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.PlannerUnsupportedNotification
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -53,7 +53,7 @@ class FallbackPlanBuilderTest extends CypherFunSuite {
   }
 
   test("should warn if falling back from a specified plan") {
-    val preparedQuery = new PreparedQuery(null, null, null)(null, null, null, new RecordingNotificationLogger)
+    val preparedQuery = new PreparedQuerySemantics(null, null, null, null, null)(new RecordingNotificationLogger)
     val builder = mock[ExecutablePlanBuilder]
     when(builder.producePlan(preparedQuery, null, null, null)).thenThrow(classOf[CantHandleQueryException])
     WarningFallbackPlanBuilder(mock[ExecutablePlanBuilder], builder, mock[NewLogicalPlanSuccessRateMonitor])
@@ -63,7 +63,7 @@ class FallbackPlanBuilderTest extends CypherFunSuite {
   }
 
   test("should not warn if falling back from fallback plan") {
-    val preparedQuery = new PreparedQuery(null, null, null)(null, null, null, new RecordingNotificationLogger)
+    val preparedQuery = new PreparedQuerySemantics(null, null, null, null, null)(new RecordingNotificationLogger)
     val builder = mock[ExecutablePlanBuilder]
     when(builder.producePlan(preparedQuery, null, null, null)).thenThrow(classOf[CantHandleQueryException])
     SilentFallbackPlanBuilder(mock[ExecutablePlanBuilder], builder, mock[NewLogicalPlanSuccessRateMonitor])
@@ -81,7 +81,7 @@ class FallbackPlanBuilderTest extends CypherFunSuite {
     val oldBuilder = mock[ExecutablePlanBuilder]
     val newBuilder = mock[ExecutablePlanBuilder]
     val pipeBuilder = new SilentFallbackPlanBuilder(oldBuilder, newBuilder, mock[NewLogicalPlanSuccessRateMonitor])
-    val preparedQuery = PreparedQuery(parser.parse(queryText), queryText, Map.empty)(null, Set.empty, null, null)
+    val preparedQuery = PreparedQuerySemantics(parser.parse(queryText), queryText, Map.empty, null, null)(null, null, Set.empty)
     val executionPlan = mock[ExecutionPlan]
     when( oldBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING, createFingerprintReference) ).thenReturn(executionPlan)
     when( newBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING, createFingerprintReference) ).thenReturn(executionPlan)

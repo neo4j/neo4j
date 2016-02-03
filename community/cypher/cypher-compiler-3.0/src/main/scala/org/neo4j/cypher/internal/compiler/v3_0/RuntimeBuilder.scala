@@ -50,7 +50,7 @@ trait RuntimeBuilder {
   def apply(periodicCommit: Option[PeriodicCommit], logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext,
             planContext: PlanContext, tracer: CompilationPhaseTracer, semanticTable: SemanticTable,
             monitor: NewRuntimeSuccessRateMonitor, plannerName: PlannerName,
-            preparedQuery: PreparedQuery,
+            preparedQuery: PreparedQuerySemantics,
             createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
             config: CypherCompilerConfiguration): ExecutionPlan = {
     try {
@@ -69,19 +69,19 @@ trait RuntimeBuilder {
 
   def interpretedProducer: InterpretedPlanBuilder
 
-  def fallback(preparedQuery: PreparedQuery): Unit
+  def fallback(preparedQuery: PreparedQuerySemantics): Unit
 }
 
 case class SilentFallbackRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder, compiledProducer: CompiledPlanBuilder)
   extends RuntimeBuilder {
 
-  override def fallback(preparedQuery: PreparedQuery): Unit = {}
+  override def fallback(preparedQuery: PreparedQuerySemantics): Unit = {}
 }
 
 case class WarningFallbackRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder, compiledProducer: CompiledPlanBuilder)
   extends RuntimeBuilder {
 
-  override def fallback(preparedQuery: PreparedQuery): Unit = preparedQuery.notificationLogger
+  override def fallback(preparedQuery: PreparedQuerySemantics): Unit = preparedQuery.notificationLogger
     .log(RuntimeUnsupportedNotification)
 }
 
@@ -89,7 +89,7 @@ case class InterpretedRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder
   override def apply(periodicCommit: Option[PeriodicCommit], logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext,
                      planContext: PlanContext, tracer: CompilationPhaseTracer, semanticTable: SemanticTable,
                      monitor: NewRuntimeSuccessRateMonitor, plannerName: PlannerName,
-                     preparedQuery: PreparedQuery,
+                     preparedQuery: PreparedQuerySemantics,
                      createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
                      config: CypherCompilerConfiguration): ExecutionPlan =
     interpretedProducer(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, preparedQuery, createFingerprintReference, config)
@@ -97,21 +97,21 @@ case class InterpretedRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder
 
   override def compiledProducer = throw new InternalException("This should never be called")
 
-  override def fallback(preparedQuery: PreparedQuery) = throw new InternalException("This should never be called")
+  override def fallback(preparedQuery: PreparedQuerySemantics) = throw new InternalException("This should never be called")
 }
 
 case class ErrorReportingRuntimeBuilder(compiledProducer: CompiledPlanBuilder) extends RuntimeBuilder {
 
   override def interpretedProducer = throw new InternalException("This should never be called")
 
-  override def fallback(preparedQuery: PreparedQuery) = throw new
+  override def fallback(preparedQuery: PreparedQuerySemantics) = throw new
       InvalidArgumentException("The given query is not currently supported in the selected runtime")
 }
 
 case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors) {
 
   def apply(periodicCommit: Option[PeriodicCommit], logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext,
-            planContext: PlanContext, tracer: CompilationPhaseTracer, preparedQuery: PreparedQuery,
+            planContext: PlanContext, tracer: CompilationPhaseTracer, preparedQuery: PreparedQuerySemantics,
             createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
             config: CypherCompilerConfiguration) =
     closing(tracer.beginPhase(PIPE_BUILDING)) {
@@ -126,7 +126,7 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
   def apply(logicalPlan: LogicalPlan, semanticTable: SemanticTable, planContext: PlanContext,
             monitor: NewRuntimeSuccessRateMonitor, tracer: CompilationPhaseTracer,
             plannerName: PlannerName,
-            preparedQuery: PreparedQuery,
+            preparedQuery: PreparedQuerySemantics,
             createFingerprintReference:Option[PlanFingerprint]=>PlanFingerprintReference): ExecutionPlan = {
             monitor.newPlanSeen(logicalPlan)
     closing(tracer.beginPhase(CODE_GENERATION)) {

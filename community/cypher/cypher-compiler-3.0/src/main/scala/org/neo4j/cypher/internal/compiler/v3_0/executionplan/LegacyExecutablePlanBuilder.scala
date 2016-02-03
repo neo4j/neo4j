@@ -42,11 +42,11 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConf
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
-  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
-  createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan =
+  override def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
+                           createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan =
     interpretedToExecutionPlan(producePipe(inputQuery, planContext, tracer), planContext, inputQuery, createFingerprintReference, config)
 
-  def producePipe(in: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer): PipeInfo = {
+  def producePipe(in: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer): PipeInfo = {
     val rewriter = rewriterSequencer("LegacyPipeBuilder")(reattachAliasedExpressions).rewriter
     val rewrite = in.rewrite(rewriter)
 

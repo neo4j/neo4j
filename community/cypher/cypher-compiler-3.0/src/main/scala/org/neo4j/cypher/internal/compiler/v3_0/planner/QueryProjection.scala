@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.CSVFormat
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LazyMode, StrictnessMode}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{EagerMode, IdName, LazyMode, StrictnessMode}
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureReadOnlyAccess, ProcedureSignature}
 
 sealed trait QueryHorizon {
   def exposedSymbols(qg: QueryGraph): Set[IdName]
@@ -158,6 +159,14 @@ case class UnwindProjection(variable: IdName, exp: Expression) extends QueryHori
   override def dependingExpressions = Seq(exp)
 
   override def preferredStrictness = None
+}
+
+case class CallProcedureProjection(signature: ProcedureSignature, argExprs: Seq[Expression], resultFields: Seq[Variable]) extends QueryHorizon {
+  override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds ++ resultFields.map(v => IdName(v.name))
+
+  override def dependingExpressions = argExprs
+
+  override def preferredStrictness = Some(if (signature.accessMode == ProcedureReadOnlyAccess) LazyMode else EagerMode)
 }
 
 case class LoadCSVProjection(variable: IdName, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {

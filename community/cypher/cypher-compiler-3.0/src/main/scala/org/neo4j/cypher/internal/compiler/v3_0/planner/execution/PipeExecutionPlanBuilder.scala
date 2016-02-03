@@ -31,11 +31,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{PeriodicCommit, CantHandleQueryException, logical}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{ProcedureSignature, ProcedureName, InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast => compilerAst, pipes}
-import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.graphdb.Relationship
 import org.neo4j.helpers.Clock
@@ -308,6 +308,11 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
     case UnwindCollection(_, variable, collection) =>
       UnwindPipe(source, toCommandExpression(collection), variable.name)()
+
+    case CallProcedure(_, signature, argExprs, resultFields) =>
+      val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
+      val procedureSignature = ProcedureSignature(signature)
+      CallProcedurePipe(source, procedureSignature.name, callMode, argExprs.map(toCommandExpression), procedureSignature.outputSignature)()
 
     case LoadCSVPlan(_, url, variableName, format, fieldTerminator) =>
       LoadCSVPipe(source, format, toCommandExpression(url), variableName.name, fieldTerminator)()

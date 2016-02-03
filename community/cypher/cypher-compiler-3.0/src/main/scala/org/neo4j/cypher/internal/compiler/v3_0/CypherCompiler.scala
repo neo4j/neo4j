@@ -28,11 +28,12 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.closing
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{PlanContext, ProcedureSignatureResolver}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{ASTAnnotationMap, ResolvedCall, Statement, UnresolvedCall}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{ResolvedCall, Statement, UnresolvedCall, _}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
+import org.neo4j.cypher.internal.frontend.v3_0.spi.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticTable, inSequence, _}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -151,14 +152,27 @@ case class CypherCompiler(parser: CypherParser,
 
   def planQuery(queryText: String, context: PlanContext, notificationLogger: InternalNotificationLogger,
                 plannerName: String = "",
-                offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) =
-    planPreparedQuery(prepareQuery(queryText, queryText, notificationLogger, plannerName), context, CompilationPhaseTracer.NO_TRACING)
+                offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) = {
+    planPreparedQuery(prepareSyntacticQuery(queryText, queryText, notificationLogger, plannerName), context, offset, CompilationPhaseTracer.NO_TRACING)
+  }
 
+  def planPreparedQuery(syntacticQuery: PreparedQuerySyntax,
+                        context: PlanContext,
+                        offset: Option[InputPosition] = None,
+                        tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
+    val semanticQuery = prepareSemanticQuery(syntacticQuery, context, offset, tracer)
+    val cache = provideCache(cacheAccessor, cacheMonitor, context)
+    val (executionPlan, _) = cache.getOrElseUpdate(syntacticQuery.statement, syntacticQuery.queryText,
+      _.isStale (context.txIdProvider, context.statistics),
+      executionPlanBuilder.build(context, semanticQuery, tracer)
+    )
+    (executionPlan, semanticQuery.extractedParams)
+  }
 
-  def prepareQuery(queryText: String, rawQueryText: String, notificationLogger: InternalNotificationLogger,
-                   plannerName: String = "",
-                   offset: Option[InputPosition] = None,
-                   tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuery = {
+  def prepareSyntacticQuery(queryText: String, rawQueryText: String, notificationLogger: InternalNotificationLogger,
+                            plannerName: String = "",
+                            offset: Option[InputPosition] = None,
+                            tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuerySyntax = {
 
     val parsedStatement = closing(tracer.beginPhase(PARSING)) {
       parser.parse(queryText, offset)
@@ -178,48 +192,60 @@ case class CypherCompiler(parser: CypherParser,
     val (rewrittenStatement, extractedParams, postConditions) = closing(tracer.beginPhase(AST_REWRITE)) {
       astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
     }
+
+    PreparedQuerySyntax(rewrittenStatement, queryText, extractedParams)(notificationLogger, plannerName, postConditions)
+  }
+
+  def prepareSemanticQuery(syntacticQuery: PreparedQuerySyntax,
+                           context: PlanContext,
+                           offset: Option[InputPosition] = None,
+                           tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuerySemantics = {
+
+    val queryText = syntacticQuery.queryText
+
+    val rewrittenSyntacticQuery = rewriteProcedureCalls(context, syntacticQuery)
+
+    val mkException = new SyntaxExceptionCreator(queryText, offset)
     val postRewriteSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
-      semanticChecker.check(queryText, rewrittenStatement, mkException)
+      semanticChecker.check(syntacticQuery.queryText, rewrittenSyntacticQuery.statement, mkException)
     }
+    // TODO: Drop un-needed coercions
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
-    PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree, notificationLogger, plannerName, offset)
-  }
-
-  def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext, tracer: CompilationPhaseTracer):
-  (ExecutionPlan, Map[String, Any]) = {
-    val cache = provideCache(cacheAccessor, cacheMonitor, context)
-    val (executionPlan, _) = cache.getOrElseUpdate(parsedQuery.statement, parsedQuery.queryText,
-      plan => plan.isStale(context.txIdProvider, context.statistics), {
-        executionPlanBuilder.build(context, resolveCallSignatures(parsedQuery, context), tracer)
-      }
-    )
-    (executionPlan, parsedQuery.extractedParams)
-  }
-
-  // TODO: Break out
-  private def resolveCallSignatures(query: PreparedQuery, signatureResolver: ProcedureSignatureResolver): PreparedQuery = {
-    // Build resolved replacement calls
-    val rewrites = query.statement.treeFold(ASTAnnotationMap.empty[UnresolvedCall, ResolvedCall]) {
-      case unresolved@UnresolvedCall(call) =>
-        val signature = signatureResolver.procedureSignature(call.procedureName)
-        val resolved = unresolved.resolve(signature)
-        (acc) => acc.updated(unresolved, resolved) -> None
-    }
-
-    // Rewriter for updating the statement to use resolved calls
-    val rewriter = Rewriter.lift {
-      case unresolved@UnresolvedCall(call) =>
-        rewrites.get(unresolved).get
-    }
-
-    // Do it all
-    val result = query.rewrite(bottomUp(rewriter), _.replaceNodes(rewrites.toSeq: _*))
+    val result = rewrittenSyntacticQuery.withSemantics(table, postRewriteSemanticState.scopeTree)
     result
   }
 
-  private def syntaxDeprecationNotifications(statement: Statement) =
-  // We don't have any deprecations in 3.0 yet
+  private def rewriteProcedureCalls(context: PlanContext, syntacticQuery: PreparedQuerySyntax ): PreparedQuerySyntax = {
+    val resolveCalls = bottomUp(Rewriter.lift {
+      case unresolved@UnresolvedCall(call) =>
+        val signature = context.procedureSignature(call.procedureName)
+        val newCall = call.copy(providedArgs = call.providedArgs.map(coerceInputs(signature)))(call.position)
+        ResolvedCall(newCall, signature)(unresolved.position)
+    })
+
+    val addExclusiveCallResultFields = Rewriter.lift {
+      case q@Query(None, part@SingleQuery(Seq(resolved@ResolvedCall(call, signature)))) if call.resultFields.isEmpty =>
+        val newArgs = call.providedArgs.getOrElse(signature.inputSignature.map { f => CoerceTo(Parameter(f.name)(call.position), f.typ) })
+        val newResults = signature.outputSignature.map { f => Variable(f.name)(call.position) }
+        val newCall = call.copy(providedArgs = Some(newArgs), resultFields = Some(newResults))(call.position)
+        val result = q.copy(part = part.copy(clauses = Seq(resolved.copy(call = newCall)(resolved.position)))(part.position))(q.position)
+        result
+    }
+
+    syntacticQuery.rewrite(resolveCalls).rewrite(addExclusiveCallResultFields)
+  }
+
+  private def coerceInputs(signature: ProcedureSignature)(exprs: Seq[Expression]) = {
+    val types = signature.inputSignature.map(f => Some(f.typ)).toStream ++ Stream.continually(None)
+    exprs.zip(types).map {
+      case (expr, Some(typ)) => CoerceTo(expr, typ)
+      case (expr, _) => expr
+    }
+  }
+
+  private def syntaxDeprecationNotifications( statement: Statement) =
+    // We don't have any deprecations in 3.0 yet
     Seq.empty[InternalNotification]
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],

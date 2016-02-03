@@ -66,7 +66,7 @@ object ProcedureSignature {
       ProcedureName(signature.name.namespace, signature.name.name),
       signature.inputSignature.map(convertField),
       signature.outputSignature.map(convertField),
-      signature.mode.callMode
+      signature.accessMode.callMode
     )
 
   def convertField(field: frontend.FieldSignature) =

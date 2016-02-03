@@ -26,16 +26,15 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_0.NormalMode
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Add, Expression, SignedDecimalIntegerLiteral, StringLiteral}
-import org.neo4j.cypher.internal.frontend.v3_0.spi.ProcReadWrite
-import org.neo4j.cypher.internal.frontend.v3_0.{spi => frontend}
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureReadOnlyAccess, ProcedureReadWriteAccess}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, ParameterNotFoundException, symbols}
+import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, spi => frontend, symbols}
 
 class CallProcedureExecutionPlanTest extends CypherFunSuite {
 
   test("should be able to call procedure with single argument") {
     // Given
-    val proc = CallProcedureExecutionPlan(readSignature, Some(Seq(add(int(42), int(42)))))
+    val proc = CallProcedureExecutionPlan(readSignature, Seq(add(int(42), int(42))))
     // When
     val res = proc.run(ctx, NormalMode, Map.empty)
 
@@ -43,28 +42,9 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
     res.toList should equal(List(Map("b" -> 84)))
   }
 
-  test("should be able to call procedure with single argument using parameters") {
-    // Given
-    val proc = CallProcedureExecutionPlan(readSignature, None)
-
-    // When
-    val res = proc.run(ctx, NormalMode, Map("a" -> 84))
-
-    // Then
-    res.toList should equal(List(Map("b" -> 84)))
-  }
-
-  test("should fail if parameter is missing") {
-    // When
-    val proc = CallProcedureExecutionPlan(readSignature, None)
-
-    // Then
-    an [ParameterNotFoundException] should be thrownBy proc.run(ctx, NormalMode, Map())
-  }
-
   test("should eagerize write procedure") {
     // Given
-    val proc = CallProcedureExecutionPlan(writeSignature, Some(Seq(add(int(42), int(42)))))
+    val proc = CallProcedureExecutionPlan(writeSignature, Seq(add(int(42), int(42))))
 
     // When
     proc.run(ctx, NormalMode, Map.empty)
@@ -75,7 +55,7 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
 
   test("should not eagerize read procedure") {
     // Given
-    val proc = CallProcedureExecutionPlan(readSignature, Some(Seq(add(int(42), int(42)))))
+    val proc = CallProcedureExecutionPlan(readSignature, Seq(add(int(42), int(42))))
 
     // When
     proc.run(ctx, NormalMode, Map.empty)
@@ -94,12 +74,14 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
 
   private val readSignature = frontend.ProcedureSignature( frontend.ProcedureName(Seq.empty, "foo"),
     Seq(frontend.FieldSignature("a", symbols.CTInteger) ),
-    Seq(frontend.FieldSignature("b", symbols.CTInteger)))
+    Seq(frontend.FieldSignature("b", symbols.CTInteger) ),
+    ProcedureReadOnlyAccess
+  )
 
   private val writeSignature = frontend.ProcedureSignature( frontend.ProcedureName(Seq.empty, "foo"),
     Seq(frontend.FieldSignature("a", symbols.CTInteger) ),
-    Seq(frontend.FieldSignature("b", symbols.CTInteger)),
-    ProcReadWrite )
+    Seq(frontend.FieldSignature("b", symbols.CTInteger) ),
+    ProcedureReadWriteAccess )
 
   private val pos = DummyPosition(-1)
   val ctx = mock[QueryContext]

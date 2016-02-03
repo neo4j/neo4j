@@ -49,6 +49,9 @@ case object PlanEventHorizon
       case UnwindProjection(variable, expression) =>
         context.logicalPlanProducer.planUnwind(plan, variable, expression)
 
+      case CallProcedureProjection(signature, argExprs, resultFields) =>
+        context.logicalPlanProducer.planCallProcedure(plan, signature, argExprs, resultFields)
+
       case LoadCSVProjection(variableName, url, format, fieldTermiator) =>
         context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTermiator)
 
