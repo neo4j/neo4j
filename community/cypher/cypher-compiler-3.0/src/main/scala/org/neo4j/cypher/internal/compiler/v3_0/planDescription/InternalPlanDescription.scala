@@ -181,6 +181,33 @@ final case class PlanDescriptionImpl(id: Id,
   }
 }
 
+final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription]) extends InternalPlanDescription {
+
+  def planDescription = if (similar.size == 1) similar.head else this
+
+  override def name: String = s"${similar.head.name}(${similar.size})"
+
+  override def variables: Set[String] = similar.foldLeft(Set.empty[String]){ (acc, plan) =>
+    acc ++ plan.variables
+  }
+
+  override def children: Children = similar.last.children
+
+  override def arguments: Seq[Argument] = similar.foldLeft(Set.empty[Argument]){ (acc, plan) =>
+    acc ++ plan.arguments
+  }.toSeq
+
+  override def find(name: String): Seq[InternalPlanDescription] = similar.last.find(name)
+
+  override def id: Id = similar.last.id
+
+  override def addArgument(argument: Argument): InternalPlanDescription = ???
+
+  override def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription = f(copy
+  (similar = similar.map(f)))
+
+}
+
 final case class SingleRowPlanDescription(id: Id, arguments: Seq[Argument] = Seq.empty, variables: Set[String]) extends InternalPlanDescription {
   override def andThen(id: Id, name: String, variables: Set[String], newArguments: Argument*) =
     new PlanDescriptionImpl(id, name, NoChildren, newArguments, variables)
