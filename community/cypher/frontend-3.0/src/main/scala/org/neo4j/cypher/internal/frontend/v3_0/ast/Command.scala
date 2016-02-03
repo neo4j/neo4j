@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import org.neo4j.cypher.internal.frontend.v3_0._
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext.Simple
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, _}
 
@@ -73,12 +74,6 @@ case class DropNodePropertyExistenceConstraint(variable: Variable, label: LabelN
 case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
 
 case class DropRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
-
-case class CallProcedure(namespace: List[String], procName: ProcName,
-                         providedArgs: Option[Seq[Expression]])(val position: InputPosition) extends Command {
-
-  override def semanticCheck: SemanticCheck = providedArgs.map(_.semanticCheck(Simple)).getOrElse(SemanticCheckResult.success)
-}
 
 case class ProcName(name: String)(val position: InputPosition) extends SymbolicName {
   override def equals(x: Any): Boolean = x match {

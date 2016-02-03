@@ -38,10 +38,9 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
 
     inputQuery.statement match {
 
-      // CALL foo.bar.baz("arg1", 2)
-      case call@CallProcedure(namespace, procName, providedArgs) =>
-        // Get signature
-        val signature = planContext.procedureSignature(ProcedureName(namespace, procName.name))
+      // Global call: CALL foo.bar.baz("arg1", 2)
+      case Query(None, SingleQuery(Seq(CallInternally(ProcedureCall(namespace, ProcName(name), providedArgs))))) =>
+        val signature = planContext.procedureSignature(ProcedureName(namespace, name))
 
         // Check arity
         providedArgs.foreach { args =>
