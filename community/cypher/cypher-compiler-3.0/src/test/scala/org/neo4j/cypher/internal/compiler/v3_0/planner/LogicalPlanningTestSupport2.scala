@@ -31,11 +31,12 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGrap
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.{LogicalPlanRewriter, unnestApply}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, ProcedureName, ProcedureSignature}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureName, ProcedureSignature}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.frontend.v3_0.{Foldable, PropertyKeyId, SemanticTable, _}
 import org.neo4j.graphdb.Node
@@ -47,6 +48,7 @@ import org.scalatest.matchers.{BeMatcher, MatchResult}
 
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
+import scala.util.Try
 
 case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
 
@@ -152,9 +154,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       override def bidirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node], end: EntityProducer[Node]): TraversalMatcher = ???
 
-      override def procedureSignature(name: ProcedureName): ProcedureSignature = ???
-
       override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
+
+      override def procedureSignature(name: ProcedureName): Try[ProcedureSignature] = ???
     }
 
     def planFor(queryString: String): SemanticPlan = {

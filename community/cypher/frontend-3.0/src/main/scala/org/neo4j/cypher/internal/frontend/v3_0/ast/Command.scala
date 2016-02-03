@@ -75,9 +75,9 @@ case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, rel
 
 case class DropRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
 
-case class ProcName(name: String)(val position: InputPosition) extends SymbolicName {
+case class LiteralProcedureName(name: String)(val position: InputPosition) extends SymbolicName {
   override def equals(x: Any): Boolean = x match {
-    case ProcName(other) => other.toLowerCase == name.toLowerCase
+    case LiteralProcedureName(other) => other.toLowerCase == name.toLowerCase
     case _ => false
   }
   override def hashCode = name.toLowerCase.hashCode

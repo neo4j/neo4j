@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v3_0.parser
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, Variable}
 import org.parboiled.scala._
 
 import scala.collection.immutable.IndexedSeq
@@ -29,12 +29,18 @@ trait ProcedureCalls {
   self: Parser with Base with Expressions with Literals =>
 
   def ProcedureCall = rule("CALL") {
-    group(keyword("CALL") ~~ zeroOrMore(SymbolicNameString ~ ".") ~ ProcedureName ~ ProcedureArguments) ~~>> (ast.ProcedureCall(_, _, _))
+    group(keyword("CALL") ~~ zeroOrMore(SymbolicNameString ~ ".") ~ ProcedureName ~ ProcedureArguments ~~ ProcedureResult) ~~>> (ast.ProcedureCall(_, _, _, _))
   }
 
   private def ProcedureArguments: Rule1[Option[Seq[Expression]]] = rule("arguments to a procedure") {
     optional(group("(" ~~
       zeroOrMore(Expression, separator = CommaSep) ~~ ")"
     ) ~~> (_.toIndexedSeq))
+  }
+
+  private def ProcedureResult: Rule1[Seq[Variable]] = rule("result fields of a procedure") {
+    optional(
+      keyword("AS") ~~ oneOrMore(Variable, separator = CommaSep) ~~> (_.toIndexedSeq)
+    ) ~~> (_.getOrElse(IndexedSeq.empty))
   }
 }

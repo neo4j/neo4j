@@ -59,7 +59,7 @@ trait Query extends Parser
     | Remove
     | Foreach
     | With
-    | CallInternally
+    | Call
     | Return
     | Pragma
   )

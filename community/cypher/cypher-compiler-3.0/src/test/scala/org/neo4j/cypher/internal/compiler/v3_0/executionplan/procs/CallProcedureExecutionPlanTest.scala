@@ -24,15 +24,12 @@ import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_0.NormalMode
-import org.neo4j.cypher.internal.compiler.v3_0.spi._
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Add, Expression, SignedDecimalIntegerLiteral, StringLiteral}
+import org.neo4j.cypher.internal.frontend.v3_0.spi.ProcReadWrite
+import org.neo4j.cypher.internal.frontend.v3_0.{spi => frontend}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_0.{ParameterNotFoundException, DummyPosition, InvalidArgumentException, symbols}
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.txstate.TxStateHolder
-import org.neo4j.kernel.internal.GraphDatabaseAPI
-
-import scala.collection.mutable
+import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, ParameterNotFoundException, symbols}
 
 class CallProcedureExecutionPlanTest extends CypherFunSuite {
 
@@ -95,12 +92,14 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
 
   def string(s: String): Expression = StringLiteral(s)(pos)
 
-  private val readSignature = ProcedureSignature( ProcedureName(Seq.empty, "foo"),
-    Seq(FieldSignature("a", symbols.CTInteger) ),
-    Seq(FieldSignature("b", symbols.CTInteger)))
+  private val readSignature = frontend.ProcedureSignature( frontend.ProcedureName(Seq.empty, "foo"),
+    Seq(frontend.FieldSignature("a", symbols.CTInteger) ),
+    Seq(frontend.FieldSignature("b", symbols.CTInteger)))
 
-  private val writeSignature = ProcedureSignature( readSignature.name,
-    readSignature.inputSignature, readSignature.outputSignature, EagerReadWriteCallMode )
+  private val writeSignature = frontend.ProcedureSignature( frontend.ProcedureName(Seq.empty, "foo"),
+    Seq(frontend.FieldSignature("a", symbols.CTInteger) ),
+    Seq(frontend.FieldSignature("b", symbols.CTInteger)),
+    ProcReadWrite )
 
   private val pos = DummyPosition(-1)
   val ctx = mock[QueryContext]

@@ -21,10 +21,13 @@ package org.neo4j.cypher.internal.spi.v3_0
 
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{TraversalMatcher, ExpanderStep}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, ProcedureSignature, ProcedureName, PlanContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureName, ProcedureSignature}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
+
+import scala.util.Try
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 
@@ -48,8 +51,8 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
     () => translateException(innerTxProvider())
   }
 
-  override def procedureSignature(name: ProcedureName): ProcedureSignature =
-    translateException(inner.procedureSignature(name))
+  override def procedureSignature(name: ProcedureName): Try[ProcedureSignature] =
+    Try { translateException(inner.procedureSignature(name).get) }
 
   override def hasIndexRule(labelName: String): Boolean =
     translateException(inner.hasIndexRule(labelName))
