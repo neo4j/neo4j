@@ -155,15 +155,14 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       case patternNode if !visited(patternNode) =>
         val qg = connectedComponentFor(patternNode, visited)
         val coveredIds = qg.coveredIds
-        val predicates = selections.predicates.filter(_.dependencies.subsetOf(coveredIds))
-        val arguments = argumentIds
+        val predicates = selections.predicates.filter(_.dependencies.subsetOf(coveredIds ++ argumentIds))
         val filteredHints = hints.filter(h => h.identifiers.forall(identifier => coveredIds.contains(IdName(identifier.name))))
         val shortestPaths = shortestPathPatterns.filter {
           p => coveredIds.contains(p.rel.nodes._1) && coveredIds.contains(p.rel.nodes._2)
         }
         qg.
           withSelections(Selections(predicates)).
-          withArgumentIds(arguments).
+          withArgumentIds(argumentIds).
           addHints(filteredHints).
           addShortestPaths(shortestPaths.toSeq: _*)
     }

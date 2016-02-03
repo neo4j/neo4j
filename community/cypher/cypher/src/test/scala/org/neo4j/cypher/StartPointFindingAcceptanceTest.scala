@@ -112,6 +112,18 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
       Map("r" -> r, "a" -> b, "b" -> a)))
   }
 
+  test("Seek relationship by id and unwind") {
+    val a = createNode("x")
+    val b = createNode("x")
+    val r = relate(a, b)
+
+    val result = executeWithAllPlanners(s"PROFILE UNWIND [${r.getId}] as rId match (a)-[r]->(b) where id(r) = rId return a,r,b")
+
+    result.executionPlanDescription().toString should include("RelationshipById")
+
+    result.toList should equal(List(Map("r" -> r, "a" -> a, "b" -> b)))
+  }
+
   test("Seek relationship by id with type that is not matching") {
     val r = relate(createNode("x"), createNode("y"), "FOO")
 
