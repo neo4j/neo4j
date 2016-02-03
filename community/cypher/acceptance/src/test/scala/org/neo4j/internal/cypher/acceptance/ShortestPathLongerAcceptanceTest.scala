@@ -164,7 +164,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
   test("Shortest path from first to last node via top right") {
     val start = System.currentTimeMillis
-    val results = executeWithAllPlanners(
+    val results = executeWithAllPlannersAndCompatibilityMode(
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
          |RETURN nodes(p) AS nodes""".stripMargin)
@@ -183,7 +183,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
   test("Shortest path from first to last node via bottom left") {
     val start = System.currentTimeMillis
-    val results = executeWithAllPlanners(
+    val results = executeWithAllPlannersAndCompatibilityMode(
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ANY(n in nodes(p) WHERE n:$bottomLeft)
          |RETURN nodes(p) AS nodes""".stripMargin)
@@ -201,7 +201,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
   test("Fallback expander should take on rel-type predicates") {
     val start = System.currentTimeMillis
-    val results = executeWithAllPlanners(
+    val results = executeWithAllPlannersAndCompatibilityMode(
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[rels*]-(dst:$bottomRight))
          |WHERE ALL(r in rels WHERE type(r) = "DOWN")
          |  AND ANY(n in nodes(p) WHERE n:$bottomLeft)
@@ -219,7 +219,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   // expanderSolverStep does not currently take on predicates using rels(p), but it should!
   ignore("Fallback expander should take on rel-type predicates (using rels(p))") {
     val start = System.currentTimeMillis
-    val results = executeWithAllPlanners(
+    val results = executeWithAllPlannersAndCompatibilityMode(
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ALL(r in rels(p) WHERE type(r) = "DOWN")
          |  AND ANY(n in nodes(p) WHERE n:$bottomLeft)

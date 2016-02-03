@@ -36,7 +36,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN & THEN
     intercept[SyntaxException](
-      executeWithAllPlanners("start n=node(*) using index n:Person(name) where n:Person and n.name = 'kabam' return n"))
+      executeWithAllPlannersAndCompatibilityMode("start n=node(*) using index n:Person(name) where n:Person and n.name = 'kabam' return n"))
   }
 
   test("fail if using a variable with label not used in match") {
@@ -45,7 +45,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN
     intercept[SyntaxException](
-      executeWithAllPlanners("match n-->() using index n:Person(name) where n.name = 'kabam' return n"))
+      executeWithAllPlannersAndCompatibilityMode("match n-->() using index n:Person(name) where n.name = 'kabam' return n"))
   }
 
   test("fail if using an hint for a non existing index") {
@@ -53,7 +53,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN
     intercept[IndexHintException](
-      executeWithAllPlanners("match (n:Person)-->() using index n:Person(name) where n.name = 'kabam' return n"))
+      executeWithAllPlannersAndCompatibilityMode("match (n:Person)-->() using index n:Person(name) where n.name = 'kabam' return n"))
   }
 
   test("fail if using hints with unusable equality predicate") {
@@ -62,7 +62,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN
     intercept[SyntaxException](
-      executeWithAllPlanners("match (n:Person)-->() using index n:Person(name) where n.name <> 'kabam' return n"))
+      executeWithAllPlannersAndCompatibilityMode("match (n:Person)-->() using index n:Person(name) where n.name <> 'kabam' return n"))
   }
 
   test("fail if joining index hints in equality predicates") {
@@ -72,11 +72,11 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN
     intercept[SyntaxException](
-      executeWithAllPlanners("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
+      executeWithAllPlannersAndCompatibilityMode("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
   }
 
   test("scan hints are handled by ronja") {
-    executeWithAllPlannersAndRuntimes("match (n:Person) using scan n:Person return n").toList
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n:Person) using scan n:Person return n").toList
   }
 
   test("fail when equality checks are done with OR") {
@@ -85,7 +85,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN
     intercept[SyntaxException](
-      executeWithAllPlanners("match n-->() using index n:Person(name) where n.name = 'kabam' OR n.name = 'kaboom' return n"))
+      executeWithAllPlannersAndCompatibilityMode("match n-->() using index n:Person(name) where n.name = 'kabam' OR n.name = 'kaboom' return n"))
   }
 
   test("correct status code when no index") {
@@ -97,7 +97,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
                   |RETURN n""".stripMargin
 
     // WHEN
-    val error = intercept[IndexHintException](executeWithAllPlanners(query))
+    val error = intercept[IndexHintException](executeWithAllPlannersAndCompatibilityMode(query))
 
     // THEN
     error.status should equal(Status.Schema.NoSuchIndex)
@@ -165,7 +165,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))
@@ -181,7 +181,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))
@@ -197,7 +197,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN [] RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN [] RETURN n")
 
     //THEN
     result.toList should equal (List())
@@ -213,7 +213,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
 
     //THEN
     result.toList should equal (List())
@@ -229,7 +229,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))
@@ -289,7 +289,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN
     intercept[SyntaxException](
-      executeWithAllPlanners("MATCH (n:Person)-->() USING SCAN x:Person return n"))
+      executeWithAllPlannersAndCompatibilityMode("MATCH (n:Person)-->() USING SCAN x:Person return n"))
   }
 
   test("scan hint must fail if using label not used in the query") {
@@ -297,7 +297,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN
     intercept[SyntaxException](
-      executeWithAllPlanners("MATCH n-->() USING SCAN n:Person return n"))
+      executeWithAllPlannersAndCompatibilityMode("MATCH n-->() USING SCAN n:Person return n"))
   }
 
   test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING SCAN'") {
@@ -651,7 +651,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("USING INDEX hint should not clash with used variables") {
     graph.createIndex("PERSON", "id")
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       """MATCH (actor:PERSON {id: 1})
         |USING INDEX actor:PERSON(id)
         |WITH 14 as id

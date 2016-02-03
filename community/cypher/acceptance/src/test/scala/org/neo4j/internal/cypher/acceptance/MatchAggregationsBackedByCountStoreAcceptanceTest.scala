@@ -558,7 +558,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
          |CREATE (p)-[:$type1]->(s)
       """.stripMargin)
 
-    val result: InternalExecutionResult = executeWithAllPlanners(query)
+    val result: InternalExecutionResult = executeWithAllPlannersAndCompatibilityMode(query)
     result.executionPlanDescription() should includeOperation(expectedLogicalPlan)
     f(result)
 
@@ -569,7 +569,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
 
   private def verifyOnEmptyDatabase(expectedLogicalPlan: String, query: String,
                                    expectedResult: Set[Any]): Unit = {
-    val resultOnEmptyDb: InternalExecutionResult = executeWithAllPlanners(query)
+    val resultOnEmptyDb: InternalExecutionResult = executeWithAllPlannersAndCompatibilityMode(query)
     resultOnEmptyDb.executionPlanDescription() should includeOperation(expectedLogicalPlan)
     withClue("should return a count of 0 on an empty database") {
       resultOnEmptyDb.columnAs(resultOnEmptyDb.columns.head).toSet[Int] should equal(expectedResult)

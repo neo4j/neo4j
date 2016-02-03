@@ -54,7 +54,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       graph.index.forNodes("index").add(node, "key", "value")
     }
 
-    val result = executeWithAllPlanners("""START n=node:index(key = "value") RETURN n""").toList
+    val result = executeWithAllPlannersAndCompatibilityMode("""START n=node:index(key = "value") RETURN n""").toList
 
     result should equal(List(Map("n"-> node)))
   }
@@ -76,7 +76,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       graph.index.forNodes("index").add(node, "key", "value")
     }
 
-    val result = executeWithAllPlanners("""START n=node:index("key:value") RETURN n""").toList
+    val result = executeWithAllPlannersAndCompatibilityMode("""START n=node:index("key:value") RETURN n""").toList
 
     result should equal(List(Map("n"-> node)))
   }
@@ -90,7 +90,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       graph.index.forNodes("index").add(otherNode, "key", "value")
     }
 
-    val result = executeWithAllPlanners("""START n=node:index("key:value") WHERE n.prop = 42 RETURN n""").toList
+    val result = executeWithAllPlannersAndCompatibilityMode("""START n=node:index("key:value") WHERE n.prop = 42 RETURN n""").toList
 
     result should equal(List(Map("n"-> node)))
   }

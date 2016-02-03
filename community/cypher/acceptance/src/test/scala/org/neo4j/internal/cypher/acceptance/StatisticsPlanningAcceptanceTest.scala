@@ -34,7 +34,7 @@ class StatisticsPlanningAcceptanceTest  extends ExecutionEngineFunSuite with New
       (0 to 10).foreach { _ =>
         createLabeledNode("User")
       }
-      executeWithAllPlanners("MATCH (n:User { name: 'Mats' }) RETURN n").executionPlanDescription() should includeOperation(
+      executeWithAllPlannersAndCompatibilityMode("MATCH (n:User { name: 'Mats' }) RETURN n").executionPlanDescription() should includeOperation(
         "NodeByLabelScan")
     }
   }

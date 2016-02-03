@@ -30,7 +30,7 @@ class ValueHashJoinAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     createLabeledNode(Map("id" -> 3), "B")
 
     // when
-    val result = executeWithAllPlanners("MATCH (a:A), (b:B) WHERE a.id = b.id RETURN a, b")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A), (b:B) WHERE a.id = b.id RETURN a, b")
 
     // then
     result.toSet should equal(Set(Map("a" -> a, "b" -> b)))
@@ -48,7 +48,7 @@ class ValueHashJoinAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     }
 
     // when
-    val result = executeWithAllPlanners("MATCH (a:A), (b:B) WHERE a.id = b.id RETURN a, b")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A), (b:B) WHERE a.id = b.id RETURN a, b")
 
     // then
     result.size should equal(11)

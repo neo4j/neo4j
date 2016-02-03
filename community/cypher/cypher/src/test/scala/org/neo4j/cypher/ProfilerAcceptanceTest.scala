@@ -99,7 +99,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate( createNode(), createNode(), "FOO")
 
     //WHEN
-    val result = profileWithAllPlanners("CYPHER 3.0 match (n) where not (n)-[:FOO]->() return *")
+    val result = profileWithAllPlanners("match (n) where not (n)-[:FOO]->() return *")
 
     //THEN
     assertRows(1)(result)("AntiSemiApply")
@@ -213,31 +213,31 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("LIMIT should influence cardinality estimation even when parameterized") {
     (0 until 100).map(i => createLabeledNode("Person"))
-    val result = executeWithAllPlanners(s"PROFILE MATCH (p:Person) RETURN p LIMIT {limit}", "limit" -> 10)
+    val result = executeWithAllPlannersAndCompatibilityMode(s"PROFILE MATCH (p:Person) RETURN p LIMIT {limit}", "limit" -> 10)
     assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
   }
 
   test("LIMIT should influence cardinality estimation with literal") {
     (0 until 100).map(i => createLabeledNode("Person"))
-    val result = executeWithAllPlanners(s"PROFILE MATCH (p:Person) RETURN p LIMIT 10")
+    val result = executeWithAllPlannersAndCompatibilityMode(s"PROFILE MATCH (p:Person) RETURN p LIMIT 10")
     assertEstimatedRows(10)(result)("Limit")
   }
 
   test("LIMIT should influence cardinality estimation with literal and parameters") {
     (0 until 100).map(i => createLabeledNode("Person"))
-    val result = executeWithAllPlanners(s"PROFILE MATCH (p:Person) WHERE 50 = {fifty} RETURN p LIMIT 10", "fifty" -> 50)
+    val result = executeWithAllPlannersAndCompatibilityMode(s"PROFILE MATCH (p:Person) WHERE 50 = {fifty} RETURN p LIMIT 10", "fifty" -> 50)
     assertEstimatedRows(10)(result)("Limit")
   }
 
   test("LIMIT should influence cardinality estimation with independent parameterless expression") {
     (0 until 100).map(i => createLabeledNode("Person"))
-    val result = executeWithAllPlanners(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(ceil(cos(0))) + 4")
+    val result = executeWithAllPlannersAndCompatibilityMode(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(ceil(cos(0))) + 4")
     assertEstimatedRows(5)(result)("Limit")
   }
 
   test("LIMIT should influence cardinality estimation by default value when expression contains parameter") {
     (0 until 100).map(i => createLabeledNode("Person"))
-    val result = executeWithAllPlanners(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(sin({limit}))", "limit" -> 1)
+    val result = executeWithAllPlannersAndCompatibilityMode(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(sin({limit}))", "limit" -> 1)
     assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
   }
 
@@ -601,9 +601,9 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result
   }
 
-  def profileWithAllPlanners(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithAllPlanners(_,_:_*), q, params:_*)
+  def profileWithAllPlanners(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithAllPlannersAndCompatibilityMode(_,_:_*), q, params:_*)
 
-  def profileWithAllPlannersAndRuntimes(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithAllPlannersAndRuntimes(_,_:_*), q, params:_*)
+  def profileWithAllPlannersAndRuntimes(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithAllPlannersAndRuntimesAndCompatibilityMode(_,_:_*), q, params:_*)
 
   override def profile(q: String, params: (String, Any)*): InternalExecutionResult = fail("Don't use profile together in ProfilerAcceptanceTest")
 

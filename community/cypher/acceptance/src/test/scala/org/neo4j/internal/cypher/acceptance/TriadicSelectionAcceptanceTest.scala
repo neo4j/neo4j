@@ -91,7 +91,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel()
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b)-->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b)-->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c12", "c21", "c22", "b2", "b3"))
   }
@@ -100,7 +100,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel()
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-->(b)-->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-->(b)-->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c12", "c21", "c22", "c31", "c32", "c41", "c42", "b1", "b2", "b3", "b4"))
   }
@@ -111,7 +111,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel()
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b)-->(c) WHERE NOT (a)-[:KNOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b)-->(c) WHERE NOT (a)-[:KNOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c12", "c21", "c22", "b3"))
   }
@@ -120,7 +120,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel()
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b)-->(c) WHERE NOT (a)-[:FOLLOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b)-->(c) WHERE NOT (a)-[:FOLLOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c12", "c21", "c22", "b2"))
   }
@@ -129,7 +129,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel()
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b)-->(c) WHERE NOT (a)-->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b)-->(c) WHERE NOT (a)-->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c12", "c21", "c22"))
   }
@@ -147,7 +147,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel()
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS|FOLLOWS]->(b)-->(c) WHERE NOT (a)-[:KNOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS|FOLLOWS]->(b)-->(c) WHERE NOT (a)-[:KNOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c12", "c21", "c22", "c31", "c32", "c41", "c42", "b3", "b4"))
   }
@@ -156,7 +156,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b:X)-->(c:X) WHERE NOT (a)-[:KNOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b:X)-->(c:X) WHERE NOT (a)-[:KNOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c21", "b3"))
   }
@@ -165,7 +165,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b:X)-->(c:Y) WHERE NOT (a)-[:KNOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b:X)-->(c:Y) WHERE NOT (a)-[:KNOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("c12", "c22"))
   }
@@ -174,7 +174,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b)-->(c:X) WHERE NOT (a)-[:KNOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b)-->(c:X) WHERE NOT (a)-[:KNOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c21", "b3"))
   }
@@ -183,7 +183,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b:X)-->(c) WHERE NOT (a)-[:KNOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b:X)-->(c) WHERE NOT (a)-[:KNOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c12", "c21", "c22", "b3"))
   }
@@ -194,7 +194,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel()
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b)-->(c) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b)-->(c) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("b2"))
   }
@@ -203,7 +203,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel()
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b)-->(c) WHERE (a)-[:FOLLOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b)-->(c) WHERE (a)-[:FOLLOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("b3"))
   }
@@ -212,7 +212,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel()
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b)-->(c) WHERE (a)-->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b)-->(c) WHERE (a)-->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("b2", "b3"))
   }
@@ -221,7 +221,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel()
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-->(b)-->(c) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-->(b)-->(c) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("b1", "b2"))
   }
@@ -230,7 +230,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel()
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS|FOLLOWS]->(b)-->(c) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS|FOLLOWS]->(b)-->(c) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("b1", "b2"))
   }
@@ -239,7 +239,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b:X)-->(c:X) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b:X)-->(c:X) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("b2"))
   }
@@ -248,7 +248,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b:X)-->(c:Y) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b:X)-->(c:Y) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set.empty)
   }
@@ -257,7 +257,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b)-->(c:X) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b)-->(c:X) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("b2"))
   }
@@ -266,7 +266,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
     // When
-    val result = executeWithAllPlanners("MATCH (a:A)-[:KNOWS]->(b:X)-->(c) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[:KNOWS]->(b:X)-->(c) WHERE (a)-[:KNOWS]->(c) RETURN c.name")
     // Then
     result.columnAs("c.name").toSet[Node] should equal(Set("b2"))
   }

@@ -26,7 +26,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("NOT(p1 AND p2) should return true when p2 is false") {
     createNode("apa")
 
-    val result = executeWithAllPlanners("match (n)where not(n.name = 'apa' and false) return n")
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n)where not(n.name = 'apa' and false) return n")
 
     result should have size 1
   }
@@ -36,7 +36,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     val query = "MATCH (n:Label) WHERE n.prop < 10 RETURN n.prop AS prop"
 
-    a[IncomparableValuesException] should be thrownBy executeWithAllPlanners(query)
+    a[IncomparableValuesException] should be thrownBy executeWithAllPlannersAndCompatibilityMode(query)
   }
 
   test("should be able to handle a large DNF predicate without running out of memory") {
@@ -69,7 +69,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
                   |RETURN ID(a), ID(b), type(r)""".stripMargin
 
     // when
-    executeWithAllPlanners(query)
+    executeWithAllPlannersAndCompatibilityMode(query)
     // then it should not fail or run out of memory
   }
 }

@@ -25,21 +25,21 @@ import org.neo4j.graphdb.{Direction, Relationship, RelationshipType}
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
   test("create a single node") {
-    val result = updateWithBothPlanners("create ()")
+    val result = updateWithBothPlannersAndCompatibilityMode("create ()")
     assertStats(result, nodesCreated = 1)
     // then
     result.toList shouldBe empty
   }
 
   test("create a single node with single label") {
-    val result = updateWithBothPlanners("create (:A)")
+    val result = updateWithBothPlannersAndCompatibilityMode("create (:A)")
     assertStats(result, nodesCreated = 1, labelsAdded = 1)
     // then
     result.toList shouldBe empty
   }
 
   test("create a single node with multiple labels") {
-    val result = updateWithBothPlanners("create (n:A:B:C:D)")
+    val result = updateWithBothPlannersAndCompatibilityMode("create (n:A:B:C:D)")
     assertStats(result, nodesCreated = 1, labelsAdded = 4)
     // then
     result.toList shouldBe empty
@@ -48,7 +48,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("combine match and create") {
     createNode()
     createNode()
-    val result = updateWithBothPlanners("match (n) create ()")
+    val result = updateWithBothPlannersAndCompatibilityMode("match (n) create ()")
     assertStats(result, nodesCreated = 2)
     // then
     result.toList shouldBe empty
@@ -57,7 +57,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("combine match, with, and create") {
     createNode()
     createNode()
-    val result = updateWithBothPlanners("match (n) create (n1) with * match(p) create (n2)")
+    val result = updateWithBothPlannersAndCompatibilityMode("match (n) create (n1) with * match(p) create (n2)")
     assertStats(result, nodesCreated = 10)
     // then
     result.toList shouldBe empty
@@ -67,12 +67,12 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should not see updates created by itself") {
     createNode()
 
-    val result = updateWithBothPlanners("match (n) create ()")
+    val result = updateWithBothPlannersAndCompatibilityMode("match (n) create ()")
     assertStats(result, nodesCreated = 1)
   }
 
   test("create a single node with properties") {
-    val result = updateWithBothPlanners("create (n {prop: 'foo'}) return n.prop as p")
+    val result = updateWithBothPlannersAndCompatibilityMode("create (n {prop: 'foo'}) return n.prop as p")
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
     // then
     result.toList should equal(List(Map("p" -> "foo")))
@@ -84,7 +84,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
   test("create node using null properties should just ignore those properties") {
     // when
-    val result = updateWithBothPlanners("create (n {id: 12, property: null}) return n.id as id")
+    val result = updateWithBothPlannersAndCompatibilityMode("create (n {id: 12, property: null}) return n.id as id")
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
 
     // then
@@ -93,7 +93,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
   test("create relationship using null properties should just ignore those properties") {
     // when
-    val result = updateWithBothPlanners("create ()-[r:X {id: 12, property: null}]->() return r.id")
+    val result = updateWithBothPlannersAndCompatibilityMode("create ()-[r:X {id: 12, property: null}]->() return r.id")
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1)
 
     // then
@@ -101,32 +101,32 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   }
 
   test("create simple pattern") {
-    val result = updateWithBothPlanners("CREATE (a)-[r:R]->(b)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a)-[r:R]->(b)")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
   test("create simple loop") {
-    val result = updateWithBothPlanners("CREATE (root: R)-[:LINK]->(root)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (root: R)-[:LINK]->(root)")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1, labelsAdded = 1)
   }
 
   test("create simple loop from match") {
     createLabeledNode("R")
-    val result = updateWithBothPlanners("MATCH (root:R) CREATE (root)-[:LINK]->(root)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (root:R) CREATE (root)-[:LINK]->(root)")
 
     assertStats(result, relationshipsCreated = 1)
   }
 
   test("create both nodes and relationships") {
-    val result = updateWithBothPlanners("CREATE (a), (b), (a)-[r:R]->(b)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a), (b), (a)-[r:R]->(b)")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
   test("create relationship with property") {
-    val result = updateWithBothPlanners("CREATE (a)-[r:R {prop: 42}]->(b)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a)-[r:R {prop: 42}]->(b)")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1)
   }
@@ -137,7 +137,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     val end = createLabeledNode("X")
 
     val typ = "TYPE"
-    val result = updateWithBothPlanners(s"MATCH (x:X), (y:Y) CREATE (x)<-[:$typ]-(y)")
+    val result = updateWithBothPlannersAndCompatibilityMode(s"MATCH (x:X), (y:Y) CREATE (x)<-[:$typ]-(y)")
 
     assertStats(result, relationshipsCreated = 1)
     graph.inTx {
@@ -151,7 +151,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     val start = createLabeledNode("Start")
 
     val typ = "TYPE"
-    val result = updateWithBothPlanners(s"MATCH (x:Start) CREATE (x)-[:$typ]->(y:End)")
+    val result = updateWithBothPlannersAndCompatibilityMode(s"MATCH (x:Start) CREATE (x)-[:$typ]->(y:End)")
 
     assertStats(result, nodesCreated = 1, labelsAdded = 1, relationshipsCreated = 1)
     graph.inTx {
@@ -166,58 +166,58 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     //when
     val query = "MATCH (n) CREATE() WITH * CREATE ()"
-    val result = updateWithBothPlanners(query)
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
 
     //then
     assertStats(result, nodesCreated = 4)
     result should not(use("Apply"))
   }
   test("create relationship with reversed direction") {
-    val result = updateWithBothPlanners("CREATE (a)<-[r1:R]-(b)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a)<-[r1:R]-(b)")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
 
-    executeWithAllPlanners("MATCH (a)<-[r1:R]-(b) RETURN *").toList should have size 1
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a)<-[r1:R]-(b) RETURN *").toList should have size 1
   }
 
   test("create relationship with multiple hops") {
-    val result = updateWithBothPlanners("CREATE (a)-[r1:R]->(b)-[r2:R]->(c)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a)-[r1:R]->(b)-[r2:R]->(c)")
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2)
 
-    executeWithAllPlanners("MATCH (a)-[r1:R]->(b)-[r2:R]->(c) RETURN *").toList should have size 1
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a)-[r1:R]->(b)-[r2:R]->(c) RETURN *").toList should have size 1
   }
 
   test("create relationship with multiple hops and reversed direction") {
-    val result = updateWithBothPlanners("CREATE (a)<-[r1:R]-(b)<-[r2:R]-(c)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a)<-[r1:R]-(b)<-[r2:R]-(c)")
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2)
 
-    executeWithAllPlanners("MATCH (a)<-[r1:R]-(b)<-[r2:R]-(c) RETURN *").toList should have size 1
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a)<-[r1:R]-(b)<-[r2:R]-(c) RETURN *").toList should have size 1
   }
 
   test("create relationship with multiple hops and changing directions") {
-    val result = updateWithBothPlanners("CREATE (a:A)-[r1:R]->(b:B)<-[r2:R]-(c:C)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a:A)-[r1:R]->(b:B)<-[r2:R]-(c:C)")
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2, labelsAdded = 3)
 
-    executeWithAllPlanners("MATCH (a:A)-[r1:R]->(b:B)<-[r2:R]-(c:C) RETURN *").toList should have size 1
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[r1:R]->(b:B)<-[r2:R]-(c:C) RETURN *").toList should have size 1
   }
 
   test("create relationship with multiple hops and changing directions 2") {
-    val result = updateWithBothPlanners("CYPHER planner=rule CREATE (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CYPHER planner=rule CREATE (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C)")
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2, labelsAdded = 3)
 
-    executeWithAllPlanners("MATCH (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C) RETURN *").toList should have size 1
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C) RETURN *").toList should have size 1
   }
 
   test("create relationship with multiple hops and varying directions and types") {
-    val result = updateWithBothPlanners("CREATE (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d)")
 
     assertStats(result, nodesCreated = 4, relationshipsCreated = 3)
 
-    executeWithAllPlanners("MATCH (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d) RETURN *").toList should have size 1
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d) RETURN *").toList should have size 1
   }
 
   test("should be possible to generate the movie graph") {
@@ -731,7 +731,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
                   |WITH TomH as a
                   |MATCH (a)-[:ACTED_IN]->(m)<-[:DIRECTED]-(d) RETURN a.name, m.title, d.name""".stripMargin
 
-    val result = updateWithBothPlanners(query)
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
 
     assertStats(result, nodesCreated = 171, relationshipsCreated = 253, propertiesWritten = 564, labelsAdded = 171)
   }
@@ -1520,7 +1520,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
                   |create(_099)-[:BUDDY]->(:StudyBuddy)<-[:BUDDY]-(_100)
                   |create(_100)-[:BUDDY]->(:StudyBuddy)<-[:BUDDY]-(_130)""".stripMargin
 
-    val result = updateWithBothPlanners(query)
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
 
     assertStats(result, nodesCreated = 731, relationshipsCreated = 1247, propertiesWritten = 230, labelsAdded = 730)
   }

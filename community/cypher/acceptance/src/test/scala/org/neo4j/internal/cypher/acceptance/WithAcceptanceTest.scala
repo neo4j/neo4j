@@ -28,7 +28,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val b = createNode()
     relate(a, b)
 
-    val result = executeWithAllPlannersAndRuntimes(
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
       "MATCH (a) WITH a MATCH (a)-->(b) RETURN *"
     )
     result.toList should equal(List(Map("a" -> a, "b" -> b)))
@@ -41,7 +41,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
 
     relate(a,createNode())
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "MATCH (a) WITH a ORDER BY a.name LIMIT 1 MATCH (a)-->(b) RETURN a"
     )
     result.toList should equal(List(Map("a" -> a)))
@@ -51,7 +51,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val a = createNode()
     val b = createNode()
 
-    val result = executeWithAllPlannersAndRuntimes(
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
       "MATCH (a) WITH a MATCH (b) RETURN *"
     )
     result.toSet should equal(Set(
@@ -67,7 +67,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val b = createLabeledNode(Map("prop"->42), "End")
     createLabeledNode(Map("prop"->3), "End")
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "MATCH (a:Start) WITH a.prop AS property MATCH (b:End) WHERE property = b.prop RETURN b"
     )
     result.toSet should equal(Set(Map("b" -> b)))
@@ -78,7 +78,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     createLabeledNode(Map("prop" -> 3), "End")
     createLabeledNode(Map("prop" -> b.getId), "Start")
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b"
     )
     result.toSet should equal(Set(Map("b" -> b)))
@@ -89,7 +89,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     createNode("prop" -> "B", "id" -> a.getId)
     createNode("prop" -> "C", "id" -> 0)
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       """MATCH (a)
         |WITH a.prop AS property, a.id as idToUse
         |ORDER BY property
@@ -106,7 +106,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val b = createNode("B")
     createNode("C")
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "MATCH (a) WITH a WHERE a.name = 'B' RETURN a"
     )
     result.toSet should equal(Set(Map("a" -> b)))
@@ -121,7 +121,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     relate(a, createNode())
     relate(b, createNode())
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "MATCH (a)-->() WITH a, count(*) as relCount WHERE relCount > 1 RETURN a"
     )
     result.toSet should equal(Set(Map("a" -> a)))
@@ -132,7 +132,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     createNode("bar" -> "A")
     createNode("bar" -> "B")
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "MATCH (a) WITH a.bar as bars, count(*) as relCount ORDER BY a.bar RETURN *"
     )
 
@@ -144,7 +144,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     createNode("bar" -> "A")
     createNode("bar" -> "B")
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "MATCH (a) WITH DISTINCT a.bar as bars ORDER BY a.bar RETURN *"
     )
 
@@ -157,7 +157,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     createNode("bar" -> "A")
     createNode("bar" -> "B")
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "MATCH (a) WITH DISTINCT a.bar as bars WHERE a.bar = 'B' RETURN *"
     )
 
@@ -169,7 +169,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val node2 = createNode()
     val rel = relate(node1, node2)
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "WITH {a} AS b, {b} AS tmp, {r} AS r WITH b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b",
       "a" -> node1, "b" -> node2, "r" -> rel
     )
@@ -180,12 +180,12 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   }
 
   test("nulls passing through WITH") {
-    executeWithAllPlanners("optional match (a:Start) with a match (a)-->(b) return *") should be (empty)
+    executeWithAllPlannersAndCompatibilityMode("optional match (a:Start) with a match (a)-->(b) return *") should be (empty)
   }
 
   test("WITH {foo: {bar: 'baz'}} AS nestedMap RETURN nestedMap.foo.bar") {
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "WITH {foo: {bar: 'baz'}} AS nestedMap RETURN nestedMap.foo.bar"
     )
     result.toSet should equal(Set(Map("nestedMap.foo.bar" -> "baz")))
@@ -197,7 +197,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val x = createNode()
     relate(n, x)
 
-    val result = executeWithAllPlanners("MATCH (n:A) WITH n LIMIT 1 MATCH (m:B), (n)-->(x) RETURN *")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:A) WITH n LIMIT 1 MATCH (m:B), (n)-->(x) RETURN *")
 
     result.toList should equal(List(Map("m" -> m, "n" -> n, "x" -> x)))
   }
@@ -209,7 +209,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
 
     // WHEN
     val query = "MATCH (n) WITH n WHERE n.prop = 42 RETURN count(*)"
-    val result = executeScalarWithAllPlanners[Long](query)
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Long](query)
 
     // THEN
     result should equal(1)
@@ -235,7 +235,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
       |WITH otherPerson, count(*) AS foaf WHERE foaf > 1
       |WITH otherPerson WHERE otherPerson.name <> 'NotOther'
       |RETURN count(*)""".stripMargin
-    val result = executeScalarWithAllPlanners[Long](query)
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Long](query)
 
     //THEN
     result should equal(1)
