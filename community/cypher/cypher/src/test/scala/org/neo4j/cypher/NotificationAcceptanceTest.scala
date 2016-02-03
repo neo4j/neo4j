@@ -404,5 +404,9 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     res.notifications should not be empty
   }
 
+  test("should not warn about literal maps") {
+    val res = innerExecute("explain return { id: 42 } ")
 
+    res.notifications should be(empty)
+  }
 }
