@@ -26,7 +26,8 @@ trait Clauses extends Parser
   with StartPoints
   with Patterns
   with Expressions
-  with Base {
+  with Base
+  with ProcedureCalls {
 
   def Clause: Rule1[ast.Clause]
 
@@ -95,6 +96,8 @@ trait Clauses extends Parser
     group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
       | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )
+
+  def CallInternally = rule("CALL") { ProcedureCall ~~>> (ast.CallInternally(_)) }
 
   def Pragma: Rule1[ast.Clause] = rule("") {
     keyword("_PRAGMA") ~~ (
