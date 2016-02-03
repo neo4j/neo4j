@@ -40,7 +40,7 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
 
   test("should be able to call procedure with single argument") {
     // Given
-    val proc = CallProcedureExecutionPlan(readSignature, Some(Seq(add(int(42), int(42)))))
+    val proc = CallProcedureExecutionPlan(readSignature, Seq(add(int(42), int(42))))
     // When
     val res = proc.run(ctx, NormalMode, Map.empty)
 
@@ -48,28 +48,9 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
     res.toList should equal(List(Map("b" -> 84)))
   }
 
-  test("should be able to call procedure with single argument using parameters") {
-    // Given
-    val proc = CallProcedureExecutionPlan(readSignature, None)
-
-    // When
-    val res = proc.run(ctx, NormalMode, Map("a" -> 84))
-
-    // Then
-    res.toList should equal(List(Map("b" -> 84)))
-  }
-
-  test("should fail if parameter is missing") {
-    // When
-    val proc = CallProcedureExecutionPlan(readSignature, None)
-
-    // Then
-    an [ParameterNotFoundException] should be thrownBy proc.run(ctx, NormalMode, Map())
-  }
-
   test("should eagerize write procedure") {
     // Given
-    val proc = CallProcedureExecutionPlan(writeSignature, Some(Seq(add(int(42), int(42)))))
+    val proc = CallProcedureExecutionPlan(writeSignature, Seq(add(int(42), int(42))))
 
     // When
     proc.run(ctx, NormalMode, Map.empty)
@@ -80,7 +61,7 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
 
   test("should not eagerize read procedure") {
     // Given
-    val proc = CallProcedureExecutionPlan(readSignature, Some(Seq(add(int(42), int(42)))))
+    val proc = CallProcedureExecutionPlan(readSignature, Seq(add(int(42), int(42))))
 
     // When
     proc.run(ctx, NormalMode, Map.empty)
@@ -97,14 +78,19 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
 
   def string(s: String): Expression = StringLiteral(s)(pos)
 
-  private val readSignature = ProcedureSignature( ProcedureName(Seq.empty, "foo"),
-    Seq(FieldSignature("a", symbols.CTInteger) ),
-    Seq(FieldSignature("b", symbols.CTInteger)))
-
-  private val writeSignature = ProcedureSignature( ProcedureName(Seq.empty, "foo"),
-    Seq(FieldSignature("a", symbols.CTInteger) ),
+  private val readSignature = ProcedureSignature(
+    ProcedureName(Seq.empty, "foo"),
+    Seq(FieldSignature("a", symbols.CTInteger)),
     Seq(FieldSignature("b", symbols.CTInteger)),
-    ProcReadWrite )
+    ProcedureReadOnlyAccess
+  )
+
+  private val writeSignature = ProcedureSignature(
+    ProcedureName(Seq.empty, "foo"),
+    Seq(FieldSignature("a", symbols.CTInteger)),
+    Seq(FieldSignature("b", symbols.CTInteger)),
+    ProcedureReadWriteAccess
+  )
 
   private val pos = DummyPosition(-1)
   val ctx = mock[QueryContext]

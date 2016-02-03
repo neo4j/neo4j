@@ -79,6 +79,10 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     case _: UnwindProjection =>
       in * Multiplier(10)
 
+    // CallProcedure
+    case _: CallProcedureProjection =>
+      in * Multiplier(10)
+
     // Load CSV
     case _: LoadCSVProjection =>
       in

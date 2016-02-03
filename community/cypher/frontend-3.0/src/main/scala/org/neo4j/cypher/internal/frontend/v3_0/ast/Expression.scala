@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression._
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureSignature, ProcedureName}
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureName, ProcedureSignature}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, TypeSpec, _}
-import org.neo4j.cypher.internal.frontend.v3_0.{ast, _}
+import org.neo4j.cypher.internal.frontend.v3_0._
+import SemanticCheckResult._
 
 import scala.collection.immutable.Stack
 
@@ -208,50 +209,48 @@ trait InfixFunctionTyping extends FunctionTyping { self: Expression =>
 
 case class ProcedureCall(namespace: List[String],
                          literalName: LiteralProcedureName,
+                         // None <=> Called without arguments (i.e. pulls them from parameters)
                          providedArgs: Option[Seq[Expression]],
-                         results: Seq[Variable] = Seq.empty)
-                        (val position: InputPosition)
-  extends Expression {
+                         resultFields: Option[Seq[Variable]] = None
+                        )(val position: InputPosition) extends Expression {
 
   def procedureName = ProcedureName(namespace, literalName.name)
 
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = {
     val checkArgs = providedArgs.map(_.semanticCheck(ctx)).getOrElse(SemanticCheckResult.success)
-    val checkResults = results.foldSemanticCheck(_.declare(CTAny))
+    val checkResults = resultFields.map(_.foldSemanticCheck(_.declare(CTAny))).getOrElse(SemanticCheckResult.success)
 
     checkArgs chain checkResults
   }
 
   // TODO: Unit Test
   def semanticCheck(ctx: SemanticContext, signature: ProcedureSignature): SemanticCheck = {
-    val checkArgs: SemanticCheck = providedArgs.map { args =>
+    val checkArgs = providedArgs.map { args =>
       val expectedNumArgs = signature.inputSignature.length
       val actualNumArgs = args.length
       if (expectedNumArgs == actualNumArgs) {
         signature.inputSignature.zip(args).map { input =>
           val (fieldSig, arg) = input
-          arg.expectType(fieldSig.typ) chain arg.semanticCheck(ctx)
-        }.foldLeft(SemanticCheckResult.success)(_ chain _)
+          arg.semanticCheck(ctx) chain arg.expectType(fieldSig.typ.covariant)
+        }.foldLeft(success)(_ chain _)
       } else {
-        SemanticCheckResult.error(_: SemanticState, SemanticError(s"Procedure call does not provide the required number of arguments ($expectedNumArgs) ", position))
+        error(_: SemanticState, SemanticError(s"Procedure call does not provide the required number of arguments ($expectedNumArgs) ", position))
       }
-    }.getOrElse(SemanticCheckResult.success)
+    }.getOrElse(success)
 
     val checkResults =
-      if (results.isEmpty)
-        SemanticCheckResult.error(_: SemanticState, SemanticError("Procedures called from within a Cypher query must explicitly name result fields", position))
-      else {
+      resultFields.map { resultFields =>
         val expectedResultFields = signature.outputSignature.length
-        val actualResultFields = results.length
+        val actualResultFields = resultFields.length
         if (expectedResultFields == actualResultFields) {
-          signature.outputSignature.zip(results).map { output =>
+          signature.outputSignature.zip(resultFields).map { output =>
             val (fieldSig, result) = output
             result.declare(fieldSig.typ)
-          }.foldLeft(SemanticCheckResult.success)(_ chain _)
+          }.foldLeft(success)(_ chain _)
         } else {
-          SemanticCheckResult.error(_: SemanticState, SemanticError(s"Procedure call does not declare the required number of result fields ($expectedResultFields) ", position))
+          error(_: SemanticState, SemanticError(s"Procedure call does not declare the required number of result fields ($expectedResultFields) ", position))
         }
-      }
+      }.getOrElse(error(_: SemanticState, SemanticError("Procedures called from within a Cypher query must explicitly name result fields", position)))
 
       checkArgs chain checkResults
   }

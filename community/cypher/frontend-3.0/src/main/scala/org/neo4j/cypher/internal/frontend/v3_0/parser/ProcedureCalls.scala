@@ -38,9 +38,9 @@ trait ProcedureCalls {
     ) ~~> (_.toIndexedSeq))
   }
 
-  private def ProcedureResult: Rule1[Seq[Variable]] = rule("result fields of a procedure") {
+  private def ProcedureResult: Rule1[Option[Seq[Variable]]] = rule("result fields of a procedure") {
     optional(
       keyword("AS") ~~ oneOrMore(Variable, separator = CommaSep) ~~> (_.toIndexedSeq)
-    ) ~~> (_.getOrElse(IndexedSeq.empty))
+    )
   }
 }

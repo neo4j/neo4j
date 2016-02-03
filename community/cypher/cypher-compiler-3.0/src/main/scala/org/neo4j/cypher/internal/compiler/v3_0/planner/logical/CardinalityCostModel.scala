@@ -70,7 +70,8 @@ object CardinalityCostModel extends CostModel {
          _: Union |
          _: Selection |
          _: ValueHashJoin |
-         _: UnwindCollection
+         _: UnwindCollection|
+         _: CallProcedure
     => CPU_BOUND
 
     case _: FindShortestPaths |

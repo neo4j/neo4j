@@ -25,14 +25,13 @@ import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterConditi
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, Rewriter, Scope, SemanticTable}
 
-case class PreparedQuery(statement: Statement,
-                         queryText: String,
-                         extractedParams: Map[String, Any])(val semanticTable: SemanticTable,
-                                                            val conditions: Set[RewriterCondition],
-                                                            val scopeTree: Scope,
-                                                            val notificationLogger: InternalNotificationLogger,
-                                                            val plannerName: String = "",
-                                                            val offset: Option[InputPosition] = None) {
+sealed trait PreparedQuery {
+  def statement: Statement
+  def queryText: String
+  def extractedParams: Map[String, Any]
+
+  def notificationLogger: InternalNotificationLogger
+  def plannerName: String
 
   def abstractQuery: AbstractQuery = statement.asQuery(notificationLogger, plannerName).setQueryText(queryText)
 
@@ -40,13 +39,45 @@ case class PreparedQuery(statement: Statement,
     case Query(Some(_), _) => true
     case _ => false
   }
+}
 
-  def rewrite(rewriter: Rewriter): PreparedQuery =
-    copy(statement = statement.endoRewrite(rewriter))(semanticTable, conditions, scopeTree, notificationLogger, plannerName, offset)
+case class PreparedQuerySyntax(statement: Statement,
+                               queryText: String,
+                               extractedParams: Map[String, Any])(val notificationLogger: InternalNotificationLogger,
+                                                                  val plannerName: String = "",
+                                                                  val conditions: Set[RewriterCondition])
 
-  def rewrite(rewriter: Rewriter, tableTransformer: SemanticTable => SemanticTable): PreparedQuery =
-    copy(statement = statement.endoRewrite(rewriter))(
-      semanticTable = tableTransformer(semanticTable),
-      conditions, scopeTree, notificationLogger, plannerName, offset
+  extends PreparedQuery {
+
+  def rewrite(rewriter: Rewriter): PreparedQuerySyntax =
+    copy(statement = statement.endoRewrite(rewriter))(notificationLogger, plannerName, conditions)
+
+  def withSemantics(semanticTable: SemanticTable,
+                    scopeTree: Scope) =
+    PreparedQuerySemantics(statement, queryText, extractedParams, semanticTable, scopeTree)(notificationLogger, plannerName, conditions)
+}
+
+case class PreparedQuerySemantics(statement: Statement,
+                                  queryText: String,
+                                  extractedParams: Map[String, Any],
+                                  semanticTable: SemanticTable,
+                                  scopeTree: Scope)(val notificationLogger: InternalNotificationLogger,
+                                                    val plannerName: String = "",
+                                                    val conditions: Set[RewriterCondition] = Set.empty)
+
+  extends PreparedQuery {
+
+  // TODO: Get rid of this variant
+  def rewrite(rewriter: Rewriter): PreparedQuerySemantics =
+    rewrite(rewriter, identity)
+
+  def rewrite(rewriter: Rewriter, tableTransformer: SemanticTable => SemanticTable): PreparedQuerySemantics =
+    copy(
+      statement = statement.endoRewrite(rewriter),
+      semanticTable = tableTransformer(semanticTable)
+    )(
+      notificationLogger,
+      plannerName,
+      conditions
     )
 }

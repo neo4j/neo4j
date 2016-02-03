@@ -61,19 +61,19 @@ class ProcedureCallParserTest
   }
 
   test("CALL foo AS bar") {
-    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), None, Seq(ast.Variable("bar")(pos))))
+    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), None, Some(Seq(ast.Variable("bar")(pos)))))
   }
 
   test("CALL foo AS bar, baz") {
-    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), None, Seq(ast.Variable("bar")(pos), ast.Variable("baz")(pos))))
+    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), None, Some(Seq(ast.Variable("bar")(pos), ast.Variable("baz")(pos)))))
   }
 
   test("CALL foo() AS bar") {
-    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), Some(Seq.empty), Seq(ast.Variable("bar")(pos))))
+    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), Some(Seq.empty), Some(Seq(ast.Variable("bar")(pos)))))
   }
 
   test("CALL foo() AS bar, baz") {
-    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), Some(Seq.empty), Seq(ast.Variable("bar")(pos), ast.Variable("baz")(pos))))
+    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), Some(Seq.empty), Some(Seq(ast.Variable("bar")(pos), ast.Variable("baz")(pos)))))
   }
 
   private val pos = DummyPosition(-1)

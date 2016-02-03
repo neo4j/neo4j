@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.IgnoreAllTests
-import org.neo4j.cypher.{CypherExecutionException, CypherTypeException, ExecutionEngineFunSuite, InvalidArgumentException}
+import org.neo4j.cypher._
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.{CallableProcedure, Neo4jTypes}
@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.proc.Neo4jTypes
 import CallableProcedure.BasicProcedure
 import org.scalatest.Tag
 
+// TODO: Fix return argument handling
 class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with IgnoreAllTests {
 
   test("should be able to find labels from built-in-procedure") {
@@ -50,6 +51,23 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
         Map("label" -> "C")))
   }
 
+  test("should be able to find labels from built-in-procedure from within a query") {
+    // Given
+    createLabeledNode(Map("name" -> "Tic"), "A")
+    createLabeledNode(Map("name" -> "Tac"), "B")
+    createLabeledNode(Map("name" -> "Toc"), "C")
+
+    //When
+    val result = execute("MATCH (n {name: 'Toc'}) WITH n.name AS name CALL db.labels AS label RETURN *")
+
+    // Then
+    result.toList should equal(
+      List(
+        Map("name" -> "Toc", "label" -> "A"),
+        Map("name" -> "Toc", "label" -> "B"),
+        Map("name" -> "Toc", "label" -> "C")))
+  }
+
   test("sys.db.labels work on an empty database") {
     // Given an empty database
     //When
@@ -67,7 +85,7 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     val result = execute("CALL my.first.proc('42', 42) AS x, y RETURN *")
 
     // Then
-    result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
+    result.toList should equal(List(Map("x" -> "42", "y" -> 42)))
   }
 
   test("should be able to call procedure with implicit arguments") {
@@ -78,15 +96,16 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     val result = execute("CALL my.first.proc AS x, y RETURN *", "in0" -> "42", "in1" -> 42)
 
     // Then
-    result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
+    result.toList should equal(List(Map("x" -> "42", "y" -> 42)))
   }
 
+  // TODO: Should throw InvalidArgumentException but this requires moving resolution to ast rewriter which currently has no plan context
   test("should fail if input type is wrong") {
     // Given
     register(Neo4jTypes.NTNumber)
 
     // Then
-    a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc('ten') RETURN *"))
+    a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten') AS x RETURN x"))
   }
 
   test("if signature declares number all number types are valid") {
@@ -94,8 +113,8 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     register(Neo4jTypes.NTNumber)
 
     // Then
-    execute("CALL my.first.proc(42) AS x RETURN *").toList should equal(List(Map("out0" -> 42)))
-    execute("CALL my.first.proc(42.3) AS x RETURN *").toList should equal(List(Map("out0" -> 42.3)))
+    execute("CALL my.first.proc(42) AS x RETURN *").toList should equal(List(Map("x" -> 42)))
+    execute("CALL my.first.proc(42.3) AS x RETURN *").toList should equal(List(Map("x" -> 42.3)))
   }
 
   test("arguments are nullable") {
@@ -103,39 +122,34 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     register(Neo4jTypes.NTNumber)
 
     // Then
-    execute("CALL my.first.proc(NULL) AS x RETURN *").toList should equal(List(Map("out0" -> null)))
+    execute("CALL my.first.proc(NULL) AS x RETURN *").toList should equal(List(Map("x" -> null)))
   }
 
+  // TODO: Should throw CypherTypeException but this requires moving resolution to ast rewriter which currently has no plan context
   test("should fail a procedure declares an integer but gets a float ") {
     // Given
     register(Neo4jTypes.NTInteger)
 
     // Then
-    a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc(42.0) AS x RETURN *"))
+    a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc(42.0) AS x RETURN *"))
   }
 
-  test("should fail a procedure declares a float but gets an integer") {
-    // Given
-    register(Neo4jTypes.NTFloat)
-
-    // Then
-    a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc(42) AS x RETURN *"))
-  }
-
+  // TODO: Should throw InvalidArgumentException but this requires moving resolution to ast rewriter which currently has no plan context
   test("should fail if explicit argument is missing") {
     // Given
     register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
-    an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc('ten') AS x, y RETURN *"))
+    an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten') AS x, y RETURN *"))
   }
 
+  // TODO: Should throw InvalidArgumentException but this requires moving resolution to ast rewriter which currently has no plan context
   test("should fail if too many arguments") {
     // Given
     register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
-    an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42) AS x, y, z RETURN *"))
+    an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42) AS x, y, z RETURN *"))
   }
 
   test("should fail if implicit argument is missing") {
@@ -143,7 +157,7 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
-    an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc AS x, y RETURN *", "in0" -> "42", "in42" -> 42))
+    an [ParameterNotFoundException] shouldBe thrownBy(execute("CALL my.first.proc AS x, y RETURN *", "x" -> "42", "y" -> 42))
   }
 
   test("should be able to call a procedure with explain") {
@@ -157,6 +171,7 @@ class CallProcedureInternallyAcceptanceTest extends ExecutionEngineFunSuite with
     result shouldBe empty
   }
 
+  // TODO: Should throw CypherExecutionException but this requires moving resolution to ast rewriter which currently has no plan context
   test("should fail if calling non-existent procedure") {
     a [CypherExecutionException] shouldBe thrownBy(execute("CALL no.such.thing.exists(42) AS x RETURN *"))
   }

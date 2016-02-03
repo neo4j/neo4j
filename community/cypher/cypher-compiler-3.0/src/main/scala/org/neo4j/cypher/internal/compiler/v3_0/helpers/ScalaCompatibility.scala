@@ -17,22 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_0.spi
+package org.neo4j.cypher.internal.compiler.v3_0.helpers
 
-import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
+import java.lang.{Iterable => JavaIterable}
+import java.util.{Map => JavaMap}
 
-case class ProcedureSignature(name: ProcedureName,
-                              inputSignature: Seq[FieldSignature],
-                              outputSignature: Seq[FieldSignature],
-                              accessMode: ProcedureAccessMode)
+import scala.collection.JavaConverters._
 
-case class ProcedureName(namespace: Seq[String], name: String) {
-  override def toString = s"""${namespace.mkString(".")}.$name"""
+object ScalaCompatibility {
+
+  // TODO: Test
+  def asScalaCompatible(value: Any): Any = value match {
+    case m: JavaMap[_, _] => m.asScala.map { case (k, v) => asScalaCompatible(k) -> asScalaCompatible(v) }
+    case c: JavaIterable[_] => c.asScala.map(asScalaCompatible)
+    case t: Traversable[_] => t.toIterable
+    case anything => anything
+  }
 }
-
-case class FieldSignature(name: String, typ: CypherType)
-
-sealed trait ProcedureAccessMode
-
-case object ProcedureReadOnlyAccess extends ProcedureAccessMode
-case object ProcedureReadWriteAccess extends ProcedureAccessMode

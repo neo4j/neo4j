@@ -172,7 +172,10 @@ object StatementConverters {
   }
 
   implicit class ResolvedCallConverter(inner: ast.ResolvedCall) {
-    def addToQueryBuilder(builder: commands.QueryBuilder) = ???
+    def addToQueryBuilder(builder: commands.QueryBuilder) = {
+      // TODO: Important :)
+      builder
+    }
   }
 
   implicit class StartConverter(val clause: ast.Start) extends AnyVal {

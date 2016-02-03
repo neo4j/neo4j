@@ -309,6 +309,10 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case UnwindCollection(_, variable, collection) =>
       UnwindPipe(source, toCommandExpression(collection), variable.name)()
 
+    case CallProcedure(_, signature, argExprs, resultFields) =>
+      val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
+      CallProcedurePipe(source, signature.name, callMode, argExprs.map(toCommandExpression), signature.outputSignature)()
+
     case LoadCSVPlan(_, url, variableName, format, fieldTerminator) =>
       LoadCSVPipe(source, format, toCommandExpression(url), variableName.name, fieldTerminator)()
 

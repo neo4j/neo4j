@@ -17,22 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_0.spi
+package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, ProcedureCall, Expression}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_0.spi.ProcedureSignature
 
-case class ProcedureSignature(name: ProcedureName,
-                              inputSignature: Seq[FieldSignature],
-                              outputSignature: Seq[FieldSignature],
-                              accessMode: ProcedureAccessMode)
+case class CallProcedure(left: LogicalPlan,
+                         signature: ProcedureSignature,
+                         argExprs: Seq[Expression],
+                         resultFields: Seq[Variable])
+                        (val solved: PlannerQuery with CardinalityEstimation)
+  extends LogicalPlan with LazyLogicalPlan {
+  val lhs = Some(left)
+  def rhs = None
 
-case class ProcedureName(namespace: Seq[String], name: String) {
-  override def toString = s"""${namespace.mkString(".")}.$name"""
+  def availableSymbols: Set[IdName] = left.availableSymbols ++ resultFields.map(v => IdName(v.name))
 }
-
-case class FieldSignature(name: String, typ: CypherType)
-
-sealed trait ProcedureAccessMode
-
-case object ProcedureReadOnlyAccess extends ProcedureAccessMode
-case object ProcedureReadWriteAccess extends ProcedureAccessMode

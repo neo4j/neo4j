@@ -129,7 +129,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
 
   val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
-  override def procedureSignature(name: ProcedureName) = Try {
+  override def procedureSignature(name: ProcedureName) = {
     val kn = new KernelProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
     val ks = tc.statement.readOperations().procedureGet(kn)
     val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
@@ -139,9 +139,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     ProcedureSignature(name, input, output, mode)
   }
 
-  private def asCypherProcMode(mode: KernelProcedureSignature.Mode): ProcedureMode = mode match {
-    case KernelProcedureSignature.Mode.READ_ONLY => ProcReadOnly
-    case KernelProcedureSignature.Mode.READ_WRITE => ProcReadWrite
+  private def asCypherProcMode(mode: KernelProcedureSignature.Mode): ProcedureAccessMode = mode match {
+    case KernelProcedureSignature.Mode.READ_ONLY => ProcedureReadOnlyAccess
+    case KernelProcedureSignature.Mode.READ_WRITE => ProcedureReadWriteAccess
     case _ => throw new CypherExecutionException(
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null )
   }

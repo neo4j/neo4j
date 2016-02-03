@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, InternalExecutionResult, READ_ONLY}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.Counter
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ProcedureCallMode, ExecutionPlan, InternalExecutionResult, READ_ONLY}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{JavaResultValueConverter, Counter}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, NoChildren, PlanDescriptionImpl}
@@ -39,12 +39,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.spi.{FieldSignature, ProcedureSig
   * latter case we will have to resort to runtime type checking.
   *
   * @param signature the signature of the procedure
-  * @param providedArgExprs the argument to the procedure
+  * @param argExprs the arguments to the procedure
   */
-case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArgExprs: Option[Seq[Expression]])
+case class CallProcedureExecutionPlan(signature: ProcedureSignature, argExprs: Seq[Expression])
   extends ExecutionPlan {
 
-  private val optArgCommandExprs  = providedArgExprs.map { args => args.map(toCommandExpression) }
+  private val argCommandExprs = argExprs.map(toCommandExpression)
 
   override def run(ctx: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
     val input = evaluateArguments(ctx, params)
@@ -62,7 +62,9 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArg
   private def createNormalExecutionResult(ctx: QueryContext, taskCloser: TaskCloser,
                                           input: Seq[Any], planType: ExecutionMode) = {
     val descriptionGenerator = () => createNormalPlan
-    new ProcedureExecutionResult(ctx, taskCloser, signature, input, descriptionGenerator, planType)
+    val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
+    val columns = signature.outputSignature.toList.map(_.name)
+    new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input, columns, descriptionGenerator, planType)
   }
 
   private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any]) = {
@@ -76,16 +78,17 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArg
                                             input: Seq[Any], planType: ExecutionMode) = {
     val rowCounter = Counter()
     val descriptionGenerator = createProfilePlanGenerator(rowCounter)
-    new ProcedureExecutionResult(ctx, taskCloser, signature, input, descriptionGenerator, planType) {
+    val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
+    val columns = signature.outputSignature.toList.map(_.name)
+    new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input, columns, descriptionGenerator, planType) {
       override protected def executeCall: Iterator[Array[AnyRef]] = rowCounter.track(super.executeCall)
     }
   }
 
   private def evaluateArguments(ctx: QueryContext, params: Map[String, Any]): Seq[Any] = {
+    val converter = new JavaResultValueConverter(ctx.isGraphKernelResultValue)
     val state = new QueryState(ctx, ExternalCSVResource.empty, params)
-    optArgCommandExprs.map { exprs => exprs.map(_.apply(ExecutionContext.empty)(state)) }.getOrElse {
-      signature.inputSignature.map { f => params.getOrElse(f.name, fail(f, ctx)) }
-    }
+    argCommandExprs.map(expr => converter.asDeepJavaResultValue(expr.apply(ExecutionContext.empty)(state)))
   }
 
   private def createNormalPlan =
