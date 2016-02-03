@@ -48,6 +48,7 @@ import org.scalatest.matchers.{BeMatcher, MatchResult}
 
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
+import scala.util.Try
 
 case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
 
@@ -153,9 +154,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       override def bidirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node], end: EntityProducer[Node]): TraversalMatcher = ???
 
-      override def procedureSignature(name: ProcedureName): ProcedureSignature = ???
-
       override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
+
+      override def procedureSignature(name: ProcedureName): Try[ProcedureSignature] = ???
     }
 
     def planFor(queryString: String): SemanticPlan = {

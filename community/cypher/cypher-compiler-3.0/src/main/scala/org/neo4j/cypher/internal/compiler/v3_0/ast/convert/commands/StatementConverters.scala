@@ -115,6 +115,7 @@ object StatementConverters {
             case c: ast.Foreach      => c.addToQueryBuilder(b)
             case _: ast.With         => b
             case _: ast.Return       => b
+            case c: ast.ResolvedCall => c.addToQueryBuilder(b)
             case _                   => throw new IllegalArgumentException("Unknown clause while grouping")
           })
 
@@ -168,6 +169,10 @@ object StatementConverters {
       val items: Seq[StartItem] = builder.startItems :+ commands.Unwind(toCommandExpression(inner.expression),inner.variable.name)
       builder.startItems(items: _*)
     }
+  }
+
+  implicit class ResolvedCallConverter(inner: ast.ResolvedCall) {
+    def addToQueryBuilder(builder: commands.QueryBuilder) = ???
   }
 
   implicit class StartConverter(val clause: ast.Start) extends AnyVal {

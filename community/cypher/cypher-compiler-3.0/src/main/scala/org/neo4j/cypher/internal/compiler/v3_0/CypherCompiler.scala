@@ -28,12 +28,12 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.closing
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{PlanContext, ProcedureSignatureResolver}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{ASTAnnotationMap, ResolvedCall, Statement, UnresolvedCall}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
-import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticTable, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticTable, inSequence, _}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 
@@ -191,10 +191,31 @@ case class CypherCompiler(parser: CypherParser,
     val cache = provideCache(cacheAccessor, cacheMonitor, context)
     val (executionPlan, _) = cache.getOrElseUpdate(parsedQuery.statement, parsedQuery.queryText,
       plan => plan.isStale(context.txIdProvider, context.statistics), {
-        executionPlanBuilder.build(context, parsedQuery, tracer)
+        executionPlanBuilder.build(context, resolveCallSignatures(parsedQuery, context), tracer)
       }
     )
     (executionPlan, parsedQuery.extractedParams)
+  }
+
+  // TODO: Break out
+  private def resolveCallSignatures(query: PreparedQuery, signatureResolver: ProcedureSignatureResolver): PreparedQuery = {
+    // Build resolved replacement calls
+    val rewrites = query.statement.treeFold(ASTAnnotationMap.empty[UnresolvedCall, ResolvedCall]) {
+      case unresolved@UnresolvedCall(call) =>
+        val signature = signatureResolver.procedureSignature(call.procedureName)
+        val resolved = unresolved.resolve(signature)
+        (acc) => acc.updated(unresolved, resolved) -> None
+    }
+
+    // Rewriter for updating the statement to use resolved calls
+    val rewriter = Rewriter.lift {
+      case unresolved@UnresolvedCall(call) =>
+        rewrites.get(unresolved).get
+    }
+
+    // Do it all
+    val result = query.rewrite(bottomUp(rewriter), _.replaceNodes(rewrites.toSeq: _*))
+    result
   }
 
   private def syntaxDeprecationNotifications(statement: Statement) =

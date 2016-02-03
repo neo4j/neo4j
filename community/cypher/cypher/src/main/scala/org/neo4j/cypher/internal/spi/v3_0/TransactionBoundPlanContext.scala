@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProcedureSignature}
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
   extends TransactionBoundTokenContext(tc.statement) with PlanContext {
@@ -128,7 +129,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
 
   val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
-  override def procedureSignature(name: ProcedureName) = {
+  override def procedureSignature(name: ProcedureName) = Try {
     val kn = new KernelProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
     val ks = tc.statement.readOperations().procedureGet(kn)
     val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))

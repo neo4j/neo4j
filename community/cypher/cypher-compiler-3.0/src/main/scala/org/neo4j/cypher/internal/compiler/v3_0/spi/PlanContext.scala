@@ -26,6 +26,8 @@ import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 
+import scala.util.Try
+
 /**
  * PlanContext is an internal access layer to the graph that is solely used during plan building
  *
@@ -33,7 +35,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
  * want to control what operations can be executed at runtime.  For example, we do not give access
  * to index rule lookup in QueryContext as that should happen at query compile time.
  */
-trait PlanContext extends TokenContext {
+trait PlanContext extends TokenContext with ProcedureSignatureResolver {
 
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
 
@@ -61,7 +63,8 @@ trait PlanContext extends TokenContext {
   def bidirectionalTraversalMatcher(steps: ExpanderStep,
                                     start: EntityProducer[Node],
                                     end: EntityProducer[Node]): TraversalMatcher
+}
 
-
-  def procedureSignature(name: ProcedureName): ProcedureSignature
+trait ProcedureSignatureResolver {
+  def procedureSignature(name: ProcedureName): Try[ProcedureSignature]
 }

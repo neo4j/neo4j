@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutablePlanBuil
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, PreparedQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{FieldSignature, ProcedureName, ProcedureSignature}
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{FieldSignature, ProcedureSignature}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.TypeSpec
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InvalidArgumentException, SemanticTable}
 
@@ -40,10 +40,10 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
     inputQuery.statement match {
 
       // Global call: CALL foo.bar.baz("arg1", 2)
-      case Query(None, SingleQuery(Seq(CallInternally(ProcedureCall(namespace, ProcName(name), providedArgs))))) =>
-        val signature = planContext.procedureSignature(ProcedureName(namespace, name))
+      case Query(None, SingleQuery(Seq(ResolvedCall(ProcedureCall(namespace, LiteralProcedureName(name), providedArgs, results), resolvedSignature))))
+        if results.isEmpty =>
+        val signature = resolvedSignature.get
 
-        // Check arity
         providedArgs.foreach { args =>
           if (args.nonEmpty && args.size != signature.inputSignature.size) {
             throw new InvalidArgumentException(

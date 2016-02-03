@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNoti
 import org.neo4j.cypher.internal.frontend.v3_0.spi.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
+import scala.util.{Failure, Success, Try}
+
 sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
   def name: String
 
@@ -289,6 +291,32 @@ case class Unwind(expression: Expression, variable: Variable)(val position: Inpu
     }
 }
 
+// TODO: Make Projection clause
+abstract class CallClause extends Clause {
+  override def name = "CALL"
+
+  def call: ProcedureCall
+}
+
+case class UnresolvedCall(call: ProcedureCall)(val position: InputPosition) extends CallClause {
+  def resolve(signature: Try[ProcedureSignature]): ResolvedCall = ResolvedCall(call, signature)(position)
+
+  override def semanticCheck = call.semanticCheck(Expression.SemanticContext.Results)
+}
+
+case class ResolvedCall(call: ProcedureCall, resolvedSignature: Try[ProcedureSignature])(val position: InputPosition) extends CallClause {
+
+  override def semanticCheck = {
+    resolvedSignature match {
+      case Success(signature) =>
+        call.semanticCheck(Expression.SemanticContext.Results, signature)
+      case Failure(e) =>
+        (state: SemanticState) =>
+          SemanticCheckResult.error(state, SemanticError(e.getMessage, position))
+    }
+  }
+}
+
 sealed trait HorizonClause extends Clause with SemanticChecking {
   override def semanticCheck = noteCurrentScope
   def semanticCheckContinuation(previousScope: Scope): SemanticCheck
@@ -395,16 +423,6 @@ case class Return(
       Seq(SemanticError("RETURN * is not allowed when there are no variables in scope", position))
     else
       Seq()
-}
-
-// TODO: Make Projection clause
-case class CallInternally(call: ProcedureCall)(val position: InputPosition) extends HorizonClause {
-  override def name = "CALL"
-
-  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
-    val previousCheck: SemanticCheck = s => SemanticCheckResult.success(s.importScope(previousScope))
-    previousCheck chain call.semanticCheck(Simple)
-  }
 }
 
 case class PragmaWithout(excluded: Seq[Variable])(val position: InputPosition) extends HorizonClause {
