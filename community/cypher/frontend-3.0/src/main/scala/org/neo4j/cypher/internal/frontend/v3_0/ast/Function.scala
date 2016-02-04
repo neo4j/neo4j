@@ -83,7 +83,6 @@ object Function {
     functions.StartNode,
     functions.StdDev,
     functions.StdDevP,
-    functions.Str,
     functions.Substring,
     functions.Sum,
     functions.Tail,

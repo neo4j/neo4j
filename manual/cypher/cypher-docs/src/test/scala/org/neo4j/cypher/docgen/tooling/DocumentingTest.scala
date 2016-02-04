@@ -20,8 +20,7 @@
 package org.neo4j.cypher.docgen.tooling
 
 import java.io._
-
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.StringHelper
+import org.neo4j.cypher.internal.compiler.v3_0.CypherSerializer
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext
@@ -117,10 +116,10 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
 
 // Used to format values coming from Cypher. Maps, collections, nodes, relationships and paths all have custom
 // formatting applied to them
-class ValueFormatter(db: GraphDatabaseService, tx: Transaction) extends (Any => String) with StringHelper with GraphIcing {
+class ValueFormatter(db: GraphDatabaseService, tx: Transaction) extends (Any => String) with CypherSerializer with GraphIcing {
   def apply(x: Any): String = {
     val ctx = new TransactionBoundQueryContext(db.asInstanceOf[GraphDatabaseAPI], tx, true, db.statement)(QuietMonitor)
-    text(x, ctx)
+    serialize(x, ctx)
   }
 }
 

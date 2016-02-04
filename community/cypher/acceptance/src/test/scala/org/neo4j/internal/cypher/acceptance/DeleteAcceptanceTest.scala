@@ -32,6 +32,70 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesDeleted = 1)
   }
 
+  test("deleted nodes should be returned marked as such") {
+    createNode()
+
+    val query = "MATCH (n) DELETE n RETURN n"
+
+    val result = updateWithBothPlanners(query)
+
+    result.dumpToString() should include("Node[0]{deleted}")
+  }
+
+  test("returning properties of deleted nodes should throw exception") {
+    createNode("p" -> 0)
+
+    val query = "MATCH (n) DELETE n RETURN n.p"
+
+    an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
+  }
+
+  test("returning labels of deleted nodes should throw exception") {
+    createLabeledNode("A")
+
+    val query = "MATCH (n:A) DELETE n RETURN labels(n)"
+
+    an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
+  }
+
+  test("returning properties of deleted relationships should throw exception") {
+    relate(createNode(), createNode(), "T", Map("p" -> "a property"))
+
+    val query = "MATCH ()-[r]->() DELETE r RETURN r.p"
+
+    an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
+  }
+
+  test("returning the type of deleted relationships should throw exception") {
+    relate(createNode(), createNode(), "T")
+
+    val query = "MATCH ()-[r:T]->() DELETE r RETURN type(r)"
+
+    an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
+  }
+
+  test("deleted relationships should be returned marked as such") {
+    relate(createNode(), createNode(), "T")
+
+    val query = "MATCH ()-[r]->() DELETE r RETURN r"
+
+    val result = updateWithBothPlanners(query)
+
+    result.dumpToString() should include(":T[0]{deleted}")
+  }
+
+  test("returning everything when including deleted entities should work") {
+    relate(createNode(), createNode(), "T")
+
+    val query = "MATCH (a)-[r]->(b) DELETE a, r, b RETURN *"
+
+    val result = updateWithBothPlanners(query)
+
+    result.dumpToString() should include(":T[0]{deleted}")
+    result.dumpToString() should include("Node[0]{deleted}")
+    result.dumpToString() should include("Node[1]{deleted}")
+  }
+
   test("should be able to delete relationships") {
     relate(createNode(), createNode())
     relate(createNode(), createNode())

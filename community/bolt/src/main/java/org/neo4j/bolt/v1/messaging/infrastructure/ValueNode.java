@@ -121,6 +121,12 @@ public class ValueNode
     }
 
     @Override
+    public boolean isDeleted()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void delete()
     {
         throw new UnsupportedOperationException();

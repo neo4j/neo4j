@@ -138,14 +138,6 @@ class StringFunctionsTest extends CypherFunSuite {
     intercept[CypherTypeException](trim(1042))
   }
 
-  test("stringTests") {
-    def str(x: Any) = StrFunction(Literal(x)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
-
-    str(1234) should equal("1234")
-    str(List(1, 2, 3, 4)) should equal("[1,2,3,4]")
-    str(null) should equal(expectedNull)
-  }
-
   test("reverse function test") {
     def reverse(x: Any) = ReverseFunction(Literal(x)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
 

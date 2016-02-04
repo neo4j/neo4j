@@ -127,6 +127,12 @@ public class ValueUnboundRelationship
     }
 
     @Override
+    public boolean isDeleted()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String toString()
     {
         return "ValueUnboundRelationship{" +

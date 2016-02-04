@@ -28,7 +28,7 @@ class ExtractFunctionTest extends CypherFunSuite {
   test("function type") {
     //GIVEN
     val collection = Literal(List(1, 2, 3))
-    val func = new ExtractFunction(collection, "x", StrFunction(Variable("x")))
+    val func = new ExtractFunction(collection, "x", ToStringFunction(Variable("x")))
     val symbols = SymbolTable()
 
     //WHEN

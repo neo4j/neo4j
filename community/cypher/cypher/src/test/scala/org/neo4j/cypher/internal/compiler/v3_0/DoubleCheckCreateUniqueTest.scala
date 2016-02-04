@@ -256,4 +256,6 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
   def getDegree( relType:RelationshipType ):Int = ???
 
   def getDegree( relType:RelationshipType, direction:Direction ):Int = ???
+
+  override def isDeleted: Boolean = ???
 }

@@ -137,6 +137,85 @@ public class TransactionMatchers
         };
     }
 
+    public static Matcher<? super HTTP.Response> graphContainsDeletedNodes( final int amount )
+    {
+        return new TypeSafeMatcher<HTTP.Response>()
+        {
+            @Override
+            protected boolean matchesSafely( HTTP.Response response )
+            {
+                try
+                {
+                    Iterator<JsonNode> nodes = getGraphNode( response ).get( "nodes" ).iterator();
+
+                    for ( int i = 0; i < amount; ++i )
+                    {
+                        assertTrue( nodes.hasNext() );
+                        JsonNode node = nodes.next();
+                        assertThat( node.get( "deleted" ).asBoolean(), equalTo( Boolean.TRUE ) );
+                    }
+                    if ( nodes.hasNext() )
+                    {
+                        JsonNode node = nodes.next();
+                        fail( "Expected no more nodes, but got a node with id " + node.get( "id" ) );
+                    }
+                    return true;
+                }
+                catch ( JsonParseException e )
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+            }
+        };
+    }
+
+    private static JsonNode getGraphNode( HTTP.Response response ) throws JsonParseException
+    {
+        return response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "graph" );
+    }
+
+    public static Matcher<? super HTTP.Response> graphContainsDeletedRelationships( final int amount )
+    {
+        return new TypeSafeMatcher<HTTP.Response>()
+        {
+            @Override
+            protected boolean matchesSafely( HTTP.Response response )
+            {
+                try
+                {
+                    Iterator<JsonNode> relationships = getGraphNode( response ).get( "relationships" ).iterator();
+
+                    for ( int i = 0; i < amount; ++i )
+                    {
+                        assertTrue( relationships.hasNext() );
+                        JsonNode node = relationships.next();
+                        assertThat( node.get( "deleted" ).asBoolean(), equalTo( Boolean.TRUE ) );
+                    }
+                    if ( relationships.hasNext() )
+                    {
+                        JsonNode node = relationships.next();
+                        fail( "Expected no more nodes, but got a node with id " + node.get( "id" ) );
+                    }
+                    return true;
+                }
+                catch ( JsonParseException e )
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+            }
+        };
+    }
+
     @SuppressWarnings("WhileLoopReplaceableByForEach")
     public static long countNodes(GraphDatabaseService graphdb)
     {

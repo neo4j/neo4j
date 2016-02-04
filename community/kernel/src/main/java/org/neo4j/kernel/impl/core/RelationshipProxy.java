@@ -42,9 +42,9 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.EntityType;
@@ -288,12 +288,20 @@ public class RelationshipProxy
     {
         try ( Statement statement = actions.statement() )
         {
-            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursor( getId() ) )
+            long relId = getId();
+            try ( Cursor<RelationshipItem> relationship = statement.readOperations().relationshipCursor( relId ) )
             {
-                if ( !relationship.next() )
+                if (( !relationship.next() ))
                 {
-                    throw new NotFoundException( "Relationship not found",
-                            new EntityNotFoundException( EntityType.RELATIONSHIP, getId() ) );
+                    if ( isDeleted() )
+                    {
+                        return Collections.emptyMap();
+                    }
+                    else
+                    {
+                        throw new NotFoundException( "Relationship not found",
+                                new EntityNotFoundException( EntityType.RELATIONSHIP, relId ) );
+                    }
                 }
 
                 try ( Cursor<PropertyItem> propertyCursor = relationship.get().properties() )
@@ -316,6 +324,12 @@ public class RelationshipProxy
         {
             throw new IllegalStateException( "Property key retrieved through kernel API should exist.", e );
         }
+    }
+
+    @Override
+    public boolean isDeleted()
+    {
+        return ((KernelStatement) actions.statement()).txState().relationshipIsDeletedInThisTx( getId() );
     }
 
     @Override
