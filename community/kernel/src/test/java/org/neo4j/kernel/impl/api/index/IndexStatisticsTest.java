@@ -27,11 +27,12 @@ import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -674,7 +675,7 @@ public class IndexStatisticsTest
 
     private static class IndexOnlineMonitor extends IndexingService.MonitorAdapter
     {
-        private final Set<IndexDescriptor> onlineIndexes = new HashSet<>();
+        private final Set<IndexDescriptor> onlineIndexes = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
         @Override
         public void populationCompleteOn( IndexDescriptor descriptor )
