@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
@@ -36,9 +37,12 @@ import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
+
+import static com.sun.corba.se.spi.activation.IIOP_CLEAR_TEXT.value;
 
 public class IndexReaderStub extends LeafReader
 {
@@ -201,7 +205,7 @@ public class IndexReaderStub extends LeafReader
     @Override
     public int maxDoc()
     {
-        return elements.length;
+        return Math.max( maxValue(), elements.length) + 1;
     }
 
     @Override
@@ -213,5 +217,11 @@ public class IndexReaderStub extends LeafReader
     @Override
     protected void doClose() throws IOException
     {
+    }
+
+    private int maxValue()
+    {
+        return Arrays.stream( elements )
+                .mapToInt( value ->  NumberUtils.toInt( value, 0 )).max().getAsInt();
     }
 }

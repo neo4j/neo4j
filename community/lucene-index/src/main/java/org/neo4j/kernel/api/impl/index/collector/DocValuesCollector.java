@@ -39,7 +39,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.RoaringDocIdSet;
+import org.apache.lucene.util.DocIdSetBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -511,11 +511,11 @@ public class DocValuesCollector extends SimpleCollector
      */
     private static final class Docs
     {
-        private final RoaringDocIdSet.Builder bits;
+        private final DocIdSetBuilder bits;
 
         public Docs( int maxDoc )
         {
-            bits = new RoaringDocIdSet.Builder( maxDoc );
+            bits = new DocIdSetBuilder( maxDoc );
         }
 
         /** Record the given document. */
