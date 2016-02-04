@@ -32,38 +32,6 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesDeleted = 1)
   }
 
-  test("deleted nodes should be returned marked as such") {
-    createNode()
-
-    val query = "MATCH (n) DELETE n RETURN n"
-
-    val result = updateWithBothPlanners(query)
-
-    result.dumpToString() should include("Node[0]{deleted}")
-  }
-
-  test("deleted relationships should be returned marked as such") {
-    relate(createNode(), createNode(), "T")
-
-    val query = "MATCH ()-[r]->() DELETE r RETURN r"
-
-    val result = updateWithBothPlanners(query)
-
-    result.dumpToString() should include(":T[0]{deleted}")
-  }
-
-  test("returning everything when including deleted entities should work") {
-    relate(createNode(), createNode(), "T")
-
-    val query = "MATCH (a)-[r]->(b) DELETE a, r, b RETURN *"
-
-    val result = updateWithBothPlanners(query)
-
-    result.dumpToString() should include(":T[0]{deleted}")
-    result.dumpToString() should include("Node[0]{deleted}")
-    result.dumpToString() should include("Node[1]{deleted}")
-  }
-
   test("should be able to delete relationships") {
     relate(createNode(), createNode())
     relate(createNode(), createNode())
