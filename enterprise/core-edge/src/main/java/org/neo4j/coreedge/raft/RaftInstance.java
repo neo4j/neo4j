@@ -363,7 +363,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
     private long randomTimeoutRange()
     {
-        return electionTimeout / 3;
+        return electionTimeout;
     }
 
     public Set<MEMBER> votingMembers()
