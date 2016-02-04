@@ -24,8 +24,7 @@
     <docs-plugin.skip>true</docs-plugin.skip>
     <attach-javadoc-phase>package</attach-javadoc-phase>
     <attach-test-jar-phase>none</attach-test-jar-phase>
-    <!-- Temporary fix, doclint-groups should be "all". -->
-    <doclint-groups>reference</doclint-groups>
+    <doclint-groups>all</doclint-groups>
   </properties>
 
   <scm>
