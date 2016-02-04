@@ -74,7 +74,7 @@ public class InMemoryVoteState<MEMBER> implements VoteState<MEMBER>
         }
         else if ( this.votedFor == null )
         {
-            return term > this.term;
+            return true;
         }
         else
         {
