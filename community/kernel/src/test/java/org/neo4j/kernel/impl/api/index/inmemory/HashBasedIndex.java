@@ -20,11 +20,11 @@
 package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -50,32 +50,32 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public String toString()
+    public synchronized String toString()
     {
         return getClass().getSimpleName() + data;
     }
 
     @Override
-    void initialize()
+    synchronized void initialize()
     {
-        data = new ConcurrentHashMap<>();
+        data = new HashMap<>();
     }
 
     @Override
-    void drop()
+    synchronized void drop()
     {
         data = null;
     }
 
     @Override
-    PrimitiveLongIterator doIndexSeek( Object propertyValue )
+    synchronized PrimitiveLongIterator doIndexSeek( Object propertyValue )
     {
         Set<Long> nodes = data().get( propertyValue );
         return nodes == null ? PrimitiveLongCollections.emptyIterator() : toPrimitiveIterator( nodes.iterator() );
     }
 
     @Override
-    public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
+    public synchronized PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
         Set<Long> nodeIds = new HashSet<>();
         for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
@@ -96,8 +96,8 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
-                                                    String upper, boolean includeUpper )
+    public synchronized PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
+            String upper, boolean includeUpper )
     {
         Set<Long> nodeIds = new HashSet<>();
         for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
@@ -138,7 +138,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
+    public synchronized PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
         Set<Long> nodeIds = new HashSet<>();
         for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
@@ -156,14 +156,14 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public PrimitiveLongIterator scan()
+    public synchronized PrimitiveLongIterator scan()
     {
         Iterable<Long> all = Iterables.flattenIterable( data.values() );
         return toPrimitiveIterator( all.iterator() );
     }
 
     @Override
-    public PrimitiveLongIterator containsString( String exactTerm )
+    public synchronized PrimitiveLongIterator containsString( String exactTerm )
     {
         Set<Long> nodeIds = new HashSet<>();
         for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
@@ -181,7 +181,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    boolean doAdd( Object propertyValue, long nodeId, boolean applyIdempotently )
+    synchronized boolean doAdd( Object propertyValue, long nodeId, boolean applyIdempotently )
     {
         Set<Long> nodes = data().get( propertyValue );
         if ( nodes == null )
@@ -193,7 +193,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    void doRemove( Object propertyValue, long nodeId )
+    synchronized void doRemove( Object propertyValue, long nodeId )
     {
         Set<Long> nodes = data().get( propertyValue );
         if ( nodes != null )
@@ -203,7 +203,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    void remove( long nodeId )
+    synchronized void remove( long nodeId )
     {
         for ( Set<Long> nodes : data().values() )
         {
@@ -212,7 +212,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    void iterateAll( IndexEntryIterator iterator ) throws Exception
+    synchronized void iterateAll( IndexEntryIterator iterator ) throws Exception
     {
         for ( Map.Entry<Object, Set<Long>> entry : data().entrySet() )
         {
@@ -221,13 +221,13 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public long maxCount()
+    public synchronized long maxCount()
     {
         return ids().size();
     }
 
     @Override
-    public Iterator<Long> iterator()
+    public synchronized Iterator<Long> iterator()
     {
         return ids().iterator();
     }
@@ -243,7 +243,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    InMemoryIndexImplementation snapshot()
+    synchronized InMemoryIndexImplementation snapshot()
     {
         HashBasedIndex snapshot = new HashBasedIndex();
         snapshot.initialize();
@@ -255,14 +255,14 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    protected long doCountIndexedNodes( long nodeId, Object propertyValue )
+    protected synchronized long doCountIndexedNodes( long nodeId, Object propertyValue )
     {
         Set<Long> candidates = data().get( propertyValue );
         return candidates != null && candidates.contains( nodeId ) ? 1 : 0;
     }
 
     @Override
-    public IndexSampler createSampler()
+    public synchronized IndexSampler createSampler()
     {
         return new HashBasedIndexSampler( data );
     }
