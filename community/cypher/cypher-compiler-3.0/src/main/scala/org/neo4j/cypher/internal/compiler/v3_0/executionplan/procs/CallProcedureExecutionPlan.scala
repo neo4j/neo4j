@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalCSVResource, Query
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, GraphStatistics, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, ExecutionMode, ExplainExecutionResult, ExplainMode, ProcedurePlannerName, ProcedureRuntimeName, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_0.InvalidArgumentException
+import org.neo4j.cypher.internal.frontend.v3_0.{ParameterNotFoundException, InvalidArgumentException}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
 /**
@@ -36,22 +36,21 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
   * latter case we will have to resort to runtime type checking.
   *
   * @param signature the signature of the procedure
-  * @param args the argument to the procedure
+  * @param providedArgExprs the argument to the procedure
   */
-case class CallProcedureExecutionPlan(signature: ProcedureSignature, args: Seq[Expression]) extends ExecutionPlan {
+case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArgExprs: Option[Seq[Expression]]) extends ExecutionPlan {
 
-  private val commandExpressions = args.map(toCommandExpression)
+  private val optArgCommandExprs  = providedArgExprs.map { args => args.map(toCommandExpression) }
 
   override def run(ctx: QueryContext, planType: ExecutionMode,
                    params: Map[String, Any]): InternalExecutionResult = {
 
     val state = new QueryState(ctx, ExternalCSVResource.empty, params)
-    val input = if (commandExpressions.nonEmpty) commandExpressions.map(_.apply(ExecutionContext.empty)(state))
-    else {
-      signature.inputSignature.map { f =>
-        params.getOrElse(f.name, fail(f, ctx))
-      }
+
+    val input = optArgCommandExprs.map { exprs => exprs.map(_.apply(ExecutionContext.empty)(state)) }.getOrElse {
+      signature.inputSignature.map { f => params.getOrElse(f.name, fail(f, ctx)) }
     }
+
     val taskCloser = new TaskCloser
     taskCloser.addTask(ctx.close)
     if (planType == ExplainMode) {
@@ -65,8 +64,9 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, args: Seq[E
 
   private def fail(f: FieldSignature, ctx: QueryContext) = {
     ctx.close(success = false)
-    throw new InvalidArgumentException(
-      s"""Procedure ${signature.name.name} expected an argument with ${f.name} with type ${f.typ}""")
+    throw new ParameterNotFoundException(
+      s"""Procedure ${signature.name.name} expected an argument with ${f.name} with type ${f.typ}"""
+    )
   }
 
   private def description = PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren, Seq(), Set.empty)

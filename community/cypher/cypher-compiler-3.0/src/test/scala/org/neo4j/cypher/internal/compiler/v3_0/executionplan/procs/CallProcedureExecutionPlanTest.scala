@@ -37,7 +37,7 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
       ProcedureName(Seq.empty, "foo"), Seq(FieldSignature("a", symbols.CTInteger)),
       Seq(FieldSignature("b", symbols.CTInteger)))
 
-    val proc = CallProcedureExecutionPlan(signature, Seq(add(int(42), int(42))))
+    val proc = CallProcedureExecutionPlan(signature, Some(Seq(add(int(42), int(42)))))
 
     // When
     val res = proc.run(ctx, NormalMode, Map.empty)
@@ -52,7 +52,7 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
       ProcedureName(Seq.empty, "foo"), Seq(FieldSignature("a", symbols.CTInteger)),
       Seq(FieldSignature("b", symbols.CTInteger)))
 
-    val proc = CallProcedureExecutionPlan(signature, Seq.empty)
+    val proc = CallProcedureExecutionPlan(signature, None)
 
     // When
     val res = proc.run(ctx, NormalMode, Map("a" -> 84))
@@ -68,7 +68,7 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
       Seq(FieldSignature("c", symbols.CTInteger)))
 
     // When
-    val proc = CallProcedureExecutionPlan(signature, Seq.empty)
+    val proc = CallProcedureExecutionPlan(signature, None)
 
     // Then
     an [InvalidArgumentException] should be thrownBy proc.run(ctx, NormalMode, Map("a" -> 84))
@@ -88,6 +88,5 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
       val input = invocationOnMock.getArguments()(1).asInstanceOf[Seq[AnyRef]]
       Iterator.single(input.toArray)
     }
-
   })
 }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutablePlanBuilder, ExecutionPlan, PlanFingerprint, PlanFingerprintReference, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, PlanContext, ProcedureName, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, PreparedQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{CallProcedure, CreateIndex, CreateNodePropertyExistenceConstraint, CreateRelationshipPropertyExistenceConstraint, CreateUniquePropertyConstraint, DropIndex, DropNodePropertyExistenceConstraint, DropRelationshipPropertyExistenceConstraint, DropUniquePropertyConstraint, Expression, LabelName, ProcName, PropertyKeyName, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InvalidArgumentException, SemanticTable}
 
 /**
@@ -39,19 +39,22 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
     inputQuery.statement match {
 
       // CALL foo.bar.baz("arg1", 2)
-      case CallProcedure(namespace, ProcName(name), args) =>
+      case call@CallProcedure(namespace, ProcName(name), providedArgs) =>
         val signature = planContext.procedureSignature(ProcedureName(namespace, name))
-        if (args.nonEmpty && args.size != signature.inputSignature.size) {
-          throw new InvalidArgumentException(
-            s"""Procedure ${signature.name.name} takes ${signature.inputSignature.size}
-                |arguments but ${args.size} was provided.""".stripMargin)
-        }
-        //type check arguments
-        args.zip(signature.inputSignature).foreach {
-          case (arg, field) => typeCheck(inputQuery.semanticTable)(arg, field)
+
+        providedArgs.foreach { args =>
+          if (args.nonEmpty && args.size != signature.inputSignature.size) {
+            throw new InvalidArgumentException(
+              s"""Procedure ${signature.name.name} takes ${signature.inputSignature.size}
+                  |arguments but ${args.size} was provided.""".stripMargin)
+          }
+          //type check arguments
+          args.zip(signature.inputSignature).foreach {
+            case (arg, field) => typeCheck(inputQuery.semanticTable)(arg, field)
+          }
         }
 
-        CallProcedureExecutionPlan(signature, args)
+        CallProcedureExecutionPlan(signature, providedArgs)
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       case CreateUniquePropertyConstraint(node, label, prop) =>
