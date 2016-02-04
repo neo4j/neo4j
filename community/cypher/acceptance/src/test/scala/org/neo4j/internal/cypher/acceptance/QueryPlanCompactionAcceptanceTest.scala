@@ -19,7 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.{NewPlannerTestSupport, QueryStatisticsTestSupport, ExecutionEngineFunSuite}
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport{
 
@@ -535,7 +538,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |;""".stripMargin
     val result = executeWithCostPlannerOnly(query)
     assertStats(result, nodesCreated = 171, relationshipsCreated = 253, propertiesWritten = 564, labelsAdded = 171)
-    result.executionPlanDescription().toString should startWith(
+    result should havePlanLike(
       """
         |+-------------------------+----------------+------------------------------------------------------------------------------------------------------+-----------+
         || Operator                | Estimated Rows | Variables                                                                                            | Other     |
@@ -702,7 +705,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || |                       +----------------+------------------------------------------------------------------------------------------------------+-----------+
         || +CreateNode(8)          |              1 | AndyW, Carrie, Hugo, JoelS, Keanu, LanaW, Laurence, TheMatrix                                        |           |
         |+-------------------------+----------------+------------------------------------------------------------------------------------------------------+-----------+
-      """.stripMargin.trim)
+      """.stripMargin)
   }
 
   test("Compact smaller, but still long and compactable query"){
@@ -727,7 +730,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |""".stripMargin
     val result = executeWithCostPlannerOnly(query)
     assertStats(result, nodesCreated = 8, relationshipsCreated = 7, propertiesWritten = 21, labelsAdded = 8)
-    result.executionPlanDescription().toString should startWith(
+    result should havePlanLike(
       """
         |+------------------------+----------------+---------------------------------------------------------------------------------------------------+-----------+
         || Operator               | Estimated Rows | Variables                                                                                         | Other     |
@@ -738,14 +741,14 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || |                      +----------------+---------------------------------------------------------------------------------------------------+-----------+
         || +CreateNode(8)         |              1 | AndyW, Carrie, Hugo, JoelS, Keanu, LanaW, Laurence, TheMatrix                                     |           |
         |+------------------------+----------------+---------------------------------------------------------------------------------------------------+-----------+
-      """.stripMargin.trim)
+      """.stripMargin)
   }
 
   test("Don't compact complex query") {
     val query = "EXPLAIN LOAD CSV WITH HEADERS FROM {csv_filename} AS line MERGE (u1:User {login: line.user1}) MERGE " +
       "(u2:User {login: line.user2}) CREATE (u1)-[:FRIEND]->(u2)"
     val result = executeWithCostPlannerOnly(query)
-    result.executionPlanDescription().toString should startWith(
+    result should havePlanLike(
       """
         |+-------------------------+----------------+---------------------------+------------------------+
         || Operator                | Estimated Rows | Variables                 | Other                  |
@@ -796,7 +799,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || |                       +----------------+---------------------------+------------------------+
         || +LoadCSV                |              1 | line                      |                        |
         |+-------------------------+----------------+---------------------------+------------------------+
-      """.stripMargin.trim)
+      """.stripMargin)
   }
 
   test("Don't compact query with consecutive expands due to presence of values in 'other' column") {
@@ -813,7 +816,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
     relate(d,b)
     val query = "PROFILE MATCH (n:Actor {name:'Keanu Reeves'})-->()-->(b) RETURN b"
     val result = executeWithCostPlannerOnly(query)
-    result.executionPlanDescription().toString should startWith(
+    result should havePlanLike(
       """
         |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
         || Operator         | Estimated Rows | Rows | DB Hits | Variables                            | Other                     |
@@ -830,6 +833,65 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || |                +----------------+------+---------+--------------------------------------+---------------------------+
         || +NodeByLabelScan |              5 |    5 |       6 | n                                    | :Actor                    |
         |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
-      """.stripMargin.trim)
+      """.stripMargin)
+  }
+
+  test("plans are alike with different anon variable numbers") {
+    val plan1 =
+      """
+        |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
+        || Operator         | Estimated Rows | Rows | DB Hits | Variables                            | Other                     |
+        |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
+        || +ProduceResults  |              1 |    1 |       0 | b                                    | b                         |
+        || |                +----------------+------+---------+--------------------------------------+---------------------------+
+        || +Filter          |              1 |    1 |       0 | anon[00], anon[11], anon[22], b, n   | NOT(anon[38] == anon[43]) |
+        || |                +----------------+------+---------+--------------------------------------+---------------------------+
+        || +Expand(All)     |              1 |    1 |       2 | anon[33], b -- anon[44], anon[55], n | ()-->(b)                  |
+        || |                +----------------+------+---------+--------------------------------------+---------------------------+
+        || +Expand(All)     |              1 |    1 |       2 | anon[66], anon[77] -- n              | (n)-->()                  |
+        || |                +----------------+------+---------+--------------------------------------+---------------------------+
+        || +Filter          |              1 |    1 |       5 | n                                    | n.name == {  AUTOSTRING0} |
+        || |                +----------------+------+---------+--------------------------------------+---------------------------+
+        || +NodeByLabelScan |              5 |    5 |       6 | n                                    | :Actor                    |
+        |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
+      """.stripMargin
+
+    val plan2 =
+      """
+        |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
+        || Operator         | Estimated Rows | Rows | DB Hits | Variables                            | Other                     |
+        |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
+        || +ProduceResults  |              1 |    1 |       0 | b                                    | b                         |
+        || |                +----------------+------+---------+--------------------------------------+---------------------------+
+        || +Filter          |              1 |    1 |       0 | anon[38], anon[41], anon[43], b, n   | NOT(anon[38] == anon[43]) |
+        || |                +----------------+------+---------+--------------------------------------+---------------------------+
+        || +Expand(All)     |              1 |    1 |       2 | anon[43], b -- anon[38], anon[41], n | ()-->(b)                  |
+        || |                +----------------+------+---------+--------------------------------------+---------------------------+
+        || +Expand(All)     |              1 |    1 |       2 | anon[38], anon[41] -- n              | (n)-->()                  |
+        || |                +----------------+------+---------+--------------------------------------+---------------------------+
+        || +Filter          |              1 |    1 |       5 | n                                    | n.name == {  AUTOSTRING0} |
+        || |                +----------------+------+---------+--------------------------------------+---------------------------+
+        || +NodeByLabelScan |              5 |    5 |       6 | n                                    | :Actor                    |
+        |+------------------+----------------+------+---------+--------------------------------------+---------------------------+
+      """.stripMargin
+
+    replaceAnonVariables(plan1) should be(replaceAnonVariables(plan2))
+  }
+
+  private final val anonPattern = "([^\\w])anon\\[\\d+\\]".r
+
+  private def replaceAnonVariables(planText: String) =
+    anonPattern.replaceAllIn(planText, "$1anon[*]")
+
+  def havePlanLike(expectedPlan: String): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(result: InternalExecutionResult): MatchResult = {
+      val plan: InternalPlanDescription = result.executionPlanDescription()
+      val planText = replaceAnonVariables(plan.toString.trim)
+      val expectedText = replaceAnonVariables(expectedPlan.trim)
+      MatchResult(
+        matches = planText.startsWith(expectedText),
+        rawFailureMessage = s"Plan does not match expected\n\nPlan:\n$planText\n\nExpected:\n$expectedText",
+        rawNegatedFailureMessage = s"Plan unexpected matches expected\n\nPlan:\n$planText\n\nExpected:\n$expectedText")
+    }
   }
 }
