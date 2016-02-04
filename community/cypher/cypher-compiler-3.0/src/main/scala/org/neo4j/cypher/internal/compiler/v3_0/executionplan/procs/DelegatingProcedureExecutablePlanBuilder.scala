@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutablePlanBuil
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, PlanContext, ProcedureName, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, PreparedQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.TypeSpec
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InvalidArgumentException, SemanticTable}
 
 /**
@@ -115,9 +116,12 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
     (ctx.getOrCreateRelTypeId(relType.name), ctx.getOrCreatePropertyKeyId(prop.name))
 
   private def typeCheck(semanticTable: SemanticTable)(exp: Expression, field: FieldSignature) = {
-    if (!(semanticTable.types(exp).actual containsAny field.typ.covariant))
+    val actual = semanticTable.types(exp).actual
+    val expected = field.typ
+    val intersected = actual intersectOrCoerce expected.covariant
+    if (intersected == TypeSpec.none)
       throw new CypherTypeException(
-        s"""${field.name} expects ${field.typ}, but got ${semanticTable.types(exp).actual.mkString(",", "or")}""")
+        s"""${field.name} expects $expected, but got ${actual.mkString(",", "or")}""")
   }
 }
 

@@ -235,12 +235,20 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc(42.0)"))
   }
 
-  test("should fail a procedure declares a float but gets an integer") {
+  test("should not fail if a procedure declares a float but gets an integer") {
     // Given
     register(Neo4jTypes.NTFloat)
 
     // Then
-    a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc(42)"))
+    a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc(42)")))
+  }
+
+  test("should not fail if a procedure declares a float but gets called with an integer") {
+    // Given
+    register(Neo4jTypes.NTFloat)
+
+    // Then
+    a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc({param})", "param" -> 42)))
   }
 
   test("should fail if explicit argument is missing") {
