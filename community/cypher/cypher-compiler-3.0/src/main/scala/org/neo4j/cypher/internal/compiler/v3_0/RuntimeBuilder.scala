@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, Gen
 import org.neo4j.cypher.internal.compiler.v3_0.helpers._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_0.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{PeriodicCommit, CantCompileQueryException}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, QueryContext}
@@ -47,8 +47,8 @@ object RuntimeBuilder {
 }
 trait RuntimeBuilder {
 
-  def apply(logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext, planContext: PlanContext,
-            tracer: CompilationPhaseTracer, semanticTable: SemanticTable,
+  def apply(periodicCommit: Option[PeriodicCommit], logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext,
+            planContext: PlanContext, tracer: CompilationPhaseTracer, semanticTable: SemanticTable,
             monitor: NewRuntimeSuccessRateMonitor, plannerName: PlannerName,
             preparedQuery: PreparedQuery,
             createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
@@ -61,7 +61,7 @@ trait RuntimeBuilder {
         monitor.unableToHandlePlan(logicalPlan, e)
         fallback(preparedQuery)
         interpretedProducer
-          .apply(logicalPlan, pipeBuildContext, planContext, tracer, preparedQuery, createFingerprintReference, config)
+          .apply(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, preparedQuery, createFingerprintReference, config)
     }
   }
 
@@ -86,13 +86,13 @@ case class WarningFallbackRuntimeBuilder(interpretedProducer: InterpretedPlanBui
 }
 
 case class InterpretedRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder) extends RuntimeBuilder {
-  override def apply(logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext, planContext: PlanContext,
-            tracer: CompilationPhaseTracer, semanticTable: SemanticTable,
-            monitor: NewRuntimeSuccessRateMonitor, plannerName: PlannerName,
-            preparedQuery: PreparedQuery,
-            createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
-            config: CypherCompilerConfiguration): ExecutionPlan =
-    interpretedProducer(logicalPlan, pipeBuildContext, planContext, tracer, preparedQuery, createFingerprintReference, config)
+  override def apply(periodicCommit: Option[PeriodicCommit], logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext,
+                     planContext: PlanContext, tracer: CompilationPhaseTracer, semanticTable: SemanticTable,
+                     monitor: NewRuntimeSuccessRateMonitor, plannerName: PlannerName,
+                     preparedQuery: PreparedQuery,
+                     createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
+                     config: CypherCompilerConfiguration): ExecutionPlan =
+    interpretedProducer(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, preparedQuery, createFingerprintReference, config)
 
 
   override def compiledProducer = throw new InternalException("This should never be called")
@@ -110,12 +110,12 @@ case class ErrorReportingRuntimeBuilder(compiledProducer: CompiledPlanBuilder) e
 
 case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors) {
 
-  def apply(logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext,
+  def apply(periodicCommit: Option[PeriodicCommit], logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext,
             planContext: PlanContext, tracer: CompilationPhaseTracer, preparedQuery: PreparedQuery,
             createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
             config: CypherCompilerConfiguration) =
     closing(tracer.beginPhase(PIPE_BUILDING)) {
-      interpretedToExecutionPlan(new PipeExecutionPlanBuilder(clock, monitors).build(logicalPlan)(pipeBuildContext, planContext), planContext, preparedQuery, createFingerprintReference, config)
+      interpretedToExecutionPlan(new PipeExecutionPlanBuilder(clock, monitors).build(periodicCommit, logicalPlan)(pipeBuildContext, planContext), planContext, preparedQuery, createFingerprintReference, config)
     }
 }
 
