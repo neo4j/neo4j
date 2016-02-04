@@ -82,4 +82,13 @@ public class CountsSnapshot
         }
         return hashcode;
     }
+
+    @Override
+    public String toString()
+    {
+        return "CountsSnapshot{" +
+                "map=" + map +
+                ", txId=" + txId +
+                '}';
+    }
 }

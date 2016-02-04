@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
 import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
 import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
 import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.register.Register;
 
 public class CountsStorageServiceImpl implements CountsStorageService
@@ -126,9 +127,9 @@ public class CountsStorageServiceImpl implements CountsStorageService
     }
 
     @Override
-    public void initialize( CountsSnapshot snapshot )
+    public void initialize( CountsSnapshot snapshot, DatabaseHealth databaseHealth )
     {
-        countsStore = new InMemoryCountsStore( snapshot );
+        countsStore = new InMemoryCountsStore( snapshot, databaseHealth );
         indexStatsUpdater = new IndexStatsUpdaterFactory().indexStatsUpdater( countsStore );
     }
 }

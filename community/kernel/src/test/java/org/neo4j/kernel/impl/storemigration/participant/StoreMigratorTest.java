@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.counts.AlwaysHappyDatabaseHealth;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -50,6 +51,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -70,6 +72,8 @@ public class StoreMigratorTest
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
     private final LabelScanStoreProvider labelScanStoreProvider =
             new LabelScanStoreProvider( new InMemoryLabelScanStore(), 2 );
+    private final DatabaseHealth databaseHealth = new AlwaysHappyDatabaseHealth();
+
 
     @Parameterized.Parameter( 0 )
     public String version;
@@ -106,14 +110,15 @@ public class StoreMigratorTest
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider );
+        StoreMigrator migrator =
+                new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider, databaseHealth );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
         migrator.migrate( storeDirectory, migrationDir, progressMonitor.startSection( "Test" ), versionToMigrateFrom );
 
         // WHEN simulating resuming the migration
         progressMonitor = new SilentMigrationProgressMonitor();
-        migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider );
+        migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider, databaseHealth );
         migrator.moveMigratedFiles( migrationDir, storeDirectory, versionToMigrateFrom );
 
         // THEN starting the new store should be successful
@@ -137,7 +142,8 @@ public class StoreMigratorTest
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider );
+        StoreMigrator migrator =
+                new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider, databaseHealth );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
         migrator.migrate( storeDirectory, migrationDir, progressMonitor.startSection( "Test" ), versionToMigrateFrom );
@@ -145,7 +151,7 @@ public class StoreMigratorTest
 
         // WHEN simulating resuming the migration
         progressMonitor = new SilentMigrationProgressMonitor();
-        migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider );
+        migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider, databaseHealth );
         migrator.rebuildCounts( storeDirectory, versionToMigrateFrom );
 
         // THEN starting the new store should be successful
@@ -169,7 +175,8 @@ public class StoreMigratorTest
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider );
+        StoreMigrator migrator =
+                new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider, databaseHealth );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
 

@@ -52,7 +52,7 @@ public class InMemoryCountsStoreIntegrationTest
     public void singleWriteTest()
     {
         //GIVEN
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = getCountsStore();
         IntermediateStateTestManager intermediateStateTestManager = new IntermediateStateTestManager();
         Map<CountsKey,long[]> snapshotMap;
 
@@ -78,7 +78,7 @@ public class InMemoryCountsStoreIntegrationTest
         Map<CountsKey,long[]> map = new ConcurrentHashMap<>();
         ConcurrentHashMap<CountsKey,long[]> updateMap = new ConcurrentHashMap<>();
         IntermediateStateTestManager intermediateStateTestManager = new IntermediateStateTestManager();
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = getCountsStore();
 
         for ( int i = 0; i < 1000; i++ )
         {
@@ -98,7 +98,7 @@ public class InMemoryCountsStoreIntegrationTest
     public void concurrentWorkload() throws Exception
     {
         //GIVEN
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = getCountsStore();
         IntermediateStateTestManager intermediateStateTestManager = new IntermediateStateTestManager();
         ExecutorService executor = Executors.newFixedThreadPool( 10 );
         ExecutorCompletionService<Void> ecs = new ExecutorCompletionService<>( executor );
@@ -234,5 +234,10 @@ public class InMemoryCountsStoreIntegrationTest
             v[i] = v[i] + value[i];
         }
         return v;
+    }
+
+    private InMemoryCountsStore getCountsStore()
+    {
+        return new InMemoryCountsStore( new AlwaysHappyDatabaseHealth() );
     }
 }

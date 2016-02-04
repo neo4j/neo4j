@@ -17,22 +17,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.kernel.impl.store.counts;
 
-import org.neo4j.graphdb.event.ErrorState;
-import org.neo4j.kernel.KernelEventHandlers;
+import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.logging.Log;
 
-public class DatabasePanicEventGenerator
+public class AlwaysHappyDatabaseHealth extends DatabaseHealth
 {
-    private final KernelEventHandlers kernelEventHandlers;
 
-    public DatabasePanicEventGenerator( KernelEventHandlers kernelEventHandlers )
+    public AlwaysHappyDatabaseHealth( DatabasePanicEventGenerator dbpe, Log log )
     {
-        this.kernelEventHandlers = kernelEventHandlers;
+        super( dbpe, log );
     }
-    
-    public void generateEvent( final ErrorState error, final Throwable cause )
+
+    public AlwaysHappyDatabaseHealth()
     {
-        kernelEventHandlers.kernelPanic( error, cause ) ;
+        super( null, null );
+    }
+
+    @Override
+    public <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION
+    {
+    }
+
+    @Override
+    public void panic( Throwable cause )
+    {
+    }
+
+    @Override
+    public boolean isHealthy()
+    {
+        return true;
+    }
+
+    @Override
+    public void healed()
+    {
     }
 }

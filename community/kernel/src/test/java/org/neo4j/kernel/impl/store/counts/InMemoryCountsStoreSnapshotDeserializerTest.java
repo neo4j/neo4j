@@ -88,7 +88,8 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
     public void correctlyDeserializeTxIdAndMapSize() throws IOException
     {
         //GIVEN
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore =
+                new InMemoryCountsStore( new AlwaysHappyDatabaseHealth() );
         Map<CountsKey,long[]> updates = new HashMap<>();
         updates.put( CountsKeyFactory.nodeKey( 1 ), new long[]{1} );
         updates.put( CountsKeyFactory.nodeKey( 2 ), new long[]{1} );

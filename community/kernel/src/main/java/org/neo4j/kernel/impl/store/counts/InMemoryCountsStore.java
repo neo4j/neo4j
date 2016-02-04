@@ -31,12 +31,13 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
+import org.neo4j.kernel.internal.DatabaseHealth;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.function.Predicates.awaitForever;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-class InMemoryCountsStore implements CountsStore
+public class InMemoryCountsStore implements CountsStore
 {
     private static final long[] EMPTY_METADATA = {1L};
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -44,15 +45,18 @@ class InMemoryCountsStore implements CountsStore
     private final ConcurrentHashMap<CountsKey,long[]> map;
     private final OutOfOrderSequence lastTxId = new ArrayQueueOutOfOrderSequence( BASE_TX_ID, 100, EMPTY_METADATA );
     private CountsSnapshot snapshot;
+    private final DatabaseHealth databaseHealth;
 
-    public InMemoryCountsStore( CountsSnapshot snapshot )
+    public InMemoryCountsStore( CountsSnapshot snapshot, DatabaseHealth databaseHealth )
     {
+        this.databaseHealth = databaseHealth;
         map = new ConcurrentHashMap<>( snapshot.getMap() );
         lastTxId.set( snapshot.getTxId(), EMPTY_METADATA );
     }
 
-    public InMemoryCountsStore()
+    public InMemoryCountsStore(DatabaseHealth databaseHealth)
     {
+        this.databaseHealth = databaseHealth;
         map = new ConcurrentHashMap<>();
     }
 
@@ -187,17 +191,17 @@ class InMemoryCountsStore implements CountsStore
 
         try
         {
-            // We should NOT blindly wait forever. We also shouldn't have a timeout. The proposed solution is to
-            // wait forever unless the database has failed in the background. In that case we want to fail as well.
-            // This will allow us to not timeout prematurely but also not hang when the database is broken.
-            awaitForever( () -> lastTxId.getHighestGapFreeNumber() >= snapshot.getTxId(), 100, MILLISECONDS );
+            awaitForever(
+                    () -> ((lastTxId.getHighestGapFreeNumber() >= snapshot.getTxId()) && databaseHealth.isHealthy()),
+                    100, MILLISECONDS );
+            databaseHealth.assertHealthy( UnderlyingStorageException.class );
             return snapshot;
         }
         catch ( InterruptedException ex )
         {
             Thread.currentThread().interrupt();
-            throw Exceptions
-                    .withCause( new UnderlyingStorageException( "Construction of snapshot was interrupted." ), ex );
+                throw Exceptions
+                        .withCause( new UnderlyingStorageException( "Construction of snapshot was interrupted." ), ex );
         }
         finally
         {

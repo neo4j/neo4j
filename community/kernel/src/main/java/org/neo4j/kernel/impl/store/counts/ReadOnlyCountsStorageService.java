@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.counts;
 
 import org.neo4j.kernel.impl.api.CountsVisitor;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.register.Register;
 
 public class ReadOnlyCountsStorageService implements CountsStorageService
@@ -88,8 +89,8 @@ public class ReadOnlyCountsStorageService implements CountsStorageService
     }
 
     @Override
-    public void initialize( CountsSnapshot snapshot )
+    public void initialize( CountsSnapshot snapshot, DatabaseHealth databaseHealth )
     {
-        delegate.initialize( snapshot );
+        delegate.initialize( snapshot, databaseHealth );
     }
 }

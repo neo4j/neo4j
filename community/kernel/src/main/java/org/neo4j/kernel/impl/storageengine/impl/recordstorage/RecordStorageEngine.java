@@ -404,7 +404,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     public void initFromSnapshot(CountsSnapshot snapshot)
     {
-        countsStorageService.initialize( snapshot );
+        countsStorageService.initialize( snapshot, databaseHealth );
     }
 
     @Override

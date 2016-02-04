@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.counts.AlwaysHappyDatabaseHealth;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
@@ -65,6 +66,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMo
 import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -113,6 +115,8 @@ public class StoreUpgraderTest
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
     private final LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider( new
             InMemoryLabelScanStore(), 2 );
+    DatabaseHealth databaseHealth = new AlwaysHappyDatabaseHealth();
+
 
     private final Config allowMigrateConfig = new Config( MapUtil.stringMap( GraphDatabaseSettings
             .allow_store_upgrade.name(), "true" ) );
@@ -371,7 +375,8 @@ public class StoreUpgraderTest
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ) );
         NullLogService instance = NullLogService.getInstance();
-        StoreMigrator migrator = spy( new StoreMigrator(fileSystem, pageCache, new Config(), instance, schemaIndexProvider ) );
+        StoreMigrator migrator = spy( new StoreMigrator(fileSystem, pageCache, new Config(), instance,
+                schemaIndexProvider, databaseHealth ) );
         StoreUpgrader storeUpgrader = newUpgrader( upgradableDatabase, pageCache );
         storeUpgrader.migrateIfNeeded( dbDirectory );
 
@@ -408,8 +413,8 @@ public class StoreUpgraderTest
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
 
         NullLogService instance = NullLogService.getInstance();
-        StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, new Config(), instance,
-                schemaIndexProvider );
+        StoreMigrator defaultMigrator =
+                new StoreMigrator( fileSystem, pageCache, new Config(), instance, schemaIndexProvider, databaseHealth );
         SchemaIndexMigrator indexMigrator =
                 new SchemaIndexMigrator( fileSystem, schemaIndexProvider, labelScanStoreProvider );
 

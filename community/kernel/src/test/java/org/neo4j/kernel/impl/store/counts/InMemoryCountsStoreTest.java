@@ -42,7 +42,7 @@ public class InMemoryCountsStoreTest
     public void getExpectedValue()
     {
         //GIVEN
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = createCountStore();
         Map<CountsKey,long[]> update = new HashMap<>();
         NodeKey key = CountsKeyFactory.nodeKey( 1 );
         update.put( key, new long[]{1} );
@@ -58,7 +58,7 @@ public class InMemoryCountsStoreTest
     public void neverSetKeyReturnsNull()
     {
         //GIVEN
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = createCountStore();
         Map<CountsKey,long[]> update = new HashMap<>();
         NodeKey key = CountsKeyFactory.nodeKey( 1 );
         update.put( key, new long[]{1} );
@@ -74,7 +74,7 @@ public class InMemoryCountsStoreTest
     public void getNullKeyResultsInNPE()
     {
         //GIVEN
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = createCountStore();
         Map<CountsKey,long[]> update = new HashMap<>();
         NodeKey key = CountsKeyFactory.nodeKey( 1 );
         update.put( key, new long[]{1} );
@@ -91,7 +91,7 @@ public class InMemoryCountsStoreTest
     public void emptyUpdate()
     {
         //GIVEN
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = createCountStore();
         Map<CountsKey,long[]> update = new HashMap<>();
 
         //WHEN
@@ -107,7 +107,7 @@ public class InMemoryCountsStoreTest
     public void validSnapshot()
     {
         //GIVEN
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = createCountStore();
         Map<CountsKey,long[]> update = new HashMap<>();
         NodeKey key = CountsKeyFactory.nodeKey( 1 );
         update.put( key, new long[]{1} );
@@ -126,7 +126,7 @@ public class InMemoryCountsStoreTest
     public void restoreFromSnapshot()
     {
         //GIVEN
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = createCountStore();
         Map<CountsKey,long[]> update = new HashMap<>();
         NodeKey keyA = CountsKeyFactory.nodeKey( 1 );
         NodeKey keyB = CountsKeyFactory.nodeKey( 2 );
@@ -147,7 +147,7 @@ public class InMemoryCountsStoreTest
         CountsSnapshot countsSnapshot = countStore.snapshot( 4 );
         long beforeTxId = countsSnapshot.getTxId();
         assertEquals( 4, beforeTxId );
-        countStore = new InMemoryCountsStore( countsSnapshot );
+        countStore = new InMemoryCountsStore( countsSnapshot, new AlwaysHappyDatabaseHealth() );
 
         //THEN
         CountsSnapshot secondCountsSnapshot = countStore.snapshot( 4 );
@@ -161,7 +161,7 @@ public class InMemoryCountsStoreTest
     @Test
     public void testForEach() throws Exception
     {
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = createCountStore();
         Map<CountsKey,long[]> update = new HashMap<>();
         NodeKey nodeKey = CountsKeyFactory.nodeKey( 1 );
         update.put( nodeKey, new long[]{1} );
@@ -181,7 +181,7 @@ public class InMemoryCountsStoreTest
     @Test
     public void testEmptyForEach() throws Exception
     {
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = createCountStore();
 
         countStore.forEach( new BiConsumer<CountsKey,long[]>()
         {
@@ -197,7 +197,7 @@ public class InMemoryCountsStoreTest
     public void testUpdate()
     {
         //GIVEN
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = createCountStore();
         NodeKey nodeKey = CountsKeyFactory.nodeKey( 1 );
         RelationshipKey relKey = CountsKeyFactory.relationshipKey( 1, 1, 1 );
         IndexSampleKey indexSampleKey = CountsKeyFactory.indexSampleKey( 1, 1 );
@@ -255,7 +255,7 @@ public class InMemoryCountsStoreTest
     public void testReplace()
     {
         //GIVEN
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = createCountStore();
         NodeKey nodeKey = CountsKeyFactory.nodeKey( 1 );
         RelationshipKey relKey = CountsKeyFactory.relationshipKey( 1, 1, 1 );
         IndexSampleKey indexSampleKey = CountsKeyFactory.indexSampleKey( 1, 1 );
@@ -292,7 +292,7 @@ public class InMemoryCountsStoreTest
     public void testInterleavedUpdateAllAndUpdate()
     {
         //GIVEN
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = createCountStore();
         NodeKey nodeKey = CountsKeyFactory.nodeKey( 1 );
         RelationshipKey relKey = CountsKeyFactory.relationshipKey( 1, 1, 1 );
         IndexSampleKey indexSampleKey = CountsKeyFactory.indexSampleKey( 1, 1 );
@@ -326,7 +326,7 @@ public class InMemoryCountsStoreTest
     public void testInterleavedUpdateAllAndReplace()
     {
         //GIVEN
-        InMemoryCountsStore countStore = new InMemoryCountsStore();
+        InMemoryCountsStore countStore = createCountStore();
         NodeKey nodeKey = CountsKeyFactory.nodeKey( 1 );
         RelationshipKey relKey = CountsKeyFactory.relationshipKey( 1, 1, 1 );
         IndexSampleKey indexSampleKey = CountsKeyFactory.indexSampleKey( 1, 1 );
@@ -354,5 +354,10 @@ public class InMemoryCountsStoreTest
         assertEquals( countStore.get( indexStatisticsKey )[0], 10 );
         assertEquals( countStore.get( indexStatisticsKey )[1], 10 );
 
+    }
+
+    private InMemoryCountsStore createCountStore()
+    {
+        return new InMemoryCountsStore( new AlwaysHappyDatabaseHealth() );
     }
 }

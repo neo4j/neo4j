@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.counts.AlwaysHappyDatabaseHealth;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
@@ -56,6 +57,7 @@ import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
@@ -63,11 +65,10 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
+import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom20IT
 {
@@ -83,6 +84,7 @@ public class StoreMigratorFrom20IT
     private PageCache pageCache;
     private final LifeSupport life = new LifeSupport();
     private UpgradableDatabase upgradableDatabase;
+    private final DatabaseHealth databaseHealth = new AlwaysHappyDatabaseHealth();
 
     private SchemaIndexProvider schemaIndexProvider;
     private LabelScanStoreProvider labelScanStoreProvider;
@@ -111,7 +113,8 @@ public class StoreMigratorFrom20IT
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
         // WHEN
-        StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, NullLogService.getInstance(), schemaIndexProvider );
+        StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, NullLogService.getInstance(),
+                schemaIndexProvider, databaseHealth );
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fs, schemaIndexProvider, labelScanStoreProvider );
         upgrader( indexMigrator, storeMigrator ).migrateIfNeeded( find20FormatStoreDirectory( storeDir.directory() ) );
 
@@ -145,7 +148,9 @@ public class StoreMigratorFrom20IT
         File legacyStoreDir = find20FormatStoreDirectory( storeDir.directory() );
 
         // When
-        StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, NullLogService.getInstance(), schemaIndexProvider );
+        StoreMigrator storeMigrator =
+                new StoreMigrator( fs, pageCache, config, NullLogService.getInstance(), schemaIndexProvider,
+                        databaseHealth );
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fs, schemaIndexProvider, labelScanStoreProvider );
         upgrader( indexMigrator, storeMigrator ).migrateIfNeeded( legacyStoreDir );
         ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );

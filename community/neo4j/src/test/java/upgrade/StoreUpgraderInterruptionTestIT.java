@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.counts.AlwaysHappyDatabaseHealth;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -56,6 +57,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -64,7 +66,6 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
@@ -78,6 +79,7 @@ public class StoreUpgraderInterruptionTestIT
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
     private final LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider( new
             InMemoryLabelScanStore(), 2 );
+    DatabaseHealth databaseHealth =  new AlwaysHappyDatabaseHealth();
 
     @Parameters( name = "{0}" )
     public static Collection<Object[]> versions()
@@ -110,7 +112,8 @@ public class StoreUpgraderInterruptionTestIT
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
         final Config config = new Config();
-        StoreMigrator failingStoreMigrator = new StoreMigrator(fs, pageCache, config, logService, schemaIndexProvider )
+        StoreMigrator failingStoreMigrator = new StoreMigrator(fs, pageCache, config, logService,
+                schemaIndexProvider,databaseHealth )
         {
             @Override
             public void migrate( File sourceStoreDir, File targetStoreDir,
@@ -140,7 +143,8 @@ public class StoreUpgraderInterruptionTestIT
                 allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
 
         progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, config, logService, schemaIndexProvider );
+        StoreMigrator migrator =
+                new StoreMigrator( fs, pageCache, config, logService, schemaIndexProvider, databaseHealth );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
         newUpgrader(upgradableDatabase, progressMonitor, indexMigrator, migrator ).migrateIfNeeded( workingDirectory );
 
@@ -169,7 +173,8 @@ public class StoreUpgraderInterruptionTestIT
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
         final Config config = new Config();
-        StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, config, logService, schemaIndexProvider )
+        StoreMigrator failingStoreMigrator =
+                new StoreMigrator( fs, pageCache, config, logService, schemaIndexProvider, databaseHealth )
         {
             @Override
             public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom ) throws IOException
@@ -199,7 +204,8 @@ public class StoreUpgraderInterruptionTestIT
         assertConsistentStore( workingDirectory );
 
         progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, config, logService, schemaIndexProvider );
+        StoreMigrator migrator =
+                new StoreMigrator( fs, pageCache, config, logService, schemaIndexProvider, databaseHealth );
         newUpgrader( upgradableDatabase, progressMonitor, createIndexMigrator(), migrator )
                 .migrateIfNeeded( workingDirectory );
 
