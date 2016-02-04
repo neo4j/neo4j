@@ -65,7 +65,6 @@ import org.neo4j.legacy.consistency.store.synthetic.IndexEntry;
 import org.neo4j.legacy.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static java.lang.String.format;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -73,6 +72,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+
+import static java.lang.String.format;
+
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 
 @RunWith(Suite.class)

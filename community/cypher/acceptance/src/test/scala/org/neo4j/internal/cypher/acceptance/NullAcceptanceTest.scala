@@ -29,7 +29,7 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     // Given empty database
 
     // When
-    val result = updateWithBothPlanners("optional match (a:DoesNotExist) set a.prop = 42 return a")
+    val result = updateWithBothPlannersAndCompatibilityMode("optional match (a:DoesNotExist) set a.prop = 42 return a")
 
     // Then doesn't throw
     result.toList
@@ -39,7 +39,7 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     // Given empty database
 
     // When
-    val result = updateWithBothPlanners("optional match (a:DoesNotExist) remove a.prop return a")
+    val result = updateWithBothPlannersAndCompatibilityMode("optional match (a:DoesNotExist) remove a.prop return a")
 
     // Then doesn't throw
     result.toList
@@ -89,7 +89,7 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     // Given empty database
 
     // When
-    val result = updateWithBothPlanners("optional match (a:DoesNotExist) delete a return a")
+    val result = updateWithBothPlannersAndCompatibilityMode("optional match (a:DoesNotExist) delete a return a")
 
     // Then doesn't throw
     result.toList
@@ -99,27 +99,27 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     // Given empty database
 
     // When
-    val result = updateWithBothPlanners("optional match ()-[r: DoesNotExist]-() delete r return r")
+    val result = updateWithBothPlannersAndCompatibilityMode("optional match ()-[r: DoesNotExist]-() delete r return r")
 
     // Then doesn't throw
     result.toList
   }
 
   test("round(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN round(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN round(null)") should equal(anyNull)
   }
 
 
   test("floor(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN floor(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN floor(null)") should equal(anyNull)
   }
 
   test("ceil(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN ceil(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN ceil(null)") should equal(anyNull)
   }
 
   test("abs(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN abs(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN abs(null)") should equal(anyNull)
   }
 
   test("acos(null) returns null") {
@@ -127,19 +127,19 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   }
 
   test("asin(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN asin(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN asin(null)") should equal(anyNull)
   }
 
   test("atan(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN atan(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN atan(null)") should equal(anyNull)
   }
 
   test("cos(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN cos(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN cos(null)") should equal(anyNull)
   }
 
   test("cot(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN cot(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN cot(null)") should equal(anyNull)
   }
 
   test("degrees(null) returns null") {
@@ -147,50 +147,50 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   }
 
   test("exp(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN exp(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN exp(null)") should equal(anyNull)
   }
 
   test("log(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN log(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN log(null)") should equal(anyNull)
   }
 
   test("log10(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN log10(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN log10(null)") should equal(anyNull)
   }
 
   test("sin(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN sin(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN sin(null)") should equal(anyNull)
   }
 
   test("tan(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN tan(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN tan(null)") should equal(anyNull)
   }
 
   test("haversin(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN haversin(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN haversin(null)") should equal(anyNull)
   }
 
   test("sqrt(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN sqrt(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN sqrt(null)") should equal(anyNull)
   }
 
   test("sign(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN sign(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN sign(null)") should equal(anyNull)
   }
 
   test("radians(null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN radians(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN radians(null)") should equal(anyNull)
   }
 
   test("atan2(null, 0.3) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN atan2(null, 0.3)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN atan2(null, 0.3)") should equal(anyNull)
   }
 
   test("atan2(0.3, null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN atan2(0.3, null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN atan2(0.3, null)") should equal(anyNull)
   }
 
   test("atan2(null, null) returns null") {
-    executeScalarWithAllPlanners[Any]("RETURN atan2(null, null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN atan2(null, null)") should equal(anyNull)
   }
 }

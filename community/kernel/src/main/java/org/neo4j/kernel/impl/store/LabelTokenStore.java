@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.Token;
@@ -36,7 +36,6 @@ import org.neo4j.storageengine.api.Token;
 public class LabelTokenStore extends TokenStore<LabelTokenRecord, Token>
 {
     public static final String TYPE_DESCRIPTOR = "LabelTokenStore";
-    public static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
     public LabelTokenStore(
             File file,
@@ -44,45 +43,18 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord, Token>
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            DynamicStringStore nameStore )
+            DynamicStringStore nameStore,
+            RecordFormat<LabelTokenRecord> recordFormat,
+            String storeVersion )
     {
         super( file, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
-                logProvider, nameStore, new Token.Factory() );
+                logProvider, nameStore, TYPE_DESCRIPTOR, new Token.Factory(), recordFormat, storeVersion );
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, LabelTokenRecord record ) throws FAILURE
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, LabelTokenRecord record )
+            throws FAILURE
     {
         processor.processLabelToken( this, record );
-    }
-
-    @Override
-    protected LabelTokenRecord newRecord( int id )
-    {
-        return new LabelTokenRecord( id );
-    }
-
-    @Override
-    protected void readRecord( LabelTokenRecord record, PageCursor cursor )
-    {
-        record.setNameId( cursor.getInt() );
-    }
-
-    @Override
-    protected void writeRecord( LabelTokenRecord record, PageCursor cursor )
-    {
-        cursor.putInt( record.getNameId() );
-    }
-
-    @Override
-    public int getRecordSize()
-    {
-        return RECORD_SIZE;
-    }
-
-    @Override
-    public String getTypeDescriptor()
-    {
-        return TYPE_DESCRIPTOR;
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_0.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
@@ -233,6 +234,9 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     statsDivergenceThreshold = 0.5,
     queryPlanTTL = 1000,
     useErrorsOverWarnings = false,
-    nonIndexedLabelWarningThreshold = 10000
+    nonIndexedLabelWarningThreshold = 10000,
+    idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
+    idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
+    errorIfShortestPathFallbackUsedAtRuntime = false
   )
 }

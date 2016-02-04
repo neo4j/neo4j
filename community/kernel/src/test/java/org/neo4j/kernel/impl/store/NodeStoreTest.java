@@ -52,11 +52,13 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.containsStackTraceElement;
 import static org.neo4j.helpers.Exceptions.forMethod;
@@ -64,6 +66,7 @@ import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class NodeStoreTest
 {
@@ -156,7 +159,7 @@ public class NodeStoreTest
 
         // WHEN
         // -- reading that record back
-        NodeRecord readRecord = nodeStore.getRecord( nodeId );
+        NodeRecord readRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
 
         // THEN
         // -- the label field must be the same
@@ -205,9 +208,9 @@ public class NodeStoreTest
         store.updateRecord( new NodeRecord( deleted, false, 10, 20, false ) );
 
         // When & then
-        assertTrue( store.inUse( exists ) );
-        assertFalse( store.inUse( deleted ) );
-        assertFalse( store.inUse( IdType.NODE.getMaxValue() ) );
+        assertTrue( store.isInUse( exists ) );
+        assertFalse( store.isInUse( deleted ) );
+        assertFalse( store.isInUse( IdType.NODE.getMaxValue() ) );
     }
 
     @Test

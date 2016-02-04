@@ -25,7 +25,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should ignore nulls") {
     val n = createNode("apa" -> 42)
 
-    val result = updateWithBothPlanners("MATCH (n) OPTIONAL MATCH (n)-[r]->() REMOVE r.apa RETURN n")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) OPTIONAL MATCH (n)-[r]->() REMOVE r.apa RETURN n")
     result.toList should equal(List(Map("n" -> n)))
   }
 
@@ -34,7 +34,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     createLabeledNode(Map("prop" -> 42), "L")
 
     // WHEN
-    val result = updateWithBothPlanners("MATCH (n) REMOVE n:L RETURN n.prop")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) REMOVE n:L RETURN n.prop")
 
     //THEN
     assertStats(result, labelsRemoved = 1)
@@ -46,7 +46,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     createLabeledNode(Map("prop" -> 42), "L1", "L2", "L3")
 
     // WHEN
-    val result = updateWithBothPlanners("MATCH (n) REMOVE n:L1:L3 RETURN labels(n)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) REMOVE n:L1:L3 RETURN labels(n)")
 
     //THEN
     assertStats(result, labelsRemoved = 2)
@@ -58,7 +58,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     createLabeledNode(Map("prop" -> 42), "L")
 
     // WHEN
-    val result = updateWithBothPlanners("MATCH (n) REMOVE n.prop RETURN exists(n.prop) as still_there")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) REMOVE n.prop RETURN exists(n.prop) as still_there")
 
     //THEN
     assertStats(result, propertiesWritten = 1)
@@ -70,7 +70,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     createLabeledNode(Map("prop" -> 42, "a" -> "a", "b" -> "B"), "L")
 
     // WHEN
-    val result = updateWithBothPlanners("MATCH (n) REMOVE n.prop, n.a RETURN size(keys(n)) as props")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) REMOVE n.prop, n.a RETURN size(keys(n)) as props")
 
     //THEN
     assertStats(result, propertiesWritten = 2)
@@ -108,7 +108,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     createNode()
 
     // WHEN
-    val result = updateWithBothPlanners("MATCH (n) REMOVE n.prop RETURN sum(size(keys(n))) as totalNumberOfProps")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) REMOVE n.prop RETURN sum(size(keys(n))) as totalNumberOfProps")
 
     //THEN
     assertStats(result, propertiesWritten = 0)

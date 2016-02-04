@@ -28,16 +28,16 @@ class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewP
     val two = createNode(Map("value" -> 2))
     val three = createNode(Map("value" -> 3))
 
-    executeWithAllPlanners("MATCH (n) WHERE 1 < n.value < 3 RETURN n").toSet should equal(
+    executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE 1 < n.value < 3 RETURN n").toSet should equal(
       Set(Map("n" -> two)))
 
-    executeWithAllPlanners("MATCH (n) WHERE 1 < n.value <= 3 RETURN n").toSet should equal(
+    executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE 1 < n.value <= 3 RETURN n").toSet should equal(
       Set(Map("n" -> two), Map("n" -> three)))
 
-    executeWithAllPlanners("MATCH (n) WHERE 1 <= n.value < 3 RETURN n").toSet should equal(
+    executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE 1 <= n.value < 3 RETURN n").toSet should equal(
       Set(Map("n" -> one), Map("n" -> two)))
 
-    executeWithAllPlanners("MATCH (n) WHERE 1 <= n.value <= 3 RETURN n").toSet should equal(
+    executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE 1 <= n.value <= 3 RETURN n").toSet should equal(
       Set(Map("n" -> one), Map("n" -> two), Map("n" -> three)))
   }
 
@@ -46,23 +46,23 @@ class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewP
     val b = createNode(Map("value" -> "b"))
     val c = createNode(Map("value" -> "c"))
 
-    executeWithAllPlanners("MATCH (n) WHERE 'a' < n.value < 'c' RETURN n").toSet should equal(
+    executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE 'a' < n.value < 'c' RETURN n").toSet should equal(
       Set(Map("n" -> b)))
 
-    executeWithAllPlanners("MATCH (n) WHERE 'a' < n.value <= 'c' RETURN n").toSet should equal(
+    executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE 'a' < n.value <= 'c' RETURN n").toSet should equal(
       Set(Map("n" -> b), Map("n" -> c)))
 
-    executeWithAllPlanners("MATCH (n) WHERE 'a' <= n.value < 'c' RETURN n").toSet should equal(
+    executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE 'a' <= n.value < 'c' RETURN n").toSet should equal(
       Set(Map("n" -> a), Map("n" -> b)))
 
-    executeWithAllPlanners("MATCH (n) WHERE 'a' <= n.value <= 'c' RETURN n").toSet should equal(
+    executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE 'a' <= n.value <= 'c' RETURN n").toSet should equal(
       Set(Map("n" -> a), Map("n" -> b), Map("n" -> c)))
   }
 
   test("should handle empty ranges") {
     createNode(Map("value" -> 3))
 
-    executeWithAllPlanners("MATCH (n) WHERE 10 < n.value < 3 RETURN n").toSet shouldBe empty
+    executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE 10 < n.value < 3 RETURN n").toSet shouldBe empty
   }
 
   test("should handle long chains of operators") {
@@ -73,7 +73,7 @@ class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewP
     relate(node2, node3)
     relate(node3, node1)
 
-    executeWithAllPlanners("MATCH (n)-->(m) WHERE n.prop1 < m.prop1 = n.prop2 <> m.prop2 RETURN m").toSet should equal(Set(Map("m" -> node2)))
+    executeWithAllPlannersAndCompatibilityMode("MATCH (n)-->(m) WHERE n.prop1 < m.prop1 = n.prop2 <> m.prop2 RETURN m").toSet should equal(Set(Map("m" -> node2)))
   }
 
   test("should handle numerical literal on the left when using an index") {

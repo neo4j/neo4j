@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.proc;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -29,25 +28,33 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
-
-public class Procedures
+/**
+ * This is the coordinating service for procedures in the database. It loads procedures from a specified
+ * directory at startup, but also allows programmatic registration of them - and then, of course, allows
+ * invoking procedures.
+ */
+public class Procedures extends LifecycleAdapter
 {
     private final ProcedureRegistry registry = new ProcedureRegistry();
     private final TypeMappers typeMappers = new TypeMappers();
     private final ComponentRegistry components = new ComponentRegistry();
     private final ReflectiveProcedureCompiler compiler = new ReflectiveProcedureCompiler(typeMappers, components);
+    private final File pluginDir;
     private final Log log;
 
     public Procedures()
     {
-        this( NullLog.getInstance() );
+        this( null, NullLog.getInstance() );
     }
 
-    public Procedures( Log log )
+    public Procedures(  File pluginDir, Log log )
     {
+        this.pluginDir = pluginDir;
         this.log = log;
     }
 
@@ -55,7 +62,7 @@ public class Procedures
      * Register a new procedure. This method must not be called concurrently with {@link #get(ProcedureSignature.ProcedureName)}.
      * @param proc the procedure.
      */
-    public synchronized void register( CallableProcedure proc ) throws ProcedureException
+    public void register( CallableProcedure proc ) throws ProcedureException
     {
         registry.register( proc );
     }
@@ -64,7 +71,7 @@ public class Procedures
      * Register a new procedure defined with annotations on a java class.
      * @param proc the procedure class
      */
-    public synchronized void register( Class<?> proc ) throws KernelException
+    public void register( Class<?> proc ) throws KernelException
     {
         for ( CallableProcedure procedure : compiler.compile( proc ) )
         {
@@ -77,7 +84,7 @@ public class Procedures
      * @param javaClass the class of the native type
      * @param toNeo the conversion to Neo4jTypes
      */
-    public synchronized void registerType( Class<?> javaClass, TypeMappers.NeoValueConverter toNeo )
+    public void registerType( Class<?> javaClass, TypeMappers.NeoValueConverter toNeo )
     {
         typeMappers.registerType( javaClass, toNeo );
     }
@@ -88,23 +95,9 @@ public class Procedures
      * @param cls the type of component to be registered (this is what users 'ask' for in their field declaration)
      * @param supplier a function that supplies the actual component, given the context of a procedure invocation
      */
-    public synchronized <T> void registerComponent( Class<T> cls, Function<CallableProcedure.Context, T> supplier )
+    public <T> void registerComponent( Class<T> cls, Function<CallableProcedure.Context, T> supplier )
     {
         components.register( cls, supplier );
-    }
-
-    /**
-     * Find all procedure-annotated methods in jar files in the given directory and register them.
-     * @param dir directory to look for jarfiles in
-     * @throws IOException
-     * @throws KernelException
-     */
-    public synchronized void loadFromDirectory( File dir ) throws IOException, KernelException
-    {
-        for ( CallableProcedure procedure : new ProcedureJarLoader( compiler, log ).loadProceduresFromDir( dir ) )
-        {
-            register( procedure );
-        }
     }
 
     public ProcedureSignature get( ProcedureSignature.ProcedureName name ) throws ProcedureException
@@ -121,5 +114,18 @@ public class Procedures
                                                            Object[] input ) throws ProcedureException
     {
         return registry.call( ctx, name, input );
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        ProcedureJarLoader loader = new ProcedureJarLoader( compiler, log );
+        for ( CallableProcedure procedure : loader.loadProceduresFromDir( pluginDir ) )
+        {
+            register( procedure );
+        }
+
+        // And register built-in procedures
+        BuiltInProcedures.addTo( this );
     }
 }

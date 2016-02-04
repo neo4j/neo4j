@@ -22,7 +22,7 @@ package org.neo4j.tools.txlog;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.tools.txlog.checktypes.CheckType;
@@ -35,7 +35,7 @@ import org.neo4j.tools.txlog.checktypes.CheckType;
  *
  * @param <R> the type of the record
  */
-class CommittedRecords<R extends Abstract64BitRecord>
+class CommittedRecords<R extends AbstractBaseRecord>
 {
     private final CheckType<?,R> checkType;
     private final Map<Long,RecordInfo<R>> recordsById;

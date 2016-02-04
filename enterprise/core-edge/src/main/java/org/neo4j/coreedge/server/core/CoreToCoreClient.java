@@ -46,9 +46,9 @@ import org.neo4j.logging.LogProvider;
 public class CoreToCoreClient extends CoreClient
 {
     public CoreToCoreClient( LogProvider logProvider, ExpiryScheduler expiryScheduler, Expiration expiration,
-                             ChannelInitializer channelInitializer, Monitors monitors )
+                             ChannelInitializer channelInitializer, Monitors monitors, int maxQueueSize )
     {
-        super( logProvider, expiryScheduler, expiration, channelInitializer, monitors );
+        super( logProvider, expiryScheduler, expiration, channelInitializer, monitors, maxQueueSize );
     }
 
     public static class ChannelInitializer extends io.netty.channel.ChannelInitializer<SocketChannel>

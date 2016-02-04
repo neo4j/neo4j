@@ -48,13 +48,14 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Token;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
  * Tool to dump content of specified store into readable format for further analysis.
  * @param <RECORD> type of record to dump
  * @param <STORE> type of store to dump
  */
-public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAbstractStore & RecordStore<RECORD>>
+public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordStore<RECORD>>
 {
 
     public static void main( String... args ) throws Exception
@@ -151,7 +152,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         return Boolean.getBoolean( "logger" ) ? FormattedLogProvider.toOutputStream( System.out ) : NullLogProvider.getInstance();
     }
 
-    private static <R extends AbstractBaseRecord, S extends CommonAbstractStore & RecordStore<R>> void dump(
+    private static <R extends AbstractBaseRecord, S extends RecordStore<R>> void dump(
             long[] ids, S store ) throws Exception
     {
         new DumpStore<R,S>( System.out ).dump( store, ids );
@@ -257,7 +258,6 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         out.println( "store.getRecordSize() = " + size );
         out.println( "<dump>" );
         long used = 0;
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         long highId = -1;
 
         if ( ids == null )
@@ -291,8 +291,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
 
     private boolean dumpRecord( STORE store, int size, long id ) throws Exception
     {
-        RECORD record = store.forceGetRecord( id );
-
+        RECORD record = store.getRecord( id, store.newRecord(), FORCE );
         Object transform = transform( record );
         if ( transform != null )
         {
@@ -304,7 +303,8 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         else
         {
             out.print( record );
-            byte[] rawRecord = store.getRawRecordData( id );
+            // TODO Hmm, please don't do this
+            byte[] rawRecord = ((CommonAbstractStore)store).getRawRecordData( id );
             dumpHex( record, ByteBuffer.wrap( rawRecord ), id, size );
         }
         return record.inUse();

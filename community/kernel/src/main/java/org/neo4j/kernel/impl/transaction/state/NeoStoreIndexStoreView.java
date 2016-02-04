@@ -54,6 +54,7 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class NeoStoreIndexStoreView implements IndexStoreView
 {
@@ -152,8 +153,8 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     @Override
     public void nodeAsUpdates( long nodeId, Collection<NodePropertyUpdate> target )
     {
-        NodeRecord node = nodeStore.loadRecord( nodeId, new NodeRecord( nodeId ) );
-        if ( node == null || !node.inUse() )
+        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
+        if ( !node.inUse() )
         {
             return;
         }
@@ -180,7 +181,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     @Override
     public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
-        NodeRecord node = nodeStore.forceGetRecord( nodeId );
+        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
         if ( !node.inUse() )
         {
             throw new EntityNotFoundException( EntityType.NODE, nodeId );
@@ -271,6 +272,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     abstract static class NodeStoreScan<FAILURE extends Exception> implements StoreScan<FAILURE>
     {
         private volatile boolean continueScanning;
+        private final NodeRecord record;
 
         protected final NodeStore nodeStore;
         protected final LockService locks;
@@ -283,6 +285,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         public NodeStoreScan( NodeStore nodeStore, LockService locks, long totalCount )
         {
             this.nodeStore = nodeStore;
+            this.record = nodeStore.newRecord();
             this.locks = locks;
             this.totalCount = totalCount;
         }
@@ -292,18 +295,16 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         {
             PrimitiveLongIterator nodeIds = new StoreIdIterator( nodeStore );
             continueScanning = true;
-            NodeRecord record = new NodeRecord( -1 );
             while ( continueScanning && nodeIds.hasNext() )
             {
                 long id = nodeIds.next();
                 try ( Lock ignored = locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) )
                 {
-                    NodeRecord loaded = nodeStore.loadRecord( id, record );
-                    if ( loaded != null )
-                    {
-                        process( loaded );
-                    }
                     count++;
+                    if ( nodeStore.getRecord( id, record, FORCE ).inUse() )
+                    {
+                        process( record );
+                    }
                 }
             }
         }

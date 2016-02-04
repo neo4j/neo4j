@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-class ForeachAcceptanceTest extends ExecutionEngineFunSuite {
+class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with QueryStatisticsTestSupport {
 
   test("should understand symbols introduced by FOREACH") {
     createLabeledNode("Label")
@@ -33,26 +33,29 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite {
         |  CREATE UNIQUE (n)-[:SELF]->(b))""".stripMargin
 
     // should work
-    execute(query)
+    eengine.execute(query)
   }
 
   test("nested foreach") {
     // given
-    createLabeledNode("root")
+    createLabeledNode("Root")
 
     // when
-    val query = """MATCH (r:root)
-      |FOREACH (i IN range(1,10)|
-      |CREATE (r)-[:PARENT]->(c:child { id:i })
-      |FOREACH (j IN range(1,10)|
-      |CREATE (c)-[:PARENT]->(:child { id:c.id*10+j })))""".stripMargin
-    eengine.execute(query)
+    val query = """MATCH (r:Root)
+                  |FOREACH (i IN range(1, 10) |
+                  | CREATE (r)-[:PARENT]->(c:Child { id:i })
+                  | FOREACH (j IN range(1, 10) |
+                  |   CREATE (c)-[:PARENT]->(:Child { id: c.id * 10 + j })
+                  | )
+                  |)""".stripMargin
 
+    val result = updateWithBothPlanners(query)
 
     // then
-    val rows = executeScalar[Number]("MATCH (:root)-[:PARENT]->(:child) RETURN count(*)")
+    assertStats(result, nodesCreated = 110, relationshipsCreated = 110, propertiesWritten = 110, labelsAdded = 110)
+    val rows = executeScalar[Number]("MATCH (:Root)-[:PARENT]->(:Child) RETURN count(*)")
     rows should equal(10)
-    val ids = execute("MATCH (:root)-[:PARENT*]->(c:child) RETURN c.id AS id ORDER BY c.id").toList
+    val ids = updateWithBothPlanners("MATCH (:Root)-[:PARENT*]->(c:Child) RETURN c.id AS id ORDER BY c.id").toList
     ids should equal((1 to 110).map(i => Map("id" -> i)))
   }
 
@@ -61,10 +64,23 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite {
     val query = "FOREACH( n in range( 0, 1 ) | CREATE (p:Person) )"
 
     // when
-    val result = execute(query).toList
+    val result = updateWithBothPlanners(query)
 
     // then
+    assertStats(result, nodesCreated = 2, labelsAdded = 2)
+    result should use("Foreach", "CreateNode")
     result shouldBe empty
+  }
+
+  test("foreach should not expose inner variables") {
+    val query = """MATCH (n)
+                  |FOREACH (i IN [0, 1, 2]
+                  |  CREATE (m)
+                  |)
+                  |SET m.prop = 0
+                """.stripMargin
+
+    a [SyntaxException] should be thrownBy updateWithBothPlanners(query)
   }
 
   test("foreach should let you use inner variables from create relationship patterns") {
@@ -79,11 +95,13 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite {
                   |RETURN e.foo, i.foo, p.foo""".stripMargin
 
     // when
-    val result = execute(query).toList
+    val result = updateWithBothPlanners(query)
 
     // then
-    result.head.get("e.foo") should equal(Some("e_bar"))
-    result.head.get("i.foo") should equal(Some("i_bar"))
-    result.head.get("p.foo") should equal(Some("p_bar"))
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, labelsAdded = 2, propertiesWritten = 3)
+    val resultList = result.toList
+    resultList.head.get("e.foo") should equal(Some("e_bar"))
+    resultList.head.get("i.foo") should equal(Some("i_bar"))
+    resultList.head.get("p.foo") should equal(Some("p_bar"))
   }
 }

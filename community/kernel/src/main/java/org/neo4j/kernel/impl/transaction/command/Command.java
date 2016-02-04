@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.api.CommandVisitor;
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -43,7 +43,7 @@ import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
-import static java.util.Collections.unmodifiableCollection;
+
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.util.Bits.bitFlag;
 import static org.neo4j.kernel.impl.util.Bits.bitFlags;
@@ -134,7 +134,12 @@ public abstract class Command implements StorageCommand
 
     void writeDynamicRecords( WritableChannel channel, Collection<DynamicRecord> records ) throws IOException
     {
-        channel.putInt( records.size() ); // 4
+        writeDynamicRecords( channel, records, records.size() );
+    }
+
+    void writeDynamicRecords( WritableChannel channel, Iterable<DynamicRecord> records, int size ) throws IOException
+    {
+        channel.putInt( size ); // 4
         for ( DynamicRecord record : records )
         {
             writeDynamicRecord( channel, record );
@@ -164,7 +169,7 @@ public abstract class Command implements StorageCommand
         }
     }
 
-    public static abstract class BaseCommand<RECORD extends Abstract64BitRecord> extends Command
+    public static abstract class BaseCommand<RECORD extends AbstractBaseRecord> extends Command
     {
         protected final RECORD before;
         protected final RECORD after;
@@ -482,7 +487,7 @@ public abstract class Command implements StorageCommand
         public void serialize( WritableChannel channel ) throws IOException
         {
             channel.put( NeoCommandType.PROP_INDEX_COMMAND );
-            channel.putInt( after.getId() );
+            channel.putInt( after.getIntId() );
             writePropertyKeyTokenRecord( channel, before );
             writePropertyKeyTokenRecord( channel, after );
         }
@@ -523,7 +528,7 @@ public abstract class Command implements StorageCommand
         public void serialize( WritableChannel channel ) throws IOException
         {
             channel.put( NeoCommandType.REL_TYPE_COMMAND );
-            channel.putInt( after.getId() );
+            channel.putInt( after.getIntId() );
             writeRelationshipTypeTokenRecord( channel, before );
             writeRelationshipTypeTokenRecord( channel, after );
         }
@@ -563,7 +568,7 @@ public abstract class Command implements StorageCommand
         public void serialize( WritableChannel channel ) throws IOException
         {
             channel.put( NeoCommandType.LABEL_KEY_COMMAND );
-            channel.putInt( after.getId() );
+            channel.putInt( after.getIntId() );
             writeLabelTokenRecord( channel, before );
             writeLabelTokenRecord( channel, after );
         }
@@ -579,11 +584,17 @@ public abstract class Command implements StorageCommand
 
     public static class SchemaRuleCommand extends Command
     {
-        private final Collection<DynamicRecord> recordsBefore;
-        private final Collection<DynamicRecord> recordsAfter;
+        private final SchemaRecord recordsBefore;
+        private final SchemaRecord recordsAfter;
         private final SchemaRule schemaRule;
 
         public SchemaRuleCommand( Collection<DynamicRecord> recordsBefore, Collection<DynamicRecord> recordsAfter,
+                SchemaRule schemaRule )
+        {
+            this( new SchemaRecord( recordsBefore ), new SchemaRecord( recordsAfter ), schemaRule );
+        }
+
+        public SchemaRuleCommand( SchemaRecord recordsBefore, SchemaRecord recordsAfter,
                 SchemaRule schemaRule )
         {
             setup( first( recordsAfter ).getId(), Mode.fromRecordState( first( recordsAfter ) ) );
@@ -608,9 +619,9 @@ public abstract class Command implements StorageCommand
             return handler.visitSchemaRuleCommand( this );
         }
 
-        public Collection<DynamicRecord> getRecordsAfter()
+        public SchemaRecord getRecordsAfter()
         {
-            return unmodifiableCollection( recordsAfter );
+            return recordsAfter;
         }
 
         public SchemaRule getSchemaRule()
@@ -618,7 +629,7 @@ public abstract class Command implements StorageCommand
             return schemaRule;
         }
 
-        public Collection<DynamicRecord> getRecordsBefore()
+        public SchemaRecord getRecordsBefore()
         {
             return recordsBefore;
         }
@@ -627,8 +638,8 @@ public abstract class Command implements StorageCommand
         public void serialize( WritableChannel channel ) throws IOException
         {
             channel.put( NeoCommandType.SCHEMA_RULE_COMMAND );
-            writeDynamicRecords( channel, recordsBefore );
-            writeDynamicRecords( channel, recordsAfter );
+            writeDynamicRecords( channel, recordsBefore, recordsBefore.size() );
+            writeDynamicRecords( channel, recordsAfter, recordsAfter.size() );
             channel.put( first( recordsAfter ).isCreated() ? (byte) 1 : 0 );
         }
     }

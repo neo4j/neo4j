@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.spi.v3_0.ExceptionTranslationSupport
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
+import scala.collection.Iterator
+
 class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends DelegatingQueryContext(inner) with ExceptionTranslationSupport {
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(super.setLabelsOnNode(node, labelIds))
@@ -121,9 +123,11 @@ class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends Delega
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
     translateException(super.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  override def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] = {
+  override def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] =
     translateIterator(super.callReadOnlyProcedure(signature, args))
-  }
+
+  override def callReadWriteProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] =
+    translateIterator(super.callReadWriteProcedure(signature, args))
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T =
     super.withAnyOpenQueryContext(qc =>

@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import static java.lang.Integer.parseInt;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.string_block_size;
-import static org.neo4j.kernel.impl.store.AbstractDynamicStore.BLOCK_HEADER_SIZE;
+import static org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat.RECORD_HEADER_SIZE;
 
 /**
  * {@link DynamicRecordAllocator} that allocates records using a {@link BatchingIdSequence}
@@ -38,7 +38,7 @@ import static org.neo4j.kernel.impl.store.AbstractDynamicStore.BLOCK_HEADER_SIZE
  */
 public class BatchingDynamicRecordAllocator implements DynamicRecordAllocator
 {
-    private final int dataSize = parseInt( string_block_size.getDefaultValue() ) - BLOCK_HEADER_SIZE;
+    private final int dataSize = parseInt( string_block_size.getDefaultValue() ) - RECORD_HEADER_SIZE;
     private final IdSequence idSequence;
     private final List<DynamicRecord> records = new ArrayList<>();
 
@@ -53,7 +53,7 @@ public class BatchingDynamicRecordAllocator implements DynamicRecordAllocator
     }
 
     @Override
-    public int dataSize()
+    public int getRecordDataSize()
     {
         return dataSize;
     }

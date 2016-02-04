@@ -17,25 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.record;
+package org.neo4j.kernel.impl.store;
 
-public abstract class AbstractRecord extends AbstractBaseRecord
+/**
+ * Information extracted from the header of a store.
+ */
+public interface StoreHeader
 {
-    private final int id;
-
-    public AbstractRecord( int id )
-    {
-        this.id = id;
-    }
-
-    public int getId()
-    {
-        return id;
-    }
-
-    @Override
-    public long getLongId()
-    {
-        return id;
-    }
 }

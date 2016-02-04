@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.Iterator;
 
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
-import org.neo4j.kernel.impl.store.AbstractRecordStore;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -59,7 +59,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         void propertiesWritten( long count );
     }
 
-    private final AbstractRecordStore<RECORD> entityStore;
+    private final CommonAbstractStore<RECORD> entityStore;
     private final PropertyStore propertyStore;
     private final IoMonitor ioMonitor;
     private final PropertyCreator propertyCreator;
@@ -70,7 +70,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
     private final ReusableIteratorCostume<PropertyBlock> blockIterator = new ReusableIteratorCostume<>();
 
     EntityStoreUpdaterStep( StageControl control, Configuration config,
-            AbstractRecordStore<RECORD> entityStore,
+            CommonAbstractStore<RECORD> entityStore,
             PropertyStore propertyStore, IoMonitor ioMonitor,
             Monitor monitor )
     {

@@ -32,10 +32,10 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     test(ldbcQuery.name) {
       //given
       eengine.execute(ldbcQuery.createQuery, ldbcQuery.createParams)
-      ldbcQuery.constraintQueries.foreach(updateWithBothPlanners(_))
+      ldbcQuery.constraintQueries.foreach(updateWithBothPlannersAndCompatibilityMode(_))
 
       //when
-      val result = executeWithAllPlanners(ldbcQuery.query, ldbcQuery.params.toSeq: _*).toComparableResult
+      val result = executeWithAllPlannersAndCompatibilityMode(ldbcQuery.query, ldbcQuery.params.toSeq: _*).toComparableResult
 
       //then
       result should equal(ldbcQuery.expectedResult)
@@ -43,8 +43,8 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   }
 
   test("LDBC query 12 should not get a bad plan because of lost precision in selectivity calculation") {
-    updateWithBothPlanners(LdbcQueries.Query12.createQuery, LdbcQueries.Query12.createParams.toSeq: _*)
-    LdbcQueries.Query12.constraintQueries.foreach(updateWithBothPlanners(_))
+    updateWithBothPlannersAndCompatibilityMode(LdbcQueries.Query12.createQuery, LdbcQueries.Query12.createParams.toSeq: _*)
+    LdbcQueries.Query12.constraintQueries.foreach(updateWithBothPlannersAndCompatibilityMode(_))
 
     val updatedLdbc12 =
       """MATCH (:Person {id:{1}})-[:KNOWS]-(friend:Person)
@@ -57,7 +57,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
 
     val params: Map[String, Any] = Map("1" -> 0, "2" -> 1, "3" -> 10)
 
-    val result = executeWithAllPlanners(s"PROFILE $updatedLdbc12", params.toSeq:_*)
+    val result = executeWithAllPlannersAndCompatibilityMode(s"PROFILE $updatedLdbc12", params.toSeq:_*)
 
     // no precision loss resulting in insane numbers
     all (collectEstimations(result.executionPlanDescription())) should be > 0.0

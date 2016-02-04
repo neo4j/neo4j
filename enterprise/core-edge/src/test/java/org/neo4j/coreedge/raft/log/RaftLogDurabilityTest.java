@@ -27,6 +27,7 @@ import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -38,7 +39,8 @@ public class RaftLogDurabilityTest
     {
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
-        return new NaiveDurableRaftLog( fileSystem, directory, new DummyRaftableContentSerializer() );
+        return new NaiveDurableRaftLog( fileSystem, directory, new DummyRaftableContentSerializer(),
+                NullLogProvider.getInstance() );
     }
 
     @Test

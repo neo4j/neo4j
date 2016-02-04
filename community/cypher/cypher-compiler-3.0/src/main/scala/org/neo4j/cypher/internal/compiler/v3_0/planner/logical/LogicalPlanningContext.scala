@@ -35,6 +35,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   input: QueryGraphSolverInput = QueryGraphSolverInput.empty,
                                   notificationLogger: InternalNotificationLogger = devNullLogger,
                                   useErrorsOverWarnings: Boolean = false,
+                                  errorIfShortestPathFallbackUsedAtRuntime: Boolean = false,
                                   config: QueryPlannerConfiguration = QueryPlannerConfiguration.default) {
   def withStrictness(strictness: StrictnessMode) = copy(input = input.withPreferredStrictness(strictness))
 

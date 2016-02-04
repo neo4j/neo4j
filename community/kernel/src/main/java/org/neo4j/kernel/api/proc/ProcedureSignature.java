@@ -137,23 +137,42 @@ public class ProcedureSignature
     private final ProcedureName name;
     private final List<FieldSignature> inputSignature;
     private final List<FieldSignature> outputSignature;
+    private final Mode mode;
 
-    public ProcedureSignature( ProcedureName name, List<FieldSignature> inputSignature, List<FieldSignature> outputSignature )
+    /**
+     * The procedure mode affects how the procedure will execute, and which capabilities
+     * it requires.
+     */
+    public enum Mode
+    {
+        /** This procedure will only perform read operations against the graph */
+        READ_ONLY,
+        /** This procedure may perform both read and write operations against the graph */
+        READ_WRITE
+    }
+
+    public ProcedureSignature( ProcedureName name,
+                               List<FieldSignature> inputSignature,
+                               List<FieldSignature> outputSignature,
+                               Mode mode )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
         this.outputSignature = unmodifiableList( outputSignature );
+        this.mode = mode;
     }
 
     public ProcedureSignature( ProcedureName name )
     {
-        this( name, Collections.emptyList(), Collections.emptyList() );
+        this( name, Collections.emptyList(), Collections.emptyList(), Mode.READ_ONLY );
     }
 
     public ProcedureName name()
     {
         return name;
     }
+
+    public Mode mode() { return mode; }
 
     public List<FieldSignature> inputSignature()
     {
@@ -198,10 +217,17 @@ public class ProcedureSignature
         private final ProcedureName name;
         private final List<FieldSignature> inputSignature = new LinkedList<>();
         private final List<FieldSignature> outputSignature = new LinkedList<>();
+        private Mode mode = Mode.READ_ONLY;
 
         public Builder( String[] namespace, String name )
         {
             this.name = new ProcedureName( namespace, name );
+        }
+
+        public Builder mode( Mode mode )
+        {
+            this.mode = mode;
+            return this;
         }
 
         /** Define an input field */
@@ -220,7 +246,7 @@ public class ProcedureSignature
 
         public ProcedureSignature build()
         {
-            return new ProcedureSignature(name, inputSignature, outputSignature );
+            return new ProcedureSignature(name, inputSignature, outputSignature, mode );
         }
     }
 

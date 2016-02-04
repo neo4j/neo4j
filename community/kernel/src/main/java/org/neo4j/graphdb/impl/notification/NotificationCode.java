@@ -121,6 +121,13 @@ public enum NotificationCode
             Status.Statement.UnboundedPatternWarning,
             "Using shortest path with an unbounded pattern will likely result in long execution times. " +
             "It is recommended to use an upper limit to the number of node hops in your pattern."
+    ),
+    EXHAUSTIVE_SHORTEST_PATH(
+            SeverityLevel.WARNING,
+            Status.Statement.ExhaustiveShortestPathWarning,
+            "Using shortest path with an exhaustive search fallback might cause query slow down since shortest path " +
+            "graph algorithms might not work for this use case. It is recommended to introduce a WITH to separate the " +
+            "MATCH containing the shortest path from the existential predicates on that path."
     )
     ;
 

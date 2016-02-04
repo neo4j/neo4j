@@ -272,13 +272,13 @@ public class RecordAccessStub implements RecordAccess
 
     private static <R extends AbstractBaseRecord> R add( Map<Long, Delta<R>> records, R record )
     {
-        records.put( record.getLongId(), new Delta<>( record ) );
+        records.put( record.getId(), new Delta<>( record ) );
         return record;
     }
 
     private static <R extends AbstractBaseRecord> void add( Map<Long, Delta<R>> records, R oldRecord, R newRecord )
     {
-        records.put( newRecord.getLongId(), new Delta<>( oldRecord, newRecord ) );
+        records.put( newRecord.getId(), new Delta<>( oldRecord, newRecord ) );
     }
 
     public DynamicRecord addSchema( DynamicRecord schema )

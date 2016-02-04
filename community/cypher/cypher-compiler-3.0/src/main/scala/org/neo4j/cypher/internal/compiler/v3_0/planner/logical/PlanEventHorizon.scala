@@ -55,6 +55,9 @@ case object PlanEventHorizon
       case LoadCSVProjection(variableName, url, format, fieldTermiator) =>
         context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTermiator)
 
+      case PassthroughAllHorizon() =>
+        context.logicalPlanProducer.planPassAll(plan)
+
       case _ =>
         throw new CantHandleQueryException
     }

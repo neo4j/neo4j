@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
@@ -35,12 +35,13 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.GroupVisito
  */
 public class NodeFirstRelationshipProcessor implements RecordProcessor<NodeRecord>, GroupVisitor
 {
-    private final RelationshipGroupStore relGroupStore;
+    private final RecordStore<RelationshipGroupRecord> relGroupStore;
     private final NodeRelationshipCache cache;
 
     private long nextGroupId = -1;
 
-    public NodeFirstRelationshipProcessor( RelationshipGroupStore relGroupStore, NodeRelationshipCache cache )
+    public NodeFirstRelationshipProcessor( RecordStore<RelationshipGroupRecord> relGroupStore,
+            NodeRelationshipCache cache )
     {
         this.relGroupStore = relGroupStore;
         this.cache = cache;
@@ -68,7 +69,8 @@ public class NodeFirstRelationshipProcessor implements RecordProcessor<NodeRecor
         long id = nextGroupId != -1 ? nextGroupId : relGroupStore.nextId();
         nextGroupId = -1;
 
-        RelationshipGroupRecord groupRecord = new RelationshipGroupRecord( id, type );
+        RelationshipGroupRecord groupRecord = new RelationshipGroupRecord( id );
+        groupRecord.setType( type );
         groupRecord.setInUse( true );
         groupRecord.setFirstOut( out );
         groupRecord.setFirstIn( in );

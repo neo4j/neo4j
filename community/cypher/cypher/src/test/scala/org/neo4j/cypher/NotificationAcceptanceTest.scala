@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.notification._
 class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("Warn for cartesian product") {
-    val result = executeWithAllPlannersAndRuntimes("explain match (a)-->(b), (c)-->(d) return *")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("explain match (a)-->(b), (c)-->(d) return *")
 
     result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))))
   }
@@ -38,48 +38,48 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("Warn for cartesian product with runtime=interpreted") {
-    val result = executeWithAllPlanners("explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *")
+    val result = executeWithAllPlannersAndCompatibilityMode("explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *")
 
     result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))))
   }
 
   test("Don't warn for cartesian product when not using explain") {
-    val result = executeWithAllPlannersAndRuntimes("match (a)-->(b), (c)-->(d) return *")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-->(b), (c)-->(d) return *")
 
     result.notifications shouldBe empty
   }
 
   test("warn when using length on collection") {
-    val result = executeWithAllPlanners("explain return length([1, 2, 3])")
+    val result = executeWithAllPlannersAndCompatibilityMode("explain return length([1, 2, 3])")
 
     result.notifications should equal(Set(LengthOnNonPathNotification(InputPosition(14, 1, 15))))
   }
 
   test("do not warn when using length on a path") {
-    val result = executeWithAllPlanners("explain match p=(a)-[*]->(b) return length(p)")
+    val result = executeWithAllPlannersAndCompatibilityMode("explain match p=(a)-[*]->(b) return length(p)")
 
     result.notifications shouldBe empty
   }
 
   test("do warn when using length on a pattern expression") {
-    val result = executeWithAllPlanners("explain match (a) where a.name='Alice' return length((a)-->()-->())")
+    val result = executeWithAllPlannersAndCompatibilityMode("explain match (a) where a.name='Alice' return length((a)-->()-->())")
 
     result.notifications should contain(LengthOnNonPathNotification(InputPosition(45, 1, 46)))
   }
 
   test("do warn when using length on a string") {
-    val result = executeWithAllPlanners("explain return length('a string')")
+    val result = executeWithAllPlannersAndCompatibilityMode("explain return length('a string')")
 
     result.notifications should equal(Set(LengthOnNonPathNotification(InputPosition(14, 1, 15))))
   }
 
   test("do not warn when using size on a collection") {
-    val result = executeWithAllPlanners("explain return size([1, 2, 3])")
+    val result = executeWithAllPlannersAndCompatibilityMode("explain return size([1, 2, 3])")
     result.notifications shouldBe empty
   }
 
   test("do not warn when using size on a string") {
-    val result = executeWithAllPlanners("explain return size('a string')")
+    val result = executeWithAllPlannersAndCompatibilityMode("explain return size('a string')")
     result.notifications shouldBe empty
   }
 
@@ -157,8 +157,8 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("Warnings should work on potentially cached queries") {
-    val resultWithoutExplain = executeWithAllPlannersAndRuntimes("match (a)-->(b), (c)-->(d) return *")
-    val resultWithExplain = executeWithAllPlannersAndRuntimes("explain match (a)-->(b), (c)-->(d) return *")
+    val resultWithoutExplain = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-->(b), (c)-->(d) return *")
+    val resultWithExplain = executeWithAllPlannersAndRuntimesAndCompatibilityMode("explain match (a)-->(b), (c)-->(d) return *")
 
     resultWithoutExplain shouldBe empty
     resultWithExplain.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))))

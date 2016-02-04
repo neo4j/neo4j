@@ -233,4 +233,17 @@ class QueryGraphConnectedComponentsTest
       QueryGraph(patternNodes = Set(B, X), patternRelationships = Set(B_to_X), argumentIds = Set(X))
     ))
   }
+
+  test("should pick the predicates correctly when they depend on arguments") {
+    //  UNWIND [0] as x match (a)-[r]->(b) where id(r) = x
+    val graph = QueryGraph(
+      argumentIds = Set(X),
+      patternNodes = Set(A, B),
+      patternRelationships = Set(A_to_B),
+      selections = Selections.from(Equals(Variable(A_to_B.name.name)(pos), Variable(X.name.name)(pos))(pos))
+    )
+
+    val components = graph.connectedComponents
+    components should equal(Seq(graph))
+  }
 }

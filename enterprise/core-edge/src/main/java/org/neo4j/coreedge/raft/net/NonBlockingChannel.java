@@ -32,6 +32,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.util.concurrent.FutureListener;
 
+import org.neo4j.coreedge.raft.net.monitoring.MessageQueueMonitor;
 import org.neo4j.coreedge.server.Disposable;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.logging.Log;
@@ -41,7 +42,6 @@ import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 public class NonBlockingChannel implements Disposable
 {
-    private static final int MAX_QUEUE_SIZE = 64;
     private static final int CONNECT_BACKOFF_IN_MS = 250;
     /* This pause is a maximum for retrying in case of a park/unpark race as well as for any other abnormal
     situations. */
@@ -53,13 +53,19 @@ public class NonBlockingChannel implements Disposable
     private Queue<Object> messageQueue = new ConcurrentLinkedQueue<>();
     private volatile boolean stillRunning = true;
     private ChannelHandler keepAliveHandler;
+    private final MessageQueueMonitor monitor;
+    private final int maxQueueSize;
     FutureListener<Void> errorListener;
 
-    public NonBlockingChannel( Bootstrap bootstrap, final InetSocketAddress destination, ChannelHandler keepAliveHandler, final Log log )
+    public NonBlockingChannel( Bootstrap bootstrap, final InetSocketAddress destination,
+                               ChannelHandler keepAliveHandler, final Log log, MessageQueueMonitor monitor,
+                               int maxQueueSize)
     {
         this.bootstrap = bootstrap;
         this.destination = destination;
         this.keepAliveHandler = keepAliveHandler;
+        this.monitor = monitor;
+        this.maxQueueSize = maxQueueSize;
 
         this.errorListener = future -> {
             if ( !future.isSuccess() )
@@ -103,6 +109,7 @@ public class NonBlockingChannel implements Disposable
         {
             nettyChannel.close();
             messageQueue.clear();
+            monitor.queueSize(destination, messageQueue.size());
         }
     }
 
@@ -133,10 +140,15 @@ public class NonBlockingChannel implements Disposable
             throw new IllegalStateException( "sending on disposed channel" );
         }
 
-        if ( messageQueue.size() < MAX_QUEUE_SIZE )
+        if ( messageQueue.size() < maxQueueSize )
         {
             messageQueue.offer( msg );
             LockSupport.unpark( messageSendingThread );
+            monitor.queueSize( destination, messageQueue.size());
+        }
+        else
+        {
+            monitor.droppedMessage(destination);
         }
     }
 
@@ -155,6 +167,7 @@ public class NonBlockingChannel implements Disposable
             write.addListener( errorListener );
 
             messageQueue.poll();
+            monitor.queueSize( destination, messageQueue.size());
             sentSomething = true;
         }
 

@@ -89,9 +89,11 @@ public class Legacy19NodeStoreReader implements LegacyNodeStoreReader
                         long relModifier = (inUseByte & 0xEL) << 31;
                         long nextProp = getUnsignedInt( buffer );
                         long propModifier = (inUseByte & 0xF0L) << 28;
-                        nodeRecord = new NodeRecord( id, false, longFromIntAndMod( nextRel, relModifier ),
-                                longFromIntAndMod( nextProp, propModifier ) );
-                        nodeRecord.setInUse( inUse );
+                        nodeRecord = new NodeRecord( id ).initialize( true,
+                                longFromIntAndMod( nextProp, propModifier ),
+                                false,
+                                longFromIntAndMod( nextRel, relModifier ),
+                                Record.NO_LABELS_FIELD.intValue() );
                     }
                     else
                     {

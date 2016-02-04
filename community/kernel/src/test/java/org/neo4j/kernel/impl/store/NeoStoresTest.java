@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
+import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -89,6 +90,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class NeoStoresTest
 {
@@ -465,10 +468,10 @@ public class NeoStoresTest
     {
         File storeDir = dir.directory( "small_store" );
         initializeStores( storeDir, stringMap( "string_block_size", "62", "array_block_size", "302" ) );
-        assertEquals( 62 + AbstractDynamicStore.BLOCK_HEADER_SIZE,
-                pStore.getStringBlockSize() );
-        assertEquals( 302 + AbstractDynamicStore.BLOCK_HEADER_SIZE,
-                pStore.getArrayBlockSize() );
+        assertEquals( 62 + DynamicRecordFormat.RECORD_HEADER_SIZE,
+                pStore.getStringStore().getRecordSize() );
+        assertEquals( 302 + DynamicRecordFormat.RECORD_HEADER_SIZE,
+                pStore.getArrayStore().getRecordSize() );
         ds.stop();
     }
 
@@ -798,7 +801,7 @@ public class NeoStoresTest
         for ( int keyId : props.keySet() )
         {
             long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id );
+            PropertyRecord record = getRecord( pStore, id );
             PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
             DefinedProperty data = block.newPropertyData( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
@@ -888,7 +891,7 @@ public class NeoStoresTest
         for ( int keyId : props.keySet() )
         {
             long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id );
+            PropertyRecord record = getRecord( pStore, id );
             PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
             DefinedProperty data = block.newPropertyData( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
@@ -975,7 +978,7 @@ public class NeoStoresTest
         for ( int keyId : props.keySet() )
         {
             long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id );
+            PropertyRecord record = getRecord( pStore, id );
             PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
             DefinedProperty data = block.newPropertyData( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
@@ -1041,7 +1044,7 @@ public class NeoStoresTest
         for ( int keyId : props.keySet() )
         {
             long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id );
+            PropertyRecord record = getRecord( pStore, id );
             PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
             DefinedProperty data = block.newPropertyData( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
@@ -1115,7 +1118,7 @@ public class NeoStoresTest
         for ( int keyId : props.keySet() )
         {
             long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id );
+            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL );
             PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
             DefinedProperty data = block.newPropertyData( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
@@ -1176,7 +1179,7 @@ public class NeoStoresTest
         for ( int keyId : props.keySet() )
         {
             long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id );
+            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL );
             PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
             DefinedProperty data = block.newPropertyData( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
@@ -1240,7 +1243,7 @@ public class NeoStoresTest
         for ( int keyId : props.keySet() )
         {
             long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id );
+            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL );
             PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
             DefinedProperty data = block.newPropertyData( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )
@@ -1286,7 +1289,7 @@ public class NeoStoresTest
         for ( int keyId : props.keySet() )
         {
             long id = props.get( keyId ).other();
-            PropertyRecord record = pStore.getRecord( id );
+            PropertyRecord record = pStore.getRecord( id, pStore.newRecord(), NORMAL );
             PropertyBlock block = record.getPropertyBlock( props.get( keyId ).first().propertyKeyId() );
             DefinedProperty data = block.newPropertyData( pStore );
             if ( data.propertyKeyId() == prop1.propertyKeyId() )

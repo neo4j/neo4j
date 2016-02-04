@@ -28,22 +28,26 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class PropertyReader implements PropertyAccessor
 {
     private final PropertyStore propertyStore;
-    private final StoreAccess storeAccess;
+    private final NodeStore nodeStore;
+    private final NodeRecord nodeRecord;
 
     public PropertyReader( StoreAccess storeAccess )
     {
-        this.storeAccess = storeAccess;
-        propertyStore = storeAccess.getRawNeoStores().getPropertyStore();
+        this.propertyStore = storeAccess.getRawNeoStores().getPropertyStore();
+        this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();
+        this.nodeRecord = nodeStore.newRecord();
     }
 
     public Collection<PropertyRecord> getPropertyRecordChain( NodeRecord nodeRecord )
@@ -57,7 +61,7 @@ public class PropertyReader implements PropertyAccessor
         List<PropertyRecord> toReturn = new LinkedList<>();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = storeAccess.getPropertyStore().forceGetRecord( nextProp );
+            PropertyRecord propRecord = propertyStore.getRecord( nextProp, propertyStore.newRecord(), FORCE );
             toReturn.add( propRecord );
             nextProp = propRecord.getNextProp();
         }
@@ -99,8 +103,7 @@ public class PropertyReader implements PropertyAccessor
     @Override
     public Property getProperty( long nodeId, int propertyKeyId )
     {
-        NodeRecord nodeRecord = storeAccess.getNodeStore().forceGetRecord( nodeId );
-        if ( nodeRecord != null )
+        if ( nodeStore.getRecord( nodeId, nodeRecord, FORCE ).inUse() )
         {
             for ( PropertyBlock block : propertyBlocks( nodeRecord ) )
             {

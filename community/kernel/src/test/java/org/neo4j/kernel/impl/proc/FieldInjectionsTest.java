@@ -26,7 +26,7 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.procedure.Resource;
+import org.neo4j.procedure.Context;
 
 import static junit.framework.TestCase.assertEquals;
 
@@ -105,7 +105,7 @@ public class FieldInjectionsTest
 
     public static class ProcedureWithPrivateMemberField
     {
-        @Resource
+        @Context
         private boolean someState = false;
     }
 
@@ -116,13 +116,13 @@ public class FieldInjectionsTest
 
     public static class ParentProcedure
     {
-        @Resource
+        @Context
         public int parentField;
     }
 
     public static class ChildProcedure extends ParentProcedure
     {
-        @Resource
+        @Context
         public int childField;
     }
 }

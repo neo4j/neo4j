@@ -25,11 +25,11 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.procedure.Resource;
+import org.neo4j.procedure.Context;
 
 public class ProcedureExample
 {
-    @Resource
+    @Context
     public GraphDatabaseService db;
 
     /**

@@ -17,9 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store;
+package org.neo4j.procedure;
 
-public interface DynamicBlockSize
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
+ * This annotation marks a {@link Procedure} as performing updates to the graph.
+ * <p>
+ * This is <i>required</i> if the procedure performs write operations.
+ */
+@Target( ElementType.METHOD )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface PerformsWrites
 {
-    int getBlockSize();
 }

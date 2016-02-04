@@ -165,7 +165,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
 
             if ( rule.isConstraintIndex() && rule.getOwningConstraint() != null )
             {
-                DynamicRecord previousObligation = constraintObligations.put( rule.getOwningConstraint(), record );
+                DynamicRecord previousObligation = constraintObligations.put( rule.getOwningConstraint(), record.clone() );
                 if ( previousObligation != null )
                 {
                     engine.report().duplicateObligation( previousObligation );
@@ -179,7 +179,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         {
             checkLabelAndPropertyRule( rule, rule.getPropertyKey(), record, records, engine );
 
-            DynamicRecord previousObligation = indexObligations.put( rule.getOwnedIndex(), record );
+            DynamicRecord previousObligation = indexObligations.put( rule.getOwnedIndex(), record.clone() );
             if ( previousObligation != null )
             {
                 engine.report().duplicateObligation( previousObligation );
@@ -283,7 +283,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     private void checkForDuplicates( SchemaRule rule, DynamicRecord record,
             CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
     {
-        DynamicRecord previousContentRecord = verifiedRulesWithRecords.put( rule, record );
+        DynamicRecord previousContentRecord = verifiedRulesWithRecords.put( rule, record.clone() );
         if ( previousContentRecord != null )
         {
             engine.report().duplicateRuleContent( previousContentRecord );

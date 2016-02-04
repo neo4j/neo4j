@@ -23,25 +23,33 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public abstract class TokenRecord extends AbstractRecord
+public abstract class TokenRecord extends AbstractBaseRecord
 {
-    private int nameId = Record.NO_NEXT_BLOCK.intValue();
-    private final List<DynamicRecord> nameRecords = new ArrayList<DynamicRecord>();
-    private boolean isLight;
+    private int nameId;
+    private List<DynamicRecord> nameRecords;
 
-    TokenRecord( int id )
+    public TokenRecord( int id )
     {
         super( id );
     }
 
-    public void setIsLight( boolean status )
+    public TokenRecord initialize( boolean inUse, int nameId )
     {
-        isLight = status;
+        super.initialize( inUse );
+        this.nameId = nameId;
+        this.nameRecords = new ArrayList<>();
+        return this;
+    }
+
+    @Override
+    public void clear()
+    {
+        initialize( false, Record.NO_NEXT_BLOCK.intValue() );
     }
 
     public boolean isLight()
     {
-        return isLight;
+        return nameRecords == null || nameRecords.isEmpty();
     }
 
     public int getNameId()
@@ -79,7 +87,7 @@ public abstract class TokenRecord extends AbstractRecord
         buf.append( getId() ).append( "," ).append( inUse() ? "in" : "no" ).append( " use" );
         buf.append( ",nameId=" ).append( nameId );
         additionalToString( buf );
-        if ( !isLight )
+        if ( !isLight() )
         {
             for ( DynamicRecord dyn : nameRecords )
             {

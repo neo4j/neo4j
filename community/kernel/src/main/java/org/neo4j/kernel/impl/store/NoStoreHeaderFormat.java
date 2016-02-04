@@ -17,25 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure;
+package org.neo4j.kernel.impl.store;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.neo4j.io.pagecache.PageCursor;
 
-/**
- * This marks a field in a class with {@link Procedure} methods as a resource for the procedures to use.
- * What this means is that before the procedure is called, fields with this annotation will be automatically
- * populated with the appropriate resource.
- *
- * In fact, apart from static fields, <i>only</i> fields with this annotation are allowed in classses that
- * define procedure. Each of the fields must be public and non-final.
- *
- * @see Procedure
- */
-@Target( ElementType.FIELD )
-@Retention( RetentionPolicy.RUNTIME )
-public @interface Resource
+import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
+
+public class NoStoreHeaderFormat implements StoreHeaderFormat<NoStoreHeader>
 {
+    public static final NoStoreHeaderFormat NO_STORE_HEADER_FORMAT = new NoStoreHeaderFormat();
+
+    private NoStoreHeaderFormat()
+    {
+    }
+
+    @Override
+    public int numberOfReservedRecords()
+    {
+        return 0;
+    }
+
+    @Override
+    public void writeHeader( PageCursor cursor )
+    {
+        throw new UnsupportedOperationException( "Should not be called" );
+    }
+
+    @Override
+    public NoStoreHeader readHeader( PageCursor cursor )
+    {
+        return NO_STORE_HEADER;
+    }
 }

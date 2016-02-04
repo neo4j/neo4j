@@ -46,6 +46,17 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   val monitorTag = "CompilerComparison"
   val clock = Clock.SYSTEM_CLOCK
+  override val config = CypherCompilerConfiguration(
+    queryCacheSize = 100,
+    statsDivergenceThreshold = 0.5,
+    queryPlanTTL = 1000,
+    useErrorsOverWarnings = false,
+    idpMaxTableSize = 128,
+    idpIterationDuration = 1000,
+    nonIndexedLabelWarningThreshold = 10000,
+    errorIfShortestPathFallbackUsedAtRuntime = true
+  )
+
   val compilers = Seq[(String, GraphDatabaseService => CypherCompiler)](
     "legacy (rule)" -> legacyCompiler,
     "ronja (idp)" -> ronjaCompiler(IDPPlannerName),

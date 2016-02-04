@@ -23,7 +23,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.IteratorSupport._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.SingleComponentPlanner.DEFAULT_SOLVERS
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.solveOptionalMatches.OptionalSolver
@@ -39,9 +38,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.InternalException
   * written by Donald Kossmann and Konrad Stocker
   */
 case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
-                                  maxTableSize: Int = 256,
+                                  solverConfig: IDPSolverConfig = DefaultIDPSolverConfig,
                                   leafPlanFinder: LeafPlanFinder = leafPlanOptions,
-                                  solvers: Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] = DEFAULT_SOLVERS,
                                   optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin)) extends SingleComponentPlannerTrait {
   def planComponent(qg: QueryGraph)(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
     val leaves = leafPlanFinder(context.config, qg)
@@ -49,14 +47,15 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
     val bestPlan =
       if (qg.patternRelationships.nonEmpty) {
 
-        val generators = solvers.map(_ (qg))
+        val generators = solverConfig.solvers(qg).map(_ (qg))
         val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
         val generator = selectingGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, LogicalPlan, LogicalPlanningContext])(_ ++ _)
 
         val solver = new IDPSolver[PatternRelationship, LogicalPlan, LogicalPlanningContext](
           generator = generator,
           projectingSelector = kit.pickBest,
-          maxTableSize = maxTableSize,
+          maxTableSize = solverConfig.maxTableSize,
+          iterationDurationLimit = solverConfig.iterationDurationLimit,
           monitor = monitor
         )
 

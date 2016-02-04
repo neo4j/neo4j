@@ -30,12 +30,12 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val b = createNode("B")
 
     // when
-    val result = updateWithBothPlanners("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) RETURN count(*)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) RETURN count(*)")
 
     // then
     assertStats(result, relationshipsCreated = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
-    executeWithAllPlanners("MATCH (a {name:'A'})-[:TYPE]->(b {name:'B'}) RETURN a.name").toList should have size 1
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a {name:'A'})-[:TYPE]->(b {name:'B'}) RETURN a.name").toList should have size 1
   }
 
   test("should be able to find a relationship") {
@@ -44,9 +44,9 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val b = createNode("B")
     relate(a, b, "TYPE")
 
-    executeWithAllPlanners("MATCH (a {name:'A'})-[r:TYPE]->(b {name:'B'}) RETURN *")
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a {name:'A'})-[r:TYPE]->(b {name:'B'}) RETURN *")
     // when
-    val result = updateWithBothPlanners("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) RETURN count(r)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) RETURN count(r)")
 
     // then
    assertStats(result, relationshipsCreated = 0)
@@ -61,7 +61,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     relate(a, b, "TYPE")
 
     // when
-    val result = updateWithBothPlanners("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) RETURN count(r)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) RETURN count(r)")
 
     // then
     assertStats(result, relationshipsCreated = 0)
@@ -76,7 +76,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val r = relate(a, b, "TYPE", "r2")
 
     // when
-    val result = updateWithBothPlanners("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE {name:'r2'}]->(b) RETURN id(r)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE {name:'r2'}]->(b) RETURN id(r)")
 
     // then
     assertStats(result, relationshipsCreated = 0)
@@ -90,12 +90,12 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     relate(a, b, "TYPE", "r1")
 
     // when
-    val result = updateWithBothPlanners("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE {name:'r2'}]->(b) RETURN count(r)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE {name:'r2'}]->(b) RETURN count(r)")
 
     // then
     assertStats(result, relationshipsCreated = 1, propertiesWritten = 1)
     result.toList should equal(List(Map("count(r)" -> 1)))
-    executeWithAllPlanners("MATCH (a {name:'A'})-[r:TYPE {name:'r2'}]->(b {name:'B'}) RETURN a.name, b.name, r.name")
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a {name:'A'})-[r:TYPE {name:'r2'}]->(b {name:'B'}) RETURN a.name, b.name, r.name")
       .toList should equal(
       List(Map("a.name" -> "A", "b.name" -> "B", "r.name" -> "r2"))
     )
@@ -109,7 +109,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     relate(a, b, "TYPE")
 
     // when
-    val result = updateWithBothPlanners("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)<-[r:TYPE]-(b) RETURN id(r)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)<-[r:TYPE]-(b) RETURN id(r)")
 
     // then
     assertStats(result, relationshipsCreated = 0)
@@ -122,12 +122,12 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val b = createNode("B")
 
     // when
-    val result = updateWithBothPlanners("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE {name:'Lola'}]->(b) RETURN count(r)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE {name:'Lola'}]->(b) RETURN count(r)")
 
     // then
 
     assertStats(result, relationshipsCreated = 1, propertiesWritten = 1)
-    executeWithAllPlanners("MATCH (a {name:'A'})-[r:TYPE {name:'Lola'}]->(b {name:'B'}) RETURN a, b").toList should equal(
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a {name:'A'})-[r:TYPE {name:'Lola'}]->(b {name:'B'}) RETURN a, b").toList should equal(
       List(Map("a" -> a, "b" -> b)))
   }
 
@@ -137,12 +137,12 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val b = createNode("B")
 
     // when
-    val result = updateWithBothPlanners("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) ON CREATE SET r.name = 'Lola' RETURN count(r)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) ON CREATE SET r.name = 'Lola' RETURN count(r)")
 
     // then
 
     assertStats(result, relationshipsCreated = 1, propertiesWritten = 1)
-    executeWithAllPlanners("MATCH (a {name:'A'})-[r]->(b) RETURN r.name").toList should equal(List(Map("r.name" -> "Lola")))
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a {name:'A'})-[r]->(b) RETURN r.name").toList should equal(List(Map("r.name" -> "Lola")))
   }
 
   test("should handle on match") {
@@ -152,11 +152,11 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     relate(a, b, "TYPE")
 
     // when
-    val result = updateWithBothPlanners("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) ON MATCH SET r.name = 'Lola' RETURN count(r)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) ON MATCH SET r.name = 'Lola' RETURN count(r)")
 
     // then
     assertStats(result, relationshipsCreated = 0, propertiesWritten = 1)
-    executeScalarWithAllPlanners[String]("MATCH (a {name:'A'})-[r:TYPE]->(b {name:'B'}) RETURN r.name") should equal("Lola")
+    executeScalarWithAllPlannersAndCompatibilityMode[String]("MATCH (a {name:'A'})-[r:TYPE]->(b {name:'B'}) RETURN r.name") should equal("Lola")
   }
 
   test("should handle on create and on match") {
@@ -166,12 +166,12 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     createNode("name" -> "B", "id" -> 4)
 
     // when
-    val result = updateWithBothPlanners(
+    val result = updateWithBothPlannersAndCompatibilityMode(
       "MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) ON CREATE SET r.name = 'Lola' ON MATCH set r.name = 'RUN' RETURN count(r)")
 
     // then
     assertStats(result, relationshipsCreated = 3, propertiesWritten = 4)
-    executeWithAllPlanners("MATCH (a {name:'A'})-[r]->(b) RETURN a.id, r.name, b.id").toSet should equal(Set(
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a {name:'A'})-[r]->(b) RETURN a.id, r.name, b.id").toSet should equal(Set(
       Map("a.id" -> 1, "b.id" -> 2, "r.name" -> "RUN"),
       Map("a.id" -> 3, "b.id" -> 2, "r.name" -> "Lola"),
       Map("a.id" -> 1, "b.id" -> 4, "r.name" -> "Lola"),
@@ -184,11 +184,11 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val a = createNode("A")
 
     // when
-    val result = updateWithBothPlanners("MATCH (a {name:'A'}) MERGE (a)-[r:TYPE]->() RETURN count(r)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (a {name:'A'}) MERGE (a)-[r:TYPE]->() RETURN count(r)")
 
     // then
     assertStats(result, relationshipsCreated = 1, nodesCreated = 1)
-    executeWithAllPlanners("MATCH (a)-[r:TYPE]->() RETURN a").toList should equal(List(Map("a" -> a)))
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a)-[r:TYPE]->() RETURN a").toList should equal(List(Map("a" -> a)))
   }
 
   test("should handle longer patterns") {
@@ -196,11 +196,11 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val a = createNode("A")
 
     // when
-    val result = updateWithBothPlanners("MATCH (a {name:'A'}) MERGE (a)-[r:TYPE]->()<-[:TYPE]-(b) RETURN count(r)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (a {name:'A'}) MERGE (a)-[r:TYPE]->()<-[:TYPE]-(b) RETURN count(r)")
 
     // then
     assertStats(result, relationshipsCreated = 2, nodesCreated = 2)
-    executeWithAllPlanners("MATCH (a {name:'A'})-[r:TYPE]->()<-[:TYPE]-(b) RETURN a").toList should equal(List(Map("a" -> a)))
+    executeWithAllPlannersAndCompatibilityMode("MATCH (a {name:'A'})-[r:TYPE]->()<-[:TYPE]-(b) RETURN a").toList should equal(List(Map("a" -> a)))
   }
 
   test("should handle nodes bound in the middle") {
@@ -208,7 +208,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val b = createNode("B")
 
     // when
-    val result = updateWithBothPlanners("MATCH (b {name:'B'}) MERGE (a)-[r1:TYPE]->(b)<-[r2:TYPE]-(c) RETURN type(r1), type(r2)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (b {name:'B'}) MERGE (a)-[r1:TYPE]->(b)<-[r2:TYPE]-(c) RETURN type(r1), type(r2)")
 
     // then
     assertStats(result, relationshipsCreated = 2, nodesCreated = 2)
@@ -222,7 +222,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     relate(a, b, "TYPE")
 
     // when
-    val result = updateWithBothPlanners("MATCH (b:B) MERGE (a:A)-[r1:TYPE]->(b)<-[r2:TYPE]-(c:C) RETURN type(r1), type(r2)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (b:B) MERGE (a:A)-[r1:TYPE]->(b)<-[r2:TYPE]-(c:C) RETURN type(r1), type(r2)")
 
     // then
     assertStats(result, relationshipsCreated = 2, nodesCreated = 2, labelsAdded = 2)
@@ -235,7 +235,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val b = createLabeledNode("B")
 
     // when
-    val result = updateWithBothPlanners("MERGE (a:A) MERGE (b:B) MERGE (a)-[:FOO]->(b)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MERGE (a:A) MERGE (b:B) MERGE (a)-[:FOO]->(b)")
 
     // then
     assertStats(result, relationshipsCreated = 1)
@@ -245,7 +245,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     // given
 
     // when
-    val result = updateWithBothPlanners("CREATE (a:A) MERGE (a)-[:KNOWS]->(b:B) CREATE (b)-[:KNOWS]->(c:C) RETURN count(*)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a:A) MERGE (a)-[:KNOWS]->(b:B) CREATE (b)-[:KNOWS]->(c:C) RETURN count(*)")
 
     // then
     assertStats(result, relationshipsCreated = 2, nodesCreated = 3, labelsAdded = 3)
@@ -264,16 +264,16 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val a = createLabeledNode("Start")
     relate(a, createNode("prop" -> 2), "FOO")
 
-    val result = executeWithRulePlanner("match (a:Start) foreach(x in [1,2,3] | merge (a)-[:FOO]->({prop: x}) )")
+    val result = updateWithBothPlanners("match (a:Start) foreach(x in [1,2,3] | merge (a)-[:FOO]->({prop: x}) )")
     assertStats(result, nodesCreated = 2, propertiesWritten = 2, relationshipsCreated = 2)
   }
 
-  test("should_handle_two_merges_inside_foreach") {
+  test("should handle two merges inside foreach") {
     val a = createLabeledNode("Start")
     val b = createLabeledNode(Map("prop" -> 42), "End")
 
 
-    val result = executeWithRulePlanner("match (a:Start) foreach(x in [42] | merge (b:End {prop: x}) merge (a)-[:FOO]->(b) )")
+    val result = updateWithBothPlanners("match (a:Start) foreach(x in [42] | merge (b:End {prop: x}) merge (a)-[:FOO]->(b) )")
     assertStats(result, nodesCreated = 0, propertiesWritten = 0, relationshipsCreated = 1)
 
     graph.inTx {
@@ -283,15 +283,15 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     }
   }
 
-  test("should_handle_two_merges_inside_bare_foreach") {
+  test("should handle two merges inside bare foreach") {
     createNode("x" -> 1)
 
-    val result = executeWithRulePlanner("foreach(v in [1, 2] | merge (a {x: v}) merge (b {y: v}) merge (a)-[:FOO]->(b))")
+    val result = updateWithBothPlanners("foreach(v in [1, 2] | merge (a {x: v}) merge (b {y: v}) merge (a)-[:FOO]->(b))")
     assertStats(result, nodesCreated = 3, propertiesWritten = 3, relationshipsCreated = 2)
   }
 
-  test("should_handle_two_merges_inside_foreach_after_with") {
-    val result = executeWithRulePlanner("with 3 as y " +
+  test("should handle two merges inside foreach after with") {
+    val result = updateWithBothPlanners("with 3 as y " +
       "foreach(x in [1, 2] | " +
       "merge (a {x: x, y: y}) " +
       "merge (b {x: x+1, y: y}) " +
@@ -325,7 +325,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     resultList.head.head._2.isInstanceOf[Path] should be(true)
   }
 
-  test("should_handle_foreach_in_foreach_game_of_life_ftw") {
+  test("should handle foreach in foreach game of life ftw") {
 
     /* creates a grid 4 nodes wide and 4 nodes deep.
      o-o-o-o
@@ -337,7 +337,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
      o-o-o-o
      */
 
-    val result = executeWithRulePlanner(
+    val result = updateWithBothPlanners(
       "foreach(x in [0,1,2] |" +
         "foreach(y in [0,1,2] |" +
         "  merge (a {x:x, y:y})" +
@@ -353,12 +353,12 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
   }
 
   test("should handle merge with no known points") {
-    val result = updateWithBothPlanners("merge ({name:'Andres'})-[:R]->({name:'Emil'})")
+    val result = updateWithBothPlannersAndCompatibilityMode("merge ({name:'Andres'})-[:R]->({name:'Emil'})")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 2)
   }
 
-  test("should_handle_foreach_in_foreach_game_without_known_points") {
+  test("should handle foreach in foreach game without known points") {
 
     /* creates a grid 4 nodes wide and 4 nodes deep.
      o-o o-o o-o
@@ -370,7 +370,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
      o-o o-o o-o
      */
 
-    val result = executeWithRulePlanner(
+    val result = updateWithBothPlanners(
       "foreach(x in [0,1,2] |" +
         "foreach(y in [0,1,2] |" +
         "  merge (a {x:x, y:y})-[:R]->(b {x:x+1, y:y})" +
@@ -382,25 +382,25 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
   }
 
   test("should handle on create on created nodes") {
-    val result = updateWithBothPlanners("merge (a)-[:KNOWS]->(b) ON CREATE SET b.created = timestamp()")
+    val result = updateWithBothPlannersAndCompatibilityMode("merge (a)-[:KNOWS]->(b) ON CREATE SET b.created = timestamp()")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1)
   }
 
   test("should handle on match on created nodes") {
-    val result = updateWithBothPlanners("merge (a)-[:KNOWS]->(b) ON MATCH SET b.created = timestamp()")
+    val result = updateWithBothPlannersAndCompatibilityMode("merge (a)-[:KNOWS]->(b) ON MATCH SET b.created = timestamp()")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 0)
   }
 
   test("should handle on create on created rels") {
-    val result = updateWithBothPlanners("merge (a)-[r:KNOWS]->(b) ON CREATE SET r.created = timestamp()")
+    val result = updateWithBothPlannersAndCompatibilityMode("merge (a)-[r:KNOWS]->(b) ON CREATE SET r.created = timestamp()")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1)
   }
 
   test("should handle on match on created rels") {
-    val result = updateWithBothPlanners("merge (a)-[r:KNOWS]->(b) ON MATCH SET r.created = timestamp()")
+    val result = updateWithBothPlannersAndCompatibilityMode("merge (a)-[r:KNOWS]->(b) ON MATCH SET r.created = timestamp()")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 0)
   }
@@ -431,7 +431,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
   test("should find existing relationships when matching with undirected relationship") {
     val r1 = relate(createNode("id" -> 2), createNode("id" -> 1), "KNOWS")
     val r2 = relate(createNode("id" -> 1), createNode("id" -> 2), "KNOWS")
-    val result = updateWithBothPlanners("merge (a {id: 2})-[r:KNOWS]-(b {id: 1}) RETURN r").columnAs[Relationship]("r").toSet
+    val result = updateWithBothPlannersAndCompatibilityMode("merge (a {id: 2})-[r:KNOWS]-(b {id: 1}) RETURN r").columnAs[Relationship]("r").toSet
 
     result should equal(Set(r1, r2))
   }
@@ -451,20 +451,20 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
         |RETURN count(*)""".stripMargin
 
 
-    val result = updateWithBothPlanners(query)
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1, labelsAdded = 2)
   }
 
   test("merge should handle array properties properly") {
     relate(createLabeledNode("A"), createLabeledNode("B"), "T", Map("prop" -> Array(42, 43)))
 
-    val result = updateWithBothPlanners("MATCH (a:A),(b:B) MERGE (a)-[r:T {prop: [42,43]}]->(b) RETURN count(*)")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (a:A),(b:B) MERGE (a)-[r:T {prop: [42,43]}]->(b) RETURN count(*)")
     assertStats(result, nodesCreated = 0, relationshipsCreated = 0, propertiesWritten = 0)
   }
 
   test("merge should see variables introduced by other update actions") {
     // when
-    val result = updateWithBothPlanners("CREATE (a) MERGE (a)-[:X]->() RETURN count(a)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a) MERGE (a)-[:X]->() RETURN count(a)")
 
     // then
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
@@ -472,7 +472,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
 
   test("merge should see variables introduced by update actions") {
     // when
-    val result = updateWithBothPlanners("CREATE (a) MERGE (a)-[:X]->() RETURN count(*)")
+    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a) MERGE (a)-[:X]->() RETURN count(*)")
 
     // then
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
@@ -484,7 +484,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
        |MERGE (p:Person {name: actor})
        |MERGE (p)-[:ACTED_IN]->(m)""".stripMargin
 
-    val result = updateWithBothPlanners(query)
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
 
     assertStats(result, nodesCreated = 5, relationshipsCreated = 4, propertiesWritten = 5, labelsAdded = 5)
   }
@@ -511,7 +511,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
       """.stripMargin
 
     // WHEN
-    updateWithBothPlanners(query)
+    updateWithBothPlannersAndCompatibilityMode(query)
 
     // THEN
     assert(true)
@@ -537,7 +537,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
       """.stripMargin
 
     // WHEN
-    updateWithBothPlanners(query)
+    updateWithBothPlannersAndCompatibilityMode(query)
 
     // THEN query should not crash
     assert(true)

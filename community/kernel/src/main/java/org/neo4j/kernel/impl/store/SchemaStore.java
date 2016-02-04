@@ -24,18 +24,22 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class SchemaStore extends AbstractDynamicStore implements Iterable<SchemaRule>
 {
@@ -50,9 +54,12 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            LogProvider logProvider )
+            LogProvider logProvider,
+            RecordFormat<DynamicRecord> recordFormat,
+            String storeVersion )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, BLOCK_SIZE );
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, BLOCK_SIZE,
+                recordFormat, storeVersion );
     }
 
     @Override
@@ -61,19 +68,13 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
         processor.processSchema( this, record );
     }
 
-    @Override
-    public String getTypeDescriptor()
-    {
-        return TYPE_DESCRIPTOR;
-    }
-
-    public Collection<DynamicRecord> allocateFrom( SchemaRule rule )
+    public List<DynamicRecord> allocateFrom( SchemaRule rule )
     {
         RecordSerializer serializer = new RecordSerializer();
         serializer = serializer.append( (AbstractSchemaRule)rule );
-        Collection<DynamicRecord> records = new ArrayList<>();
+        List<DynamicRecord> records = new ArrayList<>();
         allocateRecordsFromBytes( records, serializer.serialize(),
-                IteratorUtil.iterator( forceGetRecord( rule.getId() ) ), this );
+                IteratorUtil.iterator( getRecord( rule.getId(), newRecord(), FORCE ) ), this );
         return records;
     }
 

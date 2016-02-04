@@ -42,12 +42,14 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -81,7 +83,7 @@ public class CoreEdgeMetricsIT
         // then
         for ( final CoreGraphDatabase db : cluster.coreServers() )
         {
-            assertAllNodesVisible(db);
+            assertAllNodesVisible( db );
         }
 
         for ( final EdgeGraphDatabase db : cluster.edgeServers() )
@@ -91,23 +93,23 @@ public class CoreEdgeMetricsIT
 
         File coreServerMetricsDir = new File( cluster.getCoreServerById( 0 ).getStoreDir(), "metrics" );
 
-        assertEventually("append index eventually accurate",
+        assertEventually( "append index eventually accurate",
                 () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.APPEND_INDEX ) ),
-                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
+                greaterThan( 0L ), 5, TimeUnit.SECONDS );
 
-        assertEventually("commit index eventually accurate",
+        assertEventually( "commit index eventually accurate",
                 () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.COMMIT_INDEX ) ),
-                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
+                greaterThan( 0L ), 5, TimeUnit.SECONDS );
 
-        assertEventually("term eventually accurate",
+        assertEventually( "term eventually accurate",
                 () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.TERM ) ),
-                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
+                greaterThan( 0L ), 5, TimeUnit.SECONDS );
 
-        assertEventually("leader not found eventually accurate",
+        assertEventually( "leader not found eventually accurate",
                 () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.LEADER_NOT_FOUND ) ),
-                equalTo ( 0L ), 5, TimeUnit.SECONDS );
+                equalTo( 0L ), 5, TimeUnit.SECONDS );
 
-        assertEventually("tx pull requests received eventually accurate",
+        assertEventually( "tx pull requests received eventually accurate",
                 () ->
                 {
                     long total = 0;
@@ -118,29 +120,37 @@ public class CoreEdgeMetricsIT
                     }
                     return total;
                 },
-                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
+                greaterThan( 0L ), 5, TimeUnit.SECONDS );
 
-        assertEventually("tx retries eventually accurate",
+        assertEventually( "tx retries eventually accurate",
                 () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.TX_RETRIES ) ),
-                equalTo ( 0L ), 5, TimeUnit.SECONDS );
+                equalTo( 0L ), 5, TimeUnit.SECONDS );
 
-        assertEventually("is leader eventually accurate",
+        assertEventually( "is leader eventually accurate",
                 () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.IS_LEADER ) ),
-                greaterThanOrEqualTo ( 0L ), 5, TimeUnit.SECONDS );
+                greaterThanOrEqualTo( 0L ), 5, TimeUnit.SECONDS );
 
         File edgeServerMetricsDir = new File( cluster.getEdgeServerById( 0 ).getStoreDir(), "metrics" );
 
-        assertEventually("pull update request registered",
+        assertEventually( "pull update request registered",
                 () -> readLastValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATES ) ),
-                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
+                greaterThan( 0L ), 5, TimeUnit.SECONDS );
 
-        assertEventually("pull update request registered",
+        assertEventually( "pull update request registered",
                 () -> readLastValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATE_HIGHEST_TX_ID_REQUESTED ) ),
-                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
+                greaterThan( 0L ), 5, TimeUnit.SECONDS );
 
-        assertEventually("pull update response received",
+        assertEventually( "pull update response received",
                 () -> readLastValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATE_HIGHEST_TX_ID_RECEIVED ) ),
-                greaterThan ( 0L ), 5, TimeUnit.SECONDS );
+                greaterThan( 0L ), 5, TimeUnit.SECONDS );
+
+        assertEventually( "dropped messages eventually accurate",
+                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.DROPPED_MESSAGES ) ),
+                equalTo( 0L ), 5, TimeUnit.SECONDS );
+
+        assertEventually( "queue size eventually accurate",
+                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.QUEUE_SIZE ) ),
+                equalTo( 0L ), 5, TimeUnit.SECONDS );
 
         cluster.shutdown();
     }
@@ -154,7 +164,7 @@ public class CoreEdgeMetricsIT
             Config config = db.getDependencyResolver().resolveDependency( Config.class );
 
             assertEventually( "node to appear on core server " + config.get( raft_advertised_address ), nodeCount,
-                    greaterThan(  0L ), 15, SECONDS );
+                    greaterThan( 0L ), 15, SECONDS );
 
             for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
             {

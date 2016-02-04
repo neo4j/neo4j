@@ -369,6 +369,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case Eager(_) =>
       EagerPipe(source)()
 
+    case ErrorPlan(_, ex) =>
+      ErrorPipe(source, ex)()
+
     case RepeatableRead(_) =>
       RepeatableReadPipe(source)()
 
@@ -443,6 +446,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
     case ValueHashJoin(_, _, ast.Equals(lhsExpression, rhsExpression)) =>
       ValueHashJoinPipe(buildExpression(lhsExpression), buildExpression(rhsExpression), lhs, rhs)()
+
+    case ForeachApply(_, _, variable, expression) =>
+      ForeachPipe(lhs, rhs, variable, toCommandExpression(expression))()
 
     case x =>
       throw new CantHandleQueryException(x.toString)

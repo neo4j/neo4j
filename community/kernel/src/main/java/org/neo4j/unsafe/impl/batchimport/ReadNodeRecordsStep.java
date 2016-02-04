@@ -26,6 +26,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static java.lang.Math.min;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+
 /**
  * Reads from {@link NodeStore} and produces batches of {@link NodeRecord} for others to process.
  *
@@ -52,8 +54,9 @@ public class ReadNodeRecordsStep extends IoProducerStep
         NodeRecord[] batch = new NodeRecord[size];
         for ( int i = 0; i < size; i++ )
         {
-            // We don't want null in batch[i], a not used record is what we want
-            nodeStore.loadRecord( id, batch[i] = new NodeRecord( id++ ) );
+            // We don't want null in batch[i], a record, whether used or unused is what we want
+            nodeStore.getRecord( id, batch[i] = nodeStore.newRecord(), CHECK );
+            id++;
         }
         return size > 0 ? batch : null;
     }
@@ -61,6 +64,6 @@ public class ReadNodeRecordsStep extends IoProducerStep
     @Override
     protected long position()
     {
-        return id * NodeStore.RECORD_SIZE;
+        return id * nodeStore.getRecordSize();
     }
 }

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.Serializable;
 
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
 
 import org.neo4j.coreedge.catchup.tx.edge.PullRequestMonitor;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
@@ -42,7 +43,6 @@ import org.neo4j.logging.LogProvider;
 public abstract class CoreClient extends LifecycleAdapter implements StoreFileReceiver, StoreFileStreamingCompleteListener,
                                                                      TxStreamCompleteListener, TxPullResponseListener
 {
-    private final LogProvider logProvider;
     private final PullRequestMonitor pullRequestMonitor;
     private StoreFileStreams storeFileStreams = null;
     private Iterable<StoreFileStreamingCompleteListener> storeFileStreamingCompleteListeners = Listeners.newListeners();
@@ -52,10 +52,10 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     private SenderService senderService;
 
     public CoreClient( LogProvider logProvider, ExpiryScheduler expiryScheduler, Expiration expiration,
-                       ChannelInitializer channelInitializer, Monitors monitors )
+                       ChannelInitializer<SocketChannel> channelInitializer, Monitors monitors, int maxQueueSize )
     {
-        this.logProvider = logProvider;
-        this.senderService = new SenderService( expiryScheduler, expiration, channelInitializer, logProvider );
+        this.senderService = new SenderService( expiryScheduler, expiration, channelInitializer, logProvider,
+                monitors, maxQueueSize );
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 
@@ -72,7 +72,7 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
         pullRequestMonitor.txPullRequest( lastTransactionId );
     }
 
-    protected void send( AdvertisedSocketAddress to, RequestMessageType messageType, Serializable contentMessage )
+    private void send( AdvertisedSocketAddress to, RequestMessageType messageType, Serializable contentMessage )
     {
         senderService.send( to, messageType, contentMessage );
     }

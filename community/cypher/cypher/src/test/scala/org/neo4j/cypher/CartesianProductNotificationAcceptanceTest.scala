@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNoti
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.logging.NullLog
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
@@ -101,8 +100,6 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
   }
 
   private def createCompiler() = {
-    val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
-
     CypherCompilerFactory.costBasedCompiler(
       graph,
       CypherCompilerConfiguration(
@@ -110,6 +107,9 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
         statsDivergenceThreshold = 0.5,
         queryPlanTTL = 1000L,
         useErrorsOverWarnings = false,
+        idpMaxTableSize = 128,
+        idpIterationDuration = 1000,
+        errorIfShortestPathFallbackUsedAtRuntime = false,
         nonIndexedLabelWarningThreshold = 10000L
       ),
       Clock.SYSTEM_CLOCK,

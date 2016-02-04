@@ -36,6 +36,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
@@ -52,7 +53,7 @@ import org.neo4j.test.Unzip;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
+
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class MigrationTestUtils
@@ -227,7 +228,7 @@ public class MigrationTestUtils
     public static boolean allStoreFilesHaveNoTrailer( FileSystemAbstraction fs, File dir ) throws IOException
     {
         final Iterable<StoreFile> storeFilesWithGivenVersions =
-                Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( ALL_STORES_VERSION ) );
+                Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( LowLimit.STORE_VERSION ) );
         LegacyStoreVersionCheck legacyStoreVersionCheck = new LegacyStoreVersionCheck( fs );
 
         boolean success = true;
@@ -235,7 +236,7 @@ public class MigrationTestUtils
         {
             File file = new File( dir, storeFile.storeFileName() );
             StoreVersionCheck.Result result =
-                    legacyStoreVersionCheck.hasVersion( file, ALL_STORES_VERSION, storeFile.isOptional() );
+                    legacyStoreVersionCheck.hasVersion( file, LowLimit.STORE_VERSION, storeFile.isOptional() );
             success &= result.outcome == Outcome.unexpectedUpgradingStoreVersion ||
                        result.outcome == Outcome.storeVersionNotFound;
         }
@@ -257,7 +258,7 @@ public class MigrationTestUtils
     public static boolean checkNeoStoreHasLatestVersion( StoreVersionCheck check, File workingDirectory )
     {
         File neostoreFile = new File( workingDirectory, MetaDataStore.DEFAULT_NAME );
-        return check.hasVersion( neostoreFile, ALL_STORES_VERSION ).outcome.isSuccessful();
+        return check.hasVersion( neostoreFile, LowLimit.STORE_VERSION ).outcome.isSuccessful();
     }
 
     public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original, File other )

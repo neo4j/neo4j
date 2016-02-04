@@ -107,13 +107,13 @@ public class TransactionWriter
     public void create( LabelTokenRecord labelToken )
     {
         labelToken.setCreated();
-        update( new LabelTokenRecord( labelToken.getId() ), labelToken );
+        update( new LabelTokenRecord( labelToken.getIntId() ), labelToken );
     }
 
     public void create( PropertyKeyTokenRecord token )
     {
         token.setCreated();
-        update( new PropertyKeyTokenRecord( token.getId() ), token );
+        update( new PropertyKeyTokenRecord( token.getIntId() ), token );
     }
 
     public void create( RelationshipGroupRecord group )
@@ -193,7 +193,7 @@ public class TransactionWriter
     public void create( PropertyRecord property )
     {
         property.setCreated();
-        PropertyRecord before = new PropertyRecord( property.getLongId() );
+        PropertyRecord before = new PropertyRecord( property.getId() );
         if ( property.isNodeSet() )
         {
             before.setNodeId( property.getNodeId() );

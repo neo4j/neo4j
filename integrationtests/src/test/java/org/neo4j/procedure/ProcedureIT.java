@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -48,6 +49,7 @@ import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -64,108 +66,65 @@ public class ProcedureIT
     private GraphDatabaseService db;
 
     @Test
-    public void shouldLoadProcedureFromPluginDirectory() throws Throwable
+    public void shouldCallProcedureWithParameterMap() throws Throwable
     {
         // Given
-        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
-
-        // When
-        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-            .newGraphDatabase();
-
-        // Then
         try ( Transaction ignore = db.beginTx() )
         {
-            Result res1 = db.execute( "CALL org.neo4j.procedure.integrationTestMe" );
-            assertThat( res1.next(), equalTo( map( "someVal", 1337L ) ));
-            assertFalse( res1.hasNext() );
-
-            Result res2 = db.execute( "CALL org.neo4j.procedure.simpleArgument(42)" );
-            assertThat( res2.next(), equalTo( map( "someVal", 42L ) ));
-            assertFalse( res2.hasNext() );
-        }
-    }
-
-    @Test
-    public void shouldLoadBeAbleToCallMethodWithParameterMap() throws Throwable
-    {
-        // Given
-        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
-
-        // When
-        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-            .newGraphDatabase();
-
-        // Then
-        try ( Transaction ignore = db.beginTx() )
-        {
+            // When
             Result res = db.execute( "CALL org.neo4j.procedure.simpleArgument", map( "name", 42L ) );
+
+            // Then
             assertThat( res.next(), equalTo( map( "someVal", 42L ) ) );
             assertFalse( res.hasNext() );
         }
     }
 
     @Test
-    public void shouldLoadBeAbleToCallProcedureWithGenericArgument() throws Throwable
+    public void shouldCallProcedureWithGenericArgument() throws Throwable
     {
         // Given
-        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
-
-        // When
-        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-            .newGraphDatabase();
-
-        // Then
         try ( Transaction ignore = db.beginTx() )
         {
+            // When
             Result res = db.execute(
                     "CALL org.neo4j.procedure.genericArguments([ ['graphs'], ['are'], ['everywhere']], " +
                     "[ [[1, 2, 3]], [[4, 5]]] )" );
+
+            // Then
             assertThat( res.next(), equalTo( map( "someVal", 5L ) ) );
             assertFalse( res.hasNext() );
         }
     }
 
     @Test
-    public void shouldLoadBeAbleToCallProcedureWithMapArgument() throws Throwable
+    public void shouldCallProcedureWithMapArgument() throws Throwable
     {
         // Given
-        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
-
-        // When
-        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-            .newGraphDatabase();
-
-        // Then
         try ( Transaction ignore = db.beginTx() )
         {
+            // When
             Result res = db.execute(
                     "CALL org.neo4j.procedure.mapArgument({foo: 42, bar: 'hello'})" );
+
+            // Then
             assertThat( res.next(), equalTo( map( "someVal", 2L ) ) );
             assertFalse( res.hasNext() );
         }
     }
 
     @Test
-    public void shouldLoadBeAbleToCallProcedureWithNodeReturn() throws Throwable
+    public void shouldCallProcedureWithNodeReturn() throws Throwable
     {
         // Given
-        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
-
-        // When
-        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-            .newGraphDatabase();
-
-        // Then
         try ( Transaction ignore = db.beginTx() )
         {
             long nodeId = db.createNode().getId();
+
+            // When
             Result res = db.execute( "CALL org.neo4j.procedure.node({id})", map( "id", nodeId ) );
+
+            // Then
             Node node = (Node) res.next().get( "node" );
             assertThat(node.getId(), equalTo( nodeId ));
             assertFalse( res.hasNext() );
@@ -175,9 +134,6 @@ public class ProcedureIT
     @Test
     public void shouldGiveHelpfulErrorOnMissingProcedure() throws Throwable
     {
-        // Given
-        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
-
         // Expect
         exception.expect( QueryExecutionException.class );
         exception.expectMessage( "There is no procedure with the name `someProcedureThatDoesNotExist` " +
@@ -192,34 +148,26 @@ public class ProcedureIT
     public void shouldGiveHelpfulErrorOnExceptionMidStream() throws Throwable
     {
         // Given
-        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
+        // run in tx to avoid having to wait for tx rollback on shutdown
+        try( Transaction ignore = db.beginTx() )
+        {
+            Result result = db.execute( "CALL org.neo4j.procedure.throwsExceptionInStream" );
 
-        Result result = db.execute( "CALL org.neo4j.procedure.throwsExceptionInStream" );
+            // Expect
+            exception.expect( QueryExecutionException.class );
+            exception.expectMessage(
+                    "Failed to call procedure `org.neo4j.procedure.throwsExceptionInStream() :: (someVal :: INTEGER?)`: " +
+                    "Kaboom" );
 
-        // Expect
-        exception.expect( QueryExecutionException.class );
-        exception.expectMessage(
-                "Failed to call procedure `org.neo4j.procedure.throwsExceptionInStream() :: (someVal :: INTEGER?)`: " +
-                "Kaboom" );
-
-        // When
-        result.next();
+            // When
+            result.next();
+        }
     }
 
     @Test
-    public void shouldLoadBeAbleToCallProcedureWithAccessToDB() throws Throwable
+    public void shouldCallProcedureWithAccessToDB() throws Throwable
     {
-        // Given
-        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
-
         // When
-        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-            .newGraphDatabase();
-
         try ( Transaction ignore = db.beginTx() )
         {
             db.createNode( label( "Person" ) ).setProperty( "name", "Buddy Holly" );
@@ -239,12 +187,10 @@ public class ProcedureIT
     public void shouldLogLikeThereIsNoTomorrow() throws Throwable
     {
         // Given
-        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
-
-        // When
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
-        GraphDatabaseService db = new TestGraphDatabaseFactory()
+        db.shutdown();
+        db = new TestGraphDatabaseFactory()
             .setInternalLogProvider( logProvider )
             .setUserLogProvider( logProvider  )
             .newImpermanentDatabaseBuilder()
@@ -268,10 +214,81 @@ public class ProcedureIT
         );
     }
 
-    @Before
-    public void setUp()
+    @Test
+    public void readOnlyProcedureCannotWrite() throws Throwable
     {
-        this.db = null;
+        // Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Write operations are not allowed" );
+
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.execute( "CALL org.neo4j.procedure.readOnlyTryingToWrite()" ).next();
+        }
+    }
+
+    @Test
+    public void procedureMarkedForWritingCanWrite() throws Throwable
+    {
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            // TODO: #hasNext should not be needed here, result of writes should be eagerized
+            db.execute( "CALL org.neo4j.procedure.writingProcedure()" ).hasNext();
+            tx.success();
+        }
+
+        // Then
+        try( Transaction tx = db.beginTx() )
+        {
+            assertEquals(1, db.getAllNodes().stream().count());
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldNotBeAbleToCallWriteProcedureThroughReadProcedure() throws Throwable
+    {
+        // Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Write operations are not allowed" );
+
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.execute( "CALL org.neo4j.procedure.readOnlyCallingWriteProcedure" ).next();
+        }
+    }
+
+    @Test
+    public void procedureMarkedForWritingCanCallOtherWritingProcedure() throws Throwable
+    {
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            // TODO: #hasNext should not be needed here, result of writes should be eagerized
+            db.execute( "CALL org.neo4j.procedure.writeProcedureCallingWriteProcedure()" ).hasNext();
+            tx.success();
+        }
+
+        // Then
+        try( Transaction tx = db.beginTx() )
+        {
+            assertEquals(1, db.getAllNodes().stream().count());
+            tx.success();
+        }
+    }
+
+    @Before
+    public void setUp() throws IOException
+    {
+        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
+        db = new TestGraphDatabaseFactory()
+                .newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .newGraphDatabase();
+
     }
 
     @After
@@ -316,11 +333,6 @@ public class ProcedureIT
     {
         public String name;
 
-        public MyOutputRecord()
-        {
-
-        }
-
         public MyOutputRecord( String name )
         {
             this.name = name;
@@ -329,10 +341,10 @@ public class ProcedureIT
 
     public static class ClassWithProcedures
     {
-        @Resource
+        @Context
         public GraphDatabaseService db;
 
-        @Resource
+        @Context
         public Log log;
 
         @Procedure
@@ -389,6 +401,38 @@ public class ProcedureIT
             log.warn( "3" );
             log.error( "4" );
             return Stream.empty();
+        }
+
+        @Procedure
+        public Stream<Output> readOnlyTryingToWrite()
+        {
+            db.createNode();
+            return Stream.empty();
+        }
+
+        @Procedure
+        @PerformsWrites
+        public Stream<Output> writingProcedure()
+        {
+            db.createNode();
+            return Stream.empty();
+        }
+
+        @Procedure
+        public Stream<Output> readOnlyCallingWriteProcedure()
+        {
+            return db.execute("CALL org.neo4j.procedure.writingProcedure")
+                    .stream()
+                    .map( (row) -> new Output( 0 ) );
+        }
+
+        @Procedure
+        @PerformsWrites
+        public Stream<Output> writeProcedureCallingWriteProcedure()
+        {
+            return db.execute("CALL org.neo4j.procedure.writingProcedure")
+                    .stream()
+                    .map( (row) -> new Output( 0 ) );
         }
     }
 }

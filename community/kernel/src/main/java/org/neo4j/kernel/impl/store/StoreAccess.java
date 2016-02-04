@@ -215,10 +215,12 @@ public class StoreAccess
         };
     }
 
-    private static RecordStore<DynamicRecord> wrapNodeDynamicLabelStore( RecordStore<DynamicRecord> store ) {
-        return new DelegatingRecordStore<DynamicRecord>( store ) {
+    private static RecordStore<DynamicRecord> wrapNodeDynamicLabelStore( RecordStore<DynamicRecord> store )
+    {
+        return new RecordStore.Delegator<DynamicRecord>( store )
+        {
             @Override
-            public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, DynamicRecord record)
+            public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, DynamicRecord record )
                     throws FAILURE
             {
                 processor.processLabelArrayWithOwner( this, record );

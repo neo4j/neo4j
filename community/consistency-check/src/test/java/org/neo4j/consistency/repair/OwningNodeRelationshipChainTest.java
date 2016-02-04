@@ -25,10 +25,14 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RecordStoreUtil.ReadNodeAnswer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,9 +44,9 @@ public class OwningNodeRelationshipChainTest
     public void shouldFindBothChainsThatTheRelationshipRecordShouldBelongTo() throws Exception
     {
         // given
-        int node1 = 101, node1Rel = 1001;
-        int node2 = 201, node2Rel = 2001;
-        int sharedRel = 1000;
+        long node1 = 101, node1Rel = 1001;
+        long node2 = 201, node2Rel = 2001;
+        long sharedRel = 1000;
         int relType = 0;
 
         RecordSet<RelationshipRecord> node1RelChain = RecordSet.asSet(
@@ -56,10 +60,11 @@ public class OwningNodeRelationshipChainTest
 
         @SuppressWarnings("unchecked")
         RecordStore<NodeRecord> recordStore = mock( RecordStore.class );
-        when( recordStore.forceGetRecord( node1 ) ).thenReturn(
-                new NodeRecord( node1, false, node1Rel, NO_NEXT_PROPERTY.intValue() ) );
-        when( recordStore.forceGetRecord( node2 ) ).thenReturn(
-                new NodeRecord( node2, false, node2Rel, NO_NEXT_PROPERTY.intValue() ) );
+        when( recordStore.getRecord( eq( node1 ), any( NodeRecord.class ), any( RecordLoad.class ) ) )
+                .thenAnswer( new ReadNodeAnswer( false, node1Rel, NO_NEXT_PROPERTY.intValue() ) );
+        when( recordStore.getRecord( eq( node2 ), any( NodeRecord.class ), any( RecordLoad.class ) ) )
+                .thenAnswer( new ReadNodeAnswer( false, node2Rel, NO_NEXT_PROPERTY.intValue() ) );
+        when( recordStore.newRecord() ).thenReturn( new NodeRecord( -1 ) );
 
         RelationshipChainExplorer relationshipChainExplorer = mock( RelationshipChainExplorer.class );
         when( relationshipChainExplorer.followChainFromNode( node1, node1Rel ) ).thenReturn( node1RelChain );
@@ -95,6 +100,4 @@ public class OwningNodeRelationshipChainTest
             }
         };
     }
-
-
 }

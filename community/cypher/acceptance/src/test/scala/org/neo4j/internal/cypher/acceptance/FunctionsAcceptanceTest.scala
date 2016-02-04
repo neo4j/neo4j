@@ -19,15 +19,14 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{CRS, CartesianPoint, GeographicPoint}
-import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
 
 class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("split should work as expected") {
     // When
-    val result = executeScalarWithAllPlanners[Long](
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Long](
       "UNWIND split(\"one1two\",\"1\") AS item RETURN count(item)"
     )
 
@@ -40,7 +39,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     createLabeledNode(Map("age" -> "42"), "Person")
 
     // When
-    val result = executeScalarWithAllPlanners[Long](
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Long](
       "MATCH (p:Person { age: \"42\" }) WITH * MATCH (n) RETURN toInt(n.age)"
     )
 
@@ -50,7 +49,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
 
   test("toInt should work on float") {
     // When
-    val result = executeScalarWithAllPlanners[Long](
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Long](
       "WITH 82.9 as weight RETURN toInt(weight)"
     )
 
@@ -60,7 +59,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
 
   test("toInt should return null on string that is not a number") {
     // When
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "WITH 'foo' as foo_string, '' as empty_string RETURN toInt(foo_string) as foo, toInt(empty_string) as empty"
     )
 
@@ -79,15 +78,16 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
   test("toInt should fail on type Any") {
     // When
     val query = "WITH [2, 2.9, '1.7'] AS numbers RETURN [n in numbers | toInt(n)] AS int_numbers"
-    val error = intercept[SyntaxException](executeWithAllPlanners(query))
+    val error = intercept[SyntaxException](executeWithAllPlannersAndCompatibilityMode(query))
 
     // Then
-    assert(error.getMessage.contains("Type mismatch: expected Float, Integer, Number or String but was Any"))
+    error.getMessage should (include("Type mismatch: expected Float, Integer, Number or String but was Any")
+      or include("Type mismatch: expected Float, Integer or String but was Any") )
   }
 
   test("toInt should work on string collection") {
     // When
-    val result = executeWithAllPlanners("WITH ['2', '2.9', 'foo'] AS numbers RETURN [n in numbers | toInt(n)] AS int_numbers")
+    val result = executeWithAllPlannersAndCompatibilityMode("WITH ['2', '2.9', 'foo'] AS numbers RETURN [n in numbers | toInt(n)] AS int_numbers")
 
     // Then
     result.toList should equal(List(Map("int_numbers" -> List(2, 2, null))))
@@ -98,7 +98,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     createLabeledNode(Map("rating" -> 4), "Movie")
 
     // When
-    val result = executeScalarWithAllPlanners[Double](
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Double](
       "MATCH (m:Movie { rating: 4 }) WITH * MATCH (n) RETURN toFloat(n.rating)"
     )
 
@@ -116,7 +116,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
 
   test("toFloat should return null on string that is not a number") {
     // When
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "WITH 'foo' as foo_string, '' as empty_string RETURN toFloat(foo_string) as foo, toFloat(empty_string) as empty"
     )
 
@@ -127,15 +127,16 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
   test("toFloat should fail on type Any") {
     // When
     val query = "WITH [3.4, 3, '5'] AS numbers RETURN [n in numbers | toFloat(n)] AS float_numbers"
-    val error = intercept[SyntaxException](executeWithAllPlanners(query))
+    val error = intercept[SyntaxException](executeWithAllPlannersAndCompatibilityMode(query))
 
     // Then
-    assert(error.getMessage.contains("Type mismatch: expected Float, Integer, Number or String but was Any"))
+    error.getMessage should (include("Type mismatch: expected Float, Integer, Number or String but was Any")
+      or include("Type mismatch: expected Float, Integer or String but was Any") )
   }
 
   test("toFloat should work on string collection") {
     // When
-    val result = executeWithAllPlanners("WITH ['1', '2', 'foo'] AS numbers RETURN [n in numbers | toFloat(n)] AS float_numbers")
+    val result = executeWithAllPlannersAndCompatibilityMode("WITH ['1', '2', 'foo'] AS numbers RETURN [n in numbers | toFloat(n)] AS float_numbers")
 
     // Then
     result.toList should equal(List(Map("float_numbers" -> List(1.0, 2.0, null))))
@@ -146,7 +147,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     createLabeledNode(Map("rating" -> 4), "Movie")
 
     // When
-    val result = executeScalarWithAllPlanners[String](
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[String](
       "MATCH (m:Movie { rating: 4 }) WITH * MATCH (n) RETURN toString(n.rating)"
     )
 
@@ -192,15 +193,16 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
   test("toString should fail on type Any") {
     // When
     val query = "WITH [2, 2.9, '1.7'] AS numbers RETURN [n in numbers | toString(n)] AS int_numbers"
-    val error = intercept[SyntaxException](executeWithAllPlanners(query))
+    val error = intercept[SyntaxException](executeWithAllPlannersAndCompatibilityMode(query))
 
     // Then
-    assert(error.getMessage.contains("Type mismatch: expected Boolean, Float, Integer or String but was Any"))
+    error.getMessage should (include("Type mismatch: expected Boolean, Float, Integer or String but was Any")
+      or include("Type mismatch: expected Float, Integer or String but was Any") )
   }
 
   test("toString should work on an integer collection") {
     // When
-    val result = executeWithAllPlanners("WITH [1, 2, 3] AS numbers RETURN [n in numbers | toString(n)] AS string_numbers")
+    val result = executeWithAllPlannersAndCompatibilityMode("WITH [1, 2, 3] AS numbers RETURN [n in numbers | toString(n)] AS string_numbers")
 
     // Then
     result.toList should equal(List(Map("string_numbers" -> List("1", "2", "3"))))
@@ -213,7 +215,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
         |RETURN x + 1
       """.stripMargin
 
-    val result = executeScalarWithAllPlanners[Long](query)
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Long](query)
 
     result should equal(2)
   }
@@ -225,14 +227,14 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
         |RETURN x + "!"
       """.stripMargin
 
-    val result = executeScalarWithAllPlanners[String](query)
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[String](query)
 
     result should equal("wow!")
   }
 
   test("reverse function should work as expected") {
     // When
-    val result = executeScalarWithAllPlanners[String]("RETURN reverse('raksO')")
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[String]("RETURN reverse('raksO')")
 
     // Then
     result should equal("Oskar")
@@ -242,7 +244,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val node = createLabeledNode(Map("prop" -> "foo"), "Person")
     createLabeledNode("Person")
 
-    val result = executeWithAllPlanners("MATCH (n:Person) WHERE exists(n['prop']) RETURN n")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Person) WHERE exists(n['prop']) RETURN n")
     result.toList should equal(List(Map("n" -> node)))
   }
 
@@ -251,7 +253,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val query = "WITH {name: 'Mats', name2: 'Pontus'} AS map RETURN exists(map.name)"
 
     // WHEN
-    val result = executeScalarWithAllPlanners[Boolean](query)
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Boolean](query)
 
     // THEN
     result shouldBe true
@@ -262,7 +264,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val query = "WITH {name: null} AS map RETURN exists(map.name)"
 
     // WHEN
-    val result = executeScalarWithAllPlanners[Boolean](query)
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Boolean](query)
 
     // THEN
     result shouldBe false
@@ -273,7 +275,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val query = "WITH {name: null} AS map RETURN exists(map.nonExistantKey)"
 
     // WHEN
-    val result = executeScalarWithAllPlanners[Boolean](query)
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Boolean](query)
 
     // THEN
     result shouldBe false
@@ -284,7 +286,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val query = "WITH {name: 'Mats', name2: 'Pontus'} AS map RETURN map.name IS NOT NULL"
 
     // WHEN
-    val result = executeScalarWithAllPlanners[Boolean](query)
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Boolean](query)
 
     // THEN
     result shouldBe true
@@ -295,7 +297,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val query = "WITH {name: null} AS map RETURN map.name IS NOT NULL"
 
     // WHEN
-    val result = executeScalarWithAllPlanners[Boolean](query)
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Boolean](query)
 
     // THEN
     result shouldBe false
@@ -306,7 +308,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val query = "WITH {name: null} AS map RETURN map.nonExistantKey IS NOT NULL"
 
     // WHEN
-    val result = executeScalarWithAllPlanners[Boolean](query)
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Boolean](query)
 
     // THEN
     result shouldBe false
@@ -317,9 +319,9 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     createNode("prop" -> 20.0)
     createNode("prop" -> 30.0)
 
-    executeScalarWithAllPlanners[Double]("MATCH (n) RETURN percentileDisc(n.prop, 0.0)") should equal (10.0 +- 0.1)
-    executeScalarWithAllPlanners[Double]("MATCH (n) RETURN percentileDisc(n.prop, 0.5)") should equal (20.0 +- 0.1)
-    executeScalarWithAllPlanners[Double]("MATCH (n) RETURN percentileDisc(n.prop, 1.0)") should equal (30.0 +- 0.1)
+    executeScalarWithAllPlannersAndCompatibilityMode[Double]("MATCH (n) RETURN percentileDisc(n.prop, 0.0)") should equal (10.0 +- 0.1)
+    executeScalarWithAllPlannersAndCompatibilityMode[Double]("MATCH (n) RETURN percentileDisc(n.prop, 0.5)") should equal (20.0 +- 0.1)
+    executeScalarWithAllPlannersAndCompatibilityMode[Double]("MATCH (n) RETURN percentileDisc(n.prop, 1.0)") should equal (30.0 +- 0.1)
   }
 
   test("percentileCont should work in the valid range") {
@@ -327,9 +329,9 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     createNode("prop" -> 20.0)
     createNode("prop" -> 30.0)
 
-    executeScalarWithAllPlanners[Double]("MATCH (n) RETURN percentileCont(n.prop, 0)") should equal (10.0 +- 0.1)
-    executeScalarWithAllPlanners[Double]("MATCH (n) RETURN percentileCont(n.prop, 0.5)") should equal (20.0 +- 0.1)
-    executeScalarWithAllPlanners[Double]("MATCH (n) RETURN percentileCont(n.prop, 1)") should equal (30.0 +- 0.1)
+    executeScalarWithAllPlannersAndCompatibilityMode[Double]("MATCH (n) RETURN percentileCont(n.prop, 0)") should equal (10.0 +- 0.1)
+    executeScalarWithAllPlannersAndCompatibilityMode[Double]("MATCH (n) RETURN percentileCont(n.prop, 0.5)") should equal (20.0 +- 0.1)
+    executeScalarWithAllPlannersAndCompatibilityMode[Double]("MATCH (n) RETURN percentileCont(n.prop, 1)") should equal (30.0 +- 0.1)
   }
 
   test("point function should work with literal map") {
@@ -481,7 +483,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val expected = createNode().getId
 
     // WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n) RETURN id(n)")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) RETURN id(n)")
 
     // THEN
     result.toList should equal(List(Map("id(n)" -> expected)))
@@ -493,7 +495,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val expected = relate(createNode(), createNode()).getId
 
     // WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH ()-[r]->() RETURN id(r)")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r]->() RETURN id(r)")
 
     // THEN
     result.toList should equal(List(Map("id(r)" -> expected)))

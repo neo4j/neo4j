@@ -23,12 +23,56 @@ import java.util.function.Predicate;
 
 import org.neo4j.helpers.CloneableInPublic;
 
+/**
+ * {@link AbstractBaseRecord records} are intended to be reusable. Created with a zero-arg constructor
+ * and initialized with the public {@code initialize} method exposed by the specific record implementations,
+ * or {@link #clear() cleared} if reading a record that isn't in use.
+ */
 public abstract class AbstractBaseRecord implements CloneableInPublic
 {
-    private boolean inUse = false;
-    private boolean created = false;
+    private long id;
+    private boolean inUse;
+    private boolean created;
 
-    public abstract long getLongId();
+    protected AbstractBaseRecord( long id )
+    {
+        this.id = id;
+        clear();
+    }
+
+    protected AbstractBaseRecord initialize( boolean inUse )
+    {
+        this.inUse = inUse;
+        this.created = false;
+        return this;
+    }
+
+    /**
+     * Clears this record to its initial state. Initializing this record with an {@code initialize-method}
+     * doesn't require clear the record first, either initialize or clear suffices.
+     * Subclasses, most specific subclasses only, implements this method by calling initialize with
+     * zero-like arguments.
+     */
+    public void clear()
+    {
+        inUse = false;
+        created = false;
+    }
+
+    public long getId()
+    {
+        return id;
+    }
+
+    public int getIntId()
+    {
+        return Math.toIntExact( id );
+    }
+
+    public void setId( long id )
+    {
+        this.id = id;
+    }
 
     public final boolean inUse()
     {
@@ -53,11 +97,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     @Override
     public int hashCode()
     {
-        final int prime = 31;
-        int result = 1;
-        long id = getLongId();
-        result = prime * result + (int) (id ^ (id >>> 32));
-        return result;
+        return (int) (( id >>> 32 ) ^ id );
     }
 
     @Override
@@ -70,7 +110,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
         if ( getClass() != obj.getClass() )
             return false;
         AbstractBaseRecord other = (AbstractBaseRecord) obj;
-        if ( getLongId() != other.getLongId() )
+        if ( id != other.id )
             return false;
         return true;
     }

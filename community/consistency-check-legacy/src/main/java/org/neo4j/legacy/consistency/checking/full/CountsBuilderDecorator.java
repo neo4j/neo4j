@@ -48,6 +48,7 @@ import org.neo4j.legacy.consistency.store.synthetic.CountsEntry;
 
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.legacy.consistency.checking.full.NodeLabelReader.getListOfLabels;
 
 class CountsBuilderDecorator extends CheckDecorator.Adapter
@@ -317,7 +318,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                 return false;
             }
 
-            if ( record.getLongId() == 0 )
+            if ( record.getId() == 0 )
             {
                 if ( started )
                 {
@@ -338,6 +339,6 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                                         RecordAccess recordAccess,
                                         long nodeId )
     {
-        return getListOfLabels( nodeStore.forceGetRecord( nodeId ), recordAccess, engine );
+        return getListOfLabels( nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE ), recordAccess, engine );
     }
 }

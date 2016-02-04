@@ -39,6 +39,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -177,7 +178,7 @@ public class NodeLabelsFieldTest
         assertEquals( 1, count( changedDynamicRecords ) );
         assertEquals( dynamicLabelsLongRepresentation( changedDynamicRecords ), node.getLabelField() );
         assertTrue( Arrays.equals( new long[] {labelId1, labelId2, labelId3},
-                nodeStore.getDynamicLabelsArray( changedDynamicRecords ) ) );
+                DynamicNodeLabels.getDynamicLabelsArray( changedDynamicRecords, nodeStore.getDynamicLabelStore() ) ) );
     }
 
     @Test
@@ -208,7 +209,8 @@ public class NodeLabelsFieldTest
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
 
         // WHEN
-        Pair<Long,long[]> pair = nodeStore.getDynamicLabelsArrayAndOwner( initialRecords );
+        Pair<Long,long[]> pair = DynamicNodeLabels.getDynamicLabelsArrayAndOwner( initialRecords,
+                nodeStore.getDynamicLabelStore() );
 
         // THEN
         assertEquals( nodeId,  pair.first() );
@@ -248,7 +250,8 @@ public class NodeLabelsFieldTest
                 new ArrayList<DynamicRecord>() );
 
         // WHEN
-        Pair<Long,long[]> changedPair = nodeStore.getDynamicLabelsArrayAndOwner( changedDynamicRecords );
+        Pair<Long,long[]> changedPair = DynamicNodeLabels.getDynamicLabelsArrayAndOwner( changedDynamicRecords,
+                nodeStore.getDynamicLabelStore() );
 
         // THEN
         assertEquals( nodeId,  changedPair.first() );
@@ -282,7 +285,7 @@ public class NodeLabelsFieldTest
         long dynRecordId = NodeLabelsField.firstDynamicLabelRecordId( node.getLabelField() );
 
         // THEN
-        assertEquals( dynamicRecord.getLongId(), dynRecordId );
+        assertEquals( dynamicRecord.getId(), dynRecordId );
     }
 
     @Test
@@ -493,8 +496,8 @@ public class NodeLabelsFieldTest
 
     private Collection<DynamicRecord> allocateAndApply( NodeStore nodeStore, long nodeId, long[] longs )
     {
-        Collection<DynamicRecord> records = nodeStore.allocateRecordsForDynamicLabels( nodeId, longs,
-                IteratorUtil.<DynamicRecord>emptyIterator() );
+        Collection<DynamicRecord> records = DynamicNodeLabels.allocateRecordsForDynamicLabels( nodeId, longs,
+                IteratorUtil.<DynamicRecord>emptyIterator(), nodeStore.getDynamicLabelStore() );
         nodeStore.updateDynamicLabelRecords( records );
         return records;
     }

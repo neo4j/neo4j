@@ -275,7 +275,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         {
             if( command instanceof Command.TokenCommand )
             {
-                return ((Command.TokenCommand<? extends TokenRecord>) command).getAfter().getId();
+                return ((Command.TokenCommand<? extends TokenRecord>) command).getAfter().getIntId();
             }
         }
         throw new NoSuchEntryException( "Expected command not found" );

@@ -41,15 +41,16 @@ import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -158,8 +159,8 @@ public class StorePropertyPayloadCursorTest
             assertFalse( cursor.next() );
 
             // Then
-            verify( dynamicStringStore ).newDynamicRecordCursor();
-            verify( dynamicArrayStore ).newDynamicRecordCursor();
+            verify( dynamicStringStore ).newRecordCursor( any( DynamicRecord.class ) );
+            verify( dynamicArrayStore ).newRecordCursor( any( DynamicRecord.class ) );
         }
     }
 
@@ -467,17 +468,18 @@ public class StorePropertyPayloadCursorTest
         return new StubPageCursor( 1, page );
     }
 
+    @SuppressWarnings( "unchecked" )
     private static <S extends AbstractDynamicStore> S newDynamicStoreMock( Class<S> clazz )
     {
-        AbstractDynamicStore.DynamicRecordCursor recordCursor = mock( AbstractDynamicStore.DynamicRecordCursor.class );
+        RecordCursor<DynamicRecord> recordCursor = mock( RecordCursor.class );
         when( recordCursor.next() ).thenReturn( true ).thenReturn( false );
         DynamicRecord dynamicRecord = new DynamicRecord( 42 );
         dynamicRecord.setData( new byte[]{1, 1, 1, 1, 1} );
         when( recordCursor.get() ).thenReturn( dynamicRecord );
 
         S store = mock( clazz );
-        when( store.newDynamicRecordCursor() ).thenReturn( mock( AbstractDynamicStore.DynamicRecordCursor.class ) );
-        when( store.getRecordsCursor( anyLong(), anyBoolean(), any( AbstractDynamicStore.DynamicRecordCursor.class ) ) )
+        when( store.newRecordCursor( any( DynamicRecord.class ) ) ).thenReturn( mock( RecordCursor.class ) );
+        when( store.placeRecordCursor( anyLong(), any( RecordCursor.class ), any( RecordLoad.class ) ) )
                 .thenReturn( recordCursor );
 
         return store;
@@ -543,7 +545,7 @@ public class StorePropertyPayloadCursorTest
         long id;
 
         @Override
-        public int dataSize()
+        public int getRecordDataSize()
         {
             return 120;
         }

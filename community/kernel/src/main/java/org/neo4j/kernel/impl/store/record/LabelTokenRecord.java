@@ -19,12 +19,18 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-
 public class LabelTokenRecord extends TokenRecord
 {
     public LabelTokenRecord( int id )
     {
         super( id );
+    }
+
+    @Override
+    public LabelTokenRecord initialize( boolean inUse, int nameId )
+    {
+        super.initialize( inUse, nameId );
+        return this;
     }
 
     @Override
@@ -36,13 +42,12 @@ public class LabelTokenRecord extends TokenRecord
     @Override
     public LabelTokenRecord clone()
     {
-        LabelTokenRecord labelTokenRecord = new LabelTokenRecord( getId() );
+        LabelTokenRecord labelTokenRecord = new LabelTokenRecord( getIntId() );
         labelTokenRecord.setInUse( inUse() );
         if ( isCreated() )
         {
             labelTokenRecord.setCreated();
         }
-        labelTokenRecord.setIsLight( isLight() );
         labelTokenRecord.setNameId( getNameId() );
         labelTokenRecord.addNameRecords( getNameRecords() );
         return labelTokenRecord;

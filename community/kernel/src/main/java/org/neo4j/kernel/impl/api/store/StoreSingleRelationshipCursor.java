@@ -56,7 +56,7 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
             try
             {
                 relationshipRecord.setId( relationshipId );
-                return relationshipStore.fillRecord( relationshipId, relationshipRecord, RecordLoad.CHECK );
+                return relationshipStore.getRecord( relationshipId, relationshipRecord, RecordLoad.CHECK ).inUse();
             }
             finally
             {

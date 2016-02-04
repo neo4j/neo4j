@@ -42,6 +42,8 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+
 public class NodeLabelReader
 {
     public static <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport> Set<Long> getListOfLabels(
@@ -99,7 +101,7 @@ public class NodeLabelReader
             long id = NodeLabelsField.firstDynamicLabelRecordId( field );
             while ( !Record.NULL_REFERENCE.is( id ) )
             {
-                DynamicRecord record = labels.forceGetRecord( id );
+                DynamicRecord record = labels.getRecord( id, labels.newRecord(), FORCE );
                 if ( !record.inUse() || !alreadySeen.add( id ) )
                 {
                     return PrimitiveLongCollections.EMPTY_LONG_ARRAY;

@@ -19,7 +19,7 @@
  */
 package org.neo4j.tools.txlog;
 
-import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
  *
  * @param <R> the type of the record
  */
-public class RecordInfo<R extends Abstract64BitRecord>
+public class RecordInfo<R extends AbstractBaseRecord>
 {
     private final R record;
     private final long logVersion;

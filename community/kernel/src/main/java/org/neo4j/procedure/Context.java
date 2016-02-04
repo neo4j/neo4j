@@ -17,35 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.record;
+package org.neo4j.procedure;
 
-public abstract class Abstract64BitRecord extends AbstractBaseRecord
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
+ * This marks a field in a class with {@link Procedure} methods as part of the context the procedure is invoked in.
+ * Practically, this means that before the procedure is called, fields with this annotation are automatically
+ * populated with implementations of the specified APIs.
+ *
+ * In fact, apart from static fields, <i>only</i> fields with this annotation are allowed in classses that
+ * define procedure. Each of the fields must be public and non-final.
+ *
+ * @see Procedure
+ */
+@Target( ElementType.FIELD )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface Context
 {
-    private long id;
-
-    protected Abstract64BitRecord()
-    {
-
-    }
-
-    protected Abstract64BitRecord( long id )
-    {
-        this.id = id;
-    }
-
-    public long getId()
-    {
-        return id;
-    }
-
-    public void setId( long id )
-    {
-        this.id = id;
-    }
-    
-    @Override
-    public long getLongId()
-    {
-        return id;
-    }
 }

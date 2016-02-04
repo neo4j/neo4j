@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,32 +32,28 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
+import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
+import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -105,6 +106,8 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class TransactionRecordStateTest
@@ -832,35 +835,6 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void createdSchemaRuleRecordMustBeWrittenHeavy() throws Exception
-    {
-        // GIVEN
-        NeoStores neoStores = neoStoresRule.open();
-        TransactionRecordState tx = newTransactionRecordState( neoStores );
-        long ruleId = 0;
-        int labelId = 5, propertyKeyId = 7;
-        SchemaRule rule = new IndexRule( ruleId, labelId, propertyKeyId,
-                new SchemaIndexProvider.Descriptor( "quantum-dex", "25.0" ), null );
-
-        // WHEN
-        tx.createSchemaRule( rule );
-        PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( tx );
-
-        transactionCommands.accept( command -> ((Command)command).handle( new CommandVisitor.Adapter()
-        {
-            @Override
-            public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
-            {
-                for ( DynamicRecord record : command.getRecordsAfter() )
-                {
-                    assertFalse( record + " should have been heavy", record.isLight() );
-                }
-                return false;
-            }
-        } ) );
-    }
-
-    @Test
     public void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithDifferentTypes() throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
@@ -1126,14 +1100,17 @@ public class TransactionRecordStateTest
 
     private void assertRelationshipGroupsInOrder( NeoStores neoStores, long nodeId, int... types )
     {
-        NodeRecord node = neoStores.getNodeStore().getRecord( nodeId );
+        NodeStore nodeStore = neoStores.getNodeStore();
+        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
         assertTrue( "Node should be dense, is " + node, node.isDense() );
         long groupId = node.getNextRel();
         int cursor = 0;
         List<RelationshipGroupRecord> seen = new ArrayList<>();
         while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            RelationshipGroupRecord group = neoStores.getRelationshipGroupStore().getRecord( groupId );
+            RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
+            RelationshipGroupRecord group = relationshipGroupStore.getRecord( groupId,
+                    relationshipGroupStore.newRecord(), NORMAL );
             seen.add( group );
             assertEquals( "Invalid type, seen groups so far " + seen, types[cursor++], group.getType() );
             groupId = group.getNext();
@@ -1154,7 +1131,8 @@ public class TransactionRecordStateTest
         transaction.accept( extractor );
 
         OnlineIndexUpdates lazyIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(),
-                neoStores.getPropertyStore(), new PropertyLoader( neoStores ) );
+                neoStores.getPropertyStore(), new PropertyLoader( neoStores ),
+                new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() ) );
         lazyIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.nodeCommandsById() );
         return lazyIndexUpdates;
     }
@@ -1256,7 +1234,7 @@ public class TransactionRecordStateTest
         return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, 0,
                 new NoOpClient(),
                 new RelationshipCreator( relationshipGroupGetter,
-                        neoStores.getRelationshipGroupStore().getDenseNodeThreshold() ),
+                        neoStores.getRelationshipGroupStore().getStoreHeaderInt() ),
                 new RelationshipDeleter( relationshipGroupGetter, propertyDeleter ),
                 new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser ),
                 propertyDeleter );
@@ -1274,7 +1252,8 @@ public class TransactionRecordStateTest
 
     private void assertDynamicLabelRecordInUse( NeoStores store, long id, boolean inUse )
     {
-        DynamicRecord record = store.getNodeStore().getDynamicLabelStore().forceGetRecord( id );
+        DynamicArrayStore dynamicLabelStore = store.getNodeStore().getDynamicLabelStore();
+        DynamicRecord record = dynamicLabelStore.getRecord( id, dynamicLabelStore.newRecord(), FORCE );
         assertTrue( inUse == record.inUse() );
     }
 

@@ -40,7 +40,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -53,6 +52,8 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -66,18 +67,19 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
-import static java.lang.Integer.MAX_VALUE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
+
+import static java.lang.Integer.MAX_VALUE;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatHugeStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatStoreDirectory;
-import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom19IT
 {
@@ -241,7 +243,7 @@ public class StoreMigratorFrom19IT
         assertEquals( 1409818980890L, metaDataStore.getCreationTime() );
         assertEquals( 7528833218632030901L, metaDataStore.getRandomNumber() );
         assertEquals( 1L, metaDataStore.getCurrentLogVersion() );
-        assertEquals( ALL_STORES_VERSION, MetaDataStore.versionLongToString(
+        assertEquals( LowLimit.STORE_VERSION, MetaDataStore.versionLongToString(
                 metaDataStore.getStoreVersion() ) );
         assertEquals( 8L + 3, metaDataStore.getLastCommittedTransactionId() ); // prior verifications add 3 transactions
     }

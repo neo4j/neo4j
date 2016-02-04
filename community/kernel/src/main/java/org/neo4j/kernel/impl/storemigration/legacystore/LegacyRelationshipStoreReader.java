@@ -106,16 +106,10 @@ public interface LegacyRelationshipStoreReader extends Closeable
 
         public RelationshipRecord createRecord()
         {
-            if( record == null)
+            if ( record == null)
             {
-                record = new RelationshipRecord( recordId, firstNode, secondNode, type );
-                record.setInUse( inUse );
-                record.setFirstPrevRel( firstPrevRel );
-                record.setFirstNextRel( firstNextRel );
-                record.setSecondPrevRel( secondPrevRel );
-                record.setSecondNextRel( secondNextRel );
-                record.setNextProp( nextProp );
-
+                record = new RelationshipRecord( recordId ).initialize( inUse, nextProp, firstNode, secondNode,
+                        type, firstPrevRel, firstNextRel, secondPrevRel, secondNextRel, true, true );
             }
             return record;
         }

@@ -31,7 +31,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -53,6 +52,7 @@ import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplierFacade;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
+import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
@@ -71,6 +71,8 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.command.CacheInvalidationBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.HighIdBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
@@ -149,6 +151,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync;
     private final NeoStoreIndexStoreView indexStoreView;
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
+    private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
 
     // Immutable state for creating/applying commands
     private final Loaders loaders;
@@ -178,7 +181,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             LabelScanStoreProvider labelScanStoreProvider,
             LegacyIndexProviderLookup legacyIndexProviderLookup,
             IndexConfigStore indexConfigStore,
-            IdOrderingQueue legacyIndexTransactionOrdering )
+            IdOrderingQueue legacyIndexTransactionOrdering,
+            RecordFormats recordFormats )
     {
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
@@ -191,11 +195,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.constraintSemantics = constraintSemantics;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
 
-        final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
+        final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory,
+                pageCache, fs, logProvider, recordFormats );
         neoStores = storeFactory.openAllNeoStores( true );
 
         try
         {
+            indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
             schemaCache = new SchemaCache( constraintSemantics, Collections.<SchemaRule>emptyList() );
             schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
 
@@ -355,7 +361,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         // Schema index application
         appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
-                neoStores.getNodeStore(), neoStores.getPropertyStore(), new PropertyLoader( neoStores ), mode ) );
+                neoStores.getNodeStore(), neoStores.getPropertyStore(), new PropertyLoader( neoStores ),
+                indexUpdatesConverter, mode ) );
 
         // Legacy index application
         appliers.add(

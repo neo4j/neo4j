@@ -27,6 +27,8 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+
 /**
  * Cursor for iterating a set of nodes. It is attached to an iterator, typically from
  * an index seek or similar.
@@ -57,8 +59,7 @@ public class StoreIteratorNodeCursor extends StoreAbstractNodeCursor
     {
         while ( iterator != null && iterator.hasNext() )
         {
-            NodeRecord record = nodeStore.loadRecord( iterator.next(), nodeRecord );
-            if ( record != null && record.inUse() )
+            if ( nodeStore.getRecord( iterator.next(), nodeRecord, CHECK ).inUse() )
             {
                 return true;
             }

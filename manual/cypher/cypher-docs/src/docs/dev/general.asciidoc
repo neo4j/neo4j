@@ -29,4 +29,8 @@ include::ql/unwind/index.asciidoc[]
 
 include::ql/union/index.asciidoc[]
 
+:leveloffset: 2
+
+include::ql/call/index.asciidoc[]
+
 :leveloffset: 0

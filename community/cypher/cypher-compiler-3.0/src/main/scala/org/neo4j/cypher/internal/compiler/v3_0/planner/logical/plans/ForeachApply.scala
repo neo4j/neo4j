@@ -17,24 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure;
+package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+case class ForeachApply(left: LogicalPlan, right: LogicalPlan, variable: String, expression: Expression)(val solved: PlannerQuery with CardinalityEstimation)
+  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
 
-/**
- * This annotation marks a {@link Procedure} as performing updates to the graph.
- * <p>
- * This is <i>required</i> if the procedure performs write operations.
- */
-@Target( ElementType.METHOD )
-@Retention( RetentionPolicy.RUNTIME )
-public @interface PerformsWriteOperations
-{
-    // Implementation note: this is not yet enforced, but is an important part of the
-    // contract with the user. Without this annotation, we do not guarantee writes will
-    // work.
+  val lhs = Some(left)
+  val rhs = Some(right)
+
+  def availableSymbols = left.availableSymbols // NOTE: right.availableSymbols and variable are not available outside
 }

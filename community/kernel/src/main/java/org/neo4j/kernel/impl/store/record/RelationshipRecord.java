@@ -20,24 +20,22 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
 public class RelationshipRecord extends PrimitiveRecord
 {
     private long firstNode;
     private long secondNode;
     private int type;
-    private long firstPrevRel = 1;
-    private long firstNextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private long secondPrevRel = 1;
-    private long secondNextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private boolean firstInFirstChain = true;
-    private boolean firstInSecondChain = true;
+    private long firstPrevRel;
+    private long firstNextRel;
+    private long secondPrevRel;
+    private long secondNextRel;
+    private boolean firstInFirstChain;
+    private boolean firstInSecondChain;
 
-    public RelationshipRecord( long id )
-    {
-        super( id, Record.NO_NEXT_PROPERTY.intValue() );
-    }
-
+    @Deprecated
     public RelationshipRecord( long id, long firstNode, long secondNode, int type )
     {
         this( id );
@@ -46,6 +44,7 @@ public class RelationshipRecord extends PrimitiveRecord
         this.type = type;
     }
 
+    @Deprecated
     public RelationshipRecord( long id, boolean inUse, long firstNode, long secondNode, int type,
                                long firstPrevRel, long firstNextRel, long secondPrevRel, long secondNextRel,
                                boolean firstInFirstChain, boolean firstInSecondChain )
@@ -59,6 +58,36 @@ public class RelationshipRecord extends PrimitiveRecord
         this.firstInFirstChain = firstInFirstChain;
         this.firstInSecondChain = firstInSecondChain;
 
+    }
+
+    public RelationshipRecord( long id )
+    {
+        super( id );
+    }
+
+    public RelationshipRecord initialize( boolean inUse, long nextProp, long firstNode, long secondNode,
+            int type, long firstPrevRel, long firstNextRel, long secondPrevRel, long secondNextRel,
+            boolean firstInFirstChain, boolean firstInSecondChain )
+    {
+        super.initialize( inUse, nextProp );
+        this.firstNode = firstNode;
+        this.secondNode = secondNode;
+        this.type = type;
+        this.firstPrevRel = firstPrevRel;
+        this.firstNextRel = firstNextRel;
+        this.secondPrevRel = secondPrevRel;
+        this.secondNextRel = secondNextRel;
+        this.firstInFirstChain = firstInFirstChain;
+        this.firstInSecondChain = firstInSecondChain;
+        return this;
+    }
+
+    @Override
+    public void clear()
+    {
+        initialize( false, NO_NEXT_PROPERTY.intValue(), -1, -1, -1,
+                1, NO_NEXT_RELATIONSHIP.intValue(),
+                1, NO_NEXT_RELATIONSHIP.intValue(), true, true );
     }
 
     public void setLinks( long firstNode, long secondNode, int type )
@@ -180,7 +209,7 @@ public class RelationshipRecord extends PrimitiveRecord
     @Override
     public RelationshipRecord clone()
     {
-        return new RelationshipRecord( getId(), inUse(),
+        return new RelationshipRecord( getId() ).initialize( inUse(), nextProp,
                 firstNode, secondNode, type,
                 firstPrevRel, firstNextRel, secondPrevRel, secondNextRel, firstInFirstChain, firstInSecondChain );
     }

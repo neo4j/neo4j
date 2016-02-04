@@ -280,12 +280,12 @@ public abstract class AbstractNeo4jTestCase
 
     protected long dynamicStringRecordsInUse()
     {
-        return dynamicRecordsInUse( "stringPropertyStore" );
+        return dynamicRecordsInUse( "stringStore" );
     }
 
     protected long dynamicArrayRecordsInUse()
     {
-        return dynamicRecordsInUse( "arrayPropertyStore" );
+        return dynamicRecordsInUse( "arrayStore" );
     }
 
     private long dynamicRecordsInUse( String fieldName )

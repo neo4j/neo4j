@@ -36,9 +36,11 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 
 import org.neo4j.coreedge.raft.net.NonBlockingChannel;
 import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.raft.net.monitoring.MessageQueueMonitor;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -47,27 +49,33 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
 public class SenderService extends LifecycleAdapter implements Outbound<AdvertisedSocketAddress>
 {
     private final Expiration expiration;
-    private final ConcurrentHashMap<AdvertisedSocketAddress,Timestamped<NonBlockingChannel>> lazyChannelMap =
+    private final ConcurrentHashMap<AdvertisedSocketAddress,TimestampedNonBlockingChannel> lazyChannelMap =
             new ConcurrentHashMap<>();
     private final ExpiryScheduler scheduler;
     private final ChannelInitializer<SocketChannel> channelInitializer;
     private final ReadWriteLock serviceLock = new ReentrantReadWriteLock();
     private final Log log;
+    private final Monitors monitors;
 
     private JobScheduler.JobHandle jobHandle;
     private boolean senderServiceRunning;
     private Bootstrap bootstrap;
     private NioEventLoopGroup eventLoopGroup;
+    private int maxQueueSize;
 
     public SenderService( ExpiryScheduler expiryScheduler,
-            Expiration expiration,
-            ChannelInitializer<SocketChannel> channelInitializer,
-            LogProvider logProvider )
+                          Expiration expiration,
+                          ChannelInitializer<SocketChannel> channelInitializer,
+                          LogProvider logProvider,
+                          Monitors monitors,
+                          int maxQueueSize)
     {
         this.expiration = expiration;
         this.scheduler = expiryScheduler;
         this.channelInitializer = channelInitializer;
         this.log = logProvider.getLog( getClass() );
+        this.monitors = monitors;
+        this.maxQueueSize = maxQueueSize;
     }
 
     @Override
@@ -81,8 +89,10 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
                 return;
             }
 
-            Timestamped<NonBlockingChannel> lazyChannel = getAndUpdateLife( to );
+            MessageQueueMonitor monitor = monitors.newMonitor( MessageQueueMonitor.class, NonBlockingChannel.class );
+            TimestampedNonBlockingChannel lazyChannel = getAndUpdateLife( to, monitor );
             NonBlockingChannel nonBlockingChannel = lazyChannel.get();
+            monitor.register(to.socketAddress());
             for ( Object msg : messages )
             {
                 nonBlockingChannel.send( msg );
@@ -99,18 +109,18 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
         return lazyChannelMap.size();
     }
 
-    private Timestamped<NonBlockingChannel> getAndUpdateLife( AdvertisedSocketAddress to )
+    private TimestampedNonBlockingChannel getAndUpdateLife( AdvertisedSocketAddress to, MessageQueueMonitor monitor )
     {
-        Timestamped<NonBlockingChannel> timestampedLazyChannel = lazyChannelMap.get( to );
+        TimestampedNonBlockingChannel timestampedLazyChannel = lazyChannelMap.get( to );
 
         if ( timestampedLazyChannel == null )
         {
             Expiration.ExpirationTime expirationTime = expiration.new ExpirationTime();
-            timestampedLazyChannel = new Timestamped<>( expirationTime,
+            timestampedLazyChannel = new TimestampedNonBlockingChannel( expirationTime,
                     new NonBlockingChannel( bootstrap, to.socketAddress(),
-                            new InboundKeepAliveHandler( expirationTime ), log ) );
+                            new InboundKeepAliveHandler( expirationTime ), log, monitor, maxQueueSize ) );
 
-            Timestamped<NonBlockingChannel> existingTimestampedLazyChannel =
+            TimestampedNonBlockingChannel existingTimestampedLazyChannel =
                     lazyChannelMap.putIfAbsent( to, timestampedLazyChannel );
 
             if ( existingTimestampedLazyChannel != null )
@@ -164,10 +174,10 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
                 jobHandle = null;
             }
 
-            Iterator<Timestamped<NonBlockingChannel>> itr = lazyChannelMap.values().iterator();
+            Iterator<TimestampedNonBlockingChannel> itr = lazyChannelMap.values().iterator();
             while ( itr.hasNext() )
             {
-                Timestamped<NonBlockingChannel> timestampedChannel = itr.next();
+                TimestampedNonBlockingChannel timestampedChannel = itr.next();
                 timestampedChannel.get().dispose();
                 itr.remove();
             }
@@ -189,10 +199,10 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
     private synchronized void reapDeadChannels()
     {
-        Iterator<Timestamped<NonBlockingChannel>> itr = lazyChannelMap.values().iterator();
+        Iterator<TimestampedNonBlockingChannel> itr = lazyChannelMap.values().iterator();
         while ( itr.hasNext() )
         {
-            Timestamped<NonBlockingChannel> timestampedChannel = itr.next();
+            TimestampedNonBlockingChannel timestampedChannel = itr.next();
 
             serviceLock.writeLock().lock();
             try
@@ -210,20 +220,20 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
         }
     }
 
-    private final class Timestamped<T extends Disposable>
+    private final class TimestampedNonBlockingChannel
     {
         private final Expiration.ExpirationTime endOfLife;
-        private T timestampedThing;
+        private NonBlockingChannel channel;
 
-        public Timestamped( Expiration.ExpirationTime endOfLife, T timestampedThing )
+        public TimestampedNonBlockingChannel( Expiration.ExpirationTime endOfLife, NonBlockingChannel channel )
         {
             this.endOfLife = endOfLife;
-            this.timestampedThing = timestampedThing;
+            this.channel = channel;
         }
 
-        public T get()
+        public NonBlockingChannel get()
         {
-            return timestampedThing;
+            return channel;
         }
 
         public Expiration.ExpirationTime getEndOfLife()

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compatibility.exceptionHandlerFor3_0
+import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.GraphDatabaseService
@@ -29,7 +29,6 @@ import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.configuration.Config
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
 
@@ -71,6 +70,9 @@ class CypherCompiler(graph: GraphDatabaseService,
                      configuredPlanner: CypherPlanner,
                      configuredRuntime: CypherRuntime,
                      useErrorsOverWarnings: Boolean,
+                     idpMaxTableSize: Int,
+                     idpIterationDuration: Long,
+                     errorIfShortestPathFallbackUsedAtRuntime: Boolean,
                      logProvider: LogProvider) {
   import org.neo4j.cypher.internal.CypherCompiler._
 
@@ -81,6 +83,9 @@ class CypherCompiler(graph: GraphDatabaseService,
     statsDivergenceThreshold = getStatisticsDivergenceThreshold,
     queryPlanTTL = getMinimumTimeBeforeReplanning,
     useErrorsOverWarnings = useErrorsOverWarnings,
+    idpMaxTableSize = idpMaxTableSize,
+    idpIterationDuration = idpIterationDuration,
+    errorIfShortestPathFallbackUsedAtRuntime = errorIfShortestPathFallbackUsedAtRuntime,
     nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold
   )
 

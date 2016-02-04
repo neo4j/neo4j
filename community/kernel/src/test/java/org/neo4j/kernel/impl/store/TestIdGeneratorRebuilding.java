@@ -32,6 +32,7 @@ import java.util.List;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -78,7 +79,8 @@ public class TestIdGeneratorRebuilding
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore );
+                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
+                LowLimit.RECORD_FORMATS.node(), LowLimit.STORE_VERSION );
         store.initialise( true );
         store.makeStoreOk();
 
@@ -182,7 +184,8 @@ public class TestIdGeneratorRebuilding
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore );
+                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
+                LowLimit.RECORD_FORMATS.node(), LowLimit.STORE_VERSION );
         store.initialise( true );
         store.makeStoreOk();
 

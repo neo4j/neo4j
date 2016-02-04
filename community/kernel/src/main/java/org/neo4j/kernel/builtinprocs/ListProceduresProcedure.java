@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static org.neo4j.helpers.collection.Iterables.asRawIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.api.ReadOperations.readOperations;
+import static org.neo4j.kernel.api.ReadOperations.statement;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
 
 public class ListProceduresProcedure extends CallableProcedure.BasicProcedure
@@ -45,7 +45,7 @@ public class ListProceduresProcedure extends CallableProcedure.BasicProcedure
     @Override
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        Set<ProcedureSignature> procedureSignatures = ctx.get( readOperations ).proceduresGetAll();
+        Set<ProcedureSignature> procedureSignatures = ctx.get( statement ).readOperations().proceduresGetAll();
         ArrayList<ProcedureSignature> sorted = new ArrayList<>( procedureSignatures );
         sorted.sort( (a,b) -> a.name().toString().compareTo( b.name().toString() ) );
 

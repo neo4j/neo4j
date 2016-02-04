@@ -26,6 +26,8 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+
 /**
  * Cursor for a single node.
  */
@@ -57,9 +59,7 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
         {
             try
             {
-                nodeRecord.setId( nodeId );
-                NodeRecord record = nodeStore.loadRecord( nodeId, this.nodeRecord );
-                return record != null && record.inUse();
+                return nodeStore.getRecord( nodeId, nodeRecord, CHECK ).inUse();
             }
             finally
             {

@@ -135,8 +135,8 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
   test("should plan merge node with on create and on match ") {
     val allNodesScan = AllNodesScan(aId, Set.empty)(solved)
     val optional = Optional(allNodesScan)(solved)
-    val setLabels = SetLabels(SingleRow()(solved),
-      aId, Seq(lblName("L")))(solved)
+    val argument = Argument(Set(aId))(solved)(Map.empty)
+    val setLabels = SetLabels(argument, aId, Seq(lblName("L")))(solved)
     val onMatch = ConditionalApply(optional, setLabels, Seq(aId))(solved)
 
     val singleRow = SingleRow()(solved)

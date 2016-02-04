@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
  * involves one or more resources, such as a {@link org.neo4j.graphdb.GraphDatabaseService}.
  * <p>
  * By default, procedures are read-only. If you want to perform writes to the
- * database, you need to add the {@link PerformsWriteOperations} annotation to your method as well.
+ * database, you need to add the {@link PerformsWrites} annotation to your method as well.
  *
  * <h2>Input declaration</h2>
  * A procedure can accept input arguments, which is defined in the arguments to the
@@ -77,11 +77,11 @@ import java.lang.annotation.Target;
  * <h2>Resource declarations</h2>
  * The procedure method itself can contain arbitrary Java code - but in order to work with the underlying graph,
  * it must have access to the graph API. This is done by declaring fields in the procedure class, and annotating
- * them with the {@link Resource} annotation. Fields declared this way are automatically injected with the
+ * them with the {@link Context} annotation. Fields declared this way are automatically injected with the
  * requested resource. This is how procedures gain access to APIs to do work with.
  * <p>
  * All fields in the class containing the procedure declaration must either be static; or it must be public, non-final
- * and annotated with {@link Resource}.
+ * and annotated with {@link Context}.
  * <p>
  * Resources supported by default are as follows:
  * <ul>

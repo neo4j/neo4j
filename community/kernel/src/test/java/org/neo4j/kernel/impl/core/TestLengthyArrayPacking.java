@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.kernel.impl.store.PropertyStore.DEFAULT_DATA_BLOCK_SIZE;
+import static org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat.DEFAULT_DATA_BLOCK_SIZE;
 
 public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
 {

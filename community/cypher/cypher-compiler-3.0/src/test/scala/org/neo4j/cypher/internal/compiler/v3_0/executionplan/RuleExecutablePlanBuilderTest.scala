@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, CypherCompilerConfiguration, Monitors, PreparedQuery, devNullLogger}
@@ -37,7 +38,10 @@ class RuleExecutablePlanBuilderTest extends CypherFunSuite {
     statsDivergenceThreshold = 0.5,
     queryPlanTTL = 1000,
     useErrorsOverWarnings = false,
-    nonIndexedLabelWarningThreshold = 10000
+    nonIndexedLabelWarningThreshold = 10000,
+    idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
+    idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
+    errorIfShortestPathFallbackUsedAtRuntime = false
   )
   val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors], config, RewriterStepSequencer.newValidating)
 

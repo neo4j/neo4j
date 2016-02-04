@@ -43,6 +43,7 @@ object ClauseConverters {
     case c: Remove => addRemoveToLogicalPlanInput(acc, c)
     case c: Merge => addMergeToLogicalPlanInput(acc, c)
     case c: LoadCSV => addLoadCSVToLogicalPlanInput(acc, c)
+    case c: Foreach => addForeachToLogicalPlanInput(acc, c)
 
     case x => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
   }
@@ -124,11 +125,13 @@ object ClauseConverters {
         //remove duplicates from loops, (a:L)-[:ER1]->(a)
         val dedupedNodes = dedup(nodes)
 
+        val seenPatternNodes = acc.allSeenPatternNodes
+
         //create nodes that are not already matched or created
-        val nodesToCreate = dedupedNodes.filterNot(pattern => acc.allSeenPatternNodes(pattern.nodeName))
+        val nodesToCreate = dedupedNodes.filterNot(pattern => seenPatternNodes(pattern.nodeName))
 
         //we must check that we are not trying to set a pattern or label on any already created nodes
-        val nodesCreatedBefore = dedupedNodes.filter(pattern => acc.allSeenPatternNodes(pattern.nodeName))
+        val nodesCreatedBefore = dedupedNodes.filter(pattern => seenPatternNodes(pattern.nodeName))
         nodesCreatedBefore.collectFirst {
           case c if c.labels.nonEmpty || c.properties.nonEmpty =>
             throw new SyntaxException(
@@ -261,18 +264,19 @@ object ClauseConverters {
       SetRelationshipPropertiesFromMapPattern(IdName.fromVariable(rel), expression, removeOtherProps = false)
   }
 
-  private def addMergeToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Merge): PlannerQueryBuilder = {
+  private def addMergeToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Merge): PlannerQueryBuilder = {
+
     val onCreate = clause.actions.collect {
-      case OnCreate(setClause) => setClause.items.map(toSetPattern(acc.semanticTable))
+      case OnCreate(setClause) => setClause.items.map(toSetPattern(builder.semanticTable))
     }.flatten
     val onMatch = clause.actions.collect {
-      case OnMatch(setClause) => setClause.items.map(toSetPattern(acc.semanticTable))
+      case OnMatch(setClause) => setClause.items.map(toSetPattern(builder.semanticTable))
     }.flatten
 
-    clause.pattern.patternParts.foldLeft(acc) {
+    clause.pattern.patternParts.foldLeft(builder) {
       //MERGE (n :L1:L2 {prop: 42})
-      case (builder, EveryPath(NodePattern(Some(id), labels, props))) =>
-        val currentlyAvailableVariables = acc.currentlyAvailableVariables
+      case (acc, EveryPath(NodePattern(Some(id), labels, props))) =>
+        val currentlyAvailableVariables = builder.currentlyAvailableVariables
         val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
         val propertyPredicates = toPropertySelection(id, toPropertyMap(props))
         val createNodePattern = CreateNodePattern(IdName.fromVariable(id), labels, props)
@@ -283,23 +287,26 @@ object ClauseConverters {
           argumentIds = currentlyAvailableVariables
         )
 
-        val queryGraph = matchGraph.addMutatingPatterns(MergeNodePattern(createNodePattern, matchGraph, onCreate, onMatch))
+        val queryGraph = QueryGraph.empty
+          .withArgumentIds(matchGraph.argumentIds)
+          .addMutatingPatterns(MergeNodePattern(createNodePattern, matchGraph, onCreate, onMatch))
 
-        builder
-          .withTail(
-            MergePlannerQuery(queryGraph = queryGraph))
+        acc
+          .withHorizon(PassthroughAllHorizon())
+          .withTail(RegularPlannerQuery(queryGraph = queryGraph))
+          .withHorizon(asQueryProjection(distinct = false, QueryProjection.forIds(queryGraph.allCoveredIds)))
           .withTail(RegularPlannerQuery())
 
       //MERGE (n)-[r: R]->(m)
-      case (builder, EveryPath(pattern: RelationshipChain)) =>
+      case (acc, EveryPath(pattern: RelationshipChain)) =>
         val (nodes, rels) = allCreatePatterns(pattern)
         //remove duplicates from loops, (a:L)-[:ER1]->(a)
         val dedupedNodes = dedup(nodes)
 
         //create nodes that are not already matched or created
-        val nodesToCreate = dedupedNodes.filterNot(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+        val nodesToCreate = dedupedNodes.filterNot(pattern => acc.allSeenPatternNodes(pattern.nodeName))
         //we must check that we are not trying to set a pattern or label on any already created nodes
-        val nodesCreatedBefore = dedupedNodes.filter(pattern => builder.allSeenPatternNodes(pattern.nodeName)).toSet
+        val nodesCreatedBefore = dedupedNodes.filter(pattern => acc.allSeenPatternNodes(pattern.nodeName)).toSet
 
         nodesCreatedBefore.collectFirst {
           case c if c.labels.nonEmpty || c.properties.nonEmpty =>
@@ -323,14 +330,18 @@ object ClauseConverters {
           patternRelationships = rels.map(r => PatternRelationship(r.relName, (r.leftNode, r.rightNode),
             r.direction, Seq(r.relType), SimplePatternLength)).toSet,
           selections = Selections.from(hasLabels ++ hasProps:_*),
-          argumentIds = acc.currentlyAvailableVariables ++ nodesCreatedBefore.map(_.nodeName)
+          argumentIds = builder.currentlyAvailableVariables ++ nodesCreatedBefore.map(_.nodeName)
         )
 
-        val queryGraph = matchGraph.addMutatingPatterns(MergeRelationshipPattern(nodesToCreate, rels, matchGraph, onCreate, onMatch))
+        val queryGraph = QueryGraph.empty
+          .withArgumentIds(matchGraph.argumentIds)
+          .addMutatingPatterns(MergeRelationshipPattern(nodesToCreate, rels, matchGraph, onCreate, onMatch))
 
-        builder
-          .withTail(MergePlannerQuery(queryGraph = queryGraph))
-          .withTail(RegularPlannerQuery())
+        acc.
+          withHorizon(PassthroughAllHorizon()).
+          withTail(RegularPlannerQuery(queryGraph = queryGraph)).
+          withHorizon(asQueryProjection(distinct = false, QueryProjection.forIds(queryGraph.allCoveredIds))).
+          withTail(RegularPlannerQuery())
 
       case _ => throw new CantHandleQueryException("not supported yet")
     }
@@ -391,6 +402,46 @@ object ClauseConverters {
           exp = clause.expression)
       ).
       withTail(PlannerQuery.empty)
+
+  private def addForeachToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Foreach): PlannerQueryBuilder = {
+    val currentlyAvailableVariables = builder.currentlyAvailableVariables
+
+    val setOfNodeVariables =
+      if (builder.semanticTable.isNode(clause.variable))
+        Set(IdName.fromVariable(clause.variable))
+      else Set.empty
+
+    val foreachVariable = IdName.fromVariable(clause.variable)
+    val projectionToInnerUpdates = asQueryProjection(distinct = false, QueryProjection
+      .forIds(currentlyAvailableVariables + foreachVariable))
+
+    val innerBuilder = new PlannerQueryBuilder(PlannerQuery.empty, builder.semanticTable)
+      .amendQueryGraph(_.addPatternNodes((builder.allSeenPatternNodes ++ setOfNodeVariables).toSeq:_*)
+                        .addArgumentIds(foreachVariable +: currentlyAvailableVariables.toSeq))
+      .withHorizon(projectionToInnerUpdates)
+
+    val innerPlannerQuery = clause.updates.foldLeft(innerBuilder) {
+      case (acc, innerClause) => addToLogicalPlanInput(acc, innerClause)
+    }.build()
+
+    val foreachPattern = ForeachPattern(
+      variable = IdName(clause.variable.name),
+      expression = clause.expression,
+      innerUpdates = innerPlannerQuery)
+
+    val foreachGraph = QueryGraph(
+      argumentIds = currentlyAvailableVariables,
+      mutatingPatterns = Seq(foreachPattern)
+    )
+
+    // Since foreach can contain reads (via inner merge) we put it in its own separate planner query
+    // to maintain the strict ordering of reads followed by writes within a single planner query
+    builder
+      .withHorizon(PassthroughAllHorizon())
+      .withTail(RegularPlannerQuery(queryGraph = foreachGraph))
+      .withHorizon(PassthroughAllHorizon()) // NOTE: We do not expose anything from foreach itself
+      .withTail(RegularPlannerQuery())
+  }
 
   private def addStartToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Start): PlannerQueryBuilder = {
     builder.amendQueryGraph { qg =>

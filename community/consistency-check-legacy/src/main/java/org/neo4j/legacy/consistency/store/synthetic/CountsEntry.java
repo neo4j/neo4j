@@ -32,14 +32,23 @@ import org.neo4j.legacy.consistency.store.DiffRecordAccess;
  */
 public class CountsEntry extends AbstractBaseRecord
 {
-    private final CountsKey key;
-    private final long count;
+    private CountsKey key;
+    private long count;
 
     public CountsEntry( CountsKey key, long count )
     {
+        super( -1 );
         this.key = key;
         this.count = count;
         setInUse( true );
+    }
+
+    @Override
+    public void clear()
+    {
+        super.clear();
+        key = null;
+        count = 0;
     }
 
     @Override
@@ -49,7 +58,13 @@ public class CountsEntry extends AbstractBaseRecord
     }
 
     @Override
-    public long getLongId()
+    public void setId( long id )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getId()
     {
         throw new UnsupportedOperationException();
     }

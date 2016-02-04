@@ -31,6 +31,8 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.Token;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+
 public class PropertyDeduplicatorTestUtil
 {
     public static Map<String, Integer> indexPropertyKeys( PropertyKeyTokenStore propertyKeyTokenStore )
@@ -68,7 +70,7 @@ public class PropertyDeduplicatorTestUtil
         long nextProp = record.getNextProp();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propertyRecord = propertyStore.getRecord( nextProp );
+            PropertyRecord propertyRecord = propertyStore.getRecord( nextProp, propertyStore.newRecord(), FORCE );
             for ( PropertyBlock propertyBlock : propertyRecord )
             {
                 if ( propertyBlock.getKeyIndexId() == original.id() )
