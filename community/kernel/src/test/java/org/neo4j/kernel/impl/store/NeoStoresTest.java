@@ -238,7 +238,7 @@ public class NeoStoresTest
         {
             nodeIds[i] = nextId( Node.class );
             transaction.nodeDoCreate( nodeIds[i] );
-            nodeAddProperty( nodeIds[i], index( "nisse" ), new Integer( 10 - i ) );
+            nodeAddProperty( nodeIds[i], index( "nisse" ), 10 - i );
         }
         for ( int i = 0; i < 2; i++ )
         {

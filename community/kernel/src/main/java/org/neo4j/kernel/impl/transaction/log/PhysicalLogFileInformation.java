@@ -29,17 +29,17 @@ public class PhysicalLogFileInformation implements LogFileInformation
     }
 
     private final PhysicalLogFiles logFiles;
-    private final TransactionMetadataCache transactionMetadataCache;
+    private final LogHeaderCache logHeaderCache;
     private final TransactionIdStore transactionIdStore;
     private final LogVersionToTimestamp logVersionToTimestamp;
 
     public PhysicalLogFileInformation( PhysicalLogFiles logFiles,
-                                       TransactionMetadataCache transactionMetadataCache,
+                                       LogHeaderCache logHeaderCache,
                                        TransactionIdStore transactionIdStore,
                                        LogVersionToTimestamp logVersionToTimestamp )
     {
         this.logFiles = logFiles;
-        this.transactionMetadataCache = transactionMetadataCache;
+        this.logHeaderCache = logHeaderCache;
         this.transactionIdStore = transactionIdStore;
         this.logVersionToTimestamp = logVersionToTimestamp;
     }
@@ -64,7 +64,7 @@ public class PhysicalLogFileInformation implements LogFileInformation
     @Override
     public long getFirstCommittedTxId( long version ) throws IOException
     {
-        long logHeader = transactionMetadataCache.getLogHeader( version );
+        long logHeader = logHeaderCache.getLogHeader( version );
         if ( logHeader != -1 )
         {   // It existed in cache
             return logHeader + 1;
@@ -74,7 +74,7 @@ public class PhysicalLogFileInformation implements LogFileInformation
         if ( logFiles.versionExists( version ) )
         {
             long previousVersionLastCommittedTx = logFiles.extractHeader( version ).lastCommittedTxId;
-            transactionMetadataCache.putHeader( version, previousVersionLastCommittedTx );
+            logHeaderCache.putHeader( version, previousVersionLastCommittedTx );
             return previousVersionLastCommittedTx + 1;
         }
         return -1;

@@ -58,9 +58,8 @@ public class PhysicalLogFileTest
         String name = "log";
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        life.add( new PhysicalLogFile( fs, logFiles, 1000,
-                transactionIdStore, logVersionRepository, mock( Monitor.class ),
-                new TransactionMetadataCache( 10, 100 ) ));
+        life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore::getLastCommittedTransactionId,
+                logVersionRepository, mock( Monitor.class ), new LogHeaderCache( 10 ) ) );
 
         // WHEN
         life.start();
@@ -82,8 +81,8 @@ public class PhysicalLogFileTest
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         Monitor monitor = mock( Monitor.class );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
-                transactionIdStore, logVersionRepository, monitor,
-                new TransactionMetadataCache( 10, 100 ) ) );
+                transactionIdStore::getLastCommittedTransactionId, logVersionRepository, monitor,
+                new LogHeaderCache( 10 ) ) );
 
         // WHEN
         try
@@ -120,8 +119,8 @@ public class PhysicalLogFileTest
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
-                transactionIdStore, logVersionRepository, mock( Monitor.class ),
-                new TransactionMetadataCache( 10, 100 ) ) );
+                transactionIdStore::getLastCommittedTransactionId, logVersionRepository, mock( Monitor.class ),
+                new LogHeaderCache( 10 ) ) );
 
         // WHEN
         life.start();
@@ -172,8 +171,8 @@ public class PhysicalLogFileTest
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
-                transactionIdStore, logVersionRepository, mock( Monitor.class ),
-                new TransactionMetadataCache( 10, 100 )) );
+                transactionIdStore::getLastCommittedTransactionId, logVersionRepository, mock( Monitor.class ),
+                new LogHeaderCache( 10 ) ) );
         life.start();
         FlushablePositionAwareChannel writer = logFile.getWriter();
         LogPositionMarker mark = new LogPositionMarker();

@@ -22,7 +22,6 @@ package org.neo4j.coreedge.catchup.tx.edge;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
-import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
 import org.neo4j.coreedge.server.edge.EdgeToCoreConnectionStrategy;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;

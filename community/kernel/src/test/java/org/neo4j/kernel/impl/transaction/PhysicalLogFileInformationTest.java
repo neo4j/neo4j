@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -37,7 +38,7 @@ public class PhysicalLogFileInformationTest
 {
 
     private PhysicalLogFiles logFiles = mock( PhysicalLogFiles.class );
-    private TransactionMetadataCache transactionMetadataCache = mock( TransactionMetadataCache.class );
+    private LogHeaderCache logHeaderCache = mock( LogHeaderCache.class );
     private TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
     private PhysicalLogFileInformation.LogVersionToTimestamp
             logVersionToTimestamp = mock( PhysicalLogFileInformation.LogVersionToTimestamp.class );
@@ -45,31 +46,31 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReadAndCacheFirstCommittedTransactionIdForAGivenVersionWhenNotCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles,
-                transactionMetadataCache, transactionIdStore, logVersionToTimestamp );
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore,
+                logVersionToTimestamp );
         long expected = 5;
 
-        long version = 10l;
-        when( transactionMetadataCache.getLogHeader( version ) ).thenReturn( -1l );
+        long version = 10L;
+        when( logHeaderCache.getLogHeader( version ) ).thenReturn( -1L );
         when( logFiles.versionExists( version ) ).thenReturn( true );
         when( logFiles.extractHeader( version ) ).thenReturn(
-                new LogHeader( (byte) -1/*ignored*/, -1l/*ignored*/, expected - 1l )
+                new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L )
         );
 
         long firstCommittedTxId = info.getFirstCommittedTxId( version );
         assertEquals( expected, firstCommittedTxId );
-        verify( transactionMetadataCache, times( 1 ) ).putHeader( version, expected - 1 );
+        verify( logHeaderCache, times( 1 ) ).putHeader( version, expected - 1 );
     }
 
     @Test
     public void shouldReadFirstCommittedTransactionIdForAGivenVersionWhenCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles,
-                transactionMetadataCache, transactionIdStore, logVersionToTimestamp );
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore,
+                logVersionToTimestamp );
         long expected = 5;
 
-        long version = 10l;
-        when( transactionMetadataCache.getLogHeader( version ) ).thenReturn( expected - 1 );
+        long version = 10L;
+        when( logHeaderCache.getLogHeader( version ) ).thenReturn( expected - 1 );
 
         long firstCommittedTxId = info.getFirstCommittedTxId( version );
         assertEquals( expected, firstCommittedTxId );
@@ -78,35 +79,35 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReadAndCacheFirstCommittedTransactionIdWhenNotCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles,
-                transactionMetadataCache, transactionIdStore, logVersionToTimestamp );
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore,
+                logVersionToTimestamp );
         long expected = 5;
 
-        long version = 10l;
+        long version = 10L;
         when( logFiles.getHighestLogVersion() ).thenReturn( version );
-        when( transactionMetadataCache.getLogHeader( version ) ).thenReturn( -1l );
+        when( logHeaderCache.getLogHeader( version ) ).thenReturn( -1L );
         when( logFiles.versionExists( version ) ).thenReturn( true );
         when( logFiles.extractHeader( version ) ).thenReturn(
-                new LogHeader( (byte) -1/*ignored*/, -1l/*ignored*/, expected - 1l )
+                new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L )
         );
         when( logFiles.hasAnyTransaction( version ) ).thenReturn( true );
 
         long firstCommittedTxId = info.getFirstExistingTxId();
         assertEquals( expected, firstCommittedTxId );
-        verify( transactionMetadataCache, times( 1 ) ).putHeader( version, expected - 1 );
+        verify( logHeaderCache, times( 1 ) ).putHeader( version, expected - 1 );
     }
 
     @Test
     public void shouldReadFirstCommittedTransactionIdWhenCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles,
-                transactionMetadataCache, transactionIdStore, logVersionToTimestamp );
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore,
+                logVersionToTimestamp );
         long expected = 5;
 
-        long version = 10l;
+        long version = 10L;
         when( logFiles.getHighestLogVersion() ).thenReturn( version );
         when( logFiles.versionExists( version ) ).thenReturn( true );
-        when( transactionMetadataCache.getLogHeader( version ) ).thenReturn( expected -1 );
+        when( logHeaderCache.getLogHeader( version ) ).thenReturn( expected -1 );
         when( logFiles.hasAnyTransaction( version ) ).thenReturn( true );
 
         long firstCommittedTxId = info.getFirstExistingTxId();
@@ -116,10 +117,10 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReturnNothingWhenThereAreNoTransactions() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles,
-                transactionMetadataCache, transactionIdStore, logVersionToTimestamp );
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore,
+                logVersionToTimestamp );
 
-        long version = 10l;
+        long version = 10L;
         when( logFiles.getHighestLogVersion() ).thenReturn( version );
         when( logFiles.hasAnyTransaction( version ) ).thenReturn( false );
 

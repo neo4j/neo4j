@@ -95,6 +95,7 @@ import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogFileRecoverer;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
@@ -571,13 +572,15 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering,
             TransactionIdStore transactionIdStore, LogVersionRepository logVersionRepository )
     {
-        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1000, 100_000 );
+        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100_000 );
+        LogHeaderCache logHeaderCache = new LogHeaderCache( 1000 );
         final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, PhysicalLogFile.DEFAULT_NAME,
                 fileSystemAbstraction );
 
         final PhysicalLogFile logFile = life.add( new PhysicalLogFile( fileSystemAbstraction, logFiles,
-                config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), transactionIdStore,
-                logVersionRepository, physicalLogMonitor, transactionMetadataCache ) );
+                config.get( GraphDatabaseSettings.logical_log_rotation_threshold ),
+                transactionIdStore::getLastCommittedTransactionId, logVersionRepository, physicalLogMonitor,
+                logHeaderCache ) );
 
         final PhysicalLogFileInformation.LogVersionToTimestamp
                 logInformation = new PhysicalLogFileInformation.LogVersionToTimestamp()
@@ -601,7 +604,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             }
         };
         final LogFileInformation logFileInformation =
-                new PhysicalLogFileInformation( logFiles, transactionMetadataCache, transactionIdStore, logInformation );
+                new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore, logInformation );
 
         String pruningConf = config.get(
                 config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral )

@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -228,12 +230,13 @@ public class StoreCopyClient
         {
             // Start the log and appender
             PhysicalLogFiles logFiles = new PhysicalLogFiles( tempStoreDir, fs );
-            TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 100 );
+            LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
             ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, tempStoreDir );
+            ReadOnlyTransactionIdStore readOnlyTransactionIdStore = new ReadOnlyTransactionIdStore(
+                    pageCache, tempStoreDir );
             LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
-                    new ReadOnlyTransactionIdStore( pageCache, tempStoreDir ), logVersionRepository,
-                    new Monitors().newMonitor( PhysicalLogFile.Monitor.class ),
-                    transactionMetadataCache ) );
+                    readOnlyTransactionIdStore::getLastCommittedTransactionId, logVersionRepository,
+                    new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             life.start();
 
             // Just write all transactions to the active log version. Remember that this is after a store copy

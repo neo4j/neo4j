@@ -24,29 +24,15 @@ import org.neo4j.helpers.collection.LruCache;
 public class TransactionMetadataCache
 {
     private final LruCache<Long /*tx id*/, TransactionMetadata> txStartPositionCache;
-    private final LruCache<Long /*log version*/, Long /*last committed tx*/> logHeaderCache;
 
-    public TransactionMetadataCache( int headerCacheSize, int transactionCacheSize )
+    public TransactionMetadataCache( int transactionCacheSize )
     {
-        this.logHeaderCache = new LruCache<>( "Log header cache", headerCacheSize );
         this.txStartPositionCache = new LruCache<>( "Tx start position cache", transactionCacheSize );
     }
 
     public void clear()
     {
-        logHeaderCache.clear();
         txStartPositionCache.clear();
-    }
-
-    public void putHeader( long logVersion, long previousLogLastCommittedTx )
-    {
-        logHeaderCache.put( logVersion, previousLogLastCommittedTx );
-    }
-
-    public long getLogHeader( long logVersion )
-    {
-        Long value = logHeaderCache.get( logVersion );
-        return value == null ? -1 : value;
     }
 
     public TransactionMetadata getTransactionMetadata( long txId )

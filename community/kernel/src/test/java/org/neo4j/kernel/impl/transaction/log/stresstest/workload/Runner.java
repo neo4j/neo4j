@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -69,9 +70,10 @@ public class Runner implements Callable<Long>
         try ( Lifespan life = new Lifespan() )
         {
             TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
-            TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1000, 100_000 );
+            TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100_000 );
+            LogHeaderCache logHeaderCache = new LogHeaderCache( 1000 );
 
-            LogFile logFile = life.add( createPhysicalLogFile( transactionIdStore, transactionMetadataCache ) );
+            LogFile logFile = life.add( createPhysicalLogFile( transactionIdStore, logHeaderCache ) );
 
             TransactionAppender transactionAppender = life.add(
                     createBatchingTransactionAppender( transactionIdStore, transactionMetadataCache, logFile ) );
@@ -117,15 +119,16 @@ public class Runner implements Callable<Long>
     }
 
     private PhysicalLogFile createPhysicalLogFile( TransactionIdStore transactionIdStore,
-            TransactionMetadataCache transactionMetadataCache )
+            LogHeaderCache logHeaderCache )
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fs );
         long rotateAtSize = Settings.BYTES.apply(
                 GraphDatabaseSettings.logical_log_rotation_threshold.getDefaultValue() );
         DeadSimpleLogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 0 );
-        return new PhysicalLogFile( fs, logFiles, rotateAtSize, transactionIdStore,
-                logVersionRepository, NOOP_LOGFILE_MONITOR, transactionMetadataCache );
+        return new PhysicalLogFile( fs, logFiles, rotateAtSize,
+                transactionIdStore::getLastCommittedTransactionId, logVersionRepository, NOOP_LOGFILE_MONITOR,
+                logHeaderCache );
     }
 
     private static final PhysicalLogFile.Monitor NOOP_LOGFILE_MONITOR = new PhysicalLogFile.Monitor()
