@@ -48,7 +48,8 @@ case class ProcedureExecutionResult[E <: Exception](taskCloser: TaskCloser,
   override def javaColumns: java.util.List[String] = signature.outputSignature.seq.map(_.name).asJava
 
   override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
-    signature.mode.call(context, signature, args.map(asJavaCompatible)).foreach { res =>
+    val call: Iterator[Array[AnyRef]] = signature.mode.call(context, signature, args.map(asJavaCompatible))
+    call.foreach { res =>
       var i = 0
       val row = new ResultRowImpl
       signature.outputSignature.foreach { f =>

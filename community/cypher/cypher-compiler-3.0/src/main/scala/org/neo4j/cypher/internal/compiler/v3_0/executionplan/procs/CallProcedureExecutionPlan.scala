@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, InternalExecutionResult, READ_ONLY}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, GraphStatistics, ProcedureSignature, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, ExecutionMode, ExplainExecutionResult, ExplainMode, ProcedurePlannerName, ProcedureRuntimeName, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.{ParameterNotFoundException, InvalidArgumentException}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
@@ -58,8 +58,14 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArg
       taskCloser.close(success = true)
       new ExplainExecutionResult(signature.outputSignature.seq.map(_.name).toList,
         description, READ_ONLY, Set.empty)
-    } else
-      ProcedureExecutionResult(taskCloser, ctx, signature, input, description, planType)
+    } else {
+      val result: ProcedureExecutionResult[Nothing] = ProcedureExecutionResult(taskCloser, ctx, signature, input, description, planType)
+      // Naive eagerization for now, refactor as need arises
+      if( signature.mode == ProcReadWrite )
+        result.toEagerIterableResult(ProcedurePlannerName, ProcedureRuntimeName)
+      else result
+
+    }
   }
 
   private def fail(f: FieldSignature, ctx: QueryContext) = {
