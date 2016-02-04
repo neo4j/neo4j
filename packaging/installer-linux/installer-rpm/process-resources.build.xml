@@ -4,13 +4,13 @@
            compression="gzip" dest="${project.build.directory}"/>
 
     <replaceregexp
-            file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j-server.properties"
+            file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j.properties"
             match="org.neo4j.server.database.location=.*"
             replace="org.neo4j.server.database.location=/var/lib/neo4j"
             />
 
     <replaceregexp
-            file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j-server.properties"
+            file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j.properties"
             match="org.neo4j.server.http.log.enabled=false"
             replace="org.neo4j.server.http.log.enabled=true"
             />

@@ -4,7 +4,6 @@
 #
 # chkconfig: 2345 99 20
 # processname: java
-# config:      /etc/neo4j/neo4j-server.properties
 # config:      /etc/neo4j/neo4j.properties
 # pidfile:     /var/run/neo4j.pid
 # Provides:          neo4j-service

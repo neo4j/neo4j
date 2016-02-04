@@ -64,7 +64,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     @Title( "Enforcing Server Authorization Rules" )
     @Documented( "In this example, a (dummy) failing security rule is registered to deny\n" +
                  "access to all URIs to the server by listing the rules class in\n" +
-                 "'neo4j-server.properties':\n" +
+                 "'neo4j.properties':\n" +
                  "\n" +
                  "@@config\n" +
                  "\n" +
@@ -162,7 +162,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     @Title( "Using Wildcards to Target Security Rules" )
     @Documented( "In this example, a security rule is registered to deny\n" +
                  "access to all URIs to the server by listing the rule(s) class(es) in\n" +
-                 "'neo4j-server.properties'.\n" +
+                 "'neo4j.properties'.\n" +
                  "In this case, the rule is registered\n" +
                  "using a wildcard URI path (where `*` characters can be used to signify\n" +
                  "any part of the path). For example `/users*` means the rule\n" +

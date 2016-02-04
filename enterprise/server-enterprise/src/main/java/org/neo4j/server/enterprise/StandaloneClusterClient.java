@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.enterprise;
 
-import org.jboss.netty.channel.ChannelException;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -28,20 +26,21 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.jboss.netty.channel.ChannelException;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.function.Predicates;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
@@ -50,20 +49,12 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.neo4j.helpers.Exceptions.peel;
-import static org.neo4j.helpers.collection.MapUtil.loadStrictly;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
- * Wrapper around a {@link ClusterClient} to fit the environment of the Neo4j server,
- * mostly regarding the use of the server config file passed in from the script starting
- * this class. That server config file will be parsed and necessary parts passed on.
+ * Wrapper around a {@link ClusterClient} to fit the environment of the Neo4j server.
  * <p>
- * Configuration of the cluster client can be specified by
- * <ol>
- * <li>reading from a db tuning file (neo4j.properties) appointed by the neo4j server configuration file,
- * specified from org.neo4j.server.properties system property.</li>
- * <li>
- * </li>
+ * Configuration of the cluster client can be specified in the neo4j configuration file, specified by the
+ * org.neo4j.config.file system property.
  *
  * @author Mattias Persson
  */
@@ -104,33 +95,19 @@ public class StandaloneClusterClient
         } );
     }
 
-
     public static void main( String[] args ) throws IOException
     {
-        String propertiesFile = System.getProperty( ServerSettings.SERVER_CONFIG_FILE_KEY );
-        File dbProperties = extractDbTuningProperties( propertiesFile );
-        Map<String, String> config = stringMap();
-        if ( dbProperties != null )
-        {
-            if ( !dbProperties.exists() )
-            {
-                throw new IllegalArgumentException( dbProperties + " doesn't exist" );
-            }
-            config = readFromConfigConfig( config, dbProperties );
-        }
-        config.putAll( Args.parse( args ).asMap() );
-        verifyConfig( config );
         try
         {
-            JobScheduler jobScheduler = new Neo4jJobScheduler();
-            LogService logService = logService( new DefaultFileSystemAbstraction() );
-
             LifeSupport life = new LifeSupport();
-            life.add(jobScheduler);
-            Dependencies dependencies = new Dependencies();
+            life.add( new Neo4jJobScheduler() );
 
-            // start network communication
-            new ClusterClientModule( life, dependencies, new Monitors(), new Config( config ), logService,
+            new ClusterClientModule(
+                    life,
+                    new Dependencies(),
+                    new Monitors(),
+                    getConfig( args ),
+                    logService( new DefaultFileSystemAbstraction() ),
                     new NotElectableElectionCredentialsProvider() );
 
             new StandaloneClusterClient( life );
@@ -152,6 +129,28 @@ public class StandaloneClusterClient
         }
     }
 
+    private static Config getConfig( String[] args ) throws IOException
+    {
+        Map<String, String> config = new HashMap<>();
+        String configPath = System.getProperty( ServerSettings.SERVER_CONFIG_FILE_KEY );
+        if ( configPath != null )
+        {
+            File configFile = new File( configPath );
+            if ( configFile.exists() )
+            {
+                config.putAll( MapUtil.load( configFile ) );
+            }
+            else
+            {
+                throw new IllegalArgumentException( configFile + " doesn't exist" );
+            }
+        }
+
+        config.putAll( Args.parse( args ).asMap() );
+        verifyConfig( config );
+        return new Config( config );
+    }
+
     private static void verifyConfig( Map<String, String> config )
     {
         if ( !config.containsKey( ClusterSettings.initial_hosts.name() ) )
@@ -166,32 +165,6 @@ public class StandaloneClusterClient
         }
     }
 
-    private static Map<String, String> readFromConfigConfig( Map<String, String> config, File propertiesFile )
-    {
-        Map<String, String> result = new HashMap<String, String>( config );
-        Map<String, String> existingConfig = loadStrictly( propertiesFile );
-        for ( Setting<?> setting : new Setting[]{
-                ClusterSettings.initial_hosts,
-                ClusterSettings.cluster_name,
-                ClusterSettings.cluster_server,
-                ClusterSettings.server_id} )
-        // TODO add timeouts
-        {
-            moveOver( existingConfig, result, setting );
-        }
-
-        return result;
-    }
-
-    private static void moveOver( Map<String, String> from, Map<String, String> to, Setting<?> setting )
-    {
-        String key = setting.name();
-        if ( from.containsKey( key ) )
-        {
-            to.put( key, from.get( key ) );
-        }
-    }
-
     private static LogService logService( FileSystemAbstraction fileSystem ) throws IOException
     {
         File home = new File( System.getProperty( "neo4j.home" ) );
@@ -199,27 +172,5 @@ public class StandaloneClusterClient
                 new File( new File( new File( home, "data" ), "log" ), "arbiter" ).getAbsolutePath() );
         return StoreLogService.withUserLogProvider( FormattedLogProvider.toOutputStream( System.out ) )
                 .inStoreDirectory( fileSystem, new File( logDir ) );
-    }
-
-    private static File extractDbTuningProperties( String propertiesFile )
-    {
-        if ( propertiesFile == null )
-        {
-            return null;
-        }
-        File serverConfigFile = new File( propertiesFile );
-        if ( !serverConfigFile.exists() )
-        {
-            return null;
-        }
-
-        Map<String, String> serverConfig = loadStrictly( serverConfigFile );
-        String dbTuningFile = serverConfig.get( ServerSettings.legacy_db_config.name() );
-        if ( dbTuningFile == null )
-        {
-            return null;
-        }
-        File result = new File( dbTuningFile );
-        return result.exists() ? result : null;
     }
 }

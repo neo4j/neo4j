@@ -19,9 +19,7 @@
  */
 package org.neo4j.server.helpers;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,9 +29,6 @@ import java.util.Properties;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.FakeClock;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
@@ -58,10 +53,9 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
-import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
-import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class CommunityServerBuilder
@@ -76,26 +70,13 @@ public class CommunityServerBuilder
     private final HashMap<String, String> thirdPartyPackages = new HashMap<>();
     private final Properties arbitraryProperties = new Properties();
 
-    public static LifecycleManagingDatabase.GraphFactory IN_MEMORY_DB = new LifecycleManagingDatabase.GraphFactory()
-    {
-        @Override
-        public GraphDatabaseAPI newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
-        {
-            File storeDir = config.get( ServerSettings.legacy_db_location );
-            Map<String, String> params = config.getParams();
-            params.put( CommunityFacadeFactory.Configuration.ephemeral.name(), "true" );
-            return new ImpermanentGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(dependencies) );
-        }
+    public static LifecycleManagingDatabase.GraphFactory IN_MEMORY_DB = ( config, dependencies ) -> {
+        File storeDir = config.get( ServerSettings.legacy_db_location );
+        Map<String, String> params = config.getParams();
+        params.put( CommunityFacadeFactory.Configuration.ephemeral.name(), "true" );
+        return new ImpermanentGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(dependencies) );
     };
 
-    private enum WhatToDo
-    {
-        CREATE_GOOD_TUNING_FILE,
-        CREATE_DANGLING_TUNING_FILE_PROPERTY,
-        CREATE_CORRUPT_TUNING_FILE
-    }
-
-    private WhatToDo action;
     protected Clock clock = null;
     private String[] autoIndexedNodeKeys = null;
     private String[] autoIndexedRelationshipKeys = null;
@@ -140,8 +121,7 @@ public class CommunityServerBuilder
         File temporaryConfigFile = createTempPropertyFile();
         File temporaryFolder = temporaryConfigFile.getParentFile();
 
-        createPropertiesFile( temporaryFolder, temporaryConfigFile );
-        createTuningFile( temporaryConfigFile );
+        ServerTestUtils.writePropertiesToFile( createConfiguration( temporaryFolder ), temporaryConfigFile );
 
         return temporaryConfigFile;
     }
@@ -152,9 +132,9 @@ public class CommunityServerBuilder
         return this;
     }
 
-    private void createPropertiesFile( File temporaryFolder, File temporaryConfigFile )
+    private Map<String, String> createConfiguration( File temporaryFolder )
     {
-        Map<String, String> properties = MapUtil.stringMap(
+        Map<String, String> properties = stringMap(
                 ServerSettings.management_api_path.name(), webAdminUri,
                 ServerSettings.rest_api_path.name(), webAdminDataUri );
 
@@ -216,53 +196,13 @@ public class CommunityServerBuilder
         }
 
         properties.put( ServerSettings.auth_enabled.name(), "false" );
+        properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
 
         for ( Object key : arbitraryProperties.keySet() )
         {
             properties.put( String.valueOf( key ), String.valueOf( arbitraryProperties.get( key ) ) );
         }
-
-        ServerTestUtils.writePropertiesToFile( properties, temporaryConfigFile );
-    }
-
-    public static final Map<String, String> good_tuning_file_properties =
-            MapUtil.stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-
-    private void createTuningFile( File temporaryConfigFile ) throws IOException
-    {
-        if ( action == WhatToDo.CREATE_GOOD_TUNING_FILE )
-        {
-            File databaseTuningPropertyFile = createTempPropertyFile();
-            writePropertiesToFile( good_tuning_file_properties, databaseTuningPropertyFile );
-            writePropertyToFile( ServerSettings.legacy_db_config.name(),
-                    databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile );
-        }
-        else if ( action == WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY )
-        {
-            writePropertyToFile( ServerSettings.legacy_db_config.name(), createTempPropertyFile().getAbsolutePath(),
-                    temporaryConfigFile );
-        }
-        else if ( action == WhatToDo.CREATE_CORRUPT_TUNING_FILE )
-        {
-            File corruptTuningFile = trashFile();
-            writePropertyToFile( ServerSettings.legacy_db_config.name(), corruptTuningFile.getAbsolutePath(),
-                    temporaryConfigFile );
-        }
-    }
-
-    private File trashFile() throws IOException
-    {
-        File f = createTempPropertyFile();
-
-        try ( FileWriter fstream = new FileWriter( f, true ); BufferedWriter out = new BufferedWriter( fstream ) )
-        {
-            for ( int i = 0; i < 100; i++ )
-            {
-                out.write( (int) System.currentTimeMillis() );
-            }
-        }
-
-        return f;
+        return properties;
     }
 
     protected CommunityServerBuilder( LogProvider logProvider )
@@ -336,54 +276,8 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder withFailingPreflightTasks()
-    {
-        preflightTasks = new PreFlightTasks( NullLogProvider.getInstance() )
-        {
-            @Override
-            public boolean run()
-            {
-                return false;
-            }
-
-            @Override
-            public PreflightTask failedTask()
-            {
-                return new PreflightTask()
-                {
-
-                    @Override
-                    public String getFailureMessage()
-                    {
-                        return "mockFailure";
-                    }
-
-                    @Override
-                    public boolean run()
-                    {
-                        return false;
-                    }
-                };
-            }
-        };
-        return this;
-    }
-
     public CommunityServerBuilder withDefaultDatabaseTuning()
     {
-        action = WhatToDo.CREATE_GOOD_TUNING_FILE;
-        return this;
-    }
-
-    public CommunityServerBuilder withNonResolvableTuningFile()
-    {
-        action = WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY;
-        return this;
-    }
-
-    public CommunityServerBuilder withCorruptTuningFile()
-    {
-        action = WhatToDo.CREATE_CORRUPT_TUNING_FILE;
         return this;
     }
 
@@ -393,21 +287,9 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder withFakeClock()
-    {
-        clock = new FakeClock();
-        return this;
-    }
-
     public CommunityServerBuilder withAutoIndexingEnabledForNodes( String... keys )
     {
         autoIndexedNodeKeys = keys;
-        return this;
-    }
-
-    public CommunityServerBuilder withAutoIndexingEnabledForRelationships( String... keys )
-    {
-        autoIndexedRelationshipKeys = keys;
         return this;
     }
 

@@ -227,27 +227,6 @@ public abstract class MapUtil
     }
 
     /**
-     * Loads a {@link Map} from a {@link File} assuming strings as keys
-     * and values. Any {@link IOException} is wrapped and thrown as a
-     * {@link RuntimeException} instead.
-     *
-     * @param file the {@link File} containing a {@link Properties}-like
-     * layout of keys and values.
-     * @return the read data as a {@link Map}.
-     */
-    public static Map<String, String> loadStrictly( File file )
-    {
-        try
-        {
-            return load( file );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    /**
      * Stores the data in {@code config} into {@code file} in a standard java
      * {@link Properties} format.
      * @param config the data to store in the properties file.

@@ -19,12 +19,6 @@
  */
 package org.neo4j.storeupgrade;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
@@ -37,6 +31,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -82,6 +82,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -202,7 +203,6 @@ public class StoreUpgradeIntegrationTest
             Properties props = new Properties();
             props.putAll( ServerTestUtils.getDefaultRelativeProperties() );
             props.setProperty( ServerSettings.legacy_db_location.name(), dir.getAbsolutePath() );
-            props.setProperty( ServerSettings.legacy_db_config.name(), configFile.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
             props.store( new FileWriter( configFile ), "" );

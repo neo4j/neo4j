@@ -34,28 +34,11 @@ import org.neo4j.shell.ShellSettings;
 
 import static java.util.Arrays.asList;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.server.configuration.ServerSettings.legacy_db_config;
 
-/**
- * This is responsible for loading Server Configuration from disk, maintaining backwards-compatibility with several
- * mechanisms of determining where config is located.
- *
- * It loads, currently, config from two locations, matching the behavior where there were two distinct config pipelines
- * [neo4j-server.properties, neo4j.properties]. But both config files are now consolidated internally - the config
- * from both is combined into one config instance.
- */
 public class BaseServerConfigLoader
 {
     public Config loadConfig( File configFile, File legacyConfigFile, Log log, Pair<String, String> ... configOverrides )
-    {
-        return loadConfig( configFile, legacyConfigFile,
-                new File( legacyConfigFile.getParentFile(), ServerSettings.DB_TUNING_CONFIG_FILE_NAME ),
-                log, configOverrides );
-    }
-
-    public Config loadConfig( File configFile, File legacyConfigFile, File legacyDbTuningDefaultFile, Log log, Pair<String, String> ... configOverrides )
     {
         if ( log == null )
         {
@@ -71,10 +54,7 @@ public class BaseServerConfigLoader
             config.augment( loadFromFile( log, configFile ) );
         }
 
-        // Load the two legacy config files
-
-        config.augment( loadServerConfig( legacyConfigFile, log ) );
-        config.augment( loadDBConfig( legacyDbTuningDefaultFile, config, log ) );
+        config.augment( loadFromFile( log, legacyConfigFile ) );
 
         overrideEmbeddedDefaults( config );
         applyUserOverrides( config, configOverrides );
@@ -124,24 +104,6 @@ public class BaseServerConfigLoader
     protected static Iterable<Class<?>> getDefaultSettingsClasses()
     {
         return asList( ServerSettings.class, GraphDatabaseSettings.class );
-    }
-
-    private static Map<String, String> loadServerConfig( File legacyServerConfigFile, Log log )
-    {
-        return loadFromFile( log, legacyServerConfigFile );
-    }
-
-    private static Map<String, String> loadDBConfig( File defaultFile, Config config, Log log )
-    {
-        File legacyDbConfigFile = config.get( legacy_db_config );
-        if ( legacyDbConfigFile == null || !legacyDbConfigFile.exists() )
-        {
-            // try to find the db config file
-            legacyDbConfigFile = defaultFile;
-            config.augment( stringMap( legacy_db_config.name(), legacyDbConfigFile.getAbsolutePath() ) );
-        }
-
-        return loadFromFile( log, legacyDbConfigFile );
     }
 
     private static Map<String,String> loadFromFile( Log log, File file )

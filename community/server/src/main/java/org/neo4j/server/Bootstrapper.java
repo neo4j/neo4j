@@ -187,11 +187,12 @@ public abstract class Bootstrapper
     }
 
     /**
-     * Create a new config instance for the DBMS. For legacy reasons, this method contains convoluted logic to load two additional config files - one
-     * determined by a system property (neo4j-server.properties) and one determined by a config key (neo4j.properties).
+     * Create a new config instance for the DBMS. For legacy reasons, this method contains convoluted logic to load an
+     * additional config file determined by a system property (neo4j.properties).
      *
-     * It will also override defaults set in neo4j embedded (remote shell default on/off, query log file name). Whether it's correct to do that here is
-     * dubious, it makes it confusing in the documentation that the defaults do not match the behavior of the server.
+     * It will also override defaults set in neo4j embedded (remote shell default on/off, query log file name). Whether
+     * it's correct to do that here is dubious, it makes it confusing in the documentation that the defaults do not
+     * match the behavior of the server.
      */
     protected Config createConfig( Log log, File file, Pair<String, String>[] configOverrides ) throws IOException
     {

@@ -54,7 +54,7 @@ The full source code is found here:
 https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/src/main/java/org/neo4j/examples/server/unmanaged/HelloWorldResource.java[HelloWorldResource.java]
 
 Having built your code, the resulting jar file (and any custom dependencies) should be placed in the +$NEO4J_SERVER_HOME/plugins+ directory.
-We also need to tell Neo4j where to look for the extension by adding some configuration in the _conf/neo4j-server.properties_ file:
+We also need to tell Neo4j where to look for the extension by adding some configuration in the _conf/neo4j.properties_ file:
 
 [source]
 ------

@@ -50,9 +50,9 @@ Retrieves all settings for the Neo4j installation as determined by Get-Neo4jHome
 Retrieves all settings with the name 'httpport' from the Neo4j installation at 'C:\Neo4j'
 
 .EXAMPLE
-'C:\Neo4j' | Get-Neo4jSetting -Name 'httpport' -ConfigurationFile @('neo4j.properties','neo4j-server.properties')
+'C:\Neo4j' | Get-Neo4jSetting -Name 'httpport' -ConfigurationFile 'neo4j.properties'
 
-Retrieves all settings with the name 'httpport' from the Neo4j installation at 'C:\Neo4j' in configuration files called 'neo4j.properties' or 'neo4j-server.properties'
+Retrieves all settings with the name 'httpport' from the Neo4j installation at 'C:\Neo4j' in  'neo4j.properties'
 
 .OUTPUTS
 System.Management.Automation.PSCustomObject
@@ -115,7 +115,7 @@ Function Get-Neo4jSetting
     # Set the default list of configuration files    
     if ($ConfigurationFile -eq $null)
     {
-      $ConfigurationFile = ('neo4j.properties','neo4j-server.properties','neo4j-wrapper.conf')
+      $ConfigurationFile = ('neo4j.properties','neo4j-wrapper.conf')
       if ($thisServer.ServerType -eq 'Enterprise') { $ConfigurationFile += 'arbiter-wrapper.conf' }
     }
    

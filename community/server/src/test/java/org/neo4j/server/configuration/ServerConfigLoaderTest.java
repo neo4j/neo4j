@@ -19,17 +19,16 @@
  */
 package org.neo4j.server.configuration;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -92,25 +91,6 @@ public class ServerConfigLoaderTest
         assertNotNull( testConf );
         final String EXPECTED_VALUE = "bar";
         assertEquals( EXPECTED_VALUE, testConf.getParams().get( "foo" ) );
-    }
-
-    @Test
-    public void shouldSupportProvidingDatabaseTuningParametersSeparately() throws IOException
-    {
-        // given
-        File databaseTuningPropertyFile = DatabaseTuningPropertyFileBuilder.builder( folder.getRoot() )
-                .withKernelId( "kernelfromseparatedbtuningfile" )
-                .build();
-        File propertyFileWithDbTuningProperty = PropertyFileBuilder.builder( folder.getRoot() )
-                .withDbTuningPropertyFile( databaseTuningPropertyFile )
-                .build();
-
-        // when
-        Config config = configLoader.loadConfig( null, propertyFileWithDbTuningProperty, log );
-
-        // then
-        assertNotNull( config );
-        assertEquals( config.get( GraphDatabaseSettings.forced_kernel_id ), "kernelfromseparatedbtuningfile" );
     }
 
     @Test
