@@ -317,14 +317,16 @@ public class ImportTool
         Charset inputEncoding;
         boolean skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns;
         Config dbConfig;
+        OutputStream badOutput = null;
 
+        boolean success = false;
         try
         {
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.<File>mandatory(),
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
 
             File badFile = new File( storeDir, BAD_FILE_NAME );
-            OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
+            badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
             nodesFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.NODE_DATA.key() );
             relationshipsFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.RELATIONSHIP_DATA.key() );
             validateInputFiles( nodesFiles, relationshipsFiles );
@@ -350,6 +352,7 @@ public class ImportTool
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector );
             dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.<File>optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
+            success = true;
         }
         catch ( IllegalArgumentException e )
         {
@@ -358,6 +361,13 @@ public class ImportTool
         catch ( IOException e )
         {
             throw andPrintError( "File error", e, false );
+        }
+        finally
+        {
+            if ( !success && badOutput != null )
+            {
+                badOutput.close();
+            }
         }
 
         LifeSupport life = new LifeSupport();
@@ -373,7 +383,7 @@ public class ImportTool
                 ExecutionMonitors.defaultVisible(),
                 dbConfig );
         printOverview( storeDir, nodesFiles, relationshipsFiles );
-        boolean success = false;
+        success = false;
         try
         {
             importer.doImport( input );
@@ -386,6 +396,7 @@ public class ImportTool
         finally
         {
             input.badCollector().close();
+            badOutput.close();
 
             if ( input.badCollector().badEntries() > 0 )
             {
