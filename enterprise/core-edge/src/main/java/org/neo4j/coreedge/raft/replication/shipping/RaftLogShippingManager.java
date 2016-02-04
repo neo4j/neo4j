@@ -51,6 +51,7 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
     private LeaderContext lastLeaderContext;
 
     private boolean running;
+    private boolean destroyed = false;
 
     public RaftLogShippingManager( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog,
                                    Clock clock, MEMBER myself, RaftMembership<MEMBER> membership, long retryTimeMillis,
@@ -71,6 +72,11 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
 
     public synchronized void start( LeaderContext initialLeaderContext )
     {
+        if( destroyed )
+        {
+            return;
+        }
+
         running = true;
 
         for ( MEMBER member : membership.replicationMembers() )
@@ -79,6 +85,12 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
         }
 
         lastLeaderContext = initialLeaderContext;
+    }
+
+    public synchronized void destroy()
+    {
+        stop();
+        destroyed = true;
     }
 
     public synchronized void stop()

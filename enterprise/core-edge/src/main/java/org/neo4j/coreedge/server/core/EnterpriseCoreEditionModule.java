@@ -123,6 +123,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -220,7 +221,6 @@ public class EnterpriseCoreEditionModule
             throw new RuntimeException( e );
         }
 
-
         RaftMembershipState<CoreMember> raftMembershipState;
         try
         {
@@ -240,13 +240,10 @@ public class EnterpriseCoreEditionModule
 
         dependencies.satisfyDependency( raft );
 
-        dependencies.satisfyDependency( raft );
-
         RaftReplicator<CoreMember> replicator = new RaftReplicator<>( raft, myself,
                 new RaftOutbound( loggingOutbound ) );
 
         LocalSessionPool localSessionPool = new LocalSessionPool( myself );
-
 
         OnDiskReplicatedLockTokenState<CoreMember> onDiskReplicatedLockTokenState;
         try
@@ -474,6 +471,14 @@ public class EnterpriseCoreEditionModule
                 raftMembershipManager, logShipping, databaseHealthSupplier, Clock.SYSTEM_CLOCK, monitors );
 
         life.add( new RaftDiscoveryServiceConnector( discoveryService, raftInstance ) );
+
+        life.add( new LifecycleAdapter() {
+            @Override
+            public void shutdown() throws Throwable
+            {
+                logShipping.destroy();
+            }
+        } );
 
         return raftInstance;
     }
