@@ -202,6 +202,8 @@ public class OutputMappers
 
     private List<Field> instanceFields( Class<?> userClass )
     {
-        return asList( userClass.getDeclaredFields() ).stream().filter( ( f ) -> !isStatic( f.getModifiers() ) ).collect( toList() );
+        return asList( userClass.getDeclaredFields() ).stream()
+                .filter( ( f ) -> !isStatic( f.getModifiers() ) && !f.getName().contains( "$" ) )
+                .collect( toList() );
     }
 }

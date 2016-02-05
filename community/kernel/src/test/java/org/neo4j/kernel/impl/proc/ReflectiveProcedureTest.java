@@ -213,6 +213,18 @@ public class ReflectiveProcedureTest
         compile( ProcedureWithStaticContextAnnotatedField.class ).get( 0 );
     }
 
+    @Test
+    public void shouldAllowNonStaticOutput() throws Throwable
+    {
+        // When
+        CallableProcedure proc = compile( ProcedureWithNonStaticOutputRecord.class ).get( 0 );
+
+        // Then
+        assertEquals( 1, proc.signature().outputSignature().size() );
+    }
+
+
+
     public static class MyOutputRecord
     {
         public String name;
@@ -268,6 +280,20 @@ public class ReflectiveProcedureTest
         @Procedure
         public void voidOutput()
         {
+        }
+    }
+
+    public static class ProcedureWithNonStaticOutputRecord
+    {
+        @Procedure
+        public Stream<NonStatic> voidOutput()
+        {
+            return Stream.of(new NonStatic());
+        }
+
+        public class NonStatic
+        {
+            public String field = "hello, rodl!";
         }
     }
 
