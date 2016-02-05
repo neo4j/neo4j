@@ -26,6 +26,17 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
 
   val QUERY = "MATCH (n:Label) RETURN n"
 
+  test("should match paths correctly with rule planner in 2.3") {
+    relate(createNode(), createNode(), "T")
+
+    val query = "MATCH (n)-[r:T]->(m) RETURN count(*)"
+
+    execute(s"CYPHER 2.3 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
+    execute(s"CYPHER 2.3 $query").columnAs[Long]("count(*)").next() shouldBe 1
+    execute(s"CYPHER 3.0 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
+    execute(s"CYPHER 3.0 $query").columnAs[Long]("count(*)").next() shouldBe 1
+  }
+
   test("should_be_able_to_switch_between_versions") {
     runWithConfig() {
       engine =>
