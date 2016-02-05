@@ -55,17 +55,20 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
 
 public class TransactionConstraintsIT
 {
+    private static final int SLAVE_ONLY_ID = 1;
+
     @ClassRule
     public static final ClusterRule clusterRule = new ClusterRule( TransactionConstraintsIT.class )
-            .withSharedSetting( HaSettings.pull_interval, "0" );
+            .withSharedSetting( HaSettings.pull_interval, "0" )
+            .withInstanceSetting( HaSettings.slave_only,  (serverId) -> serverId == SLAVE_ONLY_ID ? "true" : "false" );
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -92,8 +95,7 @@ public class TransactionConstraintsIT
     public void startTxAsSlaveAndFinishItAfterHavingSwitchedToMasterShouldNotSucceed() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = cluster.getAnySlave();
-        takeTheLeadInAnEventualMasterSwitch( db );
+        GraphDatabaseService db = cluster.getAnySlave( getSlaveOnlySlave() );
 
         // WHEN
         Transaction tx = db.beginTx();
@@ -104,11 +106,12 @@ public class TransactionConstraintsIT
         }
         finally
         {
-            cluster.shutdown( cluster.getMaster() );
+            HighlyAvailableGraphDatabase oldMaster = cluster.getMaster();
+            cluster.shutdown( oldMaster );
+            // Wait for new master
+            cluster.await( masterAvailable( oldMaster ) );
             assertFinishGetsTransactionFailure( tx );
         }
-
-        cluster.await( masterAvailable() );
 
         // THEN
         assertEquals( db, cluster.getMaster() );
@@ -121,10 +124,10 @@ public class TransactionConstraintsIT
     public void startTxAsSlaveAndFinishItAfterAnotherMasterBeingAvailableShouldNotSucceed() throws Exception
     {
         // GIVEN
-        HighlyAvailableGraphDatabase db = cluster.getAnySlave();
+        HighlyAvailableGraphDatabase db = getSlaveOnlySlave();
+        HighlyAvailableGraphDatabase oldMaster;
 
         // WHEN
-        HighlyAvailableGraphDatabase theOtherSlave;
         Transaction tx = db.beginTx();
         try
         {
@@ -133,20 +136,27 @@ public class TransactionConstraintsIT
         }
         finally
         {
-            theOtherSlave = cluster.getAnySlave( db );
-            takeTheLeadInAnEventualMasterSwitch( theOtherSlave );
-            cluster.shutdown( cluster.getMaster() );
+            oldMaster = cluster.getMaster();
+            cluster.shutdown( oldMaster );
+            // Wait for new master
+            cluster.await( masterAvailable( oldMaster ) );
+            // THEN
             assertFinishGetsTransactionFailure( tx );
         }
 
-        cluster.await( ClusterManager.masterAvailable() );
-
-        // THEN
         assertFalse( db.isMaster() );
-        assertTrue( theOtherSlave.isMaster() );
+        assertFalse( oldMaster.isMaster() );
         // to prevent a deadlock scenario which occurs if this test exists (and @After starts)
         // before the db has recovered from its KERNEL_PANIC
         awaitFullyOperational( db );
+    }
+
+    private HighlyAvailableGraphDatabase getSlaveOnlySlave()
+    {
+        HighlyAvailableGraphDatabase db = first( cluster.getAllMembers() );
+        assertEquals( SLAVE_ONLY_ID, cluster.getServerId( db ).toIntegerIndex() );
+        assertFalse( db.isMaster() );
+        return db;
     }
 
     @Test
