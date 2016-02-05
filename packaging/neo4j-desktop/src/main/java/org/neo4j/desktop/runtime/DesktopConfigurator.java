@@ -80,7 +80,6 @@ public class DesktopConfigurator
         return config.get( ServerSettings.legacy_db_location ).getAbsolutePath();
     }
 
-    public int getServerPort(){ return config.get( ServerSettings.webserver_port );
-    }
+    public int getServerPort(){ return config.get( ServerSettings.webserver_port ); }
 
 }
