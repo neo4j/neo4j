@@ -59,7 +59,6 @@ public class RaftInstanceBuilder<MEMBER>
     };
 
     private LogProvider logProvider = NullLogProvider.getInstance();
-    private Clock clock = Clock.SYSTEM_CLOCK;
 
     private long electionTimeout = 500;
     private long heartbeatInterval = 150;
@@ -84,14 +83,14 @@ public class RaftInstanceBuilder<MEMBER>
         LeaderOnlyReplicator<MEMBER, MEMBER> leaderOnlyReplicator = new LeaderOnlyReplicator<>( member, member,
                 outbound );
         RaftMembershipManager<MEMBER> membershipManager = new RaftMembershipManager<>( leaderOnlyReplicator,
-                memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, clock, catchupTimeout,
-                raftMembership );
+                memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, Clock.SYSTEM_CLOCK,
+                catchupTimeout, raftMembership );
         RaftLogShippingManager<MEMBER> logShipping = new RaftLogShippingManager<>( outbound, logProvider, raftLog,
-                clock, member, membershipManager, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
+                Clock.SYSTEM_CLOCK, member, membershipManager, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
 
         return new RaftInstance<>( member, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
                 renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider, membershipManager,
-                logShipping, databaseHealthSupplier, clock, monitors );
+                logShipping, databaseHealthSupplier, monitors );
     }
 
     public RaftInstanceBuilder<MEMBER> leaderWaitTimeout( long leaderWaitTimeout )
@@ -127,12 +126,6 @@ public class RaftInstanceBuilder<MEMBER>
     public RaftInstanceBuilder<MEMBER> databaseHealth( final DatabaseHealth databaseHealth )
     {
         this.databaseHealthSupplier = () -> databaseHealth;
-        return this;
-    }
-
-    public RaftInstanceBuilder<MEMBER> clock( Clock clock )
-    {
-        this.clock = clock;
         return this;
     }
 

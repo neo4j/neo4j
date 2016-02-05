@@ -21,5 +21,7 @@ package org.neo4j.coreedge.raft;
 
 public interface LeaderLocator<MEMBER>
 {
-    MEMBER getLeader() throws NoLeaderTimeoutException;
+    MEMBER getLeader() throws NoLeaderFoundException;
+
+    MEMBER getLeader( long timeoutMillis ) throws NoLeaderFoundException;
 }

@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.neo4j.coreedge.raft.LeaderLocator;
-import org.neo4j.coreedge.raft.NoLeaderTimeoutException;
+import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.net.Outbound;
@@ -52,7 +52,7 @@ public class RaftReplicator<MEMBER> implements Replicator, RaftLog.Listener
         {
             leader = leaderLocator.getLeader();
         }
-        catch ( NoLeaderTimeoutException e )
+        catch ( NoLeaderFoundException e )
         {
             throw new ReplicationFailedException( e );
         }

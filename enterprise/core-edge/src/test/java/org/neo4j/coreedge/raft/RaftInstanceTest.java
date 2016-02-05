@@ -332,11 +332,10 @@ public class RaftInstanceTest
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        int leaderWaitTimeout = 10000;
-        Clock clock = new TickingClock( 0, leaderWaitTimeout + 1, TimeUnit.MILLISECONDS );
+        int leaderWaitTimeout = 1;
 
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).clock( clock ).leaderWaitTimeout( leaderWaitTimeout ).build();
+                .timeoutService( timeouts ).leaderWaitTimeout( leaderWaitTimeout ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
 
@@ -348,7 +347,7 @@ public class RaftInstanceTest
             fail( "Should have thrown exception" );
         }
         // Then
-        catch ( NoLeaderTimeoutException e )
+        catch ( NoLeaderFoundException e )
         {
             // expected
         }
@@ -465,8 +464,7 @@ public class RaftInstanceTest
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        int leaderWaitTimeout = 10000;
-        Clock clock = new TickingClock( 0, leaderWaitTimeout + 1, TimeUnit.MILLISECONDS );
+        int leaderWaitTimeout = 1;
 
         Monitors monitors = new Monitors();
         LeaderNotFoundMonitor leaderNotFoundMonitor = new StubLeaderNotFoundMonitor();
@@ -475,7 +473,6 @@ public class RaftInstanceTest
 
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
-                .clock( clock )
                 .leaderWaitTimeout( leaderWaitTimeout )
                 .monitors(monitors)
                 .build();
@@ -490,7 +487,7 @@ public class RaftInstanceTest
             fail( "Should have thrown exception" );
         }
         // Then
-        catch ( NoLeaderTimeoutException e )
+        catch ( NoLeaderFoundException e )
         {
             // expected
             assertEquals(1, leaderNotFoundMonitor.leaderNotFoundExceptions());

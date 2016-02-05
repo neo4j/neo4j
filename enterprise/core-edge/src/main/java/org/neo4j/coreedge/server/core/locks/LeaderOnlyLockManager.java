@@ -20,7 +20,7 @@
 package org.neo4j.coreedge.server.core.locks;
 
 import org.neo4j.coreedge.raft.LeaderLocator;
-import org.neo4j.coreedge.raft.NoLeaderTimeoutException;
+import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -131,7 +131,7 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
         {
             leader = leaderLocator.getLeader();
         }
-        catch ( NoLeaderTimeoutException e )
+        catch ( NoLeaderFoundException e )
         {
             throw new AcquireLockTimeoutException( e, "Could not acquire lock token." );
         }
