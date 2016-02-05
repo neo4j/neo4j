@@ -56,7 +56,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
         {
             for ( String key : columns )
             {
-                write( out, format, row.get( key ) );
+                write( out, format, row.get( key ), txStateChecker );
             }
         }
         finally
@@ -65,7 +65,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
         }
     }
 
-    private void write( JsonGenerator out, RepresentationFormat format, Object value ) throws IOException
+    private void write( JsonGenerator out, RepresentationFormat format, Object value, TransactionStateChecker checker ) throws IOException
     {
         if ( value instanceof Map<?, ?> )
         {
@@ -75,7 +75,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
                 for ( Map.Entry<String, ?> entry : ((Map<String, ?>) value).entrySet() )
                 {
                     out.writeFieldName( entry.getKey() );
-                    write( out, format, entry.getValue() );
+                    write( out, format, entry.getValue(), checker );
                 }
             }
             finally
@@ -94,7 +94,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
             {
                 for ( Object item : (Iterable<?>) value )
                 {
-                    write( out, format, item );
+                    write( out, format, item, checker );
                 }
             }
             finally
@@ -104,11 +104,15 @@ class RestRepresentationWriter implements ResultDataContentWriter
         }
         else if ( value instanceof Node )
         {
-            write( format, new NodeRepresentation( (Node) value ) );
+            NodeRepresentation representation = new NodeRepresentation( (Node) value );
+            representation.setTransactionStateChecker( checker );
+            write( format, representation );
         }
         else if ( value instanceof Relationship )
         {
-            write( format, new RelationshipRepresentation( (Relationship) value ) );
+            RelationshipRepresentation representation = new RelationshipRepresentation( (Relationship) value );
+            representation.setTransactionStateChecker( checker );
+            write( format, representation );
         }
         else
         {

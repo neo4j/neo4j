@@ -39,6 +39,8 @@ import static org.neo4j.server.rest.transactional.integration.TransactionMatcher
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.graphContainsNoDeletedEntities;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.hasErrors;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.matches;
+import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.restContainsDeletedEntities;
+import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.restContainsNoDeletedEntities;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.rowContainsDeletedEntities;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.rowContainsNoDeletedEntities;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -93,6 +95,38 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     }
 
     @Test
+    public void shouldBeAbleToReturnDeletedEntitiesRest()
+    {
+        // given
+        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRest( "MATCH (s:Start)-[r:R]->(e:End) DELETE s, r, e RETURN *" ) );
+
+        assertThat( commit, containsNoErrors() );
+        assertThat( commit, restContainsDeletedEntities( 3 ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 0L ) );
+    }
+
+    @Test
+    public void shouldBeAbleToReturnDeletedEntitiesRow()
+    {
+        // given
+        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRow( "MATCH (s:Start)-[r:R]->(e:End) DELETE s, r, e RETURN *" ) );
+
+        assertThat( commit, containsNoErrors() );
+        assertThat( commit, rowContainsDeletedEntities( 3 ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 0L ) );
+    }
+
+    @Test
     public void shouldNotMarkNormalEntitiesAsDeletedGraph()
     {
         // given
@@ -123,19 +157,18 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     }
 
     @Test
-    public void shouldBeAbleToReturnDeletedEntitiesRow()
+    public void shouldNotMarkNormalEntitiesAsDeletedRest()
     {
         // given
         graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
-                queryAsJsonRow( "MATCH (s:Start)-[r:R]->(e:End) DELETE s, r, e RETURN *" ) );
+                queryAsJsonRest( "MATCH (s:Start)-[r:R]->(e:End) RETURN *" ) );
 
         assertThat( commit, containsNoErrors() );
-        assertThat( commit, rowContainsDeletedEntities( 3 ) );
+        assertThat( commit, restContainsNoDeletedEntities() );
         assertThat( commit.status(), equalTo( 200 ) );
-        assertThat( nodesInDatabase(), equalTo( 0L ) );
     }
 
     @Test
@@ -166,6 +199,22 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
 
         assertThat( commit, containsNoErrors() );
         assertThat( commit, rowContainsDeletedEntities( 1 ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 0L ) );
+    }
+
+    @Test
+    public void shouldBeAbleToReturnDeletedNodesRest()
+    {
+        // given
+        graphdb().execute( "CREATE (:NodeToDelete {p: 'a property'})" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRest( "MATCH (n:NodeToDelete) DELETE n RETURN n" ) );
+
+        assertThat( commit, containsNoErrors() );
+        assertThat( commit, restContainsDeletedEntities( 1 ) );
         assertThat( commit.status(), equalTo( 200 ) );
         assertThat( nodesInDatabase(), equalTo( 0L ) );
     }
@@ -203,6 +252,22 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     }
 
     @Test
+    public void shouldBeAbleToReturnDeletedRelationshipsRest()
+    {
+        // given
+        graphdb().execute( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRest( "MATCH (s)-[r:R]->(e) DELETE r RETURN r" ) );
+
+        assertThat( commit, containsNoErrors() );
+        assertThat( commit, restContainsDeletedEntities( 1 ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 2L ) );
+    }
+
+    @Test
     public void shouldFailIfTryingToReturnPropsOfDeletedNodeGraph()
     {
         // given
@@ -226,6 +291,21 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         // execute and commit
         Response commit = http.POST( commitResource,
                 queryAsJsonRow( "MATCH (n:NodeToDelete) DELETE n RETURN n.p" ) );
+
+        assertThat( commit, hasErrors( Status.Statement.EntityNotFound ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 1L ) );
+    }
+
+    @Test
+    public void shouldFailIfTryingToReturnPropsOfDeletedNodeRest()
+    {
+        // given
+        graphdb().execute( "CREATE (:NodeToDelete {p: 'a property'})" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRest( "MATCH (n:NodeToDelete) DELETE n RETURN n.p" ) );
 
         assertThat( commit, hasErrors( Status.Statement.EntityNotFound ) );
         assertThat( commit.status(), equalTo( 200 ) );
@@ -263,6 +343,21 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     }
 
     @Test
+    public void shouldFailIfTryingToReturnLabelsOfDeletedNodeRest()
+    {
+        // given
+        graphdb().execute( "CREATE (:NodeToDelete)" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRest( "MATCH (n:NodeToDelete) DELETE n RETURN labels(n)" ) );
+
+        assertThat( commit, hasErrors( Status.Statement.EntityNotFound ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 1L ) );
+    }
+
+    @Test
     public void shouldFailIfTryingToReturnPropsOfDeletedRelationshipGraph()
     {
         // given
@@ -286,6 +381,21 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         // execute and commit
         Response commit = http.POST( commitResource,
                 queryAsJsonRow( "MATCH (s)-[r:R]->(e) DELETE r RETURN r.p" ) );
+
+        assertThat( commit, hasErrors( Status.Statement.EntityNotFound ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 2L ) );
+    }
+
+    @Test
+    public void shouldFailIfTryingToReturnPropsOfDeletedRelationshipRest()
+    {
+        // given
+        graphdb().execute( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRest( "MATCH (s)-[r:R]->(e) DELETE r RETURN r.p" ) );
 
         assertThat( commit, hasErrors( Status.Statement.EntityNotFound ) );
         assertThat( commit.status(), equalTo( 200 ) );
@@ -322,9 +432,29 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         assertThat( nodesInDatabase(), equalTo( 2L ) );
     }
 
+    @Test
+    public void shouldFailIfTryingToReturnTypeOfDeletedRelationshipRest()
+    {
+        // given
+        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRest( "MATCH (s)-[r:R]->(e) DELETE r RETURN type(r)" ) );
+
+        assertThat( commit, hasErrors( Status.Statement.EntityNotFound ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 2L ) );
+    }
+
     private HTTP.RawPayload queryAsJsonGraph( String query )
     {
         return quotedJson( "{ 'statements': [ { 'statement': '" + query + "', 'resultDataContents': [ 'graph' ] } ] }" );
+    }
+
+    private HTTP.RawPayload queryAsJsonRest( String query )
+    {
+        return quotedJson( "{ 'statements': [ { 'statement': '" + query + "', 'resultDataContents': [ 'rest' ] } ] }" );
     }
 
     private HTTP.RawPayload queryAsJsonRow( String query )

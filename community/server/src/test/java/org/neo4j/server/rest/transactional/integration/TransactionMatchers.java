@@ -179,6 +179,42 @@ public class TransactionMatchers
         };
     }
 
+    public static Matcher<? super HTTP.Response> restContainsDeletedEntities( final int amount )
+    {
+        return new TypeSafeMatcher<HTTP.Response>()
+        {
+            @Override
+            protected boolean matchesSafely( HTTP.Response response )
+            {
+                try
+                {
+                    Iterator<JsonNode> entities = getJsonNodeWithName( response, "rest" ).iterator();
+
+                    for ( int i = 0; i < amount; ++i )
+                    {
+                        assertTrue( entities.hasNext() );
+                        JsonNode node = entities.next();
+                        assertThat( node.get( "metadata" ).get( "deleted" ).asBoolean(), equalTo( Boolean.TRUE ) );
+                    }
+                    if ( entities.hasNext() )
+                    {
+                        fail( "Expected no more entities" );
+                    }
+                    return true;
+                }
+                catch ( JsonParseException e )
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+            }
+        };
+    }
+
     public static Matcher<? super HTTP.Response> graphContainsDeletedNodes( final int amount )
     {
         return new TypeSafeMatcher<HTTP.Response>()
@@ -260,6 +296,34 @@ public class TransactionMatchers
                     for ( JsonNode node : getJsonNodeWithName( response, "row" ) )
                     {
                         assertNull( node.get( "deleted" ) );
+                    }
+                    return true;
+                }
+                catch ( JsonParseException e )
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+            }
+        };
+    }
+
+    public static Matcher<? super HTTP.Response> restContainsNoDeletedEntities()
+    {
+        return new TypeSafeMatcher<HTTP.Response>()
+        {
+            @Override
+            protected boolean matchesSafely( HTTP.Response response )
+            {
+                try
+                {
+                    for ( JsonNode node : getJsonNodeWithName( response, "rest" ) )
+                    {
+                        assertNull( node.get( "metadata" ).get( "deleted" ) );
                     }
                     return true;
                 }
