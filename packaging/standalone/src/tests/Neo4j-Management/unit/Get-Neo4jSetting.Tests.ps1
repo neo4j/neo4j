@@ -48,16 +48,14 @@ InModuleScope Neo4j-Management {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Test-Path { return $false }  
       Mock Test-Path { return $true } -ParameterFilter { ([string]$Path).EndsWith('neo4j.properties') }
-      Mock Test-Path { return $true } -ParameterFilter { ([string]$Path).EndsWith('neo4j-server.properties') }
       Mock Test-Path { return $false } -ParameterFilter { ([string]$Path).EndsWith('neo4j-wrapper.conf') }
-      Mock Get-KeyValuePairsFromConfFile { return @{ "setting1"="value1"; } } -ParameterFilter { $Filename.EndsWith('neo4j.properties') }
-      Mock Get-KeyValuePairsFromConfFile { return @{ "setting2"="value2"; } } -ParameterFilter { $Filename.EndsWith('neo4j-server.properties') }
+      Mock Get-KeyValuePairsFromConfFile { return @{ "setting"="value"; } } -ParameterFilter { $Filename.EndsWith('neo4j.properties') }
       Mock Get-KeyValuePairsFromConfFile { throw 'missing file' }             -ParameterFilter { $Filename.EndsWith('neo4j-wrapper.conf') }
       
       $result = Get-Neo4jSetting
       
       It "ignore the missing file" {
-        $result.Count | Should Be 2
+        $result.Count | Should Be 1
       } 
     }
   
@@ -65,13 +63,12 @@ InModuleScope Neo4j-Management {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }  
       Mock Test-Path { return $true }
       Mock Get-KeyValuePairsFromConfFile { return @{ "setting1"="value1"; } } -ParameterFilter { $Filename.EndsWith('neo4j.properties') }
-      Mock Get-KeyValuePairsFromConfFile { return @{ "setting2"="value2"; } } -ParameterFilter { $Filename.EndsWith('neo4j-server.properties') }
-      Mock Get-KeyValuePairsFromConfFile { return @{ "setting3"="value3"; } } -ParameterFilter { $Filename.EndsWith('neo4j-wrapper.conf') }
+      Mock Get-KeyValuePairsFromConfFile { return @{ "setting2"="value2"; } } -ParameterFilter { $Filename.EndsWith('neo4j-wrapper.conf') }
       
       $result = Get-Neo4jSetting
       
       It "one setting per file" {
-        $result.Count | Should Be 3
+        $result.Count | Should Be 2
       } 
   
       # Parse the results and make sure the expected results are there
@@ -82,17 +79,13 @@ InModuleScope Neo4j-Management {
       $result | ForEach-Object -Process {
         $setting = $_
         switch ($setting.Name) {
-          'setting1' { $neo4jProperties =       ($setting.ConfigurationFile -eq 'neo4j.properties') -and ($setting.IsDefault -eq $false) -and ($setting.Value -eq 'value1') }
-          'setting2' { $neo4jServerProperties = ($setting.ConfigurationFile -eq 'neo4j-server.properties') -and ($setting.IsDefault -eq $false) -and ($setting.Value -eq 'value2') }
-          'setting3' { $neo4jWrapper =          ($setting.ConfigurationFile -eq 'neo4j-wrapper.conf') -and ($setting.IsDefault -eq $false) -and ($setting.Value -eq 'value3') }
+          'setting1' { $neo4jServerProperties = ($setting.ConfigurationFile -eq 'neo4j.properties') -and ($setting.IsDefault -eq $false) -and ($setting.Value -eq 'value1') }
+          'setting2' { $neo4jWrapper =          ($setting.ConfigurationFile -eq 'neo4j-wrapper.conf') -and ($setting.IsDefault -eq $false) -and ($setting.Value -eq 'value2') }
           default { $unknownSetting = $true}
         }
       }
   
       It "returns settings for file neo4j.properties" {
-        $neo4jProperties | Should Be $true
-      } 
-      It "returns settings for file neo4j-server.properties" {
         $neo4jServerProperties | Should Be $true
       } 
       It "returns settings for file neo4j-wrapper.conf" {
@@ -107,35 +100,26 @@ InModuleScope Neo4j-Management {
     Context "Configuration settings with multiple values" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }  
       Mock Test-Path { return $true }
-      Mock Get-KeyValuePairsFromConfFile { return @{ "setting1"="value1"; } } -ParameterFilter { $Filename.EndsWith('neo4j.properties') }
-      Mock Get-KeyValuePairsFromConfFile { return @{ "setting2"=@("value2","value3","value4"); } } -ParameterFilter { $Filename.EndsWith('neo4j-server.properties') }
+      Mock Get-KeyValuePairsFromConfFile { return @{ "setting"=@("value1","value2","value3"); } } -ParameterFilter { $Filename.EndsWith('neo4j.properties') }
       Mock Get-KeyValuePairsFromConfFile { return @{} } -ParameterFilter { $Filename.EndsWith('neo4j-wrapper.conf') }
       
       $result = Get-Neo4jSetting
       
       It "one setting per file" {
-        $result.Count | Should Be 2
+        $result.Count | Should Be 1
       } 
   
       # Parse the results and make sure the expected results are there
-      $singleSetting = $null
       $multiSetting = $null
       $result | ForEach-Object -Process {
         $setting = $_
         switch ($setting.Name) {
-          'setting1' { $singleSetting = $setting }
-          'setting2' { $multiSetting = $setting }
+          'setting1' { $multiSetting = $setting }
         }
       }
       
-      It "returns single settings" {
-        ($singleSetting -ne $null) | Should Be $true
-      }
       It "returns multiple settings" {
         ($multiSetting -ne $null) | Should Be $true
-      }
-      It "returns a string for single settings" {
-        $singleSetting.Value.GetType().ToString() | Should Be "System.String"
       }
       It "returns an object array for multiple settings" {
         $multiSetting.Value.GetType().ToString() | Should Be "System.Object[]"

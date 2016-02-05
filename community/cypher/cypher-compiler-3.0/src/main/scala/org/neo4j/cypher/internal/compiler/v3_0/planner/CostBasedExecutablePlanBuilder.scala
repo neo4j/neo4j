@@ -66,11 +66,11 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
 
     statement match {
       case (ast: Query, rewrittenSemanticTable) =>
-        val (logicalPlan, pipeBuildContext) = closing(tracer.beginPhase(LOGICAL_PLANNING)) {
+        val (periodicCommit, logicalPlan, pipeBuildContext) = closing(tracer.beginPhase(LOGICAL_PLANNING)) {
           produceLogicalPlan(ast, rewrittenSemanticTable)(planContext, inputQuery.notificationLogger)
         }
-        runtimeBuilder(logicalPlan, pipeBuildContext, planContext, tracer, rewrittenSemanticTable, planBuilderMonitor,
-                      plannerName,  inputQuery, createFingerprintReference, config)
+        runtimeBuilder(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, rewrittenSemanticTable,
+          planBuilderMonitor, plannerName, inputQuery, createFingerprintReference, config)
       case x =>
         throw new CantHandleQueryException(x.toString())
     }
@@ -78,7 +78,9 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
 
 
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)
-                        (planContext: PlanContext,  notificationLogger: InternalNotificationLogger): (LogicalPlan, PipeExecutionBuilderContext) = {
+                        (planContext: PlanContext,  notificationLogger: InternalNotificationLogger):
+  (Option[PeriodicCommit], LogicalPlan, PipeExecutionBuilderContext) = {
+
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val unionQuery = toUnionQuery(ast, semanticTable)
     val metrics = metricsFactory.newMetrics(planContext.statistics)
@@ -89,7 +91,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
       errorIfShortestPathFallbackUsedAtRuntime = config.errorIfShortestPathFallbackUsedAtRuntime,
       config = QueryPlannerConfiguration.default.withUpdateStrategy(updateStrategy))
 
-    val plan = queryPlanner.plan(unionQuery)(context)
+    val (periodicCommit, plan) = queryPlanner.plan(unionQuery)(context)
 
     val pipeBuildContext = PipeExecutionBuilderContext(metrics.cardinality, semanticTable, plannerName)
 
@@ -97,7 +99,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     // TODO:H Should this be plan.solved.all(_.queryGraph.readOnly) ?
     if (plan.solved.queryGraph.readOnly) checkForUnresolvedTokens(ast, semanticTable).foreach(notificationLogger += _)
 
-    (plan, pipeBuildContext)
+    (periodicCommit, plan, pipeBuildContext)
   }
 }
 

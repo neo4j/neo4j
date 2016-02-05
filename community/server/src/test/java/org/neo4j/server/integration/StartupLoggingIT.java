@@ -19,17 +19,17 @@
  */
 package org.neo4j.server.integration;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
@@ -41,9 +41,9 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import static java.util.Arrays.asList;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class StartupLoggingIT extends ExclusiveServerTestBase
 {
@@ -70,7 +70,6 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         // TODO: Obviously the logging below is insane, but we added this test in a point release, so we don't want to break anyone grepping for this
         //       This should be changed in 3.0.0.
         assertThat( captured, containsAtLeastTheseLines(
-                warn( "Config file \\[config.neo4j-server\\.properties\\] does not exist." ),
                 warn( "Config file \\[config.neo4j\\.properties\\] does not exist." ),
                 info( "Successfully started database" ),
                 info( "Starting HTTP on port 7474 \\(.+ threads available\\)" ),

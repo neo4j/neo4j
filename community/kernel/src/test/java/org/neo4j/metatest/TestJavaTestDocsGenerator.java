@@ -141,9 +141,11 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     public static String readFileAsString( File file ) throws java.io.IOException
     {
         byte[] buffer = new byte[(int) file.length()];
-        BufferedInputStream f = new BufferedInputStream( new FileInputStream( file ) );
-        f.read( buffer );
-        return new String( buffer );
+        try ( BufferedInputStream f = new BufferedInputStream( new FileInputStream( file ) ) )
+        {
+            f.read( buffer );
+            return new String( buffer );
+        }
     }
 
     @Override

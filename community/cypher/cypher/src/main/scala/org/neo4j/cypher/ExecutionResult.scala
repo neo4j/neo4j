@@ -74,7 +74,7 @@ case class QueryStatistics(nodesCreated: Int = 0,
       constraintsRemoved > 0
 
   override def toString = {
-    val builder = new StringBuilder("\n")
+    val builder = new StringBuilder
 
     includeIfNonZero(builder, "Nodes created: ", nodesCreated)
     includeIfNonZero(builder, "Relationships created: ", relationshipsCreated)

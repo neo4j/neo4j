@@ -22,7 +22,7 @@ set -euo pipefail
 
 FRIENDLY_NAME="Neo4j Server"
 SHUTDOWN_TIMEOUT=120
-CONFIG_FILES=("neo4j-wrapper.conf" "neo4j-server.properties")
+CONFIG_FILES=("neo4j-wrapper.conf" "neo4j.properties")
 MAIN_CLASS="#{neo4j.mainClass}"
 MIN_ALLOWED_OPEN_FILES=40000
 CONSOLE_LOG_FILE="console.log"

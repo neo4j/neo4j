@@ -102,7 +102,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
     val plan = LeafPlan("a")
     val expectedPipe = LeafPipe("a")
 
-    val result = builder.build(plan).pipe
+    val result = builder.build(None, plan).pipe
     result should equal(expectedPipe)
   }
 
@@ -128,7 +128,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
         )
       )
 
-    val result = builder.build(plan).pipe
+    val result = builder.build(None, plan).pipe
     result should equal(expectedPipe)
   }
 
@@ -157,7 +157,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
         )
       )
 
-    val result = builder.build(plan).pipe
+    val result = builder.build(None, plan).pipe
     result should equal(expectedPipe)
   }
 
@@ -178,7 +178,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
                         OneChildPipe("b", LeafPipe("d")),
                         TwoChildPipe("c", LeafPipe("e"), LeafPipe("f")))
 
-    val result = builder.build(plan).pipe
+    val result = builder.build(None, plan).pipe
     result should equal(expectedPipe)
   }
 }

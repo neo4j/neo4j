@@ -64,9 +64,9 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val pq = RegularPlannerQuery(horizon = RegularQueryProjection(columns.map(c => c -> varFor(c)).toMap))
 
-    val union = UnionQuery(Seq(pq), distinct = false, columns.map(IdName.apply))
+    val union = UnionQuery(Seq(pq), distinct = false, columns.map(IdName.apply), periodicCommit = None)
 
-    val result = queryPlanner.plan(union)
+    val (_, result) = queryPlanner.plan(union)
 
     result shouldBe a [ProduceResult]
 
@@ -107,7 +107,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       planSingleQuery = PlanSingleQuery(expressionRewriterFactory = (lpc) => Rewriter.noop ))
 
     // when
-    val query = UnionQuery(Seq(plannerQuery), distinct = false, Seq.empty)
+    val query = UnionQuery(Seq(plannerQuery), distinct = false, Seq.empty, None)
     queryPlanner.plan(query)(context)
 
     // then

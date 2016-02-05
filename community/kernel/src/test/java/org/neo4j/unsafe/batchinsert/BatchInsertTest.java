@@ -1276,6 +1276,7 @@ public class BatchInsertTest
 
         assertThat( (String[]) inserter.getNodeProperties( personNodeId ).get( "email" ),
                 arrayContaining( "Edward1099511659993@gmail.com", "backup@gmail.com" ) );
+        inserter.shutdown();
     }
 
     @Test
@@ -1485,6 +1486,7 @@ public class BatchInsertTest
             // Then
             assertEquals( "Index for given {label;property} already exists", e.getMessage() );
         }
+        inserter.shutdown();
     }
 
     @Test
@@ -1510,6 +1512,7 @@ public class BatchInsertTest
                     "It is not allowed to create uniqueness constraints and indexes on the same {label;property}",
                     e.getMessage() );
         }
+        inserter.shutdown();
     }
 
     @Test
@@ -1533,6 +1536,7 @@ public class BatchInsertTest
             // Then
             assertEquals( "Index for given {label;property} already exists", e.getMessage() );
         }
+        inserter.shutdown();
     }
 
     @Test
@@ -1578,6 +1582,7 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( properties, inserter.getNodeProperties( node ) );
+        inserter.shutdown();
     }
 
     private void createRelationships( BatchInserter inserter, long node, RelationshipType relType,

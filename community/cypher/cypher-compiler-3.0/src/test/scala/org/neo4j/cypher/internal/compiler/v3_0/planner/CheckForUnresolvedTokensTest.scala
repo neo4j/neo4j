@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Query, Statement, SingleQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.notification.{MissingPropertyNameNotification, MissingRelTypeNotification, MissingLabelNotification}
-import org.neo4j.cypher.internal.frontend.v3_0.{PropertyKeyId, RelTypeId, InputPosition, LabelId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Query
+import org.neo4j.cypher.internal.frontend.v3_0.notification.{MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, LabelId, PropertyKeyId, RelTypeId, SemanticTable}
 
 class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport {
 
@@ -87,11 +87,11 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     val semanticTable = new SemanticTable
 
     //when
-    val ast = parse("MATCH (a {prop: 42}) RETURN a")
+    val ast = parse("MATCH (a) WHERE a.prop = 42 RETURN a")
 
     //then
     checkForUnresolvedTokens(ast, semanticTable) should equal(Seq(
-      MissingPropertyNameNotification(InputPosition(10, 1, 11), "prop")))
+      MissingPropertyNameNotification(InputPosition(18, 1, 19), "prop")))
   }
 
   test("don't warn when property key name is there") {
@@ -101,6 +101,17 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
     //when
     val ast = parse("MATCH (a {prop: 42}) RETURN a")
+
+    //then
+    checkForUnresolvedTokens(ast, semanticTable) shouldBe empty
+  }
+
+  test("don't warn for literal maps") {
+    //given
+    val semanticTable = new SemanticTable
+
+    //when
+    val ast = parse("RETURN {prop: 'foo'}")
 
     //then
     checkForUnresolvedTokens(ast, semanticTable) shouldBe empty

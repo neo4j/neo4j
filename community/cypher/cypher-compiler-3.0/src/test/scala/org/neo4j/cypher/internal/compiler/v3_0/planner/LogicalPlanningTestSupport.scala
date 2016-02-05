@@ -183,23 +183,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     nonIndexedLabelWarningThreshold = 10000
   )
 
-  def produceLogicalPlan(queryText: String)(implicit planner: CostBasedExecutablePlanBuilder, planContext: PlanContext): LogicalPlan = {
-    val parsedStatement = parser.parse(queryText)
-    val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
-    val semanticState = semanticChecker.check(queryText, parsedStatement, mkException)
-    val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryText, parsedStatement, semanticState)
-    CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), rewriterSequencer, semanticChecker, postConditions, monitors.newMonitor[AstRewritingMonitor]()) match {
-      case (ast: Query, newTable) =>
-        semanticChecker.check(queryText, ast, mkException)
-        tokenResolver.resolve(ast)(newTable, planContext)
-        val (logicalPlan, _) = planner.produceLogicalPlan(ast, newTable)(planContext, devNullLogger)
-        logicalPlan
-
-      case _ =>
-        throw new IllegalArgumentException("produceLogicalPlan only supports ast.Query input")
-    }
-  }
-
   def buildPlannerQuery(query: String) = {
     val queries: Seq[PlannerQuery] = buildPlannerUnionQuery(query).queries
     queries.head

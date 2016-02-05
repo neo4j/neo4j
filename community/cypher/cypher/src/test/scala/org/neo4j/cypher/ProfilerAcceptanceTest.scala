@@ -287,7 +287,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val query = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE()"
 
     // given
-    executeWithRulePlanner(query).toList
+    executeWithCostPlannerOnly(query).toList
     deleteAllEntities()
     val initialTxCounts = graph.txCounts
 

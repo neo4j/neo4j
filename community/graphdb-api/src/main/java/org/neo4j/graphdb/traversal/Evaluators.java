@@ -52,6 +52,7 @@ public abstract class Evaluators
     private static final PathEvaluator ALL_BUT_START_POSITION = fromDepth( 1 );
 
     /**
+     * @param <STATE> the type of the state object.
      * @return an evaluator which includes everything it encounters and doesn't prune
      *         anything.
      */
@@ -74,7 +75,8 @@ public abstract class Evaluators
      * Returns an {@link Evaluator} which includes positions down to {@code depth}
      * and prunes everything deeper than that.
      *
-     * @param depth the max depth to traverse to.
+     * @param depth   the max depth to traverse to.
+     * @param <STATE> the type of the state object.
      * @return Returns an {@link Evaluator} which includes positions down to
      *         {@code depth} and prunes everything deeper than that.
      */
@@ -95,7 +97,8 @@ public abstract class Evaluators
      * Returns an {@link Evaluator} which only includes positions from {@code depth}
      * and deeper and never prunes anything.
      *
-     * @param depth the depth to start include positions from.
+     * @param depth   the depth to start include positions from.
+     * @param <STATE> the type of the state object.
      * @return Returns an {@link Evaluator} which only includes positions from
      *         {@code depth} and deeper and never prunes anything.
      */
@@ -115,7 +118,8 @@ public abstract class Evaluators
      * Returns an {@link Evaluator} which only includes positions at {@code depth}
      * and prunes everything deeper than that.
      *
-     * @param depth the depth to start include positions from.
+     * @param depth   the depth to start include positions from.
+     * @param <STATE> the type of the state object.
      * @return Returns an {@link Evaluator} which only includes positions at
      *         {@code depth} and prunes everything deeper than that.
      */
@@ -138,6 +142,7 @@ public abstract class Evaluators
      *
      * @param minDepth minimum depth a position must have to be included.
      * @param maxDepth maximum depth a position must have to be included.
+     * @param <STATE>  the type of the state object.
      * @return Returns an {@link Evaluator} which only includes positions between
      *         depths {@code minDepth} and {@code maxDepth}. It prunes everything deeper
      *         than {@code maxDepth}.
@@ -170,6 +175,7 @@ public abstract class Evaluators
      *                            in paths with.
      * @param orAnyOfTheseTypes   additional types to match the last relationship in
      *                            paths with.
+     * @param <STATE>             the type of the state object.
      * @return an {@link Evaluator} which compares the type of the last relationship
      *         in a {@link Path} to a given set of relationship types.
      */
@@ -218,6 +224,7 @@ public abstract class Evaluators
      *                          in paths with.
      * @param orAnyOfTheseTypes types to match the last relationship in paths with. If any matches
      *                          it's considered a match.
+     * @param <STATE>           the type of the state object.
      * @return an {@link Evaluator} which compares the type of the last relationship
      *         in a {@link Path} to a given set of relationship types.
      * @see #lastRelationshipTypeIs(Evaluation, Evaluation, RelationshipType, RelationshipType...)
@@ -236,6 +243,7 @@ public abstract class Evaluators
      *                          in paths with.
      * @param orAnyOfTheseTypes types to match the last relationship in paths with. If any matches
      *                          it's considered a match.
+     * @param <STATE>           the type of the state object.
      * @return an {@link Evaluator} which compares the type of the last relationship
      *         in a {@link Path} to a given set of relationship types.
      * @see #lastRelationshipTypeIs(Evaluation, Evaluation, RelationshipType, RelationshipType...)
@@ -258,6 +266,7 @@ public abstract class Evaluators
      * @param evaluationIfNoMatch the {@link Evaluation} to return if the {@link Path#endNode()}
      *                            doesn't match any of the nodes in {@code nodes}.
      * @param possibleEndNodes    a set of nodes to match to end nodes in paths.
+     * @param <STATE>             the type of the state object.
      * @return an {@link Evaluator} which will return {@code evaluationIfMatch} if
      *         {@link Path#endNode()} for a given path is any of {@code nodes},
      *         else {@code evaluationIfNoMatch}.
@@ -297,7 +306,8 @@ public abstract class Evaluators
      * {@link Evaluation#INCLUDE_AND_CONTINUE} for {@code evaluationIfMatch} and
      * {@link Evaluation#EXCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
      *
-     * @param nodes end nodes for paths to be included in the result.
+     * @param nodes   end nodes for paths to be included in the result.
+     * @param <STATE> the type of the state object.
      * @return paths where the end node is one of {@code nodes}
      */
     public static <STATE> PathEvaluator<STATE> includeWhereEndNodeIs( Node... nodes )
@@ -314,8 +324,9 @@ public abstract class Evaluators
      * Evaluator which decides to include a {@link Path} if all the
      * {@code nodes} exist in it.
      *
-     * @param nodes {@link Node}s that must exist in a {@link Path} for it
-     *              to be included.
+     * @param nodes   {@link Node}s that must exist in a {@link Path} for it
+     *                to be included.
+     * @param <STATE> the type of the state object.
      * @return {@link Evaluation#INCLUDE_AND_CONTINUE} if all {@code nodes}
      *         exist in a given {@link Path}, otherwise
      *         {@link Evaluation#EXCLUDE_AND_CONTINUE}.
@@ -366,6 +377,7 @@ public abstract class Evaluators
      *
      * @param evaluators represented as one evaluators. If any of the evaluators decides
      *                   to include a path it will be included.
+     * @param <STATE>    the type of the state object.
      * @return an {@link Evaluator} which decides to include a path if any of the supplied
      *         evaluators wants to include it.
      */
@@ -395,6 +407,7 @@ public abstract class Evaluators
      *
      * @param evaluators represented as one evaluators. If any of the evaluators decides
      *                   to include a path it will be included.
+     * @param <STATE>    the type of the state object.
      * @return an {@link Evaluator} which decides to include a path if any of the supplied
      *         evaluators wants to include it.
      */
@@ -422,8 +435,9 @@ public abstract class Evaluators
      * possibleEndNodes.
      * @param depth The exact depth to filter the returned path evaluators.
      * @param possibleEndNodes Filter for the possible nodes to end the path on.
-     * @param <STATE> the type of the state object
-     * @return
+     * @param <STATE> the type of the state object.
+     * @return {@link Evaluator}s for paths with the specified depth and with an end node from the list of
+     * possibleEndNodes.
      */
     public static <STATE> PathEvaluator<STATE> endNodeIsAtDepth( final int depth, Node... possibleEndNodes )
     {

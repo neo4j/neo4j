@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.enterprise.functional;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Properties;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
@@ -31,7 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.NeoServer;
@@ -46,6 +40,8 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.cluster.ClusterSettings.initial_hosts;
+import static org.neo4j.cluster.ClusterSettings.server_id;
 import static org.neo4j.server.enterprise.EnterpriseServerSettings.mode;
 
 public class EnterpriseServerIT
@@ -59,12 +55,11 @@ public class EnterpriseServerIT
     public void shouldBeAbleToStartInHAMode() throws Throwable
     {
         // Given
-        File tuningFile = createNeo4jProperties();
-
         NeoServer server = EnterpriseServerBuilder.server()
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
-                .withProperty( ServerSettings.legacy_db_config.name(), tuningFile.getAbsolutePath() )
+                .withProperty( server_id.name(), "1" )
+                .withProperty( initial_hosts.name(), ":5001" )
                 .persistent()
                 .build();
 
@@ -91,13 +86,12 @@ public class EnterpriseServerIT
     public void shouldRequireAuthorizationForHAStatusEndpoints() throws Exception
     {
         // Given
-        File tuningFile = createNeo4jProperties();
-
         NeoServer server = EnterpriseServerBuilder.server()
                 .withProperty( ServerSettings.auth_enabled.name(), "true" )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
-                .withProperty( ServerSettings.legacy_db_config.name(), tuningFile.getAbsolutePath() )
+                .withProperty( server_id.name(), "1" )
+                .withProperty( initial_hosts.name(), ":5001" )
                 .persistent()
                 .build();
 
@@ -123,14 +117,13 @@ public class EnterpriseServerIT
     public void shouldAllowDisablingAuthorizationOnHAStatusEndpoints() throws Exception
     {
         // Given
-        File tuningFile = createNeo4jProperties();
-
         NeoServer server = EnterpriseServerBuilder.server()
                 .withProperty( ServerSettings.auth_enabled.name(), "true" )
                 .withProperty( HaSettings.ha_status_auth_enabled.name(), "false" )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
-                .withProperty( ServerSettings.legacy_db_config.name(), tuningFile.getAbsolutePath() )
+                .withProperty( server_id.name(), "1" )
+                .withProperty( initial_hosts.name(), ":5001" )
                 .persistent()
                 .build();
 
@@ -150,26 +143,6 @@ public class EnterpriseServerIT
         finally
         {
             server.stop();
-        }
-    }
-
-    private File createNeo4jProperties() throws IOException
-    {
-        File tuningFile = folder.newFile( "neo4j-test.properties" );
-        FileOutputStream fos = new FileOutputStream( tuningFile );
-        try
-        {
-            Properties neo4jProps = new Properties();
-
-            neo4jProps.put( ClusterSettings.server_id.name(), "1" );
-            neo4jProps.put( ClusterSettings.initial_hosts.name(), ":5001" );
-
-            neo4jProps.store( fos, "" );
-            return tuningFile;
-        }
-        finally
-        {
-            fos.close();
         }
     }
 

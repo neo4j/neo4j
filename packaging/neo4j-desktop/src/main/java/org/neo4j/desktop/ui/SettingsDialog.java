@@ -22,8 +22,6 @@ package org.neo4j.desktop.ui;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Frame;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import javax.swing.BoxLayout;
@@ -56,19 +54,11 @@ class SettingsDialog extends JDialog
         getContentPane().add( withSpacingBorder( withBoxLayout( BoxLayout.Y_AXIS, createPanel(
                 createCommandPromptPanel( createCommandPromptButton() ),
                 createEditDatabaseConfigPanel( createEditDatabaseConfigurationButton() ),
-                createEditServerConfigPanel( createEditServerConfigurationButton() ),
                 createEditVmOptionsPanel( createEditVmOptionsButton() ),
                 createExtensionsPanel( createOpenPluginsDirectoryButton() ),
                 createVerticalSpacing(),
                 withFlowLayout( FlowLayout.RIGHT, createPanel(
-                        createTextButton( "Close", new ActionListener()
-                        {
-                            @Override
-                            public void actionPerformed( ActionEvent e )
-                            {
-                                close();
-                            }
-                        } ) ) )
+                        createTextButton( "Close", e -> close() ) ) )
         ) ) ) );
 
         pack();
@@ -92,28 +82,10 @@ class SettingsDialog extends JDialog
     private Component createEditDatabaseConfigPanel( JButton configurationButton )
     {
         File configFile = model.getDatabaseConfigurationFile();
-        return withTitledBorder( "Database Tuning", withBoxLayout( BoxLayout.Y_AXIS,
+        return withTitledBorder( "Database Configuration", withBoxLayout( BoxLayout.Y_AXIS,
                 createPanel(
                         withFlowLayout( FlowLayout.LEFT, createPanel( createLabel(
-                                "neo4j.properties contains tuning configuration such as cache settings.",
-                                "You will need to stop and re-start the database for changes to take effect."
-                        ) ) ),
-                        withFlowLayout( FlowLayout.RIGHT, createPanel(
-                                createUnmodifiableTextField( configFile.getAbsolutePath() ),
-                                configurationButton
-                        ) )
-                )
-        ) );
-    }
-
-    private Component createEditServerConfigPanel( JButton configurationButton )
-    {
-        File configFile = model.getServerConfigurationFile();
-
-        return withTitledBorder( "Server Configuration", withBoxLayout( BoxLayout.Y_AXIS,
-                createPanel(
-                        withFlowLayout( FlowLayout.LEFT, createPanel( createLabel(
-                                configFile.getName() + " contains server configuration such as port bindings.",
+                                "neo4j.properties contains configuration such as cache settings and port bindings.",
                                 "You will need to stop and re-start the database for changes to take effect."
                         ) ) ),
                         withFlowLayout( FlowLayout.RIGHT, createPanel(
@@ -159,20 +131,15 @@ class SettingsDialog extends JDialog
 
     private JButton createCommandPromptButton()
     {
-        return Components.createTextButton( ellipsis( "Command Prompt" ), new ActionListener()
-        {
-            @Override
-            public void actionPerformed( ActionEvent e )
+        return Components.createTextButton( ellipsis( "Command Prompt" ), e -> {
+            try
             {
-                try
-                {
-                    model.launchCommandPrompt();
-                }
-                catch ( Exception exception )
-                {
-                    exception.printStackTrace();
-                    alert( exception.getMessage() );
-                }
+                model.launchCommandPrompt();
+            }
+            catch ( Exception exception )
+            {
+                exception.printStackTrace();
+                alert( exception.getMessage() );
             }
         } );
     }
@@ -195,29 +162,6 @@ class SettingsDialog extends JDialog
                 if ( !file.exists() )
                 {
                     model.writeDefaultDatabaseConfiguration( file );
-                }
-            }
-        } );
-    }
-
-    private JButton createEditServerConfigurationButton()
-    {
-        return Components.createTextButton( ellipsis( "Edit" ), new EditFileActionListener( this, model )
-        {
-            @Override
-            protected File getFile()
-            {
-                return model.getServerConfigurationFile();
-            }
-
-            @SuppressWarnings("ResultOfMethodCallIgnored")
-            @Override
-            protected void ensureFileAndParentDirectoriesExists( File file ) throws IOException
-            {
-                file.getParentFile().mkdirs();
-                if ( !file.exists() )
-                {
-                    model.writeDefaultServerConfiguration( file );
                 }
             }
         } );

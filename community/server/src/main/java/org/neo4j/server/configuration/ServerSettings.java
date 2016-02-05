@@ -34,8 +34,6 @@ import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Obsoleted;
 import org.neo4j.kernel.configuration.Settings;
 
-import static java.io.File.separator;
-
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.EMPTY;
@@ -54,19 +52,14 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 public interface ServerSettings
 {
     /**
-     * Key for the server configuration file. The file path should always be get/set using System.property.
+     * Key for the configuration file system property.
      */
-    String SERVER_CONFIG_FILE_KEY = "org.neo4j.server.properties";
+    String SERVER_CONFIG_FILE_KEY = "org.neo4j.config.file";
 
     /**
-     * Path to the server configuration file. The file path should always be get/set using System.property.
+     * Default path for the configuration file. The path should always be get/set using System.property.
      */
-    String SERVER_CONFIG_FILE = "config/neo4j-server.properties";
-
-    /**
-     *  Default name for the db configuration file.
-     */
-    String DB_TUNING_CONFIG_FILE_NAME = "neo4j.properties";
+    String SERVER_CONFIG_FILE = "config/neo4j.properties";
 
     @Description("Maximum request header size")
     Setting<Integer> maximum_request_header_size =
@@ -182,9 +175,11 @@ public interface ServerSettings
     @Description("Host and port for Bolt protocol")
     Setting<HostnamePort> bolt_socket_address = BoltKernelExtension.Settings.socket_address;
 
+    @SuppressWarnings("unused") // unused but needs documenting as deprecated until 4.0
     @Internal
-    Setting<File> legacy_db_config = setting( "org.neo4j.server.db.tuning.properties", PATH,
-            separator + "etc" + separator + "neo" + separator + DB_TUNING_CONFIG_FILE_NAME );
+    @Deprecated
+    @Obsoleted("There is now only one configuration file")
+    Setting<File> legacy_db_config = setting( "org.neo4j.server.db.tuning.properties", PATH, "" );
 
     @Internal
     Setting<URI> rest_api_path = setting( "org.neo4j.server.webadmin.data.uri",

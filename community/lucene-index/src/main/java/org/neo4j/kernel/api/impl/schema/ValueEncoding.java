@@ -23,6 +23,7 @@ import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -64,10 +65,11 @@ enum ValueEncoding
                 }
 
                 @Override
-                NumericRangeQuery<Double> encodeQuery( Object value )
+                Query encodeQuery( Object value )
                 {
                     Double doubleValue = ((Number) value).doubleValue();
-                    return NumericRangeQuery.newDoubleRange( key(), doubleValue, doubleValue, true, true );
+                    return new ConstantScoreQuery( NumericRangeQuery.newDoubleRange( key(), doubleValue, doubleValue,
+                            true, true ) );
                 }
             },
     Array
@@ -97,9 +99,9 @@ enum ValueEncoding
                 }
 
                 @Override
-                TermQuery encodeQuery( Object value )
+                Query encodeQuery( Object value )
                 {
-                    return new TermQuery( new Term( key(), ArrayEncoder.encode( value ) ) );
+                    return new ConstantScoreQuery( new TermQuery( new Term( key(), ArrayEncoder.encode( value ) ) ) );
                 }
             },
     Bool
@@ -129,9 +131,9 @@ enum ValueEncoding
                 }
 
                 @Override
-                TermQuery encodeQuery( Object value )
+                Query encodeQuery( Object value )
                 {
-                    return new TermQuery( new Term( key(), value.toString() ) );
+                    return new ConstantScoreQuery( new TermQuery( new Term( key(), value.toString() ) ) );
                 }
             },
     String
@@ -162,9 +164,9 @@ enum ValueEncoding
                 }
 
                 @Override
-                TermQuery encodeQuery( Object value )
+                Query encodeQuery( Object value )
                 {
-                    return new TermQuery( new Term( key(), value.toString() ) );
+                    return new ConstantScoreQuery( new TermQuery( new Term( key(), value.toString() ) ) );
                 }
             };
 

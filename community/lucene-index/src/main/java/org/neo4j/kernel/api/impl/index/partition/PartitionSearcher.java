@@ -38,6 +38,7 @@ public class PartitionSearcher implements Closeable
     {
         this.referenceManager = referenceManager;
         this.indexSearcher = referenceManager.acquire();
+        this.indexSearcher.setQueryCache( null );
     }
 
     public IndexSearcher getIndexSearcher()

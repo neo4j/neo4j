@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.schema;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.TermQuery;
@@ -32,6 +33,7 @@ import org.junit.Test;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.TestCase.assertEquals;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
+import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.newSeekQuery;
 import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Array;
 import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Bool;
 import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Number;
@@ -50,7 +52,7 @@ public class LuceneDocumentStructureTest
     @Test
     public void tooLongArrayShouldBeSkipped()
     {
-        byte[] bytes = RandomStringUtils.randomAscii( IndexWriter.MAX_TERM_LENGTH  + 10).getBytes();
+        byte[] bytes = RandomStringUtils.randomAscii( IndexWriter.MAX_TERM_LENGTH + 10 ).getBytes();
         Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, bytes );
         assertNull( document.getField( Array.key() ) );
     }
@@ -111,7 +113,8 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingBoolProperty() throws Exception
     {
         // given
-        TermQuery query = (TermQuery) LuceneDocumentStructure.newSeekQuery( true );
+        ConstantScoreQuery constantScoreQuery = (ConstantScoreQuery) newSeekQuery( true );
+        TermQuery query = (TermQuery) constantScoreQuery.getQuery();
 
         // then
         assertEquals( "true", query.getTerm().text() );
@@ -121,10 +124,10 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingStringProperty() throws Exception
     {
         // given
-        TermQuery query = (TermQuery) LuceneDocumentStructure.newSeekQuery( "Characters" );
+        ConstantScoreQuery query = (ConstantScoreQuery) newSeekQuery( "Characters" );
 
         // then
-        assertEquals( "Characters", query.getTerm().text() );
+        assertEquals( "Characters", ((TermQuery) query.getQuery()).getTerm().text() );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -132,7 +135,8 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingNumberProperty() throws Exception
     {
         // given
-        NumericRangeQuery<Double> query = (NumericRangeQuery<Double>) LuceneDocumentStructure.newSeekQuery( 12 );
+        ConstantScoreQuery constantScoreQuery = (ConstantScoreQuery) newSeekQuery( 12 );
+        NumericRangeQuery<Double> query = (NumericRangeQuery<Double>) constantScoreQuery.getQuery();
 
         // then
         assertEquals( 12.0, query.getMin() );
@@ -143,7 +147,9 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingArrayProperty() throws Exception
     {
         // given
-        TermQuery query = (TermQuery) LuceneDocumentStructure.newSeekQuery( new Integer[]{1, 2, 3} );
+        ConstantScoreQuery constantScoreQuery = (ConstantScoreQuery)
+                newSeekQuery( new Integer[]{1, 2, 3} );
+        TermQuery query = (TermQuery) constantScoreQuery.getQuery();
 
         // then
         assertEquals( "D1.0|2.0|3.0|", query.getTerm().text() );
@@ -167,7 +173,8 @@ public class LuceneDocumentStructureTest
     public void shouldBuildRangeSeekByStringQueryForStrings() throws Exception
     {
         // given
-        TermRangeQuery query = (TermRangeQuery) LuceneDocumentStructure.newRangeSeekByStringQuery( "foo", false, null, true );
+        TermRangeQuery query =
+                (TermRangeQuery) LuceneDocumentStructure.newRangeSeekByStringQuery( "foo", false, null, true );
 
         // then
         assertEquals( "string", query.getField() );

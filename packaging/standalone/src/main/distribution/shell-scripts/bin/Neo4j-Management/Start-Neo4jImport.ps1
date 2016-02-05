@@ -116,7 +116,7 @@ Function Start-Neo4jImport
     
     # Get the path to the graph data directory
     $graphPath = ''
-    $setting = ($thisServer | Get-Neo4jSetting -ConfigurationFile 'neo4j-server.properties' -Name 'org.neo4j.server.database.location')
+    $setting = ($thisServer | Get-Neo4jSetting -ConfigurationFile 'neo4j.properties' -Name 'org.neo4j.server.database.location')
     if ($setting -ne $null) { $graphPath = "$($thisServer.Home)\$($setting.Value.Replace('/','\'))" }
 
     $ShellArgs = $JavaCMD.args

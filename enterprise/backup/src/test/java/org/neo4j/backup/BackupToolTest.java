@@ -19,15 +19,15 @@
  */
 package org.neo4j.backup;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.helpers.HostnamePort;

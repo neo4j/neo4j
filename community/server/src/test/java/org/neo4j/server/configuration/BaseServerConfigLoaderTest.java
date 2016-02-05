@@ -19,24 +19,23 @@
  */
 package org.neo4j.server.configuration;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
-import org.neo4j.test.SuppressOutput;
 import org.neo4j.logging.NullLog;
+import org.neo4j.test.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.SuppressOutput.suppressAll;
-
 import static org.junit.Assert.assertNotNull;
+
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class BaseServerConfigLoaderTest
 {
@@ -47,46 +46,6 @@ public class BaseServerConfigLoaderTest
 
     private final Log log = NullLog.getInstance();
     private final BaseServerConfigLoader configLoader = new BaseServerConfigLoader();
-
-    @Test
-    public void whenDatabaseTuningFilePresentInDefaultLocationShouldLoadItEvenIfNotSpecified() throws IOException
-    {
-        // given
-        File emptyPropertyFile = PropertyFileBuilder.builder( folder.getRoot() )
-                .build();
-        DatabaseTuningPropertyFileBuilder.builder( folder.getRoot() )
-                .withKernelId( "fromdefaultlocation" )
-                .build();
-
-        // when
-        Config config = configLoader.loadConfig( null, emptyPropertyFile, log );
-
-        // then
-        assertEquals( "fromdefaultlocation", config.get( GraphDatabaseSettings.forced_kernel_id ) );
-    }
-
-    @Test
-    public void whenDatabaseTuningFilePresentInDefaultLocationShouldNotLoadIfAnotherSpecified() throws IOException
-    {
-        // given
-        File databaseTuningPropertyFileWeWantToUse = DatabaseTuningPropertyFileBuilder.builder( folder.getRoot() )
-                .withKernelId( "shouldgetloaded" )
-                .build();
-        File emptyPropertyFile = PropertyFileBuilder.builder( folder.getRoot() )
-                .withDbTuningPropertyFile( databaseTuningPropertyFileWeWantToUse )
-                .build();
-        // The tuning properties we want to ignore, in the same dir as the neo
-        // server properties
-        DatabaseTuningPropertyFileBuilder.builder( folder.newFolder() )
-                .withKernelId( "shouldnotgetloaded" )
-                .build();
-
-        // when
-        Config config = configLoader.loadConfig( null, emptyPropertyFile, log );
-
-        // then
-        assertEquals( "shouldgetloaded", config.get( GraphDatabaseSettings.forced_kernel_id ) );
-    }
 
     @Test
     public void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages() throws IOException

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{PropertyKeyName, RelTypeName, LabelName, Query}
+import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.notification.{MissingPropertyNameNotification, MissingRelTypeNotification, MissingLabelNotification, InternalNotification}
 
 /**
@@ -41,7 +41,7 @@ object checkForUnresolvedTokens extends ((Query, SemanticTable) => Seq[InternalN
       case rel@RelTypeName(name) if isEmptyRelType(name) => acc =>
         (acc :+ MissingRelTypeNotification(rel.position, name), Some(identity))
 
-      case prop@PropertyKeyName(name) if isEmptyPropertyName(name) => acc =>
+      case Property(_, prop@PropertyKeyName(name)) if isEmptyPropertyName(name) => acc =>
         (acc :+ MissingPropertyNameNotification(prop.position, name), Some(identity))
 
     }
