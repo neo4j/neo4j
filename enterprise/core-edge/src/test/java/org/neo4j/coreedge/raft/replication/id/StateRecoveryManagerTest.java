@@ -27,10 +27,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.coreedge.raft.state.StateMarshal;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -62,13 +65,13 @@ public class StateRecoveryManagerTest
         File fileB = fileB();
         fsa.create( fileB );
 
-        StateRecoveryManager manager = new TestOnlyStateRecoveryManager( fsa );
+        StateRecoveryManager<Long> manager = new StateRecoveryManager<>( fsa, new LongMarshal() );
 
         // when
         final StateRecoveryManager.RecoveryStatus recoveryStatus = manager.recover( fileA, fileB );
 
         // then
-        assertEquals( fileA, recoveryStatus.previouslyInactive() );
+        assertEquals( fileA, recoveryStatus.activeFile() );
     }
 
     @Test
@@ -86,13 +89,13 @@ public class StateRecoveryManagerTest
         File fileB = fileB();
         fsa.create( fileB );
 
-        StateRecoveryManager manager = new TestOnlyStateRecoveryManager( fsa );
+        StateRecoveryManager<Long> manager = new StateRecoveryManager<>( fsa, new LongMarshal() );
 
         // when
         final StateRecoveryManager.RecoveryStatus recoveryStatus = manager.recover( fileA, fileB );
 
         // then
-        assertEquals( fileB, recoveryStatus.previouslyInactive() );
+        assertEquals( fileB, recoveryStatus.activeFile() );
     }
 
     @Test
@@ -113,14 +116,14 @@ public class StateRecoveryManagerTest
         channel = fsa.create( fileB );
         channel.close();
 
-        StateRecoveryManager manager = new TestOnlyStateRecoveryManager( fsa );
+        StateRecoveryManager<Long> manager = new StateRecoveryManager<>( fsa, new LongMarshal() );
 
         // when
         final StateRecoveryManager.RecoveryStatus recoveryStatus = manager.recover( fileA, fileB );
 
         // then
-        assertEquals( fileA, recoveryStatus.previouslyActive() );
-        assertEquals( fileB, recoveryStatus.previouslyInactive() );
+        assertEquals( 999l, recoveryStatus.recoveredState() );
+        assertEquals( fileB, recoveryStatus.activeFile() );
     }
 
     @Test
@@ -147,13 +150,13 @@ public class StateRecoveryManagerTest
         File fileB = fileB();
         fsa.create( fileB );
 
-        StateRecoveryManager manager = new TestOnlyStateRecoveryManager( fsa );
+        StateRecoveryManager<Long> manager = new StateRecoveryManager<>( fsa, new LongMarshal() );
 
         // when
         final StateRecoveryManager.RecoveryStatus recoveryStatus = manager.recover( fileA, fileB );
 
         // then
-        assertEquals( fileB, recoveryStatus.previouslyInactive() );
+        assertEquals( fileB, recoveryStatus.activeFile() );
     }
 
     @Test
@@ -163,7 +166,7 @@ public class StateRecoveryManagerTest
         EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
         fsa.mkdir( testDir.directory() );
 
-        StateRecoveryManager manager = new TestOnlyStateRecoveryManager( fsa );
+        StateRecoveryManager<Long> manager = new StateRecoveryManager<>( fsa, new LongMarshal() );
 
         writeSomeLongsIn( fsa, fileA(), 3, 4 );
         writeSomeLongsIn( fsa, fileB(), 5, 6 );
@@ -174,8 +177,8 @@ public class StateRecoveryManagerTest
         final StateRecoveryManager.RecoveryStatus recovered = manager.recover( fileA(), fileB() );
 
         // then
-        assertEquals(fileA(), recovered.previouslyInactive());
-        assertEquals(fileB(), recovered.previouslyActive());
+        assertEquals( fileA(), recovered.activeFile() );
+        assertEquals( 6L, recovered.recoveredState() );
     }
 
     private File fileA()
@@ -233,30 +236,37 @@ public class StateRecoveryManagerTest
         return buffer;
     }
 
-    private class TestOnlyStateRecoveryManager extends StateRecoveryManager
+    private static class LongMarshal implements StateMarshal<Long>
     {
-        public TestOnlyStateRecoveryManager( FileSystemAbstraction fileSystem )
+        @Override
+        public Long startState()
         {
-            super( fileSystem );
+            return 0L;
         }
 
         @Override
-        protected long getOrdinalOfLastRecord( File storeFile ) throws IOException
+        public long ordinal( Long aLong )
         {
-            // Assumes no trailing garbage
-            final long fileSize = fileSystem.getFileSize( storeFile );
-            assert fileSize % 8 == 0 : "Size is not a multiple of 8, incomplete entries present";
+            return aLong;
+        }
 
-            if ( fileSize >= 8 )
+        @Override
+        public void marshal( Long aLong, WritableChannel channel ) throws IOException
+        {
+            channel.putLong( aLong );
+        }
+
+        @Override
+        public Long unmarshal( ReadableChannel source ) throws IOException
+        {
+            try
             {
-                ByteBuffer temp = ByteBuffer.allocate( 8 );
-                StoreChannel fileChannel = fileSystem.open( storeFile, "r" );
-                fileChannel.position( fileSize - 8 );
-                fileChannel.read( temp );
-                temp.flip();
-                return temp.getLong();
+                return source.getLong();
             }
-            return -1;
+            catch ( ReadPastEndException e )
+            {
+                return null;
+            }
         }
     }
 }

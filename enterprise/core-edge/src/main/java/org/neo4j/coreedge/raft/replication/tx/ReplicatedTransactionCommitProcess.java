@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -41,10 +40,9 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import static org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory.createImmutableReplicatedTransaction;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotCommit;
 
-public class ReplicatedTransactionCommitProcess extends LifecycleAdapter implements TransactionCommitProcess
+public class ReplicatedTransactionCommitProcess implements TransactionCommitProcess
 {
     private final Replicator replicator;
-    private final Replicator.ReplicatedContentListener replicatedTxListener;
     private final long retryIntervalMillis;
     private final LocalSessionPool sessionPool;
     private final Log log;
@@ -52,18 +50,15 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
     private final TxRetryMonitor txRetryMonitor;
 
     public ReplicatedTransactionCommitProcess( Replicator replicator, LocalSessionPool sessionPool,
-                                               Replicator.ReplicatedContentListener replicatedTxListener,
                                                long retryIntervalMillis, LogService logging,
-                                               CommittingTransactions txFutures, Monitors monitors)
+                                               CommittingTransactions txFutures, Monitors monitors )
     {
         this.sessionPool = sessionPool;
-        this.replicatedTxListener = replicatedTxListener;
         this.replicator = replicator;
         this.retryIntervalMillis = retryIntervalMillis;
         this.log = logging.getInternalLog( getClass() );
         this.txFutures = txFutures;
         txRetryMonitor = monitors.newMonitor( TxRetryMonitor.class );
-        replicator.subscribe( this.replicatedTxListener );
     }
 
     @Override
@@ -135,11 +130,5 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
                 Thread.currentThread().interrupt();
             }
         }
-    }
-
-    @Override
-    public void stop()
-    {
-        replicator.unsubscribe( replicatedTxListener );
     }
 }

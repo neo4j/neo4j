@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.raft.state.term.InMemoryTermState;
-import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState;
+import org.neo4j.coreedge.raft.state.term.TermState;
+import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -114,8 +114,8 @@ public class RaftStateBuilder
 
     public RaftState<RaftTestMember> build() throws RaftStorageException
     {
-        InMemoryTermState termStore = new InMemoryTermState();
-        InMemoryVoteState<RaftTestMember> voteStore = new InMemoryVoteState<>( );
+        StateStorage<TermState> termStore = new StubStateStorage<>( new TermState() );
+        StateStorage<VoteState<RaftTestMember>> voteStore = new StubStateStorage<>( new VoteState<>( ) );
         StubMembership membership = new StubMembership();
 
         RaftState<RaftTestMember> state = new RaftState<>( myself, termStore, membership, entryLog, voteStore );

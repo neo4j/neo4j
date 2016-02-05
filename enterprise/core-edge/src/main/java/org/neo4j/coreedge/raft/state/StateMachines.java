@@ -17,15 +17,38 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.replication.session;
+package org.neo4j.coreedge.raft.state;
 
-import org.neo4j.coreedge.server.RaftTestMember;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-public class InMemoryGlobalSessionTrackerStateTest extends BaseGlobalSessionTrackerStateTest
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+
+public class StateMachines implements StateMachine
 {
-    @Override
-    protected GlobalSessionTrackerState<RaftTestMember> instantiateSessionTracker()
+    List<StateMachine> machines = new ArrayList<>();
+
+    public void add( StateMachine stateMachine )
     {
-        return new InMemoryGlobalSessionTrackerState<>();
+        machines.add( stateMachine );
+    }
+
+    @Override
+    public void applyCommand( ReplicatedContent content, long logIndex )
+    {
+        for ( StateMachine machine : machines )
+        {
+            machine.applyCommand( content, logIndex );
+        }
+    }
+
+    @Override
+    public void flush() throws IOException
+    {
+        for ( StateMachine machine : machines )
+        {
+            machine.flush();
+        }
     }
 }

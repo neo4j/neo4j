@@ -19,22 +19,16 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.net.Outbound;
 
-public class RaftReplicator<MEMBER> implements Replicator, RaftLog.Listener
+public class RaftReplicator<MEMBER> implements Replicator
 {
     private final LeaderLocator<MEMBER> leaderLocator;
     private final MEMBER me;
     private final Outbound<MEMBER> outbound;
-    private final Set<ReplicatedContentListener> listeners = new CopyOnWriteArraySet<>();
-    private boolean contentHasStarted;
 
     public RaftReplicator( LeaderLocator<MEMBER> leaderLocator, MEMBER me, Outbound<MEMBER> outbound )
     {
@@ -46,7 +40,6 @@ public class RaftReplicator<MEMBER> implements Replicator, RaftLog.Listener
     @Override
     public synchronized void replicate( ReplicatedContent content ) throws ReplicationFailedException
     {
-        contentHasStarted = true;
         MEMBER leader;
         try
         {
@@ -58,40 +51,5 @@ public class RaftReplicator<MEMBER> implements Replicator, RaftLog.Listener
         }
 
         outbound.send( leader, new RaftMessages.NewEntry.Request<>( me, content ) );
-    }
-
-    @Override
-    public synchronized void subscribe( ReplicatedContentListener listener )
-    {
-        if ( contentHasStarted )
-        {
-            throw new IllegalStateException( "Late subscription: " + listener );
-        }
-        listeners.add( listener );
-    }
-
-    @Override
-    public void unsubscribe( ReplicatedContentListener listener )
-    {
-        listeners.remove( listener );
-    }
-
-    @Override
-    public void onAppended( ReplicatedContent content, long logIndex )
-    {
-    }
-
-    @Override
-    public void onCommitted( ReplicatedContent content, long logIndex )
-    {
-        for ( ReplicatedContentListener listener : listeners )
-        {
-            listener.onReplicated( content, logIndex );
-        }
-    }
-
-    @Override
-    public void onTruncated( long fromLogIndex )
-    {
     }
 }

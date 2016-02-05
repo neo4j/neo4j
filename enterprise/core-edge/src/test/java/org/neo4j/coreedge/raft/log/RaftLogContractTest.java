@@ -93,24 +93,17 @@ public abstract class RaftLogContractTest
     {
         RaftLog log = createRaftLog();
 
-        RaftLog.Listener listener = mock( RaftLog.Listener.class );
-        log.registerListener( listener );
-
         log.commit( 10 );
 
         assertThat( log.appendIndex(), is( -1L ) );
         assertThat( log.commitIndex(), is( -1L ) );
         assertThat( log.entryExists( 0 ), is( false ) );
-        verify( listener, never() ).onCommitted( any( ReplicatedContent.class ), anyLong() );
     }
 
     @Test
     public void shouldCommitOutOfOrderAppend() throws Exception
     {
         RaftLog log = createRaftLog();
-
-        RaftLog.Listener listener = mock( RaftLog.Listener.class );
-        log.registerListener( listener );
 
         log.commit( 10 );
 
@@ -122,7 +115,6 @@ public abstract class RaftLogContractTest
         assertThat( log.appendIndex(), is( 0L ) );
         assertThat( log.commitIndex(), is( 0L ) );
         assertThat( log.entryExists( 0 ), is( true ) );
-        verify( listener, times( 1 ) ).onCommitted( eq( logEntry.content() ), anyLong() );
     }
 
     @Test
@@ -210,36 +202,6 @@ public abstract class RaftLogContractTest
 
         assertThat( log.readLogEntry( 0 ), equalTo( logEntryA ) );
         assertThat( log.readLogEntry( 1 ), equalTo( logEntryB ) );
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    public void shouldNotifyAppendedEntryListener() throws Exception
-    {
-        RaftLog log = createRaftLog();
-
-        RaftLog.Listener listener = mock( RaftLog.Listener.class );
-        log.registerListener( listener );
-
-        RaftLogEntry logEntry = new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) );
-        log.append( logEntry );
-
-        verify( listener, times( 1 ) ).onAppended( eq( logEntry.content() ), eq( 0L ) );
-    }
-
-    @Test
-    public void shouldNotifyTruncationListener() throws Exception
-    {
-        RaftLog log = createRaftLog();
-
-        RaftLog.Listener listener = mock( RaftLog.Listener.class );
-        log.registerListener( listener );
-
-        RaftLogEntry logEntry = new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) );
-        log.append( logEntry );
-        log.truncate( 0 );
-
-        verify( listener, times( 1 ) ).onTruncated( eq( 0L ) );
     }
 
     @Test

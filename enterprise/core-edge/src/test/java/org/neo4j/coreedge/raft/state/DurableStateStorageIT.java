@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.state;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.Supplier;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,9 +36,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.KernelEventHandlers;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -48,7 +49,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-public class PersistedStateIT
+public class DurableStateStorageIT
 {
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
@@ -243,23 +244,32 @@ public class PersistedStateIT
                 return;
             }
         }
-        fail("Method " + expectedMethodName + " was not part of the failure stack trace.");
+        fail( "Method " + expectedMethodName + " was not part of the failure stack trace." );
     }
 
     private static class LongState
     {
-        private static final String FILENAME = "long.";
-        private final StatePersister<Long> statePersister;
+        private static final String FILENAME = "long";
+        private final DurableStateStorage<Long> stateStorage;
         private long theState = -1;
 
         public LongState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
                           int numberOfEntriesBeforeRotation ) throws IOException
         {
-            File fileA = new File( stateDir, FILENAME + "a" );
-            File fileB = new File( stateDir, FILENAME + "b" );
-
-            ChannelMarshal<Long> byteBufferMarshal = new ChannelMarshal<Long>()
+            StateMarshal<Long> byteBufferMarshal = new StateMarshal<Long>()
             {
+                @Override
+                public Long startState()
+                {
+                    return 0L;
+                }
+
+                @Override
+                public long ordinal( Long aLong )
+                {
+                    return aLong;
+                }
+
                 @Override
                 public void marshal( Long aLong, WritableChannel channel ) throws IOException
                 {
@@ -280,34 +290,17 @@ public class PersistedStateIT
                 }
             };
 
-            StateRecoveryManager recoveryManager = new StateRecoveryManager( fileSystemAbstraction )
-            {
-                @Override
-                protected long getOrdinalOfLastRecord( File file ) throws IOException
-                {
-                    ReadableChannel channel = new ReadAheadChannel<>( fileSystemAbstraction.open( file, "r" ) );
-
-                    Long result = -1L;
-                    Long temp;
-                    while ( (temp = byteBufferMarshal.unmarshal( channel )) != null )
-                    {
-                        result = temp;
-                    }
-                    return result;
-                }
-            };
-
-            final StateRecoveryManager.RecoveryStatus recoveryStatus = recoveryManager.recover( fileA, fileB );
-
-            this.theState = recoveryManager.getOrdinalOfLastRecord( recoveryStatus.previouslyActive() );
-
-            this.statePersister = new StatePersister<>( fileA, fileB, fileSystemAbstraction,
-                    numberOfEntriesBeforeRotation,
+            Supplier<DatabaseHealth> databaseHealthSupplier = () -> new DatabaseHealth( new
+                    DatabasePanicEventGenerator( new KernelEventHandlers( NullLog
+                    .getInstance() ) ), NullLog.getInstance() );
+            this.stateStorage = new DurableStateStorage<>( fileSystemAbstraction, stateDir, FILENAME,
                     byteBufferMarshal,
-                    recoveryStatus.previouslyInactive(),
-                    () -> new DatabaseHealth( new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog
-                            .getInstance() ) ), NullLog.getInstance() )
+                    numberOfEntriesBeforeRotation,
+                    databaseHealthSupplier,
+                    NullLogProvider.getInstance()
             );
+
+            this.theState = this.stateStorage.getInitialState();
         }
 
         public long getTheState()
@@ -317,7 +310,7 @@ public class PersistedStateIT
 
         public void setTheState( long newState ) throws IOException
         {
-            statePersister.persistStoreData( newState );
+            stateStorage.persistStoreData( newState );
             this.theState = newState;
         }
     }

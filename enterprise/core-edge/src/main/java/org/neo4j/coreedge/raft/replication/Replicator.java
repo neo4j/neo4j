@@ -23,12 +23,6 @@ package org.neo4j.coreedge.raft.replication;
  * Replicate content across a cluster of servers.
  *
  * Content producers call {@link #replicate(ReplicatedContent)}.
- *
- * Content consumers {@link #subscribe(ReplicatedContentListener) subscribe} to replicated content,
- * and are notified when content is replicated from the same server, or from another server in the cluster.
- *
- * The actual delivery semantics of replicated content afforded to users depends on the underlying replicator
- * implementation.
  */
 public interface Replicator
 {
@@ -41,32 +35,6 @@ public interface Replicator
      * @throws ReplicationFailedException Thrown when the replication surely failed.
      */
     void replicate( ReplicatedContent content ) throws ReplicationFailedException;
-
-    /**
-     * Subscribe a listener which gets notified about all delivered replicated
-     * content.
-     *
-     * @param listener The listener to subscribe.
-     */
-    void subscribe( ReplicatedContentListener listener );
-
-    /**
-     * Unsubscribe a previously registered replicated content listener.
-     *
-     * @param listener The listener to unsubscribe.
-     */
-    void unsubscribe( ReplicatedContentListener listener );
-
-    interface ReplicatedContentListener
-    {
-        /**
-         * Notification that content has been successfully replicated.
-         *
-         * @param content The replicated content.
-         * @param logIndex The index of the content.
-         */
-        void onReplicated( ReplicatedContent content, long logIndex );
-    }
 
     /**
      * Thrown when the replication surely failed, as compared to cases

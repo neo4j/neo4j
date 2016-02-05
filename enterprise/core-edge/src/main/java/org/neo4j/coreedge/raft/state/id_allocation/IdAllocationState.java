@@ -23,21 +23,20 @@ import java.io.IOException;
 import org.neo4j.coreedge.network.Message;
 import java.util.Arrays;
 
-import org.neo4j.coreedge.raft.replication.id.IdAllocationState;
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
-import org.neo4j.kernel.impl.store.id.IdType;
 
 import static java.util.Arrays.copyOf;
 
 /**
  * An in-memory representation of the IDs allocated to this core instance.
  * Instances of this class are serialized to disk by
- *
- * {@link InMemoryIdAllocationState.InMemoryIdAllocationStateChannelMarshal}. The serialized form:
- * <p>
+ * <p/>
+ * {@link Marshal}. The serialized form:
+ * <p/>
  * +----------------------------------+
  * |  8-byte length marker            |
  * +----------------------------------+
@@ -55,14 +54,14 @@ import static java.util.Arrays.copyOf;
  * |  15x 8-byte                      |
  * +----------------------------------+
  */
-public class InMemoryIdAllocationState implements IdAllocationState, Message
+public class IdAllocationState implements Message
 {
     private final long[] firstUnallocated;
     private final long[] lastIdRangeStartForMe;
     private final int[] lastIdRangeLengthForMe;
     private long logIndex;
 
-    public InMemoryIdAllocationState()
+    public IdAllocationState()
     {
         this( new long[IdType.values().length],
                 new long[IdType.values().length],
@@ -70,10 +69,10 @@ public class InMemoryIdAllocationState implements IdAllocationState, Message
                 -1L );
     }
 
-    private InMemoryIdAllocationState( long[] firstUnallocated,
-                                       long[] lastIdRangeStartForMe,
-                                       int[] lastIdRangeLengthForMe,
-                                       long logIndex )
+    private IdAllocationState( long[] firstUnallocated,
+                               long[] lastIdRangeStartForMe,
+                               int[] lastIdRangeLengthForMe,
+                               long logIndex )
     {
         this.firstUnallocated = firstUnallocated;
         this.lastIdRangeStartForMe = lastIdRangeStartForMe;
@@ -81,7 +80,7 @@ public class InMemoryIdAllocationState implements IdAllocationState, Message
         this.logIndex = logIndex;
     }
 
-    public InMemoryIdAllocationState( InMemoryIdAllocationState other )
+    public IdAllocationState( IdAllocationState other )
     {
         this.firstUnallocated = copyOf( other.firstUnallocated, other.firstUnallocated.length );
         this.lastIdRangeStartForMe = copyOf( other.lastIdRangeStartForMe, other.lastIdRangeStartForMe.length );
@@ -89,49 +88,74 @@ public class InMemoryIdAllocationState implements IdAllocationState, Message
         this.logIndex = other.logIndex;
     }
 
-    @Override
+    /**
+     * @param idType The type of graph object whose ID is under allocation
+     * @return the length of the last ID range allocated
+     */
     public int lastIdRangeLength( IdType idType )
     {
         return lastIdRangeLengthForMe[idType.ordinal()];
     }
 
-    @Override
+    /**
+     * @param idType        The type of graph object whose ID is under allocation
+     * @param idRangeLength the length of the ID range to be allocated
+     */
     public void lastIdRangeLength( IdType idType, int idRangeLength )
     {
         lastIdRangeLengthForMe[idType.ordinal()] = idRangeLength;
     }
 
-    @Override
+    /**
+     * @return The last set log index, which is the value last passed to {@link #logIndex(long)}
+     */
     public long logIndex()
     {
         return logIndex;
     }
 
-    @Override
+    /**
+     * Sets the last seen log index, which is the last log index at which a replicated value that updated this state
+     * was encountered.
+     *
+     * @param logIndex The value to set as the last log index at which this state was updated
+     */
     public void logIndex( long logIndex )
     {
         this.logIndex = logIndex;
     }
 
-    @Override
+    /**
+     * @param idType the type of graph object whose ID is under allocation
+     * @return the first unallocated entry for idType
+     */
     public long firstUnallocated( IdType idType )
     {
         return firstUnallocated[idType.ordinal()];
     }
 
-    @Override
+    /**
+     * @param idType     the type of graph object whose ID is under allocation
+     * @param idRangeEnd the first unallocated entry for idType
+     */
     public void firstUnallocated( IdType idType, long idRangeEnd )
     {
         firstUnallocated[idType.ordinal()] = idRangeEnd;
     }
 
-    @Override
+    /**
+     * @param idType The type of graph object whose ID is under allocation
+     * @return start position of allocation
+     */
     public long lastIdRangeStart( IdType idType )
     {
         return lastIdRangeStartForMe[idType.ordinal()];
     }
 
-    @Override
+    /**
+     * @param idType       The type of graph object whose ID is under allocation
+     * @param idRangeStart start position of allocation
+     */
     public void lastIdRangeStart( IdType idType, long idRangeStart )
     {
         lastIdRangeStartForMe[idType.ordinal()] = idRangeStart;
@@ -149,7 +173,7 @@ public class InMemoryIdAllocationState implements IdAllocationState, Message
             return false;
         }
 
-        InMemoryIdAllocationState that = (InMemoryIdAllocationState) o;
+        IdAllocationState that = (IdAllocationState) o;
 
         return logIndex == that.logIndex &&
                 Arrays.equals( firstUnallocated, that.firstUnallocated ) &&
@@ -167,15 +191,10 @@ public class InMemoryIdAllocationState implements IdAllocationState, Message
         return result;
     }
 
-    static class InMemoryIdAllocationStateChannelMarshal implements ChannelMarshal<InMemoryIdAllocationState>
+    public static class Marshal implements StateMarshal<IdAllocationState>
     {
-        public static final int NUMBER_OF_BYTES_PER_WRITE =
-                3 * IdType.values().length * 8 // 3 arrays of IdType enum value length storing longs
-                        + 8 * 3 // the length (as long) for each array
-                        + 8; // the raft log index
-
         @Override
-        public void marshal( InMemoryIdAllocationState state, WritableChannel channel ) throws IOException
+        public void marshal( IdAllocationState state, WritableChannel channel ) throws IOException
         {
             channel.putLong( (long) state.firstUnallocated.length );
             for ( long l : state.firstUnallocated )
@@ -198,7 +217,7 @@ public class InMemoryIdAllocationState implements IdAllocationState, Message
         }
 
         @Override
-        public InMemoryIdAllocationState unmarshal( ReadableChannel channel ) throws IOException
+        public IdAllocationState unmarshal( ReadableChannel channel ) throws IOException
         {
             try
             {
@@ -223,13 +242,25 @@ public class InMemoryIdAllocationState implements IdAllocationState, Message
 
                 long logIndex = channel.getLong();
 
-                return new InMemoryIdAllocationState( firstNotAllocated, lastIdRangeStartForMe,
+                return new IdAllocationState( firstNotAllocated, lastIdRangeStartForMe,
                         lastIdRangeLengthForMe, logIndex );
             }
             catch ( ReadPastEndException ex )
             {
                 return null;
             }
+        }
+
+        @Override
+        public IdAllocationState startState()
+        {
+            return new IdAllocationState();
+        }
+
+        @Override
+        public long ordinal( IdAllocationState state )
+        {
+            return state.logIndex();
         }
     }
 }

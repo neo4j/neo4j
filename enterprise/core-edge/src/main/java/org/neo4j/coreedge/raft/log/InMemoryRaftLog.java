@@ -22,48 +22,16 @@ package org.neo4j.coreedge.raft.log;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 
 public class InMemoryRaftLog implements RaftLog
 {
-    private final Set<Listener> listeners = new CopyOnWriteArraySet<>();
     private final Map<Long, RaftLogEntry> raftLog = new HashMap<>();
 
     private long appendIndex = -1;
     private long commitIndex = -1;
     private long term = -1;
-
-    @Override
-    public void replay() throws Throwable
-    {
-        int index = 0;
-        for (; index <= commitIndex; index++ )
-        {
-            ReplicatedContent content = readEntryContent( index );
-            for ( Listener listener : listeners )
-            {
-                listener.onAppended( content, index );
-                listener.onCommitted( content, index );
-            }
-        }
-        for (; index <= appendIndex; index++ )
-        {
-            ReplicatedContent content = readEntryContent( index );
-            for ( Listener listener : listeners )
-            {
-                listener.onAppended( content, index );
-            }
-        }
-    }
-
-    @Override
-    public void registerListener( Listener listener )
-    {
-        listeners.add( listener );
-    }
 
     @Override
     public long append( RaftLogEntry logEntry ) throws RaftStorageException
@@ -80,10 +48,6 @@ public class InMemoryRaftLog implements RaftLog
         }
 
         appendIndex++;
-        for ( Listener listener : listeners )
-        {
-            listener.onAppended( logEntry.content(), appendIndex );
-        }
         raftLog.put( appendIndex, logEntry );
         return appendIndex;
     }
@@ -95,17 +59,7 @@ public class InMemoryRaftLog implements RaftLog
         {
             commitIndex = appendIndex;
         }
-        while ( this.commitIndex < commitIndex )
-        {
-            long nextCommitIndex = this.commitIndex + 1;
-
-            RaftLogEntry logEntry = raftLog.get( nextCommitIndex );
-            for ( Listener listener : listeners )
-            {
-                listener.onCommitted( logEntry.content(), nextCommitIndex );
-            }
-            this.commitIndex = nextCommitIndex;
-        }
+        this.commitIndex = commitIndex;
     }
 
     @Override
@@ -168,11 +122,6 @@ public class InMemoryRaftLog implements RaftLog
         if ( appendIndex >= fromIndex )
         {
             appendIndex = fromIndex - 1;
-
-            for ( Listener listener : listeners )
-            {
-                listener.onTruncated( fromIndex );
-            }
         }
         term = readEntryTerm( appendIndex );
     }

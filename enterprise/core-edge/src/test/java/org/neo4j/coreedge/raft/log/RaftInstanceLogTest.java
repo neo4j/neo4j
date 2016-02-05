@@ -31,6 +31,7 @@ import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -48,7 +49,7 @@ import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 public class RaftInstanceLogTest
 {
     @Mock
-    RaftLog.Listener entryConsumer;
+    StateMachine stateMachine;
 
     private RaftTestMember myself = member( 0 );
     private ReplicatedContent content = ReplicatedInteger.valueOf( 1 );
@@ -61,10 +62,10 @@ public class RaftInstanceLogTest
     {
         // given
         testEntryLog = new InMemoryRaftLog();
-        testEntryLog.registerListener( entryConsumer );
 
         raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .raftLog( testEntryLog )
+                .stateMachine( stateMachine )
                 .build();
     }
 
@@ -355,6 +356,6 @@ public class RaftInstanceLogTest
 
         // then
         assertEquals( 2, testEntryLog.commitIndex() );
-        verify( entryConsumer ).onCommitted( eq( ReplicatedInteger.valueOf( 1 ) ), anyLong() );
+        verify( stateMachine ).applyCommand( eq( ReplicatedInteger.valueOf( 1 ) ), anyLong() );
     }
 }

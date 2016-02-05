@@ -19,38 +19,15 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-
 /**
  * Persists entries that are coordinated through RAFT, i.e. this is the log
  * of user data.
  * <p/>
  * All write operations in this interface must be durably persisted before
  * returning from the respective functions.
- * <p/>
- * Entries are appended during the RAFT replication phase, and when safely
- * replicated they will be committed. The consumer of the raft entry log
- * can then safely apply the committed entry, typically to a state machine
- * with the entry representing a state transition to be performed.
  */
 public interface RaftLog extends ReadableRaftLog
 {
-    String APPEND_INDEX_TAG = "appendIndex";
-    String COMMIT_INDEX_TAG = "commitIndex";
-
-    void replay() throws Throwable;
-
-    void registerListener( Listener consumer );
-
-    interface Listener
-    {
-        void onAppended( ReplicatedContent content, long logIndex );
-
-        void onCommitted( ReplicatedContent content, long logIndex );
-
-        void onTruncated( long fromLogIndex );
-    }
-
     /**
      * Appends entry to the end of the log. The first log index is 0.
      * <p/>

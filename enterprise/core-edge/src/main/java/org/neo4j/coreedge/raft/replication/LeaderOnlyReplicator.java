@@ -41,16 +41,4 @@ public class LeaderOnlyReplicator<MEMBER,SOCKET> implements Replicator
     {
         outbound.send( target, new RaftMessages.NewEntry.Request<>( source, content ) );
     }
-
-    @Override
-    public void subscribe( ReplicatedContentListener listener )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void unsubscribe( ReplicatedContentListener listener )
-    {
-        throw new UnsupportedOperationException();
-    }
 }

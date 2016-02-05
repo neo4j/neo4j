@@ -21,7 +21,7 @@ package org.neo4j.coreedge.server.core.locks;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.replication.DirectReplicator;
+import org.neo4j.coreedge.raft.state.StubStateStorage;
 import org.neo4j.coreedge.server.RaftTestMember;
 
 import static org.junit.Assert.assertEquals;
@@ -34,9 +34,8 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldStartWithInvalidTokenId() throws Exception
     {
         // given
-        DirectReplicator replicator = new DirectReplicator();
-        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator,
-                new InMemoryReplicatedLockTokenState<RaftTestMember>() );
+        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new StubStateStorage<>( new InMemoryReplicatedLockTokenState<RaftTestMember>() ) );
 
         // when
         int initialTokenId = stateMachine.currentToken().id();
@@ -49,57 +48,54 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldIssueNextLockTokenCandidateId() throws Exception
     {
         // given
-        DirectReplicator replicator = new DirectReplicator();
-        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>( replicator,
-                new InMemoryReplicatedLockTokenState<RaftTestMember>() );
+        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new StubStateStorage<>( new InMemoryReplicatedLockTokenState<RaftTestMember>() ) );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ) );
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ), 0 );
 
         // then
-        assertEquals( firstCandidateId+1, stateMachine.nextCandidateId() );
+        assertEquals( firstCandidateId + 1, stateMachine.nextCandidateId() );
     }
 
     @Test
     public void shouldKeepTrackOfCurrentLockTokenId() throws Exception
     {
         // given
-        DirectReplicator replicator = new DirectReplicator();
-        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator,
-                new InMemoryReplicatedLockTokenState<RaftTestMember>() );
+        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new StubStateStorage<>( new InMemoryReplicatedLockTokenState<RaftTestMember>() ) );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ) );
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ), 1 );
 
         // then
         assertEquals( firstCandidateId, stateMachine.currentToken().id() );
 
         // when
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId+1 ) );
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId + 1 ), 2 );
 
         // then
-        assertEquals( firstCandidateId+1, stateMachine.currentToken().id() );
+        assertEquals( firstCandidateId + 1, stateMachine.currentToken().id() );
     }
 
     @Test
     public void shouldKeepTrackOfLockTokenOwner() throws Exception
     {
         // given
-        DirectReplicator replicator = new DirectReplicator();
-        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator,
-                new InMemoryReplicatedLockTokenState<RaftTestMember>() );
+        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new StubStateStorage<>( new InMemoryReplicatedLockTokenState<RaftTestMember>() ) );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ) );
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ), 1 );
 
         // then
         assertEquals( member( 0 ), stateMachine.currentToken().owner() );
 
         // when
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 1 ), firstCandidateId+1 ) );
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 1 ), firstCandidateId + 1 ), 2 );
 
         // then
         assertEquals( member( 1 ), stateMachine.currentToken().owner() );
@@ -109,22 +105,21 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldAcceptOnlyFirstRequestWithSameId() throws Exception
     {
         // given
-        DirectReplicator replicator = new DirectReplicator();
-        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator,
-                new InMemoryReplicatedLockTokenState<RaftTestMember>() );
+        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new StubStateStorage<>( new InMemoryReplicatedLockTokenState<RaftTestMember>() ) );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ) );
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 1 ), firstCandidateId ) );
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ), 1 );
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 1 ), firstCandidateId ), 2 );
 
         // then
         assertEquals( 0, stateMachine.currentToken().id() );
         assertEquals( member( 0 ), stateMachine.currentToken().owner() );
 
         // when
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 1 ), firstCandidateId+1 ) );
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId+1 ) );
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 1 ), firstCandidateId + 1 ), 3 );
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId + 1 ), 4 );
 
         // then
         assertEquals( 1, stateMachine.currentToken().id() );
@@ -135,39 +130,38 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldOnlyAcceptNextImmediateId() throws Exception
     {
         // given
-        DirectReplicator replicator = new DirectReplicator();
-        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>( replicator,
-                new InMemoryReplicatedLockTokenState<RaftTestMember>() );
+        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new StubStateStorage<>( new InMemoryReplicatedLockTokenState<RaftTestMember>() ) );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId+1 ) ); // not accepted
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId + 1 ), 1 ); // not accepted
 
         // then
         assertEquals( stateMachine.currentToken().id(), LockToken.INVALID_LOCK_TOKEN_ID );
 
         // when
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ) ); // accepted
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ), 2 ); // accepted
 
         // then
         assertEquals( stateMachine.currentToken().id(), firstCandidateId );
 
         // when
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId+1 ) ); // accepted
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId + 1 ), 3 ); // accepted
 
         // then
-        assertEquals( stateMachine.currentToken().id(), firstCandidateId+1 );
+        assertEquals( stateMachine.currentToken().id(), firstCandidateId + 1 );
 
         // when
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ) ); // not accepted
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ), 4 ); // not accepted
 
         // then
-        assertEquals( stateMachine.currentToken().id(), firstCandidateId+1 );
+        assertEquals( stateMachine.currentToken().id(), firstCandidateId + 1 );
 
         // when
-        replicator.replicate( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId+3 ) ); // not accepted
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId + 3 ), 5 ); // not accepted
 
         // then
-        assertEquals( stateMachine.currentToken().id(), firstCandidateId+1 );
+        assertEquals( stateMachine.currentToken().id(), firstCandidateId + 1 );
     }
 }

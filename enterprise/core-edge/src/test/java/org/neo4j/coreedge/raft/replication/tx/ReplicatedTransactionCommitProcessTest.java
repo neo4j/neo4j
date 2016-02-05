@@ -76,7 +76,7 @@ public class ReplicatedTransactionCommitProcessTest
 
         // when
         new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ),
-                transactionStateMachine, 1, NullLogService.getInstance(), txFutures, new Monitors() )
+                1, NullLogService.getInstance(), txFutures, new Monitors() )
                 .commit( tx(), NULL, INTERNAL );
 
         // then
@@ -101,7 +101,7 @@ public class ReplicatedTransactionCommitProcessTest
 
         // when
         new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ),
-                transactionStateMachine, 1, NullLogService.getInstance(), txFutures, new Monitors() )
+                1, NullLogService.getInstance(), txFutures, new Monitors() )
                 .commit( tx(), NULL, INTERNAL );
 
         // then
@@ -116,7 +116,7 @@ public class ReplicatedTransactionCommitProcessTest
         doThrow( Replicator.ReplicationFailedException.class ).when( replicator ).replicate( any( ReplicatedContent.class) );
 
         TransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess( replicator,
-                new LocalSessionPool( coreMember ), mock( Replicator.ReplicatedContentListener.class),
+                new LocalSessionPool( coreMember ),
                 0, NullLogService.getInstance(), mock(CommittingTransactions.class), new Monitors() );
 
         // when

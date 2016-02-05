@@ -19,19 +19,22 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
-import org.junit.Test;
-
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.Test;
+
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.coreedge.raft.replication.session.InMemoryGlobalSessionTrackerState;
+import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
+import org.neo4j.coreedge.raft.state.StateMachine;
+import org.neo4j.coreedge.raft.state.StubStateStorage;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.raft.state.StateMachines;
 import org.neo4j.coreedge.server.core.locks.LockTokenManager;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -46,6 +49,7 @@ import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -61,7 +65,8 @@ public class CommitProcessStateMachineCollaborationTest
         CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
                 new AdvertisedSocketAddress( "raft:1" ) );
 
-        TriggeredReplicator replicator = new TriggeredReplicator();
+        StateMachines stateMachines = new StateMachines();
+        TriggeredReplicator replicator = new TriggeredReplicator( stateMachines );
         StubCommittingTransactionsRegistry txFutures = new StubCommittingTransactionsRegistry( replicator,
                 timeoutCounter );
 
@@ -71,11 +76,11 @@ public class CommitProcessStateMachineCollaborationTest
         LockTokenManager lockState = lockState( 0 );
         final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures,
-                new InMemoryGlobalSessionTrackerState<>(), NullLogProvider.getInstance() );
-
+                new StubStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance() );
+        stateMachines.add( stateMachine );
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
-                replicator, sessionPool, stateMachine, 100,
+                replicator, sessionPool, 100,
                 NullLogService.getInstance(), txFutures, new Monitors() );
 
         // when
@@ -92,7 +97,8 @@ public class CommitProcessStateMachineCollaborationTest
         CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
                 new AdvertisedSocketAddress( "raft:1" ) );
 
-        TriggeredReplicator replicator = new TriggeredReplicator();
+        StateMachines stateMachines = new StateMachines();
+        TriggeredReplicator replicator = new TriggeredReplicator( stateMachines );
         CommittingTransactions txFutures = new StubCommittingTransactionsRegistry( replicator );
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
@@ -102,10 +108,11 @@ public class CommitProcessStateMachineCollaborationTest
 
         final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures,
-                new InMemoryGlobalSessionTrackerState<>(), NullLogProvider.getInstance() );
+                new StubStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance() );
+        stateMachines.add( stateMachine );
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
-                replicator, sessionPool, stateMachine, 1,
+                replicator, sessionPool, 1,
                 NullLogService.getInstance(), txFutures, new Monitors() );
 
         // when
@@ -129,9 +136,14 @@ public class CommitProcessStateMachineCollaborationTest
 
     private class TriggeredReplicator implements Replicator
     {
-        private ReplicatedContentListener listener;
+        private StateMachine stateMachine;
         private int timesReplicated = 0;
         private ReplicatedContent content;
+
+        public TriggeredReplicator( StateMachine stateMachine )
+        {
+            this.stateMachine = stateMachine;
+        }
 
         @Override
         public void replicate( ReplicatedContent content ) throws ReplicationFailedException
@@ -140,21 +152,9 @@ public class CommitProcessStateMachineCollaborationTest
             timesReplicated++;
         }
 
-        @Override
-        public void subscribe( ReplicatedContentListener listener )
-        {
-            this.listener = listener;
-        }
-
-        @Override
-        public void unsubscribe( ReplicatedContentListener listener )
-        {
-            throw new UnsupportedOperationException();
-        }
-
         public void triggerReplication()
         {
-            listener.onReplicated( content, 1 );
+            stateMachine.applyCommand( content, 1 );
         }
 
         public int timesReplicated()

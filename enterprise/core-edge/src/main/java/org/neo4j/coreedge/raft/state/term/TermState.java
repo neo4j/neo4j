@@ -19,17 +19,30 @@
  */
 package org.neo4j.coreedge.raft.state.term;
 
-import org.neo4j.coreedge.raft.log.RaftStorageException;
+import java.io.IOException;
 
-/**
- * Represents the current term for this Raft instance. Implementations of this interface are expected to
- * maintain the invariant that the term never transitions to a lower value.
- */
-public interface TermState
+import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
+
+public class TermState
 {
-    String TERM_TAG = "term";
+    private long term = 0;
 
-    long currentTerm();
+    public TermState()
+    {
+    }
+
+    private TermState( long term )
+    {
+        this.term = term;
+    }
+
+    public long currentTerm()
+    {
+        return term;
+    }
 
     /**
      * Updates the term to a new value. This value is generally expected, but not required, to be persisted. Consecutive
@@ -38,7 +51,57 @@ public interface TermState
      * passed as argument.
      *
      * @param newTerm The new value.
-     * @throws RaftStorageException If the implementation persists the state and a storage exception was raised.
      */
-    void update( long newTerm ) throws RaftStorageException;
+    public void update( long newTerm )
+    {
+        failIfInvalid( newTerm );
+        term = newTerm;
+    }
+
+    /**
+     * This method implements the invariant of this class, that term never transitions to lower values. If
+     * newTerm is lower than the term already stored in this class, it will throw an
+     * {@link IllegalArgumentException}.
+     */
+    public void failIfInvalid( long newTerm )
+    {
+        if ( newTerm < term )
+        {
+            throw new IllegalArgumentException( "Cannot move to a lower term" );
+        }
+    }
+
+    public static class Marshal implements StateMarshal<TermState>
+    {
+        @Override
+        public void marshal( TermState termState, WritableChannel channel ) throws IOException
+        {
+            channel.putLong( termState.currentTerm() );
+        }
+
+        @Override
+        public TermState unmarshal( ReadableChannel source ) throws IOException
+        {
+            try
+            {
+                return new TermState( source.getLong() );
+            }
+            catch ( ReadPastEndException ex )
+            {
+                return null;
+            }
+        }
+
+        @Override
+        public TermState startState()
+        {
+            return new TermState();
+        }
+
+        @Override
+        public long ordinal( TermState state )
+        {
+            return state.currentTerm();
+        }
+    }
 }

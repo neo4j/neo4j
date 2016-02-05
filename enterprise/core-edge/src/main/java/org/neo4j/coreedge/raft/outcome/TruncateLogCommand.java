@@ -26,7 +26,7 @@ import org.neo4j.coreedge.raft.log.RaftStorageException;
 
 public class TruncateLogCommand implements LogCommand
 {
-    private final long fromIndex;
+    public final long fromIndex;
 
     public TruncateLogCommand( long fromIndex )
     {
