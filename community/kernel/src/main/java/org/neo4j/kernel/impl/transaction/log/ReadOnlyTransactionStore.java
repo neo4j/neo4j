@@ -46,11 +46,13 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
             throws IOException
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( fromPath, fs );
-        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 100 );
+        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100 );
+        LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
         final ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, fromPath );
         PhysicalLogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 0,
-                transactionIdStore, new ReadOnlyLogVersionRepository( pageCache, fromPath ),
-                monitors.newMonitor( PhysicalLogFile.Monitor.class ), transactionMetadataCache ) );
+                transactionIdStore::getLastCommittedTransactionId,
+                new ReadOnlyLogVersionRepository( pageCache, fromPath ),
+                monitors.newMonitor( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
                 new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
         physicalStore = new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader );

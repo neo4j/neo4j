@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.Supplier;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -59,9 +60,9 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     public static final String REGEX_DEFAULT_VERSION_SUFFIX = "\\.";
     private final long rotateAtSize;
     private final FileSystemAbstraction fileSystem;
-    private final TransactionIdStore transactionIdStore;
+    private final Supplier<Long> lastCommittedId;
     private final PhysicalLogFiles logFiles;
-    private final TransactionMetadataCache transactionMetadataCache;
+    private final LogHeaderCache logHeaderCache;
     private final Monitor monitor;
     private final ByteBuffer headerBuffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
     private PositionAwarePhysicalFlushableChannel writer;
@@ -71,16 +72,16 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     private volatile PhysicalLogVersionedStoreChannel channel;
 
     public PhysicalLogFile( FileSystemAbstraction fileSystem, PhysicalLogFiles logFiles, long rotateAtSize,
-            TransactionIdStore transactionIdStore,
-            LogVersionRepository logVersionRepository, Monitor monitor,
-            TransactionMetadataCache transactionMetadataCache )
+                            Supplier<Long> lastCommittedId, LogVersionRepository logVersionRepository,
+                            Monitor monitor, LogHeaderCache logHeaderCache
+    )
     {
         this.fileSystem = fileSystem;
         this.rotateAtSize = rotateAtSize;
-        this.transactionIdStore = transactionIdStore;
+        this.lastCommittedId = lastCommittedId;
         this.logVersionRepository = logVersionRepository;
         this.monitor = monitor;
-        this.transactionMetadataCache = transactionMetadataCache;
+        this.logHeaderCache = logHeaderCache;
         this.logFiles = logFiles;
         this.readerLogVersionBridge = new ReaderLogVersionBridge( fileSystem, logFiles );
     }
@@ -170,9 +171,9 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         if ( header == null )
         {
             // Either the header is not there in full or the file was new. Don't care
-            long lastTxId = transactionIdStore.getLastCommittedTransactionId();
+            long lastTxId = lastCommittedId.get();
             writeLogHeader( headerBuffer, forVersion, lastTxId );
-            transactionMetadataCache.putHeader( forVersion, lastTxId );
+            logHeaderCache.putHeader( forVersion, lastTxId );
             storeChannel.writeAll( headerBuffer );
             monitor.opened( toOpen, forVersion, lastTxId, true );
         }
@@ -252,15 +253,15 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     {
         // Start from the where we're currently at and go backwards in time (versions)
         long logVersion = logFiles.getHighestLogVersion();
-        long highTransactionId = transactionIdStore.getLastCommittedTransactionId();
+        long highTransactionId = lastCommittedId.get();
         while ( logFiles.versionExists( logVersion ) )
         {
-            long previousLogLastTxId = transactionMetadataCache.getLogHeader( logVersion );
+            long previousLogLastTxId = logHeaderCache.getLogHeader( logVersion );
             if ( previousLogLastTxId == -1 )
             {
                 LogHeader header = readLogHeader( fileSystem, logFiles.getLogFileForVersion( logVersion ) );
                 assert logVersion == header.logVersion;
-                transactionMetadataCache.putHeader( header.logVersion, header.lastCommittedTxId );
+                logHeaderCache.putHeader( header.logVersion, header.lastCommittedTxId );
                 previousLogLastTxId = header.lastCommittedTxId;
             }
 

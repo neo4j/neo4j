@@ -566,8 +566,7 @@ public class NeoStores implements AutoCloseable
             @Override
             public long initialVersion()
             {
-                return ((MetaDataStore) getOrCreateStore( StoreType.META_DATA ))
-                        .getLastCommittedTransactionId();
+                return ((MetaDataStore) getOrCreateStore( StoreType.META_DATA )).getLastCommittedTransactionId();
             }
         } );
 

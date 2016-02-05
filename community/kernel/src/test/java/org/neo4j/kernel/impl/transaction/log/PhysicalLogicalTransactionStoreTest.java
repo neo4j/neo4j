@@ -91,13 +91,15 @@ public class PhysicalLogicalTransactionStoreTest
     {
         // GIVEN
         TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
-        TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 1000 );
+        TransactionMetadataCache positionCache = new TransactionMetadataCache( 1000 );
+        LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
 
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fs );
         Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
-                transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
+                transactionIdStore::getLastCommittedTransactionId, mock( LogVersionRepository.class ), monitor,
+                logHeaderCache ) );
 
         life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache, transactionIdStore, BYPASS,
                 DATABASE_HEALTH ) );
@@ -118,15 +120,17 @@ public class PhysicalLogicalTransactionStoreTest
     {
         // GIVEN
         TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
-        TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
+        TransactionMetadataCache positionCache = new TransactionMetadataCache( 100 );
+        LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final int masterId = 2, authorId = 1;
         final long timeStarted = 12345, latestCommittedTxWhenStarted = 4545, timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
         final PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fs );
         Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore,
-                mock( LogVersionRepository.class ), monitor, positionCache ) );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
+                transactionIdStore::getLastCommittedTransactionId, mock( LogVersionRepository.class ), monitor,
+                logHeaderCache ) );
 
         life.start();
         try
@@ -145,7 +149,8 @@ public class PhysicalLogicalTransactionStoreTest
                 authorId, timeStarted, timeCommitted, latestCommittedTxWhenStarted );
         final LogFileRecoverer recoverer = new LogFileRecoverer( new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory() ), visitor );
-        logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
+        logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore::getLastCommittedTransactionId,
+                mock( LogVersionRepository.class ), monitor, logHeaderCache ) );
 
         life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
                 transactionIdStore, BYPASS, DATABASE_HEALTH ) );
@@ -236,7 +241,8 @@ public class PhysicalLogicalTransactionStoreTest
     {
         // GIVEN
         TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
-        TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
+        TransactionMetadataCache positionCache = new TransactionMetadataCache( 100 );
+        LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final int masterId = 2, authorId = 1;
         final long timeStarted = 12345, latestCommittedTxWhenStarted = 4545, timeCommitted = timeStarted + 10;
@@ -244,8 +250,8 @@ public class PhysicalLogicalTransactionStoreTest
         PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fs );
         Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
-                transactionIdStore, mock( LogVersionRepository.class ), monitor,
-                positionCache ) );
+                transactionIdStore::getLastCommittedTransactionId, mock( LogVersionRepository.class ), monitor,
+                logHeaderCache ) );
 
         life.start();
         try
@@ -263,9 +269,8 @@ public class PhysicalLogicalTransactionStoreTest
                 authorId, timeStarted, timeCommitted, latestCommittedTxWhenStarted );
         final LogFileRecoverer recoverer = new LogFileRecoverer( new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory() ), visitor );
-        logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
-                transactionIdStore, mock( LogVersionRepository.class ), monitor,
-                positionCache ) );
+        logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore::getLastCommittedTransactionId,
+                mock( LogVersionRepository.class ), monitor, logHeaderCache ) );
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile, positionCache,
                 new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() ) );
 
@@ -293,7 +298,7 @@ public class PhysicalLogicalTransactionStoreTest
     {
         // GIVEN
         LogFile logFile = mock( LogFile.class );
-        TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
+        TransactionMetadataCache cache = new TransactionMetadataCache( 10 );
 
         LifeSupport life = new LifeSupport();
 
@@ -325,7 +330,7 @@ public class PhysicalLogicalTransactionStoreTest
         // a missing file
         when( logFile.getReader( any( LogPosition.class) ) ).thenThrow( new FileNotFoundException() );
         // Which is nevertheless in the metadata cache
-        TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
+        TransactionMetadataCache cache = new TransactionMetadataCache( 10 );
         cache.cacheTransactionMetadata( 10, new LogPosition( 2, 130 ), 1, 1, 100 );
 
         LifeSupport life = new LifeSupport();

@@ -35,6 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
@@ -177,8 +178,8 @@ public class RecoveryTest
                 }
             }, monitor ) );
 
-            life.add( new PhysicalLogFile( fs, logFiles, 50, transactionIdStore, logVersionRepository,
-                    mock( PhysicalLogFile.Monitor.class ), new TransactionMetadataCache( 10, 100 ) ) );
+            life.add( new PhysicalLogFile( fs, logFiles, 50, transactionIdStore::getLastCommittedTransactionId,
+                    logVersionRepository, mock( PhysicalLogFile.Monitor.class ), new LogHeaderCache( 10 ) ) );
 
             life.start();
 
@@ -247,8 +248,8 @@ public class RecoveryTest
                 }
             }, monitor ));
 
-            life.add( new PhysicalLogFile( fs, logFiles, 50, transactionIdStore, logVersionRepository, mock( PhysicalLogFile.Monitor.class),
-                    new TransactionMetadataCache( 10, 100 )) );
+            life.add( new PhysicalLogFile( fs, logFiles, 50, transactionIdStore::getLastCommittedTransactionId,
+                    logVersionRepository, mock( PhysicalLogFile.Monitor.class), new LogHeaderCache( 10 ) ) );
 
             life.start();
 

@@ -82,7 +82,7 @@ public class BatchingTransactionAppenderTest
     private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
     private final LogFile logFile = mock( LogFile.class );
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-    private final TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 10 );
+    private final TransactionMetadataCache positionCache = new TransactionMetadataCache( 10 );
 
     @Test
     public void shouldAppendSingleTransaction() throws Exception
@@ -208,7 +208,7 @@ public class BatchingTransactionAppenderTest
 
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( latestCommittedTxWhenStarted );
 
-        LogEntryStart start = new LogEntryStart( 0, 0, 0l, latestCommittedTxWhenStarted, null,
+        LogEntryStart start = new LogEntryStart( 0, 0, 0L, latestCommittedTxWhenStarted, null,
                 LogPosition.UNSPECIFIED );
         LogEntryCommit commit = new OnePhaseCommit( latestCommittedTxWhenStarted + 2, 0l );
         CommittedTransactionRepresentation transaction =
@@ -280,7 +280,7 @@ public class BatchingTransactionAppenderTest
         doThrow( failure ).when( flushable ).flush();
         LogFile logFile = mock( LogFile.class );
         when( logFile.getWriter() ).thenReturn( channel );
-        TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 10 );
+        TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         Mockito.reset( databaseHealth );

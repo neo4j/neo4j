@@ -186,11 +186,11 @@ public class StoreMigratorFrom20IT
     {
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         assertEquals( 1317392957120L, metaDataStore.getCreationTime() );
-        assertEquals( -472309512128245482l, metaDataStore.getRandomNumber() );
-        assertEquals( 5l, metaDataStore.getCurrentLogVersion() );
+        assertEquals( -472309512128245482L, metaDataStore.getRandomNumber() );
+        assertEquals( 5L, metaDataStore.getCurrentLogVersion() );
         assertEquals( LowLimit.STORE_VERSION, MetaDataStore.versionLongToString(
                 metaDataStore.getStoreVersion() ) );
-        assertEquals( 1042l, metaDataStore.getLastCommittedTransactionId() );
+        assertEquals( 1042L, metaDataStore.getLastCommittedTransactionId() );
     }
 
     private StoreUpgrader upgrader( SchemaIndexMigrator indexMigrator, StoreMigrator storeMigrator )

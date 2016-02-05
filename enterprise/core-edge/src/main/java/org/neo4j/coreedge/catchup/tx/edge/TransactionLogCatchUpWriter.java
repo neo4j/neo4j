@@ -26,6 +26,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -61,9 +62,9 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
         logFiles = new PhysicalLogFiles( storeDir, fs );
         logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, storeDir );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
-                new ReadOnlyTransactionIdStore( pageCache, storeDir ), logVersionRepository,
+                new ReadOnlyTransactionIdStore( pageCache, storeDir )::getLastCommittedTransactionId, logVersionRepository,
                 new Monitors().newMonitor( PhysicalLogFile.Monitor.class ),
-                new TransactionMetadataCache( 10, 100 ) ) );
+                new LogHeaderCache( 10 ) ) );
         life.start();
 
         FlushableChannel channel = logFile.getWriter();
