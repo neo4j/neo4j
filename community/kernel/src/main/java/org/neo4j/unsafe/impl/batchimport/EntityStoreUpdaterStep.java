@@ -122,6 +122,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
                     }
                 }
                 highestId = max( highestId, record.getId() );
+                entityStore.prepareForCommit( record );
                 entityStore.updateRecord( record );
             }
             else

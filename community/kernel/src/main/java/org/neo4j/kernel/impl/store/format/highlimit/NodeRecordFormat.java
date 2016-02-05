@@ -39,10 +39,6 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     {
         super( fixedRecordSize( RECORD_SIZE ), 0, recordIO );
     }
-    public NodeRecordFormat()
-    {
-        super( fixedRecordSize( RECORD_SIZE ), 0 );
-    }
 
     @Override
     public NodeRecord newRecord()

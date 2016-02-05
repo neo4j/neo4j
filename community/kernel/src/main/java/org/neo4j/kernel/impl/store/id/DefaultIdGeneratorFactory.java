@@ -35,21 +35,30 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
         this.fs = fs;
     }
 
+    @Override
     public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
     {
         long maxValue = idType.getMaxValue();
         boolean aggressiveReuse = idType.allowAggressiveReuse();
-        IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, maxValue,
+        IdGenerator generator = instantiate( fs, fileName, grabSize, maxValue,
                 aggressiveReuse, highId );
         generators.put( idType, generator );
         return generator;
     }
 
+    protected IdGenerator instantiate( FileSystemAbstraction fs, File fileName, int grabSize, long maxValue,
+            boolean aggressiveReuse, long highId )
+    {
+        return new IdGeneratorImpl( fs, fileName, grabSize, maxValue, aggressiveReuse, highId );
+    }
+
+    @Override
     public IdGenerator get( IdType idType )
     {
         return generators.get( idType );
     }
 
+    @Override
     public void create( File fileName, long highId, boolean throwIfFileExists )
     {
         IdGeneratorImpl.createGenerator( fs, fileName, highId, throwIfFileExists );

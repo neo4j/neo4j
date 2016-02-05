@@ -32,11 +32,6 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     private static final int HAS_LOOP_BIT     = 0b0010_0000;
     private static final int HAS_NEXT_BIT     = 0b0100_0000;
 
-    public RelationshipGroupRecordFormat()
-    {
-        super( fixedRecordSize( RECORD_SIZE ), 0 );
-    }
-
     public RelationshipGroupRecordFormat( RecordIO<RelationshipGroupRecord> recordIO )
     {
         super( fixedRecordSize( RECORD_SIZE ), 0, recordIO );

@@ -989,6 +989,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
                 {
                     freeId( id );
                 }
+                if ( (!record.inUse() || !record.requiresSecondaryUnit()) && record.hasSecondaryUnitId() )
+                {
+                    // If record was just now deleted, or if the record used a secondary unit, but not anymore
+                    // then free the id of that secondary unit.
+                    freeId( record.getSecondaryUnitId() );
+                }
             }
         }
         catch ( IOException e )

@@ -126,11 +126,11 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         assert (headerByte & 0x7) == 0 : "Format-specific header bits (" + headerByte +
                 ") collides with format-generic header bits";
         headerByte = set( headerByte, IN_USE_BIT, record.inUse() );
-        headerByte = set( headerByte, HEADER_BIT_RECORD_UNIT, record.requiresTwoUnits() );
+        headerByte = set( headerByte, HEADER_BIT_RECORD_UNIT, record.requiresSecondaryUnit() );
         headerByte = set( headerByte, HEADER_BIT_FIRST_RECORD_UNIT, true );
         primaryCursor.putByte( headerByte );
 
-        if ( record.requiresTwoUnits() )
+        if ( record.requiresSecondaryUnit() )
         {
             doWriteInternal( record, primaryCursor,
                     recordIO.getWriteAdapter( record, primaryCursor, recordSize, storeFile ) );
@@ -151,9 +151,13 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     {
         assert record.inUse();
         int length = 1 + requiredDataLength( record );
-        if ( length > recordSize )
+        boolean requiresSecondaryUnit = length > recordSize;
+        record.setRequiresSecondaryUnit( requiresSecondaryUnit );
+        if ( record.requiresSecondaryUnit() && !record.hasSecondaryUnitId() )
         {
-            record.setSecondaryId( idSequence.nextId() );
+            // Allocate a new id at this point, but this is not the time to free this ID the the case where
+            // this record doesn't need this secondary unit anymore... that needs to be done when applying to store.
+            record.setSecondaryUnitId( idSequence.nextId() );
         }
     }
 

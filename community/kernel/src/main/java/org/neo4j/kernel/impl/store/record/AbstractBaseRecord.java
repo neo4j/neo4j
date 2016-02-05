@@ -34,7 +34,11 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     private long id;
     // Used for the "record unit" feature where one logical record may span two physical records,
     // as to still keep low and fixed record size, but support occasionally bigger records.
-    private long secondaryId;
+    private long secondaryUnitId;
+    // This flag is for when a record required a secondary unit, was changed, as a result of that change
+    // no longer requires that secondary unit and gets updated. In that scenario we still want to know
+    // about the secondary unit id so that we can free it when the time comes to apply the record to store.
+    private boolean requiresSecondaryUnit;
     private boolean inUse;
     private boolean created;
 
@@ -48,7 +52,8 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     {
         this.inUse = inUse;
         this.created = false;
-        this.secondaryId = NO_ID;
+        this.secondaryUnitId = NO_ID;
+        this.requiresSecondaryUnit = false;
         return this;
     }
 
@@ -62,7 +67,8 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     {
         inUse = false;
         created = false;
-        secondaryId = NO_ID;
+        secondaryUnitId = NO_ID;
+        requiresSecondaryUnit = false;
     }
 
     public long getId()
@@ -81,28 +87,40 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     }
 
     /**
-     * Sets a secondary record unit ID for this record. If this is set to something other than {@link #NO_ID}
-     * then {@link #requiresTwoUnits()} will return {@code true}.
+     * Sets a secondary record unit ID for this record. If this is set to something other than {@code -1}
+     * then {@link #requiresSecondaryUnit()} will return {@code true}.
+     * Setting this id is separate from setting {@link #requiresSecondaryUnit()} since this secondary unit id
+     * may be used to just free that id at the time of updating in the store if a record goes from two to one unit.
      */
-    public void setSecondaryId( long id )
+    public void setSecondaryUnitId( long id )
     {
-        this.secondaryId = id;
+        this.secondaryUnitId = id;
+    }
+
+    public boolean hasSecondaryUnitId()
+    {
+        return secondaryUnitId != NO_ID;
     }
 
     /**
-     * @return secondary record unit ID set by {@link #setSecondaryId(long)}.
+     * @return secondary record unit ID set by {@link #setSecondaryUnitId(long)}.
      */
-    public long getSecondaryId()
+    public long getSecondaryUnitId()
     {
-        return this.secondaryId;
+        return this.secondaryUnitId;
+    }
+
+    public void setRequiresSecondaryUnit( boolean requires )
+    {
+        this.requiresSecondaryUnit = requires;
     }
 
     /**
      * @return whether or not a secondary record unit ID has been assigned.
      */
-    public boolean requiresTwoUnits()
+    public boolean requiresSecondaryUnit()
     {
-        return this.secondaryId != NO_ID;
+        return requiresSecondaryUnit;
     }
 
     public final boolean inUse()

@@ -33,10 +33,6 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     private static final int HAS_END_NEXT_BIT   = 0b0100_0000;
     private static final int HAS_PROPERTY_BIT   = 0b1000_0000;
 
-    public RelationshipRecordFormat()
-    {
-        super( fixedRecordSize( RECORD_SIZE ), 0 );
-    }
     public RelationshipRecordFormat( RecordIO<RelationshipRecord> recordIO )
     {
         super( fixedRecordSize( RECORD_SIZE ), 0, recordIO );

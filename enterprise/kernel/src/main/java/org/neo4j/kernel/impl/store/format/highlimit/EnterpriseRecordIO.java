@@ -64,7 +64,7 @@ public class EnterpriseRecordIO<RECORD extends AbstractBaseRecord> implements Re
             }
             while ( secondaryPageCursorControl.shouldRetry() );
 
-            record.setSecondaryId( secondaryId );
+            record.setSecondaryUnitId( secondaryId );
         }
     }
 
@@ -76,10 +76,10 @@ public class EnterpriseRecordIO<RECORD extends AbstractBaseRecord> implements Re
 
         // Write using the normal adapter since the first reference we write cannot really overflow
         // into the secondary record
-        Reference.encode( record.getSecondaryId(), primaryCursor, PAGE_CURSOR_ADAPTER );
+        Reference.encode( record.getSecondaryUnitId(), primaryCursor, PAGE_CURSOR_ADAPTER );
 
         return new SecondaryPageCursorWriteDataAdapter(
-                pageIdForRecord( record.getSecondaryId(), storeFile.pageSize(), recordSize ),
-                offsetForId( record.getSecondaryId(), storeFile.pageSize(), recordSize ), primaryEndOffset );
+                pageIdForRecord( record.getSecondaryUnitId(), storeFile.pageSize(), recordSize ),
+                offsetForId( record.getSecondaryUnitId(), storeFile.pageSize(), recordSize ), primaryEndOffset );
     }
 }

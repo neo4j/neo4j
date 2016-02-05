@@ -192,7 +192,7 @@ public abstract class RecordFormatTest
                         {
                             assertEquals( written.inUse(), read.inUse() );
                             assertEquals( written.getId(), read.getId() );
-                            assertEquals( written.getSecondaryId(), read.getSecondaryId() );
+                            assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
                             key.assertRecordsEquals( written, read );
                         }
                         else

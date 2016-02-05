@@ -52,19 +52,19 @@ public class HighLimit implements RecordFormats
     @Override
     public RecordFormat<NodeRecord> node()
     {
-        return new NodeRecordFormat();
+        return new NodeRecordFormat( new RecordIO.CommunityRecordIO<>() );
     }
 
     @Override
     public RecordFormat<RelationshipRecord> relationship()
     {
-        return new RelationshipRecordFormat();
+        return new RelationshipRecordFormat( new RecordIO.CommunityRecordIO<>() );
     }
 
     @Override
     public RecordFormat<RelationshipGroupRecord> relationshipGroup()
     {
-        return new RelationshipGroupRecordFormat();
+        return new RelationshipGroupRecordFormat( new RecordIO.CommunityRecordIO<>() );
     }
 
     @Override

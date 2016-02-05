@@ -72,6 +72,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
 
     protected void update( RECORD record ) throws Throwable
     {
+        store.prepareForCommit( record );
         store.updateRecord( record );
     }
 
