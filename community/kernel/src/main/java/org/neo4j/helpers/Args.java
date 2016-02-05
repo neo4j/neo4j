@@ -266,6 +266,10 @@ public class Args
     /**
      * Like calling {@link #getBoolean(String, Boolean, Boolean)} with {@code true} for
      * {@code defaultValueIfNoValue}, i.e. specifying {@code --myarg} will interpret it as {@code true}.
+     *
+     * @param key argument key.
+     * @param defaultValueIfNotSpecified used if argument not specified.
+     * @return argument boolean value depending on what was specified, see above.
      */
     public Boolean getBoolean( String key, Boolean defaultValueIfNotSpecified )
     {

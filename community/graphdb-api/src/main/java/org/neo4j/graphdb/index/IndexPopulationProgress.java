@@ -21,7 +21,7 @@ package org.neo4j.graphdb.index;
 
 /**
  * This class is simply a progress counter of indexing population progress. It has the constraint that
- * 0 <= completed <= total
+ * {@code 0 <= completed <= total}
  * <p>
  * Use IndexPopulationProgress.NONE if you need an object without any particular progress.
  */

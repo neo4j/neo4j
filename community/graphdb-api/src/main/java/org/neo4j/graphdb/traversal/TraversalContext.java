@@ -62,6 +62,7 @@ public interface TraversalContext extends TraversalMetadata
      *
      * @param branch the {@link TraversalBranch} to evaluate.
      * @param state the {@link BranchState} for the branch.
+     * @param <STATE> the type of the state object.
      * @return an {@link Evaluation} of the branch in this traversal.
      */
     <STATE> Evaluation evaluate( TraversalBranch branch, BranchState<STATE> state );
