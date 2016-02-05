@@ -96,23 +96,25 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
         } // close() here is necessary to flush the temp buffer into the channel so we can read it next
 
         rawChannel = fs.open( tempFile, "r" ); // The try-with-resources closes the channel, need to reopen
-        ReadAheadChannel<StoreChannel> readAheadChannel = new ReadAheadChannel<>( rawChannel );
-        recovered = deserialize( readAheadChannel );
-
-        //THEN
-        Assert.assertEquals( countsSnapshot.getTxId(), recovered.getTxId() );
-        for ( Map.Entry<CountsKey, long[]> pair : countsSnapshot.getMap().entrySet() )
+        try ( ReadAheadChannel<StoreChannel> readAheadChannel = new ReadAheadChannel<>( rawChannel ) )
         {
-            long[] value = recovered.getMap().get( pair.getKey() );
-            Assert.assertNotNull( value );
-            Assert.assertArrayEquals( value, pair.getValue() );
-        }
+            recovered = deserialize( readAheadChannel );
 
-        for ( Map.Entry<CountsKey, long[]> pair : recovered.getMap().entrySet() )
-        {
-            long[] value = countsSnapshot.getMap().get( pair.getKey() );
-            Assert.assertNotNull( value );
-            Assert.assertArrayEquals( value, pair.getValue() );
+            //THEN
+            Assert.assertEquals( countsSnapshot.getTxId(), recovered.getTxId() );
+            for ( Map.Entry<CountsKey, long[]> pair : countsSnapshot.getMap().entrySet() )
+            {
+                long[] value = recovered.getMap().get( pair.getKey() );
+                Assert.assertNotNull( value );
+                Assert.assertArrayEquals( value, pair.getValue() );
+            }
+
+            for ( Map.Entry<CountsKey, long[]> pair : recovered.getMap().entrySet() )
+            {
+                long[] value = countsSnapshot.getMap().get( pair.getKey() );
+                Assert.assertNotNull( value );
+                Assert.assertArrayEquals( value, pair.getValue() );
+            }
         }
     }
 }

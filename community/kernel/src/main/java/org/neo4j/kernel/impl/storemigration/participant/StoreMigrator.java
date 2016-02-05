@@ -381,10 +381,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         InputIterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
-        OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) );
-        importer.doImport(
-                Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(), true,
-                        Collectors.badCollector( badOutput, 0 ) ) );
+        try ( OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) ) )
+        {
+            importer.doImport(
+                    Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(), true,
+                            Collectors.badCollector( badOutput, 0 ) ) );
+        }
 
         // During migration the batch importer only writes node, relationship, relationship group and counts stores.
         // Delete the property store files from the batch import migration so that even if we won't
