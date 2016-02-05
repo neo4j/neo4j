@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -199,6 +200,19 @@ public class ReflectiveProcedureTest
         compile( ProcedureWithInvalidRecordOutput.class ).get( 0 );
     }
 
+    @Test
+    public void shouldGiveHelpfulErrorOnContextAnnotatedStaticField() throws Throwable
+    {
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "The field `gdb` in the class named `ProcedureWithStaticContextAnnotatedField` is " +
+                                 "annotated as a @Context field,but it is static. @Context fields must be public, " +
+                                 "non-final and non-static,because they are reset each time a procedure is invoked." );
+
+        // When
+        compile( ProcedureWithStaticContextAnnotatedField.class ).get( 0 );
+    }
+
     public static class MyOutputRecord
     {
         public String name;
@@ -298,6 +312,18 @@ public class ReflectiveProcedureTest
         public String test( )
         {
             return "Testing";
+        }
+    }
+
+    public static class ProcedureWithStaticContextAnnotatedField
+    {
+        @Context
+        public static GraphDatabaseService gdb;
+
+        @Procedure
+        public Stream<MyOutputRecord> test( )
+        {
+            return null;
         }
     }
 

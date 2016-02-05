@@ -21,6 +21,11 @@ public interface Messages
                 "\n" +
                 "And then define your procedure as returning `Stream<Output>`.");
 
+    Message proc_static_field_annotated_as_context =
+            msg("The field `%s` in the class named `%s` is annotated as a @Context field," +
+                "but it is static. @Context fields must be public, non-final and non-static," +
+                "because they are reset each time a procedure is invoked.");
+
     interface Message
     {
         String defaultMessage();
