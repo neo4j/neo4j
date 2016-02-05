@@ -81,21 +81,9 @@ public abstract class PortableInstallation implements Installation
     }
 
     @Override
-    public File getDatabaseConfigurationFile()
-    {
-        return new File( getDatabaseDirectory(), NEO4J_PROPERTIES_FILENAME );
-    }
-
-    @Override
-    public InputStream getDefaultServerConfiguration()
-    {
-        return getResourceStream( DEFAULT_SERVER_CONFIG_RESOURCE_NAME );
-    }
-
-    @Override
     public InputStream getDefaultDatabaseConfiguration()
     {
-        return getResourceStream( DEFAULT_DATABASE_CONFIG_RESOURCE_NAME );
+        return getResourceStream( DEFAULT_SERVER_CONFIG_RESOURCE_NAME );
     }
 
     @Override

@@ -28,9 +28,9 @@ import org.neo4j.server.configuration.BaseServerConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.neo4j.helpers.collection.Pair.pair;
+import static org.neo4j.server.configuration.ServerSettings.auth_store;
 import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
 import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
-import static org.neo4j.server.configuration.ServerSettings.auth_store;
 
 public class DesktopConfigurator
 {
@@ -53,10 +53,7 @@ public class DesktopConfigurator
                 null,
 
                 /** Server config file */
-                installation.getServerConfigurationsFile(),
-
-                /** Database tuning file */
-                getDatabaseConfigurationFile(),
+                installation.getConfigurationsFile(),
 
                 FormattedLog.toOutputStream( System.out ),
 
@@ -83,13 +80,6 @@ public class DesktopConfigurator
         return config.get( ServerSettings.legacy_db_location ).getAbsolutePath();
     }
 
-    public int getServerPort()
-    {
-        return config.get( ServerSettings.webserver_port );
-    }
+    public int getServerPort(){ return config.get( ServerSettings.webserver_port ); }
 
-    public File getDatabaseConfigurationFile()
-    {
-        return new File( dbDir, Installation.NEO4J_PROPERTIES_FILENAME );
-    }
 }
