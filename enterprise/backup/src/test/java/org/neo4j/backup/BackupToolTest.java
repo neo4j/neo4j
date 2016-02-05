@@ -179,7 +179,7 @@ public class BackupToolTest
     public void passesOnConfigurationIfProvided() throws Exception
     {
         // given
-        File propertyFile = testDirectory.file( "neo4j.properties" );
+        File propertyFile = testDirectory.file( "neo4j.conf" );
         Properties properties = new Properties();
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( propertyFile ), null );

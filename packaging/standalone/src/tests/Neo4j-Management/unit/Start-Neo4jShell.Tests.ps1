@@ -79,9 +79,9 @@ if ($PSVersionTable.PSVersion -ne '2.0') {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting {
         @(
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_enabled'; 'Value'='true' })
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_host'; 'Value'='somehost.domain.com' })
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_port'; 'Value'='1234' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_enabled'; 'Value'='true' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_host'; 'Value'='somehost.domain.com' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_port'; 'Value'='1234' })
         )
       }
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
@@ -100,9 +100,9 @@ if ($PSVersionTable.PSVersion -ne '2.0') {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting {
         @(
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_enabled'; 'Value'='true' })
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_host'; 'Value'='somehost.domain.com' })
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_port'; 'Value'='1234' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_enabled'; 'Value'='true' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_host'; 'Value'='somehost.domain.com' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_port'; 'Value'='1234' })
         )
       }
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
@@ -122,9 +122,9 @@ if ($PSVersionTable.PSVersion -ne '2.0') {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting {
         @(
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_enabled'; 'Value'='true' })
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_host'; 'Value'='somehost.domain.com' })
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_port'; 'Value'='1234' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_enabled'; 'Value'='true' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_host'; 'Value'='somehost.domain.com' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_port'; 'Value'='1234' })
         )
       }
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
@@ -144,9 +144,9 @@ if ($PSVersionTable.PSVersion -ne '2.0') {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting {
         @(
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_enabled'; 'Value'='true' })
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_host'; 'Value'='somehost.domain.com' })
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_port'; 'Value'='1234' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_enabled'; 'Value'='true' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_host'; 'Value'='somehost.domain.com' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_port'; 'Value'='1234' })
         )
       }
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
@@ -166,9 +166,9 @@ if ($PSVersionTable.PSVersion -ne '2.0') {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting {
         @(
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_enabled'; 'Value'='true' })
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_host'; 'Value'='somehost.domain.com' })
-          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='remote_shell_port'; 'Value'='1234' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_enabled'; 'Value'='true' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_host'; 'Value'='somehost.domain.com' })
+          New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='remote_shell_port'; 'Value'='1234' })
         )
       }
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }

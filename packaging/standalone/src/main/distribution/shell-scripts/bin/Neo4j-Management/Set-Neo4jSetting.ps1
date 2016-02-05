@@ -43,9 +43,9 @@ The value of the property to set
 Create the configuration file if it does not exist
 
 .EXAMPLE
-'C:\Neo4j\neo4j-community' | Set-Neo4jSetting -ConfigurationFile 'neo4j.properties' -Name 'node_auto_indexing' -Value 'false'
+'C:\Neo4j\neo4j-community' | Set-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'node_auto_indexing' -Value 'false'
 
-Set node_auto_indexing=false in the neo4j.properties file for the Neo4j installation at C:\Neo4j\neo4j-community
+Set node_auto_indexing=false in the neo4j.conf file for the Neo4j installation at C:\Neo4j\neo4j-community
 
 .EXAMPLE
 Import-CSV -Path 'C:\settings.csv' | Set-Neo4jSetting -Force

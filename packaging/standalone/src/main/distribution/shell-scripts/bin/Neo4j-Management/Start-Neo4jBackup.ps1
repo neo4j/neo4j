@@ -134,8 +134,8 @@ Function Start-Neo4jBackup
     $BackupHost = '127.0.0.1:6362'
     Get-Neo4jSetting -Neo4jServer $thisServer | ForEach-Object -Process `
     {
-      if (($_.ConfigurationFile -eq 'neo4j.properties') -and ($_.Name -eq 'online_backup_enabled')) { $BackupEnabled = ($_.Value.ToUpper() -eq 'TRUE') }
-      if (($_.ConfigurationFile -eq 'neo4j.properties') -and ($_.Name -eq 'online_backup_server')) { $BackupHost = ($_.Value) }
+      if (($_.ConfigurationFile -eq 'neo4j.conf') -and ($_.Name -eq 'online_backup_enabled')) { $BackupEnabled = ($_.Value.ToUpper() -eq 'TRUE') }
+      if (($_.ConfigurationFile -eq 'neo4j.conf') -and ($_.Name -eq 'online_backup_server')) { $BackupHost = ($_.Value) }
     }
     if (($UseHost -ne '') -and ($UserPort -ne -1))
     {

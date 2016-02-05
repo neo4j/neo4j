@@ -140,7 +140,7 @@ public class DesktopModel
 
         for ( String fileName : fileNames )
         {
-            if ( fileName.startsWith( "neostore" ) || fileName.equals( "neo4j.properties" ) )
+            if ( fileName.startsWith( "neostore" ) || fileName.equals( "neo4j.conf" ) )
             {
                 return;
             }

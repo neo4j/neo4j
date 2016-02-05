@@ -389,7 +389,7 @@
           <systemProperties>
             <systemProperty>
               <key>org.neo4j.config.file</key>
-              <value>${basedir}/neo4j-home/conf/neo4j.properties</value>
+              <value>${basedir}/neo4j-home/conf/neo4j.conf</value>
             </systemProperty>
           </systemProperties>
         </configuration>

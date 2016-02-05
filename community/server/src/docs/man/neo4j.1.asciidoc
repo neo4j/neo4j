@@ -42,7 +42,7 @@ For information regarding Windows, see http://neo4j.com/docs/stable/powershell.h
 [[neo4j-manpage-files]]
 == FILES
 
-*conf/neo4j.properties*::
+*conf/neo4j.conf*::
   Configuration.
 
 *conf/neo4j-wrapper.conf*::

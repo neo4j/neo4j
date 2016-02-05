@@ -225,7 +225,7 @@ public class ConsistencyCheckTool
     private String usage()
     {
         return joinAsLines(
-                jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.properties>] [-v] [-" + USE_LEGACY_CHECKER + "] <storedir>" ),
+                jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.conf>] [-v] [-" + USE_LEGACY_CHECKER + "] <storedir>" ),
                 "WHERE:   -propowner          also check property owner consistency (more time consuming)",
                 "         -recovery           to perform recovery on the store before checking",
                 "         -config <filename>  is the location of an optional properties file",

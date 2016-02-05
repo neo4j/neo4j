@@ -155,7 +155,7 @@ public class RESTApiModule implements ServerModule
             catch ( IllegalArgumentException e )
             {
                 //TODO enable guard and restart EmbeddedGraphdb
-                throw new RuntimeException( "Unable to use guard, you have to enable guard in neo4j.properties", e );
+                throw new RuntimeException( "Unable to use guard, you have to enable guard in neo4j.conf", e );
             }
         }
     }

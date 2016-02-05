@@ -191,7 +191,7 @@
           <systemProperties>
             <systemProperty>
               <key>org.neo4j.config.file</key>
-              <value>${basedir}/neo4j-home/conf/neo4j.properties</value>
+              <value>${basedir}/neo4j-home/conf/neo4j.conf</value>
             </systemProperty>
           </systemProperties>
         </configuration>
@@ -315,7 +315,7 @@
               <target>
                 <property name="classpath" refid="maven.runtime.classpath" />
                 <exec executable="java">
-                  <arg line="-Dorg.neo4j.config.file=${basedir}/neo4j-home/conf/neo4j.properties" />
+                  <arg line="-Dorg.neo4j.config.file=${basedir}/neo4j-home/conf/neo4j.conf" />
                   <arg line="-classpath" />
                   <arg line="${basedir}/src/main/resources:${classpath}" />
                   <arg line="${neo4j-server.mainClass}" />

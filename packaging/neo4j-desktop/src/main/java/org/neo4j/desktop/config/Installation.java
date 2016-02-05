@@ -30,9 +30,9 @@ import org.neo4j.desktop.config.portable.Environment;
  */
 public interface Installation
 {
-    String NEO4J_PROPERTIES_FILENAME = "neo4j.properties";
+    String NEO4J_PROPERTIES_FILENAME = "neo4j.conf";
     String NEO4J_VMOPTIONS_FILENAME = "neo4j-community.vmoptions";
-    String DEFAULT_SERVER_CONFIG_RESOURCE_NAME = "/org/neo4j/desktop/config/neo4j-default.properties";
+    String DEFAULT_SERVER_CONFIG_RESOURCE_NAME = "/org/neo4j/desktop/config/neo4j-default.conf";
     String DEFAULT_VMOPTIONS_TEMPLATE_RESOURCE_NAME = "/org/neo4j/desktop/config/vmoptions.template";
     String INSTALL_PROPERTIES_FILENAME = "install.properties";
 
@@ -57,7 +57,7 @@ public interface Installation
     File getVmOptionsFile();
 
     /**
-     * Get the abstract path name that points to the neo4j.properties file.
+     * Get the abstract path name that points to the neo4j.conf file.
      */
     File getConfigurationsFile();
 
@@ -68,7 +68,7 @@ public interface Installation
     void initialize() throws Exception;
 
     /**
-     * Get the contents for a default neo4j.properties file.
+     * Get the contents for a default neo4j.conf file.
      */
     InputStream getDefaultDatabaseConfiguration();
 

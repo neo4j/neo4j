@@ -70,7 +70,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         // TODO: Obviously the logging below is insane, but we added this test in a point release, so we don't want to break anyone grepping for this
         //       This should be changed in 3.0.0.
         assertThat( captured, containsAtLeastTheseLines(
-                warn( "Config file \\[config.neo4j\\.properties\\] does not exist." ),
+                warn( "Config file \\[config.neo4j\\.conf\\] does not exist." ),
                 info( "Successfully started database" ),
                 info( "Starting HTTP on port 7474 \\(.+ threads available\\)" ),
                 info( "Mounting static content at /webadmin" ),

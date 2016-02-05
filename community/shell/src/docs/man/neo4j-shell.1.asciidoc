@@ -69,7 +69,7 @@ Examples for remote:
 Examples for local:
 ....
   neo4j-shell -path /path/to/db
-  neo4j-shell -path /path/to/db -config /path/to/neo4j.properties
+  neo4j-shell -path /path/to/db -config /path/to/neo4j.conf
   neo4j-shell -path /path/to/db -readonly
 ....
 

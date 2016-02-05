@@ -199,7 +199,7 @@ public class StoreUpgradeIntegrationTest
         {
             File dir = store.prepareDirectory( testDir.graphDbDir() );
 
-            File configFile = new File( dir, "neo4j.properties" );
+            File configFile = new File( dir, "neo4j.conf" );
             Properties props = new Properties();
             props.putAll( ServerTestUtils.getDefaultRelativeProperties() );
             props.setProperty( ServerSettings.legacy_db_location.name(), dir.getAbsolutePath() );

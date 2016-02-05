@@ -61,7 +61,7 @@ InModuleScope Neo4j-Management {
     Context "Uses default values" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
       } -ParameterFilter {
         $Name -eq 'org.neo4j.server.database.location'
       }
@@ -86,7 +86,7 @@ InModuleScope Neo4j-Management {
     Context "Uses specified graph directory" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
       } -ParameterFilter {
         $Name -eq 'org.neo4j.server.database.location'
       }
@@ -107,7 +107,7 @@ InModuleScope Neo4j-Management {
     Context "Appends other commands" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='org.neo4j.server.database.location'; 'Value'='fakedir\throwerror' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='org.neo4j.server.database.location'; 'Value'='fakedir\throwerror' })
       } -ParameterFilter {
         $Name -eq 'org.neo4j.server.database.location'
       }
@@ -128,7 +128,7 @@ InModuleScope Neo4j-Management {
     Context "Starts a new process by default" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
       } -ParameterFilter {
         $Name -eq 'org.neo4j.server.database.location'
       }
@@ -147,7 +147,7 @@ InModuleScope Neo4j-Management {
     Context "Starts shell in same process if specified" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
       } -ParameterFilter {
         $Name -eq 'org.neo4j.server.database.location'
       }
@@ -165,7 +165,7 @@ InModuleScope Neo4j-Management {
     Context "Returns the Neo4jServer Object if -PassThru" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
       Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.properties'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
       } -ParameterFilter {
         $Name -eq 'org.neo4j.server.database.location'
       }

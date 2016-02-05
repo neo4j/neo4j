@@ -40,9 +40,9 @@ The name of the property to remove
 Allow the function to set the contents of the configuration file, even if the file is read-only
 
 .EXAMPLE
-'C:\Neo4j\neo4j-community' | Remove-Neo4jSetting -ConfigurationFile 'neo4j.properties' -Name 'node_auto_indexing'
+'C:\Neo4j\neo4j-community' | Remove-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'node_auto_indexing'
 
-Remove the node_auto_indexing property in the neo4j.properties file for the Neo4j installation at C:\Neo4j\neo4j-community
+Remove the node_auto_indexing property in the neo4j.conf file for the Neo4j installation at C:\Neo4j\neo4j-community
 
 .OUTPUTS
 System.Management.Automation.PSCustomObject
