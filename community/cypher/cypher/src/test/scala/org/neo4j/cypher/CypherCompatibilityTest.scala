@@ -37,7 +37,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     execute(s"CYPHER 3.0 $query").columnAs[Long]("count(*)").next() shouldBe 1
   }
 
-  test("should_be_able_to_switch_between_versions") {
+  test("should be able to switch between versions") {
     runWithConfig() {
       engine =>
         engine.execute(s"CYPHER 2.3 $QUERY").toList shouldBe empty
@@ -45,7 +45,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     }
   }
 
-  test("should_be_able_to_switch_between_versions2") {
+  test("should be able to switch between versions2") {
     runWithConfig() {
       engine =>
         engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
@@ -53,35 +53,45 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     }
   }
 
-  test("should_be_able_to_override_config") {
+  test("should be able to override config") {
     runWithConfig(GraphDatabaseSettings.cypher_parser_version -> "2.3") {
       engine =>
         engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
     }
   }
 
-  test("should_be_able_to_override_config2") {
-    runWithConfig(GraphDatabaseSettings.cypher_parser_version -> "2.3") {
+  test("should be able to override config2") {
+    runWithConfig(GraphDatabaseSettings.cypher_parser_version -> "3.0") {
       engine =>
-        engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
+        engine.execute(s"CYPHER 2.3 $QUERY").toList shouldBe empty
     }
   }
 
-  test("should_use_default_version_by_default") {
+  test("should use default version by default") {
     runWithConfig() {
       engine =>
-        engine.execute(QUERY).toList shouldBe empty
+        val result = engine.execute(QUERY)
+        result shouldBe empty
+        result.executionPlanDescription().arguments.get("version") should equal(
+          Some("CYPHER 3.0")
+        )
     }
   }
 
   //TODO fix this test
-  ignore("should handle profile") {
+  ignore("should handle profile in compiled runtime") {
     runWithConfig() {
-      (engine: ExecutionEngine) =>
-        assertProfiled(engine, "CYPHER 2.3 runtime=interpreted PROFILE MATCH (n) RETURN n")
+      engine =>
         assertProfiled(engine, "CYPHER 2.3 runtime=compiled PROFILE MATCH (n) RETURN n")
-        assertProfiled(engine, "CYPHER 3.0 runtime=interpreted PROFILE MATCH (n) RETURN n")
         assertProfiled(engine, "CYPHER 3.0 runtime=compiled PROFILE MATCH (n) RETURN n")
+    }
+  }
+
+  test("should handle profile in interpreted runtime") {
+    runWithConfig() {
+      engine =>
+        assertProfiled(engine, "CYPHER 2.3 runtime=interpreted PROFILE MATCH (n) RETURN n")
+        assertProfiled(engine, "CYPHER 3.0 runtime=interpreted PROFILE MATCH (n) RETURN n")
     }
   }
 
@@ -92,7 +102,6 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
         assertExplained(engine, "CYPHER 3.0 EXPLAIN MATCH (n) RETURN n")
     }
   }
-
 
   private val queryThatCannotRunWithCostPlanner = "MATCH (a), (b) CREATE UNIQUE (a)-[r:X]->(b)"
 
