@@ -32,7 +32,6 @@ import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
-import org.neo4j.coreedge.raft.replication.storeid.SeedStoreId;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer;
 import org.neo4j.coreedge.raft.replication.token.TokenType;
@@ -40,7 +39,6 @@ import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -113,20 +111,6 @@ public class CoreReplicatedContentByteBufferMarshalTest
         ReplicatedContent message = new ReplicatedIdAllocationRequest(
                 new CoreMember( new AdvertisedSocketAddress( "host_a:1" ),
                         new AdvertisedSocketAddress( "host_a:2" ) ), IdType.PROPERTY, 100, 200 );
-
-        // when
-        marshal.serialize( message, buffer );
-
-        // then
-        assertThat( marshal.deserialize( buffer ), equalTo( message ) );
-    }
-
-    @Test
-    public void shouldMarshalSeedStoreId() throws Exception
-    {
-        // given
-        ByteBuf buffer = Unpooled.buffer();
-        ReplicatedContent message = new SeedStoreId( new StoreId() );
 
         // when
         marshal.serialize( message, buffer );

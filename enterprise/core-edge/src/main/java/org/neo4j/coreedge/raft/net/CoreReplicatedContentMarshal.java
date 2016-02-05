@@ -29,8 +29,6 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequestSerializer;
-import org.neo4j.coreedge.raft.replication.storeid.SeedStoreId;
-import org.neo4j.coreedge.raft.replication.storeid.SeedStoreIdSerializer;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
@@ -65,11 +63,6 @@ public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<By
         {
             buffer.writeByte( ID_RANGE_REQUEST_TYPE );
             ReplicatedIdAllocationRequestSerializer.serialize( (ReplicatedIdAllocationRequest) content, buffer );
-        }
-        else if ( content instanceof SeedStoreId )
-        {
-            buffer.writeByte( SEED_STORE_ID_TYPE );
-            SeedStoreIdSerializer.serialize( (SeedStoreId) content, buffer );
         }
         else if ( content instanceof ReplicatedTokenRequest )
         {
@@ -111,9 +104,6 @@ public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<By
                 break;
             case ID_RANGE_REQUEST_TYPE:
                 content = ReplicatedIdAllocationRequestSerializer.deserialize( buffer );
-                break;
-            case SEED_STORE_ID_TYPE:
-                content = SeedStoreIdSerializer.deserialize( buffer );
                 break;
             case TOKEN_REQUEST_TYPE:
                 content = ReplicatedTokenRequestSerializer.deserialize( buffer );
