@@ -76,8 +76,8 @@ terms of the relevant Commercial Agreement.
       <build>
         <plugins>
           <plugin>
-          <groupId>org.neo4j.build.plugins</groupId>
-          <artifactId>ease-maven-plugin</artifactId>
+            <groupId>org.neo4j.build.plugins</groupId>
+            <artifactId>ease-maven-plugin</artifactId>
             <executions>
               <execution>
                 <id>aggregate-artifacts</id>
