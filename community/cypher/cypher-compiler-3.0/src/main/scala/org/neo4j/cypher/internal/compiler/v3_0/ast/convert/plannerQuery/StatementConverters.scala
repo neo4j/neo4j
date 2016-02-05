@@ -52,11 +52,11 @@ object StatementConverters {
     require(nodes.isEmpty, "Found a blacklisted AST node: " + nodes.head.toString)
 
     query match {
-      case Query(None, queryPart: SingleQuery) =>
+      case Query(periodicCommitHint, queryPart: SingleQuery) =>
         val builder = toPlannerQueryBuilder(queryPart, semanticTable)
-        UnionQuery(Seq(builder.build()), distinct = false, builder.returns)
+        UnionQuery(Seq(builder.build()), distinct = false, builder.returns, PeriodicCommit(periodicCommitHint))
 
-      case Query(None, u: ast.Union) =>
+      case Query(periodicCommitHint, u: ast.Union) =>
         val queries: Seq[SingleQuery] = u.unionedQueries
         val distinct = u match {
           case _: UnionAll => false
@@ -68,7 +68,7 @@ object StatementConverters {
         val returns = plannedQueries.head.returns
         assert(plannedQueries.forall(_.returns == returns))
 
-        UnionQuery(plannedQueries.map(_.build()), distinct, returns)
+        UnionQuery(plannedQueries.map(_.build()), distinct, returns, PeriodicCommit(periodicCommitHint))
 
       case _ =>
         throw new CantHandleQueryException

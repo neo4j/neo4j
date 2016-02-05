@@ -46,8 +46,10 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
 
   val planBuilder = new PipeExecutionPlanBuilder(Clock.SYSTEM_CLOCK, monitors)
 
-  def build(f: PlannerQuery with CardinalityEstimation => LogicalPlan): PipeInfo =
-    planBuilder.build(f(solved))
+  def build(f: PlannerQuery with CardinalityEstimation => LogicalPlan): PipeInfo = {
+    val logicalPlan = f(solved)
+    planBuilder.build(None, logicalPlan)
+  }
 
   test("projection only query") {
     val logicalPlan = Projection(

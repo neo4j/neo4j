@@ -22,13 +22,20 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, PatternRelationship, StrictnessMode}
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Hint, LabelName}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{PeriodicCommitHint, Hint, LabelName}
 import org.neo4j.cypher.internal.frontend.v3_0.perty._
 
 import scala.annotation.tailrec
 import scala.collection.GenTraversableOnce
 
-case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[IdName])
+case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[IdName], periodicCommit: Option[PeriodicCommit])
+
+object PeriodicCommit {
+  def apply(periodicCommitHint: Option[PeriodicCommitHint]): Option[PeriodicCommit] =
+    periodicCommitHint.map(hint => new PeriodicCommit(hint.size.map(_.value)))
+}
+
+case class PeriodicCommit(val batchSize: Option[Long])
 
 case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
                                horizon: QueryHorizon = QueryProjection.empty,

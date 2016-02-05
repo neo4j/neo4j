@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, PipeInfo, PlanFingerprint, ReadsAllNodes}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantHandleQueryException, logical}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{PeriodicCommit, CantHandleQueryException, logical}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast => compilerAst, pipes}
@@ -43,7 +43,7 @@ import org.neo4j.helpers.Clock
 import scala.collection.mutable
 
 class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors, pipeBuilderFactory: PipeBuilderFactory = PipeBuilderFactory()) {
-  def build(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
+  def build(periodicCommit: Option[PeriodicCommit], plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
 
     val topLevelPipe = buildPipe(plan)
 
@@ -54,7 +54,8 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors, pipeBuilderFact
         None
     }
 
-    PipeInfo(topLevelPipe, plan.solved.exists(_.queryGraph.containsUpdates), None, fingerprint, context.plannerName)
+    val periodicCommitInfo = periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
+    PipeInfo(topLevelPipe, plan.solved.exists(_.queryGraph.containsUpdates), periodicCommitInfo, fingerprint, context.plannerName)
   }
 
   /*

@@ -178,7 +178,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       }
     }
 
-    def getLogicalPlanFor(queryString: String): (LogicalPlan, SemanticTable) = {
+    def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
       val parsedStatement = parser.parse(queryString)
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
       val semanticState = semanticChecker.check(queryString, parsedStatement, mkException)
@@ -194,8 +194,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           val metrics = metricsFactory.newMetrics(planContext.statistics)
           val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
           val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, table, queryGraphSolver, QueryGraphSolverInput.empty)
-          val plan = planner.plan(unionQuery)(context)
-          (plan, table)
+          val (periodicCommit, plan) = planner.plan(unionQuery)(context)
+          (periodicCommit, plan, table)
       }
     }
 
