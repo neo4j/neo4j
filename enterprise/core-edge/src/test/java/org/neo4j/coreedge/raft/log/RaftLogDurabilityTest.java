@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;

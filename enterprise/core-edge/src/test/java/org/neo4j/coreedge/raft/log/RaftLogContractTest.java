@@ -28,6 +28,7 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -115,6 +116,26 @@ public abstract class RaftLogContractTest
         assertThat( log.appendIndex(), is( 0L ) );
         assertThat( log.commitIndex(), is( 0L ) );
         assertThat( log.entryExists( 0 ), is( true ) );
+    }
+
+    @Test
+    public void shouldCommitOnlyOnce() throws Exception
+    {
+        RaftLog log = createRaftLog();
+
+        RaftLog.Listener listener = mock( RaftLog.Listener.class );
+        log.registerListener( listener );
+
+        RaftLogEntry logEntry = new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) );
+        log.append( logEntry );
+
+        log.commit( 10 );
+        log.commit( 10 );
+
+        assertThat( log.appendIndex(), is( 0L ) );
+        assertThat( log.commitIndex(), is( 0L ) );
+        assertThat( log.entryExists( 0 ), is( true ) );
+        verify( listener, times( 1 ) ).onCommitted( eq( logEntry.content() ), anyLong() );
     }
 
     @Test
@@ -223,5 +244,142 @@ public abstract class RaftLogContractTest
         {
             // expected
         }
+    }
+
+    @Test
+    public void shouldCommitAndThenTruncateSubsequentEntry() throws Exception
+    {
+        // given
+        RaftLog log = createRaftLog();
+        log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 0 ) ) );
+        long toCommit = log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );
+        long toTruncate = log.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 2 ) ) );
+
+        // when
+        log.commit( toCommit );
+        log.truncate( toTruncate );
+
+        // then
+        assertThat( log.entryExists( toCommit ), is( true ) );
+        assertThat( log.entryExists( toTruncate ), is( false ) );
+        assertThat( log.readEntryTerm( toCommit ), is( 0L ) );
+    }
+
+    @Test
+    public void shouldTruncateAndThenCommitPreviousEntry() throws Exception
+    {
+        // given
+        RaftLog log = createRaftLog();
+        log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 0 ) ) );
+        long toCommit = log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );
+        long toTruncate = log.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 2 ) ) );
+
+        // when
+        log.truncate( toTruncate );
+        log.commit( toCommit );
+
+        // then
+        assertThat( log.entryExists( toCommit ), is( true ) );
+        assertThat( log.entryExists( toTruncate ), is( false ) );
+        assertThat( log.readEntryTerm( toCommit ), is( 0L ) );
+    }
+
+    @Test
+    public void shouldCommitAfterTruncatingAndAppending() throws Exception
+    {
+        // given
+        RaftLog log = createRaftLog();
+        log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 0 ) ) );
+        long toCommit = log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );
+        long toTruncate = log.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 2 ) ) );
+
+        /*
+          0 1 2 Tr(2) 2 C*(1)
+         */
+
+        // when
+        log.truncate( toTruncate );
+        long lastAppended = log.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 3 ) ) );
+        log.commit( toCommit );
+
+        // then
+        assertThat( log.entryExists( toCommit ), is( true ) );
+        assertThat( log.entryExists( lastAppended ), is( true ) );
+        assertThat( log.entryExists( toTruncate ), is( true ) ); // index is "reused"
+        assertThat( log.readEntryTerm( toCommit ), is( 0L ) );
+        assertThat( log.readEntryTerm( lastAppended ), is( 2L ) );
+    }
+
+    @Test
+    public void shouldCommitAfterAppendingAndTruncating() throws Exception
+    {
+        // given
+        RaftLog log = createRaftLog();
+        log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 0 ) ) );
+        long toCommit = log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );
+        long toTruncate = log.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 2 ) ) );
+
+        // when
+        long lastAppended = log.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 3 ) ) );
+        log.truncate( toTruncate );
+        log.commit( toCommit );
+
+        // then
+        assertThat( log.entryExists( toCommit ), is( true ) );
+        assertThat( log.entryExists( lastAppended ), is( false ) );
+        assertThat( log.entryExists( toTruncate ), is( false ) );
+        assertThat( log.readEntryTerm( toCommit ), is( 0L ) );
+    }
+
+    @Test
+    public void shouldNotAllowTruncationAtLastCommit() throws Exception
+    {
+        // given
+        RaftLog log = createRaftLog();
+        log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 0 ) ) );
+        long toCommit = log.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 2 ) ) );
+
+        log.commit( toCommit );
+
+        try
+        {
+            // when
+            log.truncate( toCommit );
+            fail("Truncation at this point should have failed");
+        }
+        catch( IllegalArgumentException truncationFailed )
+        {
+            // awesome
+        }
+
+        // then
+        assertThat( log.entryExists( toCommit ), is( true ) );
+    }
+
+    @Test
+    public void shouldNotAllowTruncationBeforeLastCommit() throws Exception
+    {
+        // given
+        RaftLog log = createRaftLog();
+        log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 0 ) ) );
+        long toTryToTruncate = log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );
+        long toCommit = log.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 2 ) ) );
+
+        log.commit( toCommit );
+
+        try
+        {
+            // when
+            log.truncate( toTryToTruncate );
+            fail("Truncation at this point should have failed");
+        }
+        catch( IllegalArgumentException truncationFailed )
+        {
+            // awesome
+        }
+
+        // then
+        assertThat( log.entryExists( toCommit ), is( true ) );
+        assertThat( log.entryExists( toTryToTruncate ), is( true ) );
     }
 }

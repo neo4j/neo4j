@@ -58,7 +58,7 @@ public class PhysicalLogFileInformation implements LogFileInformation
 
         // OK, so we now have the oldest existing log version here. Open it and see if there's any transaction
         // in there. If there is then that transaction is the first one that we have.
-        return logFiles.hasAnyTransaction( version ) ? candidateFirstTx : -1;
+        return logFiles.hasAnyEntries( version ) ? candidateFirstTx : -1;
     }
 
     @Override

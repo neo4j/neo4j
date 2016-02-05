@@ -205,7 +205,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     for ( long logVersion = logFiles.getLowestLogVersion();
                             logFiles.versionExists( logVersion ); logVersion++ )
                     {
-                        if ( logFiles.hasAnyTransaction( logVersion ) )
+                        if ( logFiles.hasAnyEntries( logVersion ) )
                         {
                             LogHeader header = logFiles.extractHeader( logVersion );
                             long firstTransactionIdInThisLog = header.lastCommittedTxId + 1;

@@ -77,4 +77,5 @@ public class RaftLogEntry
     {
         return String.format( "RaftLogEntry{term=%d, content=%s}", term, content );
     }
+
 }

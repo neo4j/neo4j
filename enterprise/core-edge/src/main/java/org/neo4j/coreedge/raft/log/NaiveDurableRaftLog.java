@@ -27,8 +27,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.state.ByteBufferMarshal;
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
