@@ -12,6 +12,7 @@ Apache Software License, Version 2.0
   Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
+  FindBugs-jsr305
   Jackson
   JAX-RS provider for JSON content type
   Jetty :: Http Utility
@@ -1307,6 +1308,7 @@ version.
 
 ------------------------------------------------------------------------------
 GNU Lesser General Public License, Version 2.1
+  FindBugs-Annotations
   Logback Access Module
   Logback Classic Module
   Logback Core Module

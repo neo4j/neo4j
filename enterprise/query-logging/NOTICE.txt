@@ -25,6 +25,10 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  FindBugs-jsr305
   Lucene Core
   Lucene Memory
+
+GNU Lesser General Public License, Version 2.1
+  FindBugs-Annotations
 

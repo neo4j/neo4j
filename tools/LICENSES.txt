@@ -6,6 +6,7 @@ Apache Software License, Version 2.0
   airline
   Apache Commons Lang
   ConcurrentLinkedHashMap
+  FindBugs-jsr305
   Guava: Google Core Libraries for Java
   javax.inject
   Lucene Common Analyzers
