@@ -27,6 +27,7 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import javax.annotation.Nonnull;
 
 import org.neo4j.concurrent.AsyncEventSender;
 import org.neo4j.logging.AbstractLog;
@@ -245,129 +246,133 @@ public class AsyncLogTest
         }
 
         @Override
-        public void bulk( Consumer<Log> consumer )
+        public void bulk( @Nonnull Consumer<Log> consumer )
         {
             throw new UnsupportedOperationException();
         }
 
+        @Nonnull
         @Override
         public Logger debugLogger()
         {
             return new Logger()
             {
                 @Override
-                public void log( String message )
+                public void log( @Nonnull String message )
                 {
                     log.debug( message );
                 }
 
                 @Override
-                public void log( String message, Throwable throwable )
+                public void log( @Nonnull String message, @Nonnull Throwable throwable )
                 {
                     log.debug( message, throwable );
                 }
 
                 @Override
-                public void log( String format, Object... arguments )
+                public void log( @Nonnull String format, @Nonnull Object... arguments )
                 {
                     log.debug( format, arguments );
                 }
 
                 @Override
-                public void bulk( Consumer<Logger> consumer )
+                public void bulk( @Nonnull Consumer<Logger> consumer )
                 {
                     throw new UnsupportedOperationException();
                 }
             };
         }
 
+        @Nonnull
         @Override
         public Logger infoLogger()
         {
             return new Logger()
             {
                 @Override
-                public void log( String message )
+                public void log( @Nonnull String message )
                 {
                     log.info( message );
                 }
 
                 @Override
-                public void log( String message, Throwable throwable )
+                public void log( @Nonnull String message, @Nonnull Throwable throwable )
                 {
                     log.info( message, throwable );
                 }
 
                 @Override
-                public void log( String format, Object... arguments )
+                public void log( @Nonnull String format, @Nonnull Object... arguments )
                 {
                     log.info( format, arguments );
                 }
 
                 @Override
-                public void bulk( Consumer<Logger> consumer )
+                public void bulk( @Nonnull Consumer<Logger> consumer )
                 {
                     throw new UnsupportedOperationException();
                 }
             };
         }
 
+        @Nonnull
         @Override
         public Logger warnLogger()
         {
             return new Logger()
             {
                 @Override
-                public void log( String message )
+                public void log( @Nonnull String message )
                 {
                     log.warn( message );
                 }
 
                 @Override
-                public void log( String message, Throwable throwable )
+                public void log( @Nonnull String message, @Nonnull Throwable throwable )
                 {
                     log.warn( message, throwable );
                 }
 
                 @Override
-                public void log( String format, Object... arguments )
+                public void log( @Nonnull String format, @Nonnull Object... arguments )
                 {
                     log.warn( format, arguments );
                 }
 
                 @Override
-                public void bulk( Consumer<Logger> consumer )
+                public void bulk( @Nonnull Consumer<Logger> consumer )
                 {
                     throw new UnsupportedOperationException();
                 }
             };
         }
 
+        @Nonnull
         @Override
         public Logger errorLogger()
         {
             return new Logger()
             {
                 @Override
-                public void log( String message )
+                public void log( @Nonnull String message )
                 {
                     log.error( message );
                 }
 
                 @Override
-                public void log( String message, Throwable throwable )
+                public void log( @Nonnull String message, @Nonnull Throwable throwable )
                 {
                     log.error( message, throwable );
                 }
 
                 @Override
-                public void log( String format, Object... arguments )
+                public void log( @Nonnull String format, @Nonnull Object... arguments )
                 {
                     log.error( format, arguments );
                 }
 
                 @Override
-                public void bulk( Consumer<Logger> consumer )
+                public void bulk( @Nonnull Consumer<Logger> consumer )
                 {
                     throw new UnsupportedOperationException();
                 }
@@ -397,136 +402,140 @@ public class AsyncLogTest
         }
 
         @Override
-        public void bulk( Consumer<Log> consumer )
+        public void bulk( @Nonnull Consumer<Log> consumer )
         {
             throw new UnsupportedOperationException();
         }
 
+        @Nonnull
         @Override
         public Logger debugLogger()
         {
             return new Logger()
             {
                 @Override
-                public void log( String message )
+                public void log( @Nonnull String message )
                 {
                     matcher = builder.debug( messageMatcher( message ) );
                 }
 
                 @Override
-                public void log( String message, Throwable throwable )
+                public void log( @Nonnull String message, @Nonnull Throwable throwable )
                 {
                     matcher = builder.debug( messageMatcher( message ), sameInstance( throwable ) );
                 }
 
                 @Override
-                public void log( String format, Object... arguments )
+                public void log( @Nonnull String format, @Nonnull Object... arguments )
                 {
                     matcher = builder.debug( messageMatcher( format ), arguments );
                 }
 
                 @Override
-                public void bulk( Consumer<Logger> consumer )
+                public void bulk( @Nonnull Consumer<Logger> consumer )
                 {
                     throw new UnsupportedOperationException();
                 }
             };
         }
 
+        @Nonnull
         @Override
         public Logger infoLogger()
         {
             return new Logger()
             {
                 @Override
-                public void log( String message )
+                public void log( @Nonnull String message )
                 {
                     matcher = builder.info( messageMatcher( message ) );
                 }
 
                 @Override
-                public void log( String message, Throwable throwable )
+                public void log( @Nonnull String message, @Nonnull Throwable throwable )
                 {
                     matcher = builder.info( messageMatcher( message ), sameInstance( throwable ) );
                 }
 
                 @Override
-                public void log( String format, Object... arguments )
+                public void log( @Nonnull String format, @Nonnull Object... arguments )
                 {
                     matcher = builder.info( messageMatcher( format ), arguments );
                 }
 
                 @Override
-                public void bulk( Consumer<Logger> consumer )
+                public void bulk( @Nonnull Consumer<Logger> consumer )
                 {
                     throw new UnsupportedOperationException();
                 }
             };
         }
 
+        @Nonnull
         @Override
         public Logger warnLogger()
         {
             return new Logger()
             {
                 @Override
-                public void log( String message )
+                public void log( @Nonnull String message )
                 {
                     matcher = builder.warn( messageMatcher( message ) );
                 }
 
                 @Override
-                public void log( String message, Throwable throwable )
+                public void log( @Nonnull String message, @Nonnull Throwable throwable )
                 {
                     matcher = builder.warn( messageMatcher( message ), sameInstance( throwable ) );
                 }
 
                 @Override
-                public void log( String format, Object... arguments )
+                public void log( @Nonnull String format, @Nonnull Object... arguments )
                 {
                     matcher = builder.warn( messageMatcher( format ), arguments );
                 }
 
                 @Override
-                public void bulk( Consumer<Logger> consumer )
+                public void bulk( @Nonnull Consumer<Logger> consumer )
                 {
                     throw new UnsupportedOperationException();
                 }
             };
         }
 
+        @Nonnull
         @Override
         public Logger errorLogger()
         {
             return new Logger()
             {
                 @Override
-                public void log( String message )
+                public void log( @Nonnull String message )
                 {
                     matcher = builder.error( messageMatcher( message ) );
                 }
 
                 @Override
-                public void log( String message, Throwable throwable )
+                public void log( @Nonnull String message, @Nonnull Throwable throwable )
                 {
                     matcher = builder.error( messageMatcher( message ), sameInstance( throwable ) );
                 }
 
                 @Override
-                public void log( String format, Object... arguments )
+                public void log( @Nonnull String format, @Nonnull Object... arguments )
                 {
                     matcher = builder.error( messageMatcher( format ), arguments );
                 }
 
                 @Override
-                public void bulk( Consumer<Logger> consumer )
+                public void bulk( @Nonnull Consumer<Logger> consumer )
                 {
                     throw new UnsupportedOperationException();
                 }
             };
         }
 
-        private Matcher<String> messageMatcher( String message )
+        private Matcher<String> messageMatcher( @Nonnull String message )
         {
             return allOf( startsWith( "[AsyncLog @ " ), endsWith( "]  " + message ) );
         }

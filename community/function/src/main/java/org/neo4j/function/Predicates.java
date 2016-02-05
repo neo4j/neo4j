@@ -28,6 +28,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import javax.annotation.Nonnull;
 
 /**
  * Constructors for basic {@link Predicate} types
@@ -98,7 +99,7 @@ public class Predicates
         };
     }
 
-    public static <T> Predicate<T> instanceOf( final Class clazz )
+    public static <T> Predicate<T> instanceOf( @Nonnull final Class clazz )
     {
         return item -> item != null && clazz.isInstance( item );
     }

@@ -24,6 +24,7 @@ import java.io.StringWriter;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.function.Consumer;
+import javax.annotation.Nonnull;
 
 /**
  * Buffers all messages sent to it, and is able to replay those messages into
@@ -57,7 +58,7 @@ public class BufferingLog extends AbstractLog
     private abstract class BufferingLogger implements Logger
     {
         @Override
-        public void log( String message )
+        public void log( @Nonnull String message )
         {
             LogMessage logMessage = buildMessage( message );
             synchronized (buffer)
@@ -66,10 +67,10 @@ public class BufferingLog extends AbstractLog
             }
         }
 
-        protected abstract LogMessage buildMessage( String message );
+        protected abstract LogMessage buildMessage( @Nonnull String message );
 
         @Override
-        public void log( final String message, final Throwable throwable )
+        public void log( @Nonnull final String message, @Nonnull final Throwable throwable )
         {
             LogMessage logMessage = buildMessage( message, throwable );
             synchronized (buffer)
@@ -81,7 +82,7 @@ public class BufferingLog extends AbstractLog
         protected abstract LogMessage buildMessage( String message, Throwable throwable );
 
         @Override
-        public void log( String format, Object... arguments )
+        public void log( @Nonnull String format, @Nonnull Object... arguments )
         {
             LogMessage logMessage = buildMessage( format, arguments );
             synchronized (buffer)
@@ -93,7 +94,7 @@ public class BufferingLog extends AbstractLog
         protected abstract LogMessage buildMessage( String message, Object... arguments );
 
         @Override
-        public void bulk( Consumer<Logger> consumer )
+        public void bulk( @Nonnull Consumer<Logger> consumer )
         {
             synchronized (buffer)
             {
@@ -105,7 +106,7 @@ public class BufferingLog extends AbstractLog
     private final Logger debugLogger = new BufferingLogger()
     {
         @Override
-        public LogMessage buildMessage( final String message )
+        public LogMessage buildMessage( @Nonnull final String message )
         {
             return new LogMessage()
             {
@@ -124,7 +125,7 @@ public class BufferingLog extends AbstractLog
         }
 
         @Override
-        public LogMessage buildMessage( final String message, final Throwable throwable )
+        public LogMessage buildMessage( @Nonnull final String message, @Nonnull final Throwable throwable )
         {
             return new LogMessage()
             {
@@ -166,7 +167,7 @@ public class BufferingLog extends AbstractLog
     private final Logger infoLogger = new BufferingLogger()
     {
         @Override
-        public LogMessage buildMessage( final String message )
+        public LogMessage buildMessage( @Nonnull final String message )
         {
             return new LogMessage()
             {
@@ -185,7 +186,7 @@ public class BufferingLog extends AbstractLog
         }
 
         @Override
-        public LogMessage buildMessage( final String message, final Throwable throwable )
+        public LogMessage buildMessage( @Nonnull final String message, @Nonnull final Throwable throwable )
         {
             return new LogMessage()
             {
@@ -227,7 +228,7 @@ public class BufferingLog extends AbstractLog
     private final Logger warnLogger = new BufferingLogger()
     {
         @Override
-        public LogMessage buildMessage( final String message )
+        public LogMessage buildMessage( @Nonnull final String message )
         {
             return new LogMessage()
             {
@@ -246,7 +247,7 @@ public class BufferingLog extends AbstractLog
         }
 
         @Override
-        public LogMessage buildMessage( final String message, final Throwable throwable )
+        public LogMessage buildMessage( @Nonnull final String message, @Nonnull final Throwable throwable )
         {
             return new LogMessage()
             {
@@ -288,7 +289,7 @@ public class BufferingLog extends AbstractLog
     private final Logger errorLogger = new BufferingLogger()
     {
         @Override
-        public LogMessage buildMessage( final String message )
+        public LogMessage buildMessage( @Nonnull final String message )
         {
             return new LogMessage()
             {
@@ -307,7 +308,7 @@ public class BufferingLog extends AbstractLog
         }
 
         @Override
-        public LogMessage buildMessage( final String message, final Throwable throwable )
+        public LogMessage buildMessage( @Nonnull final String message, @Nonnull final Throwable throwable )
         {
             return new LogMessage()
             {
@@ -353,24 +354,28 @@ public class BufferingLog extends AbstractLog
         return true;
     }
 
+    @Nonnull
     @Override
     public Logger debugLogger()
     {
         return this.debugLogger;
     }
 
+    @Nonnull
     @Override
     public Logger infoLogger()
     {
         return infoLogger;
     }
 
+    @Nonnull
     @Override
     public Logger warnLogger()
     {
         return warnLogger;
     }
 
+    @Nonnull
     @Override
     public Logger errorLogger()
     {
@@ -378,7 +383,7 @@ public class BufferingLog extends AbstractLog
     }
 
     @Override
-    public void bulk( Consumer<Log> consumer )
+    public void bulk( @Nonnull Consumer<Log> consumer )
     {
         synchronized (buffer)
         {

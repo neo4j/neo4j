@@ -20,6 +20,7 @@
 package org.neo4j.logging.async;
 
 import java.util.function.Consumer;
+import javax.annotation.Nonnull;
 
 import org.neo4j.concurrent.AsyncEventSender;
 import org.neo4j.logging.AbstractLog;
@@ -35,7 +36,7 @@ public class AsyncLog extends AbstractLog
     private final Log log;
     private final AsyncEventSender<AsyncLogEvent> events;
 
-    public AsyncLog( AsyncEventSender<AsyncLogEvent> events, Log log )
+    public AsyncLog( @Nonnull AsyncEventSender<AsyncLogEvent> events, @Nonnull Log log )
     {
         this.log = requireNonNull( log, "Log" );
         this.events = requireNonNull( events, "AsyncEventSender<AsyncLogEvent>" );
@@ -47,24 +48,28 @@ public class AsyncLog extends AbstractLog
         return log.isDebugEnabled();
     }
 
+    @Nonnull
     @Override
     public Logger debugLogger()
     {
         return new AsyncLogger( events, log.debugLogger() );
     }
 
+    @Nonnull
     @Override
     public Logger infoLogger()
     {
         return new AsyncLogger( events, log.infoLogger() );
     }
 
+    @Nonnull
     @Override
     public Logger warnLogger()
     {
         return new AsyncLogger( events, log.warnLogger() );
     }
 
+    @Nonnull
     @Override
     public Logger errorLogger()
     {
@@ -72,7 +77,7 @@ public class AsyncLog extends AbstractLog
     }
 
     @Override
-    public void bulk( Consumer<Log> consumer )
+    public void bulk( @Nonnull Consumer<Log> consumer )
     {
         events.send( bulkLogEvent( log, consumer ) );
     }
@@ -82,32 +87,32 @@ public class AsyncLog extends AbstractLog
         private final Logger logger;
         private final AsyncEventSender<AsyncLogEvent> events;
 
-        AsyncLogger( AsyncEventSender<AsyncLogEvent> events, Logger logger )
+        AsyncLogger( @Nonnull AsyncEventSender<AsyncLogEvent> events, @Nonnull Logger logger )
         {
             this.logger = requireNonNull( logger, "Logger" );
             this.events = events;
         }
 
         @Override
-        public void log( String message )
+        public void log( @Nonnull String message )
         {
             events.send( logEvent( logger, message ) );
         }
 
         @Override
-        public void log( String message, Throwable throwable )
+        public void log( @Nonnull String message, @Nonnull Throwable throwable )
         {
             events.send( logEvent( logger, message, throwable ) );
         }
 
         @Override
-        public void log( String format, Object... arguments )
+        public void log( @Nonnull String format, @Nonnull Object... arguments )
         {
             events.send( logEvent( logger, format, arguments ) );
         }
 
         @Override
-        public void bulk( Consumer<Logger> consumer )
+        public void bulk( @Nonnull Consumer<Logger> consumer )
         {
             events.send( bulkLogEvent( logger, consumer ) );
         }
