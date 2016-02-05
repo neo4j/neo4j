@@ -28,11 +28,21 @@ import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
 
 public class Neo4jJsonCodec extends ObjectMapper
 {
+    private TransitionalPeriodTransactionMessContainer container;
+
+    public Neo4jJsonCodec( TransitionalPeriodTransactionMessContainer container )
+    {
+        this();
+        this.container = container;
+    }
+
     public Neo4jJsonCodec()
     {
         getSerializationConfig().without( SerializationConfig.Feature.FLUSH_AFTER_WRITE_VALUE );
@@ -43,11 +53,11 @@ public class Neo4jJsonCodec extends ObjectMapper
     {
         if ( value instanceof PropertyContainer )
         {
-            writePropertyContainer( out, (PropertyContainer) value );
+            writePropertyContainer( out, (PropertyContainer) value, TransactionStateChecker.create( container ) );
         }
         else if ( value instanceof Path )
         {
-            writePath( out, ((Path) value).iterator() );
+            writePath( out, ((Path) value).iterator(), TransactionStateChecker.create( container ) );
         }
         else if (value instanceof Iterable)
         {
@@ -102,14 +112,14 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writePath( JsonGenerator out, Iterator<PropertyContainer> value ) throws IOException
+    private void writePath( JsonGenerator out, Iterator<PropertyContainer> value, TransactionStateChecker txStateChecker ) throws IOException
     {
         out.writeStartArray();
         try
         {
             while ( value.hasNext() )
             {
-                writePropertyContainer( out, value.next() );
+                writePropertyContainer( out, value.next(), txStateChecker );
             }
         }
         finally
@@ -118,14 +128,61 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writePropertyContainer( JsonGenerator out, PropertyContainer value ) throws IOException
+    private void writePropertyContainer( JsonGenerator out, PropertyContainer value, TransactionStateChecker txStateChecker )
+            throws IOException
+    {
+        if ( value instanceof Node )
+        {
+            writeNode( out, (Node) value, txStateChecker );
+        }
+        else if ( value instanceof Relationship )
+        {
+            writeRelationship( out, (Relationship) value, txStateChecker );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Expected a Node or Relationship, but got a " + value.toString() );
+        }
+    }
+
+    private void writeNode( JsonGenerator out, Node node, TransactionStateChecker txStateChecker ) throws IOException
     {
         out.writeStartObject();
         try
         {
-            for ( Map.Entry<String, Object> property : value.getAllProperties().entrySet() )
+            if ( txStateChecker.isNodeDeletedInCurrentTx( node.getId() ) )
             {
-                out.writeObjectField( property.getKey(), property.getValue() );
+                out.writeBooleanField( "deleted", Boolean.TRUE );
+            }
+            else
+            {
+                for ( Map.Entry<String,Object> property : node.getAllProperties().entrySet() )
+                {
+                    out.writeObjectField( property.getKey(), property.getValue() );
+                }
+            }
+        }
+        finally
+        {
+            out.writeEndObject();
+        }
+    }
+
+    private void writeRelationship( JsonGenerator out, Relationship node, TransactionStateChecker txStateChecker ) throws IOException
+    {
+        out.writeStartObject();
+        try
+        {
+            if ( txStateChecker.isRelationshipDeletedInCurrentTx( node.getId() ) )
+            {
+                out.writeBooleanField( "deleted", Boolean.TRUE );
+            }
+            else
+            {
+                for ( Map.Entry<String,Object> property : node.getAllProperties().entrySet() )
+                {
+                    out.writeObjectField( property.getKey(), property.getValue() );
+                }
             }
         }
         finally

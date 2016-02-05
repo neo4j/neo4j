@@ -58,7 +58,7 @@ public class RowWriterTests
         json.writeStartObject();
         // RETURN {one:{two:[true, {three: 42}]}}
         resultDataContentWriter.write( json, asList( "the column" ), new MapRow(
-                map( "the column", map( "one", map( "two", asList( true, map( "three", 42 ) ) ) ) ) ) );
+                map( "the column", map( "one", map( "two", asList( true, map( "three", 42 ) ) ) ) ) ), null );
         json.writeEndObject();
         json.flush();
         json.close();

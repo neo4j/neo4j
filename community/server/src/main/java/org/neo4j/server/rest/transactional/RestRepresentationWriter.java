@@ -47,7 +47,8 @@ class RestRepresentationWriter implements ResultDataContentWriter
     }
 
     @Override
-    public void write( JsonGenerator out, Iterable<String> columns, Result.ResultRow row ) throws IOException
+    public void write( JsonGenerator out, Iterable<String> columns, Result.ResultRow row,
+            TransactionStateChecker txStateChecker ) throws IOException
     {
         RepresentationFormat format = new StreamingJsonFormat.StreamingRepresentationFormat( out, null );
         out.writeArrayFieldStart( "rest" );

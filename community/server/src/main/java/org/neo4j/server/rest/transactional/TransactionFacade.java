@@ -87,6 +87,6 @@ public class TransactionFacade
 
     public ExecutionResultSerializer serializer( OutputStream output, URI baseUri )
     {
-        return new ExecutionResultSerializer( output, baseUri, logProvider );
+        return new ExecutionResultSerializer( output, baseUri, logProvider, kernel );
     }
 }
