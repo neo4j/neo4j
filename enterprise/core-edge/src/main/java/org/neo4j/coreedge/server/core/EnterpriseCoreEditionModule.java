@@ -93,7 +93,6 @@ import org.neo4j.coreedge.server.logging.BetterMessageLogger;
 import org.neo4j.coreedge.server.logging.MessageLogger;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
@@ -186,7 +185,7 @@ public class EnterpriseCoreEditionModule
         RaftServer<CoreMember> raftServer = new RaftServer<>( marshal, raftListenAddress, logProvider );
 
         final DelayedRenewableTimeoutService raftTimeoutService =
-                new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK, logProvider );
+                new DelayedRenewableTimeoutService( SYSTEM_CLOCK, logProvider );
 
         NaiveDurableRaftLog raftLog = life.add( new NaiveDurableRaftLog( fileSystem,
                 new File( clusterStateDirectory, NaiveDurableRaftLog.DIRECTORY_NAME ),
@@ -471,7 +470,7 @@ public class EnterpriseCoreEditionModule
                 myself, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
                 raftTimeoutService, loggingRaftInbound,
                 new RaftOutbound( outbound ), leaderWaitTimeout, logProvider,
-                raftMembershipManager, logShipping, databaseHealthSupplier, Clock.SYSTEM_CLOCK, monitors );
+                raftMembershipManager, logShipping, databaseHealthSupplier, SYSTEM_CLOCK, monitors );
 
         life.add( new RaftDiscoveryServiceConnector( discoveryService, raftInstance ) );
 

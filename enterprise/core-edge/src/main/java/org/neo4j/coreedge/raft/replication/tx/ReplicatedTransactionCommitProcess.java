@@ -88,8 +88,9 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
         boolean interrupted = false;
         try ( CommittingTransaction futureTxId = txFutures.register( operationContext.localOperationId() ) )
         {
-            while ( true )
+            for ( long numberOfRetries = 1; true; numberOfRetries++ )
             {
+                log.info( "Replicating transaction %s, attempt: %d ", operationContext, numberOfRetries );
                 try
                 {
                     replicator.replicate( transaction );
