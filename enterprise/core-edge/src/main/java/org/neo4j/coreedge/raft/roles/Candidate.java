@@ -127,7 +127,10 @@ public class Candidate implements RaftMessageHandler
 
             case ELECTION_TIMEOUT:
             {
-                outcome.setNextRole( FOLLOWER );
+                if ( !Election.start( ctx, outcome ) )
+                {
+                    outcome.setNextRole( FOLLOWER );
+                }
                 break;
             }
         }

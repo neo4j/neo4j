@@ -100,6 +100,18 @@ public class RaftInstanceBuilder<MEMBER>
         return this;
     }
 
+    public RaftInstanceBuilder<MEMBER> electionTimeout( long electionTimeout )
+    {
+        this.electionTimeout = electionTimeout;
+        return this;
+    }
+
+    public RaftInstanceBuilder<MEMBER> heartbeatInterval( long heartbeatInterval )
+    {
+        this.heartbeatInterval = heartbeatInterval;
+        return this;
+    }
+
     public RaftInstanceBuilder<MEMBER> timeoutService( RenewableTimeoutService renewableTimeoutService )
     {
         this.renewableTimeoutService = renewableTimeoutService;
