@@ -226,6 +226,26 @@ public class ReflectiveProcedureTest
         assertEquals( 1, proc.signature().outputSignature().size() );
     }
 
+    @Test
+    public void shouldAllowOverridingProcedureName() throws Throwable
+    {
+        // When
+        CallableProcedure proc = compile( ProcedureWithOverriddenName.class ).get( 0 );
+
+        // Then
+        assertEquals("org.mystuff.thisisActuallyTheName", proc.signature().name().toString() );
+    }
+
+    @Test
+    public void shouldAllowOverridingProcedureNameWithoutNamespace() throws Throwable
+    {
+        // When
+        CallableProcedure proc = compile( ProcedureWithSingleName.class ).get( 0 );
+
+        // Then
+        assertEquals("singleName", proc.signature().name().toString() );
+    }
+
     public static class MyOutputRecord
     {
         public String name;
@@ -380,6 +400,30 @@ public class ReflectiveProcedureTest
         public Stream<MyOutputRecord> thisIsNotAProcedure()
         {
             return null;
+        }
+    }
+
+    public static class ProcedureWithOverriddenName
+    {
+        @Procedure("org.mystuff.thisisActuallyTheName")
+        public void somethingThatShouldntMatter()
+        {
+
+        }
+
+        @Procedure("singleName")
+        public void blahDoesntMatterEither()
+        {
+
+        }
+    }
+
+    public static class ProcedureWithSingleName
+    {
+        @Procedure("singleName")
+        public void blahDoesntMatterEither()
+        {
+
         }
     }
 

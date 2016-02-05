@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -134,6 +135,20 @@ public class ReflectiveProcedureCompiler
 
     private ProcedureName extractName( Class<?> procDefinition, Method m )
     {
+        String definedName = m.getAnnotation( Procedure.class ).value();
+        if( definedName.trim().length() > 0 )
+        {
+            String[] split = definedName.split( "\\." );
+            if( split.length == 1)
+            {
+                return new ProcedureName( new String[0], split[0] );
+            }
+            else
+            {
+                int lastElement = split.length - 1;
+                return new ProcedureName( Arrays.copyOf(split, lastElement ), split[lastElement] );
+            }
+        }
         Package pkg = procDefinition.getPackage();
         // Package is null if class is in root package
         String[] namespace = pkg == null ? new String[0] : pkg.getName().split( "\\." );
