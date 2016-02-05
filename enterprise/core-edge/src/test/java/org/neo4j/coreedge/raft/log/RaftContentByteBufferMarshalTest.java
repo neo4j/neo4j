@@ -19,12 +19,12 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import org.junit.Test;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
+
+import org.junit.Test;
 
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.replication.RaftContentSerializer;
@@ -32,19 +32,18 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
-import org.neo4j.coreedge.raft.replication.storeid.SeedStoreId;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.index.IndexCommand;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class RaftContentByteBufferMarshalTest
@@ -64,21 +63,6 @@ public class RaftContentByteBufferMarshalTest
                 new CoreMember( new AdvertisedSocketAddress( "host2:1002" ),
                         new AdvertisedSocketAddress( "host2:1002" ) )
         ) );
-
-        // when
-        ByteBuffer buffer = serializer.serialize( in );
-        ReplicatedContent out = serializer.deserialize( buffer );
-
-        // then
-        assertEquals( in, out );
-    }
-
-    @Test
-    public void shouldSerializeSeedStoreId() throws Exception
-    {
-        // given
-        RaftContentSerializer serializer = new RaftContentSerializer();
-        SeedStoreId in = new SeedStoreId( new StoreId() );
 
         // when
         ByteBuffer buffer = serializer.serialize( in );
