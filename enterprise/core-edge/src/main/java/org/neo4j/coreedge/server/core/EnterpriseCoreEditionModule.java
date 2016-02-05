@@ -50,7 +50,6 @@ import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.net.RaftChannelInitializer;
 import org.neo4j.coreedge.raft.net.RaftOutbound;
 import org.neo4j.coreedge.raft.replication.LeaderOnlyReplicator;
-import org.neo4j.coreedge.raft.replication.RaftContentSerializer;
 import org.neo4j.coreedge.raft.replication.RaftReplicator;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
@@ -188,7 +187,7 @@ public class EnterpriseCoreEditionModule
 
         MonitoredRaftLog monitoredRaftLog = new MonitoredRaftLog( life.add( new NaiveDurableRaftLog( fileSystem,
                 new File( clusterStateDirectory, NaiveDurableRaftLog.DIRECTORY_NAME ),
-                new RaftContentSerializer(), logProvider ) ), platformModule.monitors );
+                marshal, logProvider ) ), platformModule.monitors );
 
         StateMachines stateMachines = new StateMachines();
 

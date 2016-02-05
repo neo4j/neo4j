@@ -28,9 +28,10 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.CoreMember;
 
 import static org.neo4j.coreedge.raft.RaftMessages.Type.APPEND_ENTRIES_REQUEST;
@@ -42,9 +43,9 @@ import static org.neo4j.coreedge.raft.RaftMessages.Type.VOTE_RESPONSE;
 
 public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private final ReplicatedContentMarshal<ByteBuf> marshal;
+    private final ByteBufMarshal<ReplicatedContent> marshal;
 
-    public RaftMessageDecoder( ReplicatedContentMarshal<ByteBuf> marshal )
+    public RaftMessageDecoder( ByteBufMarshal<ReplicatedContent> marshal )
     {
         this.marshal = marshal;
     }
@@ -94,7 +95,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             for ( int i = 0; i < count; i++ )
             {
                 long entryTerm = buffer.readLong();
-                final ReplicatedContent content = marshal.deserialize( buffer );
+                final ReplicatedContent content = marshal.unmarshal( buffer );
                 entries[i] = new RaftLogEntry( entryTerm, content );
             }
 
@@ -112,7 +113,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
         }
         else if ( messageType.equals( NEW_ENTRY_REQUEST ) )
         {
-            ReplicatedContent content = marshal.deserialize( buffer );
+            ReplicatedContent content = marshal.unmarshal( buffer );
 
             list.add( new RaftMessages.NewEntry.Request<>( from, content ) );
         }

@@ -23,9 +23,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.Serializer;
+import org.neo4j.coreedge.raft.state.ByteBufferMarshal;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -71,17 +75,17 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     private final StoreChannel contentChannel;
     private final StoreChannel commitChannel;
 
-    private final Serializer serializer;
+    private final ByteBufMarshal<ReplicatedContent> marshal;
     private final Log log;
     private long appendIndex = -1;
     private long contentOffset;
     private long commitIndex = -1;
     private long term = -1;
 
-    public NaiveDurableRaftLog( FileSystemAbstraction fileSystem, File directory, Serializer serializer,
-                                LogProvider logProvider )
+    public NaiveDurableRaftLog( FileSystemAbstraction fileSystem, File directory,
+                                ByteBufMarshal<ReplicatedContent> marshal, LogProvider logProvider )
     {
-        this.serializer = serializer;
+        this.marshal = marshal;
 
         directory.mkdirs();
 
@@ -334,7 +338,9 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
 
     private int writeContent( RaftLogEntry logEntry ) throws MarshallingException, IOException
     {
-        ByteBuffer contentBuffer = serializer.serialize( logEntry.content() );
+        ByteBuf buffer = Unpooled.buffer();
+        marshal.marshal( logEntry.content(), buffer );
+        ByteBuffer contentBuffer = buffer.internalNioBuffer( 0, buffer.writerIndex() );
         int length = CONTENT_LENGTH_BYTES + contentBuffer.remaining();
 
         ByteBuffer contentLengthBuffer = ByteBuffer.allocate( CONTENT_LENGTH_BYTES );
@@ -357,7 +363,8 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         ByteBuffer contentBuffer = ByteBuffer.allocate( contentLength - CONTENT_LENGTH_BYTES );
         contentChannel.read( contentBuffer, contentPointer + CONTENT_LENGTH_BYTES );
         contentBuffer.flip();
-        return serializer.deserialize( contentBuffer );
+        ByteBuf byteBuf = Unpooled.wrappedBuffer( contentBuffer );
+        return marshal.unmarshal( byteBuf );
     }
 
     private void storeCommitIndex( long commitIndex ) throws IOException

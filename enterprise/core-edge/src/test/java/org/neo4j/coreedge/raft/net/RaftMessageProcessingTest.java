@@ -31,10 +31,9 @@ import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageDecoder;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageEncoder;
-import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertEquals;
@@ -42,10 +41,10 @@ import static org.junit.Assert.assertEquals;
 @RunWith(MockitoJUnitRunner.class)
 public class RaftMessageProcessingTest
 {
-    private static ReplicatedContentMarshal<ByteBuf> serializer = new ReplicatedContentMarshal<ByteBuf>()
+    private static ByteBufMarshal<ReplicatedContent> serializer = new ByteBufMarshal<ReplicatedContent>()
     {
         @Override
-        public void serialize( ReplicatedContent content, ByteBuf buffer ) throws MarshallingException
+        public void marshal( ReplicatedContent content, ByteBuf buffer )
         {
             if ( content instanceof ReplicatedInteger )
             {
@@ -59,12 +58,8 @@ public class RaftMessageProcessingTest
         }
 
         @Override
-        public ReplicatedContent deserialize( ByteBuf buffer ) throws MarshallingException
+        public ReplicatedContent unmarshal( ByteBuf buffer )
         {
-            if ( buffer.readableBytes() < 1 )
-            {
-                throw new MarshallingException( "Cannot read content type" );
-            }
             byte type = buffer.readByte();
             final ReplicatedContent content;
             switch ( type )
@@ -73,12 +68,12 @@ public class RaftMessageProcessingTest
                     content = ReplicatedInteger.valueOf( buffer.readInt() );
                     break;
                 default:
-                    throw new MarshallingException( String.format( "Unknown content type 0x%x", type ) );
+                    throw new IllegalArgumentException( String.format( "Unknown content type 0x%x", type ) );
             }
 
             if ( buffer.readableBytes() != 0 )
             {
-                throw new MarshallingException( "Bytes remain in buffer after deserialization (" + buffer
+                throw new IllegalArgumentException( "Bytes remain in buffer after deserialization (" + buffer
                         .readableBytes() + " bytes)" );
             }
             return content;

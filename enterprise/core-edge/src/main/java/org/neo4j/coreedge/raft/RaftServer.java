@@ -37,10 +37,11 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.raft.net.Inbound;
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageDecoder;
-import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -50,16 +51,16 @@ public class RaftServer<MEMBER> extends LifecycleAdapter implements Inbound
 {
     private final ListenSocketAddress listenAddress;
     private final Log log;
-    private final ReplicatedContentMarshal<ByteBuf> serializer;
+    private final ByteBufMarshal<ReplicatedContent> marshal;
     private MessageHandler messageHandler;
     private EventLoopGroup workerGroup;
     private Channel channel;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
-    public RaftServer( ReplicatedContentMarshal<ByteBuf> serializer, ListenSocketAddress listenAddress, LogProvider logProvider )
+    public RaftServer( ByteBufMarshal<ReplicatedContent> marshal, ListenSocketAddress listenAddress, LogProvider logProvider )
     {
-        this.serializer = serializer;
+        this.marshal = marshal;
         this.listenAddress = listenAddress;
         this.log = logProvider.getLog( getClass() );
     }
@@ -108,7 +109,7 @@ public class RaftServer<MEMBER> extends LifecycleAdapter implements Inbound
                         ChannelPipeline pipeline = ch.pipeline();
                         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
                         pipeline.addLast( new LengthFieldPrepender( 4 ) );
-                        pipeline.addLast( new RaftMessageDecoder( serializer ) );
+                        pipeline.addLast( new RaftMessageDecoder( marshal ) );
                         pipeline.addLast( new RaftMessageHandler() );
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                     }

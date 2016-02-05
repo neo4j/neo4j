@@ -36,11 +36,34 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.WritableChannel;
 
 public class ReplicatedTokenRequestSerializer
 {
-    public static void serialize( ReplicatedTokenRequest content, ByteBuf buffer )
+    public static void marshal( ReplicatedTokenRequest content, WritableChannel channel ) throws IOException
+    {
+        channel.putInt( content.type().ordinal() );
+        StringMarshal.marshal( channel, content.tokenName() );
+
+        channel.putInt( content.commandBytes().length );
+        channel.put( content.commandBytes(), content.commandBytes().length );
+    }
+
+    public static ReplicatedTokenRequest unmarshal( ReadableChannel channel ) throws IOException
+    {
+        TokenType type = TokenType.values()[ channel.getInt() ];
+        String tokenName = StringMarshal.unmarshal( channel );
+
+        int commandBytesLength = channel.getInt();
+        byte[] commandBytes = new byte[ commandBytesLength ];
+        channel.get( commandBytes, commandBytesLength );
+
+        return new ReplicatedTokenRequest( type, tokenName, commandBytes );
+    }
+
+    public static void marshal( ReplicatedTokenRequest content, ByteBuf buffer )
     {
         buffer.writeInt( content.type().ordinal() );
         StringMarshal.marshal( buffer, content.tokenName() );
@@ -49,14 +72,14 @@ public class ReplicatedTokenRequestSerializer
         buffer.writeBytes( content.commandBytes() );
     }
 
-    public static ReplicatedTokenRequest deserialize( ByteBuf buffer )
+    public static ReplicatedTokenRequest unmarshal( ByteBuf buffer )
     {
-        TokenType type = TokenType.values()[buffer.readInt()];
+        TokenType type = TokenType.values()[ buffer.readInt() ];
         String tokenName = StringMarshal.unmarshal( buffer );
 
         int commandBytesLength = buffer.readInt();
-        byte[] commandBytes = new  byte[commandBytesLength];
-        buffer.readBytes( commandBytes, 0, commandBytesLength );
+        byte[] commandBytes = new byte[ commandBytesLength ];
+        buffer.readBytes( commandBytes );
 
         return new ReplicatedTokenRequest( type, tokenName, commandBytes );
     }

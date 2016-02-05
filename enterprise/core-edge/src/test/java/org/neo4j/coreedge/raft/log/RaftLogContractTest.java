@@ -42,7 +42,7 @@ public abstract class RaftLogContractTest
     public abstract RaftLog createRaftLog() throws Exception;
 
     @Test
-    public void shouldCorrectReportOnEmptyLog() throws Exception
+    public void shouldReportCorrectDefaultValuesOnEmptyLog() throws Exception
     {
         // given
         ReadableRaftLog log = createRaftLog();
@@ -209,14 +209,14 @@ public abstract class RaftLogContractTest
     {
         // given
         RaftLog log = createRaftLog();
+        log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );
+        log.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 2 ) ) );
 
-        // when
         try
         {
-            log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );
-            log.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 2 ) ) );
-            // then
+            // when the term has a lower value
             log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 3 ) ) );
+            // then an exception should be thrown
             fail( "Should have failed because of non-monotonic terms" );
         }
         catch ( RaftStorageException expected )

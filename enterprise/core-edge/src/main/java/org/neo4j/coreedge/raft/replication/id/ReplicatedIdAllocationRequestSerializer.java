@@ -19,14 +19,37 @@
  */
 package org.neo4j.coreedge.raft.replication.id;
 
+import java.io.IOException;
+
 import io.netty.buffer.ByteBuf;
 
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 public class ReplicatedIdAllocationRequestSerializer
 {
-    public static void serialize( ReplicatedIdAllocationRequest idRangeRequest, ByteBuf buffer )
+    public static void marshal( ReplicatedIdAllocationRequest idRangeRequest, WritableChannel channel )
+            throws IOException
+    {
+        new CoreMember.CoreMemberMarshal().marshal( idRangeRequest.owner(), channel );
+        channel.putInt( idRangeRequest.idType().ordinal() );
+        channel.putLong( idRangeRequest.idRangeStart() );
+        channel.putInt( idRangeRequest.idRangeLength() );
+    }
+
+    public static ReplicatedIdAllocationRequest unmarshal( ReadableChannel channel ) throws IOException
+    {
+        CoreMember owner = new CoreMember.CoreMemberMarshal().unmarshal( channel );
+        IdType idType = IdType.values()[ channel.getInt() ];
+        long idRangeStart = channel.getLong();
+        int idRangeLength = channel.getInt();
+
+        return new ReplicatedIdAllocationRequest( owner, idType, idRangeStart, idRangeLength );
+    }
+
+    public static void marshal( ReplicatedIdAllocationRequest idRangeRequest, ByteBuf buffer )
     {
         new CoreMember.CoreMemberMarshal().marshal( idRangeRequest.owner(), buffer );
         buffer.writeInt( idRangeRequest.idType().ordinal() );
@@ -34,10 +57,10 @@ public class ReplicatedIdAllocationRequestSerializer
         buffer.writeInt( idRangeRequest.idRangeLength() );
     }
 
-    public static ReplicatedIdAllocationRequest deserialize( ByteBuf buffer )
+    public static ReplicatedIdAllocationRequest unmarshal( ByteBuf buffer )
     {
         CoreMember owner = new CoreMember.CoreMemberMarshal().unmarshal( buffer );
-        IdType idType = IdType.values()[buffer.readInt()];
+        IdType idType = IdType.values()[ buffer.readInt() ];
         long idRangeStart = buffer.readLong();
         int idRangeLength = buffer.readInt();
 

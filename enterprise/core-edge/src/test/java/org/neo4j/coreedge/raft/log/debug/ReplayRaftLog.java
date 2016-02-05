@@ -24,14 +24,13 @@ import java.io.IOException;
 
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.coreedge.raft.replication.RaftContentSerializer;
+import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -50,7 +49,7 @@ public class ReplayRaftLog
         File logDirectory = new File( from );
         System.out.println( "logDirectory = " + logDirectory );
         NaiveDurableRaftLog log = new NaiveDurableRaftLog( new DefaultFileSystemAbstraction(),
-                logDirectory, new RaftContentSerializer(), NullLogProvider.getInstance() );
+                logDirectory, new CoreReplicatedContentMarshal(), NullLogProvider.getInstance() );
 
         long totalCommittedEntries = log.commitIndex();
 

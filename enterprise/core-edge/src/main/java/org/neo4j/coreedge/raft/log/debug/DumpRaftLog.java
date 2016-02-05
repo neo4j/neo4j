@@ -23,9 +23,8 @@ import java.io.File;
 
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.coreedge.raft.replication.RaftContentSerializer;
+import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 public class DumpRaftLog
@@ -37,7 +36,7 @@ public class DumpRaftLog
             File logDirectory = new File( arg );
             System.out.println( "logDirectory = " + logDirectory );
             NaiveDurableRaftLog log = new NaiveDurableRaftLog( new DefaultFileSystemAbstraction(),
-                    logDirectory, new RaftContentSerializer(), NullLogProvider.getInstance() );
+                    logDirectory, new CoreReplicatedContentMarshal(), NullLogProvider.getInstance() );
 
             new LogPrinter( log ).print( System.out );
             System.out.println();

@@ -63,5 +63,5 @@ public interface ReadableRaftLog
      * @param logIndex The index of the log entry.
      * @return True if the entry exists, otherwise false.
      */
-    boolean entryExists( long logIndex );
+    boolean entryExists( long logIndex ) throws RaftStorageException;
 }

@@ -111,7 +111,7 @@ public class RaftLogAdversarialTest
     }
 
     private void verifyCurrentLogAndNewLogLoadedFromFileSystem(
-            ReadableRaftLog log, FileSystemAbstraction fileSystem, LogVerifier logVerifier )
+            ReadableRaftLog log, FileSystemAbstraction fileSystem, LogVerifier logVerifier ) throws RaftStorageException
     {
         logVerifier.verifyLog( log );
         logVerifier.verifyLog( createRaftLog( fileSystem ) );
@@ -119,6 +119,6 @@ public class RaftLogAdversarialTest
 
     private interface LogVerifier
     {
-        void verifyLog( ReadableRaftLog log );
+        void verifyLog( ReadableRaftLog log ) throws RaftStorageException;
     }
 }

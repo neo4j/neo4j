@@ -27,8 +27,8 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import org.neo4j.com.CommittedTransactionSerializer;
 import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
-import org.neo4j.coreedge.raft.replication.storeid.StoreIdEncoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
+import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
 
 public class TxPullResponseEncoder extends MessageToMessageEncoder<TxPullResponse>
 {
@@ -36,7 +36,7 @@ public class TxPullResponseEncoder extends MessageToMessageEncoder<TxPullRespons
     protected void encode( ChannelHandlerContext ctx, TxPullResponse response, List<Object> out ) throws Exception
     {
         ByteBuf encoded = ctx.alloc().buffer();
-        new StoreIdEncoder().encode( response.storeId(), encoded );
+        new StoreIdMarshal().marshal( response.storeId(), encoded );
         new CommittedTransactionSerializer( new NetworkFlushableByteBuf( encoded ) ).visit( response.tx() );
         out.add( encoded );
     }
