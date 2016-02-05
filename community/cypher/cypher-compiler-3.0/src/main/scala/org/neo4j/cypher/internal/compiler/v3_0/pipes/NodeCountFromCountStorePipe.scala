@@ -33,7 +33,7 @@ case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])(
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
     val count = label match {
-      case Some(lazyLabel) => lazyLabel.id(state.query) match {
+      case Some(lazyLabel) => lazyLabel.getOptId(state.query) match {
         case Some(idOfLabel) => state.query.nodeCountByCountStore(idOfLabel)
         case _ => 0
       }

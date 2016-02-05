@@ -35,22 +35,15 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
                                     properties: Option[Expression], pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],
-                                      state: QueryState): Iterator[ExecutionContext] = {
-    input.map { row =>
-      createRelationship(row, state)
-    }
-  }
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    input.map(createRelationship(_, state))
 
   private def createRelationship(context: ExecutionContext, state: QueryState): ExecutionContext = {
     val start = getNode(context, startNode)
     val end = getNode(context, endNode)
-    val relationship = typ.typ(state.query) match {
-      case Some(v) if v != LazyType.UNINITIALIZED => state.query.createRelationship(start.getId, end.getId, v)
-      case _ => state.query.createRelationship(start, end, typ.name)
-    }
+    val typeId = typ.typ(state.query)
+    val relationship = state.query.createRelationship(start.getId, end.getId, typeId)
     setProperties(context, state, relationship.getId)
-
     context += key -> relationship
   }
 
@@ -63,22 +56,32 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
   private def setProperties(context: ExecutionContext, state: QueryState, relId: Long) = {
     properties.foreach { expr =>
       expr(context)(state) match {
-        case _: Node | _: Relationship => throw new
-            CypherTypeException("Parameter provided for relationship creation is not a Map")
+        case _: Node | _: Relationship =>
+          throw new CypherTypeException("Parameter provided for relationship creation is not a Map")
         case IsMap(f) =>
           val propertiesMap: Map[String, Any] = f(state.query)
           propertiesMap.foreach {
-              case (k, v) => setProperty(relId, k, v, state.query)
-            }
-            case _ =>
-              throw new CypherTypeException("Parameter provided for relationship creation is not a Map")
+            case (k, v) => setProperty(relId, k, v, state.query)
+          }
+        case _ =>
+          throw new CypherTypeException("Parameter provided for relationship creation is not a Map")
       }
     }
   }
 
-  def setProperty(nodeId: Long, key: String, value: Any, qtx: QueryContext): Unit
+  private def setProperty(relId: Long, key: String, value: Any, qtx: QueryContext) {
+    //do not set properties for null values
+    if (value == null) {
+      handleNull(key: String)
+    } else {
+      val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)
+      qtx.relationshipOps.setProperty(relId, propertyKeyId, makeValueNeoSafe(value))
+    }
+  }
 
-  def symbols = src.symbols.add(key, CTRelationship)
+  protected def handleNull(key: String): Unit
+
+  override def symbols = src.symbols.add(key, CTRelationship)
 
   override def localEffects = Effects(CreatesRelationship(typ.name))
 }
@@ -91,7 +94,6 @@ case class CreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ
 
   def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateRelationship", variables)
 
-
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   override def dup(sources: List[Pipe]): Pipe = {
@@ -99,36 +101,28 @@ case class CreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ
     CreateRelationshipPipe(onlySource, key, startNode, typ, endNode, properties)(estimatedCardinality)
   }
 
-  override def setProperty(nodeId: Long, key: String, value: Any, qtx: QueryContext) = {
-    //do not set properties for null values
-    if (value != null) {
-      val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)
-      qtx.relationshipOps.setProperty(nodeId, propertyKeyId, makeValueNeoSafe(value))
-    }
+  override protected def handleNull(key: String) {
+    //do nothing
   }
 }
 
 case class MergeCreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
-                                  properties: Option[Expression])
-                                 (val estimatedCardinality: Option[Double] = None)
-                                 (implicit pipeMonitor: PipeMonitor)
+                                       properties: Option[Expression])
+                                      (val estimatedCardinality: Option[Double] = None)
+                                      (implicit pipeMonitor: PipeMonitor)
   extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties, pipeMonitor) {
 
   def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "MergeCreateRelationship", variables)
-
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    CreateRelationshipPipe(onlySource, key, startNode, typ, endNode, properties)(estimatedCardinality)
+    MergeCreateRelationshipPipe(onlySource, key, startNode, typ, endNode, properties)(estimatedCardinality)
   }
 
-  override def setProperty(relId: Long, key: String, value: Any, qtx: QueryContext) = {
+  override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create
-    if (value == null) throw new InvalidSemanticsException(s"Cannot merge relationship using null property value for $key")
-
-    val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)
-    qtx.relationshipOps.setProperty(relId, propertyKeyId, makeValueNeoSafe(value))
+    throw new InvalidSemanticsException(s"Cannot merge relationship using null property value for $key")
   }
 }

@@ -27,12 +27,11 @@ case class LazyType(name: String) {
 
   private var id = LazyType.UNINITIALIZED
 
-  def typ(context: QueryContext): Option[Int] = {
-    if (id == -1) {
-      id = context.getOptRelTypeId(name).getOrElse(LazyType.UNINITIALIZED)
+  def typ(context: QueryContext): Int = {
+    if (id == LazyType.UNINITIALIZED) {
+      id = context.getOrCreateRelTypeId(name)
     }
-
-    Some(id)
+    id
   }
 }
 

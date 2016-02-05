@@ -34,26 +34,21 @@ import scala.collection.Map
 abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression], pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],
-                                      state: QueryState): Iterator[ExecutionContext] = {
-    input.map { row =>
-      createNode(row, state)
-    }
-  }
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    input.map(createNode(_, state))
 
   private def createNode(context: ExecutionContext, state: QueryState): ExecutionContext = {
     val node = state.query.createNode()
     setProperties(context, state, node.getId)
     setLabels(context, state, node.getId)
-
     context += key -> node
   }
 
   private def setProperties(context: ExecutionContext, state: QueryState, nodeId: Long) = {
     properties.foreach { expr =>
       expr(context)(state) match {
-        case _: Node | _: Relationship => throw new
-            CypherTypeException("Parameter provided for node creation is not a Map")
+        case _: Node | _: Relationship =>
+          throw new CypherTypeException("Parameter provided for node creation is not a Map")
         case IsMap(f) =>
           val propertiesMap: Map[String, Any] = f(state.query)
           propertiesMap.foreach {
@@ -65,13 +60,20 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
     }
   }
 
-  def setProperty(nodeId: Long, key: String, value: Any, qtx: QueryContext): Unit
+  private def setProperty(nodeId: Long, key: String, value: Any, qtx: QueryContext) {
+    //do not set properties for null values
+    if (value == null) {
+      handleNull(key)
+    } else {
+      val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)
+      qtx.nodeOps.setProperty(nodeId, propertyKeyId, makeValueNeoSafe(value))
+    }
+  }
+
+  protected def handleNull(key: String): Unit
 
   private def setLabels(context: ExecutionContext, state: QueryState, nodeId: Long) = {
-    val labelIds = labels.map(l => {
-      val maybeLabelId = l.id(state.query).map(_.id)
-      maybeLabelId getOrElse state.query.getOrCreateLabelId(l.name)
-    })
+    val labelIds = labels.map(_.getOrCreateId(state.query).id)
     state.query.setLabelsOnNode(nodeId, labelIds.iterator)
   }
 
@@ -95,12 +97,8 @@ case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], proper
     CreateNodePipe(onlySource, key, labels, properties)(estimatedCardinality)
   }
 
-  override def setProperty(nodeId: Long, key: String, value: Any, qtx: QueryContext) = {
-    //do not set properties for null values
-    if (value != null) {
-      val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)
-      qtx.nodeOps.setProperty(nodeId, propertyKeyId, makeValueNeoSafe(value))
-    }
+  override protected def handleNull(key: String) {
+    // do nothing
   }
 }
 
@@ -116,11 +114,8 @@ case class MergeCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], p
     MergeCreateNodePipe(onlySource, key, labels, properties)(estimatedCardinality)
   }
 
-  override def setProperty(nodeId: Long, key: String, value: Any, qtx: QueryContext) = {
+  override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create
-    if (value == null) throw new InvalidSemanticsException(s"Cannot merge node using null property value for $key")
-
-    val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)
-    qtx.nodeOps.setProperty(nodeId, propertyKeyId, makeValueNeoSafe(value))
+    throw new InvalidSemanticsException(s"Cannot merge node using null property value for $key")
   }
 }
