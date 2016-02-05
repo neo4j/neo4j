@@ -25,9 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
 
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
@@ -116,7 +116,7 @@ public class TypeMappers
             }
         }
 
-        throw javaToNeoMappingError( javaType, Neo4jTypes.NTAny );
+        throw javaToNeoMappingError( javaType );
     }
 
     public void registerType( Class<?> javaClass, NeoValueConverter toNeo )
@@ -138,9 +138,13 @@ public class TypeMappers
         return new SimpleConverter( NTList( inner.type() ), List.class );
     }
 
-    private static ProcedureException javaToNeoMappingError( Type cls, AnyType neoType )
+    private ProcedureException javaToNeoMappingError( Type cls )
     {
-        return new ProcedureException( Status.Statement.InvalidType, "Don't know how to map `%s` to `%s`", cls, neoType );
+        return new ProcedureException( Status.Statement.InvalidType, "Don't know how to map `%s` to the Neo4j Type " +
+                                                                     "System. Please refer to " +
+                                                                     "to the documentation for full details. For " +
+                                                                     "your reference, known types are: %s",
+                cls, Iterables.toList(javaToNeo.keySet()) );
     }
 
     public static class SimpleConverter implements NeoValueConverter

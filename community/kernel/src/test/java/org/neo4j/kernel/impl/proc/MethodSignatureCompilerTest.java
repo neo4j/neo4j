@@ -97,9 +97,14 @@ public class MethodSignatureCompilerTest
 
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Argument `name` at position 0 in `echoWithInvalidType` with type `UnmappableRecord` " +
-                                 "cannot be converted to a Neo4j type: Don't know how to map " +
-                                 "`class org.neo4j.kernel.impl.proc.MethodSignatureCompilerTest$UnmappableRecord` to `ANY?`" );
+        exception.expectMessage( "Argument `name` at position 0 in `echoWithInvalidType` with type " +
+                                 "`UnmappableRecord` cannot be converted to a Neo4j type: Don't know how to map " +
+                                 "`class org.neo4j.kernel.impl.proc.MethodSignatureCompilerTest$UnmappableRecord` to " +
+                                 "the Neo4j Type System. Please refer to to the documentation for full details. For " +
+                                 "your reference, known types are: [long, double, class java.lang.Number, class java" +
+                                 ".lang.Object, class java.lang.String, class java.lang.Long, class java.lang.Double," +
+                                 " interface java.util.List, interface java.util.Map, boolean, class java.lang" +
+                                 ".Boolean]" );
 
         // When
         new MethodSignatureCompiler(new TypeMappers()).signatureFor( echo );
