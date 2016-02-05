@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.helpers
 
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor}
-import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.{JavaValueCompatibility, Eagerly}
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
 import scala.collection.JavaConverters._
@@ -60,16 +60,10 @@ object iteratorToVisitable {
         case None =>
           throw new IllegalArgumentException("No column \"" + key + "\" exists")
         case Some(value) if clazz.isInstance(value) || value == null =>
-          clazz.cast(javaValue(value))
+          clazz.cast(JavaValueCompatibility.asDeepJavaValue(value))
         case Some(value) =>
           throw new NoSuchElementException("The current item in column \"" + key + "\" is not a " + clazz + ": \"" + value + "\"")
       }
-    }
-
-    private def javaValue( value: Any ): Any = value match {
-      case iter: Seq[_] => iter.map( javaValue ).asJava
-      case iter: Map[_, _] => Eagerly.immutableMapValues( iter, javaValue ).asJava
-      case x => x
     }
   }
 }

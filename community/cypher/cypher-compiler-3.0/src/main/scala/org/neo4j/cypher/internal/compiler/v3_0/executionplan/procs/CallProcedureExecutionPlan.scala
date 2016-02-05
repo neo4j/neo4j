@@ -59,12 +59,7 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArg
       new ExplainExecutionResult(signature.outputSignature.seq.map(_.name).toList,
         description, READ_ONLY, Set.empty)
     } else {
-      val result: ProcedureExecutionResult[Nothing] = ProcedureExecutionResult(taskCloser, ctx, signature, input, description, planType)
-      // Naive eagerization for now, refactor as need arises
-      if( signature.mode == ProcReadWrite )
-        result.toEagerIterableResult(ProcedurePlannerName, ProcedureRuntimeName)
-      else result
-
+      ProcedureExecutionResult(taskCloser, ctx, signature, input, description, planType)
     }
   }
 

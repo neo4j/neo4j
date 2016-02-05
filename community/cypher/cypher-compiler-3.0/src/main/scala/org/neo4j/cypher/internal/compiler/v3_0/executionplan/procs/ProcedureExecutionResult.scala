@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
+import java.util
+
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.ResultRowImpl
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{AcceptingExecutionResult, InternalQueryType, READ_ONLY}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_0.helpers.JavaCompatibility.asJavaCompatible
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.JavaValueCompatibility.asDeepJavaValue
 
 import scala.collection.JavaConverters._
 
@@ -43,29 +45,46 @@ case class ProcedureExecutionResult[E <: Exception](taskCloser: TaskCloser,
                                                     args: Seq[Any],
                                                     executionPlanDescription: InternalPlanDescription,
                                                     executionMode: ExecutionMode)
-  extends AcceptingExecutionResult(context, Some(taskCloser)) {
+  extends StandardInternalExecutionResult(context, Some(taskCloser)) {
 
-  override def javaColumns: java.util.List[String] = signature.outputSignature.seq.map(_.name).asJava
+  // The signature mode is taking care of eagerization
+  private val underlying = signature.mode.call(context, signature, args.map(asDeepJavaValue))
+  private val outputs = signature.outputSignature
+
+  override protected val inner = new util.Iterator[util.Map[String, Any]]() {
+    override def next(): util.Map[String, Any] = resultAsMap(underlying.next())
+    override def hasNext: Boolean = underlying.hasNext
+  }
 
   override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
-    val call: Iterator[Array[AnyRef]] = signature.mode.call(context, signature, args.map(asJavaCompatible))
-    call.foreach { res =>
-      var i = 0
-      val row = new ResultRowImpl
-      signature.outputSignature.foreach { f =>
-        row.set(f.name, res(i))
-        i = i + 1
-      }
-      visitor.visit(row)
-    }
+    underlying.foreach { res => visitor.visit(new ResultRowImpl(resultAsRefMap(res))) }
     close()
   }
 
-  //TODO Look into having the kernel track updates, rather than cypher middle-layers, only sensible way I can think
-  //     of to get accurate stats for procedure code
-  override def queryStatistics() = context.getOptStatistics.getOrElse(InternalQueryStatistics())
+  override def javaColumns: java.util.List[String] = signature.outputSignature.seq.map(_.name).asJava
 
+  // TODO Look into having the kernel track updates, rather than cypher middle-layers, only sensible way I can think
+  //      of to get accurate stats for procedure code
+  override def queryStatistics() = context.getOptStatistics.getOrElse(InternalQueryStatistics())
   override def executionType: InternalQueryType = signature.mode.queryType
 
-  override def close() = taskCloser.close(success = true)
+  private def resultAsMap(rowData: Array[AnyRef]): util.Map[String, Any] = {
+    val mapData = new util.HashMap[String, Any](rowData.length)
+    var i = 0
+    outputs.foreach { field =>
+      mapData.put(field.name, rowData(i))
+      i = i + 1
+    }
+    mapData
+  }
+
+  private def resultAsRefMap(rowData: Array[AnyRef]): util.Map[String, AnyRef] = {
+    val mapData = new util.HashMap[String, AnyRef](rowData.length)
+    var i = 0
+    outputs.foreach { field =>
+      mapData.put(field.name, rowData(i))
+      i = i + 1
+    }
+    mapData
+  }
 }

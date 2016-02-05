@@ -19,17 +19,19 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.helpers
 
-import java.util
-
+import java.util.{Map => JavaMap}
+import java.util.{List => JavaList}
 import scala.collection.JavaConverters._
 
-object JavaCompatibility {
+object JavaValueCompatibility {
 
-  def asJavaCompatible(value: Any): Any = value match {
-    case seq: Seq[_]    => seq.map(asJavaCompatible).asJava
-    case map: Map[_, _] => Eagerly.immutableMapValues(map, asJavaCompatible).asJava
-    case x              => x
-  }
+  def asDeepJavaMap[S](map: Map[S, Any]): JavaMap[S, Any] =
+    if (map == null) null else Eagerly.immutableMapValues(map, asDeepJavaValue).asJava: JavaMap[S, Any]
 
-  def asJavaMap[S,T](map: Map[S,T]): util.Map[S, AnyRef] = Eagerly.immutableMapValues(map, asJavaCompatible).asJava.asInstanceOf[util.Map[S, AnyRef]]
+  def asDeepJavaValue(value: Any): Any =
+    if (value == null) null else value match {
+      case map: Map[_, _] => Eagerly.immutableMapValues(map, asDeepJavaValue).asJava: JavaMap[_, _]
+      case iterable: Iterable[_] => iterable.map(asDeepJavaValue).toSeq.asJava: JavaList[_]
+      case anything => anything
+    }
 }

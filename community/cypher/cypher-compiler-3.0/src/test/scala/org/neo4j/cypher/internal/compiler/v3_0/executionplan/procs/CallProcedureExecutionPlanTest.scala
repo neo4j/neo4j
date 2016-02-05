@@ -91,7 +91,7 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
   def int(i: Int): Expression = SignedDecimalIntegerLiteral(i.toString)(pos)
 
   def string(s: String): Expression = StringLiteral(s)(pos)
-  
+
   private val readSignature = ProcedureSignature( ProcedureName(Seq.empty, "foo"),
     Seq(FieldSignature("a", symbols.CTInteger) ),
     Seq(FieldSignature("b", symbols.CTInteger)))

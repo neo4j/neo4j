@@ -44,7 +44,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
     } else {
       sideEffect(countingCtx)
       ctx.close(success = true)
-      PureSideEffectInternalExecutionResult(description, countingCtx, queryType, planType)
+      PureSideEffectInternalExecutionResult(countingCtx, description, queryType, planType)
     }
   }
 

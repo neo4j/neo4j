@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_0.helpers.JavaCompatibility._
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.JavaValueCompatibility._
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.graphdb.{NotFoundException, ResourceIterator}
 
@@ -56,7 +56,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
     def hasNext = self.hasNext
-    def next() = asJavaCompatible(getAnyColumn(column, self.next())).asInstanceOf[T]
+    def next() = asDeepJavaValue(getAnyColumn(column, self.next())).asInstanceOf[T]
   }
 
   def columnAs[T](column: String): Iterator[T] =
@@ -65,7 +65,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaIterator: ResourceIterator[java.util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
     def hasNext = self.hasNext
-    def next() = Eagerly.immutableMapValues(self.next(), asJavaCompatible).asJava
+    def next() = Eagerly.immutableMapValues(self.next(), asDeepJavaValue).asJava
   }
 
   override def toList: List[Predef.Map[String, Any]] = result.toList

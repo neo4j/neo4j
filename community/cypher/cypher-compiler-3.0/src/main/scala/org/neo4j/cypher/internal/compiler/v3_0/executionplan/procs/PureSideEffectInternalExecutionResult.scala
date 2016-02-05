@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{AcceptingExecutionResult, InternalQueryType}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics}
@@ -30,8 +30,12 @@ import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStat
 /**
   * Empty result, as produced by a pure side-effect.
   */
-case class PureSideEffectInternalExecutionResult(executionPlanDescription: InternalPlanDescription, ctx: QueryContext, executionType: InternalQueryType, executionMode: ExecutionMode)
-  extends AcceptingExecutionResult(ctx) {
+case class PureSideEffectInternalExecutionResult(ctx: QueryContext,
+                                                 executionPlanDescription: InternalPlanDescription,
+                                                 executionType: InternalQueryType,
+                                                 executionMode: ExecutionMode)
+  extends StandardInternalExecutionResult(ctx)
+  with StandardInternalExecutionResult.IterateByAccepting {
 
   override def javaColumns: util.List[String] = java.util.Collections.emptyList()
 

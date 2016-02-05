@@ -169,6 +169,8 @@ case object plannerDocGen extends CustomDocGen[Any] {
         case queryProjection: QueryProjection =>
           val projectionPrefix = query.tail.fold("RETURN")(_ => "WITH")
           section(projectionPrefix)(queryProjection.unquote)
+        case _ =>
+          ???
       }
       group(graphDoc :/: projectionDoc)
     }
@@ -185,6 +187,9 @@ case object plannerDocGen extends CustomDocGen[Any] {
 
       case queryProjection: UnwindProjection =>
         section("UNWIND")(generateDoc(Map(queryProjection.variable.name -> queryProjection.exp), QueryShuffle.empty))
+
+      case _ =>
+        ???
     }
 
     def generateDoc(projections: Map[String, Expression], queryShuffle: QueryShuffle): RecipeAppender[Any] = {
