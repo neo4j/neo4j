@@ -157,14 +157,13 @@ public class OutputMappersTest
 
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class that you define, with public non-final " +
-                                 "fields defining the fields in the record. If you'd like your procedure to return `Long`, you could define a record class " +
+        exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class\n" +
+                                 "that you define, with public non-final fields defining the fields in the record.\n" +
+                                 "If you'd like your procedure to return `Long`, you could define a record class " +
                                  "like:\n" +
                                  "public class Output {\n" +
                                  "    public Long out;\n" +
-                                 "}\n" +
-                                 "\n" +
-                                 "And then define your procedure as returning `Stream<Output>`." );
+                                 "}" );
 
         // When
         mapper(Long.class);

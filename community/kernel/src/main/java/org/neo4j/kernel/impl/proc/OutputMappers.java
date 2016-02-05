@@ -33,13 +33,13 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
-import org.neo4j.kernel.impl.messages.Messages;
+import org.neo4j.messages.Messages;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.kernel.impl.messages.Messages.proc_invalid_return_type_description;
+import static org.neo4j.messages.Messages.proc_invalid_return_type_description;
 
 /**
  * Takes user-defined record classes, and does two things: Describe the class as a {@link ProcedureSignature}, and provide a mechanism to convert
@@ -137,8 +137,7 @@ public class OutputMappers
         if ( cls != Stream.class )
         {
             throw new ProcedureException( Status.Procedure.TypeError,
-                    Messages.get( proc_invalid_return_type_description,
-                            cls.getSimpleName(), cls.getSimpleName() ));
+                    Messages.get( proc_invalid_return_type_description, cls.getSimpleName() ));
         }
 
         ParameterizedType genType = (ParameterizedType) method.getGenericReturnType();
@@ -195,15 +194,20 @@ public class OutputMappers
             || userClass.getPackage() != null && userClass.getPackage().getName().startsWith( "java." ) )
         {
             throw new ProcedureException( Status.Procedure.TypeError,
-                    Messages.get( proc_invalid_return_type_description,
-                        userClass.getSimpleName(), userClass.getSimpleName() ));
+                    Messages.get( proc_invalid_return_type_description, userClass.getSimpleName() ));
         }
     }
 
     private List<Field> instanceFields( Class<?> userClass )
     {
         return asList( userClass.getDeclaredFields() ).stream()
-                .filter( ( f ) -> !isStatic( f.getModifiers() ) && !f.getName().contains( "$" ) )
+                .filter( ( f ) -> !isStatic( f.getModifiers() ) &&
+                                  !isSynthetic( f.getModifiers() ) )
                 .collect( toList() );
+    }
+
+    private static boolean isSynthetic( int modifiers )
+    {
+        return (modifiers & 0x00001000) != 0;
     }
 }

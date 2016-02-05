@@ -117,8 +117,13 @@ public class ProcedureJarLoaderTest
 
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "A procedure must return a `java.util.stream.Stream`, " +
-                                 "`ClassWithInvalidProcedure.booleansAreNotAcceptableReturnTypes` returns `boolean`." );
+        exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class\n" +
+                                 "that you define, with public non-final fields defining the fields in the record.\n" +
+                                 "If you'd like your procedure to return `boolean`, you could define a record class " +
+                                 "like:\n" +
+                                 "public class Output {\n" +
+                                 "    public boolean out;\n" +
+                                 "}\n" );
 
         // When
         jarloader.loadProcedures( jar );

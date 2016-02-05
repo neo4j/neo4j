@@ -30,10 +30,10 @@ import java.util.function.Function;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.impl.messages.Messages;
+import org.neo4j.messages.Messages;
 import org.neo4j.procedure.Context;
 
-import static org.neo4j.kernel.impl.messages.Messages.proc_static_field_annotated_as_context;
+import static org.neo4j.messages.Messages.proc_static_field_annotated_as_context;
 
 /**
  * Injects annotated fields with appropriate values.

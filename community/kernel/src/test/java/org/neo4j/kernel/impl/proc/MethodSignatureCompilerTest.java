@@ -97,14 +97,12 @@ public class MethodSignatureCompilerTest
 
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Argument `name` at position 0 in `echoWithInvalidType` with type " +
-                                 "`UnmappableRecord` cannot be converted to a Neo4j type: Don't know how to map " +
+        exception.expectMessage( "Argument `name` at position 0 in `echoWithInvalidType` with\n" +
+                                 "type `UnmappableRecord` cannot be converted to a Neo4j type: Don't know how to map " +
                                  "`class org.neo4j.kernel.impl.proc.MethodSignatureCompilerTest$UnmappableRecord` to " +
-                                 "the Neo4j Type System. Please refer to to the documentation for full details. For " +
-                                 "your reference, known types are: [long, double, class java.lang.Number, class java" +
-                                 ".lang.Object, class java.lang.String, class java.lang.Long, class java.lang.Double," +
-                                 " interface java.util.List, interface java.util.Map, boolean, class java.lang" +
-                                 ".Boolean]" );
+                                 "the Neo4j Type System.\n" +
+                                 "Please refer to to the documentation for full details.\n" +
+                                 "For your reference, known types are:" );
 
         // When
         new MethodSignatureCompiler(new TypeMappers()).signatureFor( echo );
@@ -118,9 +116,9 @@ public class MethodSignatureCompilerTest
 
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Argument at position 1 in method `echoWithoutAnnotations` is missing an " +
-                                 "`@Name` annotation. Please add the annotation, recompile the class and " +
-                                 "try again." );
+        exception.expectMessage( "Argument at position 1 in method `echoWithoutAnnotations` is missing an `@Name` " +
+                                 "annotation.\n" +
+                                 "Please add the annotation, recompile the class and try again." );
 
         // When
         new MethodSignatureCompiler(new TypeMappers()).signatureFor( echo );

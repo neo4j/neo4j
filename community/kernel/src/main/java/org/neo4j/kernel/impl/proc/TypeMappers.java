@@ -29,6 +29,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
+import org.neo4j.messages.Messages;
 
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTBoolean;
@@ -38,6 +39,7 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNumber;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
+import static org.neo4j.messages.Messages.proc_unmappable_type;
 
 public class TypeMappers
 {
@@ -140,11 +142,11 @@ public class TypeMappers
 
     private ProcedureException javaToNeoMappingError( Type cls )
     {
-        return new ProcedureException( Status.Statement.InvalidType, "Don't know how to map `%s` to the Neo4j Type " +
-                                                                     "System. Please refer to " +
-                                                                     "to the documentation for full details. For " +
-                                                                     "your reference, known types are: %s",
-                cls, Iterables.toList(javaToNeo.keySet()) );
+        List<Type> types = Iterables.toList( javaToNeo.keySet() );
+        types.sort( (a,b)->a.toString().compareTo( b.toString() ) );
+
+        return new ProcedureException( Status.Statement.InvalidType,
+                Messages.get( proc_unmappable_type, cls, types ));
     }
 
     public static class SimpleConverter implements NeoValueConverter
