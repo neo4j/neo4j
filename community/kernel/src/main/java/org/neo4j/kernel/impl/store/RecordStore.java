@@ -236,6 +236,8 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      */
     int getStoreHeaderInt();
 
+    void prepareForCommit( RECORD record );
+
     Predicate<AbstractBaseRecord> IN_USE = AbstractBaseRecord::inUse;
 
     class Delegator<R extends AbstractBaseRecord> implements RecordStore<R>
@@ -371,6 +373,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public void ensureHeavy( R record )
         {
             actual.ensureHeavy( record );
+        }
+
+        @Override
+        public void prepareForCommit( R record )
+        {
+            actual.prepareForCommit( record );
         }
     }
 

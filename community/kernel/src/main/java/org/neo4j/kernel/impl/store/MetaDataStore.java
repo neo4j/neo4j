@@ -846,4 +846,9 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
     {
         return cursor.getByte() == Record.IN_USE.byteValue();
     }
+
+    @Override
+    public void prepareForCommit( NeoStoreActualRecord record )
+    {   // No need to do anything with these records before commit
+    }
 }

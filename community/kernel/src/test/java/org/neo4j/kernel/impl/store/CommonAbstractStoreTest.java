@@ -132,5 +132,10 @@ public class CommonAbstractStoreTest
         {
             return false;
         }
+
+        @Override
+        public void prepareForCommit( AbstractBaseRecord record )
+        {
+        }
     }
 }

@@ -82,6 +82,12 @@ public class ComposableRecordStore<RECORD extends AbstractBaseRecord, HEADER ext
     }
 
     @Override
+    public void prepareForCommit( RECORD record )
+    {
+        recordFormat.prepare( record, recordSize, this );
+    }
+
+    @Override
     public long getNextRecordReference( RECORD record )
     {
         return recordFormat.getNextRecordReference( record );
