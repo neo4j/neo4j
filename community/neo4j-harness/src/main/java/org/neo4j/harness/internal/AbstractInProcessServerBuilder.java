@@ -46,6 +46,9 @@ import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 
+import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
+import static org.neo4j.bolt.BoltKernelExtension.Settings.enabled;
+import static org.neo4j.bolt.BoltKernelExtension.Settings.socket_address;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.test.Digests.md5Hex;
 
@@ -73,7 +76,10 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         setDirectory( workingDir );
         withConfig( ServerSettings.auth_enabled, "false" );
         withConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-        withConfig( ServerSettings.webserver_port.name(), Integer.toString( freePort() ) );
+        withConfig( ServerSettings.webserver_port.name(), Integer.toString( freePort(7474, 10000) ) );
+
+        withConfig( connector( 0, enabled ), "true" );
+        withConfig( connector( 0, socket_address ), "localhost:" + Integer.toString( freePort(7687, 10000) ) );
     }
 
 
@@ -198,11 +204,11 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         return md5Hex( Long.toString( new Random().nextLong() ) );
     }
 
-    private int freePort()
+    private int freePort(int startRange, int endRange)
     {
         try
         {
-            return Ports.findFreePort( Ports.INADDR_LOCALHOST, new int[]{7474, 10000} ).getPort();
+            return Ports.findFreePort( Ports.INADDR_LOCALHOST, new int[]{startRange, endRange} ).getPort();
         }
         catch ( IOException e )
         {

@@ -146,6 +146,15 @@ public class Neo4jRule implements TestRule, TestServerBuilder
         return this;
     }
 
+    public URI boltURI()
+    {
+        if(controls == null)
+        {
+            throw new IllegalStateException( "Cannot access instance URI before or after the test runs." );
+        }
+        return controls.boltURI();
+    }
+
     public URI httpURI()
     {
         if(controls == null)

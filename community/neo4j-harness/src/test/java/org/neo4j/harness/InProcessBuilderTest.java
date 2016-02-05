@@ -19,8 +19,14 @@
  */
 package org.neo4j.harness;
 
+import org.apache.commons.io.FileUtils;
+import org.codehaus.jackson.JsonNode;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyManagementException;
@@ -35,17 +41,14 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.apache.commons.io.FileUtils;
-import org.codehaus.jackson.JsonNode;
-import org.junit.Rule;
-import org.junit.Test;
-
+import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.server.ServerTestUtils;
@@ -63,7 +66,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 
 public class InProcessBuilderTest
@@ -219,6 +221,21 @@ public class InProcessBuilderTest
         finally
         {
             FileUtils.forceDelete( dir.toFile() );
+        }
+    }
+
+    @Test
+    public void shouldOpenBoltPort() throws Throwable
+    {
+        // given
+        try(ServerControls controls = newInProcessBuilder().newServer() )
+        {
+            URI uri = controls.boltURI();
+
+            // when
+            new SocketConnection().connect( new HostnamePort( uri.getHost(), uri.getPort() ) );
+
+            // then no exception
         }
     }
 
