@@ -28,6 +28,8 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 
+import org.neo4j.desktop.model.DesktopModel;
+
 import static org.neo4j.desktop.ui.Components.alert;
 import static org.neo4j.desktop.ui.Components.createLabel;
 import static org.neo4j.desktop.ui.Components.createPanel;

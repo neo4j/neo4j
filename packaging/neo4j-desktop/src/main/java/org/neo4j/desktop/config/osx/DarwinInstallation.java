@@ -24,7 +24,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-import org.neo4j.desktop.config.Environment;
+import org.neo4j.desktop.config.portable.Environment;
 import org.neo4j.desktop.config.unix.UnixInstallation;
 
 public class DarwinInstallation extends UnixInstallation
@@ -33,6 +33,7 @@ public class DarwinInstallation extends UnixInstallation
     public DarwinInstallation()
     {
         String filename = "openNeoTerminal.sh";
+
         try
         {
             String[] scriptCommands = {
@@ -48,25 +49,25 @@ public class DarwinInstallation extends UnixInstallation
                     "echo neo4j-import",
                     "bash"};
 
-            try ( FileWriter fileWriter = new FileWriter( new File( filename ), false ) )
+            try( FileWriter fileWriter = new FileWriter( new File( filename ), false ) )
             {
-                for ( String scriptCommand : scriptCommands )
+                for( String scriptCommand : scriptCommands )
                 {
-                    fileWriter.write( scriptCommand + "\n" );
+                    fileWriter.write( scriptCommand + "\n");
                 }
-            }
 
             String commands[] = { "bash", "-c", "chmod a+x " + filename };
 
             Runtime.getRuntime().exec( commands );
-        }
-        catch( IOException ioe )
-        {
-            System.out.println( "Error writing openNeoTerminal.sh" );
+            }
+            catch( IOException ioe )
+            {
+                System.out.println( "Error writing " + filename );
+            }
         }
         catch( URISyntaxException urise )
         {
-            System.out.println( "Error getting bin locations for openNeoTerminal.sh" );
+            System.out.println( "Error getting bin locations for " + filename );
         }
     }
 
@@ -79,7 +80,6 @@ public class DarwinInstallation extends UnixInstallation
     @Override
     protected File getDefaultDirectory()
     {
-        // cf. http://stackoverflow.com/questions/567874/how-do-i-find-the-users-documents-folder-with-java-in-os-x
         return new File( new File( System.getProperty( "user.home" ) ), "Documents" );
     }
 }

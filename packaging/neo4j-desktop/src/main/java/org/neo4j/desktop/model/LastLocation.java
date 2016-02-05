@@ -17,31 +17,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.desktop.config.osx;
+package org.neo4j.desktop.model;
 
 import java.io.File;
-import java.io.IOException;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
 
-import org.neo4j.desktop.config.portable.Environment;
-
-class DarwinEnvironment extends Environment
+public class LastLocation
 {
-    @Override
-    public void editFile( File file ) throws IOException, SecurityException
+    public static String getLastLocation( String defaultLocation )
     {
-        try
-        {
-            super.editFile( file );
-        }
-        catch( IOException|UnsupportedOperationException ex )
-        {
-            Runtime.getRuntime().exec( new String[] { "openDirectory", "-nt", file.getAbsolutePath() } );
-        }
-    }
+        File file = new File( ".dblocation" );
+        String location = defaultLocation;
 
-    @Override
-    public void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory ) throws IOException
-    {
-        Runtime.getRuntime().exec( new String[] { "openDirectory", "-na", "Terminal", "openNeoTerminal.sh" } );
+        if( file.exists() && file.canRead() )
+        {
+            try( Scanner scanner = new Scanner( file ) )
+            {
+                if ( scanner.hasNextLine() )
+                {
+                    location = scanner.nextLine();
+                }
+            }
+            catch ( FileNotFoundException fnfe )
+            {
+                fnfe.printStackTrace();
+            }
+        }
+
+        return location;
     }
 }

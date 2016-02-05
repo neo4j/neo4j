@@ -22,6 +22,7 @@ package org.neo4j.desktop.config;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import org.neo4j.desktop.config.portable.Environment;
 
 /**
  * The Installation represents the "static" part of the configuration on a particular system. It abstracts away

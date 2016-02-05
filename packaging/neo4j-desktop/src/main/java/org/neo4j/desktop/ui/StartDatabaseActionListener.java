@@ -22,6 +22,9 @@ package org.neo4j.desktop.ui;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import org.neo4j.desktop.model.DesktopModel;
+import org.neo4j.desktop.model.exceptions.UnableToStartServerException;
+import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 import org.neo4j.desktop.runtime.DatabaseActions;
 
 import static javax.swing.SwingUtilities.invokeLater;
