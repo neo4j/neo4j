@@ -182,6 +182,23 @@ public class ReflectiveProcedureTest
         assertFalse( proc.apply( null, new Object[0] ).hasNext() );
     }
 
+    @Test
+    public void shouldGiveHelpfulErrorOnProcedureReturningInvalidRecordType() throws Throwable
+    {
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class that" +
+                                 " you define, with public non-final fields defining the fields in the record. If " +
+                                 "you'd like your procedure to return `String`, you could define a record class " +
+                                 "like:\n" +
+                                 "public class Output {\n" +
+                                 "    public String out;\n" +
+                                 "}" );
+
+        // When
+        compile( ProcedureWithInvalidRecordOutput.class ).get( 0 );
+    }
+
     public static class MyOutputRecord
     {
         public String name;
@@ -272,6 +289,15 @@ public class ReflectiveProcedureTest
             return Stream.of(
                     new MyOutputRecord( "Bonnie" ),
                     new MyOutputRecord( "Clyde" ) );
+        }
+    }
+
+    public static class ProcedureWithInvalidRecordOutput
+    {
+        @Procedure
+        public String test( )
+        {
+            return "Testing";
         }
     }
 
