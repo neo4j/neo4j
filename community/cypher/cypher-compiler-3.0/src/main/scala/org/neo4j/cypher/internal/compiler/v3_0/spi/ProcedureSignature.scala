@@ -26,25 +26,25 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
 import scala.collection.JavaConverters._
 
-sealed trait ProcedureMode {
+sealed trait ProcedureCallMode {
   val queryType: InternalQueryType
 
   def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]]
 }
 
-case object ProcReadOnly extends ProcedureMode {
+case object LazyReadOnlyCallMode extends ProcedureCallMode {
   override val queryType: InternalQueryType = READ_ONLY
 
   override def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] =
-    ctx.callReadOnlyProcedure(signature, args)
+    ctx.callReadOnlyProcedure(signature.name, args)
 }
 
-case object ProcReadWrite extends ProcedureMode {
+case object EagerReadWriteCallMode extends ProcedureCallMode {
   override val queryType: InternalQueryType = READ_WRITE
 
   override def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] = {
     val buffer = new util.ArrayList[Array[AnyRef]]()
-    val iterator = ctx.callReadWriteProcedure(signature, args)
+    val iterator = ctx.callReadWriteProcedure(signature.name, args)
     while (iterator.hasNext) {
       buffer.add(iterator.next())
     }
@@ -55,7 +55,7 @@ case object ProcReadWrite extends ProcedureMode {
 case class ProcedureSignature(name: ProcedureName,
                               inputSignature: Seq[FieldSignature],
                               outputSignature: Seq[FieldSignature],
-                              mode: ProcedureMode = ProcReadOnly)
+                              mode: ProcedureCallMode = LazyReadOnlyCallMode)
 
 case class ProcedureName(namespace: Seq[String], name: String)
 

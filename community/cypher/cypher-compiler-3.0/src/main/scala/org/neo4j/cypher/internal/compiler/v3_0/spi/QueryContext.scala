@@ -162,9 +162,9 @@ trait QueryContext extends TokenContext {
 
   def lockRelationships(relIds: Long*)
 
-  def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 
-  def callReadWriteProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 }
 
 trait Operations[T <: PropertyContainer] {

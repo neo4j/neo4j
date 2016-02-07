@@ -123,11 +123,11 @@ class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends Delega
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
     translateException(super.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  override def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] =
-    translateIterator(super.callReadOnlyProcedure(signature, args))
+  override def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
+    translateIterator(super.callReadOnlyProcedure(name, args))
 
-  override def callReadWriteProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] =
-    translateIterator(super.callReadWriteProcedure(signature, args))
+  override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
+    translateIterator(super.callReadWriteProcedure(name, args))
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T =
     super.withAnyOpenQueryContext(qc =>

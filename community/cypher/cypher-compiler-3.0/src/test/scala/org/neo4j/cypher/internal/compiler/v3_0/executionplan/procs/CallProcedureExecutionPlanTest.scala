@@ -97,7 +97,7 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
     Seq(FieldSignature("b", symbols.CTInteger)))
 
   private val writeSignature = ProcedureSignature( readSignature.name,
-    readSignature.inputSignature, readSignature.outputSignature, ProcReadWrite )
+    readSignature.inputSignature, readSignature.outputSignature, EagerReadWriteCallMode )
 
   private val pos = DummyPosition(-1)
   val ctx = mock[QueryContext]
@@ -116,6 +116,6 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
     }
   }
 
-  when(ctx.callReadOnlyProcedure(any[ProcedureSignature], any[Seq[AnyRef]])).thenAnswer(procedureResult)
-  when(ctx.callReadWriteProcedure(any[ProcedureSignature], any[Seq[AnyRef]])).thenAnswer(procedureResult)
+  when(ctx.callReadOnlyProcedure(any[ProcedureName], any[Seq[AnyRef]])).thenAnswer(procedureResult)
+  when(ctx.callReadWriteProcedure(any[ProcedureName], any[Seq[AnyRef]])).thenAnswer(procedureResult)
 }
