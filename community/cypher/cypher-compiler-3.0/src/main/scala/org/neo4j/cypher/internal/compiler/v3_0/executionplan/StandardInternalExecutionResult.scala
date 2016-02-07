@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 import java.io.{PrintWriter, StringWriter}
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.iteratorToVisitable
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{JavaResultValueConverter, ScalaResultValueConverter, TextResultValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{Runtime, Planner}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{TaskCloser, _}
 import org.neo4j.cypher.internal.frontend.v3_0.EntityNotFoundException
@@ -36,14 +36,15 @@ import scala.collection.{Map, mutable}
 
 abstract class StandardInternalExecutionResult(context: QueryContext,
                                                taskCloser: Option[TaskCloser] = None)
-  extends InternalExecutionResult with SuccessfulCloseable {
+  extends InternalExecutionResult
+    with SuccessfulCloseable {
 
   self =>
 
-  import org.neo4j.cypher.internal.compiler.v3_0.helpers.ResultValueTextSupport._
-  import org.neo4j.cypher.internal.compiler.v3_0.helpers.ScalaValueCompatibility._
-
   import scala.collection.JavaConverters._
+
+  protected val isGraphKernelResultValue = context.isGraphKernelResultValue _
+  private val scalaValues = new ScalaResultValueConverter(isGraphKernelResultValue)
 
   private var successful = false
 
@@ -51,7 +52,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   protected def isClosed = taskCloser.exists(_.isClosed)
 
   override def hasNext = inner.hasNext
-  override def next() = asDeepScalaMap(inner.next())
+  override def next() = scalaValues.asDeepScalaResultMap(inner.next())
 
   override def columns: List[String] = javaColumns.asScala.toList
   override def columnAs[T](column: String): Iterator[T] = map { case m => extractScalaColumn(column, m).asInstanceOf[T] }
@@ -99,7 +100,9 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
       populateResults(result)(row)
       populateDumpToStringResults(dumpToStringBuilder)(row)
     }
-    new StandardInternalExecutionResult(context, taskCloser) with StandardInternalExecutionResult.AcceptByIterating {
+    new StandardInternalExecutionResult(context, taskCloser)
+      with StandardInternalExecutionResult.AcceptByIterating {
+
       override protected val inner: util.Iterator[util.Map[String, Any]] = result.iterator()
 
       override def javaColumns: util.List[String] = self.javaColumns
@@ -107,7 +110,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
       override def executionPlanDescription(): InternalPlanDescription =
         self.executionPlanDescription().addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
 
-      override def toList = result.asScala.map(m => Eagerly.immutableMapValues(m.asScala, asDeepScalaValue)).toList
+      override def toList = result.asScala.map(m => Eagerly.immutableMapValues(m.asScala, scalaValues.asDeepScalaResultValue)).toList
 
       override def dumpToString(writer: PrintWriter) =
         formatOutput(writer, columns, dumpToStringBuilder.result(), queryStatistics())
@@ -136,8 +139,9 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
 
   protected def populateDumpToStringResults(builder: mutable.Builder[Map[String, String], Seq[Map[String, String]]])
                                            (row: InternalResultRow) = {
+    val textValues = new TextResultValueConverter(scalaValues)(context)
     val map = new mutable.HashMap[String, String]()
-    columns.foreach(c => map.put(c, text(row.get(c))(context)))
+    columns.foreach(c => map.put(c, textValues.asTextResultValue(row.get(c))))
 
     builder += map
   }
@@ -196,9 +200,11 @@ object StandardInternalExecutionResult {
 
     self: StandardInternalExecutionResult =>
 
+    val javaValues = new JavaResultValueConverter(isGraphKernelResultValue)
+
     @throws(classOf[Exception])
     def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
-      iteratorToVisitable.accept(self, visitor)
+      javaValues.iteratorToVisitable(self).accept(visitor)
     }
   }
 }

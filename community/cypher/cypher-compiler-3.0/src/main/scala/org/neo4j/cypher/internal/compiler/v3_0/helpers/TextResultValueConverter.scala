@@ -25,20 +25,22 @@ import org.neo4j.graphdb.{Path, Node, Relationship}
 
 import scala.collection.Map
 
-object ResultValueTextSupport {
+// Converts scala runtime values to human readable text
+//
+// Main use: Printing results when using ExecutionEngine
+//
+class TextResultValueConverter(scalaValues: ScalaResultValueConverter)(implicit context: QueryContext) {
 
-  import org.neo4j.cypher.internal.compiler.v3_0.helpers.ScalaValueCompatibility._
-
-  def text(a: Any)(implicit context: QueryContext): String = {
-    val scalaValue = asShallowScalaValue(a)
+  def asTextResultValue(a: Any): String = {
+    val scalaValue = scalaValues.asShallowScalaResultValue(a)
     scalaValue match {
       case node: Node => s"$node${props(node)}"
       case relationship: Relationship => s":${relationship.getType.name()}[${relationship.getId}]${props(relationship)}"
       case path: Path => path.toString
       case map: Map[_, _] => makeString(map)
-      case opt: Option[_] => opt.map(text).getOrElse("None")
-      case array: Array[_] => array.map(elem => text(elem)).mkString("[", ",", "]")
-      case iterable: Iterable[_] => iterable.map(elem => text(elem)).mkString("[", ",", "]")
+      case opt: Option[_] => opt.map(asTextResultValue).getOrElse("None")
+      case array: Array[_] => array.map(elem => asTextResultValue(elem)).mkString("[", ",", "]")
+      case iterable: Iterable[_] => iterable.map(elem => asTextResultValue(elem)).mkString("[", ",", "]")
       case str: String => "\"" + str + "\""
       case token: KeyToken => token.name
       case null => "<null>"
@@ -46,19 +48,19 @@ object ResultValueTextSupport {
     }
   }
 
-  private def makeString(m: Map[_, _])(implicit context: QueryContext) = m.map { case (k, v) => s"$k -> ${text(v)}" }.mkString("{", ", ", "}")
+  private def makeString(m: Map[_, _]) = m.map { case (k, v) => s"$k -> ${asTextResultValue(v)}" }.mkString("{", ", ", "}")
 
-  private def props(n: Node)(implicit context: QueryContext): String = {
+  private def props(n: Node): String = {
     val ops = context.nodeOps
     val properties = ops.propertyKeyIds(n.getId)
-    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${text(ops.getProperty(n.getId, pkId))}")
+    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextResultValue(ops.getProperty(n.getId, pkId))}")
     keyValStrings.mkString("{", ",", "}")
   }
 
-  private def props(r: Relationship)(implicit context: QueryContext): String = {
+  private def props(r: Relationship): String = {
     val ops = context.relationshipOps
     val properties = ops.propertyKeyIds(r.getId)
-    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${text(ops.getProperty(r.getId, pkId))}")
+    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextResultValue(ops.getProperty(r.getId, pkId))}")
     keyValStrings.mkString("{", ",", "}")
   }
 }

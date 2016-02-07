@@ -605,7 +605,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   def profileWithAllPlannersAndRuntimes(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithAllPlannersAndRuntimesAndCompatibilityMode(_,_:_*), q, params:_*)
 
-  override def profile(q: String, params: (String, Any)*): InternalExecutionResult = fail("Don't use profile together in ProfilerAcceptanceTest")
+  override def profile(q: String, params: (String, Any)*): InternalExecutionResult = fail("Don't use profile all together in ProfilerAcceptanceTest")
 
   def legacyProfile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(innerExecute(_,_:_*), q, params:_*)
 

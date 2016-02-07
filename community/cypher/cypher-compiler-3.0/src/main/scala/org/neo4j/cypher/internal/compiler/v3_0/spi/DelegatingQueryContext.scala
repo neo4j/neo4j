@@ -196,6 +196,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]) =
     inner.callReadWriteProcedure(name, args)
+
+  override def isGraphKernelResultValue(v: Any): Boolean =
+    inner.isGraphKernelResultValue(v)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

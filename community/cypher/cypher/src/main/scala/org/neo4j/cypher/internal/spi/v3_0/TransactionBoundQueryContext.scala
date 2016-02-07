@@ -26,6 +26,7 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.compiler.v3_0.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.DirectionConverter.toGraphDb
@@ -576,6 +577,8 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       override def next(): Array[AnyRef] = read.next
     }
   }
+
+  override def isGraphKernelResultValue(v: Any): Boolean = internal.isGraphKernelResultValue(v)
 
   private def buildPathFinder(depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
                               filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {

@@ -23,10 +23,10 @@ import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType, StandardInternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaResultValueConverter
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_0.helpers.JavaValueCompatibility.asDeepJavaValue
 
 import scala.collection.JavaConverters._
 
@@ -48,7 +48,8 @@ case class ProcedureExecutionResult[E <: Exception](taskCloser: TaskCloser,
   extends StandardInternalExecutionResult(context, Some(taskCloser)) {
 
   // The signature mode is taking care of eagerization
-  private val underlying = signature.mode.call(context, signature, args.map(asDeepJavaValue))
+  private val javaValues = new JavaResultValueConverter(isGraphKernelResultValue)
+  private val underlying = signature.mode.call(context, signature, args.map(javaValues.asDeepJavaResultValue))
   private val outputs = signature.outputSignature
 
   override protected val inner = new util.Iterator[util.Map[String, Any]]() {

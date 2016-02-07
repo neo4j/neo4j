@@ -129,6 +129,9 @@ class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends Delega
   override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
     translateIterator(super.callReadWriteProcedure(name, args))
 
+  override def isGraphKernelResultValue(v: Any): Boolean =
+    translateException(super.isGraphKernelResultValue(v))
+
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T =
     super.withAnyOpenQueryContext(qc =>
       translateException(

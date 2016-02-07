@@ -27,13 +27,6 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  test("paths are printed correctly") {
-    val n1 = createNode()
-    val n2 = createNode()
-    val r = relate(n1, n2)
-    println(executeWithAllPlannersAndCompatibilityMode("match p = (a)-[*]->(b) return p").dumpToString())
-  }
-
   test("make sure non-existing nodes are not returned") {
     executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 10 return n") should be(empty)
     executeWithAllPlannersAndCompatibilityMode("match ()-[r]->() where id(r) = 10 return r") should be(empty)
