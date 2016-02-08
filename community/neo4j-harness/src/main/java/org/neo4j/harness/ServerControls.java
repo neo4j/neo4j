@@ -28,6 +28,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
  */
 public interface ServerControls extends AutoCloseable
 {
+    /** Returns the URI to the Bolt Protocol connector of the instance. */
+    URI boltURI();
+
     /** Returns the URI to the root resource of the instance. For example, http://localhost:7474/ */
     URI httpURI();
 

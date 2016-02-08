@@ -27,8 +27,12 @@ import java.net.URI;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.AbstractNeoServer;
+
+import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
+import static org.neo4j.bolt.BoltKernelExtension.Settings.socket_address;
 
 public class InProcessServerControls implements ServerControls
 {
@@ -41,6 +45,13 @@ public class InProcessServerControls implements ServerControls
         this.serverFolder = serverFolder;
         this.server = server;
         this.additionalClosable = additionalClosable;
+    }
+
+    @Override
+    public URI boltURI()
+    {
+        HostnamePort address = server.getConfig().get( connector( 0, socket_address ) );
+        return URI.create( "bolt://" + address.getHost() + ":" + address.getPort() );
     }
 
     @Override
