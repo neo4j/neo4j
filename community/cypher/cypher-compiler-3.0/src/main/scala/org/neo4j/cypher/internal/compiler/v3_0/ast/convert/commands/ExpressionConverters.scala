@@ -196,7 +196,6 @@ object ExpressionConverters {
           commandexpressions.Distinct(command, inner)
         else
           command
-      case Str => commandexpressions.StrFunction(toCommandExpression(invocation.arguments.head))
       case Substring =>
         commandexpressions.SubstringFunction(
           toCommandExpression(invocation.arguments.head),
@@ -221,7 +220,6 @@ object ExpressionConverters {
       case ToFloat => commandexpressions.ToFloatFunction(toCommandExpression(invocation.arguments.head))
       case ToInt => commandexpressions.ToIntFunction(toCommandExpression(invocation.arguments.head))
       case ToLower => commandexpressions.LowerFunction(toCommandExpression(invocation.arguments.head))
-      case ToStr => commandexpressions.StrFunction(toCommandExpression(invocation.arguments.head))
       case ToString => commandexpressions.ToStringFunction(toCommandExpression(invocation.arguments.head))
       case ToUpper => commandexpressions.UpperFunction(toCommandExpression(invocation.arguments.head))
       case Trim => commandexpressions.TrimFunction(toCommandExpression(invocation.arguments.head))

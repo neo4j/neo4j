@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_0
 
 import java.io.{PrintWriter, StringWriter}
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.StringHelper
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 
-case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[String], queryStatistics: InternalQueryStatistics) extends StringHelper {
+case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[String], queryStatistics: InternalQueryStatistics) extends CypherSerializer {
 
   def dumpToString(implicit query: QueryContext): String = {
     val stringWriter = new StringWriter()
@@ -74,7 +73,7 @@ case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[St
   def createString(columnSizes: Map[String, Int], m: Map[String, Any])(implicit query: QueryContext): String = {
     columns.map(c => {
       val length = columnSizes.get(c).get
-      val txt = text(m.get(c).get, query)
+      val txt = serialize(m.get(c).get, query)
       val value = makeSize(txt, length)
       value
     }).mkString("| ", " | ", " |")
@@ -85,7 +84,7 @@ case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[St
 
     result.foreach((m) => {
       m.foreach((kv) => {
-        val length = text(kv._2, query).size
+        val length = serialize(kv._2, query).size
         if (!columnSizes.contains(kv._1) || columnSizes.get(kv._1).get < length) {
           columnSizes.put(kv._1, length)
         }
