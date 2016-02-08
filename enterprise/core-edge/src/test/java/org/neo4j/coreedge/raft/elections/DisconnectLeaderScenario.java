@@ -35,7 +35,8 @@ public class DisconnectLeaderScenario
 {
     private final Fixture fixture;
     private final long electionTimeout;
-    private final List<Long> electionResults = new ArrayList<>();
+    private final List<Long> electionTimeResults = new ArrayList<>();
+    private long timeoutCount;
 
     public DisconnectLeaderScenario( Fixture fixture, long electionTimeout )
     {
@@ -43,23 +44,31 @@ public class DisconnectLeaderScenario
         this.electionTimeout = electionTimeout;
     }
 
-    public void run( long iterations ) throws InterruptedException, TimeoutException
+    public void run( long iterations, long leaderStabilityMaxTimeMillis ) throws InterruptedException
     {
         for ( int i = 0; i < iterations; i++ )
         {
-            long electionTime = oneIteration();
-            electionResults.add( electionTime );
+            long electionTime;
+            try
+            {
+                electionTime = oneIteration( leaderStabilityMaxTimeMillis );
+                electionTimeResults.add( electionTime );
+            }
+            catch ( TimeoutException e )
+            {
+                timeoutCount++;
+            }
             Thread.sleep( ThreadLocalRandom.current().nextLong( electionTimeout ) );
         }
     }
 
-    private long oneIteration() throws InterruptedException, TimeoutException
+    private long oneIteration( long leaderStabilityMaxTimeMillis ) throws InterruptedException, TimeoutException
     {
-        RaftTestMember oldLeader = ElectionUtil.waitForLeaderAgreement( fixture.rafts, 10 * electionTimeout );
+        RaftTestMember oldLeader = ElectionUtil.waitForLeaderAgreement( fixture.rafts, leaderStabilityMaxTimeMillis );
         long startTime = System.currentTimeMillis();
 
         fixture.net.disconnect( oldLeader );
-        RaftTestMember newLeader = ElectionUtil.waitForLeaderAgreement( new FilteringIterable<>( fixture.rafts, raft -> !raft.identity().equals( oldLeader ) ), 10 * electionTimeout );
+        RaftTestMember newLeader = ElectionUtil.waitForLeaderAgreement( new FilteringIterable<>( fixture.rafts, raft -> !raft.identity().equals( oldLeader ) ), leaderStabilityMaxTimeMillis );
         assert !newLeader.equals( oldLeader ); // this should be guaranteed by the waitForLeaderAgreement call
 
         long endTime = System.currentTimeMillis();
@@ -82,12 +91,13 @@ public class DisconnectLeaderScenario
         double collidingAverage;
         double collisionRate;
         long collisionCount;
+        long timeoutCount;
 
         @Override
         public String toString()
         {
-            return String.format( "Result{nonCollidingAverage=%s, collidingAverage=%s, collisionRate=%s, collisionCount=%d}",
-                    nonCollidingAverage, collidingAverage, collisionRate, collisionCount );
+            return String.format( "Result{nonCollidingAverage=%s, collidingAverage=%s, collisionRate=%s, collisionCount=%d, timeoutCount=%d}",
+                    nonCollidingAverage, collidingAverage, collisionRate, collisionCount, timeoutCount );
         }
     }
 
@@ -101,7 +111,7 @@ public class DisconnectLeaderScenario
         long nonCollidingRuns = 0;
         long nonCollidingSum = 0;
 
-        for ( long electionTime : electionResults )
+        for ( long electionTime : electionTimeResults )
         {
             if ( hadOneOrMoreCollisions( electionTime ) )
             {
@@ -117,8 +127,9 @@ public class DisconnectLeaderScenario
 
         result.collidingAverage = collidingSum / (double) collidingRuns;
         result.nonCollidingAverage = nonCollidingSum / (double) nonCollidingRuns;
-        result.collisionRate = collidingRuns / (double) electionResults.size();
+        result.collisionRate = collidingRuns / (double) electionTimeResults.size();
         result.collisionCount = collidingRuns;
+        result.timeoutCount = timeoutCount;
 
         return result;
     }

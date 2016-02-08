@@ -24,8 +24,10 @@ import org.junit.Test;
 import org.neo4j.coreedge.raft.RaftTestNetwork;
 import org.neo4j.coreedge.server.RaftTestMember;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 /**
@@ -56,7 +58,7 @@ public class ElectionPerformanceIT
         {
             // when running scenario
             fixture.boot();
-            scenario.run( iterations );
+            scenario.run( iterations, 10 * electionTimeout );
         }
         finally
         {
@@ -76,6 +78,7 @@ public class ElectionPerformanceIT
         {
             assertThat( result.collidingAverage, lessThan( 3000d ) );
         }
+        assertThat( result.timeoutCount, is( 0L ) );
     }
 
     @Test
@@ -95,7 +98,7 @@ public class ElectionPerformanceIT
         {
             // when running scenario
             fixture.boot();
-            scenario.run( iterations );
+            scenario.run( iterations, 10 * electionTimeout );
         }
         finally
         {
@@ -117,5 +120,6 @@ public class ElectionPerformanceIT
         {
             assertThat( result.collidingAverage, lessThan( 120d ) );
         }
+        assertThat( result.timeoutCount, lessThanOrEqualTo( 1L ) ); // for GC or whatever reason
     }
 }
