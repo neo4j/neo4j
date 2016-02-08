@@ -35,7 +35,7 @@ import scala.collection.mutable
 
 class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  val VERBOSE = true
+  val VERBOSE = false
 
   override def databaseConfig() = super.databaseConfig() ++ Map(
     GraphDatabaseSettings.cypher_min_replan_interval -> "0",
@@ -185,7 +185,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
 
   private def determineIDPLoopSizes(numberOfPatternRelationships: Int, configKey: Setting[_], keys: Seq[Int]): Map[Any, Int] = {
     val query = makeLongPatternQuery(numberOfPatternRelationships)
-    println(configKey)
+    if (VERBOSE) println(configKey)
     val idpInnerIterations: mutable.Map[Int, Int] = keys.foldLeft(mutable.Map.empty[Int, Int]) { (acc, configValue) =>
       val config = databaseConfig() + (configKey -> configValue.toString)
       runWithConfig(config.toSeq: _*) {

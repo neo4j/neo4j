@@ -246,11 +246,16 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
           rel.coveredIds.contains(node) && !qg.patternRelationships.contains(rel)
         }
 
-        queue.enqueue(filteredPatterns.toSeq.map(_.otherSide(node)): _*)
+        val patternsWithSameName =
+          patternRelationships.filterNot(filteredPatterns).filter { r => filteredPatterns.exists(_.name == r.name) }
 
+        queue.enqueue(filteredPatterns.toSeq.map(_.otherSide(node)): _*)
+        queue.enqueue(patternsWithSameName.toSeq.flatMap(r => Seq(r.left, r.right)): _*)
+
+        val patternsInConnectedComponent = filteredPatterns ++ patternsWithSameName
         qg = qg
           .addPatternNodes(node)
-          .addPatternRelationships(filteredPatterns.toSeq)
+          .addPatternRelationships(patternsInConnectedComponent.toSeq)
 
         val alreadyHaveArguments = qg.argumentIds.nonEmpty
 
