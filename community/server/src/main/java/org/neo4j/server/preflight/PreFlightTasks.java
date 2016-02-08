@@ -32,7 +32,7 @@ import org.neo4j.logging.LogProvider;
  * add could be auto-generating config files if they don't exist and creating required
  * directories.
  *
- * All of these except generating neo4j.properties depend on having
+ * All of these except generating neo4j.conf depend on having
  * the configuration available. Eg. we can't both ensure that file exists within these
  * tests, while at the same time depending on that file existing.
  *

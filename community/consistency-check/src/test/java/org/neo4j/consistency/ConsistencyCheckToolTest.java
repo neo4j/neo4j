@@ -142,7 +142,7 @@ public class ConsistencyCheckToolTest
         assumeFalse( "This test runs with mocked ConsistencyCheckService, doesn't work with the legacy checker " +
                 "since it creates its own", useLegacyChecker );
         File storeDir = storeDirectory.directory();
-        File propertyFile = storeDirectory.file( "neo4j.properties" );
+        File propertyFile = storeDirectory.file( "neo4j.conf" );
         Properties properties = new Properties();
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( propertyFile ), null );

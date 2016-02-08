@@ -188,7 +188,7 @@ public abstract class Bootstrapper
 
     /**
      * Create a new config instance for the DBMS. For legacy reasons, this method contains convoluted logic to load an
-     * additional config file determined by a system property (neo4j.properties).
+     * additional config file determined by a system property (neo4j.conf).
      *
      * It will also override defaults set in neo4j embedded (remote shell default on/off, query log file name). Whether
      * it's correct to do that here is dubious, it makes it confusing in the documentation that the defaults do not

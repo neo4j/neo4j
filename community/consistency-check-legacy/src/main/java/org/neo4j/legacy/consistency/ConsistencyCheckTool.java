@@ -167,11 +167,11 @@ public class ConsistencyCheckTool
     private String usage()
     {
         return joinAsLines(
-                jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.properties>] <storedir>" ),
-                "WHERE:   <storedir>         is the path to the store to check",
-                "         -recovery          to perform recovery on the store before checking",
-                "         <neo4j.properties> is the location of an optional properties file",
-                "                            containing tuning parameters for the consistency check"
+                jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.conf>] <storedir>" ),
+                "WHERE:   <storedir>      is the path to the store to check",
+                "         -recovery       to perform recovery on the store before checking",
+                "         <neo4j.conf>    is the location of an optional properties file containing tuning",
+                "                         parameters for the consistency check"
         );
     }
 

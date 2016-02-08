@@ -28,9 +28,9 @@ Parses a Neo4j configuration file into a hashtable.  Multivalue keys are output 
 The full path to the file to read
 
 .EXAMPLE
-Get-KeyValuePairsFromConfFile -Filename 'C:\Neo4j\conf\neo4j.properties'
+Get-KeyValuePairsFromConfFile -Filename 'C:\Neo4j\conf\neo4j.conf'
 
-Reads the file 'C:\Neo4j\conf\neo4j.properties' and outputs a hashtable of key/value pairs
+Reads the file 'C:\Neo4j\conf\neo4j.conf' and outputs a hashtable of key/value pairs
 
 .OUTPUTS
 System.Collections.Hashtable

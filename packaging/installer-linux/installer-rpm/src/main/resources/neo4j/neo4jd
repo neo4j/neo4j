@@ -30,7 +30,7 @@ CLASSPATH=`find $NEO4J_HOME -name '*.jar' | xargs echo | tr ' ' ':'`
 
 java -cp "${CLASSPATH}" \
         -Dfile.encoding=UTF-8 \
-        -Dorg.neo4j.config.file=conf/neo4j.properties \
+        -Dorg.neo4j.config.file=conf/neo4j.conf \
         #{neo4j.mainClass} > /var/log/neo4j/console.log 2>&1 &
 
 echo $! > $PID_FILE

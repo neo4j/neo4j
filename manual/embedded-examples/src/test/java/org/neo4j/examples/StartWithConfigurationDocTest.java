@@ -37,7 +37,7 @@ public class StartWithConfigurationDocTest
         // START SNIPPET: startDbWithConfig
         GraphDatabaseService graphDb = new GraphDatabaseFactory()
             .newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
-            .loadPropertiesFromFile( pathToConfig + "neo4j.properties" )
+            .loadPropertiesFromFile( pathToConfig + "neo4j.conf" )
             .newGraphDatabase();
         // END SNIPPET: startDbWithConfig
         assertNotNull( graphDb );

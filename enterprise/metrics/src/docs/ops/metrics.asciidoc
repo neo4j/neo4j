@@ -35,7 +35,7 @@ metrics.neo4j.network.enabled=true
 [[metrics-graphite]]
 == Graphite Configuration ==
 
-For Graphite integration add the following settings to _neo4j.properties:_
+For Graphite integration add the following settings to _neo4j.conf:_
 
 [source,properties]
 ----
@@ -50,7 +50,7 @@ Start the Neo4j Server and connect to Graphite via a web browser in order to mon
 [[metrics-csv]]
 == Export to CSV Configuration ==
 
-For storing metrics in local CSV files add the following settings to _neo4j.properties:_
+For storing metrics in local CSV files add the following settings to _neo4j.conf:_
 
 [source,properties]
 ----

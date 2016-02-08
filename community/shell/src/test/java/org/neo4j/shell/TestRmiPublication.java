@@ -41,7 +41,7 @@ public class TestRmiPublication
 {
     public static File createDefaultPropertiesFile( String path ) throws IOException
     {
-        File propsFile = new File( path, "neo4j.properties" );
+        File propsFile = new File( path, "neo4j.conf" );
         Properties config = new Properties();
         config.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         try ( Writer writer = new FileWriter( propsFile ) )

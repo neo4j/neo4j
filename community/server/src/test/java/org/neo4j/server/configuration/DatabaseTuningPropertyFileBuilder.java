@@ -46,7 +46,7 @@ public class DatabaseTuningPropertyFileBuilder
 
     public File build() throws IOException
     {
-        File temporaryConfigFile = new File( parentDirectory, "neo4j.properties" );
+        File temporaryConfigFile = new File( parentDirectory, "neo4j.conf" );
         Map<String, String> properties = MapUtil.stringMap(
                 "neostore.relationshipstore.db.mapped_memory", "50M",
                 "neostore.propertystore.db.mapped_memory", "90M",

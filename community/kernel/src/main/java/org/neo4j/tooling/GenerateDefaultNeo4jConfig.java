@@ -26,16 +26,16 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle;
 import org.neo4j.graphdb.factory.SettingsResourceBundle;
 
 /**
- * Generates the default neo4j.properties file by using the {@link GraphDatabaseSettingsResourceBundle}
+ * Generates the default neo4j.conf file by using the {@link GraphDatabaseSettingsResourceBundle}
  */
-public class GenerateDefaultNeo4jProperties
+public class GenerateDefaultNeo4jConfig
 {
     public static void main( String[] args )
         throws ClassNotFoundException
     {
         for( String settingsClassName : args )
         {
-            Class settingsClass = GenerateDefaultNeo4jProperties.class.getClassLoader().loadClass( settingsClassName );
+            Class settingsClass = GenerateDefaultNeo4jConfig.class.getClassLoader().loadClass( settingsClassName );
 
             ResourceBundle bundle = new SettingsResourceBundle(settingsClass);
 

@@ -91,7 +91,7 @@ if started in embedded mode.
 
 [source,plain]
 ----
-$ neo4j-shell -config conf/neo4j.properties -path mydb
+$ neo4j-shell -config conf/neo4j.conf -path mydb
 ----
 
 === Execute a file and then exit

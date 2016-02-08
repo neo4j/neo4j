@@ -95,7 +95,7 @@ Note that this usage is not permitted when the hostname is specified as +0.0.0.0
 Neo4j instance #1 -- neo4j-01.local::
 +
 [source, properties]
-.conf/neo4j.properties
+.conf/neo4j.conf
 ----
 # Unique server id for this Neo4j instance
 # can not be negative id and must be unique
@@ -117,7 +117,7 @@ org.neo4j.server.webserver.address=0.0.0.0
 Neo4j instance #2 -- neo4j-02.local::
 +
 [source, properties]
-.conf/neo4j.properties
+.conf/neo4j.conf
 ----
 # Unique server id for this Neo4j instance
 # can not be negative id and must be unique
@@ -139,7 +139,7 @@ org.neo4j.server.webserver.address=0.0.0.0
 Neo4j instance #3 -- neo4j-03.local::
 +
 [source, properties]
-.conf/neo4j.properties
+.conf/neo4j.conf
 ----
 # Unique server id for this Neo4j instance
 # can not be negative id and must be unique
@@ -219,7 +219,7 @@ If we in this example assume that the machine has 4 gigabytes of memory, and tha
 Neo4j instance #1 -- ~/neo4j-01::
 +
 [source, properties]
-.conf/neo4j.properties
+.conf/neo4j.conf
 ----
 # Reduce the default page cache memory allocation
 dbms.pagecache.memory=500m
@@ -256,7 +256,7 @@ org.neo4j.server.webserver.https.port=7484
 Neo4j instance #2 -- ~/neo4j-02::
 +
 [source, properties]
-.conf/neo4j.properties
+.conf/neo4j.conf
 ----
 # Reduce the default page cache memory allocation
 dbms.pagecache.memory=500m
@@ -293,7 +293,7 @@ org.neo4j.server.webserver.https.port=7485
 Neo4j instance #3 -- ~/neo4j-03::
 +
 [source, properties]
-.conf/neo4j.properties
+.conf/neo4j.conf
 ----
 # Reduce the default page cache memory allocation
 dbms.pagecache.memory=500m

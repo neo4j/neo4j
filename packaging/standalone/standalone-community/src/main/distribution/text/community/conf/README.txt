@@ -4,7 +4,7 @@
 #{product.fullname} configuration files.
 
 * neo4j-http-logging.xml -- logging system configuration for the HTTP REST server using standard logback options
-* neo4j.properties       -- runtime operational settings
+* neo4j.conf             -- runtime operational settings
 * neo4j-wrapper.conf     -- environment and launch settings for Neo4j Server
 * ssl/                   -- directory holding certificate files for HTTPS operation of the REST server
 

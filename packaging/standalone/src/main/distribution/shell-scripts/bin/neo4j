@@ -202,7 +202,7 @@ parse_config() {
     fi
   }
 
-  for file in "neo4j-wrapper.conf" "neo4j.properties"; do
+  for file in "neo4j-wrapper.conf" "neo4j.conf"; do
     path="${NEO4J_CONFIG}/${file}"
     if [ -e "${path}" ]; then
       while read line; do

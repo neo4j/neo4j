@@ -85,7 +85,7 @@ class SettingsDialog extends JDialog
         return withTitledBorder( "Database Configuration", withBoxLayout( BoxLayout.Y_AXIS,
                 createPanel(
                         withFlowLayout( FlowLayout.LEFT, createPanel( createLabel(
-                                "neo4j.properties contains configuration such as cache settings and port bindings.",
+                                "neo4j.conf contains configuration such as cache settings and port bindings.",
                                 "You will need to stop and re-start the database for changes to take effect."
                         ) ) ),
                         withFlowLayout( FlowLayout.RIGHT, createPanel(

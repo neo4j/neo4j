@@ -132,12 +132,12 @@ Function Initialize-Neo4jHACluster
 
     $settings = @"
 "ConfigurationFile","IsDefault","Name","Value","Neo4jHome"
-"neo4j.properties","False","org.neo4j.server.database.mode","HA",""
-"neo4j.properties","False","ha.server_id","$ServerID",""
-"neo4j.properties","False","ha.initial_hosts","$InitialHosts",""
-"neo4j.properties","False","ha.cluster_server","$ClusterServer",""
-"neo4j.properties","False","ha.server","$HAServer",""
-"neo4j.properties","False","ha.allow_init_cluster","$(-not $DisallowClusterInit)",""
+"neo4j.conf","False","org.neo4j.server.database.mode","HA",""
+"neo4j.conf","False","ha.server_id","$ServerID",""
+"neo4j.conf","False","ha.initial_hosts","$InitialHosts",""
+"neo4j.conf","False","ha.cluster_server","$ClusterServer",""
+"neo4j.conf","False","ha.server","$HAServer",""
+"neo4j.conf","False","ha.allow_init_cluster","$(-not $DisallowClusterInit)",""
 "@ | ConvertFrom-CSV | ForEach-Object -Process { $_.Neo4jHome = $thisServer.Home; if ($_.Value -ne '') { Write-Output $_} } | Set-Neo4jSetting
 
     if ($PassThru) { Write-Output $thisServer } else { Write-Output $settings }

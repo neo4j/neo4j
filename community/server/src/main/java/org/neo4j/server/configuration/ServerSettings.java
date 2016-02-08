@@ -59,7 +59,7 @@ public interface ServerSettings
     /**
      * Default path for the configuration file. The path should always be get/set using System.property.
      */
-    String SERVER_CONFIG_FILE = "config/neo4j.properties";
+    String SERVER_CONFIG_FILE = "config/neo4j.conf";
 
     @Description("Maximum request header size")
     Setting<Integer> maximum_request_header_size =

@@ -82,14 +82,14 @@ InModuleScope Neo4j-Management {
   
     Context "Valid configuration file - single setting value to remove" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }
-      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
-      Mock Get-Content { return 'setting1=value1' } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
+      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
+      Mock Get-Content { return 'setting1=value1' } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
       Mock Set-Content { }
       Mock Set-Content -Verifiable { } -ParameterFilter {
-         ($Path -eq 'TestDrive:\Path\conf\neo4j.properties') -and ($Value -notcontains 'setting1=value1')
+         ($Path -eq 'TestDrive:\Path\conf\neo4j.conf') -and ($Value -notcontains 'setting1=value1')
       }   
       
-      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.properties'; 'Name' = 'setting1'; 'Value' = 'value1'; }
+      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.conf'; 'Name' = 'setting1'; 'Value' = 'value1'; }
       $result = ($setting | Remove-Neo4jSetting -Confirm:$false)
       
       It "returns the name" {
@@ -114,14 +114,14 @@ InModuleScope Neo4j-Management {
 
     Context "Valid configuration file - other settings remain" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }
-      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
-      Mock Get-Content { return ('setting1=value1','setting2=value2') } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
+      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
+      Mock Get-Content { return ('setting1=value1','setting2=value2') } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
       Mock Set-Content { }
       Mock Set-Content -Verifiable { } -ParameterFilter {
-         ($Path -eq 'TestDrive:\Path\conf\neo4j.properties') -and ($Value -notcontains 'setting1=value1') -and ($Value -contains 'setting2=value2')
+         ($Path -eq 'TestDrive:\Path\conf\neo4j.conf') -and ($Value -notcontains 'setting1=value1') -and ($Value -contains 'setting2=value2')
       }   
       
-      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.properties'; 'Name' = 'setting1'; 'Value' = 'value1'; }
+      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.conf'; 'Name' = 'setting1'; 'Value' = 'value1'; }
       $result = ($setting | Remove-Neo4jSetting -Confirm:$false)
       
       It "returns the name" {
@@ -146,14 +146,14 @@ InModuleScope Neo4j-Management {
 
     Context "Valid configuration file - multiple setting values to remove" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }
-      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
-      Mock Get-Content { return ('setting1=value1','setting1=value2') } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
+      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
+      Mock Get-Content { return ('setting1=value1','setting1=value2') } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
       Mock Set-Content { }
       Mock Set-Content -Verifiable { } -ParameterFilter {
-         ($Path -eq 'TestDrive:\Path\conf\neo4j.properties') -and ($Value -notcontains 'setting1=value1') -and ($Value -notcontains 'setting1=value2')
+         ($Path -eq 'TestDrive:\Path\conf\neo4j.conf') -and ($Value -notcontains 'setting1=value1') -and ($Value -notcontains 'setting1=value2')
       }   
       
-      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.properties'; 'Name' = 'setting1'; 'Value' = 'value1'; }
+      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.conf'; 'Name' = 'setting1'; 'Value' = 'value1'; }
       $result = ($setting | Remove-Neo4jSetting -Confirm:$false)
       
       It "returns the name" {
@@ -178,11 +178,11 @@ InModuleScope Neo4j-Management {
 
     Context "Valid configuration file with -WhatIf" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }
-      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
-      Mock Get-Content { return 'setting1=value1' } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
+      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
+      Mock Get-Content { return 'setting1=value1' } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
       Mock Set-Content { }
       
-      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.properties'; 'Name' = 'setting1'; 'Value' = 'value1'; }
+      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.conf'; 'Name' = 'setting1'; 'Value' = 'value1'; }
       $result = ($setting | Remove-Neo4jSetting -WhatIf)
       
       It "returns the name" {
@@ -207,14 +207,14 @@ InModuleScope Neo4j-Management {
 
     Context "Valid configuration file using the Home alias" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }
-      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
-      Mock Get-Content { return 'setting1=value1' } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
+      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
+      Mock Get-Content { return 'setting1=value1' } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
       Mock Set-Content { }
       Mock Set-Content -Verifiable { } -ParameterFilter {
-         ($Path -eq 'TestDrive:\Path\conf\neo4j.properties') -and ($Value -notcontains 'setting1=value1')
+         ($Path -eq 'TestDrive:\Path\conf\neo4j.conf') -and ($Value -notcontains 'setting1=value1')
       }   
       
-      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.properties'; 'Name' = 'setting1'; 'Value' = 'value1'; }
+      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.conf'; 'Name' = 'setting1'; 'Value' = 'value1'; }
       $result = (Remove-Neo4jSetting -Home ($setting.Neo4jHome) -ConfigurationFile ($setting.ConfigurationFile) -Name ($setting.Name) -Confirm:$false)
       
       It "returns the name" {
@@ -239,14 +239,14 @@ InModuleScope Neo4j-Management {
 
     Context "Valid configuration file using the File alias" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }
-      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
-      Mock Get-Content { return 'setting1=value1' } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
+      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
+      Mock Get-Content { return 'setting1=value1' } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
       Mock Set-Content { }
       Mock Set-Content -Verifiable { } -ParameterFilter {
-         ($Path -eq 'TestDrive:\Path\conf\neo4j.properties') -and ($Value -notcontains 'setting1=value1')
+         ($Path -eq 'TestDrive:\Path\conf\neo4j.conf') -and ($Value -notcontains 'setting1=value1')
       }   
       
-      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.properties'; 'Name' = 'setting1'; 'Value' = 'value1'; }
+      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.conf'; 'Name' = 'setting1'; 'Value' = 'value1'; }
       $result = (Remove-Neo4jSetting -Neo4jHome ($setting.Neo4jHome) -File ($setting.ConfigurationFile) -Name ($setting.Name) -Confirm:$false)
       
       It "returns the name" {
@@ -271,14 +271,14 @@ InModuleScope Neo4j-Management {
 
     Context "Valid configuration file using the Setting alias" {
       Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }
-      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
-      Mock Get-Content { return 'setting1=value1' } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.properties'}
+      Mock Test-Path { $true } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
+      Mock Get-Content { return 'setting1=value1' } -ParameterFilter { $Path -eq 'TestDrive:\Path\conf\neo4j.conf'}
       Mock Set-Content { }
       Mock Set-Content -Verifiable { } -ParameterFilter {
-         ($Path -eq 'TestDrive:\Path\conf\neo4j.properties') -and ($Value -notcontains 'setting1=value1')
+         ($Path -eq 'TestDrive:\Path\conf\neo4j.conf') -and ($Value -notcontains 'setting1=value1')
       }   
       
-      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.properties'; 'Name' = 'setting1'; 'Value' = 'value1'; }
+      $setting = New-Object -TypeName PSCustomObject -Property @{ 'Neo4jHome' = 'TestDrive:\Path'; 'ConfigurationFile' = 'neo4j.conf'; 'Name' = 'setting1'; 'Value' = 'value1'; }
       $result = (Remove-Neo4jSetting -Neo4jHome ($setting.Neo4jHome) -ConfigurationFile ($setting.ConfigurationFile) -Setting ($setting.Name) -Confirm:$false)
       
       It "returns the name" {
