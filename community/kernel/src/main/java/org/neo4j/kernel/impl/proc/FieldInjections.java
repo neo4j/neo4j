@@ -92,6 +92,14 @@ public class FieldInjections
             {
                 if ( Modifier.isStatic( field.getModifiers() ) )
                 {
+                    if( field.isAnnotationPresent( Context.class ))
+                    {
+                        throw new ProcedureException( Status.Procedure.FailedRegistration,
+                                "The field `%s` in the class named `%s` is annotated as a @Context field,\n" +
+                                "but it is static. @Context fields must be public, non-final and non-static,\n" +
+                                "because they are reset each time a procedure is invoked.",
+                                field.getName(), cls.getSimpleName() );
+                    }
                     continue;
                 }
 

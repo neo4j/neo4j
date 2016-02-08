@@ -134,9 +134,7 @@ public class OutputMappers
 
         if ( cls != Stream.class )
         {
-            throw new ProcedureException( Status.Procedure.FailedRegistration,
-                    "A procedure must return a `java.util.stream.Stream`, `%s.%s` returns `%s`.",
-                    method.getDeclaringClass().getSimpleName(), method.getName(), cls.getSimpleName() );
+            throw invalidReturnType( cls );
         }
 
         ParameterizedType genType = (ParameterizedType) method.getGenericReturnType();
@@ -192,21 +190,34 @@ public class OutputMappers
         if( userClass.isPrimitive() || userClass.isArray()
             || userClass.getPackage() != null && userClass.getPackage().getName().startsWith( "java." ) )
         {
-            throw new ProcedureException( Status.Procedure.TypeError,
-                    "Procedures must return a Stream of records, where a record is a concrete class " +
-                    "that you define, with public non-final fields defining the fields in the record. " +
-                    "If you'd like your procedure to return `%s`, you could define a record class like:\n" +
-                    "public class Output {\n" +
-                    "    public %s out;\n" +
-                    "}\n" +
-                    "\n" +
-                    "And then define your procedure as returning `Stream<Output>`.",
-                    userClass.getSimpleName(), userClass.getSimpleName() );
+            throw invalidReturnType( userClass );
         }
+    }
+
+    private ProcedureException invalidReturnType( Class<?> userClass )
+    {
+        return new ProcedureException( Status.Procedure.TypeError,
+                "Procedures must return a Stream of records, where a record is a concrete class\n" +
+                "that you define, with public non-final fields defining the fields in the record.\n" +
+                "If you''d like your procedure to return `%s`, you could define a record class like:\n" +
+                "public class Output '{'\n" +
+                "    public %s out;\n" +
+                "'}'\n" +
+                "\n" +
+                "And then define your procedure as returning `Stream<Output>`.",
+                userClass.getSimpleName(), userClass.getSimpleName());
     }
 
     private List<Field> instanceFields( Class<?> userClass )
     {
-        return asList( userClass.getDeclaredFields() ).stream().filter( ( f ) -> !isStatic( f.getModifiers() ) ).collect( toList() );
+        return asList( userClass.getDeclaredFields() ).stream()
+                .filter( ( f ) -> !isStatic( f.getModifiers() ) &&
+                                  !isSynthetic( f.getModifiers() ) )
+                .collect( toList() );
+    }
+
+    private static boolean isSynthetic( int modifiers )
+    {
+        return (modifiers & 0x00001000) != 0;
     }
 }

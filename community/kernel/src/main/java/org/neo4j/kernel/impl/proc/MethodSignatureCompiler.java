@@ -56,11 +56,19 @@ public class MethodSignatureCompiler
             if ( !param.isAnnotationPresent( Name.class ) )
             {
                 throw new ProcedureException( Status.Procedure.FailedRegistration,
-                        "Argument at position %d in method `%s` is missing an `@%s` annotation. " +
-                        "Please add the annotation, recompile the class and try again.", i, method.getName(),
-                        Name.class.getSimpleName() );
+                        "Argument at position %d in method `%s` is missing an `@%s` annotation.\n" +
+                        "Please add the annotation, recompile the class and try again.",
+                        i, method.getName(), Name.class.getSimpleName() );
             }
             String name = param.getAnnotation( Name.class ).value();
+
+            if( name.trim().length() == 0 )
+            {
+                throw new ProcedureException( Status.Procedure.FailedRegistration,
+                        "Argument at position %d in method `%s` is annotated with a name,\n" +
+                        "but the name is empty, please provide a non-empty name for the argument.",
+                        i, method.getName() );
+            }
 
             try
             {
@@ -69,8 +77,10 @@ public class MethodSignatureCompiler
             catch ( ProcedureException e )
             {
                 throw new ProcedureException( e.status(),
-                        "Argument `%s` at position %d in `%s` with type `%s` cannot be converted to a Neo4j type: %s",
-                        name, i, method.getName(), param.getType().getSimpleName(), e.getLocalizedMessage() );
+                        "Argument `%s` at position %d in `%s` with\n" +
+                        "type `%s` cannot be converted to a Neo4j type: %s",
+                        name, i, method.getName(), param.getType().getSimpleName(),
+                        e.getMessage() );
             }
 
         }
