@@ -20,8 +20,8 @@
 package org.neo4j.server.security.auth;
 
 import java.io.IOException;
+import java.time.Clock;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;

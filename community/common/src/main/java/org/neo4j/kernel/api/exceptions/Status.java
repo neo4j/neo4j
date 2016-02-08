@@ -23,10 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-import javax.crypto.ShortBufferException;
-
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientError;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientNotification;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
@@ -43,8 +40,6 @@ import static org.neo4j.kernel.api.exceptions.Status.Classification.TransientErr
  * This class is not part of the public Neo4j API, and backwards compatibility for using it as a Java class is not
  * guaranteed. Instead, the automatically generated documentation derived from this class and available in the Neo4j
  * manual should be considered a user-level API.
- *
- * Currently, only the transactional http endpoint is dedicated to using these status codes.
  */
 public interface Status
 {
@@ -390,7 +385,6 @@ public interface Status
          * <pre>
          * Neo.[Classification].[Category].[Title]
          * </pre>
-         * @return
          */
         public final String serialize()
         {
@@ -472,7 +466,7 @@ public interface Status
          * A PUBLISHABLE error/warning is one which allows sending a meaningful error message to
          * the client with the expectation that the user will be able to take any necessary action
          * to resolve the error. INTERNAL errors are more sensitive and may not be resolvable by
-         * the user - these will be logged and a only a reference will be forwarded to the user.
+         * the user - these will be logged and only a reference will be forwarded to the user.
          * This is a security feature to avoid leaking potentially sensitive information to end
          * users.
          */

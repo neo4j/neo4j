@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.impl.util.Codecs;
+import org.neo4j.string.HexString;
+import org.neo4j.string.UTF8;
 
 import static java.lang.String.format;
 
@@ -92,8 +92,8 @@ public class UserSerialization
 
     private String serialize( Credential cred )
     {
-        String encodedSalt = Codecs.encodeHexString( cred.salt() );
-        String encodedPassword = Codecs.encodeHexString( cred.passwordHash() );
+        String encodedSalt = HexString.encodeHexString( cred.salt() );
+        String encodedPassword = HexString.encodeHexString( cred.passwordHash() );
         return join( credentialSeparator, Credential.DIGEST_ALGO, encodedPassword, encodedSalt );
     }
 
@@ -108,8 +108,8 @@ public class UserSerialization
         {
             throw new FormatException( format( "unknown digest \"%s\" [line %d]", split[0], lineNumber ) );
         }
-        byte[] decodedPassword = Codecs.decodeHexString( split[1] );
-        byte[] decodedSalt = Codecs.decodeHexString( split[2] );
+        byte[] decodedPassword = HexString.decodeHexString( split[1] );
+        byte[] decodedSalt = HexString.decodeHexString( split[2] );
         return new Credential( decodedSalt, decodedPassword );
     }
 

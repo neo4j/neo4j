@@ -29,26 +29,29 @@ import org.neo4j.server.security.auth.exception.IllegalUsernameException;
  */
 public interface UserRepository
 {
-    public User findByName( String name );
+    User findByName( String name );
 
-    /** Create a user, given that the users token is unique.
+    /**
+     * Create a user, given that the users token is unique.
      * @param user the new user object
      * @throws IllegalUsernameException if the username is not valid
      */
-    public void create( User user ) throws IllegalUsernameException, IOException;
+    void create( User user ) throws IllegalUsernameException, IOException;
 
-    /** Update a user, given that the users token is unique.
+    /**
+     * Update a user, given that the users token is unique.
      * @param existingUser the existing user object, which must match the current state in this repository
      * @param updatedUser the updated user object
      * @throws ConcurrentModificationException if the existingUser does not match the current state in the repository
      */
-    public void update( User existingUser, User updatedUser ) throws ConcurrentModificationException, IOException;
+    void update( User existingUser, User updatedUser ) throws ConcurrentModificationException, IOException;
 
-    /** Deletes a user.
+    /**
+     * Deletes a user.
      * @param user the user to delete
      * @return true if the user was found and deleted
      */
-    public boolean delete( User user ) throws IOException;
+    boolean delete( User user ) throws IOException;
 
     int numberOfUsers();
 

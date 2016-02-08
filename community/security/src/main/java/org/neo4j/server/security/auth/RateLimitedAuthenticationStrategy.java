@@ -19,11 +19,10 @@
  */
 package org.neo4j.server.security.auth;
 
+import java.time.Clock;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.helpers.Clock;
 
 public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
 {
@@ -39,7 +38,7 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
         public boolean authenticationPermitted()
         {
             return failedAuthAttempts.get() < maxFailedAttempts
-                    || clock.currentTimeMillis() >= ( lastFailedAttemptTime + FAILED_AUTH_COOLDOWN_PERIOD );
+                    || clock.millis() >= ( lastFailedAttemptTime + FAILED_AUTH_COOLDOWN_PERIOD );
         }
 
         public void authSuccess()
@@ -50,7 +49,7 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
         public void authFailed()
         {
             failedAuthAttempts.incrementAndGet();
-            lastFailedAttemptTime = clock.currentTimeMillis();
+            lastFailedAttemptTime = clock.millis();
         }
     }
 

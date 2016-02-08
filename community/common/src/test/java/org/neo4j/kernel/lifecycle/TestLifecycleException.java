@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.lifecycle;
 
+import org.junit.Test;
+
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.NONE;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.SHUTDOWN;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.STARTED;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.STOPPED;
-
-import org.junit.Test;
 
 public class TestLifecycleException
 {

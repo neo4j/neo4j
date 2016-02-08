@@ -17,9 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.string;
 
-public class Codecs
+/**
+ * Utility for dealing with hexadecimal strings.
+ */
+public class HexString
 {
     final private static char[] hexArray = "0123456789ABCDEF".toCharArray();
 

@@ -17,30 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.time;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.concurrent.TimeUnit;
 
 /**
- * @deprecated please use {@link java.time.Clock} instead
+ * A {@link java.time.Clock} that is manually controlled.
  */
-@Deprecated
-public interface Clock
+public class FakeClock extends Clock
 {
-    Clock SYSTEM_CLOCK = new Clock()
+    private long millis = 0;
+
+    @Override
+    public ZoneId getZone()
     {
-        @Override
-        public long currentTimeMillis()
-        {
-            return System.currentTimeMillis();
-        }
+        return ZoneOffset.UTC;
+    }
 
-        @Override
-        public long nanoTime()
-        {
-            return System.nanoTime();
-        }
-    };
+    @Override
+    public Clock withZone( ZoneId zone )
+    {
+        throw new UnsupportedOperationException();
+    }
 
-    long currentTimeMillis();
+    @Override
+    public Instant instant()
+    {
+        return Instant.ofEpochMilli( millis );
+    }
 
-    long nanoTime();
+    public FakeClock forward( long delta, TimeUnit unit )
+    {
+        millis += unit.toMillis( delta );
+        return this;
+    }
 }

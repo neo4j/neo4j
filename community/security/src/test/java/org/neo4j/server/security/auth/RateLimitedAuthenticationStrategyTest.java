@@ -19,13 +19,14 @@
  */
 package org.neo4j.server.security.auth;
 
+import org.junit.Test;
+
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
-import org.neo4j.helpers.FakeClock;
+import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 public class RateLimitedAuthenticationStrategyTest
 {
@@ -114,4 +115,5 @@ public class RateLimitedAuthenticationStrategyTest
         // Then things should be alright
         assertThat( authStrategy.authenticate( user, "right" ), equalTo( AuthenticationResult.SUCCESS ) );
     }
+
 }

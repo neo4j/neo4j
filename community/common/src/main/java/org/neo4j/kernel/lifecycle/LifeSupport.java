@@ -22,9 +22,7 @@ package org.neo4j.kernel.lifecycle;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.logging.Logger;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Support class for handling collections of Lifecycle instances. Manages the transitions from one state to another.
@@ -164,7 +162,14 @@ public class LifeSupport
             }
             catch ( LifecycleException e )
             {
-                ex = ex == null ? e : Exceptions.withSuppressed( ex, e );
+                if( ex != null )
+                {
+                    ex.addSuppressed( e );
+                }
+                else
+                {
+                    ex = e;
+                }
             }
         }
         return ex;
@@ -202,7 +207,14 @@ public class LifeSupport
                 }
                 catch ( LifecycleException e )
                 {
-                    ex = ex == null ? e : Exceptions.withSuppressed( ex, e );
+                    if( ex != null )
+                    {
+                        ex.addSuppressed( e );
+                    }
+                    else
+                    {
+                        ex = e;
+                    }
                 }
             }
 
@@ -268,7 +280,7 @@ public class LifeSupport
 
     public Iterable<Lifecycle> getLifecycleInstances()
     {
-        return Iterables.map( lifecycleInstance -> lifecycleInstance.instance, new ArrayList<>(instances) );
+        return instances.stream().map( (l) -> l.instance ).collect( toList() );
     }
 
     /**
@@ -293,22 +305,6 @@ public class LifeSupport
     public synchronized void addLifecycleListener( LifecycleListener listener )
     {
         listeners.add( listener );
-    }
-
-    public synchronized void removeLifecycleListener( LifecycleListener listener )
-    {
-        listeners.remove( listener );
-    }
-
-    public synchronized void dump( Logger logger )
-    {
-        logger.bulk( bulkLogger -> {
-            bulkLogger.log("Lifecycle status: %s", status.name());
-            for ( LifecycleInstance instance : instances )
-            {
-                bulkLogger.log(instance.toString());
-            }
-        } );
     }
 
     private void bringToState( LifecycleInstance instance )

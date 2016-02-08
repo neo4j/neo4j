@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-import org.neo4j.helpers.UTF8;
+import org.neo4j.string.UTF8;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;

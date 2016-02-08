@@ -17,32 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.string;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
-public class CodecsTest
+public class HexStringTest
 {
     @Test
     public void shouldEncodeBytesToString()
     {
-        String result = Codecs.encodeHexString( new byte[]{(byte) 0xFF, (byte) 0x94, (byte) 0x5C, (byte) 0x00, (byte) 0x3D} );
+        String result = HexString.encodeHexString( new byte[]{(byte) 0xFF, (byte) 0x94, (byte) 0x5C, (byte) 0x00, (byte) 0x3D} );
         assertEquals( "FF945C003D", result );
     }
 
     @Test
     public void shouldEncodeEmptyBytesToEmptyString()
     {
-        String result = Codecs.encodeHexString( new byte[]{} );
+        String result = HexString.encodeHexString( new byte[]{} );
         assertEquals( "", result );
     }
 
     @Test
     public void shouldDecodeStringToBytes()
     {
-        byte[] result = Codecs.decodeHexString( "00f34CEFFF3e02" );
+        byte[] result = HexString.decodeHexString( "00f34CEFFF3e02" );
         byte[] expected = new byte[] {(byte) 0x00, (byte) 0xF3, (byte) 0x4C, (byte) 0xEF, (byte) 0xFF, (byte) 0x3E, (byte) 0x02 };
         assertArrayEquals( expected, result );
     }
@@ -50,7 +51,7 @@ public class CodecsTest
     @Test
     public void shouldDecodeEmptyStringToEmptyBytes()
     {
-        byte[] result = Codecs.decodeHexString( "" );
+        byte[] result = HexString.decodeHexString( "" );
         assertArrayEquals( new byte[]{}, result );
     }
 }

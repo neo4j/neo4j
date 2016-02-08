@@ -35,12 +35,12 @@ import java.nio.file.spi.FileSystemProvider;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.DelegatingFileSystem;
 import org.neo4j.io.fs.DelegatingFileSystemProvider;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
+import org.neo4j.string.UTF8;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -49,7 +49,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 @RunWith(Parameterized.class)
 public class FileUserRepositoryTest
@@ -243,7 +242,7 @@ public class FileUserRepositoryTest
         // Then
         assertThat( users.numberOfUsers(), equalTo( 0 ) );
         logProvider.assertExactly(
-                inLog( FileUserRepository.class ).error(
+                AssertableLogProvider.inLog( FileUserRepository.class ).error(
                         "Ignoring authorization file \"%s\" (%s)", authFile.toAbsolutePath(), "wrong number of line fields [line 1]"
                 )
         );

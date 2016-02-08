@@ -24,8 +24,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.impl.util.Codecs;
+import org.neo4j.string.UTF8;
+import org.neo4j.string.HexString;
 
 public class Credential
 {
@@ -90,9 +90,9 @@ public class Credential
     public String toString()
     {
         return "Credential{" +
-                "salt=0x" + Codecs.encodeHexString( salt ) +
-                ", passwordHash=0x" + Codecs.encodeHexString( passwordHash ) +
-                '}';
+               "salt=0x" + HexString.encodeHexString( salt ) +
+               ", passwordHash=0x" + HexString.encodeHexString( passwordHash ) +
+               '}';
     }
 
     private static byte[] hash( byte[] salt, String password )

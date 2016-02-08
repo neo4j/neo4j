@@ -27,7 +27,7 @@ public class LifecycleException
     extends RuntimeException
 {
 
-    private static final String humanReadableMessage( Object instance, LifecycleStatus from, LifecycleStatus to )
+    private static String humanReadableMessage( Object instance, LifecycleStatus from, LifecycleStatus to )
     {
         switch(to)
         {
