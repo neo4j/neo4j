@@ -190,13 +190,13 @@ public class ReflectiveProcedureTest
         exception.expect( ProcedureException.class );
         exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class\n" +
                                  "that you define, with public non-final fields defining the fields in the record.\n" +
-                                 "If you'd like your procedure to return `String`, you could define a record class " +
+                                 "If you''d like your procedure to return `String`, you could define a record class " +
                                  "like:\n" +
-                                 "public class Output {\n" +
+                                 "public class Output '{'\n" +
                                  "    public String out;\n" +
-                                 "}\n" +
+                                 "'}'\n" +
                                  "\n" +
-                                 "And then define your procedure as returning `Stream<Output>`" );
+                                 "And then define your procedure as returning `Stream<Output>`." );
 
         // When
         compile( ProcedureWithInvalidRecordOutput.class ).get( 0 );
