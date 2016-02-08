@@ -179,8 +179,11 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       title = "Update Graph",
       text =
         """Applies updates to the graph.""".stripMargin,
-      queryText = """CREATE (:Person {name: "Alistair"})""",
-      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("CreateNode"))
+      queryText = """CYPHER planner=rule CREATE (:Person {name: "Alistair"})""",
+      assertions = (p) => {
+        assertThat(p.executionPlanDescription().toString, containsString("CreateNode"))
+        assertThat(p.executionPlanDescription().toString, containsString("UpdateGraph"))
+      }
     )
   }
 
