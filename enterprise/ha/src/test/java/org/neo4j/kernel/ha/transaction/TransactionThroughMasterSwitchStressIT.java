@@ -180,7 +180,7 @@ public class TransactionThroughMasterSwitchStressIT
         cluster.await( memberSeesOtherMemberAsFailed( master, slave ) );
 
         // Fail master and wait for master to go to pending, since cluster lost quorum
-        RepairKit masterRepair = cluster.fail( master, NetworkFlag.IN );
+        RepairKit masterRepair = cluster.fail( master, false, NetworkFlag.IN );
         cluster.await( memberThinksItIsRole( master, UNKNOWN ) );
 
         // Then Immediately repair
