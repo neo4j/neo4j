@@ -20,6 +20,7 @@
 package org.neo4j.server;
 
 import org.apache.commons.configuration.Configuration;
+import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.File;
 import java.io.IOException;
@@ -491,7 +492,7 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             throw new ServerStartupException( "TLS certificate error occurred, unable to start server: " + e.getMessage(), e );
         }
-        catch( IOException e )
+        catch( IOException | OperatorCreationException e )
         {
             throw new ServerStartupException( "IO problem while loading or creating TLS certificates: " + e.getMessage(), e );
         }
