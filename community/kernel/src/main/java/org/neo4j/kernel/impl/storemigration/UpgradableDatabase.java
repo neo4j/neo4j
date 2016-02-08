@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
-import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
@@ -73,13 +72,7 @@ public class UpgradableDatabase
 
     public String checkUpgradeable( File storeDirectory )
     {
-        Result result = checkUpgradeableFor( storeDirectory, Legacy19Store.LEGACY_VERSION );
-        if ( result.outcome.isSuccessful() )
-        {
-            return Legacy19Store.LEGACY_VERSION;
-        }
-
-        result = checkUpgradeableFor( storeDirectory, Legacy20Store.LEGACY_VERSION );
+        Result result = checkUpgradeableFor( storeDirectory, Legacy20Store.LEGACY_VERSION );
         if ( result.outcome.isSuccessful() )
         {
             return Legacy20Store.LEGACY_VERSION;
