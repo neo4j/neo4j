@@ -250,7 +250,10 @@ public class RaftTestNetwork<T>
                         {
                             MessageContext first = msgQueue.first();
                             long waitTime = first.atMillis - System.currentTimeMillis();
-                            wait( waitTime );
+                            if( waitTime > 0 )
+                            {
+                                wait( waitTime );
+                            }
                         }
                         catch( NoSuchElementException e )
                         {
