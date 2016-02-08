@@ -33,13 +33,11 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
-import org.neo4j.messages.Messages;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.messages.Messages.proc_invalid_return_type_description;
 
 /**
  * Takes user-defined record classes, and does two things: Describe the class as a {@link ProcedureSignature}, and provide a mechanism to convert
@@ -136,8 +134,7 @@ public class OutputMappers
 
         if ( cls != Stream.class )
         {
-            throw new ProcedureException( Status.Procedure.TypeError,
-                    Messages.get( proc_invalid_return_type_description, cls.getSimpleName() ));
+            throw invalidReturnType( cls );
         }
 
         ParameterizedType genType = (ParameterizedType) method.getGenericReturnType();
@@ -193,9 +190,22 @@ public class OutputMappers
         if( userClass.isPrimitive() || userClass.isArray()
             || userClass.getPackage() != null && userClass.getPackage().getName().startsWith( "java." ) )
         {
-            throw new ProcedureException( Status.Procedure.TypeError,
-                    Messages.get( proc_invalid_return_type_description, userClass.getSimpleName() ));
+            throw invalidReturnType( userClass );
         }
+    }
+
+    private ProcedureException invalidReturnType( Class<?> userClass )
+    {
+        return new ProcedureException( Status.Procedure.TypeError,
+                "Procedures must return a Stream of records, where a record is a concrete class\n" +
+                "that you define, with public non-final fields defining the fields in the record.\n" +
+                "If you''d like your procedure to return `%s`, you could define a record class like:\n" +
+                "public class Output '{'\n" +
+                "    public %s out;\n" +
+                "'}'\n" +
+                "\n" +
+                "And then define your procedure as returning `Stream<Output>`.",
+                userClass.getSimpleName(), userClass.getSimpleName());
     }
 
     private List<Field> instanceFields( Class<?> userClass )

@@ -28,12 +28,7 @@ import java.util.List;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
-import org.neo4j.messages.Messages;
 import org.neo4j.procedure.Name;
-
-import static org.neo4j.messages.Messages.proc_argument_missing_name;
-import static org.neo4j.messages.Messages.proc_argument_name_empty;
-import static org.neo4j.messages.Messages.proc_unmappable_argument_type;
 
 /**
  * Given a java method, figures out a valid {@link org.neo4j.kernel.api.proc.ProcedureSignature} field signature.
@@ -61,15 +56,18 @@ public class MethodSignatureCompiler
             if ( !param.isAnnotationPresent( Name.class ) )
             {
                 throw new ProcedureException( Status.Procedure.FailedRegistration,
-                        Messages.get( proc_argument_missing_name, i, method.getName(),
-                        Name.class.getSimpleName()) );
+                        "Argument at position %d in method `%s` is missing an `@%s` annotation.\n" +
+                        "Please add the annotation, recompile the class and try again.",
+                        i, method.getName(), Name.class.getSimpleName() );
             }
             String name = param.getAnnotation( Name.class ).value();
 
             if( name.trim().length() == 0 )
             {
                 throw new ProcedureException( Status.Procedure.FailedRegistration,
-                        Messages.get( proc_argument_name_empty, i, method.getName() ) );
+                        "Argument at position %d in method `%s` is annotated with a name,\n" +
+                        "but the name is empty, please provide a non-empty name for the argument.",
+                        i, method.getName() );
             }
 
             try
@@ -79,9 +77,10 @@ public class MethodSignatureCompiler
             catch ( ProcedureException e )
             {
                 throw new ProcedureException( e.status(),
-                        Messages.get( proc_unmappable_argument_type,
-                            name, i, method.getName(), param.getType().getSimpleName(),
-                            e.getMessage() ) );
+                        "Argument `%s` at position %d in `%s` with\n" +
+                        "type `%s` cannot be converted to a Neo4j type: %s",
+                        name, i, method.getName(), param.getType().getSimpleName(),
+                        e.getMessage() );
             }
 
         }
