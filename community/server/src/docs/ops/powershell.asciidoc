@@ -74,20 +74,15 @@ Function        Get-Neo4jServer               2.3.0      Neo4j-Management
 Function        Get-Neo4jSetting              2.3.0      Neo4j-Management
 Function        Initialize-Neo4jHACluster     2.3.0      Neo4j-Management
 Function        Initialize-Neo4jServer        2.3.0      Neo4j-Management
-Function        Install-Neo4jArbiter          2.3.0      Neo4j-Management
 Function        Install-Neo4jServer           2.3.0      Neo4j-Management
 Function        Remove-Neo4jSetting           2.3.0      Neo4j-Management
-Function        Restart-Neo4jArbiter          2.3.0      Neo4j-Management
 Function        Restart-Neo4jServer           2.3.0      Neo4j-Management
 Function        Set-Neo4jSetting              2.3.0      Neo4j-Management
-Function        Start-Neo4jArbiter            2.3.0      Neo4j-Management
 Function        Start-Neo4jBackup             2.3.0      Neo4j-Management
 Function        Start-Neo4jImport             2.3.0      Neo4j-Management
 Function        Start-Neo4jServer             2.3.0      Neo4j-Management
 Function        Start-Neo4jShell              2.3.0      Neo4j-Management
-Function        Stop-Neo4jArbiter             2.3.0      Neo4j-Management
 Function        Stop-Neo4jServer              2.3.0      Neo4j-Management
-Function        Uninstall-Neo4jArbiter        2.3.0      Neo4j-Management
 Function        Uninstall-Neo4jServer         2.3.0      Neo4j-Management
 ----
 

@@ -36,7 +36,7 @@ Pass through the Neo4j Server object instead of the result of the stop operation
 .EXAMPLE
 'C:\Neo4j\neo4j-enterprise' | Restart-Neo4jServer
 
-Restart the the Neo4j Server Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise'
+Restart the Neo4j Server Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise'
 
 .OUTPUTS
 System.Management.Automation.PSCustomObject

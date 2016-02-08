@@ -13,8 +13,4 @@ test_expect_success "should include script name in usage" "
   test_expect_stdout_matching ' neo4j ' neo4j-home/bin/neo4j help
 "
 
-test_expect_success "should include arbiter script name in usage" "
-  test_expect_stdout_matching ' neo4j-arbiter ' neo4j-home/bin/neo4j-arbiter help
-"
-
 test_done

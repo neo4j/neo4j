@@ -29,7 +29,6 @@ import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -56,6 +55,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
     {
         SINGLE,
         HA,
+        ARBITER,
         CORE,
         EDGE;
 
@@ -72,44 +72,24 @@ public class EnterpriseNeoServer extends CommunityNeoServer
         }
     }
 
-    private static final GraphFactory HA_FACTORY = new GraphFactory()
-    {
-        @Override
-        public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
-        {
-
-            File storeDir = config.get( ServerSettings.legacy_db_location );
-            return new HighlyAvailableGraphDatabase( storeDir, config.getParams(), dependencies );
-        }
-    };
-    private static final GraphFactory ENTERPRISE_FACTORY = new GraphFactory()
-    {
-        @Override
-        public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
-        {
-            File storeDir = config.get( ServerSettings.legacy_db_location );
-            return new EnterpriseGraphDatabase( storeDir, config.getParams(), dependencies );
-        }
+    private static final GraphFactory HA_FACTORY = ( config, dependencies ) -> {
+        File storeDir = config.get( ServerSettings.legacy_db_location );
+        return new HighlyAvailableGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 
-    private static final GraphFactory CORE_FACTORY = new GraphFactory()
-    {
-        @Override
-        public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
-        {
-            File storeDir = config.get( ServerSettings.legacy_db_location );
-            return new CoreGraphDatabase( storeDir, config.getParams(), dependencies );
-        }
+    private static final GraphFactory ENTERPRISE_FACTORY = ( config, dependencies ) -> {
+        File storeDir = config.get( ServerSettings.legacy_db_location );
+        return new EnterpriseGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 
-    private static final GraphFactory EDGE_FACTORY = new GraphFactory()
-    {
-        @Override
-        public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
-        {
-            File storeDir = config.get( ServerSettings.legacy_db_location );
-            return new EdgeGraphDatabase( storeDir, config.getParams(), dependencies );
-        }
+    private static final GraphFactory CORE_FACTORY = ( config, dependencies ) -> {
+        File storeDir = config.get( ServerSettings.legacy_db_location );
+        return new CoreGraphDatabase( storeDir, config.getParams(), dependencies );
+    };
+
+    private static final GraphFactory EDGE_FACTORY = ( config, dependencies ) -> {
+        File storeDir = config.get( ServerSettings.legacy_db_location );
+        return new EdgeGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 
     public EnterpriseNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
@@ -125,6 +105,9 @@ public class EnterpriseNeoServer extends CommunityNeoServer
         {
         case HA:
             return lifecycleManagingDatabase( HA_FACTORY );
+        case ARBITER:
+            // Should never reach here because this mode is handled separately by the scripts.
+            throw new IllegalArgumentException( "The server cannot be started in ARBITER mode." );
         case CORE:
             return lifecycleManagingDatabase( CORE_FACTORY );
         case EDGE:

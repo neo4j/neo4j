@@ -1,9 +1,9 @@
 fake_install() {
   mkdir -p neo4j-home/bin
-  mkdir -p neo4j-home/conf
   cp ../../../main/distribution/shell-scripts/bin/* neo4j-home/bin 2>/dev/null
   chmod +x neo4j-home/bin/neo4j
-  chmod +x neo4j-home/bin/neo4j-arbiter
+  mkdir -p neo4j-home/conf
+  mkdir -p neo4j-home/lib
 }
 
 clear_config() {
@@ -15,6 +15,11 @@ set_config() {
   value=$2
   file=$3
   echo "${name}=${value}" >>"neo4j-home/conf/${file}"
+}
+
+clear_config() {
+  file=$1
+  rm "neo4j-home/conf/${file}"
 }
 
 set_main_class() {

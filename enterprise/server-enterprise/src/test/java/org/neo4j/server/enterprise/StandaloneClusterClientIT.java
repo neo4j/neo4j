@@ -296,8 +296,8 @@ public class StandaloneClusterClientIT
     private Process startStandaloneClusterClientProcess( File configFile, Map<String, String> config )
             throws Exception
     {
-        List<String> args = new ArrayList<String>( asList( "java", "-cp", getProperty( "java.class.path" ),
-                "-Dneo4j.home=" + directory.getAbsolutePath() ) );
+        List<String> args = new ArrayList<>( asList( "java", "-cp", getProperty( "java.class.path" ),
+                "-Dorg.neo4j.cluster.logdirectory=" + directory.getAbsolutePath() ) );
         if ( configFile != null )
         {
             args.add( "-D" + ServerSettings.SERVER_CONFIG_FILE_KEY + "=" + configFile.getAbsolutePath() );

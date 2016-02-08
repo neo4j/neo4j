@@ -126,6 +126,5 @@ InModuleScope Neo4j-Management {
         Assert-VerifiableMocks
       }
     }
-
   }
 }

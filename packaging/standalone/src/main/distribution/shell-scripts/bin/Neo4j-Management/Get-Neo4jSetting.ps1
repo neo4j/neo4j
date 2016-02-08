@@ -116,7 +116,6 @@ Function Get-Neo4jSetting
     if ($ConfigurationFile -eq $null)
     {
       $ConfigurationFile = ('neo4j.properties','neo4j-wrapper.conf')
-      if ($thisServer.ServerType -eq 'Enterprise') { $ConfigurationFile += 'arbiter-wrapper.conf' }
     }
    
     $ConfigurationFile | ForEach-Object -Process `
