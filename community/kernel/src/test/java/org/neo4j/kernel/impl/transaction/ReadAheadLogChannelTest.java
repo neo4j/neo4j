@@ -132,6 +132,7 @@ public class ReadAheadLogChannelTest
                 if ( !returned )
                 {
                     returned = true;
+                    channel.close();
                     return new PhysicalLogVersionedStoreChannel( fs.open( file( 1 ), "r" ),
                             -1 /* ignored */, (byte) -1 /* ignored */ );
                 }

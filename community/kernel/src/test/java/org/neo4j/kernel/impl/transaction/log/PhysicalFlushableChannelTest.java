@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Random;
@@ -57,7 +58,10 @@ public class PhysicalFlushableChannelTest
         channel.close();
 
         byte[] writtenBytes = new byte[length];
-        new FileInputStream( firstFile ).read( writtenBytes );
+        try ( InputStream in = new FileInputStream( firstFile ) )
+        {
+            in.read( writtenBytes );
+        }
 
         assertArrayEquals( bytes, writtenBytes );
     }
@@ -78,7 +82,10 @@ public class PhysicalFlushableChannelTest
         channel.close();
 
         byte[] writtenBytes = new byte[length];
-        new FileInputStream( firstFile ).read( writtenBytes );
+        try ( InputStream in = new FileInputStream( firstFile ) )
+        {
+            in.read( writtenBytes );
+        }
 
         assertArrayEquals( bytes, writtenBytes );
     }
@@ -99,7 +106,10 @@ public class PhysicalFlushableChannelTest
         channel.close();
 
         byte[] writtenBytes = new byte[length];
-        new FileInputStream( firstFile ).read( writtenBytes );
+        try ( InputStream in = new FileInputStream( firstFile ) )
+        {
+            in.read( writtenBytes );
+        }
 
         assertArrayEquals( bytes, writtenBytes );
     }
@@ -141,6 +151,7 @@ public class PhysicalFlushableChannelTest
         channel.putInt( intValue );
         channel.putLong( longValue );
         channel.prepareForFlush().flush();
+        channel.close();
 
         // "Rotate" and continue
         storeChannel = fs.open( secondFile, "rw" );
@@ -184,6 +195,7 @@ public class PhysicalFlushableChannelTest
 
         // THEN
         assertEquals( 12, positionAfterSomeData.getByteOffset() - initialPosition.getByteOffset() );
+        channel.close();
     }
 
     @Test
