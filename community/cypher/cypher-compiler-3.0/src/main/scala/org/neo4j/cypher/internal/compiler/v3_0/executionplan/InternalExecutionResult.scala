@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
 import java.io.PrintWriter
+import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.spi.InternalResultVisitor
@@ -54,5 +55,4 @@ trait InternalExecutionResult extends Iterator[Map[String, Any]] {
 
   def close()
 }
-
 

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType,
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 
 sealed trait ProcedureCallMode {
   val queryType: InternalQueryType
@@ -43,12 +44,12 @@ case object EagerReadWriteCallMode extends ProcedureCallMode {
   override val queryType: InternalQueryType = READ_WRITE
 
   override def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] = {
-    val buffer = new util.ArrayList[Array[AnyRef]]()
+    val builder = ArrayBuffer.newBuilder[Array[AnyRef]]
     val iterator = ctx.callReadWriteProcedure(signature.name, args)
     while (iterator.hasNext) {
-      buffer.add(iterator.next())
+      builder += iterator.next()
     }
-    buffer.iterator().asScala
+    builder.result().iterator
   }
 }
 

@@ -103,7 +103,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
     new StandardInternalExecutionResult(context, taskCloser)
       with StandardInternalExecutionResult.AcceptByIterating {
 
-      override protected val inner: util.Iterator[util.Map[String, Any]] = result.iterator()
+      override protected def createInner = result.iterator()
 
       override def javaColumns: util.List[String] = self.javaColumns
 
@@ -121,8 +121,9 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
     }
   }
 
-  // Implement in inheritor
-  protected def inner: util.Iterator[util.Map[String, Any]]
+  protected final lazy val inner = createInner
+
+  protected def createInner: util.Iterator[util.Map[String, Any]]
 
   protected def doInAccept[T](body: InternalResultRow => T) = {
     if (isOpen) {
@@ -189,7 +190,7 @@ object StandardInternalExecutionResult {
 
     self: StandardInternalExecutionResult =>
 
-    override lazy val inner: util.Iterator[util.Map[String, Any]] = {
+    override def createInner = {
       val list = new util.ArrayList[util.Map[String, Any]]()
       if (isOpen) doInAccept(populateResults(list))
       list.iterator()

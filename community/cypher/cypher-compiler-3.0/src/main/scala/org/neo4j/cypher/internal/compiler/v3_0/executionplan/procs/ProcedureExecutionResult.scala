@@ -25,40 +25,45 @@ import org.neo4j.cypher.internal.compiler.v3_0.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaResultValueConverter
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, ProcedureSignature, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, InternalResultVisitor, ProcedureSignature, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.{ProfileMode, ExecutionMode, InternalQueryStatistics, TaskCloser}
+import org.neo4j.cypher.internal.frontend.v3_0.ProfilerStatisticsNotReadyException
 
 import scala.collection.JavaConverters._
 
 /**
   * Execution result of a Procedure
   *
-  * @param taskCloser called when done with the result, cleans up resources.
   * @param context The QueryContext used to communicate with the kernel.
+  * @param taskCloser called when done with the result, cleans up resources.
   * @param signature The signature of the procedure.
   * @param args The argument to the procedure.
-  * @param executionPlanDescription The plan description of the result.
+  * @param executionPlanDescriptionGenerator Generator for the plan description of the result.
+  * @param executionMode The execution mode.
   */
-case class ProcedureExecutionResult[E <: Exception](taskCloser: TaskCloser,
-                                                    context: QueryContext,
-                                                    signature: ProcedureSignature,
-                                                    args: Seq[Any],
-                                                    executionPlanDescription: InternalPlanDescription,
-                                                    executionMode: ExecutionMode)
+class ProcedureExecutionResult[E <: Exception](context: QueryContext,
+                                               taskCloser: TaskCloser,
+                                               signature: ProcedureSignature,
+                                               args: Seq[Any],
+                                               executionPlanDescriptionGenerator: () => InternalPlanDescription,
+                                               val executionMode: ExecutionMode)
   extends StandardInternalExecutionResult(context, Some(taskCloser)) {
 
   // The signature mode is taking care of eagerization
-  private val javaValues = new JavaResultValueConverter(isGraphKernelResultValue)
-  private val underlying = signature.mode.call(context, signature, args.map(javaValues.asDeepJavaResultValue))
-  private val outputs = signature.outputSignature
+  private final val javaValues = new JavaResultValueConverter(isGraphKernelResultValue)
+  private final val executionResults = executeCall
+  private final val outputs = signature.outputSignature
 
-  override protected val inner = new util.Iterator[util.Map[String, Any]]() {
-    override def next(): util.Map[String, Any] = resultAsMap(underlying.next())
-    override def hasNext: Boolean = underlying.hasNext
+  protected def executeCall: Iterator[Array[AnyRef]] =
+    signature.mode.call(context, signature, args.map(javaValues.asDeepJavaResultValue))
+
+  override protected def createInner = new util.Iterator[util.Map[String, Any]]() {
+    override def next(): util.Map[String, Any] = resultAsMap(executionResults.next())
+    override def hasNext: Boolean = executionResults.hasNext
   }
 
   override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
-    underlying.foreach { res => visitor.visit(new ResultRowImpl(resultAsRefMap(res))) }
+    executionResults.foreach { res => visitor.visit(new ResultRowImpl(resultAsRefMap(res))) }
     close()
   }
 
@@ -87,5 +92,10 @@ case class ProcedureExecutionResult[E <: Exception](taskCloser: TaskCloser,
       i = i + 1
     }
     mapData
+  }
+
+  override def executionPlanDescription(): InternalPlanDescription = executionMode match {
+    case ProfileMode if executionResults.hasNext => throw new ProfilerStatisticsNotReadyException()
+    case _ => executionPlanDescriptionGenerator()
   }
 }

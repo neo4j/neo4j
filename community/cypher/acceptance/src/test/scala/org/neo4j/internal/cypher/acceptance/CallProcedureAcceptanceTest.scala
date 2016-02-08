@@ -272,7 +272,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
-    an [ParameterNotFoundException] shouldBe thrownBy(execute("CALL my.first.proc", "in0" -> "42", "in42" -> 42))
+    a [ParameterNotFoundException] shouldBe thrownBy(execute("CALL my.first.proc", "in0" -> "42", "in42" -> 42))
   }
 
   test("should be able to call a procedure with explain") {
