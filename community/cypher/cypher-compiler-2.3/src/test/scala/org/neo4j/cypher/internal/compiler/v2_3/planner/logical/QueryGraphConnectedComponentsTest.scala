@@ -34,11 +34,14 @@ class QueryGraphConnectedComponentsTest
   private val A = IdName("a")
   private val B = IdName("b")
   private val C = IdName("c")
+  private val D = IdName("d")
   private val X = IdName("x")
+  private val Y = IdName("y")
   private val A_to_B = PatternRelationship(IdName("r1"), (A, B), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val B_to_A = PatternRelationship(IdName("r3"), (B, A), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val C_to_X = PatternRelationship(IdName("r7"), (C, X), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val B_to_X = PatternRelationship(IdName("r12"), (B, X), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  private val D_to_Y = PatternRelationship(IdName("r12"), (D, Y), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val identA = ident(A.name)
   private val identB = ident(B.name)
 
@@ -245,5 +248,15 @@ class QueryGraphConnectedComponentsTest
 
     val components = graph.connectedComponents
     components should equal(Seq(graph))
+  }
+
+  test("two pattern with same rel name should be in the same connected component") {
+    // MATCH (d)-[r]->(y), (b)-[r]->(x)
+    val graph = QueryGraph(
+      patternNodes = Set(B, X, D, Y),
+      patternRelationships = Set(B_to_X, D_to_Y)
+    )
+
+    graph.connectedComponents should equal(Seq(graph))
   }
 }
