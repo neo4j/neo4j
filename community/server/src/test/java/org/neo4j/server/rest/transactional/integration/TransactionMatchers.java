@@ -40,6 +40,8 @@ import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -143,7 +145,7 @@ public class TransactionMatchers
         return response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( name );
     }
 
-    public static Matcher<? super HTTP.Response> rowContainsDeletedEntities( final int amount )
+    public static Matcher<? super HTTP.Response> rowContainsDeletedEntities( final int nodes, final int rels )
     {
         return new TypeSafeMatcher<HTTP.Response>()
         {
@@ -152,15 +154,32 @@ public class TransactionMatchers
             {
                 try
                 {
-                    Iterator<JsonNode> entities = getJsonNodeWithName( response, "row" ).iterator();
+                    Iterator<JsonNode> meta = getJsonNodeWithName( response, "meta" ).iterator();
 
-                    for ( int i = 0; i < amount; ++i )
+                    int nodeCounter = 0;
+                    int relCounter = 0;
+                    for ( int i = 0; i < nodes + rels; ++i )
                     {
-                        assertTrue( entities.hasNext() );
-                        JsonNode node = entities.next();
+                        assertTrue( meta.hasNext() );
+                        JsonNode node = meta.next();
                         assertThat( node.get( "deleted" ).asBoolean(), equalTo( Boolean.TRUE ) );
+                        String type = node.get( "type" ).getTextValue();
+                        switch ( type )
+                        {
+                        case "node":
+                            ++nodeCounter;
+                            break;
+                        case "relationship":
+                            ++relCounter;
+                            break;
+                        default:
+                            fail( "Unexpected type: " + type );
+                            break;
+                        }
                     }
-                    if ( entities.hasNext() )
+                    assertEquals( nodes, nodeCounter );
+                    assertEquals( rels, relCounter );
+                    if ( meta.hasNext() )
                     {
                         fail( "Expected no more entities" );
                     }
@@ -293,9 +312,9 @@ public class TransactionMatchers
             {
                 try
                 {
-                    for ( JsonNode node : getJsonNodeWithName( response, "row" ) )
+                    for ( JsonNode node : getJsonNodeWithName( response, "meta" ) )
                     {
-                        assertNull( node.get( "deleted" ) );
+                        assertFalse( node.get( "deleted" ).asBoolean() );
                     }
                     return true;
                 }

@@ -150,11 +150,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         out.writeStartObject();
         try
         {
-            if ( txStateChecker.isNodeDeletedInCurrentTx( node.getId() ) )
-            {
-                out.writeBooleanField( "deleted", Boolean.TRUE );
-            }
-            else
+            if ( !txStateChecker.isNodeDeletedInCurrentTx( node.getId() ) )
             {
                 for ( Map.Entry<String,Object> property : node.getAllProperties().entrySet() )
                 {
@@ -173,11 +169,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         out.writeStartObject();
         try
         {
-            if ( txStateChecker.isRelationshipDeletedInCurrentTx( node.getId() ) )
-            {
-                out.writeBooleanField( "deleted", Boolean.TRUE );
-            }
-            else
+            if ( !txStateChecker.isRelationshipDeletedInCurrentTx( node.getId() ) )
             {
                 for ( Map.Entry<String,Object> property : node.getAllProperties().entrySet() )
                 {
@@ -204,6 +196,53 @@ public class Neo4jJsonCodec extends ObjectMapper
         finally
         {
             out.writeEndArray();
+        }
+    }
+
+    void writeMeta( JsonGenerator out, Object value ) throws IOException
+    {
+        if ( value instanceof Node )
+        {
+            writeNodeMeta( out, (Node) value );
+        }
+        else if ( value instanceof Relationship )
+        {
+            writeRelationshipMeta( out, (Relationship) value );
+        }
+        // else no meta to print
+    }
+
+    private void writeNodeMeta( JsonGenerator out, Node node ) throws IOException
+    {
+        out.writeStartObject();
+        try
+        {
+            long nodeId = node.getId();
+            out.writeNumberField( "id", nodeId );
+            out.writeStringField( "type", "node" );
+            boolean isDeleted = TransactionStateChecker.create( container ).isNodeDeletedInCurrentTx( nodeId );
+            out.writeBooleanField( "deleted", isDeleted );
+        }
+        finally
+        {
+            out.writeEndObject();
+        }
+    }
+
+    private void writeRelationshipMeta( JsonGenerator out, Relationship relationship ) throws IOException
+    {
+        out.writeStartObject();
+        try
+        {
+            long nodeId = relationship.getId();
+            out.writeNumberField( "id", nodeId );
+            out.writeStringField( "type", "relationship" );
+            boolean isDeleted = TransactionStateChecker.create( container ).isRelationshipDeletedInCurrentTx( nodeId );
+            out.writeBooleanField( "deleted", isDeleted );
+        }
+        finally
+        {
+            out.writeEndObject();
         }
     }
 }

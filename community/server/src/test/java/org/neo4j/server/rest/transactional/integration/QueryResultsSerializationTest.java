@@ -121,7 +121,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
                 queryAsJsonRow( "MATCH (s:Start)-[r:R]->(e:End) DELETE s, r, e RETURN *" ) );
 
         assertThat( commit, containsNoErrors() );
-        assertThat( commit, rowContainsDeletedEntities( 3 ) );
+        assertThat( commit, rowContainsDeletedEntities( 2, 1 ) );
         assertThat( commit.status(), equalTo( 200 ) );
         assertThat( nodesInDatabase(), equalTo( 0L ) );
     }
@@ -198,7 +198,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
                 queryAsJsonRow( "MATCH (n:NodeToDelete) DELETE n RETURN n" ) );
 
         assertThat( commit, containsNoErrors() );
-        assertThat( commit, rowContainsDeletedEntities( 1 ) );
+        assertThat( commit, rowContainsDeletedEntities( 1, 0 ) );
         assertThat( commit.status(), equalTo( 200 ) );
         assertThat( nodesInDatabase(), equalTo( 0L ) );
     }
@@ -246,7 +246,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
                 queryAsJsonRow( "MATCH (s)-[r:R]->(e) DELETE r RETURN r" ) );
 
         assertThat( commit, containsNoErrors() );
-        assertThat( commit, rowContainsDeletedEntities( 1 ) );
+        assertThat( commit, rowContainsDeletedEntities( 0, 1 ) );
         assertThat( commit.status(), equalTo( 200 ) );
         assertThat( nodesInDatabase(), equalTo( 2L ) );
     }
