@@ -101,7 +101,7 @@ public class Certificates
                 owner, new BigInteger( 64, random ), NOT_BEFORE, NOT_AFTER, owner, keypair.getPublic() );
 
         PrivateKey privateKey = keypair.getPrivate();
-        ContentSigner signer = new JcaContentSignerBuilder( "SHA256WithRSAEncryption" ).build( privateKey );
+        ContentSigner signer = new JcaContentSignerBuilder( "SHA512WithRSAEncryption" ).build( privateKey );
         X509CertificateHolder certHolder = builder.build( signer );
         X509Certificate cert = new JcaX509CertificateConverter().setProvider( PROVIDER ).getCertificate( certHolder );
 
