@@ -87,4 +87,48 @@ class SerializationAcceptanceTest extends ExecutionEngineFunSuite with QueryStat
     }
   }
 
+  test("returning a deleted path") {
+    relate(createNode(), createNode(), "T")
+
+    val query = "MATCH p=(a)-[r]->(b) DELETE p RETURN p"
+
+    graph.inTx {
+      val result = execute(query)
+
+      result.dumpToString() should include(":T[0]{deleted}")
+      result.dumpToString() should include("Node[0]{deleted}")
+      result.dumpToString() should include("Node[1]{deleted}")
+    }
+  }
+
+  test("returning a deleted path with deleted node") {
+    relate(createNode(), createNode(), "T")
+
+    val query = "MATCH p=(a)-[r]->(b) DELETE a, r RETURN p"
+
+    graph.inTx {
+      val result = execute(query)
+
+      println(result.dumpToString())
+
+      result.dumpToString() should include(":T[0]{deleted}")
+      result.dumpToString() should include("Node[0]{deleted}")
+      result.dumpToString() should not include("Node[1]{deleted}")
+    }
+  }
+
+  test("returning a deleted path with deleted relationship") {
+    relate(createNode(), createNode(), "T")
+
+    val query = "MATCH p=(a)-[r]->(b) DELETE r RETURN p"
+
+    graph.inTx {
+      val result = execute(query)
+
+      result.dumpToString() should include(":T[0]{deleted}")
+      result.dumpToString() should not include("Node[0]{deleted}")
+      result.dumpToString() should not include("Node[1]{deleted}")
+    }
+  }
+
 }

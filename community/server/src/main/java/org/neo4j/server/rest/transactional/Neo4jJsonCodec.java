@@ -209,6 +209,13 @@ public class Neo4jJsonCodec extends ObjectMapper
         {
             writeRelationshipMeta( out, (Relationship) value );
         }
+        else if ( value instanceof Path )
+        {
+            for ( PropertyContainer element : ((Path) value) )
+            {
+                writeMeta( out, element );
+            }
+        }
         // else no meta to print
     }
 

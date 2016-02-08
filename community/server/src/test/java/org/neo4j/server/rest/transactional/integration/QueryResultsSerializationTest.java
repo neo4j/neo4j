@@ -447,6 +447,102 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         assertThat( nodesInDatabase(), equalTo( 2L ) );
     }
 
+    @Test
+    public void returningADeletedPathGraph()
+    {
+        // given
+        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonGraph( "MATCH p=(s)-[r:R]->(e) DELETE p RETURN p" ) );
+
+        assertThat( commit, containsNoErrors() );
+        assertThat( commit, graphContainsDeletedNodes( 2 ) );
+        assertThat( commit, graphContainsDeletedRelationships( 1 ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 0L ) );
+    }
+
+    @Test
+    public void returningAPartiallyDeletedPathGraph()
+    {
+        // given
+        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonGraph( "MATCH p=(s)-[r:R]->(e) DELETE s,r RETURN p" ) );
+
+        assertThat( commit, containsNoErrors() );
+        assertThat( commit, graphContainsDeletedNodes( 1 ) );
+        assertThat( commit, graphContainsDeletedRelationships( 1 ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 1L ) );
+    }
+
+    @Test
+    public void returningADeletedPathRow()
+    {
+        // given
+        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRow( "MATCH p=(s)-[r:R]->(e) DELETE p RETURN p" ) );
+
+        assertThat( commit, containsNoErrors() );
+        assertThat( commit, rowContainsDeletedEntities( 2, 1 ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 0L ) );
+    }
+
+    @Test
+    public void returningAPartiallyDeletedPathRow()
+    {
+        // given
+        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRow( "MATCH p=(s)-[r:R]->(e) DELETE s,r RETURN p" ) );
+
+        assertThat( commit, containsNoErrors() );
+        assertThat( commit, rowContainsDeletedEntities( 1, 1 ) );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 1L ) );
+    }
+
+    @Test
+    public void returningADeletedPathRest()
+    {
+        // given
+        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRest( "MATCH p=(s)-[r:R]->(e) DELETE p RETURN p" ) );
+
+        assertThat( commit, containsNoErrors() );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 0L ) );
+    }
+
+    @Test
+    public void returningAPartiallyDeletedPathRest()
+    {
+        // given
+        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRest( "MATCH p=(s)-[r:R]->(e) DELETE s,r RETURN p" ) );
+
+        assertThat( commit, containsNoErrors() );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( nodesInDatabase(), equalTo( 1L ) );
+    }
+
     private HTTP.RawPayload queryAsJsonGraph( String query )
     {
         return quotedJson( "{ 'statements': [ { 'statement': '" + query + "', 'resultDataContents': [ 'graph' ] } ] }" );

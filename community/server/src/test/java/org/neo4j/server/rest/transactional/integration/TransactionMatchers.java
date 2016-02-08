@@ -179,9 +179,10 @@ public class TransactionMatchers
                     }
                     assertEquals( nodes, nodeCounter );
                     assertEquals( rels, relCounter );
-                    if ( meta.hasNext() )
+                    while ( meta.hasNext() )
                     {
-                        fail( "Expected no more entities" );
+                        JsonNode node = meta.next();
+                        assertThat( node.get( "deleted" ).asBoolean(), equalTo( Boolean.FALSE ) );
                     }
                     return true;
                 }
@@ -251,10 +252,10 @@ public class TransactionMatchers
                         JsonNode node = nodes.next();
                         assertThat( node.get( "deleted" ).asBoolean(), equalTo( Boolean.TRUE ) );
                     }
-                    if ( nodes.hasNext() )
+                    while ( nodes.hasNext() )
                     {
                         JsonNode node = nodes.next();
-                        fail( "Expected no more nodes, but got a node with id " + node.get( "id" ) );
+                        assertNull( node.get( "deleted" ) );
                     }
                     return true;
                 }
