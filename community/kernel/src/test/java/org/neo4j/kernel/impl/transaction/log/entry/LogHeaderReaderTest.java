@@ -32,6 +32,8 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
+import org.neo4j.kernel.impl.util.StringBuilderStringLogger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -152,5 +154,30 @@ public class LogHeaderReaderTest
             // then
             assertEquals( "Unable to read log version and last committed tx", ex.getMessage() );
         }
+    }
+
+    @Test
+    public void shouldReadALongString() throws IOException
+    {
+        // given
+
+        // build a string longer than 32k
+        int stringSize = 32 * 1024 + 1;
+        StringBuilder sb = new StringBuilder(  );
+        for ( int i = 0; i < stringSize; i++) {
+            sb.append("x");
+        }
+        String lengthyString = sb.toString();
+
+        // we need 3 more bytes for writing the string length
+        final InMemoryLogChannel channel = new InMemoryLogChannel(stringSize + 3);
+
+        IoPrimitiveUtils.write3bLengthAndString( channel, lengthyString);
+
+        // when
+        String stringFromChannel = IoPrimitiveUtils.read3bLengthAndString( channel );
+
+        // then
+        assertEquals( lengthyString, stringFromChannel );
     }
 }
