@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{ExpanderStep, TraversalMatcher, TraversalPathExpander}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
+import org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_PATH
 import org.neo4j.graphdb.traversal._
 import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription
@@ -34,14 +35,15 @@ class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer
 
   val initialStartStep = new InitialBranchState[Option[ExpanderStep]] {
     def initialState(path: Path): Option[ExpanderStep] = Some(steps)
+
     def reverse() = this
   }
 
-  def baseTraversal(params: ExecutionContext, state:QueryState): TraversalDescription =
-    new MonoDirectionalTraversalDescription().
-    evaluator(new MyEvaluator).
-    expand(new TraversalPathExpander(params, state), initialStartStep)
-
+  def baseTraversal(params: ExecutionContext, state: QueryState): TraversalDescription =
+    new MonoDirectionalTraversalDescription()
+      .evaluator(new MyEvaluator)
+      .expand(new TraversalPathExpander(params, state), initialStartStep)
+      .uniqueness(RELATIONSHIP_PATH)
 
   def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterator[Path] = {
     // TODO memory waste
@@ -51,6 +53,7 @@ class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer
   }
 
   class ExpanderEvaluator extends PathEvaluator[Option[ExpanderStep]] {
+
     def evaluate(path: Path, state: BranchState[Option[ExpanderStep]]) = Evaluation.ofIncludes(state.getState.isEmpty)
 
     def evaluate(path: Path) = Evaluation.INCLUDE_AND_CONTINUE
@@ -60,11 +63,12 @@ class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer
 }
 
 class MyEvaluator extends PathEvaluator[Option[ExpanderStep]] {
+
   def evaluate(path: Path, state: BranchState[Option[ExpanderStep]]) = state.getState match {
-      case Some(step: ExpanderStep) if step.shouldInclude() => Evaluation.INCLUDE_AND_CONTINUE
-      case None                                             => Evaluation.INCLUDE_AND_PRUNE
-      case _                                                => Evaluation.EXCLUDE_AND_CONTINUE
-    }
+    case Some(step: ExpanderStep) if step.shouldInclude() => Evaluation.INCLUDE_AND_CONTINUE
+    case None => Evaluation.INCLUDE_AND_PRUNE
+    case _ => Evaluation.EXCLUDE_AND_CONTINUE
+  }
 
   def evaluate(path: Path) = throw new UnsupportedOperationException("This method should never be used")
 }
