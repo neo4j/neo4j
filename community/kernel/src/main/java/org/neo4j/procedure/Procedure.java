@@ -101,4 +101,15 @@ import java.lang.annotation.Target;
 @Retention( RetentionPolicy.RUNTIME )
 public @interface Procedure
 {
+    /**
+     * The namespace and name for the procedure, as a period-separated
+     * string. For instance {@code myprocedures.myprocedure}.
+     *
+     * If this is left empty, the name defaults to the package name of
+     * the class the procedure is declared in, combined with the method
+     * name. Notably, the class name is omitted.
+     *
+     * @return the namespace and procedure name
+     */
+    String value() default "";
 }
