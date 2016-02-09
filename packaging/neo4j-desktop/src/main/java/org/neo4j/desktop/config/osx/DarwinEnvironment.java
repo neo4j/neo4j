@@ -35,13 +35,13 @@ class DarwinEnvironment extends Environment
         }
         catch( IOException|UnsupportedOperationException ex )
         {
-            Runtime.getRuntime().exec( new String[] { "openDirectory", "-nt", file.getAbsolutePath() } );
+            Runtime.getRuntime().exec( new String[] { "open", "-nt", file.getAbsolutePath() } );
         }
     }
 
     @Override
     public void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory ) throws IOException
     {
-        Runtime.getRuntime().exec( new String[] { "openDirectory", "-na", "Terminal", "openNeoTerminal.sh" } );
+        Runtime.getRuntime().exec( new String[] { "open", "-na", "Terminal", "openNeoTerminal.sh" } );
     }
 }
