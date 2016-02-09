@@ -49,7 +49,7 @@ public class ServerConfigLoaderTest
     public void shouldProvideAConfiguration() throws IOException
     {
         // given
-        File configFile = PropertyFileBuilder.builder( folder.getRoot() )
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .build();
 
         // when
@@ -63,7 +63,7 @@ public class ServerConfigLoaderTest
     public void shouldUseSpecifiedConfigFile() throws Exception
     {
         // given
-        File configFile = PropertyFileBuilder.builder( folder.getRoot() )
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withNameValue( "foo", "bar" )
                 .build();
 
@@ -79,7 +79,7 @@ public class ServerConfigLoaderTest
     public void shouldAcceptDuplicateKeysWithSameValue() throws IOException
     {
         // given
-        File configFile = PropertyFileBuilder.builder( folder.getRoot() )
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withNameValue( "foo", "bar" )
                 .withNameValue( "foo", "bar" )
                 .build();
@@ -97,7 +97,7 @@ public class ServerConfigLoaderTest
     public void shouldFindThirdPartyJaxRsPackages() throws IOException
     {
         // given
-        File file = ServerTestUtils.createTempPropertyFile( folder.getRoot() );
+        File file = ServerTestUtils.createTempConfigFile( folder.getRoot() );
 
         try(BufferedWriter out = new BufferedWriter( new FileWriter( file, true ) ))
         {

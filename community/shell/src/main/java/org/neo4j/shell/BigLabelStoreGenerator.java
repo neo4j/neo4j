@@ -102,15 +102,15 @@ public class BigLabelStoreGenerator
     {
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
         GraphDatabaseBuilder graphBuilder = factory.newEmbeddedDatabaseBuilder( graphDbPath );
-        File propertiesFile = new File( graphDbPath, "neo4j.conf");
-        if ( propertiesFile.exists() && propertiesFile.isFile() && propertiesFile.canRead() )
+        File configFile = new File( graphDbPath, "neo4j.conf");
+        if ( configFile.exists() && configFile.isFile() && configFile.canRead() )
         {
-            System.out.println( format( "# Loading properties file '%s'", propertiesFile.getAbsolutePath() ) );
-            graphBuilder.loadPropertiesFromFile( propertiesFile.getAbsolutePath() );
+            System.out.println( format( "# Loading config file '%s'", configFile.getAbsolutePath() ) );
+            graphBuilder.loadPropertiesFromFile( configFile.getAbsolutePath() );
         }
         else
         {
-            System.out.println( format( "# No properties file found at '%s'", propertiesFile.getAbsolutePath() ) );
+            System.out.println( format( "# No config file found at '%s'", configFile.getAbsolutePath() ) );
         }
         return graphBuilder.newGraphDatabase();
     }

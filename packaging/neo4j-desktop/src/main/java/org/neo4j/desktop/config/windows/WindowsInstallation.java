@@ -31,15 +31,12 @@ import static javax.swing.filechooser.FileSystemView.getFileSystemView;
 public class WindowsInstallation extends PortableInstallation
 {
     private final WindowsEnvironment environment;
-    private final Properties installProperties;
+    private final Properties config = new Properties();
 
     public WindowsInstallation() throws Exception
     {
-        installProperties = new Properties();
         environment = new WindowsEnvironment();
-
-        File installPropertiesFile = new File( getInstallationBinDirectory(), INSTALL_PROPERTIES_FILENAME );
-        installProperties.load( new FileInputStream( installPropertiesFile ) );
+        config.load( new FileInputStream( new File( getInstallationBinDirectory(), INSTALL_PROPERTIES_FILENAME ) ) );
     }
 
     @Override
@@ -58,7 +55,7 @@ public class WindowsInstallation extends PortableInstallation
     public File getConfigurationDirectory()
     {
         File appData = new File( System.getenv( "APPDATA" ) );
-        return new File( appData, installProperties.getProperty( "win.appdata.subdir" ) );
+        return new File( appData, config.getProperty( "win.appdata.subdir" ) );
     }
 
     @Override
@@ -70,6 +67,6 @@ public class WindowsInstallation extends PortableInstallation
     @Override
     public File getConfigurationsFile()
     {
-        return new File( getConfigurationDirectory(), NEO4J_PROPERTIES_FILENAME );
+        return new File( getConfigurationDirectory(), NEO4J_CONFIG_FILENAME );
     }
 }

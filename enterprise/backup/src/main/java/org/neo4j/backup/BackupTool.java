@@ -143,7 +143,7 @@ public class BackupTool
     {
         String from = args.get( FROM ).trim();
         String to = args.get( TO ).trim();
-        Config tuningConfiguration = readTuningConfiguration( args );
+        Config tuningConfiguration = readConfiguration( args );
         boolean forensics = args.getBoolean( FORENSICS, false, true );
         ConsistencyCheck consistencyCheck = parseConsistencyChecker( args );
 
@@ -173,7 +173,7 @@ public class BackupTool
         String host = args.get( HOST ).trim();
         int port = args.getNumber( PORT, BackupServer.DEFAULT_PORT ).intValue();
         String to = args.get( TO ).trim();
-        Config tuningConfiguration = readTuningConfiguration( args );
+        Config tuningConfiguration = readConfiguration( args );
         boolean forensics = args.getBoolean( FORENSICS, false, true );
         ConsistencyCheck consistencyCheck = parseConsistencyChecker( args );
 
@@ -257,25 +257,25 @@ public class BackupTool
         }
     }
 
-    private static Config readTuningConfiguration( Args arguments ) throws ToolFailureException
+    private static Config readConfiguration( Args arguments ) throws ToolFailureException
     {
-        Map<String,String> specifiedProperties = stringMap();
+        Map<String,String> specifiedConfig = stringMap();
 
-        String propertyFilePath = arguments.get( CONFIG, null );
-        if ( propertyFilePath != null )
+        String configFilePath = arguments.get( CONFIG, null );
+        if ( configFilePath != null )
         {
-            File propertyFile = new File( propertyFilePath );
+            File configFile = new File( configFilePath );
             try
             {
-                specifiedProperties = MapUtil.load( propertyFile );
+                specifiedConfig = MapUtil.load( configFile );
             }
             catch ( IOException e )
             {
-                throw new ToolFailureException( String.format( "Could not read configuration properties file [%s]",
-                        propertyFilePath ), e );
+                throw new ToolFailureException( String.format( "Could not read configuration file [%s]",
+                        configFilePath ), e );
             }
         }
-        return new Config( specifiedProperties, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        return new Config( specifiedConfig, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
     private static URI resolveBackupUri( String from, Args arguments, Config config ) throws ToolFailureException

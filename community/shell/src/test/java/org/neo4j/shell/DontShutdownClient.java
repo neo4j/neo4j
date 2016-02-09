@@ -20,24 +20,22 @@
 package org.neo4j.shell;
 
 import java.io.File;
-import java.io.Serializable;
 import java.util.HashMap;
 
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.SystemOutput;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
-import static org.neo4j.shell.TestRmiPublication.createDefaultPropertiesFile;
+import static org.neo4j.shell.TestRmiPublication.createDefaultConfigFile;
 
 public class DontShutdownClient
 {
     public static void main( String[] args ) throws Exception
     {
         String path = args[0];
-        File propsFile = createDefaultPropertiesFile( path );
-        GraphDatabaseShellServer server = new GraphDatabaseShellServer(
-                path, false, propsFile.getAbsolutePath() );
-        new SameJvmClient( new HashMap<String, Serializable>(), server,
+        File configFile = createDefaultConfigFile( path );
+        GraphDatabaseShellServer server = new GraphDatabaseShellServer( path, false, configFile.getAbsolutePath() );
+        new SameJvmClient( new HashMap<>(), server,
             /* Temporary, switch back to SilentOutput once flaky test is resolved. */ new SystemOutput(),
                 InterruptSignalHandler.getHandler() );
         server.shutdown();

@@ -23,16 +23,15 @@ import java.io.File;
 
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
-import static org.neo4j.shell.TestRmiPublication.createDefaultPropertiesFile;
+import static org.neo4j.shell.TestRmiPublication.createDefaultConfigFile;
 
 public class DontShutdownLocalServer
 {
     public static void main( String[] args ) throws Exception
     {
         String path = args[0];
-        File propsFile = createDefaultPropertiesFile( path );
-        GraphDatabaseShellServer server = new GraphDatabaseShellServer(
-                path, false, propsFile.getAbsolutePath() );
+        File configFile = createDefaultConfigFile( path );
+        new GraphDatabaseShellServer( path, false, configFile.getAbsolutePath() );
         // Intentionally don't shutdown the server
     }
 }

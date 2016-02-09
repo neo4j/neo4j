@@ -179,12 +179,12 @@ public class BackupToolTest
     public void passesOnConfigurationIfProvided() throws Exception
     {
         // given
-        File propertyFile = testDirectory.file( "neo4j.conf" );
+        File configFile = testDirectory.file( "neo4j.conf" );
         Properties properties = new Properties();
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
-        properties.store( new FileWriter( propertyFile ), null );
+        properties.store( new FileWriter( configFile ), null );
 
-        String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-config", propertyFile.getPath()};
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-config", configFile.getPath()};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
@@ -199,11 +199,11 @@ public class BackupToolTest
     }
 
     @Test
-    public void exitWithFailureIfConfigSpecifiedButPropertiesFileDoesNotExist() throws Exception
+    public void exitWithFailureIfConfigSpecifiedButConfigFileDoesNotExist() throws Exception
     {
         // given
-        File propertyFile = testDirectory.file( "nonexistent_file" );
-        String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-config", propertyFile.getPath()};
+        File configFile = testDirectory.file( "nonexistent_file" );
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-config", configFile.getPath()};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
         BackupTool backupTool = new BackupTool( service, systemOut );
@@ -217,7 +217,7 @@ public class BackupToolTest
         catch ( BackupTool.ToolFailureException e )
         {
             // then
-            assertThat( e.getMessage(), containsString( "Could not read configuration properties file" ) );
+            assertThat( e.getMessage(), containsString( "Could not read configuration file" ) );
             assertThat( e.getCause(), instanceOf( IOException.class ) );
         }
 

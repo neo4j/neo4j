@@ -19,11 +19,11 @@
  */
 package org.neo4j.desktop.runtime;
 
+import java.io.File;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.File;
 
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.server.configuration.ServerSettings;
@@ -49,7 +49,7 @@ public class DesktopConfiguratorTest
     }
 
     @Test
-    public void dbPropertiesShouldContainStoreDirProperty() throws Exception
+    public void configShouldContainStoreDirSetting() throws Exception
     {
         // Given
         Installation installation = mock( Installation.class );

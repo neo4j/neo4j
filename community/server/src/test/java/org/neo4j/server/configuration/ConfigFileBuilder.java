@@ -27,7 +27,7 @@ import java.util.Map;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
 
-public class PropertyFileBuilder
+public class ConfigFileBuilder
 {
     private final ArrayList<Tuple> nameValuePairs = new ArrayList<>();
     private final File directory;
@@ -44,12 +44,12 @@ public class PropertyFileBuilder
         public String value;
     }
 
-    public static PropertyFileBuilder builder( File directory )
+    public static ConfigFileBuilder builder( File directory )
     {
-        return new PropertyFileBuilder( directory );
+        return new ConfigFileBuilder( directory );
     }
 
-    private PropertyFileBuilder( File directory )
+    private ConfigFileBuilder( File directory )
     {
         this.directory = directory;
     }
@@ -57,18 +57,18 @@ public class PropertyFileBuilder
     public File build() throws IOException
     {
         File file = new File( directory, "config" );
-        Map<String, String> properties = MapUtil.stringMap(
+        Map<String, String> config = MapUtil.stringMap(
                 ServerSettings.legacy_db_location.name(), directory.getAbsolutePath(),
                 ServerSettings.management_api_path.name(), "http://localhost:7474/db/manage/",
                 ServerSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
-        properties.put( ServerSettings.webserver_port.name(), "7474" );
+        config.put( ServerSettings.webserver_port.name(), "7474" );
         for ( Tuple t : nameValuePairs )
-            properties.put( t.name, t.value );
-        ServerTestUtils.writePropertiesToFile( properties, file );
+            config.put( t.name, t.value );
+        ServerTestUtils.writeConfigToFile( config, file );
         return file;
     }
 
-    public PropertyFileBuilder withNameValue( String name, String value )
+    public ConfigFileBuilder withNameValue( String name, String value )
     {
         nameValuePairs.add( new Tuple( name, value ) );
         return this;

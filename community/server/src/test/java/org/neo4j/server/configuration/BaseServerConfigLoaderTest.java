@@ -51,14 +51,14 @@ public class BaseServerConfigLoaderTest
     public void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages() throws IOException
     {
         // given
-        File propertyFile = PropertyFileBuilder.builder( folder.getRoot() )
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withNameValue( ServerSettings.third_party_packages.name(),
                         "org.neo4j.extension.extension1=/extension1,org.neo4j.extension.extension2=/extension2," +
                         "org.neo4j.extension.extension3=/extension3" )
                 .build();
 
         // when
-        Config config = configLoader.loadConfig( null, propertyFile, log );
+        Config config = configLoader.loadConfig( null, configFile, log );
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -71,13 +71,13 @@ public class BaseServerConfigLoaderTest
     }
 
     @Test
-    public void shouldWorkFineWhenSpecifiedPropertiesFileDoesNotExist()
+    public void shouldWorkFineWhenSpecifiedConfigFileDoesNotExist()
     {
         // Given
-        File nonExistentFilePropertiesFile = new File( "/tmp/" + System.currentTimeMillis() );
+        File nonExistentConfigFile = new File( "/tmp/" + System.currentTimeMillis() );
 
         // When
-        Config config = configLoader.loadConfig( null, nonExistentFilePropertiesFile, log );
+        Config config = configLoader.loadConfig( null, nonExistentConfigFile, log );
 
         // Then
         assertNotNull( config );
