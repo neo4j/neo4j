@@ -40,12 +40,12 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
   }
 
   def currentlyAvailableVariables: Set[IdName] = {
-    val lastPQWithNonEmptyHorizon = q.allPlannerQueries.foldLeft(q) {
-      case (acc, next) if next.horizon.exposedSymbols(next.queryGraph).nonEmpty => next
-      case (acc, _) => acc
-    }
-    lastPQWithNonEmptyHorizon.horizon.exposedSymbols(lastPQWithNonEmptyHorizon.queryGraph) ++
-      lastPQWithNonEmptyHorizon.queryGraph.allCoveredIds
+    q.allPlannerQueries.init.foldLeft(Set.empty[IdName]) {
+      case (acc, current) if current.horizon.isInstanceOf[QueryProjection] => // actual projection
+        current.horizon.exposedSymbols(current.queryGraph)
+      case (acc, current) => // with * or horizon which simply introduces new symbols (unwind or load csv)
+        current.horizon.exposedSymbols(current.queryGraph) ++ acc
+    } ++ q.allPlannerQueries.last.lastQueryGraph.allCoveredIds // for the last planner query we should not consider the return projection
   }
 
   def currentQueryGraph: QueryGraph = q.lastQueryGraph
