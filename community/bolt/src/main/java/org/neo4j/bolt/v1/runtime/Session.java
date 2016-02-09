@@ -53,6 +53,13 @@ public interface Session extends AutoCloseable
         {
         };
 
+        static <V,A> Callback<V,A> noOp() {
+            return NO_OP;
+        }
+
+        /** Called exactly once, before the request is processed by the Session State Machine */
+        void started( A attachment );
+
         /** Called zero or more times with results, if the operation invoked yields results. */
         void result( V result, A attachment ) throws Exception;
 
@@ -67,6 +74,12 @@ public interface Session extends AutoCloseable
 
         abstract class Adapter<V, A> implements Callback<V,A>
         {
+            @Override
+            public void started( A attachment )
+            {
+                // this page intentionally left blank
+            }
+
             @Override
             public void result( V result, A attachment ) throws Exception
             {

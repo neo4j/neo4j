@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.monitoring;
 
+import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
-import org.junit.Test;
 
 public class MonitorsTest
 {
@@ -109,6 +111,31 @@ public class MonitorsTest
         monitorTag2.aVoid();
         verify( listener, times(1) ).aVoid();
         verifyNoMoreInteractions( listener );
+    }
 
+    @Test
+    public void shouldTellIfMonitorHasListeners() throws Throwable
+    {
+        // Given
+        Monitors monitors = new Monitors();
+        MyMonitor listener = mock( MyMonitor.class );
+
+        // When I have a monitor with no listeners
+        monitors.newMonitor( MyMonitor.class );
+
+        // Then
+        assertFalse( monitors.hasListeners( MyMonitor.class ) );
+
+        // When I add a listener
+        monitors.addMonitorListener( listener );
+
+        // Then
+        assertTrue( monitors.hasListeners( MyMonitor.class ) );
+
+        // When that listener is removed again
+        monitors.removeMonitorListener( listener );
+
+        // Then
+        assertFalse( monitors.hasListeners( MyMonitor.class ) );
     }
 }

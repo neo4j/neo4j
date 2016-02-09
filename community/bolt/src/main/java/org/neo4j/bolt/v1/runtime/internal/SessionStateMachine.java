@@ -23,17 +23,15 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.neo4j.bolt.v1.runtime.Session;
+import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
-import org.neo4j.bolt.v1.runtime.StatementMetadata;
-import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -585,6 +583,7 @@ public class SessionStateMachine implements Session, SessionState
      */
     private void before( Object attachment, Callback cb )
     {
+        cb.started( attachment );
         if ( hasTransaction() )
         {
             txBridge.bindTransactionToCurrentThread( currentTransaction );

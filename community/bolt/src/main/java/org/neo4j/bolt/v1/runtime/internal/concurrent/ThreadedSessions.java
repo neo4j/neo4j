@@ -45,7 +45,8 @@ public class ThreadedSessions implements Sessions
     private JobScheduler scheduler;
     private LogService logging;
 
-    public ThreadedSessions( Sessions delegate, JobScheduler scheduler, LogService logging )
+    public ThreadedSessions( Sessions delegate, JobScheduler scheduler,
+                             LogService logging )
     {
         this.delegate = delegate;
         this.scheduler = scheduler;

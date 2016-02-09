@@ -53,6 +53,12 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
     private boolean ignored;
 
     @Override
+    public void started( A attachment )
+    {
+
+    }
+
+    @Override
     public void result( V result, A attachment )
     {
         if ( result instanceof RecordStream )
