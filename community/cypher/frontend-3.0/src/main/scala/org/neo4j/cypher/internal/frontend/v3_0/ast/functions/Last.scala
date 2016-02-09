@@ -33,5 +33,5 @@ case object Last extends Function {
     }
 
   private def possibleInnerTypes(expression: ast.Expression) : TypeGenerator = s =>
-    (expression.types(s) constrain CTList(CTAny)).unwrapCollections
+    (expression.types(s) constrain CTList(CTAny)).unwrapLists
 }

@@ -41,7 +41,7 @@ class ReduceExpressionTest extends CypherFunSuite {
       accumulator = Variable("x")(DummyPosition(2)),
       init = DummyExpression(CTString),
       variable = Variable("y")(DummyPosition(6)),
-      collection = DummyExpression(CTList(CTInteger)),
+      list = DummyExpression(CTList(CTInteger)),
       expression = reduceExpression
     )(DummyPosition(0))
 
@@ -53,12 +53,12 @@ class ReduceExpressionTest extends CypherFunSuite {
 
   test("shouldReturnMinimalTypeOfAccumulatorAndReduceFunction") {
     val initType = CTString.covariant | CTFloat.covariant
-    val collectionType = CTList(CTInteger)
+    val listType = CTList(CTInteger)
 
     val reduceExpression = new DummyExpression(CTAny, DummyPosition(10)) {
       override def semanticCheck(ctx: SemanticContext) = s => {
         s.symbolTypes("x") should equal(CTString | CTFloat)
-        s.symbolTypes("y") should equal(collectionType.innerType.invariant)
+        s.symbolTypes("y") should equal(listType.innerType.invariant)
         (this.specifyType(CTFloat) chain SemanticCheckResult.success)(s)
       }
     }
@@ -67,7 +67,7 @@ class ReduceExpressionTest extends CypherFunSuite {
       accumulator = Variable("x")(DummyPosition(2)),
       init = DummyExpression(initType),
       variable = Variable("y")(DummyPosition(6)),
-      collection = DummyExpression(collectionType),
+      list = DummyExpression(listType),
       expression = reduceExpression
     )(DummyPosition(0))
 
@@ -78,12 +78,12 @@ class ReduceExpressionTest extends CypherFunSuite {
 
   test("shouldFailSemanticCheckIfReduceFunctionTypeDiffersFromAccumulator") {
     val accumulatorType = CTString | CTNumber
-    val collectionType = CTList(CTInteger)
+    val listType = CTList(CTInteger)
 
     val reduceExpression = new DummyExpression(CTAny, DummyPosition(10)) {
       override def semanticCheck(ctx: SemanticContext) = s => {
         s.symbolTypes("x") should equal(accumulatorType)
-        s.symbolTypes("y") should equal(collectionType.innerType.invariant)
+        s.symbolTypes("y") should equal(listType.innerType.invariant)
         (this.specifyType(CTNode) chain SemanticCheckResult.success)(s)
       }
     }
@@ -92,7 +92,7 @@ class ReduceExpressionTest extends CypherFunSuite {
       accumulator = Variable("x")(DummyPosition(2)),
       init = DummyExpression(accumulatorType),
       variable = Variable("y")(DummyPosition(6)),
-      collection = DummyExpression(collectionType),
+      list = DummyExpression(listType),
       expression = reduceExpression
     )(DummyPosition(0))
 

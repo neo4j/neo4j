@@ -42,7 +42,7 @@ class LoadCSVTest extends CypherFunSuite {
     assert(expressionType === CTMap.invariant)
   }
 
-  test("when not expecting headers, the variable has a collection type") {
+  test("when not expecting headers, the variable has a list type") {
     val loadCSV = LoadCSV(withHeaders = false, literalURL, variable, None)(DummyPosition(6))
     val result = loadCSV.semanticCheck(SemanticState.clean)
     val expressionType = result.state.expressionType(variable).actual

@@ -29,16 +29,16 @@ class ContainerIndexTest extends CypherFunSuite {
   val dummyInteger = DummyExpression(CTInteger)
   val dummyNode = DummyExpression(CTNode)
   val dummyAny = DummyExpression(CTAny)
-  val dummyCollection = DummyExpression(CTList(CTNode) | CTList(CTString))
+  val dummyList = DummyExpression(CTList(CTNode) | CTList(CTString))
 
-  test("should detect collection lookup") {
-    val lhs = dummyCollection
+  test("should detect list lookup") {
+    val lhs = dummyList
     val rhs = dummyInteger
     val index = ContainerIndex(lhs, rhs)(DummyPosition(10))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors shouldBe empty
-    assertIsCollection(lhs.types(result.state))
+    assertIsList(lhs.types(result.state))
     rhs.types(result.state) should equal(CTInteger.covariant)
     index.types(result.state) should equal(CTNode | CTString)
   }
@@ -67,9 +67,9 @@ class ContainerIndexTest extends CypherFunSuite {
     index.types(result.state) should equal(TypeSpec.all)
   }
 
-  test("should return collection inner types of expression") {
-    val index = ContainerIndex(dummyCollection,
-      SignedDecimalIntegerLiteral("1")(DummyPosition(5))
+  test("should return list inner types of expression") {
+    val index = ContainerIndex(dummyList,
+                               SignedDecimalIntegerLiteral("1")(DummyPosition(5))
     )(DummyPosition(4))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
@@ -78,15 +78,15 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("should raise error if indexing by fraction") {
-    val index = ContainerIndex(dummyCollection,
-      DecimalDoubleLiteral("1.3")(DummyPosition(5))
+    val index = ContainerIndex(dummyList,
+                               DecimalDoubleLiteral("1.3")(DummyPosition(5))
     )(DummyPosition(4))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should equal(Seq(SemanticError("Type mismatch: expected Integer but was Float", index.idx.position)))
   }
 
-  private def assertIsCollection(spec: TypeSpec) = {
+  private def assertIsList(spec: TypeSpec) = {
     val intersection = spec & CTList(CTAny).covariant
     (intersection == TypeSpec.none) should be(right = false)
     spec should equal(intersection)

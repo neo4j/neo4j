@@ -38,14 +38,14 @@ class TypeRangeTest extends CypherFunSuite {
     rangeOfNumber.contains(CTString) should equal(false)
     rangeOfNumber.contains(CTAny) should equal(false)
 
-    val rangeOfCollectionAny = TypeRange(CTList(CTAny), CTList(CTAny))
-    rangeOfCollectionAny.contains(CTInteger) should equal(false)
-    rangeOfCollectionAny.contains(CTNumber) should equal(false)
-    rangeOfCollectionAny.contains(CTString) should equal(false)
-    rangeOfCollectionAny.contains(CTList(CTString)) should equal(false)
-    rangeOfCollectionAny.contains(CTList(CTNumber)) should equal(false)
-    rangeOfCollectionAny.contains(CTList(CTAny)) should equal(true)
-    rangeOfCollectionAny.contains(CTAny) should equal(false)
+    val rangeOfListAny = TypeRange(CTList(CTAny), CTList(CTAny))
+    rangeOfListAny.contains(CTInteger) should equal(false)
+    rangeOfListAny.contains(CTNumber) should equal(false)
+    rangeOfListAny.contains(CTString) should equal(false)
+    rangeOfListAny.contains(CTList(CTString)) should equal(false)
+    rangeOfListAny.contains(CTList(CTNumber)) should equal(false)
+    rangeOfListAny.contains(CTList(CTAny)) should equal(true)
+    rangeOfListAny.contains(CTAny) should equal(false)
   }
 
   test("unbounded TypeRange rooted at CTAny should contain all") {
@@ -68,12 +68,12 @@ class TypeRangeTest extends CypherFunSuite {
     rangeRootedAtInteger.contains(CTFloat) should equal(false)
     rangeRootedAtInteger.contains(CTAny) should equal(false)
 
-    val rangeRootedAtCollectionOfNumber = TypeRange(CTList(CTNumber), None)
-    rangeRootedAtCollectionOfNumber.contains(CTList(CTInteger)) should equal(true)
-    rangeRootedAtCollectionOfNumber.contains(CTList(CTFloat)) should equal(true)
-    rangeRootedAtCollectionOfNumber.contains(CTList(CTNumber)) should equal(true)
-    rangeRootedAtCollectionOfNumber.contains(CTList(CTString)) should equal(false)
-    rangeRootedAtCollectionOfNumber.contains(CTAny) should equal(false)
+    val rangeRootedAtListOfNumber = TypeRange(CTList(CTNumber), None)
+    rangeRootedAtListOfNumber.contains(CTList(CTInteger)) should equal(true)
+    rangeRootedAtListOfNumber.contains(CTList(CTFloat)) should equal(true)
+    rangeRootedAtListOfNumber.contains(CTList(CTNumber)) should equal(true)
+    rangeRootedAtListOfNumber.contains(CTList(CTString)) should equal(false)
+    rangeRootedAtListOfNumber.contains(CTAny) should equal(false)
   }
 
   test("unbounded TypeRange rooted at branch type should contain all more specific types") {
@@ -84,13 +84,13 @@ class TypeRangeTest extends CypherFunSuite {
     rangeRootedAtInteger.contains(CTString) should equal(false)
     rangeRootedAtInteger.contains(CTAny) should equal(false)
 
-    val rangeRootedAtCollectionAny = TypeRange(CTList(CTAny), None)
-    rangeRootedAtCollectionAny.contains(CTList(CTString)) should equal(true)
-    rangeRootedAtCollectionAny.contains(CTList(CTInteger)) should equal(true)
-    rangeRootedAtCollectionAny.contains(CTList(CTAny)) should equal(true)
-    rangeRootedAtCollectionAny.contains(CTList(CTList(CTInteger))) should equal(true)
-    rangeRootedAtCollectionAny.contains(CTBoolean) should equal(false)
-    rangeRootedAtCollectionAny.contains(CTAny) should equal(false)
+    val rangeRootedAtListAny = TypeRange(CTList(CTAny), None)
+    rangeRootedAtListAny.contains(CTList(CTString)) should equal(true)
+    rangeRootedAtListAny.contains(CTList(CTInteger)) should equal(true)
+    rangeRootedAtListAny.contains(CTList(CTAny)) should equal(true)
+    rangeRootedAtListAny.contains(CTList(CTList(CTInteger))) should equal(true)
+    rangeRootedAtListAny.contains(CTBoolean) should equal(false)
+    rangeRootedAtListAny.contains(CTAny) should equal(false)
   }
 
   test("should contain overlapping range") {
@@ -146,10 +146,10 @@ class TypeRangeTest extends CypherFunSuite {
     rangeOfNumberToInteger & TypeRange(CTInteger, CTInteger) should equal(Some(TypeRange(CTInteger, CTInteger)))
   }
 
-  test("intersection of range within collection") {
-    val rangeFromCollectionAny = TypeRange(CTList(CTAny), None)
-    rangeFromCollectionAny & TypeRange(CTList(CTString), None) should equal(Some(TypeRange(CTList(CTString), None)))
-    rangeFromCollectionAny & TypeRange(CTList(CTString), CTList(CTString)) should equal(Some(TypeRange(CTList(CTString), CTList(CTString))))
+  test("intersection of range within list") {
+    val rangeFromListAny = TypeRange(CTList(CTAny), None)
+    rangeFromListAny & TypeRange(CTList(CTString), None) should equal(Some(TypeRange(CTList(CTString), None)))
+    rangeFromListAny & TypeRange(CTList(CTString), CTList(CTString)) should equal(Some(TypeRange(CTList(CTString), CTList(CTString))))
   }
 
   test("intersection of range with non overlapping range should return none") {
@@ -180,12 +180,12 @@ class TypeRangeTest extends CypherFunSuite {
   }
 
   test("leastUpperBound with sub type") {
-    val rangeFromCollectionAny = TypeRange(CTList(CTAny), None)
-    val rangeOfCollectionAny = TypeRange(CTList(CTAny), CTList(CTAny))
-    (rangeFromCollectionAny leastUpperBounds rangeOfCollectionAny) should equal(Seq(rangeOfCollectionAny))
+    val rangeFromListAny = TypeRange(CTList(CTAny), None)
+    val rangeOfListAny = TypeRange(CTList(CTAny), CTList(CTAny))
+    (rangeFromListAny leastUpperBounds rangeOfListAny) should equal(Seq(rangeOfListAny))
 
-    val rangeFromCollectionString = TypeRange(CTList(CTString), None)
-    (rangeFromCollectionAny leastUpperBounds rangeFromCollectionString) should equal(Seq(TypeRange(CTList(CTAny), CTList(CTString)), TypeRange(CTList(CTString), None)))
+    val rangeFromListString = TypeRange(CTList(CTString), None)
+    (rangeFromListAny leastUpperBounds rangeFromListString) should equal(Seq(TypeRange(CTList(CTAny), CTList(CTString)), TypeRange(CTList(CTString), None)))
   }
 
   test("should have indefinite size when allowing unbound any at any depth") {
@@ -201,7 +201,7 @@ class TypeRangeTest extends CypherFunSuite {
     TypeRange(CTList(CTList(CTString)), None).hasDefiniteSize should equal(true)
   }
 
-  test("should reparent into collection") {
+  test("should reparent into list") {
     TypeRange(CTString, None).reparent(CTList) should equal(TypeRange(CTList(CTString), None))
     TypeRange(CTAny, CTNumber).reparent(CTList) should equal(TypeRange(CTList(CTAny), CTList(CTNumber)))
   }

@@ -50,8 +50,8 @@ class CypherTypeTest extends CypherFunSuite {
   private def assertLeastUpperBound(a: CypherType, b: CypherType, result: CypherType) {
     val simpleMergedType: CypherType = a leastUpperBound b
     simpleMergedType should equal(result)
-    val collectionMergedType: CypherType = CTList(a) leastUpperBound CTList(b)
-    collectionMergedType should equal(CTList(result))
+    val listMergedType: CypherType = CTList(a) leastUpperBound CTList(b)
+    listMergedType should equal(CTList(result))
   }
 
   test("should find greatestLowerBound") {
@@ -68,7 +68,7 @@ class CypherTypeTest extends CypherFunSuite {
   private def assertGreatestLowerBound(a: CypherType, b: CypherType, result: Option[CypherType]) {
     val simpleMergedType: Option[CypherType] = a greatestLowerBound b
     simpleMergedType should equal(result)
-    val collectionMergedType: Option[CypherType] = CTList(a) greatestLowerBound CTList(b)
-    collectionMergedType should equal(for (t <- result) yield CTList(t))
+    val listMergedType: Option[CypherType] = CTList(a) greatestLowerBound CTList(b)
+    listMergedType should equal(for (t <- result) yield CTList(t))
   }
 }

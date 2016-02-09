@@ -62,15 +62,15 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
         TypeSpec.none
 
     // [a] + [b] => [a, b]
-    val collectionTypes = lhsTypes constrain CTList(CTAny)
+    val listTypes = lhsTypes constrain CTList(CTAny)
 
     // [a] + b => [a, b]
-    val lhsCollectionTypes = collectionTypes | collectionTypes.unwrapCollections
+    val lhsListTypes = listTypes | listTypes.unwrapLists
 
     // a + [b] => [a, b]
-    val rhsCollectionTypes = lhsTypes.wrapInCollection
+    val rhsListTypes = lhsTypes.wrapInList
 
-    valueTypes | lhsCollectionTypes | rhsCollectionTypes
+    valueTypes | lhsListTypes | rhsListTypes
   }
 
   private def infixOutputTypes(lhs: ast.Expression, rhs: ast.Expression): TypeGenerator = s => {
@@ -99,21 +99,21 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
       when(CTInteger.covariant, CTInteger.covariant)(CTInteger) |
         when(CTFloat.covariant, CTFloat.covariant | CTInteger.covariant)(CTFloat)
 
-    val collectionTypes = {
-      val lhsCollectionTypes = lhsTypes constrain CTList(CTAny)
-      val rhsCollectionTypes = rhsTypes constrain CTList(CTAny)
-      val lhsCollectionInnerTypes = lhsCollectionTypes.unwrapCollections
-      val rhsCollectionInnerTypes = rhsCollectionTypes.unwrapCollections
+    val listTypes = {
+      val lhsListTypes = lhsTypes constrain CTList(CTAny)
+      val rhsListTypes = rhsTypes constrain CTList(CTAny)
+      val lhsListInnerTypes = lhsListTypes.unwrapLists
+      val rhsListInnerTypes = rhsListTypes.unwrapLists
 
       // [a] + [b] => [a, b]
-      (lhsCollectionTypes intersect rhsCollectionTypes) |
+      (lhsListTypes intersect rhsListTypes) |
         // [a] + b => [a, b]
-        (rhsTypes intersectOrCoerce lhsCollectionInnerTypes).wrapInCollection |
+        (rhsTypes intersectOrCoerce lhsListInnerTypes).wrapInList |
         // a + [b] => [a, b]
-        (lhsTypes intersectOrCoerce rhsCollectionInnerTypes).wrapInCollection
+        (lhsTypes intersectOrCoerce rhsListInnerTypes).wrapInList
     }
 
-    stringTypes | numberTypes | collectionTypes
+    stringTypes | numberTypes | listTypes
   }
 
   override def canonicalOperatorSymbol = "+"

@@ -101,8 +101,8 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
     r => that.ranges.flatMap(r leastUpperBounds)
   })
 
-  def wrapInCollection: TypeSpec = TypeSpec(ranges.map(_.reparent(CTList)))
-  def unwrapCollections: TypeSpec = TypeSpec(ranges.map(_.reparent { case c: ListType => c.innerType }))
+  def wrapInList: TypeSpec = TypeSpec(ranges.map(_.reparent(CTList)))
+  def unwrapLists: TypeSpec = TypeSpec(ranges.map(_.reparent { case c: ListType => c.innerType }))
 
   def coercions: TypeSpec = {
     val simpleCoercions = TypeSpec.simpleTypes.filter(this contains).flatMap(_.coercibleTo)

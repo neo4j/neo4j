@@ -99,11 +99,11 @@ class TypeSpecTest extends CypherFunSuite {
     (CTInteger | CTList(CTString)) constrain CTAny should equal(CTInteger | CTList(CTString))
   }
 
-  test("constrain to branch type within collection contains") {
+  test("constrain to branch type within list contains") {
     TypeSpec.all constrain CTList(CTNumber) should equal(CTList(CTNumber) | CTList(CTInteger) | CTList(CTFloat))
   }
 
-  test("constrain to sub type within collection") {
+  test("constrain to sub type within list") {
     CTList(CTAny).covariant constrain CTList(CTString) should equal(CTList(CTString).invariant)
   }
 
@@ -165,7 +165,7 @@ class TypeSpecTest extends CypherFunSuite {
     TypeSpec.all leastUpperBounds CTInteger should equal(CTAny | CTNumber | CTInteger)
   }
 
-  test("leastUpperBounds with collection") {
+  test("leastUpperBounds with list") {
     TypeSpec.all leastUpperBounds CTList(CTAny) should equal(CTAny | CTList(CTAny))
     TypeSpec.all leastUpperBounds CTList(CTString) should equal(CTAny | CTList(CTAny) | CTList(CTString))
   }
@@ -204,17 +204,17 @@ class TypeSpecTest extends CypherFunSuite {
     numberOrCollectionT leastUpperBounds CTInteger should equal(CTAny | CTNumber | CTInteger)
     numberOrCollectionT leastUpperBounds CTList(CTInteger) should equal(CTAny | CTList(CTAny) | CTList(CTNumber) | CTList(CTInteger))
 
-    val collectionOfCollectionOfAny = CTList(CTList(CTAny)).covariant
-    (TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTList(CTList(CTString)) should equal(true)
-    (TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTList(CTList(CTInteger)) should equal(true)
-    (TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTList(CTList(CTNumber)) should equal(true)
-    (TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTList(CTList(CTAny)) should equal(true)
-    (TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTList(CTString) should equal(false)
-    (TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTList(CTNumber) should equal(false)
-    (TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTList(CTAny) should equal(true)
-    (TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTString should equal(false)
-    (TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTNumber should equal(false)
-    (TypeSpec.all leastUpperBounds collectionOfCollectionOfAny) contains CTAny should equal(true)
+    val listOfListOfAny = CTList(CTList(CTAny)).covariant
+    (TypeSpec.all leastUpperBounds listOfListOfAny) contains CTList(CTList(CTString)) should equal(true)
+    (TypeSpec.all leastUpperBounds listOfListOfAny) contains CTList(CTList(CTInteger)) should equal(true)
+    (TypeSpec.all leastUpperBounds listOfListOfAny) contains CTList(CTList(CTNumber)) should equal(true)
+    (TypeSpec.all leastUpperBounds listOfListOfAny) contains CTList(CTList(CTAny)) should equal(true)
+    (TypeSpec.all leastUpperBounds listOfListOfAny) contains CTList(CTString) should equal(false)
+    (TypeSpec.all leastUpperBounds listOfListOfAny) contains CTList(CTNumber) should equal(false)
+    (TypeSpec.all leastUpperBounds listOfListOfAny) contains CTList(CTAny) should equal(true)
+    (TypeSpec.all leastUpperBounds listOfListOfAny) contains CTString should equal(false)
+    (TypeSpec.all leastUpperBounds listOfListOfAny) contains CTNumber should equal(false)
+    (TypeSpec.all leastUpperBounds listOfListOfAny) contains CTAny should equal(true)
   }
 
   test("leastUpperBounds of branch with sub type") {
@@ -238,9 +238,9 @@ class TypeSpecTest extends CypherFunSuite {
     CTNumber.covariant leastUpperBounds (CTNumber | CTInteger | CTFloat) should equal(CTNumber.covariant)
   }
 
-  test("should wrap in collection") {
-    (CTString | CTList(CTNumber)).wrapInCollection should equal(CTList(CTString) | CTList(CTList(CTNumber)))
-    TypeSpec.all.wrapInCollection should equal(CTList(CTAny).covariant)
+  test("should wrap in list") {
+    (CTString | CTList(CTNumber)).wrapInList should equal(CTList(CTString) | CTList(CTList(CTNumber)))
+    TypeSpec.all.wrapInList should equal(CTList(CTAny).covariant)
   }
 
   test("should identify coercions") {

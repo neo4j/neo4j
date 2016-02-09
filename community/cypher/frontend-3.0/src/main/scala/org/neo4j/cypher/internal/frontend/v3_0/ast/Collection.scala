@@ -30,16 +30,16 @@ case class Collection(expressions: Seq[Expression])(val position: InputPosition)
 
   private def possibleTypes: TypeGenerator = state => expressions match {
     case Seq() => CTList(CTAny).covariant
-    case _     => expressions.leastUpperBoundsOfTypes(state).wrapInCollection
+    case _     => expressions.leastUpperBoundsOfTypes(state).wrapInList
   }
 }
 
-case class CollectionSlice(collection: Expression, from: Option[Expression], to: Option[Expression])(val position: InputPosition)
+case class CollectionSlice(list: Expression, from: Option[Expression], to: Option[Expression])(val position: InputPosition)
   extends Expression {
 
   override def semanticCheck(ctx: SemanticContext) =
-    collection.semanticCheck(ctx) chain
-    collection.expectType(CTList(CTAny).covariant) chain
+    list.semanticCheck(ctx) chain
+    list.expectType(CTList(CTAny).covariant) chain
     when(from.isEmpty && to.isEmpty) {
       SemanticError("The start or end (or both) is required for a collection slice", position)
     } chain
@@ -47,7 +47,7 @@ case class CollectionSlice(collection: Expression, from: Option[Expression], to:
     from.expectType(CTInteger.covariant) chain
     to.semanticCheck(ctx) chain
     to.expectType(CTInteger.covariant) chain
-    specifyType(collection.types)
+    specifyType(list.types)
 }
 
 case class ContainerIndex(expr: Expression, idx: Expression)(val position: InputPosition)
@@ -60,21 +60,21 @@ case class ContainerIndex(expr: Expression, idx: Expression)(val position: Input
       case exprT =>
         idx.typeSwitch {
           case idxT =>
-            val collT = CTList(CTAny).covariant & exprT
+            val listT = CTList(CTAny).covariant & exprT
             val mapT = CTMap.covariant & exprT
-            val exprIsColl = collT != TypeSpec.none
+            val exprIsList = listT != TypeSpec.none
             val exprIsMap = mapT != TypeSpec.none
             val idxIsInteger = (CTInteger.covariant & idxT) != TypeSpec.none
             val idxIsString = (CTString.covariant & idxT) != TypeSpec.none
-            val collectionLookup = exprIsColl || idxIsInteger
+            val listLookup = exprIsList || idxIsInteger
             val mapLookup = exprIsMap || idxIsString
 
-            if (collectionLookup && !mapLookup) {
+            if (listLookup && !mapLookup) {
                 expr.expectType(CTList(CTAny).covariant) chain
                 idx.expectType(CTInteger.covariant) chain
-                specifyType(expr.types(_).unwrapCollections)
+                specifyType(expr.types(_).unwrapLists)
             }
-            else if (!collectionLookup && mapLookup) {
+            else if (!listLookup && mapLookup) {
                 expr.expectType(CTMap.covariant) chain
                 idx.expectType(CTString.covariant)
             } else {

@@ -33,5 +33,5 @@ case object Head extends Function {
     }
 
   private def possibleInnerTypes(expression: ast.Expression) : TypeGenerator =
-    expression.types(_).unwrapCollections
+    expression.types(_).unwrapLists
 }
