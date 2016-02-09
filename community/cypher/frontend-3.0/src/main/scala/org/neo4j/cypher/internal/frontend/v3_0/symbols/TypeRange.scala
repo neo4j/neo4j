@@ -40,7 +40,7 @@ case class TypeRange(lower: CypherType, upper: Option[CypherType]) {
   lazy val hasDefiniteSize: Boolean = upper.isDefined || !checkForAny(lower)
   private def checkForAny: CypherType => Boolean = {
     case _: AnyType => true
-    case c: CollectionType => checkForAny(c.innerType)
+    case c: ListType => checkForAny(c.innerType)
     case _ => false
   }
 

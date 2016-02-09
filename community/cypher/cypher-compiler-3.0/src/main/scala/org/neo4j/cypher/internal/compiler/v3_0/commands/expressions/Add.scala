@@ -66,7 +66,7 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
   }
 
   private def mergeWithCollection(collection: CypherType, singleElement: CypherType):CypherType= {
-    val collectionType = collection.asInstanceOf[CollectionType]
+    val collectionType = collection.asInstanceOf[ListType]
     val mergedInnerType = collectionType.innerType.leastUpperBound(singleElement)
     CTList(mergedInnerType)
   }

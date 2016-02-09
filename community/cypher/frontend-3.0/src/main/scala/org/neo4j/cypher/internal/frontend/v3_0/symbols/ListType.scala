@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.symbols
 
-object CollectionType {
-  private val anyCollectionTypeInstance = new CollectionTypeImpl(CTAny)
+object ListType {
+  private val anyCollectionTypeInstance = new ListTypeImpl(CTAny)
 
-  def apply(iteratedType: CypherType) = if (iteratedType == CTAny) anyCollectionTypeInstance else new CollectionTypeImpl(iteratedType)
+  def apply(iteratedType: CypherType) = if (iteratedType == CTAny) anyCollectionTypeInstance else new ListTypeImpl(iteratedType)
 
-  final case class CollectionTypeImpl(innerType: CypherType) extends CollectionType {
+  final case class ListTypeImpl(innerType: CypherType) extends ListType {
     val parentType = CTAny
     override val legacyIteratedType = innerType
 
@@ -35,21 +35,21 @@ object CollectionType {
     override val toString = s"Collection<$innerType>"
 
     override def isAssignableFrom(other: CypherType): Boolean = other match {
-      case otherCollection: CollectionType =>
+      case otherCollection: ListType =>
         innerType isAssignableFrom otherCollection.innerType
       case _ =>
         super.isAssignableFrom(other)
     }
 
     override def leastUpperBound(other: CypherType) = other match {
-      case otherCollection: CollectionType =>
+      case otherCollection: ListType =>
         copy(innerType leastUpperBound otherCollection.innerType)
       case _ =>
         super.leastUpperBound(other)
     }
 
     override def greatestLowerBound(other: CypherType) = other match {
-      case otherCollection: CollectionType =>
+      case otherCollection: ListType =>
         (innerType greatestLowerBound otherCollection.innerType).map(copy)
       case _ =>
         super.greatestLowerBound(other)
@@ -59,12 +59,12 @@ object CollectionType {
   }
 
   def unapply(x: CypherType): Option[CypherType] = x match {
-    case x: CollectionType => Some(x.innerType)
+    case x: ListType => Some(x.innerType)
     case _ => None
   }
 }
 
 
-sealed abstract class CollectionType extends CypherType {
+sealed abstract class ListType extends CypherType {
   def innerType: CypherType
 }

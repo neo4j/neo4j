@@ -68,7 +68,7 @@ with CollectionSupport {
     if (collectionLookup && !mapLookup) {
       index.evaluateType(CTInteger, symbols)
       expression.evaluateType(CTList(CTAny), symbols) match {
-        case collectionType: CollectionType => collectionType.innerType
+        case collectionType: ListType => collectionType.innerType
         case x if x.isInstanceOf[AnyType]   => CTAny
         case x                              => throw new CypherTypeException("Expected a collection, but was " + x)
       }

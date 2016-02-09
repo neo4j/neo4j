@@ -31,7 +31,7 @@ package object symbols {
   val CTRelationship: RelationshipType = RelationshipType.instance
   val CTPoint: PointType = PointType.instance
   val CTPath: PathType = PathType.instance
-  def CTList(inner: CypherType): CollectionType = CollectionType(inner)
+  def CTList(inner: CypherType): ListType = ListType(inner)
 
   implicit def invariantTypeSpec(that: CypherType): TypeSpec = that.invariant
 }

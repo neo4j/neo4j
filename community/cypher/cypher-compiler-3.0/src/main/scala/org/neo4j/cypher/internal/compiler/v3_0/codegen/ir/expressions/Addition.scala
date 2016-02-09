@@ -35,9 +35,9 @@ case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends Code
     case (CTString, CTString) => CTString
 
     // Collections
-    case (CollectionType(left), CollectionType(right)) => CollectionType(left leastUpperBound right)
-    case (CollectionType(innerType), singleElement) => CollectionType(innerType leastUpperBound singleElement)
-    case (singleElement, CollectionType(innerType)) => CollectionType(innerType leastUpperBound singleElement)
+    case (ListType(left), ListType(right)) => ListType(left leastUpperBound right)
+    case (ListType(innerType), singleElement) => ListType(innerType leastUpperBound singleElement)
+    case (singleElement, ListType(innerType)) => ListType(innerType leastUpperBound singleElement)
 
     // Numbers
     case (CTInteger, CTInteger) => CTInteger
