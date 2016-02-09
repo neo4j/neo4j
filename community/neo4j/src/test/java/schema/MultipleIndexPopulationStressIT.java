@@ -246,7 +246,7 @@ public class MultipleIndexPopulationStressIT
     private void createRandomData( int count ) throws IOException
     {
         BatchImporter importer = new ParallelBatchImporter( directory.directory(), fs,
-                DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY );
+                DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, new Config() );
         importer.doImport( new Input()
         {
             @Override

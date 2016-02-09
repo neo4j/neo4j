@@ -26,6 +26,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
@@ -71,6 +72,7 @@ public class ParallelBatchImporter implements BatchImporter
     private final Log log;
     private final ExecutionMonitor executionMonitor;
     private final AdditionalInitialIds additionalInitialIds;
+    private final Config dbConfig;
 
     /**
      * Advanced usage of the parallel batch importer, for special and very specific cases. Please use
@@ -78,12 +80,13 @@ public class ParallelBatchImporter implements BatchImporter
      */
     public ParallelBatchImporter( File storeDir, FileSystemAbstraction fileSystem, Configuration config,
             LogService logService, ExecutionMonitor executionMonitor,
-            AdditionalInitialIds additionalInitialIds )
+            AdditionalInitialIds additionalInitialIds, Config dbConfig )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.config = config;
         this.logService = logService;
+        this.dbConfig = dbConfig;
         this.log = logService.getInternalLogProvider().getLog( getClass() );
         this.executionMonitor = executionMonitor;
         this.additionalInitialIds = additionalInitialIds;
@@ -95,10 +98,10 @@ public class ParallelBatchImporter implements BatchImporter
      * optimal assignment of processors to bottleneck steps over time.
      */
     public ParallelBatchImporter( File storeDir, Configuration config, LogService logService,
-            ExecutionMonitor executionMonitor )
+            ExecutionMonitor executionMonitor, Config dbConfig )
     {
         this( storeDir, new DefaultFileSystemAbstraction(), config, logService,
-                withDynamicProcessorAssignment( executionMonitor, config ), EMPTY );
+                withDynamicProcessorAssignment( executionMonitor, config ), EMPTY, dbConfig );
     }
 
     @Override
@@ -115,7 +118,7 @@ public class ParallelBatchImporter implements BatchImporter
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
         try ( BatchingNeoStores neoStore =
-                      new BatchingNeoStores( fileSystem, storeDir, config, logService, additionalInitialIds );
+                      new BatchingNeoStores( fileSystem, storeDir, config, logService, additionalInitialIds, dbConfig );
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
                     neoStore.getLastCommittedTransactionId() );
               InputCache inputCache = new InputCache( fileSystem, storeDir ) )

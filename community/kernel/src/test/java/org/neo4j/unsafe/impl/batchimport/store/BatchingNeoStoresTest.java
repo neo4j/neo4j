@@ -26,15 +26,21 @@ import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
@@ -49,13 +55,33 @@ public class BatchingNeoStoresTest
         // WHEN
         try
         {
-            new BatchingNeoStores( fsr.get(), storeDir, DEFAULT, NullLogService.getInstance(), EMPTY );
+            new BatchingNeoStores( fsr.get(), storeDir, DEFAULT, NullLogService.getInstance(), EMPTY, new Config() );
             fail( "Should fail on existing data" );
         }
         catch ( IllegalStateException e )
         {
             // THEN
             assertThat( e.getMessage(), containsString( "already contains" ) );
+        }
+    }
+
+    @Test
+    public void shouldRespectDbConfig() throws Exception
+    {
+        // GIVEN
+        int size = 10;
+        Config config = new Config( stringMap(
+                GraphDatabaseSettings.array_block_size.name(), String.valueOf( size ),
+                GraphDatabaseSettings.string_block_size.name(), String.valueOf( size ) ) );
+
+        // WHEN
+        int headerSize = LowLimit.RECORD_FORMATS.dynamic().getRecordHeaderSize();
+        try ( BatchingNeoStores store =
+                new BatchingNeoStores( fsr.get(), storeDir, DEFAULT, NullLogService.getInstance(), EMPTY, config ) )
+        {
+            // THEN
+            assertEquals( size + headerSize, store.getPropertyStore().getArrayStore().getRecordSize() );
+            assertEquals( size + headerSize, store.getPropertyStore().getStringStore().getRecordSize() );
         }
     }
 

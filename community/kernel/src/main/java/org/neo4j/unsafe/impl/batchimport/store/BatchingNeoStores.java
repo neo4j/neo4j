@@ -88,12 +88,12 @@ public class BatchingNeoStores implements AutoCloseable
     private final IoTracer ioTracer;
 
     public BatchingNeoStores( FileSystemAbstraction fileSystem, File storeDir, Configuration config,
-            LogService logService, AdditionalInitialIds initialIds )
+            LogService logService, AdditionalInitialIds initialIds, Config dbConfig )
     {
         this.fileSystem = fileSystem;
         this.logProvider = logService.getInternalLogProvider();
         this.storeDir = storeDir;
-        this.neo4jConfig = new Config( stringMap(
+        this.neo4jConfig = new Config( stringMap( dbConfig.getParams(),
                 dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
                 pagecache_memory.name(), valueOf( config.writeBufferSize() ) ),
                 GraphDatabaseSettings.class );
@@ -166,9 +166,10 @@ public class BatchingNeoStores implements AutoCloseable
      * Useful for store migration where the {@link ParallelBatchImporter} is used as migrator and some of
      * its data need to be communicated by copying a store file.
      */
-    public static void createStore( FileSystemAbstraction fileSystem, String storeDir ) throws IOException
+    public static void createStore( FileSystemAbstraction fileSystem, String storeDir, Config dbConfig )
+            throws IOException
     {
-        try ( PageCache pageCache = createPageCache( fileSystem, new Config(), NullLogProvider.getInstance(),
+        try ( PageCache pageCache = createPageCache( fileSystem, dbConfig, NullLogProvider.getInstance(),
                 PageCacheTracer.NULL ) )
         {
             StoreFactory storeFactory =
