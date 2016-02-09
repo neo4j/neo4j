@@ -28,6 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.stresstests.transaction.checkpoint.tracers.TimerTransactionTracer;
@@ -71,8 +72,8 @@ public class CheckPointingLogRotationStressTesting
         }
 
         System.out.println( "1/6\tBuilding initial store..." );
-        new ParallelBatchImporter( storeDir, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.defaultVisible() )
-                .doImport( new NodeCountInputs( nodeCount ) );
+        new ParallelBatchImporter( storeDir, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.defaultVisible(),
+                new Config() ).doImport( new NodeCountInputs( nodeCount ) );
 
         System.out.println( "2/6\tStarting database..." );
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )

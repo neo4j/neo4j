@@ -47,11 +47,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.Version;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -85,6 +88,9 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
+import static org.neo4j.helpers.collection.MapUtil.store;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.store.AbstractDynamicStore.BLOCK_HEADER_SIZE;
 import static org.neo4j.tooling.GlobalGraphOperations.at;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
@@ -1534,6 +1540,31 @@ public class ImportToolTest
             assertTrue( names.isEmpty() );
             tx.success();
         }
+    }
+
+    @Test
+    public void shouldRespectDbConfig() throws Exception
+    {
+        // GIVEN
+        int arrayBlockSize = 10;
+        int stringBlockSize = 12;
+        File dbConfig = file( "neo4j.properties" );
+        store( stringMap(
+                GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
+                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ) ), dbConfig );
+        List<String> nodeIds = nodeIds();
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--db-config", dbConfig.getAbsolutePath(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, alwaysTrue() ).getAbsolutePath() );
+
+        // THEN
+        NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( NeoStoresSupplier.class ).get();
+        assertEquals( arrayBlockSize + BLOCK_HEADER_SIZE, stores.getPropertyStore().getArrayBlockSize() );
+        assertEquals( stringBlockSize + BLOCK_HEADER_SIZE, stores.getPropertyStore().getStringBlockSize() );
     }
 
     private File writeArrayCsv( String[] headers, String[] values ) throws FileNotFoundException
