@@ -20,6 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_0
 
 package object helpers {
+
+  type CountingIterator[T] = Counter#CountingIterator[T]
+
   def closing[Resource <: AutoCloseable, Result](resource: Resource)(block: => Result)(
     implicit onSuccess: Resource => Unit = (r: Resource) => {},
              onError: (Resource, Throwable) => Unit = (r: Resource, t: Throwable) => {}): Result = {

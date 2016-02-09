@@ -30,10 +30,16 @@ import org.neo4j.graphdb.Relationship;
 
 public class ResultRowImpl implements InternalResultRow
 {
-    private Map<String, Object> results = new HashMap<>();
+    private Map<String, Object> results;
+
+    public ResultRowImpl( Map<String, Object> results )
+    {
+        this.results = results;
+    }
 
     public ResultRowImpl( )
     {
+        this( new HashMap<>() );
     }
 
     public void set( String k, Object value)

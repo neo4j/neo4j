@@ -27,12 +27,13 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isA;
 
-public class JavaCompatibilityTest
+public class JavaValueCompatibilityTest
 {
     private ExecutionEngine engine;
 
@@ -47,7 +48,8 @@ public class JavaCompatibilityTest
     public void collections_in_collections_look_aiight() throws Exception
     {
         ExecutionResult execute = engine.execute( "CREATE (n:TheNode) RETURN [[ [1,2],[3,4] ],[[5,6]]] as x" );
-        Map<String, Object> next = execute.iterator().next();
+        ResourceIterator<Map<String, Object>> iterator = execute.iterator();
+        Map<String, Object> next = iterator.next();
         @SuppressWarnings("unchecked") //We know it's a collection.
         List<List<Object>> x = (List<List<Object>>)next.get( "x" );
         Iterable objects = x.get( 0 );

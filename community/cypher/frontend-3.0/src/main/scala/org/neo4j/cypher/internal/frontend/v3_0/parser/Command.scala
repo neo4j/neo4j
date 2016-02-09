@@ -75,14 +75,13 @@ trait Command extends Parser
   }
 
   def Call = rule("CALL") {
-    group(keyword("CALL") ~~ zeroOrMore(SymbolicNameString ~ ".") ~ ProcedureName ~ ProcedureArguments) ~~>> (ast
-      .CallProcedure(_, _, _))
+    group(keyword("CALL") ~~ zeroOrMore(SymbolicNameString ~ ".") ~ ProcedureName ~ ProcedureArguments) ~~>> (ast.CallProcedure(_, _, _))
   }
 
-  private def ProcedureArguments: Rule1[IndexedSeq[Expression]] = rule("arguments to a procedure") {
+  private def ProcedureArguments: Rule1[Option[Seq[Expression]]] = rule("arguments to a procedure") {
     optional(group("(" ~~
       zeroOrMore(Expression, separator = CommaSep) ~~ ")"
-    ) ~~> (_.toIndexedSeq)) ~~> (_.getOrElse(IndexedSeq.empty))
+    ) ~~> (_.toIndexedSeq))
   }
 
   private def UniqueConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~

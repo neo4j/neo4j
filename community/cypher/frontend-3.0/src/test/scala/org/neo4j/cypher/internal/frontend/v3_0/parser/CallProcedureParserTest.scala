@@ -26,32 +26,32 @@ class CallProcedureParserTest extends ParserAstTest[ast.Command] with Command {
   implicit val parser = Command
 
   test("CALL foo") {
-    yields(ast.CallProcedure(List.empty, ast.ProcName("foo")(pos), IndexedSeq.empty))
+    yields(ast.CallProcedure(List.empty, ast.ProcName("foo")(pos), None))
   }
 
   test("CALL foo()") {
-    yields(ast.CallProcedure(List.empty, ast.ProcName("foo")(pos), IndexedSeq.empty))
+    yields(ast.CallProcedure(List.empty, ast.ProcName("foo")(pos), Some(Seq.empty)))
   }
 
   test("CALL foo('Test', 1+2)") {
     yields(ast.CallProcedure(List.empty, ast.ProcName("foo")(pos),
-      Vector(
+      Some(Vector(
         ast.StringLiteral("Test")(pos),
         ast.Add(
           ast.SignedDecimalIntegerLiteral("1")(pos),
           ast.SignedDecimalIntegerLiteral("2")(pos))(pos)
-      ))
+      )))
     )
   }
 
   test("CALL foo.bar.baz('Test', 1+2)") {
     yields(ast.CallProcedure(List("foo", "bar"), ast.ProcName("baz")(pos),
-      Vector(
+      Some(Vector(
         ast.StringLiteral("Test")(pos),
         ast.Add(
           ast.SignedDecimalIntegerLiteral("1")(pos),
           ast.SignedDecimalIntegerLiteral("2")(pos))(pos)
-      ))
+      )))
     )
   }
   private val pos = DummyPosition(-1)

@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.collection.RawIterator
-import org.neo4j.cypher.{CypherExecutionException, CypherTypeException, ExecutionEngineFunSuite, InvalidArgumentException}
+import org.neo4j.cypher._
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.{CallableProcedure, Neo4jTypes}
@@ -235,12 +235,20 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc(42.0)"))
   }
 
-  test("should fail a procedure declares a float but gets an integer") {
+  test("should not fail if a procedure declares a float but gets an integer") {
     // Given
     register(Neo4jTypes.NTFloat)
 
     // Then
-    a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc(42)"))
+    a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc(42)")))
+  }
+
+  test("should not fail if a procedure declares a float but gets called with an integer") {
+    // Given
+    register(Neo4jTypes.NTFloat)
+
+    // Then
+    a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc({param})", "param" -> 42)))
   }
 
   test("should fail if explicit argument is missing") {
@@ -264,7 +272,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
-    an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc", "in0" -> "42", "in42" -> 42))
+    a [ParameterNotFoundException] shouldBe thrownBy(execute("CALL my.first.proc", "in0" -> "42", "in42" -> 42))
   }
 
   test("should be able to call a procedure with explain") {

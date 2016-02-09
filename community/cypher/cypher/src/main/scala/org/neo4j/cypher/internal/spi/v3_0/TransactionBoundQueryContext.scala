@@ -26,6 +26,7 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.compiler.v3_0.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.DirectionConverter.toGraphDb
@@ -560,15 +561,15 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
-  override def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]) =
-    callProcedure(signature, args, statement.readOperations().procedureCallRead )
+  override def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]) =
+    callProcedure(name, args, statement.readOperations().procedureCallRead )
 
-  override def callReadWriteProcedure(signature: ProcedureSignature, args: Seq[Any]) =
-    callProcedure(signature, args, statement.dataWriteOperations().procedureCallWrite )
+  override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]) =
+    callProcedure(name, args, statement.dataWriteOperations().procedureCallWrite )
 
-  private def callProcedure(signature: ProcedureSignature, args: Seq[Any],
+  private def callProcedure(name: ProcedureName, args: Seq[Any],
                             call: (proc.ProcedureSignature.ProcedureName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]) = {
-    val kn = new proc.ProcedureSignature.ProcedureName(signature.name.namespace.asJava, signature.name.name)
+    val kn = new proc.ProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
     val read: RawIterator[Array[AnyRef], ProcedureException] = call(kn, toArray)
     new scala.Iterator[Array[AnyRef]] {
@@ -576,6 +577,8 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       override def next(): Array[AnyRef] = read.next
     }
   }
+
+  override def isGraphKernelResultValue(v: Any): Boolean = internal.isGraphKernelResultValue(v)
 
   private def buildPathFinder(depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
                               filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {

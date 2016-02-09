@@ -25,7 +25,10 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 import scala.collection.mutable.ArrayBuffer
 
-class iteratorToVisitableTest extends CypherFunSuite {
+class RowIteratorVisitationTest extends CypherFunSuite {
+
+  val javaValues = new JavaResultValueConverter(_ => false)
+  import javaValues.iteratorToVisitable
 
   test("should convert non-empty iterator to visitor") {
     // Given
@@ -33,7 +36,7 @@ class iteratorToVisitableTest extends CypherFunSuite {
     val recordingVisitor = RecordingResultVisitor("a", "b")()
 
     // When
-    iteratorToVisitable.accept(input.iterator, recordingVisitor)
+    iteratorToVisitable(input.iterator).accept(recordingVisitor)
 
     // Then
     recordingVisitor.recorded should equal(input.flatMap(_.toList))
@@ -46,7 +49,7 @@ class iteratorToVisitableTest extends CypherFunSuite {
     val recordingVisitor = RecordingResultVisitor("a")(rowsToAccept)
 
     // When
-    iteratorToVisitable.accept(input.iterator, recordingVisitor)
+    iteratorToVisitable(input.iterator).accept(recordingVisitor)
 
     // Then
     recordingVisitor.recorded should equal(input.take(rowsToAccept).flatMap(_.toList))
@@ -57,7 +60,7 @@ class iteratorToVisitableTest extends CypherFunSuite {
     val visitor = mock[InternalResultVisitor[RuntimeException]]
 
     // When
-    iteratorToVisitable.accept(Iterator.empty, visitor)
+    iteratorToVisitable(Iterator.empty).accept(visitor)
 
     // Then
     verifyZeroInteractions(visitor)
@@ -74,5 +77,4 @@ class iteratorToVisitableTest extends CypherFunSuite {
       recorded.size != rowsToAccept
     }
   }
-
 }

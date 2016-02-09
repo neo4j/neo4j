@@ -191,11 +191,14 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
                                filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
 
-  override def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]) =
-    inner.callReadOnlyProcedure(signature, args)
+  override def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]) =
+    inner.callReadOnlyProcedure(name, args)
 
-  override def callReadWriteProcedure(signature: ProcedureSignature, args: Seq[Any]) =
-    inner.callReadWriteProcedure(signature, args)
+  override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]) =
+    inner.callReadWriteProcedure(name, args)
+
+  override def isGraphKernelResultValue(v: Any): Boolean =
+    inner.isGraphKernelResultValue(v)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

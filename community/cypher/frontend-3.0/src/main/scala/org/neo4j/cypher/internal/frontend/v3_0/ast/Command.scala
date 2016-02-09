@@ -75,9 +75,9 @@ case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, rel
 case class DropRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
 
 case class CallProcedure(namespace: List[String], procName: ProcName,
-                         args: IndexedSeq[Expression])(val position: InputPosition) extends Command {
+                         providedArgs: Option[Seq[Expression]])(val position: InputPosition) extends Command {
 
-  override def semanticCheck: SemanticCheck = args.semanticCheck(Simple)
+  override def semanticCheck: SemanticCheck = providedArgs.map(_.semanticCheck(Simple)).getOrElse(SemanticCheckResult.success)
 }
 
 case class ProcName(name: String)(val position: InputPosition) extends SymbolicName {

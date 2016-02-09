@@ -25,7 +25,7 @@ import java.util
 import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, ExecutionResultWrapperFor3_0, exceptionHandlerFor2_3, exceptionHandlerFor3_0}
 import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{AcceptingExecutionResult, InternalExecutionResult, READ_WRITE, _}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalExecutionResult, READ_WRITE, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.InternalResultVisitor
@@ -44,9 +44,9 @@ object RewindableExecutionResult {
               .addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
           }
         }
-      case other: AcceptingExecutionResult =>
+      case other: StandardInternalExecutionResult =>
         exceptionHandlerFor3_0.runSafely {
-          other.toEagerIterableResult(planner, runtime)
+          other.toEagerResultForTestingOnly(planner, runtime)
         }
 
       case _ =>

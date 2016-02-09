@@ -162,9 +162,13 @@ trait QueryContext extends TokenContext {
 
   def lockRelationships(relIds: Long*)
 
-  def callReadOnlyProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 
-  def callReadWriteProcedure(signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+
+  // Check if a runtime value is a node, relationship, path or some such value returned from
+  // other query context values by calling down to the underlying database
+  def isGraphKernelResultValue(v: Any): Boolean
 }
 
 trait Operations[T <: PropertyContainer] {

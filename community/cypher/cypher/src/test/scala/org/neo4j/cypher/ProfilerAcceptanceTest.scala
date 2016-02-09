@@ -55,6 +55,16 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(4)(result)("AllNodesScan")
   }
 
+  test("profile call") {
+    createLabeledNode("Person")
+    createLabeledNode("Animal")
+
+    val result = legacyProfile("CALL sys.db.labels")
+
+    assertDbHits(1)(result)("ProcedureCall")
+    assertRows(2)(result)("ProcedureCall")
+  }
+
   test("match (n) where (n)-[:FOO]->() return *") {
     //GIVEN
     relate( createNode(), createNode(), "FOO")
@@ -112,10 +122,20 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(2)(result)("Expand(All)")
   }
 
-  test("unfinished profiler complains") {
+  test("unfinished profiler complains [using MATCH]") {
     //GIVEN
     createNode("foo" -> "bar")
     val result: ExecutionResult = eengine.profile("match (n) where id(n) = 0 RETURN n")
+
+    //WHEN THEN
+    intercept[ProfilerStatisticsNotReadyException](result.executionPlanDescription())
+    result.toList // need to exhaust the results to ensure that the transaction is closed
+  }
+
+  test("unfinished profiler complains [using CALL]") {
+    //GIVEN
+    createLabeledNode("Person")
+    val result: ExecutionResult = eengine.profile("CALL sys.db.labels")
 
     //WHEN THEN
     intercept[ProfilerStatisticsNotReadyException](result.executionPlanDescription())
@@ -605,7 +625,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   def profileWithAllPlannersAndRuntimes(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithAllPlannersAndRuntimesAndCompatibilityMode(_,_:_*), q, params:_*)
 
-  override def profile(q: String, params: (String, Any)*): InternalExecutionResult = fail("Don't use profile together in ProfilerAcceptanceTest")
+  override def profile(q: String, params: (String, Any)*): InternalExecutionResult = fail("Don't use profile all together in ProfilerAcceptanceTest")
 
   def legacyProfile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(innerExecute(_,_:_*), q, params:_*)
 

@@ -23,15 +23,15 @@ import java.lang.{Iterable => JIterable}
 import java.util
 import java.util.{Iterator => JIterator}
 
-import org.junit.Assert._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{GreaterThan, True}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CountingIterator, Counter}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
@@ -46,8 +46,6 @@ import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.api.OperationsFacade
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
-
-import scala.collection.JavaConverters._
 
 // TODO: this test is horribly broken, it relies on mocking the core API for verification, but the internals don't use the core API
 class LazyTest extends ExecutionEngineFunSuite {
@@ -78,8 +76,8 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("get first relationship does not iterate through all") {
     //Given:
-    val limiter = new Limiter(1)
-    val monitoredNode = new MonitoredNode(aNode, limiter.monitor)
+    val limiter = Counter().values.limit(1) { _ => fail("Limit reached!") }
+    val monitoredNode = new MonitoredNode(aNode, limiter.tick)
 
     //When:
     graph.inTx(monitoredNode.getRelationships(Direction.OUTGOING).iterator().next())
@@ -90,8 +88,8 @@ class LazyTest extends ExecutionEngineFunSuite {
   test("traversal matcher is lazy") {
     //Given:
     val tx = graph.beginTx()
-    val limiter = new Limiter(2)
-    val monitoredNode = new MonitoredNode(aNode, limiter.monitor)
+    val limiter = Counter().values.limit(2) { _ => fail("Limit reached!") }
+    val monitoredNode = new MonitoredNode(aNode, limiter.tick)
 
     val step = SingleStep(0, Seq(), SemanticDirection.OUTGOING, None, True(), True())
     val producer = EntityProducer[Node]("test", mock[Argument]) { (ctx, state) => Iterator(monitoredNode) }
@@ -102,7 +100,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val iter = matcher.findMatchingPaths(QueryStateHelper.queryStateFrom(graph, tx), ctx)
 
     //Then:
-    assert(limiter.count === 0)
+    assert(limiter.counted === 0)
 
     //Also then, does not throw exception
     iter.next()
@@ -111,8 +109,8 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("execution of query is lazy") {
     //Given:
-    val limiter = new Limiter(3)
-    val monitoredNode = new MonitoredNode(aNode, limiter.monitor)
+    val limiter = Counter().values.limit(3) { _ => fail("Limit reached!") }
+    val monitoredNode = new MonitoredNode(aNode, limiter.tick)
 
     val engine = new ExecutionEngine(graph)
 
@@ -120,7 +118,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val iter: ExecutionResult = engine.execute("match (n)-->(x) where n = {foo} return x", Map("foo" -> monitoredNode))
 
     //Then:
-    assert(limiter.count === 0)
+    assert(limiter.counted === 0)
 
     //Also then does not step over the limit
     iter.next()
@@ -245,14 +243,14 @@ class LazyTest extends ExecutionEngineFunSuite {
   test("traversalmatcherpipe is lazy") {
     //Given:
     val tx = graph.beginTx()
-    val limiter = new Limiter(2)
+    val limiter = Counter().values.limit(2) { _ => fail("Limit reached") }
     val traversalMatchPipe = createTraversalMatcherPipe(limiter)
 
     //When:
     val result = traversalMatchPipe.createResults(QueryStateHelper.queryStateFrom(graph, tx))
 
     //Then:
-    assert(limiter.count === 0)
+    assert(limiter.counted === 0)
 
     //Also then:
     result.next() // throws exception if we iterate over more than expected to fill buffers
@@ -261,7 +259,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("filterpipe is lazy") {
     //Given:
-    val limited = new LimitedIterator[Map[String, Any]](4, (x) => Map("val" -> x))
+    val limited = Counter().map[Map[String, Any]](x => Map("val" -> x)).limit(4) { _ => fail("Limit reached!") }
     val input = new FakePipe(limited, "val" -> CTInteger)
     val pipe = new FilterPipe(input, GreaterThan(Variable("val"), Literal(3)))()
 
@@ -269,14 +267,14 @@ class LazyTest extends ExecutionEngineFunSuite {
     val iter = pipe.createResults(QueryStateHelper.empty)
 
     //Then:
-    assert(limited.count === 0)
+    assert(limited.counted === 0)
 
     //Also then:
     iter.next() // throws exception if we iterate over more than expected to
   }
 
-  private def createTraversalMatcherPipe(limiter: Limiter): TraversalMatchPipe = {
-    val monitoredNode = new MonitoredNode(aNode, limiter.monitor)
+  private def createTraversalMatcherPipe(limiter: CountingIterator[Long]): TraversalMatchPipe = {
+    val monitoredNode = new MonitoredNode(aNode, limiter.tick)
 
     val end = EndPoint("b")
     val trail = SingleStepTrail(end, SemanticDirection.OUTGOING, "r", Seq(), "a", True(), True(), null, Seq())
@@ -284,56 +282,6 @@ class LazyTest extends ExecutionEngineFunSuite {
     val producer = EntityProducer[Node]("test", mock[Argument]) { (ctx, state) => Iterator(monitoredNode) }
     val matcher = new MonoDirectionalTraversalMatcher(step, producer)
     new TraversalMatchPipe(SingleRowPipe(), matcher, trail)
-  }
-}
-
-class CountingJIterator extends JIterator[Node] {
-  private var seenNodes = 0
-  private var _source: Option[JIterator[Node]] = None
-
-  def source = _source.getOrElse(Seq.empty.asJava)
-
-  def source_= (newSource: JIterator[Node]): Unit = _source = Some(newSource)
-
-  def hasNext: Boolean = _source.exists(_.hasNext)
-
-  def next(): Node = _source match {
-    case Some(jIterator) =>
-      val result = jIterator.next()
-      seenNodes  = seenNodes + 1
-      result
-
-    case _  =>
-      throw new NoSuchElementException()
-  }
-
-  def remove() { throw new UnsupportedOperationException }
-
-  def count = seenNodes
-}
-
-class LimitedIterator[T](limit: Int, f: Int => T, message: String = "Limit reached!") extends Iterator[T] {
-  var count = 0
-
-  def hasNext = true
-
-  def next() = {
-    count += 1
-    if ( count > limit ) {
-      fail(message)
-    }
-    f(count)
-  }
-}
-
-class Limiter(limit: Int) {
-  var count: Int = 0
-
-  def monitor() {
-    count += 1
-    if ( count > limit )    {
-      fail("Limit passed!")
-    }
   }
 }
 

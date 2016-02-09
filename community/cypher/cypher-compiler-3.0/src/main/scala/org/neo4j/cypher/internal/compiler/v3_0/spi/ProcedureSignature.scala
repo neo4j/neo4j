@@ -19,33 +19,44 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.spi
 
+import java.util
+
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType, READ_ONLY, READ_WRITE}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
-sealed trait ProcedureMode {
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
+
+sealed trait ProcedureCallMode {
   val queryType: InternalQueryType
 
   def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]]
 }
 
-case object ProcReadOnly extends ProcedureMode {
+case object LazyReadOnlyCallMode extends ProcedureCallMode {
   override val queryType: InternalQueryType = READ_ONLY
 
   override def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] =
-    ctx.callReadOnlyProcedure(signature, args)
+    ctx.callReadOnlyProcedure(signature.name, args)
 }
 
-case object ProcReadWrite extends ProcedureMode {
+case object EagerReadWriteCallMode extends ProcedureCallMode {
   override val queryType: InternalQueryType = READ_WRITE
 
-  override def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] =
-    ctx.callReadWriteProcedure(signature, args)
+  override def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] = {
+    val builder = ArrayBuffer.newBuilder[Array[AnyRef]]
+    val iterator = ctx.callReadWriteProcedure(signature.name, args)
+    while (iterator.hasNext) {
+      builder += iterator.next()
+    }
+    builder.result().iterator
+  }
 }
 
 case class ProcedureSignature(name: ProcedureName,
                               inputSignature: Seq[FieldSignature],
                               outputSignature: Seq[FieldSignature],
-                              mode: ProcedureMode = ProcReadOnly )
+                              mode: ProcedureCallMode = LazyReadOnlyCallMode)
 
 case class ProcedureName(namespace: Seq[String], name: String)
 

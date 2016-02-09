@@ -17,19 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_0.helpers
+package org.neo4j.cypher.internal
 
-import java.util
+import org.neo4j.graphdb.{Path, Node, Relationship}
 
-import scala.collection.JavaConverters._
-
-object JavaCompatibility {
-
-  def asJavaCompatible(value: Any): Any = value match {
-    case seq: Seq[_]    => seq.map(asJavaCompatible).asJava
-    case map: Map[_, _] => Eagerly.immutableMapValues(map, asJavaCompatible).asJava
-    case x              => x
+object isGraphKernelResultValue extends (Any => Boolean) {
+  override def apply(v: Any): Boolean = v match {
+    case node: Node => true
+    case rel: Relationship => true
+    case path: Path => true
+    case _ => false
   }
-
-  def asJavaMap[S,T](map: Map[S,T]): util.Map[S, AnyRef] = Eagerly.immutableMapValues(map, asJavaCompatible).asJava.asInstanceOf[util.Map[S, AnyRef]]
 }
