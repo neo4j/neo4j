@@ -83,10 +83,12 @@ class LabelsAcceptanceTest extends ExecutionEngineFunSuite
       returnsLabels("FOO")
   }
 
-  test("should not create labels id when trying to delete non-existing lables") {
+  test("should not create labels id when trying to delete non-existing labels") {
     createNode()
-    val result = execute("Cypher planner=rule MATCH (n) REMOVE n:BAR RETURN id(n) as id").toList
-    result should equal(List(Map("id" -> 0)))
+    val resultRule = execute("Cypher planner=rule MATCH (n) REMOVE n:BAR RETURN id(n) as id").toList
+    resultRule should equal(List(Map("id" -> 0)))
+    val resultCost = execute("MATCH (n) REMOVE n:BAR RETURN id(n) as id").toList
+    resultCost should equal(List(Map("id" -> 0)))
 
     graph.inTx {
       graph.getDependencyResolver.resolveDependency(classOf[RecordStorageEngine]).testAccessNeoStores().getLabelTokenStore.getHighId should equal(0)

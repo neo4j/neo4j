@@ -55,7 +55,7 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
   }
 
   private def getLabelId(lazyLabel: Option[LazyLabel], state: QueryState): Option[Int] = lazyLabel match {
-      case Some(label) => label.id(state.query).map(_.id)
+      case Some(label) => label.getOptId(state.query).map(_.id)
       case _ => Some(NameId.WILDCARD)
     }
 

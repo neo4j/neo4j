@@ -211,10 +211,7 @@ case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends 
     val value = executionContext.get(nodeName).get
     if (value != null) {
       val nodeId = CastSupport.castOrFail[Node](value).getId
-      val labelIds = labels.map(l => {
-        val maybeLabelId = l.id(state.query).map(_.id)
-        maybeLabelId getOrElse state.query.getOrCreateLabelId(l.name)
-      })
+      val labelIds = labels.map(_.getOrCreateId(state.query).id)
       state.query.setLabelsOnNode(nodeId, labelIds.iterator)
     }
   }
