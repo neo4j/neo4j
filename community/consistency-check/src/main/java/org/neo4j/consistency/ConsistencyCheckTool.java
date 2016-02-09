@@ -103,7 +103,7 @@ public class ConsistencyCheckTool
         }
 
         File storeDir = determineStoreDirectory( arguments );
-        Config tuningConfiguration = readTuningConfiguration( arguments );
+        Config tuningConfiguration = readConfiguration( arguments );
         boolean verbose = isVerbose( arguments );
 
         attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir, tuningConfiguration );
@@ -201,25 +201,25 @@ public class ConsistencyCheckTool
         return storeDir;
     }
 
-    private Config readTuningConfiguration( Args arguments ) throws ToolFailureException
+    private Config readConfiguration( Args arguments ) throws ToolFailureException
     {
-        Map<String,String> specifiedProperties = stringMap();
+        Map<String,String> specifiedConfig = stringMap();
 
-        String propertyFilePath = arguments.get( CONFIG, null );
-        if ( propertyFilePath != null )
+        String configFilePath = arguments.get( CONFIG, null );
+        if ( configFilePath != null )
         {
-            File propertyFile = new File( propertyFilePath );
+            File configFile = new File( configFilePath );
             try
             {
-                specifiedProperties = MapUtil.load( propertyFile );
+                specifiedConfig = MapUtil.load( configFile );
             }
             catch ( IOException e )
             {
-                throw new ToolFailureException( String.format( "Could not read configuration properties file [%s]",
-                        propertyFilePath ), e );
+                throw new ToolFailureException( String.format( "Could not read configuration file [%s]",
+                        configFilePath ), e );
             }
         }
-        return new Config( specifiedProperties, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        return new Config( specifiedConfig, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
     private String usage()

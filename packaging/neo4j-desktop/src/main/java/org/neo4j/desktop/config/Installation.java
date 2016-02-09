@@ -30,9 +30,9 @@ import org.neo4j.desktop.config.portable.Environment;
  */
 public interface Installation
 {
-    String NEO4J_PROPERTIES_FILENAME = "neo4j.conf";
+    String NEO4J_CONFIG_FILENAME = "neo4j.conf";
     String NEO4J_VMOPTIONS_FILENAME = "neo4j-community.vmoptions";
-    String DEFAULT_SERVER_CONFIG_RESOURCE_NAME = "/org/neo4j/desktop/config/neo4j-default.conf";
+    String DEFAULT_CONFIG_RESOURCE_NAME = "/org/neo4j/desktop/config/neo4j-default.conf";
     String DEFAULT_VMOPTIONS_TEMPLATE_RESOURCE_NAME = "/org/neo4j/desktop/config/vmoptions.template";
     String INSTALL_PROPERTIES_FILENAME = "install.properties";
 

@@ -19,9 +19,6 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -29,26 +26,30 @@ import java.io.Writer;
 import java.lang.reflect.Field;
 import java.util.Properties;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.getProperty;
+
 import static org.junit.Assert.assertEquals;
 
 public class TestRmiPublication
 {
-    public static File createDefaultPropertiesFile( String path ) throws IOException
+    public static File createDefaultConfigFile( String path ) throws IOException
     {
-        File propsFile = new File( path, "neo4j.conf" );
+        File configFile = new File( path, "neo4j.conf" );
         Properties config = new Properties();
         config.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-        try ( Writer writer = new FileWriter( propsFile ) )
+        try ( Writer writer = new FileWriter( configFile ) )
         {
             config.store( writer, "" );
         }
-        return propsFile;
+        return configFile;
     }
 
     @Test

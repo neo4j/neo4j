@@ -47,7 +47,7 @@ public class ServerTestUtils
     {
         try
         {
-            return createTempPropertyFile().getParentFile();
+            return createTempConfigFile().getParentFile();
         }
         catch ( Exception e )
         {
@@ -55,9 +55,9 @@ public class ServerTestUtils
         }
     }
 
-    public static File createTempPropertyFile() throws IOException
+    public static File createTempConfigFile() throws IOException
     {
-        File file = File.createTempFile( "neo4j", "properties" );
+        File file = File.createTempFile( "neo4j", "conf" );
         file.delete();
         return file;
     }
@@ -96,20 +96,14 @@ public class ServerTestUtils
         properties.put( setting.name(), getRelativePath( temporaryFolder, setting ) );
     }
 
-    public static void writePropertiesToFile( String outerPropertyName, Map<String, String> properties,
-            File propertyFile )
+    public static void writeConfigToFile( Map<String, String> properties, File file )
     {
-        writePropertyToFile( outerPropertyName, asOneLine( properties ), propertyFile );
-    }
-
-    public static void writePropertiesToFile( Map<String, String> properties, File propertyFile )
-    {
-        Properties props = loadProperties( propertyFile );
+        Properties props = loadProperties( file );
         for ( Map.Entry<String, String> entry : properties.entrySet() )
         {
             props.setProperty( entry.getKey(), entry.getValue() );
         }
-        storeProperties( propertyFile, props );
+        storeProperties( file, props );
     }
 
     public static String asOneLine( Map<String, String> properties )
@@ -123,19 +117,12 @@ public class ServerTestUtils
         return builder.toString();
     }
 
-    public static void writePropertyToFile( String name, String value, File propertyFile )
-    {
-        Properties properties = loadProperties( propertyFile );
-        properties.setProperty( name, value );
-        storeProperties( propertyFile, properties );
-    }
-
-    private static void storeProperties( File propertyFile, Properties properties )
+    private static void storeProperties( File file, Properties properties )
     {
         OutputStream out = null;
         try
         {
-            out = new FileOutputStream( propertyFile );
+            out = new FileOutputStream( file );
             properties.store( out, "" );
         }
         catch ( IOException e )
@@ -148,15 +135,15 @@ public class ServerTestUtils
         }
     }
 
-    private static Properties loadProperties( File propertyFile )
+    private static Properties loadProperties( File file )
     {
         Properties properties = new Properties();
-        if ( propertyFile.exists() )
+        if ( file.exists() )
         {
             InputStream in = null;
             try
             {
-                in = new FileInputStream( propertyFile );
+                in = new FileInputStream( file );
                 properties.load( in );
             }
             catch ( IOException e )
@@ -186,7 +173,7 @@ public class ServerTestUtils
         }
     }
 
-    public static File createTempPropertyFile( File parentDir ) throws IOException
+    public static File createTempConfigFile( File parentDir ) throws IOException
     {
         File file = new File( parentDir, "test-" + new Random().nextInt() + ".properties" );
         file.deleteOnExit();

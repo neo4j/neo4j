@@ -61,7 +61,7 @@ public class ServerManagementTest
                         .server()
                         .withDefaultDatabaseTuning()
                         .usingDatabaseDir( dbDirectory1 )
-                        .createPropertiesFiles(), NullLog.getInstance() );
+                        .createConfigFiles(), NullLog.getInstance() );
 
         // When
         NeoServer server = cleanup.add( new EnterpriseNeoServer( config, graphDbDependencies(), NullLogProvider

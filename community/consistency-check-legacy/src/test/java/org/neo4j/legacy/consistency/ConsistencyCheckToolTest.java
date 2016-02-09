@@ -19,15 +19,15 @@
  */
 package org.neo4j.legacy.consistency;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -113,12 +113,12 @@ public class ConsistencyCheckToolTest
     {
         // given
         File storeDir = storeDirectory.directory();
-        File propertyFile = storeDirectory.file( "neo4j.conf" );
+        File configFile = storeDirectory.file( "neo4j.conf" );
         Properties properties = new Properties();
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
-        properties.store( new FileWriter( propertyFile ), null );
+        properties.store( new FileWriter( configFile ), null );
 
-        String[] args = {storeDir.getPath(), "-config", propertyFile.getPath()};
+        String[] args = {storeDir.getPath(), "-config", configFile.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
@@ -154,11 +154,11 @@ public class ConsistencyCheckToolTest
     }
 
     @Test
-    public void exitWithFailureIfConfigSpecifiedButPropertiesFileDoesNotExist() throws Exception
+    public void exitWithFailureIfConfigSpecifiedButConfigFileDoesNotExist() throws Exception
     {
         // given
-        File propertyFile = storeDirectory.file( "nonexistent_file" );
-        String[] args = {storeDirectory.directory().getPath(), "-config", propertyFile.getPath()};
+        File configFile = storeDirectory.file( "nonexistent_file" );
+        String[] args = {storeDirectory.directory().getPath(), "-config", configFile.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
         PrintStream systemOut = mock( PrintStream.class );
         ConsistencyCheckTool ConsistencyCheckTool = newConsistencyCheckToolWith( service, systemOut );
@@ -172,7 +172,7 @@ public class ConsistencyCheckToolTest
         catch ( ConsistencyCheckTool.ToolFailureException e )
         {
             // then
-            assertThat( e.getMessage(), containsString( "Could not read configuration properties file" ) );
+            assertThat( e.getMessage(), containsString( "Could not read configuration file" ) );
             assertThat( e.getCause(), instanceOf( IOException.class ) );
         }
 

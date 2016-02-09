@@ -55,7 +55,6 @@ import static java.lang.Boolean.TRUE;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
-import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class CommunityServerBuilder
@@ -116,12 +115,12 @@ public class CommunityServerBuilder
         return new TestCommunityNeoServer( config, configFile, dependencies, logProvider );
     }
 
-    public File createPropertiesFiles() throws IOException
+    public File createConfigFiles() throws IOException
     {
-        File temporaryConfigFile = createTempPropertyFile();
+        File temporaryConfigFile = ServerTestUtils.createTempConfigFile();
         File temporaryFolder = temporaryConfigFile.getParentFile();
 
-        ServerTestUtils.writePropertiesToFile( createConfiguration( temporaryFolder ), temporaryConfigFile );
+        ServerTestUtils.writeConfigToFile( createConfiguration( temporaryFolder ), temporaryConfigFile );
 
         return temporaryConfigFile;
     }
@@ -334,7 +333,7 @@ public class CommunityServerBuilder
 
     protected File buildBefore() throws IOException
     {
-        File configFile = createPropertiesFiles();
+        File configFile = createConfigFiles();
 
         if ( preflightTasks == null )
         {

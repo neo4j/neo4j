@@ -83,7 +83,7 @@ public abstract class PortableInstallation implements Installation
     @Override
     public InputStream getDefaultDatabaseConfiguration()
     {
-        return getResourceStream( DEFAULT_SERVER_CONFIG_RESOURCE_NAME );
+        return getResourceStream( DEFAULT_CONFIG_RESOURCE_NAME );
     }
 
     @Override
