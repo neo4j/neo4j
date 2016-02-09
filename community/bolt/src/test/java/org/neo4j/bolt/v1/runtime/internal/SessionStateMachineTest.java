@@ -64,7 +64,7 @@ public class SessionStateMachineTest
     public void initialStateShouldBeUninitalized()
     {
         // When & Then
-        assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.UNITIALIZED ) );
+        assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.UNINITIALIZED ) );
     }
 
     @Test
