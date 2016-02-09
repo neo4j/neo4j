@@ -62,7 +62,7 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
         TypeSpec.none
 
     // [a] + [b] => [a, b]
-    val collectionTypes = lhsTypes constrain CTCollection(CTAny)
+    val collectionTypes = lhsTypes constrain CTList(CTAny)
 
     // [a] + b => [a, b]
     val lhsCollectionTypes = collectionTypes | collectionTypes.unwrapCollections
@@ -100,8 +100,8 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
         when(CTFloat.covariant, CTFloat.covariant | CTInteger.covariant)(CTFloat)
 
     val collectionTypes = {
-      val lhsCollectionTypes = lhsTypes constrain CTCollection(CTAny)
-      val rhsCollectionTypes = rhsTypes constrain CTCollection(CTAny)
+      val lhsCollectionTypes = lhsTypes constrain CTList(CTAny)
+      val rhsCollectionTypes = rhsTypes constrain CTList(CTAny)
       val lhsCollectionInnerTypes = lhsCollectionTypes.unwrapCollections
       val rhsCollectionInnerTypes = rhsCollectionTypes.unwrapCollections
 

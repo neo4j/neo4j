@@ -34,7 +34,7 @@ case class PrefixSeekRangeExpression(range: PrefixRange[Expression]) extends Exp
 
   override def arguments: Seq[Expression] = Seq.empty
 
-  override protected def calculateType(symbols: SymbolTable): CypherType = CTCollection(CTNode)
+  override protected def calculateType(symbols: SymbolTable): CypherType = CTList(CTNode)
 
   override def symbolTableDependencies: Set[String] = Set.empty
 }

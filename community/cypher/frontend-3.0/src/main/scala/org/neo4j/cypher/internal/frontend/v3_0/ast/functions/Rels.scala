@@ -26,6 +26,6 @@ case object Rels extends Function with SimpleTypedFunction {
   def name = "rels"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTPath), outputType = CTCollection(CTRelationship))
+    Signature(argumentTypes = Vector(CTPath), outputType = CTList(CTRelationship))
   )
 }

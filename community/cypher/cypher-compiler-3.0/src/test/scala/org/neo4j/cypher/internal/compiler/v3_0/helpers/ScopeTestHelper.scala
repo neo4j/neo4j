@@ -43,13 +43,13 @@ object ScopeTestHelper {
     typedSymbol(name, TypeSpec.exact(CTString), offsets: _*)
 
   def intCollectionSymbol(name: String, offsets: Int*): Symbol =
-    typedSymbol(name, TypeSpec.exact(CTCollection(CTInteger)), offsets: _*)
+    typedSymbol(name, TypeSpec.exact(CTList(CTInteger)), offsets: _*)
 
   def pathCollectionSymbol(name: String, offsets: Int*): Symbol =
-    typedSymbol(name, TypeSpec.exact(CTCollection(CTPath)), offsets: _*)
+    typedSymbol(name, TypeSpec.exact(CTList(CTPath)), offsets: _*)
 
   def intCollectionCollectionSymbol(name: String, offsets: Int*): Symbol =
-    typedSymbol(name, TypeSpec.exact(CTCollection(CTCollection(CTInteger))), offsets: _*)
+    typedSymbol(name, TypeSpec.exact(CTList(CTList(CTInteger))), offsets: _*)
 
   def typedSymbol(name: String, typeSpec: TypeSpec, offsets: Int*) =
     Symbol(name, offsets.map(offset => pos(offset)).toSet, typeSpec)

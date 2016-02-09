@@ -28,7 +28,7 @@ case object Head extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
     checkArgs(invocation, 1) ifOkChain {
-      invocation.arguments.head.expectType(CTCollection(CTAny).covariant) chain
+      invocation.arguments.head.expectType(CTList(CTAny).covariant) chain
       invocation.specifyType(possibleInnerTypes(invocation.arguments.head))
     }
 

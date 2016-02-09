@@ -57,7 +57,7 @@ with CollectionSupport {
     val exprT = expression.evaluateType(CTAny, symbols)
     val indexT = index.evaluateType(CTAny, symbols)
 
-    val isColl = CTCollection(CTAny).isAssignableFrom(exprT)
+    val isColl = CTList(CTAny).isAssignableFrom(exprT)
     val isMap = CTMap.isAssignableFrom(exprT)
     val isInteger = CTInteger.isAssignableFrom(indexT)
     val isString = CTString.isAssignableFrom(indexT)
@@ -67,7 +67,7 @@ with CollectionSupport {
 
     if (collectionLookup && !mapLookup) {
       index.evaluateType(CTInteger, symbols)
-      expression.evaluateType(CTCollection(CTAny), symbols) match {
+      expression.evaluateType(CTList(CTAny), symbols) match {
         case collectionType: CollectionType => collectionType.innerType
         case x if x.isInstanceOf[AnyType]   => CTAny
         case x                              => throw new CypherTypeException("Expected a collection, but was " + x)

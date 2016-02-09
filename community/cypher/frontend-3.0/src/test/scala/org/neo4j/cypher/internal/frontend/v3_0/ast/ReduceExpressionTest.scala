@@ -41,7 +41,7 @@ class ReduceExpressionTest extends CypherFunSuite {
       accumulator = Variable("x")(DummyPosition(2)),
       init = DummyExpression(CTString),
       variable = Variable("y")(DummyPosition(6)),
-      collection = DummyExpression(CTCollection(CTInteger)),
+      collection = DummyExpression(CTList(CTInteger)),
       expression = reduceExpression
     )(DummyPosition(0))
 
@@ -53,7 +53,7 @@ class ReduceExpressionTest extends CypherFunSuite {
 
   test("shouldReturnMinimalTypeOfAccumulatorAndReduceFunction") {
     val initType = CTString.covariant | CTFloat.covariant
-    val collectionType = CTCollection(CTInteger)
+    val collectionType = CTList(CTInteger)
 
     val reduceExpression = new DummyExpression(CTAny, DummyPosition(10)) {
       override def semanticCheck(ctx: SemanticContext) = s => {
@@ -78,7 +78,7 @@ class ReduceExpressionTest extends CypherFunSuite {
 
   test("shouldFailSemanticCheckIfReduceFunctionTypeDiffersFromAccumulator") {
     val accumulatorType = CTString | CTNumber
-    val collectionType = CTCollection(CTInteger)
+    val collectionType = CTList(CTInteger)
 
     val reduceExpression = new DummyExpression(CTAny, DummyPosition(10)) {
       override def semanticCheck(ctx: SemanticContext) = s => {

@@ -29,7 +29,7 @@ case class Collection(expressions: Seq[Expression])(val position: InputPosition)
   def map(f: Expression => Expression) = copy(expressions = expressions.map(f))(position)
 
   private def possibleTypes: TypeGenerator = state => expressions match {
-    case Seq() => CTCollection(CTAny).covariant
+    case Seq() => CTList(CTAny).covariant
     case _     => expressions.leastUpperBoundsOfTypes(state).wrapInCollection
   }
 }
@@ -39,7 +39,7 @@ case class CollectionSlice(collection: Expression, from: Option[Expression], to:
 
   override def semanticCheck(ctx: SemanticContext) =
     collection.semanticCheck(ctx) chain
-    collection.expectType(CTCollection(CTAny).covariant) chain
+    collection.expectType(CTList(CTAny).covariant) chain
     when(from.isEmpty && to.isEmpty) {
       SemanticError("The start or end (or both) is required for a collection slice", position)
     } chain
@@ -60,7 +60,7 @@ case class ContainerIndex(expr: Expression, idx: Expression)(val position: Input
       case exprT =>
         idx.typeSwitch {
           case idxT =>
-            val collT = CTCollection(CTAny).covariant & exprT
+            val collT = CTList(CTAny).covariant & exprT
             val mapT = CTMap.covariant & exprT
             val exprIsColl = collT != TypeSpec.none
             val exprIsMap = mapT != TypeSpec.none
@@ -70,7 +70,7 @@ case class ContainerIndex(expr: Expression, idx: Expression)(val position: Input
             val mapLookup = exprIsMap || idxIsString
 
             if (collectionLookup && !mapLookup) {
-                expr.expectType(CTCollection(CTAny).covariant) chain
+                expr.expectType(CTList(CTAny).covariant) chain
                 idx.expectType(CTInteger.covariant) chain
                 specifyType(expr.types(_).unwrapCollections)
             }

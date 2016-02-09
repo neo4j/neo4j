@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticError, Se
 class ExtractExpressionTest extends CypherFunSuite {
 
   val dummyExpression = DummyExpression(
-    CTCollection(CTNode) | CTBoolean | CTCollection(CTString)
+    CTList(CTNode) | CTBoolean | CTList(CTString)
   )
 
   val extractExpression = DummyExpression(CTNode | CTNumber, DummyPosition(2))
@@ -35,7 +35,7 @@ class ExtractExpressionTest extends CypherFunSuite {
     val extract = ExtractExpression(Variable("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(DummyPosition(0))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors shouldBe empty
-    extract.types(result.state) should equal(CTCollection(CTNode) | CTCollection(CTNumber))
+    extract.types(result.state) should equal(CTList(CTNode) | CTList(CTNumber))
   }
 
   test("shouldRaiseSemanticErrorIfPredicateSpecified") {

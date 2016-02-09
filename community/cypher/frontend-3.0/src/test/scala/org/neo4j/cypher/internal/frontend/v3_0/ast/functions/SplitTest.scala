@@ -26,7 +26,7 @@ import scala.languageFeature.existentials
 class SplitTest extends FunctionTestBase("split")  {
 
   test("shouldAcceptCorrectTypes") {
-    testValidTypes(CTString,CTString)(CTCollection(CTString))
+    testValidTypes(CTString,CTString)(CTList(CTString))
   }
 
   test("shouldFailTypeCheckForIncompatibleArguments") {

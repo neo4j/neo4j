@@ -46,6 +46,6 @@ case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) 
   protected def calculateType(symbols: SymbolTable) = expr match {
     case node: Node => expr.evaluateType(CTNode, symbols)
     case rel: Relationship => expr.evaluateType(CTRelationship, symbols)
-    case _ => CTCollection(CTString)
+    case _ => CTList(CTString)
   }
 }

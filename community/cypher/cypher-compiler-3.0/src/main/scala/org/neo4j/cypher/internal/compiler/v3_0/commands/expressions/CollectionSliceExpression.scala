@@ -94,7 +94,7 @@ case class CollectionSliceExpression(collection: Expression, from: Option[Expres
   protected def calculateType(symbols: SymbolTable): CypherType = {
     from.foreach(_.evaluateType(CTNumber, symbols))
     to.foreach(_.evaluateType(CTNumber, symbols))
-    collection.evaluateType(CTCollection(CTAny), symbols)
+    collection.evaluateType(CTList(CTAny), symbols)
   }
 
   def rewrite(f: (Expression) => Expression): Expression =

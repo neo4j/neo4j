@@ -26,6 +26,6 @@ case object Nodes extends Function with SimpleTypedFunction {
   def name = "nodes"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTPath), outputType = CTCollection(CTNode))
+    Signature(argumentTypes = Vector(CTPath), outputType = CTList(CTNode))
   )
 }

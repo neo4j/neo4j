@@ -87,19 +87,19 @@ class SymbolTableTest extends CypherFunSuite {
   test("adding to string collection") {
     //given
     val symbolTable = symbols()
-    val exp = new Add(new FakeExpression(CTCollection(CTString)), new FakeExpression(CTString))
+    val exp = new Add(new FakeExpression(CTList(CTString)), new FakeExpression(CTString))
 
     //when
     val returnType = exp.evaluateType(CTAny, symbolTable)
 
     //then
-    returnType should equal(CTCollection(CTString))
+    returnType should equal(CTList(CTString))
   }
 
   test("covariance") {
     //given
-    val actual = CTCollection(CTNode)
-    val expected = CTCollection(CTMap)
+    val actual = CTList(CTNode)
+    val expected = CTList(CTMap)
 
     //then
     expected.isAssignableFrom(actual) should equal(true)

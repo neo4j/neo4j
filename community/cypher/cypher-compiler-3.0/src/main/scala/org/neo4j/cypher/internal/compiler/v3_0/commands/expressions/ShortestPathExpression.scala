@@ -89,7 +89,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
 
   def rewrite(f: (Expression) => Expression): Expression = f(ShortestPathExpression(shortestPathPattern.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable) = if (shortestPathPattern.single) CTPath else CTCollection(CTPath)
+  def calculateType(symbols: SymbolTable) = if (shortestPathPattern.single) CTPath else CTList(CTPath)
 
   def symbolTableDependencies = shortestPathPattern.symbolTableDependencies + shortestPathPattern.left.name + shortestPathPattern.right.name
 

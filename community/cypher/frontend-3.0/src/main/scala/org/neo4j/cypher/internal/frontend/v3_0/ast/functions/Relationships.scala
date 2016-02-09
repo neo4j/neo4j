@@ -26,6 +26,6 @@ case object Relationships extends Function with SimpleTypedFunction {
   def name = "relationships"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTPath), outputType = CTCollection(CTRelationship))
+    Signature(argumentTypes = Vector(CTPath), outputType = CTList(CTRelationship))
   )
 }

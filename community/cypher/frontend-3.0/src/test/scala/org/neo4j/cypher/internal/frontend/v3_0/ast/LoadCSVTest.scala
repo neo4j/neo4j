@@ -47,7 +47,7 @@ class LoadCSVTest extends CypherFunSuite {
     val result = loadCSV.semanticCheck(SemanticState.clean)
     val expressionType = result.state.expressionType(variable).actual
 
-    assert(expressionType === CTCollection(CTString).invariant)
+    assert(expressionType === CTList(CTString).invariant)
   }
 
   test("should accept one-character wide field terminators") {

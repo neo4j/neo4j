@@ -101,13 +101,13 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
     r => that.ranges.flatMap(r leastUpperBounds)
   })
 
-  def wrapInCollection: TypeSpec = TypeSpec(ranges.map(_.reparent(CTCollection)))
+  def wrapInCollection: TypeSpec = TypeSpec(ranges.map(_.reparent(CTList)))
   def unwrapCollections: TypeSpec = TypeSpec(ranges.map(_.reparent { case c: CollectionType => c.innerType }))
 
   def coercions: TypeSpec = {
     val simpleCoercions = TypeSpec.simpleTypes.filter(this contains).flatMap(_.coercibleTo)
-    if (this containsAny CTCollection(CTAny).covariant)
-      TypeSpec.exact(simpleCoercions ++ CTCollection(CTAny).coercibleTo)
+    if (this containsAny CTList(CTAny).covariant)
+      TypeSpec.exact(simpleCoercions ++ CTList(CTAny).coercibleTo)
     else
       TypeSpec.exact(simpleCoercions)
   }

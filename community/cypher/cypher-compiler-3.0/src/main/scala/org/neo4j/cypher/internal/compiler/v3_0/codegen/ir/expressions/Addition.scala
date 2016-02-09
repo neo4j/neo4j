@@ -28,7 +28,7 @@ case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends Code
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
-  val validTypes = Seq(CTString, CTFloat, CTInteger, CTCollection(CTAny))
+  val validTypes = Seq(CTString, CTFloat, CTInteger, CTList(CTAny))
 
   override def cypherType(implicit context: CodeGenContext) = (lhs.cypherType, rhs.cypherType) match {
     // Strings

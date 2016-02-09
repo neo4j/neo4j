@@ -33,7 +33,7 @@ trait FilteringExpression extends Expression {
 
   def semanticCheck(ctx: SemanticContext) =
     expression.semanticCheck(ctx) chain
-    expression.expectType(CTCollection(CTAny).covariant) chain
+    expression.expectType(CTList(CTAny).covariant) chain
     checkInnerPredicate chain
     failIfAggregrating(innerPredicate)
 
@@ -47,7 +47,7 @@ trait FilteringExpression extends Expression {
     in.flatMap(failIfAggregrating)
 
   protected def possibleInnerTypes: TypeGenerator = s =>
-    (expression.types(s) constrain CTCollection(CTAny)).unwrapCollections
+    (expression.types(s) constrain CTList(CTAny)).unwrapCollections
 
   protected def checkPredicateDefined =
     when (innerPredicate.isEmpty) {
@@ -216,10 +216,10 @@ case class ReduceExpression(scope: ReduceScope, init: Expression, collection: Ex
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     init.semanticCheck(ctx) chain
     collection.semanticCheck(ctx) chain
-    collection.expectType(CTCollection(CTAny).covariant) chain
+    collection.expectType(CTList(CTAny).covariant) chain
     withScopedState {
       val indexType: TypeGenerator = s =>
-        (collection.types(s) constrain CTCollection(CTAny)).unwrapCollections
+        (collection.types(s) constrain CTList(CTAny)).unwrapCollections
       val accType: TypeGenerator = init.types
 
       variable.declare(indexType) chain

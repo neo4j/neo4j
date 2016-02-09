@@ -78,6 +78,6 @@ class ReduceTest extends CypherFunSuite {
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(Seq(1,2)))
     val typ = reduce.calculateType(new SymbolTable())
 
-    typ should equal(CTCollection(CTInteger))
+    typ should equal(CTList(CTInteger))
   }
 }

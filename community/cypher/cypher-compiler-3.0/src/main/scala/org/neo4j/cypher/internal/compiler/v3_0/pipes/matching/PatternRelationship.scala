@@ -135,7 +135,7 @@ class VariableLengthPatternRelationship(pathName: String,
   override def variables2: Map[String, CypherType] =
     Map(startNode.key -> CTNode,
       endNode.key -> CTNode,
-      key -> CTCollection(CTRelationship)) ++ relIterable.map(_ -> CTCollection(CTRelationship)).toMap
+      key -> CTList(CTRelationship)) ++ relIterable.map(_ -> CTList(CTRelationship)).toMap
 
   override def getGraphRelationships(node: PatternNode, realNode: Node, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] = {
     val matchedPaths: Iterator[Path] = state.query.variableLengthPathExpand(node, realNode, minHops, maxHops, getDirection(node), relType)

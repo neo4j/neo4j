@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticError, Se
 
 class CollectionSliceTest extends CypherFunSuite {
   val dummyCollection = DummyExpression(
-    CTCollection(CTNode) | CTNode | CTCollection(CTString))
+    CTList(CTNode) | CTNode | CTList(CTString))
 
   test("shouldReturnCollectionTypesOfExpression") {
     val slice = CollectionSlice(dummyCollection,
@@ -35,7 +35,7 @@ class CollectionSliceTest extends CypherFunSuite {
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors shouldBe empty
-    slice.types(result.state) should equal(CTCollection(CTNode) | CTCollection(CTString))
+    slice.types(result.state) should equal(CTList(CTNode) | CTList(CTString))
   }
 
   test("shouldRaiseErrorWhenNeitherFromOrTwoSpecified") {

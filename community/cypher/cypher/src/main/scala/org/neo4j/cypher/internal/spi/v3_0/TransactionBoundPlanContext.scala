@@ -145,7 +145,7 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
     case Neo4jTypes.NTFloat => symbols.CTFloat
     case Neo4jTypes.NTNumber => symbols.CTNumber
     case Neo4jTypes.NTBoolean => symbols.CTBoolean
-    case l: Neo4jTypes.ListType => symbols.CTCollection(asCypherType(l.innerType()))
+    case l: Neo4jTypes.ListType => symbols.CTList(asCypherType(l.innerType()))
     case Neo4jTypes.NTMap => symbols.CTMap
     case Neo4jTypes.NTNode => symbols.CTNode
     case Neo4jTypes.NTRelationship => symbols.CTRelationship

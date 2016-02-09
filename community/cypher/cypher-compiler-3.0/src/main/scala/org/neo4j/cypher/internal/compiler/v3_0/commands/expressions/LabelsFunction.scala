@@ -48,6 +48,6 @@ case class LabelsFunction(nodeExpr: Expression) extends Expression {
 
   protected def calculateType(symbols: SymbolTable) = {
     nodeExpr.evaluateType(CTNode, symbols)
-    CTCollection(CTString)
+    CTList(CTString)
   }
 }

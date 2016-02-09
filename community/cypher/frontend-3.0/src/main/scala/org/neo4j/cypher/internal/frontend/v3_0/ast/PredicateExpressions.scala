@@ -102,7 +102,7 @@ case class In(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
     lhs.semanticCheck(ctx) chain
     lhs.expectType(CTAny.covariant) chain
     rhs.semanticCheck(ctx) chain
-    rhs.expectType(CTCollection(CTAny).covariant) chain
+    rhs.expectType(CTList(CTAny).covariant) chain
     specifyType(CTBoolean)
 }
 

@@ -29,7 +29,7 @@ class ContainerIndexTest extends CypherFunSuite {
   val dummyInteger = DummyExpression(CTInteger)
   val dummyNode = DummyExpression(CTNode)
   val dummyAny = DummyExpression(CTAny)
-  val dummyCollection = DummyExpression(CTCollection(CTNode) | CTCollection(CTString))
+  val dummyCollection = DummyExpression(CTList(CTNode) | CTList(CTString))
 
   test("should detect collection lookup") {
     val lhs = dummyCollection
@@ -87,7 +87,7 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   private def assertIsCollection(spec: TypeSpec) = {
-    val intersection = spec & CTCollection(CTAny).covariant
+    val intersection = spec & CTList(CTAny).covariant
     (intersection == TypeSpec.none) should be(right = false)
     spec should equal(intersection)
   }

@@ -31,5 +31,5 @@ case class ToSet(expression: CodeGenExpression) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = false
 
-  override def cypherType(implicit context: CodeGenContext) = CTCollection(CTAny)
+  override def cypherType(implicit context: CodeGenContext) = CTList(CTAny)
 }

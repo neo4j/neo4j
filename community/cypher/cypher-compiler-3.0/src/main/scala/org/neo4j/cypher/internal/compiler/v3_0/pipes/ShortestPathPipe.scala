@@ -60,7 +60,7 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
     val withPath = source.symbols.add(pathName, CTPath)
     shortestPathCommand.relIterator match {
       case None    => withPath
-      case Some(x) => withPath.add(x, CTCollection(CTRelationship))
+      case Some(x) => withPath.add(x, CTList(CTRelationship))
     }
   }
 
