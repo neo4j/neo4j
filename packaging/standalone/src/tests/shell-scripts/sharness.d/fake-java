@@ -15,6 +15,6 @@ echo "stderr from java" >&2
 
 echo -n "$@" >../java-args
 
-if [[ "${FAKE_JAVA_SLEEP:-}" ]]; then
-  sleep "${FAKE_JAVA_SLEEP}"
-fi
+while [ -f "${JAVA_SENTINEL:-}" ]; do
+  sleep 0.1
+done

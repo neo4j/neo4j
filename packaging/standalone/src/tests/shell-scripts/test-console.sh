@@ -6,7 +6,7 @@ test_description="Test running the console"
 fake_install
 
 test_expect_success "should run okay" "
-  neo4j-home/bin/neo4j console
+  run_console
 "
 
 test_done

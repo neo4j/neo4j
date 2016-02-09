@@ -20,7 +20,7 @@ for run_command in run_console run_daemon; do
   "
 
   test_expect_success "should set heap size constraints" "
-    clear_config neo4j-wrapper.conf
+    clear_config &&
     set_config 'wrapper.java.initmemory' '512' neo4j-wrapper.conf &&
     set_config 'wrapper.java.maxmemory' '1024' neo4j-wrapper.conf &&
     ${run_command} &&
