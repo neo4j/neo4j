@@ -37,8 +37,7 @@
     <module>primitive-collections</module>
     <module>graphdb-api</module>
     <module>unsafe</module>
-    <module>function</module>
-    <module>io</module>
+   <module>io</module>
     <module>csv</module>
     <module>logging</module>
     <module>security</module>
