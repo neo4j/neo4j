@@ -22,6 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
+import org.neo4j.kernel.impl.store.NeoStores
 import org.scalatest.Assertions
 import org.scalautils.LegacyTripleEquals
 
@@ -79,6 +80,15 @@ class LabelsAcceptanceTest extends ExecutionEngineFunSuite
       returnsLabels("FOO")
   }
 
+  test("should not create labels id when trying to delete non-existing lables") {
+    createNode()
+    val result = execute("MATCH n REMOVE n:BAR RETURN id(n) as id").toList
+    result should equal(List(Map("id" -> 0)))
+
+    graph.inTx {
+      graph.getDependencyResolver.resolveDependency(classOf[NeoStores]).getLabelTokenStore.getHighId should equal(0)
+    }
+  }
 
   private class AssertThat(labels: Seq[String], query:String) {
     def returnsLabels(expected:String*):AssertThat = {
