@@ -50,11 +50,14 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[KeyToke
     if (value != null) {
       val node = CastSupport.castOrFail[Node](value)
       val queryCtx = state.query
-      val labelIds = labels.map(_.getOrCreateId(state.query))
 
       labelOp match {
-        case LabelSetOp => queryCtx.setLabelsOnNode(node.getId, labelIds.iterator)
-        case LabelRemoveOp => queryCtx.removeLabelsFromNode(node.getId, labelIds.iterator)
+        case LabelSetOp =>
+          val labelIds = labels.map(_.getOrCreateId(state.query))
+          queryCtx.setLabelsOnNode(node.getId, labelIds.iterator)
+        case LabelRemoveOp =>
+          val labelIds = labels.flatMap(_.getOptId(state.query))
+          queryCtx.removeLabelsFromNode(node.getId, labelIds.iterator)
       }
     }
 
