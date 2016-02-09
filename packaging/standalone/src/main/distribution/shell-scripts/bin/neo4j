@@ -267,13 +267,23 @@ do_start() {
     >>"${CONSOLE_LOG}" 2>&1 &
   echo "$!" >"${NEO4J_PIDFILE}"
 
-  sleep "${NEO4J_START_WAIT:-5}"
-  check_status
-  if [[ ! "${NEO4J_PID:-}" ]] ; then
-    echo "Unable to start. See ${CONSOLE_LOG} for details."
-    rm "${NEO4J_PIDFILE}"
-    exit 1
-  fi
+  : "${NEO4J_START_WAIT:=5}"
+  end="$((SECONDS+NEO4J_START_WAIT))"
+  while true; do
+    check_status
+
+    if [[ "${NEO4J_PID:-}" ]]; then
+      break
+    fi
+
+    if [[ "${SECONDS}" -ge "${end}" ]]; then
+      echo "Unable to start. See ${CONSOLE_LOG} for details."
+      rm "${NEO4J_PIDFILE}"
+      return 1
+    fi
+
+    sleep 1
+  done
 
   print_start_message
   echo "See ${CONSOLE_LOG} for current status."
@@ -296,9 +306,9 @@ do_stop() {
         echo " stopped"
         [ -e "${NEO4J_PIDFILE}" ] && rm "${NEO4J_PIDFILE}"
         return 0
-      else
-        kill "${NEO4J_PID}" 2>/dev/null || true
       fi
+
+      kill "${NEO4J_PID}" 2>/dev/null || true
 
       if [[ "${SECONDS}" -ge "${end}" ]]; then
         echo " failed to stop"
