@@ -136,7 +136,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                      "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"errors\":[]}", result );
+                      "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[]}]}],\"errors\":[]}", result );
     }
 
     @Test
@@ -157,7 +157,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                      "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"errors\":[]}", result );
+                      "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[]}]}],\"errors\":[]}", result );
     }
 
     @Test
@@ -180,7 +180,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                      "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
+                      "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[]}]}]," +
                       "\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\",\"message\":\"cause1\"}]}",
                       result );
     }
@@ -204,7 +204,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                      "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
+                      "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[]}]}]," +
                       "\"errors\":[{\"code\":\"Neo.ClientError.Request.InvalidFormat\",\"message\":\"cause1\"}]}",
                       result );
     }
@@ -280,7 +280,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                      "\"data\":[{\"row\":[\"value1\",\"value2\"]},{\"row\":[\"value3\",\"value4\"]}]}]," +
+                      "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[]},{\"row\":[\"value3\",\"value4\"],\"meta\":[]}]}]," +
                       "\"errors\":[]}", result );
     }
 
@@ -306,8 +306,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[" +
-                      "{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}," +
-                      "{\"columns\":[\"column3\",\"column4\"],\"data\":[{\"row\":[\"value3\",\"value4\"]}]}]," +
+                      "{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[]}]}," +
+                      "{\"columns\":[\"column3\",\"column4\"],\"data\":[{\"row\":[\"value3\",\"value4\"],\"meta\":[]}]}]," +
                       "\"errors\":[]}", result );
     }
 
@@ -333,7 +333,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"node\"]," +
-                      "\"data\":[{\"row\":[{\"a\":12,\"b\":true,\"c\":[1,0,1,2],\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"]}]}]}]," +
+                      "\"data\":[{\"row\":[{\"a\":12,\"b\":true,\"c\":[1,0,1,2],\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"]}]," +
+                      "\"meta\":[{\"id\":1,\"type\":\"node\",\"deleted\":false}]}]}]," +
                       "\"errors\":[]}", result );
     }
 
@@ -361,7 +362,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"nested\"]," +
-                      "\"data\":[{\"row\":[{\"edge\":{\"baz\":\"quux\"},\"node\":{\"foo\":12},\"path\":[{\"foo\":12},{\"baz\":\"quux\"},{\"bar\":false}]}]}]}]," +
+                      "\"data\":[{\"row\":[{\"edge\":{\"baz\":\"quux\"},\"node\":{\"foo\":12},\"path\":[{\"foo\":12},{\"baz\":\"quux\"},{\"bar\":false}]}],\"meta\":[]}]}]," +
                       "\"errors\":[]}", result );
     }
 
@@ -382,7 +383,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"path\"]," +
-                      "\"data\":[{\"row\":[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]}]}]," +
+                      "\"data\":[{\"row\":[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]," +
+                      "\"meta\":[{\"id\":1,\"type\":\"node\",\"deleted\":false},{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"type\":\"node\",\"deleted\":false}]}]}]," +
                       "\"errors\":[]}", result );
     }
 
@@ -417,7 +419,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals(
-                "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
+                "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[]}]}]," +
                 "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailure\",\"message\":\"Stuff went wrong!\",\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
     }
@@ -454,7 +456,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals(
-                "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"]}]}]," +
+                "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[]}]}]," +
                 "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailure\",\"message\":\"Stuff went wrong!\"," +
                 "\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
@@ -492,8 +494,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         String node3 = "{\"id\":\"3\",\"labels\":[\"Other\"],\"properties\":{\"name\":\"node3\"}}";
         String rel0 = "\"relationships\":[{\"id\":\"0\",\"type\":\"KNOWS\",\"startNode\":\"0\",\"endNode\":\"1\",\"properties\":{\"name\":\"rel0\"}}]}";
         String rel1 = "\"relationships\":[{\"id\":\"1\",\"type\":\"LOVES\",\"startNode\":\"2\",\"endNode\":\"3\",\"properties\":{\"name\":\"rel1\"}}]}";
-        String row0 = "{\"row\":[{\"name\":\"node0\"},{\"name\":\"rel0\"}],\"graph\":{\"nodes\":[";
-        String row1 = "{\"row\":[{\"name\":\"node2\"},{\"name\":\"rel1\"}],\"graph\":{\"nodes\":[";
+        String row0 = "{\"row\":[{\"name\":\"node0\"},{\"name\":\"rel0\"}],\"meta\":[{\"id\":0,\"type\":\"node\",\"deleted\":false},{\"id\":0,\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
+        String row1 = "{\"row\":[{\"name\":\"node2\"},{\"name\":\"rel1\"}],\"meta\":[{\"id\":2,\"type\":\"node\",\"deleted\":false},{\"id\":1,\"type\":\"relationship\",\"deleted\":false}],\"graph\":{\"nodes\":[";
         int n0 = result.indexOf( node0 );
         int n1 = result.indexOf( node1 );
         int n2 = result.indexOf( node2 );
@@ -810,7 +812,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
 
         assertEquals(
                 "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                        "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"notifications\":[{\"code\":\"Neo" +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[]}]}],\"notifications\":[{\"code\":\"Neo" +
                         ".ClientNotification.Statement.CartesianProduct\",\"severity\":\"WARNING\",\"title\":\"This " +
                         "query builds a cartesian product between disconnected patterns.\",\"description\":\"If a " +
                         "part of a query contains multiple disconnected patterns, this will build a cartesian product" +
@@ -844,7 +846,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
 
         assertEquals(
                 "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                        "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"errors\":[]}", result );
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[]}]}],\"errors\":[]}", result );
     }
 
     @Test
@@ -872,7 +874,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
 
         assertEquals(
                 "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
-                        "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"notifications\":[{\"code\":\"Neo" +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[]}]}],\"notifications\":[{\"code\":\"Neo" +
                         ".ClientNotification.Statement.CartesianProduct\",\"severity\":\"WARNING\",\"title\":\"This " +
                         "query builds a cartesian product between disconnected patterns.\",\"description\":\"If a " +
                         "part of a query contains multiple disconnected patterns, this will build a cartesian product" +
