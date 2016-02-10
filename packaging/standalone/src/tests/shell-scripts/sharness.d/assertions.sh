@@ -1,11 +1,19 @@
 test_expect_java_arg() {
   arg="$1"
-  if grep --fixed-strings --regexp "${arg}" java-args >/dev/null ; then
-    return 0
-  fi
+  end="$((SECONDS+5))"
+  while true; do
+    if grep --fixed-strings --regexp "${arg}" java-args >&2 ; then
+      break
+    fi
 
-	echo >&2 "test_expect_java_arg: expected argument '$arg' but got '$(cat java-args)'"
-	return 1
+    if [[ "${SECONDS}" -ge "${end}" ]]; then
+      echo >&2 "test_expect_java_arg: expected argument '$arg' but got '$(cat java-args)'"
+      return 1
+    fi
+
+    echo >&2 "waiting for java args"
+    sleep 1
+  done
 }
 
 test_expect_stdout_matching() {
