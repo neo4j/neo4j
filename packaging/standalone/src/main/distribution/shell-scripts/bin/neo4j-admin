@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+# Copyright (c) 2016 "Neo Technology,"
+# Network Engine for Objects in Lund AB [http://neotechnology.com]
+#
+# This file is part of Neo4j.
+#
+# Neo4j is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+set -o errexit -o nounset -o pipefail
+[[ "${TRACE:-}" ]] && set -o xtrace
+
+PROGRAM="$(basename "$0")"
+NEO4J_ROOT="$(cd "$(dirname "$0")"/.. && dirs -l +0)"
+readonly PROGRAM NEO4J_ROOT
+
+cmd_import_args() {
+  declare database=''
+  declare source=''
+  declare mode=''
+
+  while [[ -n "${1:-}" ]]; do
+    declare arg="$1"
+    shift
+    case "${arg}" in
+      -h|--help)
+        usage
+        ;;
+      -d)
+        if [[ -n "${1:-}" ]]; then
+          database="${1}"
+          shift
+        fi
+        ;;
+      --database=*)
+        set -- "-d" "${arg#*=}" "$@"
+        ;;
+      -f)
+        if [[ -n "${1:-}" ]]; then
+          source="${1}"
+          shift
+        fi
+        ;;
+      --from=*)
+        set -- "-f" "${arg#*=}" "$@"
+        ;;
+      -m)
+        if [[ -n "${1:-}" ]]; then
+          mode="${1}"
+          shift
+        fi
+        ;;
+      --mode=*)
+        set -- "-m" "${arg#*=}" "$@"
+        ;;
+      --database|--from|--mode)
+        ;;
+      *)
+        bad_usage "unrecognized import argument '${arg}'"
+        ;;
+    esac
+  done
+
+  [[ -z "${database}" ]] && bad_usage "you must provide the --database option with an argument"
+  [[ -z "${source}" ]] && bad_usage "you must provide the --from option with an argument"
+  [[ -z "${mode}" ]] && bad_usage "you must provide the --mode option with an argument"
+
+  retval=("${database}" "${source}" "${mode}")
+}
+
+cmd_import() {
+  cmd_import_args "$@"
+  declare -r database="${retval[0]}" source="${retval[1]}" mode="${retval[2]}"
+  shift 3
+
+  case "${mode}" in
+    database)
+      cp -r "${source}" "${NEO4J_ROOT}/data/databases/${database}"
+      ;;
+    *)
+      bad_usage "unrecognised mode '${mode}'"
+      ;;
+  esac
+}
+
+bad_usage() {
+  echo "Error: $1" >&2
+  echo >&2
+  echo "$(usage)" >&2
+  exit 1
+}
+
+usage() {
+  echo "Usage:
+
+  ${PROGRAM} import --mode=<mode> --database=<database-name> --from=<source-directory>
+
+    Create a new database by importing existing data.
+
+    --mode=database
+
+      Import a database from a pre-3.0 Neo4j installation. <source-directory> is the database location (e.g.
+      <neo4j-root>/data/graph.db).
+
+  ${PROGRAM} help
+
+    Display this help text.
+"
+  exit 0
+}
+
+main() {
+  [[ -z "${1:-}" ]] && bad_usage "you must provide a command"
+  declare -r command="$1"
+  shift
+  case "${command}" in
+    import)         cmd_import "$@" ;;
+    help|--help|-h) usage ;;
+    *)              bad_usage "unrecognised command '${command}'" ;;
+  esac
+}
+
+main "$@"
