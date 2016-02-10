@@ -222,7 +222,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                  "the Lucene query language here. Below an example of a fuzzy search over\n" +
                  "multiple keys.\n" +
                  "\n" +
-                 "See: {lucene-base-uri}/queryparsersyntax.html\n" +
+                 "See: {lucene-base-uri}/queryparser/org/apache/lucene/queryparser/classic/package-summary.html\n" +
                  "\n" +
                  "Getting the results with a predefined ordering requires adding the\n" +
                  "parameter\n" +
