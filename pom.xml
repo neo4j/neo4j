@@ -33,7 +33,7 @@
     <test.runner.jvm.settings>-Xmx1G -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true</test.runner.jvm.settings>
     <doclint-groups>reference</doclint-groups>
     <neo4j.java.version>1.8</neo4j.java.version>
-    <jetty.version>9.2.4.v20141103</jetty.version>
+    <jetty.version>9.2.9.v20150224</jetty.version>
   </properties>
 
   <modules>
