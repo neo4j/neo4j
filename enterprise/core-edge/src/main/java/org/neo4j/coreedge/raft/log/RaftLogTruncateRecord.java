@@ -25,4 +25,10 @@ public class RaftLogTruncateRecord extends RaftLogRecord
     {
         super( PhysicalRaftLog.RecordType.TRUNCATE, fromLogIndex );
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "RaftLogTruncateRecord{%s}", super.toString() );
+    }
 }

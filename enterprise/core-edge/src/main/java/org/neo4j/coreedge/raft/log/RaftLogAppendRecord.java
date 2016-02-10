@@ -34,4 +34,9 @@ public class RaftLogAppendRecord extends RaftLogRecord
         return logEntry;
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format( "RaftLogAppendRecord{%s, %s}", super.toString(), logEntry );
+    }
 }

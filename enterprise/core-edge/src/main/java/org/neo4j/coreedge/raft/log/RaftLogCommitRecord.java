@@ -25,4 +25,10 @@ public class RaftLogCommitRecord extends RaftLogRecord
     {
         super( PhysicalRaftLog.RecordType.COMMIT, logIndex );
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "RaftLogCommitRecord{%s}", super.toString() );
+    }
 }

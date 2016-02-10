@@ -39,4 +39,10 @@ public abstract class RaftLogRecord
     {
         return type;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("type=%s, logIndex=%d", type, logIndex );
+    }
 }

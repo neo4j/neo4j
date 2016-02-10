@@ -20,19 +20,31 @@
 package org.neo4j.coreedge.raft.log;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.junit.After;
 import org.junit.Test;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
+import org.neo4j.coreedge.raft.log.debug.DumpPhysicalRaftLog;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogVersions;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 
@@ -138,5 +150,35 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         // Then
         assertEquals( entryIndex1, raftLog.commitIndex() );
         assertEquals( entryIndex2, raftLog.appendIndex() );
+    }
+
+    @Test
+    public void shouldReturnNullOnEndOfFile() throws Exception
+    {
+        PhysicalRaftLog raftLog = createRaftLog( 1 /* cache size */  );
+        raftLog.append(new RaftLogEntry( 0, ReplicatedInteger.valueOf( 0 ) ));
+
+        life.remove( raftLog );
+
+        StoreChannel logStoreChannel = fileSystem.open( new File( "raft-log/raft.log.0" ), "r" );
+        readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), logStoreChannel, false );
+
+        PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
+                logStoreChannel, 0, LogVersions.CURRENT_LOG_VERSION );
+        ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
+
+        try ( PhysicalRaftLogEntryCursor cursor = new PhysicalRaftLogEntryCursor( new RaftRecordCursor<>( logChannel, new DummyRaftableContentSerializer() ) ) )
+        {
+            boolean firstRecordEncountered = false;
+            while( cursor.next() )
+            {
+                RaftLogAppendRecord record = cursor.get();
+                if ( record.getLogIndex() == 0L )
+                {
+                    assertFalse( firstRecordEncountered );
+                }
+                firstRecordEncountered = true;
+            }
+        }
     }
 }

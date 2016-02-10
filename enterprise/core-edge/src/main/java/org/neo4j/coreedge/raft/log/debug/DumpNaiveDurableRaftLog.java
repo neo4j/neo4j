@@ -27,7 +27,7 @@ import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 
-public class DumpRaftLog
+public class DumpNaiveDurableRaftLog
 {
     public static void main( String[] args ) throws RaftStorageException
     {

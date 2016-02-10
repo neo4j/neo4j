@@ -61,7 +61,6 @@ public class PhysicalRaftLogEntryCursor implements IOCursor<RaftLogAppendRecord>
                     {
                         return true;
                     }
-
                     break;
                 }
                 case TRUNCATE:
