@@ -583,7 +583,11 @@ public class SessionStateMachine implements Session, SessionState
      */
     private void before( Object attachment, Callback cb )
     {
-        cb.started( attachment );
+        if( cb != null )
+        {
+            cb.started( attachment );
+        }
+
         if ( hasTransaction() )
         {
             txBridge.bindTransactionToCurrentThread( currentTransaction );

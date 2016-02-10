@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
@@ -60,7 +79,7 @@ public class MonitoredSessions implements Sessions
         @Override
         public <A> void init( String clientName, A attachment, Callback<Void,A> callback )
         {
-            monitor.messageRecieved();
+            monitor.messageReceived();
             delegate.init( clientName, attachment, withMonitor( callback ) );
         }
 
@@ -68,28 +87,28 @@ public class MonitoredSessions implements Sessions
         public <A> void run( String statement, Map<String,Object> params, A attachment,
                 Callback<StatementMetadata,A> callback )
         {
-            monitor.messageRecieved();
+            monitor.messageReceived();
             delegate.run( statement, params, attachment, withMonitor( callback ) );
         }
 
         @Override
         public <A> void pullAll( A attachment, Callback<RecordStream,A> callback )
         {
-            monitor.messageRecieved();
+            monitor.messageReceived();
             delegate.pullAll( attachment, withMonitor( callback ) );
         }
 
         @Override
         public <A> void discardAll( A attachment, Callback<Void,A> callback )
         {
-            monitor.messageRecieved();
+            monitor.messageReceived();
             delegate.discardAll( attachment, withMonitor( callback ) );
         }
 
         @Override
         public <A> void reset( A attachment, Callback<Void,A> callback )
         {
-            monitor.messageRecieved();
+            monitor.messageReceived();
             delegate.reset( attachment, withMonitor( callback ) );
         }
 
@@ -159,14 +178,12 @@ public class MonitoredSessions implements Sessions
         /**
          * Called whenever a request is received. This happens after a request is
          * deserialized, but before it is queued pending processing.
-         * @return an event object that will be invoked as the request moves through
-         *         Bolt internals.
          */
-        void messageRecieved();
+        void messageReceived();
 
         /**
          * Called after a request is done queueing, right before the worker thread takes on the request
-         * @param queueTime time between {@link #messageRecieved()} and this call, in milliseconds
+         * @param queueTime time between {@link #messageReceived()} and this call, in milliseconds
          */
         void processingStarted( long queueTime );
 
