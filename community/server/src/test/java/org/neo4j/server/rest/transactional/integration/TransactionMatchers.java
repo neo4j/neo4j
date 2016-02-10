@@ -140,7 +140,7 @@ public class TransactionMatchers
         };
     }
 
-    private static JsonNode getJsonNodeWithName( HTTP.Response response, String name ) throws JsonParseException
+    static JsonNode getJsonNodeWithName( HTTP.Response response, String name ) throws JsonParseException
     {
         return response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( name );
     }

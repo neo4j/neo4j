@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
+import org.codehaus.jackson.JsonNode;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -543,6 +547,54 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         assertThat( nodesInDatabase(), equalTo( 1L ) );
     }
 
+    @Test
+    public void nestedShouldWorkGraph()
+    {
+        // given
+        graphdb().execute( "CREATE ()" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonGraph( "MATCH (n) DELETE (n) RETURN [n, {someKey: n}]" ) );
+
+        assertThat( commit, containsNoErrors() );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( commit, graphContainsDeletedNodes( 1 ) );
+        assertThat( nodesInDatabase(), equalTo( 0L ) );
+    }
+
+    @Test
+    public void nestedShouldWorkRest()
+    {
+        // given
+        graphdb().execute( "CREATE ()" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRest( "MATCH (n) DELETE (n) RETURN [n, {someKey: n}]" ) );
+
+        assertThat( commit, containsNoErrors() );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( commit, restContainsNestedDeleted() );
+        assertThat( nodesInDatabase(), equalTo( 0L ) );
+    }
+
+    @Test
+    public void nestedShouldWorkRow()
+    {
+        // given
+        graphdb().execute( "CREATE ()" );
+
+        // execute and commit
+        Response commit = http.POST( commitResource,
+                queryAsJsonRow( "MATCH (n) DELETE (n) RETURN [n, {someKey: n}]" ) );
+
+        assertThat( commit, containsNoErrors() );
+        assertThat( commit.status(), equalTo( 200 ) );
+        assertThat( commit, rowContainsDeletedEntities( 2, 0 ) );
+        assertThat( nodesInDatabase(), equalTo( 0L ) );
+    }
+
     private HTTP.RawPayload queryAsJsonGraph( String query )
     {
         return quotedJson( "{ 'statements': [ { 'statement': '" + query + "', 'resultDataContents': [ 'graph' ] } ] }" );
@@ -567,5 +619,39 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     private void assertHasTxLocation( Response begin )
     {
         assertThat( begin.location(), matches( "http://localhost:\\d+/db/data/transaction/\\d+" ) );
+    }
+
+    /**
+     * This matcher is hardcoded to check for a list containing one deleted node and one map with a deleted node mapped to the key `someKey`.
+     * @return
+     */
+    public static Matcher<? super Response> restContainsNestedDeleted()
+    {
+        return new TypeSafeMatcher<Response>()
+        {
+            @Override
+            protected boolean matchesSafely( HTTP.Response response )
+            {
+                try
+                {
+                    JsonNode list = TransactionMatchers.getJsonNodeWithName( response, "rest" ).iterator().next();
+
+                    assertThat( list.get( 0 ).get( "metadata" ).get( "deleted" ).asBoolean(), equalTo( Boolean.TRUE ) );
+                    assertThat( list.get( 1 ).get( "someKey" ).get( "metadata" ).get( "deleted" ).asBoolean(),
+                            equalTo( Boolean.TRUE ) );
+
+                    return true;
+                }
+                catch ( JsonParseException e )
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+            }
+        };
     }
 }

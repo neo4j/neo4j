@@ -216,7 +216,21 @@ public class Neo4jJsonCodec extends ObjectMapper
                 writeMeta( out, element );
             }
         }
-        // else no meta to print
+        else if (value instanceof Iterable)
+        {
+            for ( Object v : ((Iterable) value) )
+            {
+                writeMeta( out, v );
+            }
+        }
+        else if ( value instanceof Map )
+        {
+            Map map = (Map) value;
+            for ( Object key : map.keySet() )
+            {
+                writeMeta( out, map.get( key ) );
+            }
+        }
     }
 
     private void writeNodeMeta( JsonGenerator out, Node node ) throws IOException
