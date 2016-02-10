@@ -146,6 +146,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
                 if ( nextChannel == channel )
                 {
                     // no more channels so we cannot satisfy the requested number of bytes
+                    aheadBuffer.flip();
                     throw ReadPastEndException.INSTANCE;
                 }
                 channel = nextChannel;
