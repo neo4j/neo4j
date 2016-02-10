@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -32,7 +31,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.index.DummyIndexExtensionFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -42,13 +40,10 @@ import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertEquals;
-
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TransactionRepresentationCommitProcessIT

@@ -34,9 +34,9 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.catchup.storecopy.CountsSnapshotEncoder;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderEncoder;
 import org.neo4j.coreedge.catchup.storecopy.core.GetStoreRequestHandler;
-import org.neo4j.coreedge.catchup.storecopy.core.StoreCopyFinishedResponseEncoder;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequestDecoder;
 import org.neo4j.coreedge.catchup.tx.core.TxPullRequestDecoder;
 import org.neo4j.coreedge.catchup.tx.core.TxPullRequestHandler;
@@ -120,9 +120,9 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new ResponseMessageTypeEncoder() );
                         pipeline.addLast( new RequestMessageTypeEncoder() );
                         pipeline.addLast( new TxPullResponseEncoder() );
-                        pipeline.addLast( new StoreCopyFinishedResponseEncoder() );
                         pipeline.addLast( new TxStreamFinishedResponseEncoder() );
                         pipeline.addLast( new FileHeaderEncoder() );
+                        pipeline.addLast( new CountsSnapshotEncoder() );
 
                         pipeline.addLast( new ServerMessageTypeHandler( protocol, logProvider ) );
 

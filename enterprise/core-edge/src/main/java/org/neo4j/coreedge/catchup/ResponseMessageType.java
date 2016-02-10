@@ -26,9 +26,9 @@ public enum ResponseMessageType
     TX( (byte) 1 ),
     STORE_ID( (byte) 2 ),
     FILE( (byte) 3 ),
-    STORY_COPY_FINISHED( (byte) 4 ),
+    COUNTS_SNAPSHOT( (byte) 4 ),
     TX_STREAM_FINISHED( (byte) 5 ),
-    UNKNOWN( (byte) 200 ),;
+    UNKNOWN( (byte) 200 );
 
     private byte messageType;
 
@@ -57,6 +57,6 @@ public enum ResponseMessageType
     @Override
     public String toString()
     {
-        return format( "ResponseMessageType{messageType=%s}", messageType );
+        return format( "ResponseMessageType{messageType=%s}", name() );
     }
 }

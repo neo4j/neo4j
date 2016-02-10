@@ -22,12 +22,13 @@ package org.neo4j.coreedge.catchup.storecopy.edge;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpWriter;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -58,14 +59,14 @@ public class StoreFetcher
         try
         {
             log.info( "Copying store from %s", from );
-            long lastFlushedTxId = storeCopyClient.copyStoreFiles( from, new StreamToDisk( storeDir, fs ) );
-            log.info( "Store files streamed up to %d", lastFlushedTxId );
+            CountsSnapshot countsSnapshot = storeCopyClient.copyStoreFiles( from, new StreamToDisk( storeDir, fs ) );
+            log.info( "Store files streamed up to %d", countsSnapshot.getTxId() );
 
             try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache ) )
             {
-                long lastPulledTxId = txPullClient.pullTransactions( from, lastFlushedTxId, writer );
+                long lastPulledTxId = txPullClient.pullTransactions( from, countsSnapshot.getTxId(), writer );
                 log.info( "Txs streamed up to %d", lastPulledTxId );
-                writer.setCorrectTransactionId( lastPulledTxId );
+                writer.writeCheckpoint( countsSnapshot );
             }
         }
         catch ( IOException e )

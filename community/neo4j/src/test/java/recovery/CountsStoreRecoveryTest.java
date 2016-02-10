@@ -35,9 +35,11 @@ import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -45,6 +47,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 public class CountsStoreRecoveryTest
@@ -81,6 +84,36 @@ public class CountsStoreRecoveryTest
         } );
         assertEquals( 3, number.get() );
     }
+
+    @Test
+    public void shouldRecoverTheCountsStoreWhenNeoStoreIsRecoverable() throws Exception
+    {
+        // given
+        createNode( "A" );
+        checkPoint();
+        createNode( "B" );
+        flushNeoStoreOnly();
+
+        // when
+        crashAndRestart();
+
+        // then
+        RecordStorageEngine recordStorageEngine =
+                ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        long lastTxId = getLastAppliedTransactionId();
+        CountsSnapshot snapshotFromCountsStorageService =
+                recordStorageEngine.getSnapshotFromCountsStorageService( lastTxId );
+        long[] longs = snapshotFromCountsStorageService.getMap().get( nodeKey( -1 /* All nodes*/ ) );
+        assertEquals( longs.length, 1 );
+        assertEquals( longs[0], 2 );
+    }
+
+    private long getLastAppliedTransactionId()
+    {
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                .getLastClosedTransactionId();
+    }
+
 
     private void flushNeoStoreOnly() throws Exception
     {

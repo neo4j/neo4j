@@ -17,30 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup;
+package org.neo4j.coreedge.catchup.storecopy;
 
-public class CatchupClientProtocol
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageEncoder;
+
+import java.util.List;
+
+import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshotSerializer;
+
+public class CountsSnapshotEncoder extends MessageToMessageEncoder<CountsSnapshot>
 {
-    private NextMessage nextMessage = NextMessage.MESSAGE_TYPE;
-
-    public void expect( NextMessage nextMessage )
+    @Override
+    protected void encode( ChannelHandlerContext ctx, CountsSnapshot snapshot, List<Object> out ) throws Exception
     {
-        this.nextMessage = nextMessage;
-    }
+        ByteBuf buffer = ctx.alloc().buffer();
 
-    public boolean isExpecting( NextMessage message )
-    {
-        return this.nextMessage == message;
-    }
+        CountsSnapshotSerializer.serialize( new NetworkFlushableChannelNetty4( buffer ), snapshot );
 
-    public enum NextMessage
-    {
-        MESSAGE_TYPE,
-        STORE_ID,
-        TX_PULL_RESPONSE,
-        COUNTS_SNAPSHOT,
-        TX_STREAM_FINISHED,
-        FILE_HEADER,
-        FILE_CONTENTS
+        out.add( buffer );
     }
 }

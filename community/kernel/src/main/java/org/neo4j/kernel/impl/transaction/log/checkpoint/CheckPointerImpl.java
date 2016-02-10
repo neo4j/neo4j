@@ -51,6 +51,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final Lock lock;
 
     private long lastCheckPointedTx;
+    private CountsSnapshot lastCountsSnapshot;
 
     public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
             StorageEngine storageEngine, LogPruning logPruning, TransactionAppender appender,
@@ -128,7 +129,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
                     @Override
                     public CountsSnapshot snapshot()
                     {
-                        return null;
+                        return lastCountsSnapshot;
                     }
                 };
             }
@@ -222,6 +223,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         logPruning.pruneLogs( logPosition.getLogVersion() );
 
         lastCheckPointedTx = lastClosedTransactionId;
+        lastCountsSnapshot = snapshot;
         return new CheckPointInfo(){
 
             @Override

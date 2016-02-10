@@ -28,13 +28,13 @@ import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 import org.neo4j.coreedge.catchup.ClientMessageTypeHandler;
 import org.neo4j.coreedge.catchup.RequestMessageTypeEncoder;
 import org.neo4j.coreedge.catchup.ResponseMessageTypeEncoder;
+import org.neo4j.coreedge.catchup.storecopy.CountsSnapshotDecoder;
+import org.neo4j.coreedge.catchup.storecopy.CountsSnapshotHandler;
 import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderDecoder;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;
 import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequestEncoder;
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFinishedResponseDecoder;
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFinishedResponseHandler;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseHandler;
 import org.neo4j.coreedge.server.Expiration;
@@ -81,8 +81,8 @@ public class CoreToCoreClient extends CoreClient
 
             pipeline.addLast( new ClientMessageTypeHandler( protocol, logProvider ) );
 
-            pipeline.addLast( new StoreCopyFinishedResponseDecoder( protocol ) );
-            pipeline.addLast( new StoreCopyFinishedResponseHandler( protocol, owner ) );
+            pipeline.addLast( new CountsSnapshotDecoder( protocol ) );
+            pipeline.addLast( new CountsSnapshotHandler( protocol, owner ) );
 
             pipeline.addLast( new TxStreamFinishedResponseDecoder( protocol ) );
             pipeline.addLast( new TxStreamFinishedResponseHandler( protocol, owner ) );

@@ -32,10 +32,10 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
 import org.neo4j.coreedge.catchup.storecopy.FileHeader;
-import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponse;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequest;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -62,8 +62,9 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
     protected void channelRead0( ChannelHandlerContext ctx, GetStoreRequest msg ) throws Exception
     {
         CheckPointInfo checkPointInfo = checkPointerSupplier.get().tryCheckPoint(new SimpleTriggerInfo("Store copy"));
+        CountsSnapshot snapshot = checkPointInfo.snapshot();
         sendFiles( ctx );
-        endStoreCopy( ctx, checkPointInfo.lastClosedTransactionId() );
+        sendSnapshot( ctx, snapshot );
         protocol.expect( NextMessage.MESSAGE_TYPE );
     }
 
@@ -85,9 +86,9 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
         ctx.writeAndFlush( new ChunkedNioStream( new FileInputStream( file ).getChannel() ) );
     }
 
-    private void endStoreCopy( ChannelHandlerContext ctx, long lastCommittedTxBeforeStoreCopy )
+    private void sendSnapshot( ChannelHandlerContext ctx, CountsSnapshot snapshot )
     {
-        ctx.write( ResponseMessageType.STORY_COPY_FINISHED );
-        ctx.writeAndFlush( new StoreCopyFinishedResponse( lastCommittedTxBeforeStoreCopy ) );
+        ctx.writeAndFlush( ResponseMessageType.COUNTS_SNAPSHOT );
+        ctx.writeAndFlush( snapshot );
     }
 }
