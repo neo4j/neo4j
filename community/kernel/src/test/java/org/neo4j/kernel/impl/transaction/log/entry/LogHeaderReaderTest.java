@@ -33,7 +33,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
-import org.neo4j.kernel.impl.util.StringBuilderStringLogger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
