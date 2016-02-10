@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+# Copyright (c) 2016 "Neo Technology,"
+# Network Engine for Objects in Lund AB [http://neotechnology.com]
+#
+# This file is part of Neo4j.
+#
+# Neo4j is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+set -euo pipefail
+[[ "${TRACE:-}" ]] && set -x
+
+PROGRAM="$(basename "$0")"
+NEO4J_ROOT="$(cd "$(dirname "$0")"/.. && dirs -l +0)"
+
+cmd_upgrade() {
+	opts="$(getopt -o f: -l from: -n "$PROGRAM" -- "$@")"
+	eval set -- "${opts}"
+	while true; do
+	  case "$1" in
+		  -f|--from) source="$2"; shift 2 ;;
+		  --) shift; break ;;
+	  esac
+  done
+}
+
+usage() {
+  echo "${PROGRAM} <command> <options>
+}
+
+command="$1"
+shift
+case "${command}" in
+  upgrade) cmd_upgrade "$@" ;;
+  help|--help|-h) usage ;;
+	*) usage; exit 1 ;;
+esac
+exit $?
