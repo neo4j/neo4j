@@ -96,6 +96,36 @@ public class ProcedureIT
     }
 
     @Test
+    public void shouldCallDelegatingProcedure() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.delegatingProcedure", map( "name", 43L ) );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "someVal", 43L ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallRecursiveProcedure() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.recursiveSum", map( "order", 10L ) );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "someVal", 55L ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
     public void shouldCallProcedureWithGenericArgument() throws Throwable
     {
         // Given
@@ -296,17 +326,15 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCoerceLongToDoubleAtRuntimeWhenCallingProcedure() throws Throwable
-    {
+    public void shouldCoerceLongToDoubleAtRuntimeWhenCallingProcedure() throws Throwable {
         // Given
-        try ( Transaction ignore = db.beginTx() )
-        {
+        try (Transaction ignore = db.beginTx()) {
             // When
-            Result res = db.execute( "CALL org.neo4j.procedure.squareDouble", map( "value", 4L ) );
+            Result res = db.execute("CALL org.neo4j.procedure.squareDouble", map("value", 4L));
 
             // Then
-            assertThat( res.next(), equalTo( map( "result", 16.0d ) ) );
-            assertFalse( res.hasNext() );
+            assertThat(res.next(), equalTo(map("result", 16.0d)));
+            assertFalse(res.hasNext());
         }
     }
 
@@ -352,6 +380,28 @@ public class ProcedureIT
             // Then
             assertThat( res.next(), equalTo( map( "someVal", 16L ) ) );
             assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToCallVoidProcedure() throws Throwable
+    {
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.execute( "CALL org.neo4j.procedure.sideEffect('PONTUS')" );
+
+            assertThat( db.execute( "MATCH (n:PONTUS) RETURN count(n) AS c" ).next().get( "c" ), equalTo( 1L ) );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToCallDelegatingVoidProcedure() throws Throwable
+    {
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.execute( "CALL org.neo4j.procedure.delegatingSideEffect('SUTNOP')" );
+
+            assertThat( db.execute( "MATCH (n:SUTNOP) RETURN count(n) AS c" ).next().get( "c" ), equalTo( 1L ) );
         }
     }
 
@@ -447,6 +497,30 @@ public class ProcedureIT
         public Stream<Output> simpleArgument( @Name( "name" ) long someValue )
         {
             return Stream.of( new Output( someValue ) );
+        }
+
+        @Procedure
+        public Stream<Output> delegatingProcedure( @Name( "name" ) long someValue )
+        {
+            return db.execute( "CALL org.neo4j.procedure.simpleArgument", map( "name", someValue ) )
+                    .stream()
+                    .map( (row) -> new Output( (Long) row.get( "someVal" ) ) );
+        }
+
+        @Procedure
+        public Stream<Output> recursiveSum( @Name( "order" ) long order )
+        {
+            if ( order == 0L )
+            {
+                return Stream.of( new Output( 0L ) );
+            }
+            else
+            {
+                Long prev =
+                        (Long) db.execute( "CALL org.neo4j.procedure.recursiveSum", map( "order", order - 1 ) )
+                                .next().get( "someVal" );
+                return Stream.of( new Output( order + prev ) );
+            }
         }
 
         @Procedure
@@ -555,6 +629,20 @@ public class ProcedureIT
             return db.execute("CALL org.neo4j.procedure.writingProcedure")
                     .stream()
                     .map( (row) -> new Output( 0 ) );
+        }
+
+        @Procedure
+        @PerformsWrites
+        public void sideEffect( @Name( "value" ) String value )
+        {
+            db.createNode( Label.label( value ) );
+        }
+
+        @Procedure
+        @PerformsWrites
+        public void delegatingSideEffect( @Name( "value" ) String value )
+        {
+            db.execute( "CALL org.neo4j.procedure.sideEffect", map( "value", value ) );
         }
     }
 }
