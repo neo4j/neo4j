@@ -24,9 +24,11 @@ import org.w3c.dom.Document;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,7 +42,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -90,7 +91,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
-
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -105,6 +105,11 @@ import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 public class ClusterManager
         extends LifecycleAdapter
 {
+    private static final int CLUSTER_MIN_PORT = 10_000;
+    private static final int CLUSTER_MAX_PORT = 20_000;
+    private static final int HA_MIN_PORT = CLUSTER_MAX_PORT + 1;
+    private static final int HA_MAX_PORT = HA_MIN_PORT + 10_000;
+
     /**
      * Network Flags for passing into {@link ManagedCluster#fail(HighlyAvailableGraphDatabase, NetworkFlag)}
      */
@@ -220,14 +225,61 @@ public class ClusterManager
     public static Provider clusterOfSize( int memberCount )
     {
         Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
-        for ( int i = 0; i < memberCount; i++ )
+        HashSet<Integer> takenPorts = new HashSet<>();
+        try
         {
-            cluster.getMembers().add( new Clusters.Member( 5001 + i, true ) );
+            for ( int i = 0; i < memberCount; i++ )
+            {
+                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                takenPorts.add( port );
+                cluster.getMembers().add( new Clusters.Member( port, true ) );
+            }
+        }
+        catch ( IOException e )
+        {
+            // Failed to find an open port
+            // Asserting because you can't throw an exception in a TestRule
+            assert false;
         }
 
         final Clusters clusters = new Clusters();
         clusters.getClusters().add( cluster );
         return provided( clusters );
+    }
+
+    /**
+     * Find an available port number which is also not included in the except list.
+     * @param minPort minimum port number to probe
+     * @param maxPort maximum port number to probe
+     * @param except port numbers which should be considered unavailable and already taken
+     * @return a port number
+     * @throws IOException if no open port could be found
+     */
+    private static int findFreePort( final int minPort, final int maxPort, final Collection<Integer> except )
+            throws IOException
+    {
+        int port;
+        for ( port = minPort; port <= maxPort; port++ )
+        {
+            if ( except.contains( port ) )
+            {
+                // This port is already taken but not bound yet, ignore it
+                continue;
+            }
+            try
+            {
+                ServerSocket socket = new ServerSocket( port );
+                // Port is available, return it
+                socket.close();
+                return port;
+            }
+            catch ( IOException ex )
+            {
+                // Port was already bound, try the next one
+            }
+        }
+
+        throw new IOException( "No open port could be found" );
     }
 
     /**
@@ -238,14 +290,28 @@ public class ClusterManager
     public static Provider clusterWithAdditionalClients( int haMemberCount, int additionalClientCount )
     {
         Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
-        int counter = 0;
-        for ( int i = 0; i < haMemberCount; i++, counter++ )
+        HashSet<Integer> takenPorts = new HashSet<>();
+
+        try
         {
-            cluster.getMembers().add( new Clusters.Member( 5001 + counter, true ) );
+            for ( int i = 0; i < haMemberCount; i++ )
+            {
+                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                takenPorts.add( port );
+                cluster.getMembers().add( new Clusters.Member( port, true ) );
+            }
+            for ( int i = 0; i < additionalClientCount; i++ )
+            {
+                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                takenPorts.add( port );
+                cluster.getMembers().add( new Clusters.Member( port, false ) );
+            }
         }
-        for ( int i = 0; i < additionalClientCount; i++, counter++ )
+        catch ( IOException e )
         {
-            cluster.getMembers().add( new Clusters.Member( 5001 + counter, false ) );
+            // Failed to find an open port
+            // Asserting because you can't throw an exception in a TestRule
+            assert false;
         }
 
         final Clusters clusters = new Clusters();
@@ -261,16 +327,29 @@ public class ClusterManager
     public static Provider clusterWithAdditionalArbiters( int haMemberCount, int arbiterCount )
     {
         Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
-        int counter = 0;
-        for ( int i = 0; i < arbiterCount; i++, counter++ )
-        {
-            cluster.getMembers().add( new Clusters.Member( 5001 + counter, false ) );
-        }
-        for ( int i = 0; i < haMemberCount; i++, counter++ )
-        {
-            cluster.getMembers().add( new Clusters.Member( 5001 + counter, true ) );
-        }
+        HashSet<Integer> takenPorts = new HashSet<>();
 
+        try
+        {
+            for ( int i = 0; i < arbiterCount; i++ )
+            {
+                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                takenPorts.add( port );
+                cluster.getMembers().add( new Clusters.Member( port, false ) );
+            }
+            for ( int i = 0; i < haMemberCount; i++ )
+            {
+                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                takenPorts.add( port );
+                cluster.getMembers().add( new Clusters.Member( port, true ) );
+            }
+        }
+        catch ( IOException e )
+        {
+            // Failed to find an open port
+            // Asserting because you can't throw an exception in a TestRule
+            assert false;
+        }
         final Clusters clusters = new Clusters();
         clusters.getClusters().add( cluster );
         return provided( clusters );
@@ -846,6 +925,7 @@ public class ClusterManager
         private final String name;
         private final Map<InstanceId,HighlyAvailableGraphDatabaseProxy> members = new ConcurrentHashMap<>();
         private final List<ObservedClusterMembers> arbiters = new ArrayList<>();
+        private final HashSet<Integer> takenHaPorts = new HashSet<>();
 
         ManagedCluster( Clusters.Cluster spec ) throws URISyntaxException, IOException
         {
@@ -1038,7 +1118,8 @@ public class ClusterManager
             if ( member.isFullHaMember() )
             {
                 int clusterPort = clusterUri.getPort();
-                int haPort = clusterUri.getPort() + 3000;
+                int haPort = findFreePort( HA_MIN_PORT, HA_MAX_PORT, takenHaPorts );
+                takenHaPorts.add( haPort );
                 File storeDir = new File( parent, "server" + serverId );
                 if ( storeDirInitializer != null )
                 {
