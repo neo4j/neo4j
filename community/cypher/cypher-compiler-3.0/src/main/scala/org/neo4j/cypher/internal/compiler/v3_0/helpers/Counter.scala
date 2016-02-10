@@ -31,6 +31,11 @@ class Counter(initialCount: Long) {
 
   def counted = _count
 
+  def reset(newValue: Long = 0) = {
+    _count = newValue
+    self
+  }
+
   def +=(amount: Long): Long = {
     _count += amount
     _count

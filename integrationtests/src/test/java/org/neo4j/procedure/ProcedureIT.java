@@ -311,21 +311,20 @@ public class ProcedureIT
         }
     }
 
-//    // TODO: What should happen?
-//    @Test
-//    public void foo() throws Throwable
-//    {
-//        // Given
-//        try ( Transaction ignore = db.beginTx() )
-//        {
-//            // When
-//            Result res = db.execute( "CALL org.neo4j.procedure.avgDoubleList({param})", map( "param", Arrays.<Long>asList(1L, 2L, 3L) ) );
-//
-//            // Then
-//            assertThat( res.next(), equalTo( map( "result", 2.0d ) ) );
-//            assertFalse( res.hasNext() );
-//        }
-//    }
+    @Test
+    public void shouldCoerceListOfMixedNumbers() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.avgDoubleList([{long}, {double}])", map( "long", 1L, "double", 2.0d ) );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "result", 1.5d ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
 
     @Test
     public void shouldCoerceDoubleToLongAtRuntimeWhenCallingProcedure() throws Throwable

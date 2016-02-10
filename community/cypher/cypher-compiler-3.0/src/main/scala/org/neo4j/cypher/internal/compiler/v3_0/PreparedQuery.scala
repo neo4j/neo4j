@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.StatementCon
 import org.neo4j.cypher.internal.compiler.v3_0.commands.AbstractQuery
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterCondition
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Query, Statement}
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, Scope, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, Rewriter, Scope, SemanticTable}
 
 case class PreparedQuery(statement: Statement,
                          queryText: String,
@@ -31,7 +31,8 @@ case class PreparedQuery(statement: Statement,
                                                             val conditions: Set[RewriterCondition],
                                                             val scopeTree: Scope,
                                                             val notificationLogger: InternalNotificationLogger,
-                                                            val plannerName: String = "") {
+                                                            val plannerName: String = "",
+                                                            val offset: Option[InputPosition] = None) {
 
   def abstractQuery: AbstractQuery = statement.asQuery(notificationLogger, plannerName).setQueryText(queryText)
 
@@ -41,5 +42,5 @@ case class PreparedQuery(statement: Statement,
   }
 
   def rewrite(rewriter: Rewriter): PreparedQuery =
-    copy(statement = statement.endoRewrite(rewriter))(semanticTable, conditions, scopeTree, notificationLogger, plannerName)
+    copy(statement = statement.endoRewrite(rewriter))(semanticTable, conditions, scopeTree, notificationLogger, plannerName, offset)
 }

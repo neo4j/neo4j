@@ -183,7 +183,7 @@ case class CypherCompiler(parser: CypherParser,
     }
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
-    PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree, notificationLogger, plannerName)
+    PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree, notificationLogger, plannerName, offset)
   }
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext,
