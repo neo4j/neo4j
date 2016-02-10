@@ -19,16 +19,16 @@
  */
 package org.neo4j.metrics;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiPredicate;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -46,6 +46,7 @@ import org.neo4j.metrics.source.db.TransactionMetrics;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
@@ -53,6 +54,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -78,7 +80,7 @@ public class MetricsKernelExtensionFactoryIT
     public void setup() throws Throwable
     {
         outputPath = clusterRule.directory( "metrics" );
-        Map<String,String> config = stringMap(
+        Map<String, String> config = stringMap(
                 MetricsSettings.neoEnabled.name(), Settings.TRUE,
                 metricsEnabled.name(), Settings.TRUE,
                 csvEnabled.name(), Settings.TRUE,
@@ -109,7 +111,7 @@ public class MetricsKernelExtensionFactoryIT
 
         // THEN
         assertThat( committedTransactions, greaterThanOrEqualTo( lastCommittedTransactionId ) );
-        assertThat( committedTransactions, lessThanOrEqualTo( lastCommittedTransactionId + 1000L ) );
+        assertThat( committedTransactions, lessThanOrEqualTo( lastCommittedTransactionId + 1001L ) );
     }
 
     @Test
@@ -126,7 +128,7 @@ public class MetricsKernelExtensionFactoryIT
                 ( newValue, currentValue ) -> newValue >= currentValue );
 
         // THEN
-        assertThat( committedTransactions, lessThanOrEqualTo( 1000L ) );
+        assertThat( committedTransactions, lessThanOrEqualTo( 1001L ) );
     }
 
     @Test
@@ -160,7 +162,7 @@ public class MetricsKernelExtensionFactoryIT
         addNodes( 10 );
 
         // WHEN
-        for ( int i = 0; i < 10; i ++)
+        for ( int i = 0; i < 10; i++ )
         {
             try ( Transaction tx = db.beginTx() )
             {
