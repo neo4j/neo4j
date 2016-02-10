@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft.net;
 
-import java.io.Serializable;
+import org.neo4j.coreedge.network.Message;
 
 import org.neo4j.coreedge.server.logging.MessageLogger;
 
@@ -37,7 +37,7 @@ public class LoggingOutbound<MEMBER> implements Outbound<MEMBER>
     }
 
     @Override
-    public void send( MEMBER to, Serializable... messages )
+    public void send( MEMBER to, Message... messages )
     {
         messageLogger.log( me, to, messages );
         outbound.send( to, messages );

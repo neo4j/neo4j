@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft.net;
 
-import java.io.Serializable;
+import org.neo4j.coreedge.network.Message;
 
 /**
  * A best effort service for delivery of messages to members. No guarantees are made about any of the methods
@@ -27,12 +27,12 @@ import java.io.Serializable;
  * delivered to the wrong host.
  * @param <MEMBER> The type of members that messages will be sent to.
  */
-public interface Outbound<MEMBER> extends Serializable
+public interface Outbound<MEMBER>
 {
     /**
      * Asynchronous, best effort delivery to destination.
-     * @param to
+     * @param to destination
      * @param messages The messages to send
      */
-    void send( MEMBER to, Serializable... messages );
+    void send( MEMBER to, Message... messages );
 }

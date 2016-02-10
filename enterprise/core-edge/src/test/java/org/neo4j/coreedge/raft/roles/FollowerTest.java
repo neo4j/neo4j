@@ -25,7 +25,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.RaftMessages.Message;
+import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Election;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -128,7 +128,7 @@ public class FollowerTest
         Outcome<RaftTestMember> outcome = follower.handle( heartbeat, state, log() );
 
         assertEquals( 1, outcome.getOutgoingMessages().size() );
-        Message<RaftTestMember> outgoing = outcome.getOutgoingMessages().iterator().next().message();
+        RaftMessage<RaftTestMember> outgoing = outcome.getOutgoingMessages().iterator().next().message();
         assertEquals( RaftMessages.Type.APPEND_ENTRIES_RESPONSE, outgoing.type() );
         RaftMessages.AppendEntries.Response response = (AppendEntries.Response) outgoing;
         assertFalse( response.success() );

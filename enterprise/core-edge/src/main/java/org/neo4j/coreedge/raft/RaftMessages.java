@@ -19,10 +19,10 @@
  */
 package org.neo4j.coreedge.raft;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 
@@ -51,7 +51,7 @@ public interface RaftMessages
         NEW_MEMBERSHIP_TARGET,
     }
 
-    interface Message<MEMBER> extends Serializable
+    interface RaftMessage<MEMBER> extends Message
     {
         MEMBER from();
 
@@ -61,9 +61,9 @@ public interface RaftMessages
     class Directed<MEMBER>
     {
         MEMBER to;
-        Message<MEMBER> message;
+        RaftMessage<MEMBER> message;
 
-        public Directed( MEMBER to, Message<MEMBER> message )
+        public Directed( MEMBER to, RaftMessage<MEMBER> message )
         {
             this.to = to;
             this.message = message;
@@ -74,7 +74,7 @@ public interface RaftMessages
             return to;
         }
 
-        public Message<MEMBER> message()
+        public RaftMessage<MEMBER> message()
         {
             return message;
         }
@@ -340,16 +340,22 @@ public interface RaftMessages
             public boolean equals( Object o )
             {
                 if ( this == o )
-                { return true; }
+                {
+                    return true;
+                }
                 if ( o == null || getClass() != o.getClass() )
-                { return false; }
+                {
+                    return false;
+                }
                 if ( !super.equals( o ) )
-                { return false; }
+                {
+                    return false;
+                }
                 Response<?> response = (Response<?>) o;
                 return term == response.term &&
-                       success == response.success &&
-                       matchIndex == response.matchIndex &&
-                       appendIndex == response.appendIndex;
+                        success == response.success &&
+                        matchIndex == response.matchIndex &&
+                        appendIndex == response.appendIndex;
             }
 
             @Override
@@ -414,16 +420,9 @@ public interface RaftMessages
 
             Heartbeat<?> heartbeat = (Heartbeat<?>) o;
 
-            if ( leaderTerm != heartbeat.leaderTerm )
-            {
-                return false;
-            }
-            if ( commitIndex != heartbeat.commitIndex )
-            {
-                return false;
-            }
-            return commitIndexTerm == heartbeat.commitIndexTerm;
-
+            return leaderTerm == heartbeat.leaderTerm &&
+                    commitIndex == heartbeat.commitIndex &&
+                    commitIndexTerm == heartbeat.commitIndexTerm;
         }
 
         @Override
@@ -523,7 +522,7 @@ public interface RaftMessages
         }
     }
 
-    abstract class BaseMessage<MEMBER> implements Message<MEMBER>
+    abstract class BaseMessage<MEMBER> implements RaftMessage<MEMBER>
     {
         protected MEMBER from;
         private Type type;

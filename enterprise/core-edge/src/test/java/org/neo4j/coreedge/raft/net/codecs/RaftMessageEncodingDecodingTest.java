@@ -146,7 +146,7 @@ public class RaftMessageEncodingDecodingTest
         serializeReadBackAndVerifyMessage( request );
     }
 
-    public void serializeReadBackAndVerifyMessage( RaftMessages.Message message ) throws Exception
+    public void serializeReadBackAndVerifyMessage( RaftMessages.RaftMessage message ) throws Exception
     {
         // Given
         RaftMessageEncoder encoder = new RaftMessageEncoder( serializer );

@@ -26,6 +26,6 @@ import org.neo4j.logging.Log;
 
 public interface RaftMessageHandler
 {
-    <MEMBER> Outcome<MEMBER> handle( RaftMessages.Message<MEMBER> message, ReadableRaftState<MEMBER> context, Log log )
+    <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message, ReadableRaftState<MEMBER> context, Log log )
             throws RaftStorageException;
 }

@@ -20,21 +20,21 @@
 package org.neo4j.coreedge.catchup.storecopy.edge;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 
-import org.neo4j.coreedge.catchup.tx.edge.PullRequestMonitor;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.catchup.RequestMessageType;
-import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseListener;
-import org.neo4j.coreedge.catchup.tx.edge.TxStreamCompleteListener;
-import org.neo4j.coreedge.server.Expiration;
-import org.neo4j.coreedge.server.SenderService;
+import org.neo4j.coreedge.catchup.tx.edge.PullRequestMonitor;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullRequest;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
+import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseListener;
+import org.neo4j.coreedge.catchup.tx.edge.TxStreamCompleteListener;
+import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.Expiration;
 import org.neo4j.coreedge.server.ExpiryScheduler;
+import org.neo4j.coreedge.server.SenderService;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -72,7 +72,7 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
         pullRequestMonitor.txPullRequest( lastTransactionId );
     }
 
-    private void send( AdvertisedSocketAddress to, RequestMessageType messageType, Serializable contentMessage )
+    private void send( AdvertisedSocketAddress to, RequestMessageType messageType, Message contentMessage )
     {
         senderService.send( to, messageType, contentMessage );
     }

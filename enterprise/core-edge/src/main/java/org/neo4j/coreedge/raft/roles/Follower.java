@@ -60,7 +60,7 @@ public class Follower implements RaftMessageHandler
     }
 
     @Override
-    public <MEMBER> Outcome<MEMBER> handle( RaftMessages.Message<MEMBER> message, ReadableRaftState<MEMBER> ctx, Log log )
+    public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message, ReadableRaftState<MEMBER> ctx, Log log )
             throws RaftStorageException
     {
         Outcome<MEMBER> outcome = new Outcome<>( FOLLOWER, ctx );

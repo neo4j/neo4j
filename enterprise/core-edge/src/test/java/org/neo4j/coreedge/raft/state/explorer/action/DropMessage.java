@@ -39,8 +39,8 @@ public class DropMessage implements Action
     public ClusterState advance( ClusterState previous )
     {
         ClusterState newClusterState = new ClusterState( previous );
-        Queue<RaftMessages.Message<RaftTestMember>> inboundQueue = new LinkedList<>( previous.queues.get( member ) );
-        RaftMessages.Message<RaftTestMember> message = inboundQueue.poll();
+        Queue<RaftMessages.RaftMessage<RaftTestMember>> inboundQueue = new LinkedList<>( previous.queues.get( member ) );
+        RaftMessages.RaftMessage<RaftTestMember> message = inboundQueue.poll();
         if ( message == null )
         {
             return previous;

@@ -19,16 +19,14 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
-import java.io.Serializable;
+import org.neo4j.coreedge.network.Message;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
 
 import static java.lang.String.format;
 
-public class TxPullRequest implements Serializable
+public class TxPullRequest implements Message
 {
-    private static final long serialVersionUID = 927527537940622403L;
-
     public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.TX_PULL_REQUEST;
 
     private final long txId;

@@ -33,7 +33,7 @@ import static org.junit.Assert.fail;
 
 public class MessageUtils
 {
-    public static RaftMessages.Message<RaftTestMember> messageFor( Outcome<RaftTestMember> outcome, final RaftTestMember member )
+    public static RaftMessages.RaftMessage<RaftTestMember> messageFor( Outcome<RaftTestMember> outcome, final RaftTestMember member )
     {
         Predicate<RaftMessages.Directed<RaftTestMember>> selectMember = message -> message.to() == member;
         try

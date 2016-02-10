@@ -19,16 +19,16 @@
  */
 package org.neo4j.coreedge.raft.outcome;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
+import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 
 /**
  * Holds the outcome of a RAFT role's handling of a message. The role handling logic is stateless
@@ -38,10 +38,8 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
  * A state update could be to change role, change term, etc.
  * A command could be to append to the RAFT log, tell the log shipper that there was a mismatch, etc.
  */
-public class Outcome<MEMBER> implements Serializable
+public class Outcome<MEMBER> implements Message
 {
-    private static final long serialVersionUID = 4288616769553581132L;
-
     /* Common */
     private Role newRole;
 

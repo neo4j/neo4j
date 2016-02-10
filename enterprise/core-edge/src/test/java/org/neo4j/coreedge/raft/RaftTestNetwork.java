@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
-import java.io.Serializable;
+import org.neo4j.coreedge.network.Message;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -140,10 +140,10 @@ public class RaftTestNetwork<T>
         }
 
         @Override
-        public void send( T destination, final Serializable... messages )
+        public void send( T destination, final Message... messages )
         {
             long now = System.currentTimeMillis();
-            for ( Serializable message : messages )
+            for ( Message message : messages )
             {
                 long atMillis = now + latencySpecMillis.apply( me, destination );
                 networkThread.scheduleDelivery( destination, message, atMillis );
@@ -184,11 +184,11 @@ public class RaftTestNetwork<T>
             private class MessageContext
             {
                 private final T destination;
-                private final Serializable message;
+                private final Message message;
                 private long atMillis;
                 private long seqNum;
 
-                private MessageContext( T destination, Serializable message, long atMillis )
+                private MessageContext( T destination, Message message, long atMillis )
                 {
                     this.destination = destination;
                     this.message = message;
@@ -214,7 +214,7 @@ public class RaftTestNetwork<T>
                 }
             }
 
-            public synchronized void scheduleDelivery( T destination, Serializable message, long atMillis )
+            public synchronized void scheduleDelivery( T destination, Message message, long atMillis )
             {
                 if( !disconnected )
                 {
@@ -272,7 +272,7 @@ public class RaftTestNetwork<T>
     public class Inbound implements org.neo4j.coreedge.raft.net.Inbound
     {
         private MessageHandler handler;
-        private final BlockingQueue<Serializable> Q = new ArrayBlockingQueue<>( 64, true );
+        private final BlockingQueue<Message> Q = new ArrayBlockingQueue<>( 64, true );
         private NetworkThread networkThread;
 
         public Inbound( T endpoint )
@@ -293,7 +293,7 @@ public class RaftTestNetwork<T>
 
         private volatile boolean disconnected = false;
 
-        public synchronized void deliver( Serializable message )
+        public synchronized void deliver( Message message )
         {
             if( !disconnected )
             {
@@ -335,7 +335,7 @@ public class RaftTestNetwork<T>
                 {
                     try
                     {
-                        Serializable message = Q.poll( 1, TimeUnit.SECONDS );
+                        Message message = Q.poll( 1, TimeUnit.SECONDS );
                         if( message != null && handler != null )
                         {
                             handler.handle( message );

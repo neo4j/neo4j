@@ -45,8 +45,8 @@ public class ProcessMessage implements Action
     public ClusterState advance( ClusterState previous ) throws RaftStorageException
     {
         ClusterState newClusterState = new ClusterState( previous );
-        Queue<RaftMessages.Message<RaftTestMember>> inboundQueue = new LinkedList<>( previous.queues.get( member ) );
-        RaftMessages.Message<RaftTestMember> message = inboundQueue.poll();
+        Queue<RaftMessages.RaftMessage<RaftTestMember>> inboundQueue = new LinkedList<>( previous.queues.get( member ) );
+        RaftMessages.RaftMessage<RaftTestMember> message = inboundQueue.poll();
         if ( message == null )
         {
             return previous;
@@ -58,7 +58,7 @@ public class ProcessMessage implements Action
 
         for ( RaftMessages.Directed<RaftTestMember> outgoingMessage : outcome.getOutgoingMessages() )
         {
-            LinkedList<RaftMessages.Message<RaftTestMember>> outboundQueue =
+            LinkedList<RaftMessages.RaftMessage<RaftTestMember>> outboundQueue =
                     new LinkedList<>( newClusterState.queues.get( outgoingMessage.to() ) );
             outboundQueue.add( outgoingMessage.message() );
             newClusterState.queues.put( outgoingMessage.to(), outboundQueue );

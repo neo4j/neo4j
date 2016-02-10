@@ -123,10 +123,10 @@ public class RaftServer<MEMBER> extends LifecycleAdapter implements Inbound
         this.messageHandler = handler;
     }
 
-    private class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.Message<MEMBER>>
+    private class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.RaftMessage<MEMBER>>
     {
         @Override
-        protected void channelRead0( ChannelHandlerContext channelHandlerContext, RaftMessages.Message<MEMBER>
+        protected void channelRead0( ChannelHandlerContext channelHandlerContext, RaftMessages.RaftMessage<MEMBER>
                 message ) throws Exception
         {
             messageHandler.handle( message );

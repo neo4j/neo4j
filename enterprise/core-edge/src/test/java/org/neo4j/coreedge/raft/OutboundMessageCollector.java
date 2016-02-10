@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
-import java.io.Serializable;
+import org.neo4j.coreedge.network.Message;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,7 +33,7 @@ import org.neo4j.coreedge.raft.net.Outbound;
 
 public class OutboundMessageCollector implements Outbound<RaftTestMember>
 {
-    Map<RaftTestMember, List<Serializable>> sentMessages = new HashMap<>();
+    Map<RaftTestMember, List<Message>> sentMessages = new HashMap<>();
 
     public void clear()
     {
@@ -41,9 +41,9 @@ public class OutboundMessageCollector implements Outbound<RaftTestMember>
     }
 
     @Override
-    public void send( RaftTestMember to, Serializable... messages )
+    public void send( RaftTestMember to, Message... messages )
     {
-        List<Serializable> messagesToMember = sentMessages.get( to );
+        List<Message> messagesToMember = sentMessages.get( to );
         if ( messagesToMember == null )
         {
             messagesToMember = new ArrayList<>();
@@ -53,9 +53,9 @@ public class OutboundMessageCollector implements Outbound<RaftTestMember>
         Collections.addAll( messagesToMember, messages );
     }
 
-    public List<Serializable> sentTo( RaftTestMember member )
+    public List<Message> sentTo( RaftTestMember member )
     {
-        List<Serializable> messages = sentMessages.get( member );
+        List<Message> messages = sentMessages.get( member );
 
         if ( messages == null )
         {
@@ -69,7 +69,7 @@ public class OutboundMessageCollector implements Outbound<RaftTestMember>
     {
         List<RaftLogEntry> actualMessages = new ArrayList<>();
 
-        for ( Serializable message : sentTo( member ) )
+        for ( Message message : sentTo( member ) )
         {
             if( message instanceof RaftMessages.AppendEntries.Request )
             {

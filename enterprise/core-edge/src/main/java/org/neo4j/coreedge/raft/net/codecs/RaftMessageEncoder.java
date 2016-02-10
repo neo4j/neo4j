@@ -32,7 +32,7 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
 
-public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Message<CoreMember>>
+public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.RaftMessage<CoreMember>>
 {
     private final ReplicatedContentMarshal<ByteBuf> marshal;
 
@@ -42,7 +42,7 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Mes
     }
 
     @Override
-    protected synchronized void encode( ChannelHandlerContext ctx, RaftMessages.Message<CoreMember> message,
+    protected synchronized void encode( ChannelHandlerContext ctx, RaftMessages.RaftMessage<CoreMember> message,
                                         List<Object> list ) throws Exception
     {
         ByteBuf buf = ctx.alloc().buffer();

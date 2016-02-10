@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
-import java.io.Serializable;
+import org.neo4j.coreedge.network.Message;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -33,20 +33,20 @@ import org.neo4j.coreedge.server.RaftTestMember;
 public class DirectNetworking
 {
     private final Map<Long, org.neo4j.coreedge.raft.net.Inbound.MessageHandler> handlers = new HashMap<>();
-    private final Map<Long, Queue<Serializable>> messageQueues = new HashMap<>();
+    private final Map<Long, Queue<Message>> messageQueues = new HashMap<>();
     private final Set<Long> disconnectedMembers = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
     public void processMessages()
     {
         while ( messagesToBeProcessed() )
         {
-            for ( Map.Entry<Long, Queue<Serializable>> entry : messageQueues.entrySet() )
+            for ( Map.Entry<Long, Queue<Message>> entry : messageQueues.entrySet() )
             {
                 Long id = entry.getKey();
-                Queue<Serializable> queue = entry.getValue();
+                Queue<Message> queue = entry.getValue();
                 if ( !queue.isEmpty() )
                 {
-                    Serializable message = queue.remove();
+                    Message message = queue.remove();
                     handlers.get( id ).handle( message );
                 }
             }
@@ -55,7 +55,7 @@ public class DirectNetworking
 
     private boolean messagesToBeProcessed()
     {
-        for ( Queue<Serializable> queue : messageQueues.values() )
+        for ( Queue<Message> queue : messageQueues.values() )
         {
             if ( !queue.isEmpty() )
             {
@@ -85,7 +85,7 @@ public class DirectNetworking
         }
 
         @Override
-        public synchronized void send( RaftTestMember to, final Serializable... messages )
+        public synchronized void send( RaftTestMember to, final Message... messages )
         {
             if ( !messageQueues.containsKey( to.getId() ) ||
                     disconnectedMembers.contains( to.getId() ) ||
@@ -94,7 +94,7 @@ public class DirectNetworking
                 return;
             }
 
-            for ( Serializable message : messages )
+            for ( Message message : messages )
             {
                 messageQueues.get( to.getId() ).add( message );
             }

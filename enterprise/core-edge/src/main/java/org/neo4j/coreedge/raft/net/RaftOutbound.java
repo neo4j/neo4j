@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft.net;
 
-import java.io.Serializable;
+import org.neo4j.coreedge.network.Message;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
@@ -34,7 +34,7 @@ public class RaftOutbound implements Outbound<CoreMember>
     }
 
     @Override
-    public void send( CoreMember to, Serializable... message )
+    public void send( CoreMember to, Message... message )
     {
         outbound.send( to.getRaftAddress(), message );
     }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.server;
 
-import java.io.Serializable;
+import org.neo4j.coreedge.network.Message;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -79,7 +79,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     }
 
     @Override
-    public void send( AdvertisedSocketAddress to, Serializable... messages )
+    public void send( AdvertisedSocketAddress to, Message... messages )
     {
         serviceLock.readLock().lock();
         try

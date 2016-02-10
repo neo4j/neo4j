@@ -19,9 +19,11 @@
  */
 package org.neo4j.coreedge.catchup;
 
+import org.neo4j.coreedge.network.Message;
+
 import static java.lang.String.format;
 
-public enum RequestMessageType
+public enum RequestMessageType implements Message
 {
     TX_PULL_REQUEST( (byte) 1 ),
     STORE( (byte) 2 ),

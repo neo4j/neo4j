@@ -38,7 +38,7 @@ public class ClusterState
 {
     public final Map<RaftTestMember, Role> roles;
     public final Map<RaftTestMember, ComparableRaftState> states;
-    public final Map<RaftTestMember, Queue<RaftMessages.Message<RaftTestMember>>> queues;
+    public final Map<RaftTestMember, Queue<RaftMessages.RaftMessage<RaftTestMember>>> queues;
 
     public ClusterState( Set<RaftTestMember> members ) throws RaftStorageException
     {
@@ -51,7 +51,7 @@ public class ClusterState
             roles.put( member, Role.FOLLOWER );
             RaftState<RaftTestMember> memberState = raftState().myself( member ).votingMembers( members ).build();
             states.put( member, new ComparableRaftState( memberState ) );
-            queues.put( member, new LinkedList<RaftMessages.Message<RaftTestMember>>() );
+            queues.put( member, new LinkedList<RaftMessages.RaftMessage<RaftTestMember>>() );
         }
     }
 

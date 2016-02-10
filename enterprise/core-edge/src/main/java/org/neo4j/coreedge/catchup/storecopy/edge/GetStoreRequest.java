@@ -19,13 +19,11 @@
  */
 package org.neo4j.coreedge.catchup.storecopy.edge;
 
-import java.io.Serializable;
+import org.neo4j.coreedge.network.Message;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
 
-public class GetStoreRequest implements Serializable
+public class GetStoreRequest implements Message
 {
-    private static final long serialVersionUID = 1716269110109766232L;
-
     public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.STORE;
 }

@@ -35,7 +35,7 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 public class Candidate implements RaftMessageHandler
 {
     @Override
-    public <MEMBER> Outcome<MEMBER> handle( RaftMessages.Message<MEMBER> message,
+    public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message,
                                             ReadableRaftState<MEMBER> ctx, Log log ) throws RaftStorageException
     {
         Outcome<MEMBER> outcome = new Outcome<>( CANDIDATE, ctx );

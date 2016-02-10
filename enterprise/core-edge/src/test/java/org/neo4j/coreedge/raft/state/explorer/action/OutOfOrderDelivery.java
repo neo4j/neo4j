@@ -38,12 +38,12 @@ public class OutOfOrderDelivery implements Action
     public ClusterState advance( ClusterState previous )
     {
         ClusterState newClusterState = new ClusterState( previous );
-        LinkedList<RaftMessages.Message<RaftTestMember>> inboundQueue = new LinkedList<>( previous.queues.get( member ) );
+        LinkedList<RaftMessages.RaftMessage<RaftTestMember>> inboundQueue = new LinkedList<>( previous.queues.get( member ) );
         if ( inboundQueue.size() < 2 )
         {
             return previous;
         }
-        RaftMessages.Message<RaftTestMember> message = inboundQueue.poll();
+        RaftMessages.RaftMessage<RaftTestMember> message = inboundQueue.poll();
         inboundQueue.add( 1, message );
 
         newClusterState.queues.put( member, inboundQueue );

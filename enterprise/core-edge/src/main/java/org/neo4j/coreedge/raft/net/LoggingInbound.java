@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft.net;
 
-import java.io.Serializable;
+import org.neo4j.coreedge.network.Message;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.logging.MessageLogger;
@@ -43,7 +43,7 @@ public class LoggingInbound implements Inbound
     {
         inbound.registerHandler( new MessageHandler()
         {
-            public synchronized void handle( Serializable message )
+            public synchronized void handle( Message message )
             {
                 messageLogger.log( me, message );
                 handler.handle( message );

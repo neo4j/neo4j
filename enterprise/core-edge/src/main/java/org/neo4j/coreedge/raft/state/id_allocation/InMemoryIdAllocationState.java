@@ -20,7 +20,7 @@
 package org.neo4j.coreedge.raft.state.id_allocation;
 
 import java.io.IOException;
-import java.io.Serializable;
+import org.neo4j.coreedge.network.Message;
 import java.util.Arrays;
 
 import org.neo4j.coreedge.raft.replication.id.IdAllocationState;
@@ -55,7 +55,7 @@ import static java.util.Arrays.copyOf;
  * |  15x 8-byte                      |
  * +----------------------------------+
  */
-public class InMemoryIdAllocationState implements IdAllocationState, Serializable
+public class InMemoryIdAllocationState implements IdAllocationState, Message
 {
     private final long[] firstUnallocated;
     private final long[] lastIdRangeStartForMe;
@@ -151,19 +151,10 @@ public class InMemoryIdAllocationState implements IdAllocationState, Serializabl
 
         InMemoryIdAllocationState that = (InMemoryIdAllocationState) o;
 
-        if ( logIndex != that.logIndex )
-        {
-            return false;
-        }
-        if ( !Arrays.equals( firstUnallocated, that.firstUnallocated ) )
-        {
-            return false;
-        }
-        if ( !Arrays.equals( lastIdRangeStartForMe, that.lastIdRangeStartForMe ) )
-        {
-            return false;
-        }
-        return Arrays.equals( lastIdRangeLengthForMe, that.lastIdRangeLengthForMe );
+        return logIndex == that.logIndex &&
+                Arrays.equals( firstUnallocated, that.firstUnallocated ) &&
+                Arrays.equals( lastIdRangeStartForMe, that.lastIdRangeStartForMe ) &&
+                Arrays.equals( lastIdRangeLengthForMe, that.lastIdRangeLengthForMe );
     }
 
     @Override

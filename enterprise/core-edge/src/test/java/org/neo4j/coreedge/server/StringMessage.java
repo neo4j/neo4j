@@ -17,16 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.net;
+package org.neo4j.coreedge.server;
 
 import org.neo4j.coreedge.network.Message;
 
-public interface Inbound
+public class StringMessage implements Message
 {
-    void registerHandler( MessageHandler handler );
-
-    interface MessageHandler
+    public StringMessage( String content )
     {
-        void handle( Message message );
     }
 }

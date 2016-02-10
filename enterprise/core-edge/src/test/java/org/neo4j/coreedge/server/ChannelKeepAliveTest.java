@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.server;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -43,12 +42,16 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static junit.framework.TestCase.assertEquals;
+
 import static org.neo4j.coreedge.PortsForIntegrationTesting.findFreeAddress;
 
 public class ChannelKeepAliveTest
 {
-    /** Server that sends "Hello, World!" on connect. */
+    /**
+     * Server that sends "Hello, World!" on connect.
+     */
     private Channel bootstrapHelloServer( String serverAddress ) throws IOException
     {
         ServerBootstrap bootstrap = new ServerBootstrap()
@@ -75,10 +78,12 @@ public class ChannelKeepAliveTest
         return bootstrap.bind().syncUninterruptibly().channel();
     }
 
-    /** Client that just discards read data. */
+    /**
+     * Client that just discards read data.
+     */
     private ChannelInitializer<SocketChannel> discardClientInitializer()
     {
-        ChannelInitializer<SocketChannel> channelInitializer = new ChannelInitializer<SocketChannel>()
+        return new ChannelInitializer<SocketChannel>()
         {
             @Override
             protected void initChannel( SocketChannel channel ) throws Exception
@@ -99,8 +104,6 @@ public class ChannelKeepAliveTest
                 pipeline.addLast( clientHandler );
             }
         };
-
-        return channelInitializer;
     }
 
     @Test
@@ -115,10 +118,10 @@ public class ChannelKeepAliveTest
         OnDemandJobScheduler onDemandJobScheduler = new OnDemandJobScheduler();
         SenderService senderService = new SenderService( new ExpiryScheduler( onDemandJobScheduler ),
                 new Expiration( fakeClock, 2, MINUTES ), discardClientInitializer(), NullLogProvider.getInstance(),
-                new Monitors(), 64);
+                new Monitors(), 64 );
 
         senderService.start();
-        senderService.send( new AdvertisedSocketAddress( serverAddress ), "GO!" );
+        senderService.send( new AdvertisedSocketAddress( serverAddress ), new StringMessage( "GO!" ) );
 
         // when
         fakeClock.forward( 1, TimeUnit.MINUTES ); // 1 minutes total < 2 minutes expiry time

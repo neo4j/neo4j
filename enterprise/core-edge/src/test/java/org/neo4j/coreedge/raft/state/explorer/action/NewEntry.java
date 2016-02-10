@@ -41,7 +41,7 @@ public class NewEntry implements Action
     public ClusterState advance( ClusterState previous ) throws RaftStorageException
     {
         ClusterState newClusterState = new ClusterState( previous );
-        Queue<RaftMessages.Message<RaftTestMember>> newQueue = new LinkedList<>( previous.queues.get( member ) );
+        Queue<RaftMessages.RaftMessage<RaftTestMember>> newQueue = new LinkedList<>( previous.queues.get( member ) );
         newQueue.offer( new RaftMessages.NewEntry.Request<RaftTestMember>( member, new ReplicatedString(
                 "content" ) ) );
         newClusterState.queues.put( member, newQueue );
