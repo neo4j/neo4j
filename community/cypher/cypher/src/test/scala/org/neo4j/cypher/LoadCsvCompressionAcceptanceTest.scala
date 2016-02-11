@@ -24,7 +24,7 @@ import java.util.zip.{DeflaterOutputStream, GZIPOutputStream}
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 
 import org.eclipse.jetty.server.handler.{AbstractHandler, ContextHandler, ContextHandlerCollection}
-import org.eclipse.jetty.server.{Handler, Request, Server}
+import org.eclipse.jetty.server.{Handler, Request, Server, ServerConnector}
 import org.scalatest.BeforeAndAfterAll
 
 class LoadCsvCompressionAcceptanceTest extends ExecutionEngineFunSuite with BeforeAndAfterAll {
@@ -43,7 +43,7 @@ class LoadCsvCompressionAcceptanceTest extends ExecutionEngineFunSuite with Befo
   }
 
   test("should handle uncompressed csv over http") {
-    val result = execute("LOAD CSV FROM 'http://localhost:8080/csv' AS lines RETURN lines")
+    val result = execute(s"LOAD CSV FROM 'http://localhost:${server.port}/csv' AS lines RETURN lines")
 
     result.toList should equal(List(
       Map("lines" -> Seq("a1", "b1", "c1", "d1")),
@@ -52,7 +52,7 @@ class LoadCsvCompressionAcceptanceTest extends ExecutionEngineFunSuite with Befo
   }
 
   test("should handle gzipped csv over http") {
-    val result = execute("LOAD CSV FROM 'http://localhost:8080/gzip' AS lines RETURN lines")
+    val result = execute(s"LOAD CSV FROM 'http://localhost:${server.port}/gzip' AS lines RETURN lines")
 
     result.toList should equal(List(
       Map("lines" -> Seq("a1", "b1", "c1", "d1")),
@@ -61,7 +61,7 @@ class LoadCsvCompressionAcceptanceTest extends ExecutionEngineFunSuite with Befo
   }
 
   test("should handle deflated csv over http") {
-    val result = execute("LOAD CSV FROM 'http://localhost:8080/deflate' AS lines RETURN lines")
+    val result = execute(s"LOAD CSV FROM 'http://localhost:${server.port}/deflate' AS lines RETURN lines")
 
     result.toList should equal(List(
       Map("lines" -> Seq("a1", "b1", "c1", "d1")),
@@ -73,20 +73,29 @@ class LoadCsvCompressionAcceptanceTest extends ExecutionEngineFunSuite with Befo
     * Simple server that handles csv requests in plain text, gzip and deflate
     */
   private class TestServer {
-    private val server: Server = new Server(8080)
-    private val handlers = new ContextHandlerCollection()
-    addHandler("/csv", new CsvHandler)
-    addHandler("/gzip", new GzipCsvHandler)
-    addHandler("/deflate", new DeflateCsvHandler)
-    server.setHandler(handlers)
 
-    def start() = {
-      server.start()
-    }
+     //let jetty pick a random available port for us
+     private val server: Server = new Server(0)
+     //assign the correct port when server has started.
+     private var _port = -1
+     private val handlers = new ContextHandlerCollection()
+     addHandler("/csv", new CsvHandler)
+     addHandler("/gzip", new GzipCsvHandler)
+     addHandler("/deflate", new DeflateCsvHandler)
+     server.setHandler(handlers)
 
-    def stop() = server.stop()
+     def start() = {
+       server.start()
+       //find the port that we're using.
+       _port = server.getConnectors()(0).asInstanceOf[ServerConnector].getLocalPort
+       assert(_port > 0)
+     }
 
-    private def addHandler(path: String, handler: Handler): Unit = {
+     def stop() = server.stop()
+
+     def port = _port
+
+     private def addHandler(path: String, handler: Handler): Unit = {
       val contextHandler = new ContextHandler()
       contextHandler.setContextPath(path)
       contextHandler.setHandler(handler)
