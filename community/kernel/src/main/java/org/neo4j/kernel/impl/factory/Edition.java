@@ -24,6 +24,5 @@ public enum Edition
     // Note, these are sent verbatim via UDC if UDC is enabled
     unknown,
     community,
-    advanced,
     enterprise
 }

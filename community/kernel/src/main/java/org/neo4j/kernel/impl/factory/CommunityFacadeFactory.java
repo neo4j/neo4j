@@ -50,23 +50,6 @@ public class CommunityFacadeFactory extends GraphDatabaseFacadeFactory
     @Override
     protected DatabaseInfo databaseInfo()
     {
-        return new DatabaseInfo( determineEdition(), OperationalMode.single );
+        return new DatabaseInfo( Edition.community, OperationalMode.single );
     }
-
-    private Edition determineEdition()
-    {
-        // FIXME: to be removed when advanced is gone
-        try
-        {
-            getClass().getClassLoader().loadClass( "org.neo4j.management.Neo4jManager" );
-            return Edition.advanced;
-        }
-        catch ( ClassNotFoundException e )
-        {
-            // Not Advanced
-        }
-
-        return Edition.community;
-    }
-
 }
