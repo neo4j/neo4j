@@ -39,7 +39,7 @@ class FilteringExpressionTest extends CypherFunSuite {
   }
 
   test("shouldSemanticCheckPredicateInStateContainingTypedVariable") {
-    val expression = DummyExpression(CTCollection(CTNode) | CTBoolean | CTCollection(CTString), DummyPosition(5))
+    val expression = DummyExpression(CTList(CTNode) | CTBoolean | CTList(CTString), DummyPosition(5))
 
     val error = SemanticError("dummy error", DummyPosition(8))
     val predicate = new DummyExpression(CTAny, DummyPosition(7)) {

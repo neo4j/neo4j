@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class PatternExpression(pattern: RelationshipsPattern) extends Expression with SimpleTyping {
   def position = pattern.position
-  protected def possibleTypes = CTCollection(CTPath)
+  protected def possibleTypes = CTList(CTPath)
 
   override def semanticCheck(ctx: SemanticContext) =
     pattern.semanticCheck(Pattern.SemanticContext.Expression) chain

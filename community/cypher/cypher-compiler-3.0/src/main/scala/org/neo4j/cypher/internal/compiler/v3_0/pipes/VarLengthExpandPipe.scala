@@ -103,7 +103,7 @@ case class VarLengthExpandPipe(source: Pipe,
   def planDescriptionWithoutCardinality = source.planDescription.
     andThen(this.id, s"VarLengthExpand(${if (nodeInScope) "Into" else "All"})", variables, ExpandExpression(fromName, relName, types.names, toName, projectedDir, varLength = true))
 
-  def symbols = source.symbols.add(toName, CTNode).add(relName, CTCollection(CTRelationship))
+  def symbols = source.symbols.add(toName, CTNode).add(relName, CTList(CTRelationship))
 
   override def localEffects = Effects(ReadsAllNodes, ReadsAllRelationships)
 

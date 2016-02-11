@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticError, Se
 class FilterExpressionTest extends CypherFunSuite {
 
   val dummyExpression = DummyExpression(
-    possibleTypes = CTCollection(CTNode) | CTBoolean | CTCollection(CTString)
+    possibleTypes = CTList(CTNode) | CTBoolean | CTList(CTString)
   )
 
   test("shouldHaveCollectionTypesOfInnerExpression") {
@@ -37,7 +37,7 @@ class FilterExpressionTest extends CypherFunSuite {
     )(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors shouldBe empty
-    filter.types(result.state) should equal(CTCollection(CTNode) | CTCollection(CTString))
+    filter.types(result.state) should equal(CTList(CTNode) | CTList(CTString))
   }
 
   test("shouldRaiseSyntaxErrorIfMissingPredicate") {

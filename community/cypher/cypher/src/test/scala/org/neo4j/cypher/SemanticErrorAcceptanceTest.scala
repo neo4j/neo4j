@@ -547,7 +547,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("aggregation inside looping queries is not allowed") {
 
-    val mess = "Can't use aggregating expressions inside of expressions executing over collections"
+    val mess = "Can't use aggregating expressions inside of expressions executing over lists"
     executeAndEnsureError(
       "MATCH (n) RETURN [x in [1,2,3,4,5] | count(*)]",
       s"$mess (line 1, column 24 (offset: 23))")

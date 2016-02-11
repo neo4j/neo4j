@@ -261,7 +261,7 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
     start.evaluateType(CTNumber, symbols)
     end.evaluateType(CTNumber, symbols)
     step.evaluateType(CTNumber, symbols)
-    CTCollection(CTNumber)
+    CTList(CTNumber)
   }
 
   def symbolTableDependencies = start.symbolTableDependencies ++

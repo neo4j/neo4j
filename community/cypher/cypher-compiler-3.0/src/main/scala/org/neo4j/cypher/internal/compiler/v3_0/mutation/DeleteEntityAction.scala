@@ -74,7 +74,7 @@ case class DeleteEntityAction(elementToDelete: Expression, forced: Boolean)
   def localEffects(symbols: SymbolTable) = elementToDelete match {
     case i: Variable => effectsFromCypherType(symbols.variables(i.entityName))
     case ContainerIndex(i: Variable, _) => symbols.variables(i.entityName) match {
-      case CollectionType(innerType) => effectsFromCypherType(innerType)
+      case ListType(innerType) => effectsFromCypherType(innerType)
     }
     // There could be a nested map/collection expression here, so we'll
     // just say that we don't know what type the entity has

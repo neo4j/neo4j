@@ -31,7 +31,7 @@ case object Length extends Function with SimpleTypedFunction {
   //NOTE using CTString and CTCollection here is deprecated
   val signatures = Vector(
     Signature(Vector(CTString), CTInteger),
-    Signature(Vector(CTCollection(CTAny)), CTInteger),
+    Signature(Vector(CTList(CTAny)), CTInteger),
     Signature(Vector(CTPath), CTInteger)
   )
 

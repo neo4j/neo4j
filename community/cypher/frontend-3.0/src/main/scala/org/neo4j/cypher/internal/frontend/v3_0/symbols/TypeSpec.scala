@@ -101,13 +101,13 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
     r => that.ranges.flatMap(r leastUpperBounds)
   })
 
-  def wrapInCollection: TypeSpec = TypeSpec(ranges.map(_.reparent(CTCollection)))
-  def unwrapCollections: TypeSpec = TypeSpec(ranges.map(_.reparent { case c: CollectionType => c.innerType }))
+  def wrapInList: TypeSpec = TypeSpec(ranges.map(_.reparent(CTList)))
+  def unwrapLists: TypeSpec = TypeSpec(ranges.map(_.reparent { case c: ListType => c.innerType }))
 
   def coercions: TypeSpec = {
     val simpleCoercions = TypeSpec.simpleTypes.filter(this contains).flatMap(_.coercibleTo)
-    if (this containsAny CTCollection(CTAny).covariant)
-      TypeSpec.exact(simpleCoercions ++ CTCollection(CTAny).coercibleTo)
+    if (this containsAny CTList(CTAny).covariant)
+      TypeSpec.exact(simpleCoercions ++ CTList(CTAny).coercibleTo)
     else
       TypeSpec.exact(simpleCoercions)
   }
@@ -122,7 +122,7 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
     if (rs.isEmpty)
       Stream()
     else
-      TypeSpec.simpleTypes.filter(contains(_, rs)).toStream append toStream(innerTypeRanges(rs)).map(t => CollectionType(t))
+      TypeSpec.simpleTypes.filter(contains(_, rs)).toStream append toStream(innerTypeRanges(rs)).map(t => ListType(t))
 
   def iterator: Iterator[CypherType] = toStream.iterator
 
@@ -170,9 +170,9 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
   def toShortString = mkString("", " | ", "")
 
   private def innerTypeRanges(rs: Seq[TypeRange]): Seq[TypeRange] = rs.flatMap {
-    case TypeRange(c: CollectionType, Some(u: CollectionType)) => Some(TypeRange(c.innerType, u.innerType))
-    case TypeRange(c: CollectionType, None)                    => Some(TypeRange(c.innerType, None))
-    case TypeRange(_: AnyType, Some(u: CollectionType))        => Some(TypeRange(CTAny, u.innerType))
+    case TypeRange(c: ListType, Some(u: ListType)) => Some(TypeRange(c.innerType, u.innerType))
+    case TypeRange(c: ListType, None)                    => Some(TypeRange(c.innerType, None))
+    case TypeRange(_: AnyType, Some(u: ListType))        => Some(TypeRange(CTAny, u.innerType))
     case r@TypeRange(_: AnyType, None)                         => Some(r)
     case _                                                     => None
   }

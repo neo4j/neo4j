@@ -33,13 +33,13 @@ trait FilteringExpression extends Expression {
 
   def semanticCheck(ctx: SemanticContext) =
     expression.semanticCheck(ctx) chain
-    expression.expectType(CTCollection(CTAny).covariant) chain
+    expression.expectType(CTList(CTAny).covariant) chain
     checkInnerPredicate chain
     failIfAggregrating(innerPredicate)
 
   protected def failIfAggregrating(e: Expression): Option[SemanticError] =
     if(e.containsAggregate) {
-      val message = "Can't use aggregating expressions inside of expressions executing over collections"
+      val message = "Can't use aggregating expressions inside of expressions executing over lists"
       Some(SemanticError(message, expression.position))
     } else None
 
@@ -47,7 +47,7 @@ trait FilteringExpression extends Expression {
     in.flatMap(failIfAggregrating)
 
   protected def possibleInnerTypes: TypeGenerator = s =>
-    (expression.types(s) constrain CTCollection(CTAny)).unwrapCollections
+    (expression.types(s) constrain CTList(CTAny)).unwrapLists
 
   protected def checkPredicateDefined =
     when (innerPredicate.isEmpty) {
@@ -110,7 +110,7 @@ case class ExtractExpression(scope: ExtractScope, expression: Expression)(val po
       e => withScopedState {
         variable.declare(possibleInnerTypes) chain e.semanticCheck(SemanticContext.Simple)
       } chain {
-        val outerTypes: TypeGenerator = e.types(_).wrapInCollection
+        val outerTypes: TypeGenerator = e.types(_).wrapInList
         this.specifyType(outerTypes)
       }
     }
@@ -142,7 +142,7 @@ case class ListComprehension(scope: ExtractScope, expression: Expression)(val po
       withScopedState {
         variable.declare(possibleInnerTypes) chain e.semanticCheck(SemanticContext.Simple)
       } chain {
-        val outerTypes: TypeGenerator = e.types(_).wrapInCollection
+        val outerTypes: TypeGenerator = e.types(_).wrapInList
         this.specifyType(outerTypes)
       }
     case None    => this.specifyType(expression.types)
@@ -206,7 +206,7 @@ object SingleIterablePredicate {
     SingleIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }
 
-case class ReduceExpression(scope: ReduceScope, init: Expression, collection: Expression)(val position: InputPosition) extends Expression {
+case class ReduceExpression(scope: ReduceScope, init: Expression, list: Expression)(val position: InputPosition) extends Expression {
   import ReduceExpression._
 
   def variable = scope.variable
@@ -215,11 +215,11 @@ case class ReduceExpression(scope: ReduceScope, init: Expression, collection: Ex
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     init.semanticCheck(ctx) chain
-    collection.semanticCheck(ctx) chain
-    collection.expectType(CTCollection(CTAny).covariant) chain
+    list.semanticCheck(ctx) chain
+    list.expectType(CTList(CTAny).covariant) chain
     withScopedState {
       val indexType: TypeGenerator = s =>
-        (collection.types(s) constrain CTCollection(CTAny)).unwrapCollections
+        (list.types(s) constrain CTList(CTAny)).unwrapLists
       val accType: TypeGenerator = init.types
 
       variable.declare(indexType) chain
@@ -231,7 +231,7 @@ case class ReduceExpression(scope: ReduceScope, init: Expression, collection: Ex
 
   protected def failIfAggregrating: Option[SemanticError] =
     if (expression.containsAggregate) {
-      val message = "Can't use aggregating expressions inside of expressions executing over collections"
+      val message = "Can't use aggregating expressions inside of expressions executing over lists"
       Some(SemanticError(message, expression.position))
     } else None
 
@@ -240,7 +240,7 @@ case class ReduceExpression(scope: ReduceScope, init: Expression, collection: Ex
 object ReduceExpression {
   val AccumulatorExpressionTypeMismatchMessageGenerator = (expected: String, existing: String) => s"accumulator is $expected but expression has type $existing"
 
-  def apply(accumulator: Variable, init: Expression, variable: Variable, collection: Expression, expression: Expression)(position: InputPosition): ReduceExpression =
-    ReduceExpression(ReduceScope(accumulator, variable, expression)(position), init, collection)(position)
+  def apply(accumulator: Variable, init: Expression, variable: Variable, list: Expression, expression: Expression)(position: InputPosition): ReduceExpression =
+    ReduceExpression(ReduceScope(accumulator, variable, expression)(position), init, list)(position)
 }
 

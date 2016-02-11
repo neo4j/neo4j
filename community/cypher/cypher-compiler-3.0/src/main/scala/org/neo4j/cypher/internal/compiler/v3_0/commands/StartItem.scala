@@ -155,7 +155,7 @@ case class AllRelationships(columnName: String) extends StartItem(columnName, Se
 
 case class LoadCSV(withHeaders: Boolean, url: Expression, variable: String, fieldTerminator: Option[String]) extends StartItem(variable, Seq.empty)
   with ReadOnlyStartItem {
-  def variables: Seq[(String, CypherType)] = Seq(variableName -> (if (withHeaders) CTMap else CTCollection(CTAny)))
+  def variables: Seq[(String, CypherType)] = Seq(variableName -> (if (withHeaders) CTMap else CTList(CTAny)))
   override def localEffects(symbols: SymbolTable) = Effects()
 }
 

@@ -53,7 +53,7 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variab
     val typ = if (withHeaders)
       CTMap
     else
-      CTCollection(CTString)
+      CTList(CTString)
 
     variable.declare(typ)
   }
@@ -268,10 +268,10 @@ case class Foreach(variable: Variable, expression: Expression, updates: Seq[Clau
 
   override def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) chain
-      expression.expectType(CTCollection(CTAny).covariant) chain
+      expression.expectType(CTList(CTAny).covariant) chain
       updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
       withScopedState {
-        val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
+        val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
         variable.declare(possibleInnerTypes) chain updates.semanticCheck
       }
 }
@@ -281,8 +281,8 @@ case class Unwind(expression: Expression, variable: Variable)(val position: Inpu
 
   override def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Results) chain
-      expression.expectType(CTCollection(CTAny).covariant) ifOkChain {
-      val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
+      expression.expectType(CTList(CTAny).covariant) ifOkChain {
+      val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
       variable.declare(possibleInnerTypes)
     }
 }

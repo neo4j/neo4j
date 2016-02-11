@@ -27,6 +27,6 @@ class LiteralTest extends CypherFunSuite {
   test("collections_should_be_typed_correctly") {
     val value = Literal(Seq(Seq("Text")))
 
-    value.calculateType(SymbolTable()) should equal(CTCollection(CTCollection(CTString)))
+    value.calculateType(SymbolTable()) should equal(CTList(CTList(CTString)))
   }
 }

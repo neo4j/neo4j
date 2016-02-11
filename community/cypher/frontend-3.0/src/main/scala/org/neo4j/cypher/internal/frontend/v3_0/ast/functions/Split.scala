@@ -26,6 +26,6 @@ case object Split extends Function with SimpleTypedFunction {
   def name = "split"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTString, CTString), outputType = CTCollection(CTString))
+    Signature(argumentTypes = Vector(CTString, CTString), outputType = CTList(CTString))
   )
 }

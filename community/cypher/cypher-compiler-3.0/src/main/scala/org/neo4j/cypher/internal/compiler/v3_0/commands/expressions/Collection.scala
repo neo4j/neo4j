@@ -35,8 +35,8 @@ case class Collection(arguments: Expression*) extends Expression {
 
   def calculateType(symbols: SymbolTable): CypherType =
     arguments.map(_.getType(symbols)) match {
-      case Seq() => CTCollection(CTAny)
-      case types => CTCollection(types.reduce(_ leastUpperBound _))
+      case Seq() => CTList(CTAny)
+      case types => CTList(types.reduce(_ leastUpperBound _))
     }
 
   def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet

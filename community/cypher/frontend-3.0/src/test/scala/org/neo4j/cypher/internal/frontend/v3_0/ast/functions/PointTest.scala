@@ -29,7 +29,7 @@ class PointTest extends FunctionTestBase("point")  {
 
   test("should fail type check for incompatible arguments") {
     // TODO: Fix error message which seems to assume that Node and Relationships are acceptable maps
-    testInvalidApplication(CTCollection(CTAny))(
+    testInvalidApplication(CTList(CTAny))(
       "Type mismatch: expected Map, Node or Relationship but was Collection<Any>"
     )
     testInvalidApplication(CTString)(

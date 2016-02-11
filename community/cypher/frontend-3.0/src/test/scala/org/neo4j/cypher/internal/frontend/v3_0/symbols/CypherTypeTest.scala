@@ -26,23 +26,23 @@ class CypherTypeTest extends CypherFunSuite {
     CTInteger.parents should equal(Seq(CTNumber, CTAny))
     CTNumber.parents should equal(Seq(CTAny))
     CTAny.parents should equal(Seq())
-    CTCollection(CTString).parents should equal(Seq(CTCollection(CTAny), CTAny))
+    CTList(CTString).parents should equal(Seq(CTList(CTAny), CTAny))
   }
 
   test("should be assignable from sub-type") {
     CTNumber.isAssignableFrom(CTInteger) should equal(true)
     CTAny.isAssignableFrom(CTString) should equal(true)
-    CTCollection(CTString).isAssignableFrom(CTCollection(CTString)) should equal(true)
-    CTCollection(CTNumber).isAssignableFrom(CTCollection(CTInteger)) should equal(true)
+    CTList(CTString).isAssignableFrom(CTList(CTString)) should equal(true)
+    CTList(CTNumber).isAssignableFrom(CTList(CTInteger)) should equal(true)
     CTInteger.isAssignableFrom(CTNumber) should equal(false)
-    CTCollection(CTInteger).isAssignableFrom(CTCollection(CTString)) should equal(false)
+    CTList(CTInteger).isAssignableFrom(CTList(CTString)) should equal(false)
   }
 
   test("should find leastUpperBound") {
     assertLeastUpperBound(CTNumber, CTNumber, CTNumber)
     assertLeastUpperBound(CTNumber, CTAny, CTAny)
     assertLeastUpperBound(CTNumber, CTString, CTAny)
-    assertLeastUpperBound(CTNumber, CTCollection(CTAny), CTAny)
+    assertLeastUpperBound(CTNumber, CTList(CTAny), CTAny)
     assertLeastUpperBound(CTInteger, CTFloat, CTNumber)
     assertLeastUpperBound(CTMap, CTFloat, CTAny)
   }
@@ -50,25 +50,25 @@ class CypherTypeTest extends CypherFunSuite {
   private def assertLeastUpperBound(a: CypherType, b: CypherType, result: CypherType) {
     val simpleMergedType: CypherType = a leastUpperBound b
     simpleMergedType should equal(result)
-    val collectionMergedType: CypherType = CTCollection(a) leastUpperBound CTCollection(b)
-    collectionMergedType should equal(CTCollection(result))
+    val listMergedType: CypherType = CTList(a) leastUpperBound CTList(b)
+    listMergedType should equal(CTList(result))
   }
 
   test("should find greatestLowerBound") {
     assertGreatestLowerBound(CTNumber, CTNumber, Some(CTNumber))
     assertGreatestLowerBound(CTNumber, CTAny, Some(CTNumber))
-    assertGreatestLowerBound(CTCollection(CTNumber), CTCollection(CTInteger), Some(CTCollection(CTInteger)))
+    assertGreatestLowerBound(CTList(CTNumber), CTList(CTInteger), Some(CTList(CTInteger)))
     assertGreatestLowerBound(CTNumber, CTString, None)
-    assertGreatestLowerBound(CTNumber, CTCollection(CTAny), None)
+    assertGreatestLowerBound(CTNumber, CTList(CTAny), None)
     assertGreatestLowerBound(CTInteger, CTFloat, None)
     assertGreatestLowerBound(CTMap, CTFloat, None)
-    assertGreatestLowerBound(CTBoolean, CTCollection(CTAny), None)
+    assertGreatestLowerBound(CTBoolean, CTList(CTAny), None)
   }
 
   private def assertGreatestLowerBound(a: CypherType, b: CypherType, result: Option[CypherType]) {
     val simpleMergedType: Option[CypherType] = a greatestLowerBound b
     simpleMergedType should equal(result)
-    val collectionMergedType: Option[CypherType] = CTCollection(a) greatestLowerBound CTCollection(b)
-    collectionMergedType should equal(for (t <- result) yield CTCollection(t))
+    val listMergedType: Option[CypherType] = CTList(a) greatestLowerBound CTList(b)
+    listMergedType should equal(for (t <- result) yield CTList(t))
   }
 }

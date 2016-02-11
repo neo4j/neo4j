@@ -26,6 +26,6 @@ case object Labels extends Function with SimpleTypedFunction {
   def name = "labels"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTNode), outputType = CTCollection(CTString))
+    Signature(argumentTypes = Vector(CTNode), outputType = CTList(CTString))
   )
 }

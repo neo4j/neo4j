@@ -49,35 +49,35 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
     testValidTypes(CTFloat, CTInteger)(CTFloat)
     testValidTypes(CTFloat, CTFloat)(CTFloat)
 
-    testValidTypes(CTCollection(CTNode), CTCollection(CTNode))(CTCollection(CTNode))
-    testValidTypes(CTCollection(CTFloat), CTCollection(CTFloat))(CTCollection(CTFloat))
+    testValidTypes(CTList(CTNode), CTList(CTNode))(CTList(CTNode))
+    testValidTypes(CTList(CTFloat), CTList(CTFloat))(CTList(CTFloat))
 
-    testValidTypes(CTCollection(CTNode), CTNode)(CTCollection(CTNode))
-    testValidTypes(CTCollection(CTFloat), CTFloat)(CTCollection(CTFloat))
+    testValidTypes(CTList(CTNode), CTNode)(CTList(CTNode))
+    testValidTypes(CTList(CTFloat), CTFloat)(CTList(CTFloat))
 
-    testValidTypes(CTNode, CTCollection(CTNode))(CTCollection(CTNode))
-    testValidTypes(CTFloat, CTCollection(CTFloat))(CTCollection(CTFloat))
+    testValidTypes(CTNode, CTList(CTNode))(CTList(CTNode))
+    testValidTypes(CTFloat, CTList(CTFloat))(CTList(CTFloat))
   }
 
   test("shouldHandleCombinedSpecializations") {
     testValidTypes(CTFloat | CTString, CTInteger)(CTFloat | CTString)
-    testValidTypes(CTFloat | CTCollection(CTFloat), CTFloat)(CTFloat | CTCollection(CTFloat))
-    testValidTypes(CTFloat, CTFloat | CTCollection(CTFloat))(CTFloat | CTCollection(CTFloat))
+    testValidTypes(CTFloat | CTList(CTFloat), CTFloat)(CTFloat | CTList(CTFloat))
+    testValidTypes(CTFloat, CTFloat | CTList(CTFloat))(CTFloat | CTList(CTFloat))
   }
 
   test("shouldHandleCoercions") {
-    testValidTypes(CTCollection(CTFloat), CTInteger)(CTCollection(CTFloat))
-    testValidTypes(CTFloat | CTCollection(CTFloat), CTInteger)(CTFloat | CTCollection(CTFloat))
+    testValidTypes(CTList(CTFloat), CTInteger)(CTList(CTFloat))
+    testValidTypes(CTFloat | CTList(CTFloat), CTInteger)(CTFloat | CTList(CTFloat))
   }
 
   test("shouldFailTypeCheckForIncompatibleArguments") {
     testInvalidApplication(CTInteger, CTBoolean)(
       "Type mismatch: expected Float, Integer, String or Collection<Integer> but was Boolean"
     )
-    testInvalidApplication(CTCollection(CTInteger), CTString)(
+    testInvalidApplication(CTList(CTInteger), CTString)(
       "Type mismatch: expected Integer, Collection<Integer> or Collection<Collection<Integer>> but was String"
     )
-    testInvalidApplication(CTCollection(CTInteger), CTCollection(CTString))(
+    testInvalidApplication(CTList(CTInteger), CTList(CTString))(
       "Type mismatch: expected Integer, Collection<Integer> or Collection<Collection<Integer>> but was Collection<String>"
     )
   }

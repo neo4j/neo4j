@@ -29,8 +29,8 @@ object LiteralTypeSupport {
     case _: Number                          => CTFloat
     case _: Boolean                         => CTBoolean
     case IsMap(_)                           => CTMap
-    case IsCollection(coll) if coll.isEmpty => CTCollection(CTAny)
-    case IsCollection(coll)                 => CTCollection(coll.map(deriveType).reduce(_ leastUpperBound _))
+    case IsCollection(coll) if coll.isEmpty => CTList(CTAny)
+    case IsCollection(coll)                 => CTList(coll.map(deriveType).reduce(_ leastUpperBound _))
     case _                                  => CTAny
   }
 }

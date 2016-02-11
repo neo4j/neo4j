@@ -39,11 +39,11 @@ class CodeGenExpressionTypesTest extends CypherFunSuite {
   test("collection") {
     implicit val context: CodeGenContext = null
 
-    Collection(Seq(int)).cypherType should equal(CTCollection(CTInteger))
-    Collection(Seq(double)).cypherType should equal(CTCollection(CTFloat))
-    Collection(Seq(int, double)).cypherType should equal(CTCollection(CTNumber))
-    Collection(Seq(string, int)).cypherType should equal(CTCollection(CTAny))
-    Collection(Seq(node, rel)).cypherType should equal(CTCollection(CTMap))
+    Collection(Seq(int)).cypherType should equal(CTList(CTInteger))
+    Collection(Seq(double)).cypherType should equal(CTList(CTFloat))
+    Collection(Seq(int, double)).cypherType should equal(CTList(CTNumber))
+    Collection(Seq(string, int)).cypherType should equal(CTList(CTAny))
+    Collection(Seq(node, rel)).cypherType should equal(CTList(CTMap))
   }
 
   test("add") {
@@ -52,11 +52,11 @@ class CodeGenExpressionTypesTest extends CypherFunSuite {
     Addition(int, double).cypherType should equal(CTFloat)
     Addition(string, int).cypherType should equal(CTAny)
     Addition(string, string).cypherType should equal(CTString)
-    Addition(intCollection, int).cypherType should equal(CTCollection(CTInteger))
-    Addition(int, intCollection).cypherType should equal(CTCollection(CTInteger))
-    Addition(double, intCollection).cypherType should equal(CTCollection(CTNumber))
-    Addition(doubleCollection, intCollection).cypherType should equal(CTCollection(CTNumber))
-    Addition(stringCollection, string).cypherType should equal(CTCollection(CTString))
-    Addition(string, stringCollection).cypherType should equal(CTCollection(CTString))
+    Addition(intCollection, int).cypherType should equal(CTList(CTInteger))
+    Addition(int, intCollection).cypherType should equal(CTList(CTInteger))
+    Addition(double, intCollection).cypherType should equal(CTList(CTNumber))
+    Addition(doubleCollection, intCollection).cypherType should equal(CTList(CTNumber))
+    Addition(stringCollection, string).cypherType should equal(CTList(CTString))
+    Addition(string, stringCollection).cypherType should equal(CTList(CTString))
   }
 }

@@ -117,7 +117,7 @@ class ContainerIndexTest extends CypherFunSuite {
   test("when collection is a CTAny then type is a collection of CTAny") {
     val collection = new FakeExpression(CTAny)
     val symbols = new SymbolTable()
-    val result = ContainerIndex(collection, Literal(2)).evaluateType(CTCollection(CTAny), symbols)
+    val result = ContainerIndex(collection, Literal(2)).evaluateType(CTList(CTAny), symbols)
 
     result should equal(CTAny)
   }

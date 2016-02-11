@@ -31,7 +31,7 @@ class ToIntTest extends FunctionTestBase("toInt")  {
   }
 
   test("shouldFailTypeCheckForIncompatibleArguments") {
-    testInvalidApplication(CTCollection(CTAny))(
+    testInvalidApplication(CTList(CTAny))(
       "Type mismatch: expected Float, Integer, Number or String but was Collection<Any>"
     )
 

@@ -163,7 +163,7 @@ case class ParsedVarLengthRelation(name: String,
     copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
 
   def possibleStartPoints: Seq[(String, CypherType)] =
-    (start.possibleStartPoints :+ name -> CTCollection(CTRelationship)) ++ end.possibleStartPoints
+    (start.possibleStartPoints :+ name -> CTList(CTRelationship)) ++ end.possibleStartPoints
 }
 
 case class ParsedShortestPath(name: String,

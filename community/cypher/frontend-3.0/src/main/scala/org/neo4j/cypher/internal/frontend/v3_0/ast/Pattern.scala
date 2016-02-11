@@ -294,7 +294,7 @@ case class RelationshipPattern(
   def declareVariables(ctx: SemanticContext): SemanticCheck =
     variable.fold(SemanticCheckResult.success) {
       variable =>
-        val possibleType = if (length.isEmpty) CTRelationship else CTCollection(CTRelationship)
+        val possibleType = if (length.isEmpty) CTRelationship else CTList(CTRelationship)
 
         ctx match {
           case SemanticContext.Match      => variable.implicitDeclaration(possibleType)

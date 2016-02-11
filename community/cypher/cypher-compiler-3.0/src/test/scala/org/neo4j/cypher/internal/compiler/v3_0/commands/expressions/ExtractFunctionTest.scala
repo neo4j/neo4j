@@ -32,9 +32,9 @@ class ExtractFunctionTest extends CypherFunSuite {
     val symbols = SymbolTable()
 
     //WHEN
-    val typ = func.evaluateType(CTCollection(CTString), symbols)
+    val typ = func.evaluateType(CTList(CTString), symbols)
 
     //THEN
-    typ should equal(CTCollection(CTString))
+    typ should equal(CTList(CTString))
   }
 }

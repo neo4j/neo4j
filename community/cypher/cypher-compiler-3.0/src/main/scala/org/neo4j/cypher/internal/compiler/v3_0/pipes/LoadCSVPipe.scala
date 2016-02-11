@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.LoadExternalResourceException
-import org.neo4j.cypher.internal.frontend.v3_0.symbols.{AnyType, CollectionType, MapType}
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.{AnyType, ListType, MapType}
 
 sealed trait CSVFormat
 case object HasHeaders extends CSVFormat
@@ -118,7 +118,7 @@ case class LoadCSVPipe(source: Pipe,
 
   override def symbols: SymbolTable = format match {
     case HasHeaders => source.symbols.add(variable, MapType.instance)
-    case NoHeaders => source.symbols.add(variable, CollectionType(AnyType.instance))
+    case NoHeaders => source.symbols.add(variable, ListType(AnyType.instance))
   }
 
   override def localEffects = Effects()

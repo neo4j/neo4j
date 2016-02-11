@@ -42,7 +42,7 @@ case class NodesFunction(path: Expression) extends NullInNullOutExpression(path)
   def calculateType(symbols: SymbolTable) = {
     path.evaluateType(CTPath, symbols)
 
-    CTCollection(CTNode)
+    CTList(CTNode)
   }
 
   def symbolTableDependencies = path.symbolTableDependencies

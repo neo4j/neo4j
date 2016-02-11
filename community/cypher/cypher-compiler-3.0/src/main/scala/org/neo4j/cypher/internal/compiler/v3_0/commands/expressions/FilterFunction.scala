@@ -39,7 +39,7 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
 
   def arguments: Seq[Expression] = Seq(collection)
 
-  def calculateType(symbols: SymbolTable): CypherType =  collection.evaluateType(CTCollection(CTAny), symbols)
+  def calculateType(symbols: SymbolTable): CypherType =  collection.evaluateType(CTList(CTAny), symbols)
 
   def symbolTableDependencies = symbolTableDependencies(collection, predicate, id)
 }

@@ -197,7 +197,7 @@ case class SplitFunction(orig: Expression, separator: Expression)
 
   override def rewrite(f: (Expression) => Expression) = f(SplitFunction(orig.rewrite(f), separator.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = CTCollection(CTString)
+  override def calculateType(symbols: SymbolTable) = CTList(CTString)
 
   override def symbolTableDependencies = orig.symbolTableDependencies ++ separator.symbolTableDependencies
 }

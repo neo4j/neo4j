@@ -29,7 +29,7 @@ class LabelsTest extends FunctionTestBase("labels") {
   }
 
   test("shouldHaveCollectionOfStringsType") {
-    testValidTypes(CTNode)(CTCollection(CTString))
+    testValidTypes(CTNode)(CTList(CTString))
   }
 
   test("shouldReturnErrorIfInvalidArgumentTypes") {

@@ -24,25 +24,22 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticError, SemanticState}
 
 class CollectionSliceTest extends CypherFunSuite {
-  val dummyCollection = DummyExpression(
-    CTCollection(CTNode) | CTNode | CTCollection(CTString))
+  val dummyList = DummyExpression(
+    CTList(CTNode) | CTNode | CTList(CTString))
 
   test("shouldReturnCollectionTypesOfExpression") {
-    val slice = CollectionSlice(dummyCollection,
-      Some(SignedDecimalIntegerLiteral("1")(DummyPosition(5))),
-      Some(SignedDecimalIntegerLiteral("2")(DummyPosition(7)))
+    val slice = CollectionSlice(dummyList,
+                                Some(SignedDecimalIntegerLiteral("1")(DummyPosition(5))),
+                                Some(SignedDecimalIntegerLiteral("2")(DummyPosition(7)))
     )(DummyPosition(4))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors shouldBe empty
-    slice.types(result.state) should equal(CTCollection(CTNode) | CTCollection(CTString))
+    slice.types(result.state) should equal(CTList(CTNode) | CTList(CTString))
   }
 
   test("shouldRaiseErrorWhenNeitherFromOrTwoSpecified") {
-    val slice = CollectionSlice(dummyCollection,
-      None,
-      None
-    )(DummyPosition(4))
+    val slice = CollectionSlice(dummyList, None, None)(DummyPosition(4))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should equal(Seq(SemanticError("The start or end (or both) is required for a collection slice", slice.position)))
@@ -50,10 +47,7 @@ class CollectionSliceTest extends CypherFunSuite {
 
   test("shouldRaiseErrorIfStartingFromFraction") {
     val to = DecimalDoubleLiteral("1.3")(DummyPosition(5))
-    val slice = CollectionSlice(dummyCollection,
-      None,
-      Some(to)
-    )(DummyPosition(4))
+    val slice = CollectionSlice(dummyList, None, Some(to))(DummyPosition(4))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should equal(Seq(SemanticError("Type mismatch: expected Integer but was Float", to.position)))

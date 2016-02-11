@@ -56,9 +56,9 @@ class SemanticTable(
 
   def isRelationship(expr: String) = getTypeFor(expr) == symbols.CTRelationship.invariant
 
-  def isRelationshipCollection(expr: String) = getTypeFor(expr) == symbols.CTCollection(symbols.CTRelationship).invariant
+  def isRelationshipCollection(expr: String) = getTypeFor(expr) == symbols.CTList(symbols.CTRelationship).invariant
 
-  def isNodeCollection(expr: String) = getTypeFor(expr) == symbols.CTCollection(symbols.CTNode).invariant
+  def isNodeCollection(expr: String) = getTypeFor(expr) == symbols.CTList(symbols.CTNode).invariant
 
   def isNode(expr: Variable) = types(expr).specified == symbols.CTNode.invariant
 

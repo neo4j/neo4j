@@ -29,6 +29,6 @@ case object Collect extends AggregatingFunction  {
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation)  =
     checkArgs(invocation, 1) ifOkChain {
       invocation.arguments(0).expectType(CTAny.covariant) chain
-      invocation.specifyType(invocation.arguments(0).types(_).wrapInCollection)
+      invocation.specifyType(invocation.arguments(0).types(_).wrapInList)
     }
 }

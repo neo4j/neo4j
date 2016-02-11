@@ -34,7 +34,7 @@ case class NestedPipeExpression(pipe: Pipe, path: ProjectedPath) extends Express
 
   def arguments = Nil
 
-  def calculateType(symbols: SymbolTable): CypherType = CTCollection(CTPath)
+  def calculateType(symbols: SymbolTable): CypherType = CTList(CTPath)
 
   def symbolTableDependencies = Set()
 }

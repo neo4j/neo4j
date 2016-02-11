@@ -28,16 +28,16 @@ case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends Code
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
-  val validTypes = Seq(CTString, CTFloat, CTInteger, CTCollection(CTAny))
+  val validTypes = Seq(CTString, CTFloat, CTInteger, CTList(CTAny))
 
   override def cypherType(implicit context: CodeGenContext) = (lhs.cypherType, rhs.cypherType) match {
     // Strings
     case (CTString, CTString) => CTString
 
     // Collections
-    case (CollectionType(left), CollectionType(right)) => CollectionType(left leastUpperBound right)
-    case (CollectionType(innerType), singleElement) => CollectionType(innerType leastUpperBound singleElement)
-    case (singleElement, CollectionType(innerType)) => CollectionType(innerType leastUpperBound singleElement)
+    case (ListType(left), ListType(right)) => ListType(left leastUpperBound right)
+    case (ListType(innerType), singleElement) => ListType(innerType leastUpperBound singleElement)
+    case (singleElement, ListType(innerType)) => ListType(innerType leastUpperBound singleElement)
 
     // Numbers
     case (CTInteger, CTInteger) => CTInteger
