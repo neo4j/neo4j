@@ -35,6 +35,7 @@ import org.neo4j.bolt.v1.messaging.infrastructure.ValueUnboundRelationship;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
+import static java.lang.System.lineSeparator;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.BOB;
@@ -52,49 +53,49 @@ public class BoltValueStructsDocTest
 
     static
     {
-        expectedSerialization.put( "Node", "B3 4E C9 05\n" +
-                                           "39 92 86 42\n" +
-                                           "61 6E 61 6E\n" +
-                                           "61 86 50 65\n" +
-                                           "72 73 6F 6E\n" +
-                                           "A1 81 6B C9\n" +
+        expectedSerialization.put( "Node", "B3 4E C9 05" + lineSeparator() +
+                                           "39 92 86 42" + lineSeparator() +
+                                           "61 6E 61 6E" + lineSeparator() +
+                                           "61 86 50 65" + lineSeparator() +
+                                           "72 73 6F 6E" + lineSeparator() +
+                                           "A1 81 6B C9" + lineSeparator() +
                                            "30 39" );
-        expectedSerialization.put( "Relationship", "B5 52 C9 05\n" +
-                                                   "39 C9 05 39\n" +
-                                                   "C9 05 39 85\n" +
-                                                   "31 32 33 34\n" +
-                                                   "35 A1 81 6B\n" +
+        expectedSerialization.put( "Relationship", "B5 52 C9 05" + lineSeparator() +
+                                                   "39 C9 05 39" + lineSeparator() +
+                                                   "C9 05 39 85" + lineSeparator() +
+                                                   "31 32 33 34" + lineSeparator() +
+                                                   "35 A1 81 6B" + lineSeparator() +
                                                    "C9 30 39" );
-        expectedSerialization.put( "UnboundRelationship", "B3 72 C9 05\n" +
-                                                          "39 87 20 22\n" +
-                                                          "4B 4E 4F 57\n" +
-                                                          "53 A1 81 6B\n" +
+        expectedSerialization.put( "UnboundRelationship", "B3 72 C9 05" + lineSeparator() +
+                                                          "39 87 20 22" + lineSeparator() +
+                                                          "4B 4E 4F 57" + lineSeparator() +
+                                                          "53 A1 81 6B" + lineSeparator() +
                                                           "C9 30 39" );
-        expectedSerialization.put( "Path", "B3 50 92 B3\n" +
-                                           "4E C9 03 E9\n" +
-                                           "92 86 50 65\n" +
-                                           "72 73 6F 6E\n" +
-                                           "88 45 6D 70\n" +
-                                           "6C 6F 79 65\n" +
-                                           "65 A2 84 6E\n" +
-                                           "61 6D 65 85\n" +
-                                           "41 6C 69 63\n" +
-                                           "65 83 61 67\n" +
-                                           "65 21 B3 4E\n" +
-                                           "C9 03 EA 92\n" +
-                                           "86 50 65 72\n" +
-                                           "73 6F 6E 88\n" +
-                                           "45 6D 70 6C\n" +
-                                           "6F 79 65 65\n" +
-                                           "A2 84 6E 61\n" +
-                                           "6D 65 83 42\n" +
-                                           "6F 62 83 61\n" +
-                                           "67 65 2C 91\n" +
-                                           "B3 72 0C 85\n" +
-                                           "4B 4E 4F 57\n" +
-                                           "53 A1 85 73\n" +
-                                           "69 6E 63 65\n" +
-                                           "C9 07 CF 92\n" +
+        expectedSerialization.put( "Path", "B3 50 92 B3" + lineSeparator() +
+                                           "4E C9 03 E9" + lineSeparator() +
+                                           "92 86 50 65" + lineSeparator() +
+                                           "72 73 6F 6E" + lineSeparator() +
+                                           "88 45 6D 70" + lineSeparator() +
+                                           "6C 6F 79 65" + lineSeparator() +
+                                           "65 A2 84 6E" + lineSeparator() +
+                                           "61 6D 65 85" + lineSeparator() +
+                                           "41 6C 69 63" + lineSeparator() +
+                                           "65 83 61 67" + lineSeparator() +
+                                           "65 21 B3 4E" + lineSeparator() +
+                                           "C9 03 EA 92" + lineSeparator() +
+                                           "86 50 65 72" + lineSeparator() +
+                                           "73 6F 6E 88" + lineSeparator() +
+                                           "45 6D 70 6C" + lineSeparator() +
+                                           "6F 79 65 65" + lineSeparator() +
+                                           "A2 84 6E 61" + lineSeparator() +
+                                           "6D 65 83 42" + lineSeparator() +
+                                           "6F 62 83 61" + lineSeparator() +
+                                           "67 65 2C 91" + lineSeparator() +
+                                           "B3 72 0C 85" + lineSeparator() +
+                                           "4B 4E 4F 57" + lineSeparator() +
+                                           "53 A1 85 73" + lineSeparator() +
+                                           "69 6E 63 65" + lineSeparator() +
+                                           "C9 07 CF 92" + lineSeparator() +
                                            "01 01" );
     }
 
