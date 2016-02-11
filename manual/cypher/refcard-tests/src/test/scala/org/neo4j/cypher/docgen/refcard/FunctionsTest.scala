@@ -107,5 +107,5 @@ RETURN
 
 keys({expr})###
 
-Returns a collection of string representations for the property names of a node, relationship, or map."""
+Returns a list of string representations for the property names of a node, relationship, or map."""
 }

@@ -121,7 +121,7 @@ RETURN
 split({original}, {delimiter})
 ###
 
-Split a string into a collection of strings.
+Split a string into a list of strings.
 
 ###assertion=returns-one parameters=sub
 RETURN

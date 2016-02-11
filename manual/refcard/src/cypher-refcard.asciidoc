@@ -24,7 +24,7 @@ The Cypher Refcard is also link:{docs-home}/pdf/neo4j-cypher-refcard-{neo4j-vers
 
 Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameters, which is the best practice for applications.
 Neo4j properties can be strings, numbers, booleans or arrays thereof.
-Cypher also supports maps and collections.
+Cypher also supports maps and lists.
 
 
 == Syntax
@@ -100,7 +100,7 @@ include::{sources}/import.asciidoc[]
 | Comparison         | `=`, `<>`, `<`, `>`, `<=`, `>=`
 | Boolean            | `AND`, `OR`, `XOR`, `NOT`
 | String             | `+`
-| Collection         | `+`, `IN`, `[x]`, `[x .. y]`
+| List               | `+`, `IN`, `[x]`, `[x .. y]`
 | Regular Expression | `=~`
 | String matching    | `STARTS WITH`, `ENDS WITH`, `CONTAINS`
 |===
@@ -123,7 +123,7 @@ include::{sources}/import.asciidoc[]
   So the expression `NULL = NULL` yields +NULL+ and not +TRUE+.
   To check if an expression is +NULL+, use +IS NULL+.
 * Arithmetic expressions, comparisons and function calls (except +coalesce+) will return +NULL+ if any argument is +NULL+.
-* An attempt to access a missing element in a collection or a property that doesn't exist yields +NULL+.
+* An attempt to access a missing element in a list or a property that doesn't exist yields +NULL+.
 * In +OPTIONAL MATCH+ clauses, ++NULL++s will be used for missing parts of the pattern.
 |===
 
@@ -135,7 +135,7 @@ include::{sources}/patterns.asciidoc[]
 
 include::{sources}/labels.asciidoc[]
 
-include::{sources}/collections.asciidoc[]
+include::{sources}/lists.asciidoc[]
 
 include::{sources}/maps.asciidoc[]
 
@@ -143,13 +143,13 @@ include::{sources}/relationship-functions.asciidoc[]
 
 include::{sources}/predicates.asciidoc[]
 
-include::{sources}/collection-predicates.asciidoc[]
+include::{sources}/list-predicates.asciidoc[]
 
 include::{sources}/functions.asciidoc[]
 
 include::{sources}/path-functions.asciidoc[]
 
-include::{sources}/collection-expressions.asciidoc[]
+include::{sources}/list-expressions.asciidoc[]
 
 include::{sources}/mathematical-functions.asciidoc[]
 

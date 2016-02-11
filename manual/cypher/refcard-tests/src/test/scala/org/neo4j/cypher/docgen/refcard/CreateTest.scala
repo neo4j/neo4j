@@ -56,7 +56,7 @@ class CreateTest extends RefcardTest with QueryStatisticsTestSupport {
       case "parameters=map" =>
         Map("map" -> Map("name" -> "Bob"))
       case "parameters=maps" =>
-        Map("collectionOfMaps" -> List(Map("name" -> "Bob"), Map("name" -> "Carl")))
+        Map("listOfMaps" -> List(Map("name" -> "Bob"), Map("name" -> "Carl")))
       case "parameters=ayear" =>
         Map("value" -> 2007)
       case "" =>
@@ -90,7 +90,7 @@ Create a node with the given properties.
 ###assertion=create-nodes-from-maps parameters=maps
 //
 
-UNWIND {collectionOfMaps} AS properties CREATE (n) SET n = properties
+UNWIND {listOfMaps} AS properties CREATE (n) SET n = properties
 
 RETURN n###
 

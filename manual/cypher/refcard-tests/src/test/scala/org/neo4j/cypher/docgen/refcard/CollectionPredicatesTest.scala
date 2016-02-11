@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 
 class CollectionPredicatesTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
-  val title = "Collection Predicates"
+  val title = "List Predicates"
   val css = "general c2-2 c3-3 c4-4 c5-2 c6-5"
   override val linkId = "query-predicates"
 
@@ -56,7 +56,7 @@ all(x IN coll WHERE exists(x.property))
 
 RETURN n,m###
 
-Returns `true` if the predicate is `TRUE` for all elements of the collection.
+Returns `true` if the predicate is `true` for all elements of the list.
 
 ###assertion=returns-one
 MATCH path = (n)-->(m)
@@ -68,7 +68,7 @@ any(x IN coll WHERE exists(x.property))
 
 RETURN n, m###
 
-Returns `true` if the predicate is `TRUE` for at least one element of the collection.
+Returns `true` if the predicate is `true` for at least one element of the list.
 
 ###assertion=returns-none
 MATCH path = (n)-->(m)
@@ -80,7 +80,7 @@ none(x IN coll WHERE exists(x.property))
 
 RETURN n, m###
 
-Returns `TRUE` if the predicate is `FALSE` for all elements of the collection.
+Returns `true` if the predicate is `false` for all elements of the list.
 
 ###assertion=returns-none
 MATCH path = (n)-->(m)
@@ -92,6 +92,6 @@ single(x IN coll WHERE exists(x.property))
 
 RETURN n, m###
 
-Returns `TRUE` if the predicate is `TRUE` for exactly one element in the collection.
+Returns `true` if the predicate is `true` for exactly one element in the list.
              """
 }

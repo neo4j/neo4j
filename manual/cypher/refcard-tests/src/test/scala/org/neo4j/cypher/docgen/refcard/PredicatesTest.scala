@@ -212,6 +212,6 @@ n.property IN [{value1}, {value2}]
 
 RETURN n###
 
-Check if an element exists in a collection.
+Check if an element exists in a list.
 """
 }

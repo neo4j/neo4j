@@ -68,6 +68,6 @@ WITH ["Alice", "Bob", "Charlie"] AS coll
 FOREACH (value IN coll |
  CREATE (:Person {name: value}))
 ###
-Execute a mutating operation for each element in a collection.
+Execute a mutating operation for each element in a list.
 """
 }

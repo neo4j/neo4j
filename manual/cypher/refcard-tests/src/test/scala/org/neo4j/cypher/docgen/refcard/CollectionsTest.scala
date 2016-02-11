@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 
 class CollectionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A KNOWS B")
-  val title = "Collections"
+  val title = "Lists"
   val css = "general c2-2 c3-2 c4-3 c5-2 c6-6"
   override val linkId = "syntax-collections"
 
@@ -71,7 +71,7 @@ RETURN
 
 ###
 
-Literal collections are declared in square brackets.
+Literal lists are declared in square brackets.
 
 ###assertion=returns-one parameters=coll
 RETURN
@@ -80,7 +80,7 @@ size({coll}) AS len, {coll}[0] AS value
 
 ###
 
-Collections can be passed in as parameters.
+Lists can be passed in as parameters.
 
 ###assertion=returns-one parameters=range
 RETURN
@@ -89,7 +89,7 @@ range({firstNum}, {lastNum}, {step}) AS coll
 
 ###
 
-Range creates a collection of numbers (+step+ is optional), other functions returning collections are:
+Range creates a list of numbers (+step+ is optional), other functions returning list are:
 +labels+, +nodes+, +relationships+, +rels+, +filter+, +extract+.
 
 ###assertion=returns-one
@@ -100,7 +100,7 @@ RETURN r AS rels
 
 ###
 
-Relationship variables of a variable length path contain a collection of relationships.
+Relationship variables of a variable length path contain a list of relationships.
 
 ###assertion=returns-two
 MATCH (matchedNode)
@@ -110,7 +110,7 @@ RETURN matchedNode.coll[0] AS value,
 
 ###
 
-Properties can be arrays/collections of strings, numbers or booleans.
+Properties can be lists of strings, numbers or booleans.
 
 ###assertion=returns-one parameters=subscript
 WITH [1, 2, 3] AS coll
@@ -121,9 +121,9 @@ coll[{startIdx}..{endIdx}] AS slice
 
 ###
 
-Collection elements can be accessed with +idx+ subscripts in square brackets.
-Invalid indexes return +NULL+.
-Slices can be retrieved with intervals from +start_idx+ to +end_idx+ each of which can be omitted or negative.
+List elements can be accessed with `idx` subscripts in square brackets.
+Invalid indexes return `NULL`.
+Slices can be retrieved with intervals from `start_idx` to `end_idx` each of which can be omitted or negative.
 Out of range elements are ignored.
 
 ###assertion=returns-one parameters=names
@@ -135,7 +135,7 @@ RETURN avg(n.age)
 
 ###
 
-With +UNWIND+, you can transform any collection back into individual rows.
+With `UNWIND`, you can transform any list back into individual rows.
 The example matches all names from a list of names.
 """
 }

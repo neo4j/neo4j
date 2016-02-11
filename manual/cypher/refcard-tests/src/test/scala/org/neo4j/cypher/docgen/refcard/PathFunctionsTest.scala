@@ -80,7 +80,7 @@ RETURN
 nodes(path)
 ###
 
-The nodes in the path as a collection.
+The nodes in the path as a list.
 
 ###assertion=returns-one
 MATCH path = (n)-->(m)
@@ -90,7 +90,7 @@ RETURN
 relationships(path)
 ###
 
-The relationships in the path as a collection.
+The relationships in the path as a list.
 
 ###assertion=returns-one
 MATCH path = (n)-->(m)

@@ -85,7 +85,7 @@ MATCH (n:Person) WHERE n.name IN [{value}]
 RETURN n
 ###
 
-An index can be automatically used for the IN collection checks.
+An index can be automatically used for the `IN` list checks.
 
 ###assertion=match parameters=aname
 //
