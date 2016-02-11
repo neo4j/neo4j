@@ -26,7 +26,10 @@ import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class VoteStateTest
 {
@@ -39,7 +42,7 @@ public class VoteStateTest
                 new AdvertisedSocketAddress( "host1:2001" ) );
 
         // when
-        voteState.votedFor( member, 0 );
+        voteState.update( member, 0 );
 
         // then
         assertEquals( member, voteState.votedFor() );
@@ -66,8 +69,8 @@ public class VoteStateTest
                 new AdvertisedSocketAddress( "host2:2001" ) );
 
         // when
-        voteState.votedFor( member1, 0 );
-        voteState.votedFor( member2, 1 );
+        voteState.update( member1, 0 );
+        voteState.update( member2, 1 );
 
         // then
         assertEquals( member2, voteState.votedFor() );
@@ -80,12 +83,77 @@ public class VoteStateTest
         VoteState<CoreMember> voteState = new VoteState<>();
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                 new AdvertisedSocketAddress( "host1:2001" ) );
-        voteState.votedFor( member, 0 );
+        voteState.update( member, 0 );
 
         // when
-        voteState.votedFor( null, 1 );
+        voteState.update( null, 1 );
 
         // then
         assertNull( voteState.votedFor() );
+    }
+
+    @Test
+    public void shouldNotUpdateVoteForSameTerm() throws Exception
+    {
+        // given
+        VoteState<CoreMember> voteState = new VoteState<>();
+        CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
+                new AdvertisedSocketAddress( "host1:2001" ) );
+        CoreMember member2 = new CoreMember( new AdvertisedSocketAddress( "host2:1001" ),
+                new AdvertisedSocketAddress( "host2:2001" ) );
+
+        voteState.update( member1, 0 );
+
+        try
+        {
+            // when
+            voteState.update( member2, 0 );
+            fail( "Should have thrown IllegalArgumentException" );
+        }
+        catch ( IllegalArgumentException expected )
+        {
+            // expected
+        }
+    }
+
+    @Test
+    public void shouldNotClearVoteForSameTerm() throws Exception
+    {
+        // given
+        VoteState<CoreMember> voteState = new VoteState<>();
+        CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
+                new AdvertisedSocketAddress( "host1:2001" ) );
+
+        voteState.update( member1, 0 );
+
+        try
+        {
+            // when
+            voteState.update( null, 0 );
+            fail( "Should have thrown IllegalArgumentException" );
+        }
+        catch ( IllegalArgumentException expected )
+        {
+            // expected
+        }
+    }
+
+    @Test
+    public void shouldReportNoUpdateWhenVoteStateUnchanged() throws Exception
+    {
+        // given
+        VoteState<CoreMember> voteState = new VoteState<>();
+        CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
+                new AdvertisedSocketAddress( "host1:2001" ) );
+        CoreMember member2 = new CoreMember( new AdvertisedSocketAddress( "host2:1001" ),
+                new AdvertisedSocketAddress( "host2:2001" ) );
+
+        // when
+        assertTrue( voteState.update( null, 0 ) );
+        assertFalse( voteState.update( null, 0 ) );
+        assertTrue( voteState.update( member1, 0 ) );
+        assertFalse( voteState.update( member1, 0 ) );
+        assertTrue( voteState.update( member2, 1 ) );
+        assertFalse( voteState.update( member2, 1 ) );
     }
 }
