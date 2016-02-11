@@ -138,8 +138,8 @@ public class MessageFormatTest
                 map( "name", "Bob", "age", 14 ) );
 
         assertThat( serialized( valueNode ),
-                equalTo( "B1 71 91 B3 4E 0C 92 84 55 73 65 72 86 42 61 6E\n" +
-                         "61 6E 61 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67\n" +
+                equalTo( "B1 71 91 B3 4E 0C 92 84 55 73 65 72 86 42 61 6E" + lineSeparator() +
+                         "61 6E 61 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67" + lineSeparator() +
                          "65 0E" ) );
     }
 
@@ -150,7 +150,7 @@ public class MessageFormatTest
                 map( "name", "Bob", "age", 14 ) );
 
         assertThat( serialized( valueRelationship ),
-                equalTo( "B1 71 91 B5 52 0C 01 02 85 4B 4E 4F 57 53 A2 84\n" +
+                equalTo( "B1 71 91 B5 52 0C 01 02 85 4B 4E 4F 57 53 A2 84" + lineSeparator() +
                          "6E 61 6D 65 83 42 6F 62 83 61 67 65 0E" ) );
     }
 

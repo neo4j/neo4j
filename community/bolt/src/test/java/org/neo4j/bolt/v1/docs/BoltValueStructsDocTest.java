@@ -136,7 +136,7 @@ public class BoltValueStructsDocTest
 
         // Then unpack again into a regular object
         byte[] bytes = output.bytes();
-        String hex = HexPrinter.hex( bytes, 4, "\n" );
+        String hex = HexPrinter.hex( bytes, 4, lineSeparator() );
 
         // Then it should get interpreted as the documented structure
         assertEquals( expectedSerialization.get( struct.name() ), hex );
