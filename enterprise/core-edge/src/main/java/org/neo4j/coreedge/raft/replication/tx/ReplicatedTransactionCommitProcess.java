@@ -43,19 +43,19 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotCommit;
 public class ReplicatedTransactionCommitProcess implements TransactionCommitProcess
 {
     private final Replicator replicator;
-    private final long retryIntervalMillis;
+    private final RetryStrategy retryStrategy;
     private final LocalSessionPool sessionPool;
     private final Log log;
     private final CommittingTransactions txFutures;
     private final TxRetryMonitor txRetryMonitor;
 
     public ReplicatedTransactionCommitProcess( Replicator replicator, LocalSessionPool sessionPool,
-                                               long retryIntervalMillis, LogService logging,
+                                               RetryStrategy retryStrategy, LogService logging,
                                                CommittingTransactions txFutures, Monitors monitors )
     {
         this.sessionPool = sessionPool;
         this.replicator = replicator;
-        this.retryIntervalMillis = retryIntervalMillis;
+        this.retryStrategy = retryStrategy;
         this.log = logging.getInternalLog( getClass() );
         this.txFutures = txFutures;
         txRetryMonitor = monitors.newMonitor( TxRetryMonitor.class );
@@ -104,7 +104,7 @@ public class ReplicatedTransactionCommitProcess implements TransactionCommitProc
 
                 try
                 {
-                    Long txId = futureTxId.waitUntilCommitted( retryIntervalMillis, TimeUnit.MILLISECONDS );
+                    Long txId = futureTxId.waitUntilCommitted( retryStrategy.nextTimeout(), TimeUnit.MILLISECONDS );
                     sessionPool.releaseSession( operationContext );
 
                     return txId;
@@ -118,7 +118,7 @@ public class ReplicatedTransactionCommitProcess implements TransactionCommitProc
                 catch ( TimeoutException e )
                 {
                     log.info( "Replication of %s timed out after %d %s; retrying.",
-                            operationContext, retryIntervalMillis, TimeUnit.MILLISECONDS );
+                            operationContext, retryStrategy.previousTimeout(), TimeUnit.MILLISECONDS );
                     txRetryMonitor.retry();
                 }
             }
