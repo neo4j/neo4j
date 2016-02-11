@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.function.Supplier;
 
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -36,13 +38,13 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -51,6 +53,7 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
@@ -62,6 +65,13 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
  */
 public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder
 {
+    /*
+     * IMPORTANT:
+     * This class is pooled and re-used. If you add *any* state to it, you *must* make sure that:
+     *   - the #initialize() method resets that state for re-use
+     *   - the #release() method releases resources acquired in #initialize() or during the transaction's life time
+     */
+
     private enum TransactionType
     {
         READ,
@@ -100,69 +110,80 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionHooks hooks;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StatementOperationParts operations;
-    private final KernelTransactions kernelTransactions;
     private final StorageEngine storageEngine;
-    private final Locks.Client locks;
     private final Procedures procedures;
+    private final TransactionTracer tracer;
+    private final Pool<KernelTransactionImplementation> pool;
+    private final Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier;
 
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
+    private final StoreReadLayer storeLayer;
     private final Clock clock;
 
-    // State
+    // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
+    // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
     private TransactionState txState;
-    private final LegacyIndexTransactionState legacyIndexTransactionState;
-    private TransactionType transactionType = TransactionType.READ; // Tracks current state of transaction, which will upgrade to WRITE or SCHEMA mode when necessary
+    private LegacyIndexTransactionState legacyIndexTransactionState;
+    private TransactionType transactionType; // Tracks current state of transaction, which will upgrade to WRITE or SCHEMA mode when necessary
     private TransactionHooks.TransactionHooksState hooksState;
     private KernelStatement currentStatement;
     private CloseListener closeListener;
-    private AccessMode accessMode = AccessMode.FULL; // Defines whether a transaction is allowed to upgrade to WRITE or SCHEMA mode
-
+    private AccessMode accessMode; // Defines whether a transaction is allowed to upgrade to WRITE or SCHEMA mode
+    private Locks.Client locks;
     private boolean beforeHookInvoked;
     private boolean closing, closed;
     private boolean failure, success;
     private volatile boolean terminated;
-
-    // Header information
-    private final long startTimeMillis;
-    private final long lastTransactionIdWhenStarted;
-
-    // Event tracing
-    private final TransactionEvent transactionEvent;
+    private long startTimeMillis;
+    private long lastTransactionIdWhenStarted;
+    private TransactionEvent transactionEvent;
 
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard,
-                                            Locks.Client locks,
                                             TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
                                             Procedures procedures, TransactionHeaderInformationFactory headerInformationFactory,
                                             TransactionCommitProcess commitProcess,
                                             TransactionMonitor transactionMonitor,
-                                            LegacyIndexTransactionState legacyIndexTransactionState,
-                                            KernelTransactions kernelTransactions,
+                                            Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier,
+                                            Pool<KernelTransactionImplementation> pool,
                                             Clock clock,
                                             TransactionTracer tracer,
-                                            StorageEngine storageEngine,
-                                            long lastTransactionIdWhenStarted )
+                                            StorageEngine storageEngine )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
-        this.locks = locks;
         this.constraintIndexCreator = constraintIndexCreator;
         this.procedures = procedures;
         this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
+        this.storeLayer = storageEngine.storeReadLayer();
         this.storageEngine = storageEngine;
-        this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
-        this.kernelTransactions = kernelTransactions;
+        this.legacyIndexTxStateSupplier = legacyIndexTxStateSupplier;
+        this.pool = pool;
         this.clock = clock;
+        this.tracer = tracer;
+    }
+
+    /**
+     * Reset this transaction to a vanilla state, turning it into a logically new transaction.
+     */
+    public KernelTransactionImplementation initialize( long lastCommittedTx, Locks.Client locks )
+    {
+        this.locks = locks;
+        this.closing = closed = failure = success = terminated = beforeHookInvoked = false;
+        this.transactionType = TransactionType.READ;
         this.startTimeMillis = clock.currentTimeMillis();
-        this.lastTransactionIdWhenStarted = lastTransactionIdWhenStarted;
+        this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.transactionEvent = tracer.beginTransaction();
+        assert transactionEvent != null : "transactionEvent was null!";
+        this.accessMode = AccessMode.FULL;
+        return this;
     }
 
     @Override
@@ -294,7 +315,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public LegacyIndexTransactionState legacyIndexTxState()
     {
-        return legacyIndexTransactionState;
+        return legacyIndexTransactionState != null ? legacyIndexTransactionState :
+            (legacyIndexTransactionState = legacyIndexTxStateSupplier.get());
     }
 
     @Override
@@ -341,7 +363,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private boolean hasChanges()
     {
-        return hasTxStateWithChanges() || legacyIndexTransactionState.hasChanges();
+        return hasTxStateWithChanges() || hasLegacyIndexChanges();
+    }
+
+    private boolean hasLegacyIndexChanges()
+    {
+        return legacyIndexTransactionState != null && legacyIndexTransactionState.hasChanges();
     }
 
     private boolean hasDataChanges()
@@ -390,8 +417,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             finally
             {
-                locks.close();
-                kernelTransactions.transactionClosed( this );
+                release();
             }
         }
     }
@@ -430,7 +456,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         txState,
                         locks,
                         lastTransactionIdWhenStarted );
-                if ( legacyIndexTransactionState.hasChanges() )
+                if ( hasLegacyIndexChanges() )
                 {
                     legacyIndexTransactionState.extractCommands( extractedCommands );
                 }
@@ -504,13 +530,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         @Override
                         public void visitCreatedNode( long id )
                         {
-                            storageEngine.storeReadLayer().releaseNode( id );
+                            storeLayer.releaseNode( id );
                         }
 
                         @Override
                         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
                         {
-                            storageEngine.storeReadLayer().releaseRelationship( id );
+                            storeLayer.releaseRelationship( id );
                         }
                     } );
                 }
@@ -557,6 +583,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             transactionMonitor.transactionFinished( false, hasTxStateWithChanges() );
         }
+    }
+
+    /**
+     * Release resources held up by this transaction & return it to the transaction pool.
+     */
+    private void release()
+    {
+        locks.close();
+        transactionEvent = null;
+        legacyIndexTransactionState = null;
+        txState = null;
+        hooksState = null;
+        closeListener = null;
+        pool.release( this );
     }
 
     @Override

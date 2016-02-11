@@ -45,19 +45,18 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyLong;
@@ -66,6 +65,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
 public class KernelTransactionsTest
 {
@@ -83,7 +83,7 @@ public class KernelTransactionsTest
         first.close();
 
         // Then
-        assertThat( registry.activeTransactions(), equalTo( asSet( second, third ) ) );
+        assertThat( asUniqueSet( registry.activeTransactions() ), equalTo( asSet( second, third ) ) );
     }
 
     @Test
@@ -142,8 +142,8 @@ public class KernelTransactionsTest
         KernelTransaction tx2 = kernelTransactions.newInstance();
         KernelTransaction tx3 = kernelTransactions.newInstance();
 
-        kernelTransactions.transactionClosed( tx1 );
-        kernelTransactions.transactionClosed( tx3 );
+        tx1.close();
+        tx3.close();
 
         assertEquals( asSet( tx2 ), kernelTransactions.activeTransactions() );
     }
@@ -160,22 +160,6 @@ public class KernelTransactionsTest
         tx2.close();
 
         assertEquals( asSet( tx1, tx3 ), kernelTransactions.activeTransactions() );
-    }
-
-    @Test
-    public void exceptionIsThrownWhenUnknownTxIsClosed() throws Exception
-    {
-        KernelTransactions kernelTransactions = newKernelTransactions();
-
-        try
-        {
-            kernelTransactions.transactionClosed( mock( KernelTransactionImplementation.class ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
     }
 
     @Test
@@ -210,10 +194,16 @@ public class KernelTransactionsTest
         MetaDataStore metaDataStore = mock( MetaDataStore.class );
         NeoStores neoStores = mock( NeoStores.class );
 
-        StoreStatement storeStatement = new StoreStatement( neoStores, new ReentrantLockService(),
-                mock( Supplier.class ), null );
         StoreReadLayer readLayer = mock( StoreReadLayer.class );
-        when( readLayer.acquireStatement() ).thenReturn( storeStatement );
+        when( readLayer.acquireStatement() ).thenAnswer( new Answer<StorageStatement>()
+        {
+            @Override
+            public StorageStatement answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return new StoreStatement( neoStores, new ReentrantLockService(),
+                        mock( Supplier.class ), null );
+            }
+        } );
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
