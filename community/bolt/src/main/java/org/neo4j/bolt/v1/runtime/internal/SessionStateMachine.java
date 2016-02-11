@@ -25,9 +25,7 @@ import java.util.UUID;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -53,7 +51,7 @@ public class SessionStateMachine implements Session, SessionState
         /**
          * Before the session has been initialized.
          */
-        UNITIALIZED
+        UNINITIALIZED
                 {
                     @Override
                     public State init( SessionStateMachine ctx, String clientName )
@@ -424,7 +422,7 @@ public class SessionStateMachine implements Session, SessionState
     };
 
     /** The current session state */
-    private State state = State.UNITIALIZED;
+    private State state = State.UNINITIALIZED;
 
     /** The current pending result, if present */
     private RecordStream currentResult;

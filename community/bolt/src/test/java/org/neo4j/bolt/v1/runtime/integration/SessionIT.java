@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.failedWith;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.streamContaining;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
@@ -65,7 +64,7 @@ public class SessionIT
         session.init( "TestClient/1.0", null, null );
 
         // When
-        session.run( "", Collections.<String,Object>emptyMap(), null, responses );
+        session.run( "", EMPTY_PARAMS, null, responses );
 
         // Then
         assertThat( responses.next(), failedWith( Status.Statement.InvalidSyntax ) );
@@ -79,7 +78,7 @@ public class SessionIT
         session.init( "TestClient/1.0", null, null );
 
         // When
-        session.run( "CREATE (n {k:'k'}) RETURN n.k", Collections.<String,Object>emptyMap(), null, responses );
+        session.run( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS, null, responses );
 
         // Then
         assertThat( responses.next(), success() );

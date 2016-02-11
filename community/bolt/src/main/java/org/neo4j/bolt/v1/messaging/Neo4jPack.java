@@ -211,6 +211,7 @@ public class Neo4jPack
                 }
             }
         }
+
         // TODO: combine these
         public void packProperties( PropertyContainer entity ) throws IOException
         {
@@ -223,7 +224,6 @@ public class Neo4jPack
             }
         }
     }
-
 
     public static class Unpacker extends PackStream.Unpacker
     {
@@ -265,25 +265,25 @@ public class Neo4jPack
                     char signature = unpackStructSignature();
                     switch ( signature )
                     {
-                        case NODE:
-                        {
-                            return ValueNode.unpackFields( this );
-                        }
-                        case RELATIONSHIP:
-                        {
-                            return ValueRelationship.unpackFields( this );
-                        }
-                        case UNBOUND_RELATIONSHIP:
-                        {
-                            return ValueUnboundRelationship.unpackFields( this );
-                        }
-                        case PATH:
-                        {
-                            return pathUnpacker.unpackFields( this );
-                        }
-                        default:
-                            throw new BoltIOException( Status.Request.InvalidFormat,
-                                    "Unknown struct type: " + Integer.toHexString(signature) );
+                    case NODE:
+                    {
+                        throw new BoltIOException( Status.Request.Invalid, "Nodes cannot be unpacked." );
+                    }
+                    case RELATIONSHIP:
+                    {
+                        throw new BoltIOException( Status.Request.Invalid, "Relationships cannot be unpacked." );
+                    }
+                    case UNBOUND_RELATIONSHIP:
+                    {
+                        throw new BoltIOException( Status.Request.Invalid, "Relationships cannot be unpacked." );
+                    }
+                    case PATH:
+                    {
+                        throw new BoltIOException( Status.Request.Invalid, "Paths cannot be unpacked." );
+                    }
+                    default:
+                        throw new BoltIOException( Status.Request.InvalidFormat,
+                                "Unknown struct type: " + Integer.toHexString( signature ) );
                     }
                 }
                 case END_OF_STREAM:
