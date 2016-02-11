@@ -19,30 +19,44 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import java.io.IOException;
-import java.util.function.Supplier;
+import org.junit.Test;
 
-import org.junit.Rule;
-
-import org.neo4j.coreedge.raft.state.term.OnDiskTermState;
 import org.neo4j.coreedge.raft.state.term.TermState;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.TargetDirectory;
 
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
-public class OnDiskTermStateContractTest extends TermStateContractTest
+public class TermStateTest
 {
-    @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
-
-    @Override
-    public TermState createTermStore() throws IOException
+    @Test
+    public void shouldStoreCurrentTerm() throws Exception
     {
-        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        return new OnDiskTermState( fileSystem, testDir.directory(), 100, mock( Supplier.class ),
-                NullLogProvider.getInstance() );
+        // given
+        TermState termState = new TermState();
+
+        // when
+        termState.update( 21 );
+
+        // then
+        assertEquals( 21, termState.currentTerm() );
+    }
+
+    @Test
+    public void rejectLowerTerm() throws Exception
+    {
+        // given
+        TermState termState = new TermState();
+        termState.update( 21 );
+
+        // when
+        try
+        {
+            termState.update( 20 );
+            fail( "Should have thrown exception" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // expected
+        }
     }
 }

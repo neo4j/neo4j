@@ -19,26 +19,227 @@
  */
 package org.neo4j.coreedge.raft.replication.session;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
+
 /**
- * Each cluster instance has a global session as well as several local sessions. Each local session
- * tracks its operation by assigning a unique sequence number to each operation. This allows
- * an operation originating from an instance to be uniquely identified and duplicate attempts
- * at performing that operation can be filtered out.
- * <p>
- * The session tracker defines the strategy for which local operations are allowed to be performed
- * and the strategy is to only allow operations to occur in strict order, that is with no gaps,
- * starting with sequence number zero. This is done for reasons of efficiency and creates a very
- * direct coupling between session tracking and operation validation. This class is in charge
- * of both.
+ * In memory implementation of {@link GlobalSessionTrackerState}.
+ *
+ * @param <MEMBER> The type of members tracked by this session tracker state
  */
-public interface GlobalSessionTrackerState<MEMBER>
+public class GlobalSessionTrackerState<MEMBER>
 {
+    /**
+     * Each owner can only have one local session tracker, identified by the unique global session ID.
+     */
+    private Map<MEMBER, LocalSessionTracker> sessionTrackers = new HashMap<>();
+
+    private long logIndex = -1L;
+
+    public GlobalSessionTrackerState()
+    {
+    }
+
     /**
      * Tracks the operation and returns true iff this operation should be allowed.
      */
-    boolean validateOperation( GlobalSession<MEMBER> globalSession, LocalOperationId localOperationId );
+    public boolean validateOperation( GlobalSession<MEMBER> globalSession, LocalOperationId localOperationId )
+    {
+        LocalSessionTracker existingSessionTracker = sessionTrackers.get( globalSession.owner() );
+        if ( isNewSession( globalSession, existingSessionTracker ) )
+        {
+            return isFirstOperation( localOperationId );
+        }
+        else
+        {
+            return existingSessionTracker.isValidOperation( localOperationId );
+        }
+    }
 
-    void update( GlobalSession<MEMBER> globalSession, LocalOperationId localOperationId, long logIndex );
+    public void update( GlobalSession<MEMBER> globalSession, LocalOperationId localOperationId, long logIndex )
+    {
+        LocalSessionTracker localSessionTracker = validateGlobalSessionAndGetLocalSessionTracker( globalSession );
+        localSessionTracker.validateAndTrackOperation( localOperationId );
+        this.logIndex = logIndex;
+    }
 
-    long logIndex();
+    private boolean isNewSession( GlobalSession<MEMBER> globalSession, LocalSessionTracker existingSessionTracker )
+    {
+        return existingSessionTracker == null ||
+                !existingSessionTracker.globalSessionId.equals( globalSession.sessionId() );
+    }
+
+    private boolean isFirstOperation( LocalOperationId id )
+    {
+        return id.sequenceNumber() == 0;
+    }
+
+    public long logIndex()
+    {
+        return logIndex;
+    }
+
+    private LocalSessionTracker validateGlobalSessionAndGetLocalSessionTracker( GlobalSession<MEMBER> globalSession )
+    {
+        LocalSessionTracker localSessionTracker = sessionTrackers.get( globalSession.owner() );
+
+        if ( localSessionTracker == null ||
+                !localSessionTracker.globalSessionId.equals( globalSession.sessionId() ) )
+        {
+            localSessionTracker = new LocalSessionTracker( globalSession.sessionId() );
+            sessionTrackers.put( globalSession.owner(), localSessionTracker );
+        }
+
+        return localSessionTracker;
+    }
+
+    public static class Marshal<MEMBER> implements StateMarshal<GlobalSessionTrackerState<MEMBER>>
+    {
+        private final ChannelMarshal<MEMBER> memberMarshal;
+
+        public Marshal( ChannelMarshal<MEMBER> marshal )
+        {
+            this.memberMarshal = marshal;
+        }
+
+        @Override
+        public void marshal( GlobalSessionTrackerState<MEMBER> target, WritableChannel channel )
+                throws IOException
+        {
+            final Map<MEMBER, LocalSessionTracker> sessionTrackers = target.sessionTrackers;
+
+            channel.putLong( target.logIndex );
+            channel.putInt( sessionTrackers.size() );
+
+            for ( Map.Entry<MEMBER, LocalSessionTracker> entry : sessionTrackers.entrySet() )
+            {
+                memberMarshal.marshal( entry.getKey(), channel );
+                final LocalSessionTracker localSessionTracker = entry.getValue();
+
+                final UUID uuid = localSessionTracker.globalSessionId;
+                channel.putLong( uuid.getMostSignificantBits() );
+                channel.putLong( uuid.getLeastSignificantBits() );
+
+                final Map<Long, Long> map = localSessionTracker.lastSequenceNumberPerSession;
+
+                channel.putInt( map.size() );
+
+                for ( Map.Entry<Long, Long> sessionSequence : map.entrySet() )
+                {
+                    channel.putLong( sessionSequence.getKey() );
+                    channel.putLong( sessionSequence.getValue() );
+                }
+            }
+        }
+
+        @Override
+        public GlobalSessionTrackerState<MEMBER> unmarshal( ReadableChannel source ) throws IOException
+        {
+            try
+            {
+                final long logIndex = source.getLong();
+                final int sessionTrackerSize = source.getInt();
+                final Map<MEMBER, LocalSessionTracker> theMainMap = new HashMap<>();
+
+                for ( int i = 0; i < sessionTrackerSize; i++ )
+                {
+                    final MEMBER unmarshal = memberMarshal.unmarshal( source );
+                    if ( unmarshal == null )
+                    {
+                        return null;
+                    }
+
+                    final LocalSessionTracker localSessionTracker =
+                            new LocalSessionTracker( new UUID( source.getLong(), source.getLong() ) );
+
+                    final int localSessionTrackerSize = source.getInt();
+                    final HashMap<Long, Long> notSureAboutTheName = new HashMap<>();
+                    for ( int j = 0; j < localSessionTrackerSize; j++ )
+                    {
+                        notSureAboutTheName.put( source.getLong(), source.getLong() );
+                    }
+                    localSessionTracker.lastSequenceNumberPerSession = notSureAboutTheName;
+                    theMainMap.put( unmarshal, localSessionTracker );
+                }
+                GlobalSessionTrackerState<MEMBER> result = new GlobalSessionTrackerState<>();
+                result.sessionTrackers = theMainMap;
+                result.logIndex = logIndex;
+                return result;
+            }
+            catch ( ReadPastEndException notEnoughBytes )
+            {
+                return null;
+            }
+        }
+
+        @Override
+        public GlobalSessionTrackerState<MEMBER> startState()
+        {
+            return new GlobalSessionTrackerState<>();
+        }
+
+        @Override
+        public long ordinal( GlobalSessionTrackerState<MEMBER> state )
+        {
+            return state.logIndex();
+        }
+    }
+
+    private static class LocalSessionTracker
+    {
+        UUID globalSessionId;
+        Map<Long, Long> lastSequenceNumberPerSession = new HashMap<>(); /* localSessionId -> lastSequenceNumber */
+
+        LocalSessionTracker( UUID globalSessionId )
+        {
+            this.globalSessionId = globalSessionId;
+        }
+
+        public LocalSessionTracker( LocalSessionTracker other )
+        {
+            this.globalSessionId = other.globalSessionId;
+            this.lastSequenceNumberPerSession = new HashMap<>( other.lastSequenceNumberPerSession );
+        }
+
+        boolean validateAndTrackOperation( LocalOperationId operationId )
+        {
+            if ( !isValidOperation( operationId ) )
+            {
+                return false;
+            }
+
+            lastSequenceNumberPerSession.put( operationId.localSessionId(), operationId.sequenceNumber() );
+            return true;
+        }
+
+        /**
+         * The sequence numbers under a single local session must come strictly in order and are only valid once only.
+         */
+        private boolean isValidOperation( LocalOperationId operationId )
+        {
+            Long lastSequenceNumber = lastSequenceNumberPerSession.get( operationId.localSessionId() );
+
+            if ( lastSequenceNumber == null )
+            {
+                if ( operationId.sequenceNumber() != 0 )
+                {
+                    return false;
+                }
+            }
+            else if ( operationId.sequenceNumber() != lastSequenceNumber + 1 )
+            {
+                return false;
+            }
+
+            return true;
+        }
+    }
 }

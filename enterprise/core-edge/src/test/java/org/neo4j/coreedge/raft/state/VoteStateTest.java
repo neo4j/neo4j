@@ -28,15 +28,13 @@ import org.neo4j.coreedge.server.CoreMember;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public abstract class VoteStateContractTest
+public class VoteStateTest
 {
-    public abstract VoteState<CoreMember> createVoteStore();
-
     @Test
     public void shouldStoreVote() throws Exception
     {
         // given
-        VoteState<CoreMember> voteState = createVoteStore();
+        VoteState<CoreMember> voteState = new VoteState<>();
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                 new AdvertisedSocketAddress( "host1:2001" ) );
 
@@ -51,7 +49,7 @@ public abstract class VoteStateContractTest
     public void shouldStartWithNoVote() throws Exception
     {
         // given
-        VoteState<CoreMember> voteState = createVoteStore();
+        VoteState<CoreMember> voteState = new VoteState<>();
 
         // then
         assertNull( voteState.votedFor() );
@@ -61,7 +59,7 @@ public abstract class VoteStateContractTest
     public void shouldUpdateVote() throws Exception
     {
         // given
-        VoteState<CoreMember> voteState = createVoteStore();
+        VoteState<CoreMember> voteState = new VoteState<>();
         CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                 new AdvertisedSocketAddress( "host1:2001" ) );
         CoreMember member2 = new CoreMember( new AdvertisedSocketAddress( "host2:1001" ),
@@ -79,7 +77,7 @@ public abstract class VoteStateContractTest
     public void shouldClearVote() throws Exception
     {
         // given
-        VoteState<CoreMember> voteState = createVoteStore();
+        VoteState<CoreMember> voteState = new VoteState<>();
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                 new AdvertisedSocketAddress( "host1:2001" ) );
         voteState.votedFor( member, 0 );

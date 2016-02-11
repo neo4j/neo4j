@@ -29,19 +29,19 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 import static org.junit.Assert.assertEquals;
 
-public class InMemoryRaftMembershipStateTest
+public class RaftMembershipStateTest
 {
     @Test
     public void shouldSerialiseAndDeserialiseEmptyStateCorrectly() throws Exception
     {
         // given
-        InMemoryRaftMembershipState<CoreMember> state = new InMemoryRaftMembershipState<>();
-        InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal<CoreMember> marshal = new InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal<>( new CoreMember.CoreMemberMarshal() );
+        RaftMembershipState<CoreMember> state = new RaftMembershipState<>();
+        RaftMembershipState.Marshal<CoreMember> marshal = new RaftMembershipState.Marshal<>( new CoreMember.CoreMemberMarshal() );
 
         // when
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         marshal.marshal( state, channel );
-        final InMemoryRaftMembershipState recovered = marshal.unmarshal( channel );
+        final RaftMembershipState recovered = marshal.unmarshal( channel );
 
         // then
         assertEquals( state.votingMembers(), recovered.votingMembers() );
@@ -51,8 +51,8 @@ public class InMemoryRaftMembershipStateTest
     public void shouldSerialiseAndDeserialiseNonEmptyStateCorrectly() throws Exception
     {
         // given
-        InMemoryRaftMembershipState<RaftTestMember> state = new InMemoryRaftMembershipState<>();
-        InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal<RaftTestMember> serializer = new InMemoryRaftMembershipState.InMemoryRaftMembershipStateChannelMarshal<>( new RaftTestMarshal() );
+        RaftMembershipState<RaftTestMember> state = new RaftMembershipState<>();
+        RaftMembershipState.Marshal<RaftTestMember> serializer = new RaftMembershipState.Marshal<>( new RaftTestMarshal() );
 
         RaftTestGroup coreMembers = new RaftTestGroup( 1, 2, 3 ,4 );
 
@@ -61,7 +61,7 @@ public class InMemoryRaftMembershipStateTest
         // when
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         serializer.marshal( state, channel );
-        final InMemoryRaftMembershipState recovered = serializer.unmarshal( channel );
+        final RaftMembershipState recovered = serializer.unmarshal( channel );
 
         // then
         assertEquals( state.votingMembers(), recovered.votingMembers() );

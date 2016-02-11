@@ -22,8 +22,6 @@ package org.neo4j.coreedge.raft.log;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -69,8 +67,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     public static final int COMMIT_INDEX_BYTES = 8;
     public static final String DIRECTORY_NAME = "raft-log";
 
-    private final Set<Listener> listeners = new CopyOnWriteArraySet<>();
-
     private final StoreChannel entriesChannel;
     private final StoreChannel contentChannel;
     private final StoreChannel commitChannel;
@@ -112,7 +108,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     {
         Exception container = new Exception( "Exception happened during shutdown of RaftLog. See suppressed " +
                 "exceptions for details" );
-        boolean shouldThrow = false;
+        boolean shouldThrow;
         shouldThrow = forceAndCloseChannel( entriesChannel, container );
         shouldThrow = forceAndCloseChannel( contentChannel, container ) || shouldThrow;
         shouldThrow = forceAndCloseChannel( commitChannel, container ) || shouldThrow;
@@ -147,48 +143,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public void replay() throws Throwable
-    {
-        /*
-         * Since all state machines and replicated content listeners persist their state, we can skip all entries that
-         * have been committed successfully.
-         * However, looking at how commit() does its thing, we probably face a race with a crash in between updating
-         * the commit index and having notified all replicated content listeners. We should probably invert the order
-         * there. For this reason, and having the (assumed/required) idempotent property of replicated content listeners,
-         * we still replay the last committed entry because, since we do one entry at a time, that may be the only one
-         * that has not been applied against all listeners.
-         * This change is effectively equivalent to truncating/compacting the raft log.
-         */
-        long index = Math.max( 0, commitIndex - 1 ); // new instances have a commit index of -1, which should be ignored
-        log.info( "Starting replay at index %d", index );
-        for(; index <= commitIndex; index++ )
-        {
-            ReplicatedContent content = readEntryContent( index );
-            for ( Listener listener : listeners )
-            {
-                listener.onAppended( content, index );
-                listener.onCommitted( content, index );
-            }
-            log.info( "Index %d replayed as committed", index );
-        }
-        for (; index <= appendIndex; index++ )
-        {
-            ReplicatedContent content = readEntryContent( index );
-            for ( Listener listener : listeners )
-            {
-                listener.onAppended( content, index );
-            }
-            log.info( "Index %d replayed as appended", index );
-        }
-    }
-
-    @Override
-    public void registerListener( Listener listener )
-    {
-        listeners.add( listener );
-    }
-
-    @Override
     public long append( RaftLogEntry logEntry ) throws RaftStorageException
     {
         if ( logEntry.term() >= term )
@@ -207,10 +161,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             writeEntry( new Entry( logEntry.term(), contentOffset ) );
             contentOffset += length;
             appendIndex++;
-            for ( Listener listener : listeners )
-            {
-                listener.onAppended( logEntry.content(), appendIndex );
-            }
             return appendIndex;
         }
         catch ( MarshallingException | IOException e )
@@ -239,11 +189,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
                 entriesChannel.force( false );
 
                 appendIndex = fromIndex - 1;
-
-                for ( Listener listener : listeners )
-                {
-                    listener.onTruncated( fromIndex );
-                }
             }
             term = readEntryTerm( appendIndex );
         }
@@ -274,16 +219,17 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         {
             throw new RaftStorageException( "Failed to commit", e );
         }
+        commitIndex = actualNewCommitIndex;
 
-        while ( commitIndex < actualNewCommitIndex )
-        {
-            commitIndex++;
-            for ( Listener listener : listeners )
-            {
-                ReplicatedContent content = readEntryContent( commitIndex );
-                listener.onCommitted( content, commitIndex );
-            }
-        }
+//        while ( commitIndex < actualNewCommitIndex )
+//        {
+//            commitIndex++;
+//            for ( Listener listener : listeners )
+//            {
+//                ReplicatedContent content = readEntryContent( commitIndex );
+//                listener.onCommitted( content, commitIndex );
+//            }
+//        }
     }
 
     @Override

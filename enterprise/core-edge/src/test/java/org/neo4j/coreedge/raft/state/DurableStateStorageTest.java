@@ -31,6 +31,9 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.test.TargetDirectory;
@@ -38,9 +41,7 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
-import static org.neo4j.coreedge.raft.state.id_allocation.OnDiskIdAllocationState.FILENAME;
-
-public class StatePersisterTest
+public class DurableStateStorageTest
 {
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
@@ -52,13 +53,11 @@ public class StatePersisterTest
         EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
         fsa.mkdir( testDir.directory() );
 
-
-        StatePersister<AtomicInteger> statePersister = new StatePersister<>( stateFileA(), stateFileB(), fsa, 100,
-                new AtomicIntegerMarshal(), stateFileA(),
-                mock( Supplier.class ) );
+        DurableStateStorage<AtomicInteger> storage = new DurableStateStorage<>( fsa, testDir.directory(),
+                "state", new AtomicIntegerMarshal(), 100, health(), NullLogProvider.getInstance() );
 
         // when
-        statePersister.persistStoreData( new AtomicInteger( 99 ) );
+        storage.persistStoreData( new AtomicInteger( 99 ) );
 
         // then
         assertEquals( 4, fsa.getFileSize( stateFileA() ) );
@@ -72,20 +71,18 @@ public class StatePersisterTest
         fsa.mkdir( testDir.directory() );
 
         final int numberOfEntriesBeforeRotation = 100;
-        StatePersister<AtomicInteger> statePersister = new StatePersister<>( stateFileA(), stateFileB(), fsa,
-                numberOfEntriesBeforeRotation,
-                new AtomicIntegerMarshal(), stateFileA(),
-                mock( Supplier.class ) );
-
+        DurableStateStorage<AtomicInteger> storage = new DurableStateStorage<>( fsa, testDir.directory(),
+                "state", new AtomicIntegerMarshal(), numberOfEntriesBeforeRotation,
+                health(), NullLogProvider.getInstance() );
 
         // when
         for ( int i = 0; i < numberOfEntriesBeforeRotation; i++ )
         {
-            statePersister.persistStoreData( new AtomicInteger( i ) );
+            storage.persistStoreData( new AtomicInteger( i ) );
         }
 
         // Force the rotation
-        statePersister.persistStoreData( new AtomicInteger( 9999 ) );
+        storage.persistStoreData( new AtomicInteger( 9999 ) );
 
         // then
         assertEquals( 4, fsa.getFileSize( stateFileB() ) );
@@ -100,20 +97,18 @@ public class StatePersisterTest
         fsa.mkdir( testDir.directory() );
 
         final int numberOfEntriesBeforeRotation = 100;
-        StatePersister<AtomicInteger> statePersister = new StatePersister<>( stateFileA(), stateFileB(), fsa,
-                numberOfEntriesBeforeRotation,
-                new AtomicIntegerMarshal(), stateFileA(),
-                mock( Supplier.class ) );
-
+        DurableStateStorage<AtomicInteger> storage = new DurableStateStorage<>( fsa, testDir.directory(),
+                "state", new AtomicIntegerMarshal(), numberOfEntriesBeforeRotation,
+                health(), NullLogProvider.getInstance() );
 
         // when
         for ( int i = 0; i < numberOfEntriesBeforeRotation * 2; i++ )
         {
-            statePersister.persistStoreData( new AtomicInteger( i ) );
+            storage.persistStoreData( new AtomicInteger( i ) );
         }
 
         // Force the rotation back to the first store
-        statePersister.persistStoreData( new AtomicInteger( 9999 ) );
+        storage.persistStoreData( new AtomicInteger( 9999 ) );
 
         // then
         assertEquals( 4, fsa.getFileSize( stateFileA() ) );
@@ -121,7 +116,7 @@ public class StatePersisterTest
     }
 
     @Test
-    public void shouldClearFileOnFirstUse() throws Exception
+    public void shouldClearFileOnFirstUse() throws Throwable
     {
         // given
         EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
@@ -129,32 +124,31 @@ public class StatePersisterTest
 
         int rotationCount = 10;
         AtomicIntegerMarshal atomicIntegerMarshal = new AtomicIntegerMarshal();
-        StatePersister<AtomicInteger> statePersister = new StatePersister<>( stateFileA(), stateFileB(), fsa,
-                rotationCount,
-                atomicIntegerMarshal, stateFileA(),
-                mock( Supplier.class ) );
+        DurableStateStorage<AtomicInteger> storage = new DurableStateStorage<>( fsa, testDir.directory(),
+                "state", new AtomicIntegerMarshal(), rotationCount,
+                health(), NullLogProvider.getInstance() );
 
         int largestValueWritten = 0;
-        for ( ; largestValueWritten < rotationCount * 2; largestValueWritten++ )
+        for (; largestValueWritten < rotationCount * 2; largestValueWritten++ )
         {
-            statePersister.persistStoreData( new AtomicInteger( largestValueWritten ) );
+            storage.persistStoreData( new AtomicInteger( largestValueWritten ) );
         }
-        statePersister.close();
-        // now both files are full. We reopen, then write some more.
-        statePersister = new StatePersister<>( stateFileA(), stateFileB(), fsa,
-                rotationCount,
-                atomicIntegerMarshal, stateFileA(),
-                mock( Supplier.class ) );
+        storage.shutdown();
 
-        statePersister.persistStoreData( new AtomicInteger( largestValueWritten++ ) );
-        statePersister.persistStoreData( new AtomicInteger( largestValueWritten++ ) );
-        statePersister.persistStoreData( new AtomicInteger( largestValueWritten ) );
+        // now both files are full. We reopen, then write some more.
+        storage = new DurableStateStorage<>( fsa, testDir.directory(),
+                "state", new AtomicIntegerMarshal(), rotationCount,
+                health(), NullLogProvider.getInstance() );
+
+        storage.persistStoreData( new AtomicInteger( largestValueWritten++ ) );
+        storage.persistStoreData( new AtomicInteger( largestValueWritten++ ) );
+        storage.persistStoreData( new AtomicInteger( largestValueWritten ) );
 
         /*
          * We have written stuff in fileA but not gotten to the end (resulting in rotation). The largestValueWritten
          * should nevertheless be correct
          */
-        statePersister.close();
+        storage.shutdown();
         ByteBuffer forReadingBackIn = ByteBuffer.allocate( 10_000 );
         StoreChannel lastWrittenTo = fsa.open( stateFileA(), "r" );
         lastWrittenTo.read( forReadingBackIn );
@@ -162,7 +156,7 @@ public class StatePersisterTest
 
         AtomicInteger lastRead = null;
         AtomicInteger current;
-        while( ( current = atomicIntegerMarshal.unmarshal( forReadingBackIn ) ) != null )
+        while ( (current = atomicIntegerMarshal.unmarshal( forReadingBackIn )) != null )
         {
             lastRead = current;
         }
@@ -171,7 +165,7 @@ public class StatePersisterTest
         assertEquals( largestValueWritten, lastRead.get() );
     }
 
-    private static class AtomicIntegerMarshal implements ByteBufferMarshal<AtomicInteger>, ChannelMarshal<AtomicInteger>
+    private static class AtomicIntegerMarshal implements ByteBufferMarshal<AtomicInteger>, StateMarshal<AtomicInteger>
     {
         @Override
         public void marshal( AtomicInteger atomicInteger, ByteBuffer buffer )
@@ -186,7 +180,7 @@ public class StatePersisterTest
             {
                 return new AtomicInteger( source.getInt() );
             }
-            catch( BufferUnderflowException notEnoughBytes )
+            catch ( BufferUnderflowException notEnoughBytes )
             {
                 return null;
             }
@@ -201,17 +195,42 @@ public class StatePersisterTest
         @Override
         public AtomicInteger unmarshal( ReadableChannel source ) throws IOException
         {
-            return new AtomicInteger( source.getInt() );
+            try
+            {
+                return new AtomicInteger( source.getInt() );
+            }
+            catch ( ReadPastEndException e )
+            {
+                return null;
+            }
+        }
+
+        @Override
+        public AtomicInteger startState()
+        {
+            return new AtomicInteger( 0 );
+        }
+
+        @Override
+        public long ordinal( AtomicInteger atomicInteger )
+        {
+            return atomicInteger.get();
         }
     }
 
     private File stateFileA()
     {
-        return new File( testDir.directory(), FILENAME + "a" );
+        return new File( testDir.directory(), "state.a" );
     }
 
     private File stateFileB()
     {
-        return new File( testDir.directory(), FILENAME + "b" );
+        return new File( testDir.directory(), "state.b" );
+    }
+
+    @SuppressWarnings("unchecked")
+    private Supplier<DatabaseHealth> health()
+    {
+        return mock( Supplier.class );
     }
 }

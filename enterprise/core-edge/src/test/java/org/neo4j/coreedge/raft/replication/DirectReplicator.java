@@ -19,32 +19,21 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
-import java.util.HashSet;
-import java.util.Set;
+import org.neo4j.coreedge.raft.state.StateMachine;
 
 public class DirectReplicator implements Replicator
 {
-    private final Set<ReplicatedContentListener> listeners = new HashSet<>();
+    private final StateMachine stateMachine;
     private long logIndex = 0;
+
+    public DirectReplicator( StateMachine stateMachine )
+    {
+        this.stateMachine = stateMachine;
+    }
 
     @Override
     public void replicate( ReplicatedContent content ) throws ReplicationFailedException
     {
-        for ( ReplicatedContentListener listener : listeners )
-        {
-            listener.onReplicated( content, logIndex++ );
-        }
-    }
-
-    @Override
-    public void subscribe( ReplicatedContentListener listener )
-    {
-        listeners.add( listener );
-    }
-
-    @Override
-    public void unsubscribe( ReplicatedContentListener listener )
-    {
-        listeners.remove( listener );
+        stateMachine.applyCommand( content, logIndex++ );
     }
 }

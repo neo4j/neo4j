@@ -29,10 +29,12 @@ import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.replication.LeaderOnlyReplicator;
 import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
-import org.neo4j.coreedge.raft.state.membership.InMemoryRaftMembershipState;
-import org.neo4j.coreedge.raft.state.term.InMemoryTermState;
+import org.neo4j.coreedge.raft.state.StateMachine;
+import org.neo4j.coreedge.raft.state.StateMachines;
+import org.neo4j.coreedge.raft.state.StateStorage;
+import org.neo4j.coreedge.raft.state.StubStateStorage;
+import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.coreedge.raft.state.term.TermState;
-import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -47,8 +49,8 @@ public class RaftInstanceBuilder<MEMBER>
     private int expectedClusterSize;
     private RaftGroup.Builder<MEMBER> memberSetBuilder;
 
-    private TermState termState = new InMemoryTermState();
-    private VoteState<MEMBER> voteState = new InMemoryVoteState<>();
+    private StateStorage<TermState> termState = new StubStateStorage<>( new TermState() );
+    private StateStorage<VoteState<MEMBER>> voteState = new StubStateStorage<>( new VoteState<>() );
     private RaftLog raftLog = new InMemoryRaftLog();
     private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK,
             NullLogProvider.getInstance() );
@@ -69,8 +71,11 @@ public class RaftInstanceBuilder<MEMBER>
     private int catchupBatchSize = 64;
     private int maxAllowedShippingLag = 256;
     private Supplier<DatabaseHealth> databaseHealthSupplier;
-    private InMemoryRaftMembershipState<MEMBER> raftMembership = new InMemoryRaftMembershipState<>();
-    private Monitors monitors  = new Monitors();
+    private StateStorage<RaftMembershipState<MEMBER>> raftMembership =
+            new StubStateStorage<>( new RaftMembershipState<>() );
+    private Monitors monitors = new Monitors();
+    private StateMachine stateMachine = new StateMachines();
+    private int flushAfter = 1;
 
     public RaftInstanceBuilder( MEMBER member, int expectedClusterSize, RaftGroup.Builder<MEMBER> memberSetBuilder )
     {
@@ -89,9 +94,10 @@ public class RaftInstanceBuilder<MEMBER>
         RaftLogShippingManager<MEMBER> logShipping = new RaftLogShippingManager<>( outbound, logProvider, raftLog,
                 clock, member, membershipManager, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
 
-        return new RaftInstance<>( member, termState, voteState, raftLog, electionTimeout, heartbeatInterval,
+        return new RaftInstance<>( member, termState, voteState, raftLog, stateMachine, electionTimeout,
+                heartbeatInterval,
                 renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider, membershipManager,
-                logShipping, databaseHealthSupplier, clock, monitors );
+                logShipping, databaseHealthSupplier, monitors, flushAfter );
     }
 
     public RaftInstanceBuilder<MEMBER> leaderWaitTimeout( long leaderWaitTimeout )
@@ -136,21 +142,27 @@ public class RaftInstanceBuilder<MEMBER>
         return this;
     }
 
+    public RaftInstanceBuilder<MEMBER> stateMachine( StateMachine stateMachine )
+    {
+        this.stateMachine = stateMachine;
+        return this;
+    }
+
     public RaftInstanceBuilder<MEMBER> databaseHealth( final DatabaseHealth databaseHealth )
     {
         this.databaseHealthSupplier = () -> databaseHealth;
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> clock( Clock clock )
-    {
-        this.clock = clock;
-        return this;
-    }
-
     public RaftInstanceBuilder<MEMBER> monitors( Monitors monitors )
     {
         this.monitors = monitors;
+        return this;
+    }
+
+    public RaftInstanceBuilder<MEMBER> flushAfter( int flushAfter )
+    {
+        this.flushAfter = flushAfter;
         return this;
     }
 }

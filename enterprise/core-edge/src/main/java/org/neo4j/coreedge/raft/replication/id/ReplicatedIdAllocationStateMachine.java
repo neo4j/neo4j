@@ -19,8 +19,12 @@
  */
 package org.neo4j.coreedge.raft.replication.id;
 
+import java.io.IOException;
+
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.Replicator;
+import org.neo4j.coreedge.raft.state.StateMachine;
+import org.neo4j.coreedge.raft.state.StateStorage;
+import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -44,17 +48,19 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG
  * 3) if state is not sufficient goto 1)
  * 4) state sufficient => done
  */
-public class ReplicatedIdAllocationStateMachine implements Replicator.ReplicatedContentListener
+public class ReplicatedIdAllocationStateMachine implements StateMachine
 {
     private final CoreMember me;
-    private final IdAllocationState idAllocationState;
+    private final StateStorage<IdAllocationState> storage;
+    private IdAllocationState idAllocationState;
     private final Log log;
 
-    public ReplicatedIdAllocationStateMachine( CoreMember me, IdAllocationState idAllocationState,
+    public ReplicatedIdAllocationStateMachine( CoreMember me, StateStorage<IdAllocationState> storage,
                                                LogProvider logProvider )
     {
         this.me = me;
-        this.idAllocationState = idAllocationState;
+        this.storage = storage;
+        this.idAllocationState = storage.getInitialState();
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -90,7 +96,7 @@ public class ReplicatedIdAllocationStateMachine implements Replicator.Replicated
     }
 
     @Override
-    public synchronized void onReplicated( ReplicatedContent content, long logIndex )
+    public synchronized void applyCommand( ReplicatedContent content, long logIndex )
     {
         if ( content instanceof ReplicatedIdAllocationRequest )
         {
@@ -110,10 +116,6 @@ public class ReplicatedIdAllocationStateMachine implements Replicator.Replicated
                     updateFirstNotAllocated( idType, request.idRangeStart() + request.idRangeLength() );
 
                 }
-                /*
-                 * We update regardless of whether this content was meant for us or not. Even if it isn't content we
-                 * care about, any content before it has already been applied so it is safe to ignore.
-                 */
                 idAllocationState.logIndex( logIndex );
             }
             else
@@ -127,5 +129,12 @@ public class ReplicatedIdAllocationStateMachine implements Replicator.Replicated
     public synchronized void waitForAnyChange( long timeoutMillis ) throws InterruptedException
     {
         wait( timeoutMillis );
+    }
+
+    @Override
+    public void flush() throws IOException
+    {
+        IdAllocationState copy = new IdAllocationState( idAllocationState );
+        storage.persistStoreData( copy );
     }
 }

@@ -19,14 +19,9 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState;
-import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.coreedge.server.CoreMember;
-
-public class InMemoryVoteStateContractTest extends VoteStateContractTest
+public interface StateMarshal<STATE> extends ChannelMarshal<STATE>
 {
-    @Override public VoteState<CoreMember> createVoteStore()
-    {
-        return new InMemoryVoteState<>( );
-    }
+    STATE startState();
+
+    long ordinal( STATE state );
 }

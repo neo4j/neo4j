@@ -25,9 +25,11 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.replication.DirectReplicator;
-import org.neo4j.coreedge.raft.state.id_allocation.InMemoryIdAllocationState;
+import org.neo4j.coreedge.raft.state.StubStateStorage;
+import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.raft.state.StateMachines;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.NullLogProvider;
 
@@ -39,7 +41,8 @@ public class ReplicatedIdRangeAcquirerTest
             new AdvertisedSocketAddress( "a:2" ) );
     private final CoreMember two = new CoreMember( new AdvertisedSocketAddress( "b:1" ),
             new AdvertisedSocketAddress( "b:2" ) );
-    private final DirectReplicator replicator = new DirectReplicator();
+    private final StateMachines stateMachines = new StateMachines();
+    private final DirectReplicator replicator = new DirectReplicator( stateMachines );
 
     @Test
     public void consecutiveAllocationsFromSeparateIdGeneratorsForSameIdTypeShouldNotDuplicateWhenInitialIdIsZero()
@@ -92,16 +95,13 @@ public class ReplicatedIdRangeAcquirerTest
                                                                               int idRangeLength )
     {
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( member,
-                new InMemoryIdAllocationState(), NullLogProvider.getInstance() );
-
-        replicator.subscribe( idAllocationStateMachine );
+                new StubStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+        stateMachines.add( idAllocationStateMachine );
 
         ReplicatedIdRangeAcquirer acquirer = new ReplicatedIdRangeAcquirer( replicator,
                 idAllocationStateMachine, idRangeLength, 1, member, NullLogProvider.getInstance() );
 
-        ReplicatedIdGenerator generator = new ReplicatedIdGenerator( IdType.ARRAY_BLOCK, initialHighId, acquirer,
+        return new ReplicatedIdGenerator( IdType.ARRAY_BLOCK, initialHighId, acquirer,
                 NullLogProvider.getInstance() );
-
-        return generator;
     }
 }

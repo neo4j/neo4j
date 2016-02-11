@@ -19,14 +19,11 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import org.neo4j.coreedge.raft.state.term.InMemoryTermState;
-import org.neo4j.coreedge.raft.state.term.TermState;
+import java.io.IOException;
 
-public class InMemoryTermStateContractTest extends TermStateContractTest
+public interface StateStorage<STATE>
 {
-    @Override
-    public TermState createTermStore()
-    {
-        return new InMemoryTermState();
-    }
+    STATE getInitialState();
+
+    void persistStoreData( STATE state ) throws IOException;
 }

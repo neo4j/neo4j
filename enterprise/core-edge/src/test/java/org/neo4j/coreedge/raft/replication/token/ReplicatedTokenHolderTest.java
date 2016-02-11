@@ -19,17 +19,20 @@
  */
 package org.neo4j.coreedge.raft.replication.token;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-
+import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.replication.DirectReplicator;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
+import org.neo4j.coreedge.raft.state.StateMachine;
+import org.neo4j.coreedge.raft.state.StateMachines;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -56,6 +59,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -66,6 +70,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer.createCommandBytes;
 import static org.neo4j.coreedge.raft.replication.token.TokenType.LABEL;
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.decodeLogIndexFromTxHeader;
@@ -101,7 +106,9 @@ public class ReplicatedTokenHolderTest
 
         when( idGeneratorFactory.get( any( IdType.class ) ) ).thenReturn( idGenerator );
 
-        Replicator replicator = new StubReplicator();
+        StateMachines stateMachines = new StateMachines();
+        Replicator replicator = new DirectReplicator( stateMachines );
+
         when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) )
                 .thenReturn( mock( TransactionRepresentationCommitProcess.class ) );
         StorageEngine storageEngine = mockedStorageEngine();
@@ -109,6 +116,8 @@ public class ReplicatedTokenHolderTest
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies, TIMEOUT_MILLIS, NullLogProvider.getInstance() );
+
+        stateMachines.add( tokenHolder );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
@@ -171,14 +180,16 @@ public class ReplicatedTokenHolderTest
         StorageEngine storageEngine = mockedStorageEngine();
         when( dependencies.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
 
+        StateMachines stateMachines = new StateMachines();
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder(
-                new StubReplicator(), idGeneratorFactory, dependencies, TIMEOUT_MILLIS, NullLogProvider.getInstance() );
+                new DirectReplicator( stateMachines ), idGeneratorFactory, dependencies, TIMEOUT_MILLIS, NullLogProvider.getInstance() );
         tokenHolder.setLastCommittedIndex( -1 );
+        stateMachines.add( tokenHolder );
 
         // when
         ReplicatedTokenRequest tokenRequest = new ReplicatedTokenRequest( LABEL, "Person",
                 createCommandBytes( createCommands( EXPECTED_TOKEN_ID ) ) );
-        tokenHolder.onReplicated( tokenRequest, logIndex );
+        tokenHolder.applyCommand( tokenRequest, logIndex );
 
         // then
         List<TransactionRepresentation> transactions = commitProcess.transactionsToApply;
@@ -229,14 +240,17 @@ public class ReplicatedTokenHolderTest
 
         when( idGeneratorFactory.get( any( IdType.class ) ) ).thenReturn( idGenerator );
 
-        Replicator replicator = new StubReplicator();
+        StateMachines stateMachines = new StateMachines();
+        Replicator replicator = new DirectReplicator( stateMachines );
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies, TIMEOUT_MILLIS, NullLogProvider.getInstance() );
 
+        stateMachines.add( tokenHolder );
+
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
-        tokenHolder.onReplicated( new ReplicatedTokenRequest( LABEL, "Person", createCommandBytes(
+        tokenHolder.applyCommand( new ReplicatedTokenRequest( LABEL, "Person", createCommandBytes(
                 createCommands( EXPECTED_TOKEN_ID ) ) ), 0 );
 
         // when
@@ -259,10 +273,12 @@ public class ReplicatedTokenHolderTest
         StorageEngine storageEngine = mockedStorageEngine();
         when( dependencies.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
 
-        RaceConditionSimulatingReplicator replicator = new RaceConditionSimulatingReplicator();
+        StateMachines stateMachines = new StateMachines();
+        RaceConditionSimulatingReplicator replicator = new RaceConditionSimulatingReplicator(stateMachines);
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies, TIMEOUT_MILLIS, NullLogProvider.getInstance() );
+        stateMachines.add( tokenHolder );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
@@ -289,10 +305,12 @@ public class ReplicatedTokenHolderTest
         StorageEngine storageEngine = mockedStorageEngine();
         when( dependencies.resolveDependency( StorageEngine.class ) ).thenReturn( storageEngine );
 
-        RaceConditionSimulatingReplicator replicator = new RaceConditionSimulatingReplicator();
+        StateMachines stateMachines = new StateMachines();
+        RaceConditionSimulatingReplicator replicator = new RaceConditionSimulatingReplicator( stateMachines );
 
         ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies, TIMEOUT_MILLIS, NullLogProvider.getInstance() );
+        stateMachines.add( tokenHolder );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
@@ -316,8 +334,13 @@ public class ReplicatedTokenHolderTest
 
     static class RaceConditionSimulatingReplicator implements Replicator
     {
-        private final Collection<ReplicatedContentListener> listeners = new HashSet<>();
+        private final StateMachine stateMachine;
         private ReplicatedTokenRequest otherToken;
+
+        public RaceConditionSimulatingReplicator(StateMachine stateMachine )
+        {
+            this.stateMachine = stateMachine;
+        }
 
         public void injectLabelTokenBeforeOtherOneReplicates( ReplicatedTokenRequest token )
         {
@@ -327,27 +350,13 @@ public class ReplicatedTokenHolderTest
         @Override
         public void replicate( final ReplicatedContent content ) throws ReplicationFailedException
         {
-            for ( ReplicatedContentListener listener : listeners )
+            if ( otherToken != null )
             {
-                if ( otherToken != null )
-                {
-                    listener.onReplicated( otherToken, 0 );
-                }
-                listener.onReplicated( content, 0 );
+                stateMachine.applyCommand( otherToken, 0 );
             }
+            stateMachine.applyCommand( content, 0 );
         }
 
-        @Override
-        public void subscribe( ReplicatedContentListener listener )
-        {
-            this.listeners.add( listener );
-        }
-
-        @Override
-        public void unsubscribe( ReplicatedContentListener listener )
-        {
-            this.listeners.remove( listener );
-        }
     }
 
     static class DropAllTheThingsReplicator implements Replicator
@@ -355,46 +364,6 @@ public class ReplicatedTokenHolderTest
         @Override
         public void replicate( final ReplicatedContent content ) throws ReplicationFailedException
         {
-
-        }
-
-        @Override
-        public void subscribe( ReplicatedContentListener listener )
-        {
-
-        }
-
-        @Override
-        public void unsubscribe( ReplicatedContentListener listener )
-        {
-
-        }
-    }
-
-
-    static class StubReplicator implements Replicator
-    {
-        private final Collection<ReplicatedContentListener> listeners = new HashSet<>();
-
-        @Override
-        public void replicate( final ReplicatedContent content ) throws ReplicationFailedException
-        {
-            for ( ReplicatedContentListener listener : listeners )
-            {
-                listener.onReplicated( content, 0 );
-            }
-        }
-
-        @Override
-        public void subscribe( ReplicatedContentListener listener )
-        {
-            this.listeners.add( listener );
-        }
-
-        @Override
-        public void unsubscribe( ReplicatedContentListener listener )
-        {
-            this.listeners.remove( listener );
         }
     }
 

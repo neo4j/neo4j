@@ -26,6 +26,9 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 public class MonitoredRaftLog implements RaftLog
 {
+    public static final String APPEND_INDEX_TAG = "appendIndex";
+    public static final String COMMIT_INDEX_TAG = "commitIndex";
+
     private final RaftLog delegate;
     private final RaftLogAppendIndexMonitor appendIndexMonitor;
     private final RaftLogCommitIndexMonitor commitIndexMonitor;
@@ -57,18 +60,6 @@ public class MonitoredRaftLog implements RaftLog
     {
         delegate.commit( commitIndex );
         commitIndexMonitor.commitIndex( delegate.commitIndex() );
-    }
-
-    @Override
-    public void replay() throws Throwable
-    {
-        delegate.replay();
-    }
-
-    @Override
-    public void registerListener( Listener consumer )
-    {
-        delegate.registerListener( consumer );
     }
 
     @Override

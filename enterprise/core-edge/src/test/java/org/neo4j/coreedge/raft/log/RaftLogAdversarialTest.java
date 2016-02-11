@@ -49,49 +49,6 @@ public class RaftLogAdversarialTest
     }
 
     @Test
-    public void shouldUpdateCommitIndexEvenIfConsumerFails() throws Exception
-    {
-        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        RaftLog log = createRaftLog( fileSystem );
-        log.registerListener( new RaftLog.Listener()
-        {
-            @Override
-            public void onAppended( ReplicatedContent content, long logIndex )
-            {
-            }
-
-            @Override
-            public void onCommitted( ReplicatedContent raftableContent, long logIndex )
-            {
-                throw new RuntimeException( "Fail to accept the content" );
-            }
-
-            @Override
-            public void onTruncated( long fromLogIndex )
-            {
-            }
-        } );
-
-        RaftLogEntry logEntry = new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) );
-        log.append( logEntry );
-        try
-        {
-            log.commit( 0 );
-            fail( "Should have thrown exception" );
-        }
-        catch ( Exception e )
-        {
-            // expected
-        }
-
-        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, l -> {
-            assertThat( l.appendIndex(), is( 0L ) );
-            assertThat( l.commitIndex(), is( 0L ) );
-            assertThat( l.entryExists( 0 ), is( true ) );
-        } );
-    }
-
-    @Test
     public void shouldDiscardEntryIfEntryChannelFails() throws Exception
     {
         ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, false ),

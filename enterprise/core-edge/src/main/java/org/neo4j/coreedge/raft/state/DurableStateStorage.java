@@ -26,9 +26,13 @@ import java.util.function.Supplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
-public class StatePersister<STATE>
+public class DurableStateStorage<STATE> extends LifecycleAdapter implements StateStorage<STATE>
 {
+    private STATE initialState;
     private final File fileA;
     private final File fileB;
     private final FileSystemAbstraction fileSystemAbstraction;
@@ -41,22 +45,48 @@ public class StatePersister<STATE>
 
     private PhysicalFlushableChannel currentStoreChannel;
 
-    public StatePersister( File fileA, File fileB, FileSystemAbstraction fileSystemAbstraction,
-                           int numberOfEntriesBeforeRotation, ChannelMarshal<STATE> marshal,
-                           File currentStoreFile, Supplier<DatabaseHealth> databaseHealthSupplier )
+    public DurableStateStorage( FileSystemAbstraction fileSystemAbstraction, File stateDir, String name,
+                                StateMarshal<STATE> marshal, int numberOfEntriesBeforeRotation,
+                                Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
             throws IOException
     {
-        this.fileA = fileA;
-        this.fileB = fileB;
         this.fileSystemAbstraction = fileSystemAbstraction;
-        this.numberOfEntriesBeforeRotation = numberOfEntriesBeforeRotation;
         this.marshal = marshal;
-        this.currentStoreFile = currentStoreFile;
+        this.numberOfEntriesBeforeRotation = numberOfEntriesBeforeRotation;
+        this.databaseHealthSupplier = databaseHealthSupplier;
+
+        fileA = new File( stateDir, name + ".a" );
+        fileB = new File( stateDir, name + ".b" );
+
+        StateRecoveryManager<STATE> recoveryManager =
+                new StateRecoveryManager<>( fileSystemAbstraction, marshal );
+
+        final StateRecoveryManager.RecoveryStatus<STATE> recoveryStatus = recoveryManager.recover( fileA, fileB );
+
+        this.currentStoreFile = recoveryStatus.activeFile();
         this.currentStoreChannel = new PhysicalFlushableChannel( fileSystemAbstraction.open( currentStoreFile, "rw" ) );
         initialiseStoreFile( currentStoreFile );
-        this.databaseHealthSupplier = databaseHealthSupplier;
+
+        this.initialState = recoveryStatus.recoveredState();
+
+        Log log = logProvider.getLog( getClass() );
+        log.info( "%s state restored, up to level %d.", name, marshal.ordinal( initialState ) );
     }
 
+    @Override
+    public STATE getInitialState()
+    {
+        return initialState;
+    }
+
+    @Override
+    public synchronized void shutdown() throws Throwable
+    {
+        currentStoreChannel.close();
+        currentStoreChannel = null;
+    }
+
+    @Override
     public synchronized void persistStoreData( STATE state ) throws IOException
     {
         try
@@ -95,7 +125,7 @@ public class StatePersister<STATE>
         }
     }
 
-    public PhysicalFlushableChannel initialiseStoreFile( File nextStore ) throws IOException
+    private PhysicalFlushableChannel initialiseStoreFile( File nextStore ) throws IOException
     {
         if ( fileSystemAbstraction.fileExists( nextStore ) )
         {
@@ -106,11 +136,5 @@ public class StatePersister<STATE>
         {
             return new PhysicalFlushableChannel( fileSystemAbstraction.create( nextStore ) );
         }
-    }
-
-    public synchronized void close() throws IOException
-    {
-        currentStoreChannel.close();
-        currentStoreChannel = null;
     }
 }

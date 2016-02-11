@@ -163,4 +163,8 @@ public class CoreEdgeClusterSettings
     @Description("The number of messages waiting to be sent to other servers in the cluster")
     public static final Setting<Integer> outgoing_queue_size =
             setting( "core_edge.outgoing_queue_size", INTEGER, "64" );
+
+    @Description("The number of operations to be processed before the state machines flush to disk")
+    public static final Setting<Integer> state_machine_flush_window_size =
+            setting( "core_edge.state_machine_flush_window_size", INTEGER, "100" );
 }

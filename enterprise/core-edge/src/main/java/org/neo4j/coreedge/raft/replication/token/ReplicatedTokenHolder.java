@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.replication.token;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -28,6 +29,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
+import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -64,7 +66,7 @@ import org.neo4j.storageengine.api.lock.ResourceLocker;
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 
 public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends TokenRecord> extends LifecycleAdapter
-        implements TokenHolder<TOKEN>, Replicator.ReplicatedContentListener
+        implements TokenHolder<TOKEN>, StateMachine
 {
     protected final Dependencies dependencies;
 
@@ -104,13 +106,6 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         {
             throw new IllegalStateException( "lastCommittedIndex must be set before start." );
         }
-        replicator.subscribe( this );
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-        replicator.unsubscribe( this );
     }
 
     @Override
@@ -211,7 +206,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
     }
 
     @Override
-    public void onReplicated( ReplicatedContent content, long logIndex )
+    public void applyCommand( ReplicatedContent content, long logIndex )
     {
         if ( content instanceof ReplicatedTokenRequest && ((ReplicatedTokenRequest) content).type().equals( type ) )
         {
@@ -294,5 +289,11 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
     public int size()
     {
         return tokenCache.size();
+    }
+
+    @Override
+    public void flush() throws IOException
+    {
+        // already implicitly flushed to the transaction log.
     }
 }

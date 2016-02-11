@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.raft;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -33,8 +31,6 @@ import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
-import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.TickingClock;
 import org.neo4j.kernel.KernelEventHandlers;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -332,11 +328,9 @@ public class RaftInstanceTest
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        int leaderWaitTimeout = 10000;
-        Clock clock = new TickingClock( 0, leaderWaitTimeout + 1, TimeUnit.MILLISECONDS );
-
+        int leaderWaitTimeout = 10;
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).clock( clock ).leaderWaitTimeout( leaderWaitTimeout ).build();
+                .timeoutService( timeouts ).leaderWaitTimeout( leaderWaitTimeout ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
 
@@ -465,8 +459,7 @@ public class RaftInstanceTest
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        int leaderWaitTimeout = 10000;
-        Clock clock = new TickingClock( 0, leaderWaitTimeout + 1, TimeUnit.MILLISECONDS );
+        int leaderWaitTimeout = 10;
 
         Monitors monitors = new Monitors();
         LeaderNotFoundMonitor leaderNotFoundMonitor = new StubLeaderNotFoundMonitor();
@@ -475,7 +468,6 @@ public class RaftInstanceTest
 
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
-                .clock( clock )
                 .leaderWaitTimeout( leaderWaitTimeout )
                 .monitors(monitors)
                 .build();
@@ -500,16 +492,6 @@ public class RaftInstanceTest
     private static class ExplodingRaftLog implements RaftLog
     {
         private boolean startExploding = false;
-
-        @Override
-        public void replay() throws Throwable
-        {
-        }
-
-        @Override
-        public void registerListener( Listener consumer )
-        {
-        }
 
         @Override
         public long append( RaftLogEntry entry ) throws RaftStorageException

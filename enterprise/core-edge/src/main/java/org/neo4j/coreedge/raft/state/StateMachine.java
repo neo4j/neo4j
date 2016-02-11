@@ -21,45 +21,22 @@ package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
 
-import org.junit.Test;
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 
-import org.neo4j.coreedge.raft.state.term.TermState;
-
-import static org.junit.Assert.*;
-
-public abstract class TermStateContractTest
+public interface StateMachine
 {
-    public abstract TermState createTermStore() throws IOException;
+    /**
+     * Apply command to state machine, modifying its internal state.
+     * Implementations should be idempotent, so that the caller is free to replay commands from any point in the log.
+     *
+     * @param content The replicated content, to be interpreted as a command.
+     * @param logIndex The index of the content.
+     */
+    void applyCommand( ReplicatedContent content, long logIndex );
 
-    @Test
-    public void shouldStoreCurrentTerm() throws Exception
-    {
-        // given
-        TermState termState = createTermStore();
-
-        // when
-        termState.update( 21 );
-
-        // then
-        assertEquals( 21, termState.currentTerm() );
-    }
-
-    @Test
-    public void rejectLowerTerm() throws Exception
-    {
-        // given
-        TermState termState = createTermStore();
-        termState.update( 21 );
-
-        // when
-        try
-        {
-            termState.update( 20 );
-            fail( "Should have thrown exception" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // expected
-        }
-    }
+    /**
+     * Flushes state to durable storage.
+     * @throws IOException
+     */
+    void flush() throws IOException;
 }

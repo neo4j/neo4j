@@ -27,21 +27,20 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
+import org.neo4j.coreedge.raft.membership.RaftMembership;
+import org.neo4j.coreedge.raft.outcome.LogCommand;
+import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.term.TermState;
-import org.neo4j.coreedge.raft.state.vote.InMemoryVoteState;
+import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.coreedge.raft.membership.RaftMembership;
-import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
-import org.neo4j.coreedge.raft.outcome.LogCommand;
-import org.neo4j.coreedge.raft.outcome.Outcome;
 
 import static java.util.Collections.emptySet;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
 
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 
@@ -51,8 +50,10 @@ public class RaftStateTest
     public void shouldRemoveFollowerStateAfterBecomingLeader() throws Exception
     {
         // given
-        RaftState<RaftTestMember> raftState = new RaftState<>( new RaftTestMember( 0 ), mock( TermState.class ),
-                new FakeMembership(), new InMemoryRaftLog(), new InMemoryVoteState<>( ) );
+        RaftState<RaftTestMember> raftState = new RaftState<>( new RaftTestMember( 0 ),
+                new StubStateStorage<>( new TermState() ),
+                new FakeMembership(), new InMemoryRaftLog(),
+                new StubStateStorage<>( new VoteState<>( ) ) );
 
         raftState.update( new Outcome<>( CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, initialFollowerStates(), true, emptyLogCommands(),
                 emptyOutgoingMessages(), Collections.emptySet() ) );
