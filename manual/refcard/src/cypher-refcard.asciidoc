@@ -87,6 +87,8 @@ include::{sources}/constraint.asciidoc[]
 
 include::{sources}/import.asciidoc[]
 
+include::{sources}/call.asciidoc[]
+
 ++++
 <div class="col cardgeneral c3-1 c6-2"><div class="blk">
 ++++
