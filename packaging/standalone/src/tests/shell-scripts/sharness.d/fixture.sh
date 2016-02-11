@@ -8,13 +8,13 @@ fake_install() {
       cp ../../../main/distribution/shell-scripts/bin/* "${path}/bin" 2>/dev/null
       chmod +x "${path}/bin/neo4j"
       mkdir -p "${path}/conf"
+      mkdir -p "${path}/data/databases"
       mkdir -p "${path}/lib"
       ;;
     *)
       mkdir -p "${path}/bin"
-      cp ../../../main/distribution/shell-scripts/bin/* "${path}/bin" 2>/dev/null
-      chmod +x "${path}/bin/neo4j"
       mkdir -p "${path}/conf"
+      mkdir -p "${path}/data"
       mkdir -p "${path}/lib"
       ;;
   esac
