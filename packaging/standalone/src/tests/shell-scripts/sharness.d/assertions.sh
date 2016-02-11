@@ -20,7 +20,7 @@ test_expect_stdout_matching() {
 	expected_pattern=$1
 	shift
 	stdout="$("$@")"
-	echo "${stdout}" | grep "${expected_pattern}"
+	echo "${stdout}" | grep "${expected_pattern}" >/dev/null
 	exit_code="$?"
 	if [[ "${exit_code}" -eq 0 ]]; then
 		return 0
@@ -34,7 +34,7 @@ test_expect_stderr_matching() {
 	expected_pattern=$1
 	shift
 	stdout="$("$@" 2>&1)"
-	echo "${stdout}" | grep "${expected_pattern}"
+	echo "${stdout}" | grep "${expected_pattern}" >/dev/null
 	exit_code="$?"
 	if [[ "${exit_code}" -eq 0 ]]; then
 		return 0
@@ -47,7 +47,7 @@ test_expect_stderr_matching() {
 test_expect_file_matching() {
 	expected_pattern=$1
 	content="$(cat ${2})"
-	echo "${content}" | grep "${expected_pattern}"
+	echo "${content}" | grep "${expected_pattern}" >/dev/null
 	exit_code="$?"
 	if [[ "${exit_code}" -eq 0 ]]; then
 		return 0
