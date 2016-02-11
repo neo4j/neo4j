@@ -27,6 +27,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -148,6 +149,52 @@ public class ProcedureJarLoaderTest
                 procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ));
     }
 
+    @Test
+    public void shouldGiveHelpfulErrorOnWildCardProcedure() throws Throwable
+    {
+        // Given
+        URL jar = createJarFor( ClassWithWildCardStream.class );
+
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class\n" +
+                                 "that you define and not a Stream<?>." );
+
+        // When
+        jarloader.loadProcedures( jar );
+    }
+
+    @Test
+    public void shouldGiveHelpfulErrorOnRawStreamProcedure() throws Throwable
+    {
+        // Given
+        URL jar = createJarFor( ClassWithRawStream.class );
+
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class\n" +
+                                 "that you define and not a raw Stream." );
+
+        // When
+        jarloader.loadProcedures( jar );
+    }
+
+    @Test
+    public void shouldGiveHelpfulErrorOnGenericStreamProcedure() throws Throwable
+    {
+        // Given
+        URL jar = createJarFor( ClassWithGenericStream.class );
+
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class\n" +
+                                 "that you define and not a parameterized type such as java.util.List<org.neo4j" +
+                                 ".kernel.impl.proc.ProcedureJarLoaderTest$Output>.");
+
+        // When
+        jarloader.loadProcedures( jar );
+    }
+
     public URL createJarFor( Class<?> ... targets ) throws IOException
     {
         return new JarBuilder().createJarFor( tmpdir.newFile( new Random().nextInt() + ".jar" ), targets );
@@ -209,6 +256,33 @@ public class ProcedureJarLoaderTest
         public Stream<Output> myProcedure(@Name( "value" ) long value)
         {
             return Stream.of( new Output(value) );
+        }
+    }
+
+    public static class ClassWithWildCardStream
+    {
+        @Procedure
+        public Stream<?> wildCardProc()
+        {
+            return Stream.of( new Output() );
+        }
+    }
+
+    public static class ClassWithRawStream
+    {
+        @Procedure
+        public Stream rawStreamProc()
+        {
+            return Stream.of( new Output() );
+        }
+    }
+
+    public static class ClassWithGenericStream
+    {
+        @Procedure
+        public Stream<List<Output>> genericStream()
+        {
+            return Stream.of( Collections.singletonList( new Output() ));
         }
     }
 }

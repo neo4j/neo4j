@@ -26,6 +26,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -137,8 +138,29 @@ public class OutputMappers
             throw invalidReturnType( cls );
         }
 
-        ParameterizedType genType = (ParameterizedType) method.getGenericReturnType();
+        Type genericReturnType = method.getGenericReturnType();
+        if (!(genericReturnType instanceof ParameterizedType))
+        {
+            throw new ProcedureException( Status.Procedure.TypeError,
+                    "Procedures must return a Stream of records, where a record is a concrete class\n" +
+                    "that you define and not a raw Stream.");
+        }
+
+        ParameterizedType genType = (ParameterizedType) genericReturnType;
         Type recordType = genType.getActualTypeArguments()[0];
+        if ( recordType instanceof WildcardType)
+        {
+            throw new ProcedureException( Status.Procedure.TypeError,
+                    "Procedures must return a Stream of records, where a record is a concrete class\n" +
+                    "that you define and not a Stream<?>.");
+        }
+        if (recordType instanceof ParameterizedType)
+        {
+            ParameterizedType type = (ParameterizedType) recordType;
+            throw new ProcedureException( Status.Procedure.TypeError,
+                    "Procedures must return a Stream of records, where a record is a concrete class\n" +
+                    "that you define and not a parameterized type such as %s.", type);
+        }
 
         return mapper( (Class<?>) recordType );
     }
