@@ -25,11 +25,11 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
-public final class TransactionCountThreshold implements Threshold
+public final class EntryCountThreshold implements Threshold
 {
     private final long maxTransactionCount;
 
-    TransactionCountThreshold( long maxTransactionCount )
+    EntryCountThreshold( long maxTransactionCount )
     {
         this.maxTransactionCount = maxTransactionCount;
     }
@@ -46,7 +46,7 @@ public final class TransactionCountThreshold implements Threshold
         try
         {
             // try to ask next version log file which is my last tx
-            long lastTx = source.getFirstCommittedTxId( version + 1 );
+            long lastTx = source.getFirstEntryId( version + 1 );
             if ( lastTx == -1 )
             {
                 throw new IllegalStateException(
@@ -54,7 +54,7 @@ public final class TransactionCountThreshold implements Threshold
                         "PruneStrategy never checks the current active log file" );
             }
 
-            long highest = source.getLastCommittedTxId();
+            long highest = source.getLastEntryId();
             return highest - lastTx >= maxTransactionCount;
         }
         catch ( IllegalLogFormatException e )

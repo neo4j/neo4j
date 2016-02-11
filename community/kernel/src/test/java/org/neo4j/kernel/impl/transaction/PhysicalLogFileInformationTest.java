@@ -45,7 +45,7 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReadAndCacheFirstCommittedTransactionIdForAGivenVersionWhenNotCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore,
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore::getLastCommittedTransactionId,
                 logVersionToTimestamp );
         long expected = 5;
 
@@ -56,7 +56,7 @@ public class PhysicalLogFileInformationTest
                 new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L )
         );
 
-        long firstCommittedTxId = info.getFirstCommittedTxId( version );
+        long firstCommittedTxId = info.getFirstEntryId( version );
         assertEquals( expected, firstCommittedTxId );
         verify( logHeaderCache, times( 1 ) ).putHeader( version, expected - 1 );
     }
@@ -64,21 +64,21 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReadFirstCommittedTransactionIdForAGivenVersionWhenCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore,
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore::getLastCommittedTransactionId,
                 logVersionToTimestamp );
         long expected = 5;
 
         long version = 10L;
         when( logHeaderCache.getLogHeader( version ) ).thenReturn( expected - 1 );
 
-        long firstCommittedTxId = info.getFirstCommittedTxId( version );
+        long firstCommittedTxId = info.getFirstEntryId( version );
         assertEquals( expected, firstCommittedTxId );
     }
 
     @Test
     public void shouldReadAndCacheFirstCommittedTransactionIdWhenNotCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore,
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore::getLastCommittedTransactionId,
                 logVersionToTimestamp );
         long expected = 5;
 
@@ -91,7 +91,7 @@ public class PhysicalLogFileInformationTest
         );
         when( logFiles.hasAnyEntries( version ) ).thenReturn( true );
 
-        long firstCommittedTxId = info.getFirstExistingTxId();
+        long firstCommittedTxId = info.getFirstExistingEntryId();
         assertEquals( expected, firstCommittedTxId );
         verify( logHeaderCache, times( 1 ) ).putHeader( version, expected - 1 );
     }
@@ -99,7 +99,7 @@ public class PhysicalLogFileInformationTest
     @Test
     public void shouldReadFirstCommittedTransactionIdWhenCached() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore,
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore::getLastCommittedTransactionId,
                 logVersionToTimestamp );
         long expected = 5;
 
@@ -109,21 +109,21 @@ public class PhysicalLogFileInformationTest
         when( logHeaderCache.getLogHeader( version ) ).thenReturn( expected -1 );
         when( logFiles.hasAnyEntries( version ) ).thenReturn( true );
 
-        long firstCommittedTxId = info.getFirstExistingTxId();
+        long firstCommittedTxId = info.getFirstExistingEntryId();
         assertEquals( expected, firstCommittedTxId );
     }
 
     @Test
     public void shouldReturnNothingWhenThereAreNoTransactions() throws Exception
     {
-        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore,
+        PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore::getLastCommittedTransactionId,
                 logVersionToTimestamp );
 
         long version = 10L;
         when( logFiles.getHighestLogVersion() ).thenReturn( version );
         when( logFiles.hasAnyEntries( version ) ).thenReturn( false );
 
-        long firstCommittedTxId = info.getFirstExistingTxId();
+        long firstCommittedTxId = info.getFirstExistingEntryId();
         assertEquals( -1, firstCommittedTxId );
     }
 }

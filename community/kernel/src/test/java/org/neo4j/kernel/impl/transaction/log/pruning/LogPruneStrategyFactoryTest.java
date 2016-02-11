@@ -29,16 +29,16 @@ import static org.junit.Assert.assertThat;
 
 public class LogPruneStrategyFactoryTest
 {
-
     @Test
     public void testLogPruneThresholdsByType() throws Exception
     {
         assertThat( getPruneStrategy( "files", "25", "25 files" ), instanceOf( FileCountThreshold.class ) );
         assertThat( getPruneStrategy( "size", "16G", "16G size" ), instanceOf( FileSizeThreshold.class ) );
-        assertThat( getPruneStrategy( "txs", "4G", "4G txs" ), instanceOf( TransactionCountThreshold.class ) );
-        assertThat( getPruneStrategy( "hours", "100", "100 hours" ), instanceOf( TransactionTimespanThreshold.class ) );
+        assertThat( getPruneStrategy( "txs", "4G", "4G txs" ), instanceOf( EntryCountThreshold.class ) );
+        assertThat( getPruneStrategy( "entries", "4G", "4G entries" ), instanceOf( EntryCountThreshold.class ) );
+        assertThat( getPruneStrategy( "hours", "100", "100 hours" ), instanceOf( EntryTimespanThreshold.class ) );
         assertThat( getPruneStrategy( "days", "100k", "100k days" ),
-                    instanceOf( TransactionTimespanThreshold.class) );
+                    instanceOf( EntryTimespanThreshold.class) );
     }
 
     private Threshold getPruneStrategy(String type, String value, String configValue)

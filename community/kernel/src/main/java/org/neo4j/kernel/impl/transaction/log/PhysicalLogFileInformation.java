@@ -28,30 +28,36 @@ public class PhysicalLogFileInformation implements LogFileInformation
         long getTimestampForVersion( long version ) throws IOException;
     }
 
+
+    public interface LastEntryInLog
+    {
+        long getLastEntryId(  );
+    }
+
     private final PhysicalLogFiles logFiles;
     private final LogHeaderCache logHeaderCache;
-    private final TransactionIdStore transactionIdStore;
+    private final LastEntryInLog lastEntryInLog;
     private final LogVersionToTimestamp logVersionToTimestamp;
 
     public PhysicalLogFileInformation( PhysicalLogFiles logFiles,
                                        LogHeaderCache logHeaderCache,
-                                       TransactionIdStore transactionIdStore,
+                                       LastEntryInLog lastEntryInLog,
                                        LogVersionToTimestamp logVersionToTimestamp )
     {
         this.logFiles = logFiles;
         this.logHeaderCache = logHeaderCache;
-        this.transactionIdStore = transactionIdStore;
+        this.lastEntryInLog = lastEntryInLog;
         this.logVersionToTimestamp = logVersionToTimestamp;
     }
 
     @Override
-    public long getFirstExistingTxId() throws IOException
+    public long getFirstExistingEntryId() throws IOException
     {
         long version = logFiles.getHighestLogVersion();
         long candidateFirstTx = -1;
         while ( logFiles.versionExists( version ) )
         {
-            candidateFirstTx = getFirstCommittedTxId( version );
+            candidateFirstTx = getFirstEntryId( version );
             version--;
         }
         version++; // the loop above goes back one version too far.
@@ -62,7 +68,7 @@ public class PhysicalLogFileInformation implements LogFileInformation
     }
 
     @Override
-    public long getFirstCommittedTxId( long version ) throws IOException
+    public long getFirstEntryId( long version ) throws IOException
     {
         long logHeader = logHeaderCache.getLogHeader( version );
         if ( logHeader != -1 )
@@ -81,9 +87,9 @@ public class PhysicalLogFileInformation implements LogFileInformation
     }
 
     @Override
-    public long getLastCommittedTxId()
+    public long getLastEntryId()
     {
-        return transactionIdStore.getLastCommittedTransactionId();
+        return lastEntryInLog.getLastEntryId();
     }
 
     @Override

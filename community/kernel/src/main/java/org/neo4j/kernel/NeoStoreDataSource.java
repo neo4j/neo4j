@@ -604,7 +604,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             }
         };
         final LogFileInformation logFileInformation =
-                new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore, logInformation );
+                new PhysicalLogFileInformation( logFiles, logHeaderCache, transactionIdStore::getLastCommittedTransactionId, logInformation );
 
         String pruningConf = config.get(
                 config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral )
