@@ -23,8 +23,8 @@ import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 
 public class LogRecoveryInfo
 {
-    LogPosition logPosition;
-    CountsSnapshot countsSnapshot;
+    private final LogPosition logPosition;
+    private final CountsSnapshot countsSnapshot;
 
 
     public LogRecoveryInfo( LogPosition logPosition, CountsSnapshot countsSnapshot )

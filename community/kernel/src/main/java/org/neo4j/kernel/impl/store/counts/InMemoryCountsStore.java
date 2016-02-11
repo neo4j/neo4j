@@ -54,10 +54,10 @@ public class InMemoryCountsStore implements CountsStore
         lastTxId.set( snapshot.getTxId(), EMPTY_METADATA );
     }
 
-    public InMemoryCountsStore(DatabaseHealth databaseHealth)
+    public InMemoryCountsStore( DatabaseHealth databaseHealth )
     {
         this.databaseHealth = databaseHealth;
-        map = new ConcurrentHashMap<>();
+        this.map = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -123,6 +123,11 @@ public class InMemoryCountsStore implements CountsStore
             if ( snapshot != null && snapshot.getTxId() >= txId )
             {
                 applyUpdates( pairs, snapshot.getMap() );
+            }
+            if ( txId <= lastTxId.getHighestGapFreeNumber() )
+            {
+                throw new IllegalArgumentException( "Transaction ID " + txId + " has already been applied to the " +
+                        "CountsStore. Highest Gap-Free number: " + lastTxId.getHighestGapFreeNumber() );
             }
             lastTxId.offer( txId, EMPTY_METADATA );
         }
@@ -200,8 +205,8 @@ public class InMemoryCountsStore implements CountsStore
         catch ( InterruptedException ex )
         {
             Thread.currentThread().interrupt();
-                throw Exceptions
-                        .withCause( new UnderlyingStorageException( "Construction of snapshot was interrupted." ), ex );
+            throw Exceptions
+                    .withCause( new UnderlyingStorageException( "Construction of snapshot was interrupted." ), ex );
         }
         finally
         {
@@ -209,6 +214,12 @@ public class InMemoryCountsStore implements CountsStore
         }
     }
 
+    /**
+     * Iterates over the values of the counts store, but does not guarantee atomicity.
+     * Should only be used in situations where you know updates will not be applied.
+     *
+     * @param action the action to be called
+     */
     @Override
     public void forEach( BiConsumer<CountsKey,long[]> action )
     {

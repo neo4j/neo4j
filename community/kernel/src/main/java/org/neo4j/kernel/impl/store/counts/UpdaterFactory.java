@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.counts;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
@@ -34,7 +35,7 @@ class UpdaterFactory
     {
         return new Updater()
         {
-            private final Map<CountsKey,long[]> updates = new HashMap<>();
+            private final Map<CountsKey,long[]> updates = new ConcurrentHashMap<>();
 
             @Override
             public void incrementNodeCount( int labelId, long delta )

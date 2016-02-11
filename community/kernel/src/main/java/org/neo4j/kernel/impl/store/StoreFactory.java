@@ -69,10 +69,6 @@ public class StoreFactory
     private PageCache pageCache;
     private RecordFormats recordFormats;
 
-    public StoreFactory()
-    {
-    }
-
     public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, LogProvider logProvider )
     {
         this( storeDir, new Config(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,

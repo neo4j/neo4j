@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store.counts;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.register.Register;
-
+//TODO use this counts store service when the DB is in read-only mode.
 public class ReadOnlyCountsStorageService implements CountsStorageService
 {
     private final CountsStorageServiceImpl delegate;
