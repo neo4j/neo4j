@@ -237,9 +237,8 @@ public class ClusterManager
         }
         catch ( IOException e )
         {
-            // Failed to find an open port
-            // Asserting because you can't throw an exception in a TestRule
-            assert false;
+            // you can't throw a normal exception in a TestRule
+            throw new AssertionError( "Failed to find an open port" );
         }
 
         final Clusters clusters = new Clusters();
@@ -276,6 +275,7 @@ public class ClusterManager
             catch ( IOException ex )
             {
                 // Port was already bound, try the next one
+                except.add( port );
             }
         }
 
@@ -309,9 +309,8 @@ public class ClusterManager
         }
         catch ( IOException e )
         {
-            // Failed to find an open port
-            // Asserting because you can't throw an exception in a TestRule
-            assert false;
+            // you can't throw a normal exception in a TestRule
+            throw new AssertionError( "Failed to find an open port" );
         }
 
         final Clusters clusters = new Clusters();
@@ -346,9 +345,8 @@ public class ClusterManager
         }
         catch ( IOException e )
         {
-            // Failed to find an open port
-            // Asserting because you can't throw an exception in a TestRule
-            assert false;
+            // you can't throw a normal exception in a TestRule
+            throw new AssertionError( "Failed to find an open port" );
         }
         final Clusters clusters = new Clusters();
         clusters.getClusters().add( cluster );
