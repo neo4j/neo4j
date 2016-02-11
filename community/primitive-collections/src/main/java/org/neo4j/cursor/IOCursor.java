@@ -23,4 +23,26 @@ import java.io.IOException;
 
 public interface IOCursor<T> extends RawCursor<T,IOException>
 {
+    static <M> IOCursor<M> getEmpty()
+    {
+        return new IOCursor<M>()
+        {
+            @Override
+            public boolean next() throws IOException
+            {
+                return false;
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+            }
+
+            @Override
+            public M get()
+            {
+                return null;
+            }
+        };
+    }
 }

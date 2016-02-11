@@ -19,12 +19,14 @@
  */
 package org.neo4j.coreedge.raft.membership;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 import io.netty.buffer.ByteBuf;
-
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 /**
  * Format:
@@ -63,7 +65,35 @@ import org.neo4j.coreedge.server.CoreMember;
  */
 public class CoreMemberSetSerializer
 {
-    public static void serialize( CoreMemberSet memberSet, ByteBuf buffer )
+    public static void marshal( CoreMemberSet memberSet, WritableChannel channel ) throws IOException
+    {
+        Set<CoreMember> members = memberSet.getMembers();
+        channel.putInt( members.size() );
+
+        CoreMember.CoreMemberMarshal coreMemberMarshal = new CoreMember.CoreMemberMarshal();
+
+        for ( CoreMember member : members )
+        {
+            coreMemberMarshal.marshal( member, channel );
+        }
+    }
+
+    public static CoreMemberSet unmarshal( ReadableChannel channel ) throws IOException
+    {
+        HashSet<CoreMember> members = new HashSet<>();
+        int memberCount = channel.getInt();
+
+        CoreMember.CoreMemberMarshal coreMemberMarshal = new CoreMember.CoreMemberMarshal();
+
+        for ( int i = 0; i < memberCount; i++ )
+        {
+            members.add( coreMemberMarshal.unmarshal( channel ) );
+        }
+
+        return new CoreMemberSet( members );
+    }
+
+    public static void marshal( CoreMemberSet memberSet, ByteBuf buffer )
     {
         Set<CoreMember> members = memberSet.getMembers();
         buffer.writeInt( members.size() );
@@ -76,7 +106,7 @@ public class CoreMemberSetSerializer
         }
     }
 
-    public static CoreMemberSet deserialize( ByteBuf buffer )
+    public static CoreMemberSet unmarshal( ByteBuf buffer )
     {
         HashSet<CoreMember> members = new HashSet<>();
         int memberCount = buffer.readInt();

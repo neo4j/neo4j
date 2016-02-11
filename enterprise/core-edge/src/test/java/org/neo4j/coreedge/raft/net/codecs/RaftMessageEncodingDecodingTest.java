@@ -34,10 +34,9 @@ import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.VoteRequestBuilder;
 import org.neo4j.coreedge.raft.VoteResponseBuilder;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertEquals;
@@ -93,8 +92,8 @@ public class RaftMessageEncodingDecodingTest
     public void shouldSerializeHeartbeats(  ) throws Exception
     {
         // Given
-        RaftMessageEncoder encoder = new RaftMessageEncoder( serializer );
-        RaftMessageDecoder decoder = new RaftMessageDecoder( serializer );
+        RaftMessageEncoder encoder = new RaftMessageEncoder( marshal );
+        RaftMessageDecoder decoder = new RaftMessageDecoder( marshal );
 
         // Netty puts buffers with serialized content in this list
         LinkedList<Object> resultingBuffers = new LinkedList<>();
@@ -149,8 +148,8 @@ public class RaftMessageEncodingDecodingTest
     public void serializeReadBackAndVerifyMessage( RaftMessages.RaftMessage message ) throws Exception
     {
         // Given
-        RaftMessageEncoder encoder = new RaftMessageEncoder( serializer );
-        RaftMessageDecoder decoder = new RaftMessageDecoder( serializer );
+        RaftMessageEncoder encoder = new RaftMessageEncoder( marshal );
+        RaftMessageDecoder decoder = new RaftMessageDecoder( marshal );
 
         // Netty puts buffers with serialized content in this list
         LinkedList<Object> resultingBuffers = new LinkedList<>();
@@ -183,10 +182,10 @@ public class RaftMessageEncodingDecodingTest
      * assume that there is only a single entry in the stream, which allows for asserting no remaining bytes once the
      * first entry is read from the buffer.
      */
-    private static final ReplicatedContentMarshal<ByteBuf> serializer = new ReplicatedContentMarshal<ByteBuf>()
+    private static final ByteBufMarshal<ReplicatedContent> marshal = new ByteBufMarshal<ReplicatedContent>()
     {
         @Override
-        public void serialize( ReplicatedContent content, ByteBuf buffer ) throws MarshallingException
+        public void marshal( ReplicatedContent content, ByteBuf buffer )
         {
             if ( content instanceof ReplicatedInteger )
             {
@@ -200,12 +199,8 @@ public class RaftMessageEncodingDecodingTest
         }
 
         @Override
-        public ReplicatedContent deserialize( ByteBuf buffer ) throws MarshallingException
+        public ReplicatedContent unmarshal( ByteBuf buffer )
         {
-            if ( buffer.readableBytes() < 1 )
-            {
-                throw new MarshallingException( "Cannot read content type" );
-            }
             byte type = buffer.readByte();
             final ReplicatedContent content;
             switch ( type )
@@ -214,7 +209,7 @@ public class RaftMessageEncodingDecodingTest
                     content = ReplicatedInteger.valueOf( buffer.readInt() );
                     break;
                 default:
-                    throw new MarshallingException( String.format( "Unknown content type 0x%x", type ) );
+                    throw new IllegalArgumentException( String.format( "Unknown content type 0x%x", type ) );
             }
             return content;
         }

@@ -17,16 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.replication;
+package org.neo4j.coreedge.raft.log;
 
-import java.nio.ByteBuffer;
+import java.io.File;
+import java.io.IOException;
 
-import org.neo4j.coreedge.raft.replication.MarshallingException;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.io.file.Files;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 
-public interface Serializer
+public class FilenameBasedLogVersionRepository implements LogVersionRepository
 {
-    ByteBuffer serialize( ReplicatedContent content ) throws MarshallingException;
+    private long version = 0;
 
-    ReplicatedContent deserialize( ByteBuffer buffer ) throws MarshallingException;
+    public FilenameBasedLogVersionRepository( PhysicalLogFiles logFiles)
+    {
+        version = Math.max(logFiles.getHighestLogVersion(), 0);
+    }
+
+
+    @Override
+    public long getCurrentLogVersion()
+    {
+        return version;
+    }
+
+    @Override
+    public long incrementAndGetVersion() throws IOException
+    {
+        return ++version;
+    }
 }

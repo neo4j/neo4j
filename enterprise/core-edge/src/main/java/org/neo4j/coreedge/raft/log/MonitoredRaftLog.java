@@ -93,7 +93,7 @@ public class MonitoredRaftLog implements RaftLog
     }
 
     @Override
-    public boolean entryExists( long logIndex )
+    public boolean entryExists( long logIndex ) throws RaftStorageException
     {
         return delegate.entryExists( logIndex );
     }

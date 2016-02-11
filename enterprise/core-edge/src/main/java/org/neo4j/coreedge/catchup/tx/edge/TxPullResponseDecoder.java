@@ -27,7 +27,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-import org.neo4j.coreedge.raft.replication.storeid.StoreIdDecoder;
+import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -51,7 +51,7 @@ public class TxPullResponseDecoder extends MessageToMessageDecoder<ByteBuf>
     {
         if ( protocol.isExpecting( NextMessage.TX_PULL_RESPONSE ) )
         {
-            StoreId storeId = new StoreIdDecoder().decode( msg );
+            StoreId storeId = new StoreIdMarshal().unmarshal( msg );
 
             NetworkReadableClosableByteBuf logChannel = new NetworkReadableClosableByteBuf( msg );
             LogEntryReader<NetworkReadableClosableByteBuf> reader = new VersionAwareLogEntryReader<>(

@@ -37,6 +37,7 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerialize
 import org.neo4j.coreedge.raft.replication.token.TokenType;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -51,7 +52,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class CoreReplicatedContentByteBufferMarshalTest
 {
-    private final ReplicatedContentMarshal<ByteBuf> marshal = new CoreReplicatedContentMarshal();
+    private final ByteBufMarshal<ReplicatedContent> marshal = new CoreReplicatedContentMarshal();
 
     CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
             new AdvertisedSocketAddress( "raft:1" ) );
@@ -67,9 +68,9 @@ public class CoreReplicatedContentByteBufferMarshalTest
 
         ReplicatedContent replicatedTx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation, globalSession, new LocalOperationId( 0, 0 ) );
 
-        marshal.serialize( replicatedTx, buffer );
+        marshal.marshal( replicatedTx, buffer );
 
-        assertThat( marshal.deserialize( buffer ), equalTo( replicatedTx ) );
+        assertThat( marshal.unmarshal( buffer ), equalTo( replicatedTx ) );
     }
 
     @Test
@@ -80,9 +81,9 @@ public class CoreReplicatedContentByteBufferMarshalTest
                 .<StorageCommand>emptyList() );
 
         ReplicatedContent replicatedTx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation, globalSession, new LocalOperationId( 0, 0 ) );
-        marshal.serialize( replicatedTx, buffer );
+        marshal.marshal( replicatedTx, buffer );
 
-        assertThat( marshal.deserialize( buffer ), equalTo( replicatedTx ) );
+        assertThat( marshal.unmarshal( buffer ), equalTo( replicatedTx ) );
     }
 
     @Test
@@ -97,10 +98,10 @@ public class CoreReplicatedContentByteBufferMarshalTest
         ) );
 
         // when
-        marshal.serialize( message, buffer );
+        marshal.marshal( message, buffer );
 
         // then
-        assertThat( marshal.deserialize( buffer ), equalTo( message ) );
+        assertThat( marshal.unmarshal( buffer ), equalTo( message ) );
     }
 
     @Test
@@ -113,10 +114,10 @@ public class CoreReplicatedContentByteBufferMarshalTest
                         new AdvertisedSocketAddress( "host_a:2" ) ), IdType.PROPERTY, 100, 200 );
 
         // when
-        marshal.serialize( message, buffer );
+        marshal.marshal( message, buffer );
 
         // then
-        assertThat( marshal.deserialize( buffer ), equalTo( message ) );
+        assertThat( marshal.unmarshal( buffer ), equalTo( message ) );
     }
 
     @Test
@@ -136,9 +137,9 @@ public class CoreReplicatedContentByteBufferMarshalTest
                 ReplicatedTokenRequestSerializer.createCommandBytes( commands ) );
 
         // when
-        marshal.serialize( message, buffer );
+        marshal.marshal( message, buffer );
 
         // then
-        assertThat( marshal.deserialize( buffer ), equalTo( message ) );
+        assertThat( marshal.unmarshal( buffer ), equalTo( message ) );
     }
 }

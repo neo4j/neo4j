@@ -213,7 +213,7 @@ public class NeoStoreDataSourceTest
     {
         PhysicalLogFiles files = mock( PhysicalLogFiles.class );
         when( files.getLowestLogVersion() ).thenReturn( logVersion );
-        when( files.hasAnyTransaction( logVersion ) ).thenReturn( true );
+        when( files.hasAnyEntries( logVersion ) ).thenReturn( true );
         when( files.versionExists( logVersion ) ).thenReturn( true );
         when( files.extractHeader( logVersion ) ).thenReturn( new LogHeader( LogEntryVersion.CURRENT.byteCode(),
                 logVersion, headerTxId ) );
@@ -225,7 +225,7 @@ public class NeoStoreDataSourceTest
     {
         PhysicalLogFiles files = logWithTransactions( logVersion + 1, prevLogLastTxId );
         when( files.getLowestLogVersion() ).thenReturn( logVersion );
-        when( files.hasAnyTransaction( logVersion ) ).thenReturn( false );
+        when( files.hasAnyEntries( logVersion ) ).thenReturn( false );
         when( files.versionExists( logVersion ) ).thenReturn( true );
         return files;
     }

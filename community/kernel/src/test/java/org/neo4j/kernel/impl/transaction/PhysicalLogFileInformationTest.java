@@ -25,7 +25,6 @@ import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 import static org.junit.Assert.assertEquals;
@@ -90,7 +89,7 @@ public class PhysicalLogFileInformationTest
         when( logFiles.extractHeader( version ) ).thenReturn(
                 new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L )
         );
-        when( logFiles.hasAnyTransaction( version ) ).thenReturn( true );
+        when( logFiles.hasAnyEntries( version ) ).thenReturn( true );
 
         long firstCommittedTxId = info.getFirstExistingTxId();
         assertEquals( expected, firstCommittedTxId );
@@ -108,7 +107,7 @@ public class PhysicalLogFileInformationTest
         when( logFiles.getHighestLogVersion() ).thenReturn( version );
         when( logFiles.versionExists( version ) ).thenReturn( true );
         when( logHeaderCache.getLogHeader( version ) ).thenReturn( expected -1 );
-        when( logFiles.hasAnyTransaction( version ) ).thenReturn( true );
+        when( logFiles.hasAnyEntries( version ) ).thenReturn( true );
 
         long firstCommittedTxId = info.getFirstExistingTxId();
         assertEquals( expected, firstCommittedTxId );
@@ -122,7 +121,7 @@ public class PhysicalLogFileInformationTest
 
         long version = 10L;
         when( logFiles.getHighestLogVersion() ).thenReturn( version );
-        when( logFiles.hasAnyTransaction( version ) ).thenReturn( false );
+        when( logFiles.hasAnyEntries( version ) ).thenReturn( false );
 
         long firstCommittedTxId = info.getFirstExistingTxId();
         assertEquals( -1, firstCommittedTxId );

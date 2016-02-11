@@ -17,28 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.replication;
+package org.neo4j.coreedge.raft.log;
 
-import java.nio.ByteBuffer;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-
-import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
-
-public class RaftContentSerializer implements Serializer
+public class RaftLogAppendRecord extends RaftLogRecord
 {
-    @Override
-    public ByteBuffer serialize( ReplicatedContent content ) throws MarshallingException
+    private final RaftLogEntry logEntry;
+
+    RaftLogAppendRecord( long logIndex, RaftLogEntry logEntry )
     {
-        ByteBuf buffer = Unpooled.buffer();
-        new CoreReplicatedContentMarshal().serialize( content, buffer );
-        return buffer.nioBuffer();
+        super( PhysicalRaftLog.RecordType.APPEND, logIndex );
+        this.logEntry = logEntry;
+    }
+
+    public RaftLogEntry getLogEntry()
+    {
+        return logEntry;
     }
 
     @Override
-    public ReplicatedContent deserialize( ByteBuffer buffer ) throws MarshallingException
+    public String toString()
     {
-        return new CoreReplicatedContentMarshal().deserialize( Unpooled.wrappedBuffer( buffer ) );
+        return String.format( "RaftLogAppendRecord{%s, %s}", super.toString(), logEntry );
     }
 }

@@ -17,24 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.replication;
+package org.neo4j.coreedge.raft.log;
 
-public interface ReplicatedContentMarshal<T>
+import org.neo4j.cursor.IOCursor;
+
+public interface RaftEntryStore
 {
-    /**
-     * Serialize content into bytes
-     *
-     * @param content the content to serialize
-     * @param buffer  the buffer to serialize into
-     */
-    void serialize( ReplicatedContent content, T buffer ) throws MarshallingException;
-
-    /**
-     * Deserialize content from a buffer. The buffer is consumed when this method returns.
-     *
-     * @param buffer the buffer to deserialize from
-     * @return the deserialized content
-     * @throws MarshallingException when the buffer cannot be correctly deserialized
-     */
-    ReplicatedContent deserialize( T buffer ) throws MarshallingException;
+    IOCursor<RaftLogAppendRecord> getEntriesFrom( long logIndex ) throws RaftStorageException;
 }

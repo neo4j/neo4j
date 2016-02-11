@@ -19,18 +19,53 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
+import java.io.IOException;
 import java.util.UUID;
 
 import io.netty.buffer.ByteBuf;
-
-import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 public class ReplicatedTransactionSerializer
 {
-    public static void serialize( ReplicatedTransaction<CoreMember> transaction, ByteBuf buffer ) throws MarshallingException
+    public static void marshal( ReplicatedTransaction<CoreMember> transaction, WritableChannel channel ) throws IOException
+    {
+        UUID globalSessionId = transaction.globalSession().sessionId();
+        channel.putLong( globalSessionId.getMostSignificantBits() );
+        channel.putLong( globalSessionId.getLeastSignificantBits() );
+
+        new CoreMember.CoreMemberMarshal().marshal( transaction.globalSession().owner(), channel );
+
+        channel.putLong( transaction.localOperationId().localSessionId() );
+        channel.putLong( transaction.localOperationId().sequenceNumber() );
+
+        byte[] txBytes = transaction.getTxBytes();
+        channel.putInt( txBytes.length );
+        channel.put( txBytes, txBytes.length );
+    }
+
+    public static ReplicatedTransaction unmarshal( ReadableChannel channel ) throws IOException
+    {
+        long uuidMSB = channel.getLong();
+        long uuidLSB = channel.getLong();
+        UUID globalSessionId = new UUID( uuidMSB, uuidLSB );
+
+        CoreMember owner = new CoreMember.CoreMemberMarshal().unmarshal( channel );
+
+        long localSessionId = channel.getLong();
+        long sequenceNumber = channel.getLong();
+
+        int txBytesLength = channel.getInt();
+        byte[] txBytes = new  byte[txBytesLength];
+        channel.get( txBytes, txBytesLength );
+
+        return new ReplicatedTransaction( txBytes, new GlobalSession( globalSessionId, owner ), new LocalOperationId( localSessionId, sequenceNumber ) );
+    }
+
+    public static void marshal( ReplicatedTransaction<CoreMember> transaction, ByteBuf buffer )
     {
         UUID globalSessionId = transaction.globalSession().sessionId();
         buffer.writeLong( globalSessionId.getMostSignificantBits() );
@@ -46,7 +81,7 @@ public class ReplicatedTransactionSerializer
         buffer.writeBytes( txBytes );
     }
 
-    public static ReplicatedTransaction deserialize( ByteBuf buffer ) throws MarshallingException
+    public static ReplicatedTransaction unmarshal( ByteBuf buffer )
     {
         long uuidMSB = buffer.readLong();
         long uuidLSB = buffer.readLong();
@@ -59,7 +94,7 @@ public class ReplicatedTransactionSerializer
 
         int txBytesLength = buffer.readInt();
         byte[] txBytes = new  byte[txBytesLength];
-        buffer.readBytes( txBytes, 0, txBytesLength );
+        buffer.readBytes( txBytes );
 
         return new ReplicatedTransaction( txBytes, new GlobalSession( globalSessionId, owner ), new LocalOperationId( localSessionId, sequenceNumber ) );
     }

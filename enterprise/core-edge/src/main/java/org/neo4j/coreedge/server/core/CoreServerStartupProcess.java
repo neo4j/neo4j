@@ -60,7 +60,7 @@ public class CoreServerStartupProcess
         services.add( raftServer );
         services.add( catchupServer );
         services.add( raftTimeoutService );
-        services.add( new MembershipWaiterLifecycle<>(membershipWaiter, joinCatchupTimeout, raft ) );
+        services.add( new MembershipWaiterLifecycle<>( membershipWaiter, joinCatchupTimeout, raft ) );
 
         return services;
     }

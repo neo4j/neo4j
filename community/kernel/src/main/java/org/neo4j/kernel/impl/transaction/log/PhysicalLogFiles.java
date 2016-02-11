@@ -89,7 +89,7 @@ public class PhysicalLogFiles
         return readLogHeader( fileSystem, getLogFileForVersion( version ) );
     }
 
-    public boolean hasAnyTransaction( long version )
+    public boolean hasAnyEntries( long version )
     {
         return fileSystem.getFileSize( getLogFileForVersion( version ) ) > LOG_HEADER_SIZE;
     }

@@ -19,20 +19,20 @@
  */
 package org.neo4j.coreedge.raft.net;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldPrepender;
 
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageEncoder;
-import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.server.ByteBufMarshal;
 
 public class RaftChannelInitializer extends ChannelInitializer<SocketChannel>
 {
-    private final ReplicatedContentMarshal<ByteBuf> marshal;
+    private final ByteBufMarshal<ReplicatedContent> marshal;
 
-    public RaftChannelInitializer( ReplicatedContentMarshal<ByteBuf> marshal )
+    public RaftChannelInitializer( ByteBufMarshal<ReplicatedContent> marshal )
     {
         this.marshal = marshal;
     }

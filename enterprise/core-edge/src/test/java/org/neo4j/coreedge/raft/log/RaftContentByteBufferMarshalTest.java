@@ -19,15 +19,16 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
-import org.neo4j.coreedge.raft.replication.RaftContentSerializer;
+import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
@@ -56,7 +57,7 @@ public class RaftContentByteBufferMarshalTest
     public void shouldSerializeMemberSet() throws Exception
     {
         // given
-        RaftContentSerializer serializer = new RaftContentSerializer();
+        CoreReplicatedContentMarshal serializer = new CoreReplicatedContentMarshal();
         CoreMemberSet in = new CoreMemberSet( asSet(
                 new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
                         new AdvertisedSocketAddress( "host1:1002" ) ),
@@ -65,8 +66,9 @@ public class RaftContentByteBufferMarshalTest
         ) );
 
         // when
-        ByteBuffer buffer = serializer.serialize( in );
-        ReplicatedContent out = serializer.deserialize( buffer );
+        ByteBuf buf = Unpooled.buffer();
+        serializer.marshal( in, buf );
+        ReplicatedContent out = serializer.unmarshal( buf );
 
         // then
         assertEquals( in, out );
@@ -76,7 +78,7 @@ public class RaftContentByteBufferMarshalTest
     public void shouldSerializeTransactionRepresentation() throws Exception
     {
         // given
-        RaftContentSerializer serializer = new RaftContentSerializer();
+        CoreReplicatedContentMarshal serializer = new CoreReplicatedContentMarshal();
         Collection<StorageCommand> commands = new ArrayList<>();
 
         IndexCommand.AddNodeCommand addNodeCommand = new IndexCommand.AddNodeCommand();
@@ -91,8 +93,9 @@ public class RaftContentByteBufferMarshalTest
         ReplicatedTransaction in = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( txIn, globalSession, new LocalOperationId( 0, 0 ) );
 
         // when
-        ByteBuffer buffer = serializer.serialize( in );
-        ReplicatedTransaction out = (ReplicatedTransaction)serializer.deserialize( buffer );
+        ByteBuf buf = Unpooled.buffer();
+        serializer.marshal( in, buf );
+        ReplicatedTransaction out = (ReplicatedTransaction) serializer.unmarshal( buf );
 
         TransactionRepresentation txOut = ReplicatedTransactionFactory.extractTransactionRepresentation( out, extraHeader );
 
@@ -130,12 +133,13 @@ public class RaftContentByteBufferMarshalTest
     public void shouldSerializeIdRangeRequest() throws Exception
     {
         // given
-        RaftContentSerializer serializer = new RaftContentSerializer();
+        CoreReplicatedContentMarshal serializer = new CoreReplicatedContentMarshal();
         ReplicatedContent in = new ReplicatedIdAllocationRequest( coreMember, IdType.NODE, 100, 200 );
 
         // when
-        ByteBuffer buffer = serializer.serialize( in );
-        ReplicatedContent out = serializer.deserialize( buffer );
+        ByteBuf buf = Unpooled.buffer();
+        serializer.marshal( in, buf );
+        ReplicatedContent out = serializer.unmarshal( buf );
 
         // then
         assertEquals( in, out );

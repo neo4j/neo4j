@@ -17,20 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.replication.storeid;
+package org.neo4j.coreedge.raft.log;
 
-import io.netty.buffer.ByteBuf;
-
-import org.neo4j.kernel.impl.store.StoreId;
-
-public class StoreIdEncoder
+public class RaftLogCommitRecord extends RaftLogRecord
 {
-    public void encode( StoreId storeId, ByteBuf encoded )
+    public RaftLogCommitRecord( long logIndex )
     {
-        encoded.writeLong( storeId.getCreationTime() );
-        encoded.writeLong( storeId.getRandomId() );
-        encoded.writeLong( storeId.getStoreVersion() );
-        encoded.writeLong( storeId.getUpgradeTime() );
-        encoded.writeLong( storeId.getUpgradeId() );
+        super( PhysicalRaftLog.RecordType.COMMIT, logIndex );
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "RaftLogCommitRecord{%s}", super.toString() );
     }
 }

@@ -26,17 +26,18 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
 
 public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.RaftMessage<CoreMember>>
 {
-    private final ReplicatedContentMarshal<ByteBuf> marshal;
+    private final ByteBufMarshal<ReplicatedContent> marshal;
 
-    public RaftMessageEncoder( ReplicatedContentMarshal<ByteBuf> marshal )
+    public RaftMessageEncoder( ByteBufMarshal<ReplicatedContent> marshal )
     {
         this.marshal = marshal;
     }
@@ -79,7 +80,7 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Raf
             for ( RaftLogEntry raftLogEntry : appendRequest.entries() )
             {
                 buf.writeLong( raftLogEntry.term() );
-                marshal.serialize( raftLogEntry.content(), buf );
+                marshal.marshal( raftLogEntry.content(), buf );
             }
         }
         else if ( message instanceof RaftMessages.AppendEntries.Response )
@@ -96,7 +97,7 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Raf
         {
             RaftMessages.NewEntry.Request<CoreMember> newEntryRequest = (RaftMessages.NewEntry
                     .Request<CoreMember>) message;
-            marshal.serialize( newEntryRequest.content(), buf );
+            marshal.marshal( newEntryRequest.content(), buf );
         }
         else if ( message instanceof RaftMessages.Heartbeat )
         {

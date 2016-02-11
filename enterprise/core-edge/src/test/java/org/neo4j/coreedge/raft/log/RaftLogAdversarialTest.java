@@ -31,7 +31,6 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -111,7 +110,7 @@ public class RaftLogAdversarialTest
     }
 
     private void verifyCurrentLogAndNewLogLoadedFromFileSystem(
-            ReadableRaftLog log, FileSystemAbstraction fileSystem, LogVerifier logVerifier )
+            ReadableRaftLog log, FileSystemAbstraction fileSystem, LogVerifier logVerifier ) throws RaftStorageException
     {
         logVerifier.verifyLog( log );
         logVerifier.verifyLog( createRaftLog( fileSystem ) );
@@ -119,6 +118,6 @@ public class RaftLogAdversarialTest
 
     private interface LogVerifier
     {
-        void verifyLog( ReadableRaftLog log );
+        void verifyLog( ReadableRaftLog log ) throws RaftStorageException;
     }
 }

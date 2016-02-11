@@ -17,21 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.replication.storeid;
+package org.neo4j.coreedge.raft.log;
 
-import io.netty.buffer.ByteBuf;
-
-import org.neo4j.kernel.impl.store.StoreId;
-
-public class StoreIdDecoder
+public class RaftLogTruncateRecord extends RaftLogRecord
 {
-    public StoreId decode( ByteBuf msg )
+    RaftLogTruncateRecord( long fromLogIndex )
     {
-        long creationTime = msg.readLong();
-        long randomId = msg.readLong();
-        long storeVersion = msg.readLong();
-        long upgradeTime = msg.readLong();
-        long upgradeId = msg.readLong();
-        return new StoreId( creationTime, randomId, storeVersion, upgradeTime, upgradeId );
+        super( PhysicalRaftLog.RecordType.TRUNCATE, fromLogIndex );
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "RaftLogTruncateRecord{%s}", super.toString() );
     }
 }
