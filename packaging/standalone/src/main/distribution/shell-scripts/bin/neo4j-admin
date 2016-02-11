@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 # Copyright (c) 2016 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
@@ -17,33 +16,72 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-set -euo pipefail
-[[ "${TRACE:-}" ]] && set -x
+set -o errexit -o nounset -o pipefail
+[[ "${TRACE:-}" ]] && set -o xtrace
 
 PROGRAM="$(basename "$0")"
 NEO4J_ROOT="$(cd "$(dirname "$0")"/.. && dirs -l +0)"
+readonly PROGRAM NEO4J_ROOT
+
+cmd_upgrade_args() {
+  declare source=''
+
+  while [[ -n "${1:-}" ]]; do
+    declare arg="$1"
+    shift
+    case "${arg}" in
+      -h|--help)
+        usage
+        ;;
+      -f)
+        if [[ -n "${1:-}" ]]; then
+          source="${1}"
+          shift
+        fi
+        ;;
+      --from=*)
+        set -- "-f" "${arg#*=}" "$@"
+        ;;
+      --from)
+        ;;
+      *)
+        bad_usage "unrecognized argument ${arg}"
+        ;;
+    esac
+  done
+
+  [[ -z "${source}" ]] && bad_usage "you must provide the --from option with an argument"
+
+  retval1="${source}"
+}
 
 cmd_upgrade() {
-	opts="$(getopt -o f: -l from: -n "$PROGRAM" -- "$@")"
-	eval set -- "${opts}"
-	while true; do
-	  case "$1" in
-		  -f|--from) source="$2"; shift 2 ;;
-		  --) shift; break ;;
-	  esac
-  done
+  cmd_upgrade_args "$@"
+  declare -r source="${retval1}"
+}
+
+bad_usage() {
+  echo "Error: $1" >&2
+  echo "$(usage)" >&2
+  exit 1
 }
 
 usage() {
-  echo "${PROGRAM} <command> <options>
+  echo "Usage:
+  ${PROGRAM} help
+  ${PROGRAM} upgrade [--from|-f]=<source>"
+  exit 0
 }
 
-command="$1"
-shift
-case "${command}" in
-  upgrade) cmd_upgrade "$@" ;;
-  help|--help|-h) usage ;;
-	*) usage; exit 1 ;;
-esac
-exit $?
+main() {
+  [[ -z "${1:-}" ]] && bad_usage "you must provide a command"
+  declare -r command="$1"
+  shift
+  case "${command}" in
+    upgrade)        cmd_upgrade "$@" ;;
+    help|--help|-h) usage ;;
+    *)              bad_usage "unrecognised command ${command}" ;;
+  esac
+}
+
+main "$@"

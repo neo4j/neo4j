@@ -29,3 +29,17 @@ test_expect_stdout_matching() {
 	echo >&2 "test_expect_stdout_matching: expected '${expected_pattern}' but got '${stdout}'"
 	return 1
 }
+
+test_expect_stderr_matching() {
+	expected_pattern=$1
+	shift
+	stdout="$("$@" 2>&1)"
+	echo "${stdout}" | grep "${expected_pattern}"
+	exit_code="$?"
+	if [[ "${exit_code}" -eq 0 ]]; then
+		return 0
+	fi
+
+	echo >&2 "test_expect_stdout_matching: expected '${expected_pattern}' but got '${stdout}'"
+	return 1
+}
