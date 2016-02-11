@@ -28,6 +28,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
+import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 
 public class TransactionIT
 {
@@ -82,5 +83,21 @@ public class TransactionIT
         MatcherAssert.assertThat( responses.next(), SessionMatchers.success() );
         MatcherAssert.assertThat( responses.next(), SessionMatchers.success() );
         MatcherAssert.assertThat( responses.next(), SessionMatchers.success() );
+    }
+
+    @Test
+    public void shouldFailNicelyWhenOutOfOrderRollback() throws Throwable
+    {
+        // Given
+        RecordingCallback<RecordStream, Object> responses = new RecordingCallback<>();
+        Session session = env.newSession();
+        session.init( "TestClient", null, null );
+
+        // When
+        session.run( "ROLLBACK", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata,Object>noop());
+        session.pullAll( null, responses );
+
+        // Then
+        MatcherAssert.assertThat( responses.next(), SessionMatchers.ignored());
     }
 }

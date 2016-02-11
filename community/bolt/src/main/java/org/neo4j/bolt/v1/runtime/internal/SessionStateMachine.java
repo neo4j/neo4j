@@ -91,7 +91,15 @@ public class SessionStateMachine implements Session, SessionState
                         {
                             ctx.currentResult = ctx.statementRunner.run( ctx, statement, params );
                             ctx.result( ctx.currentStatementMetadata );
-                            return STREAM_OPEN;
+                            //if the call to run failed we must remain in state ERROR
+                            if (ctx.state == ERROR)
+                            {
+                                return ERROR;
+                            }
+                            else
+                            {
+                                return STREAM_OPEN;
+                            }
                         }
                         catch ( Throwable e )
                         {

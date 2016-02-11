@@ -247,6 +247,23 @@ public class SessionStateMachineTest
         assertThat( callback.completedCount, equalTo( 1 ) );
     }
 
+    @Test
+    public void shouldErrorWhenOutOfOrderRollback() throws Throwable
+    {
+        // Given
+        final TopLevelTransaction tx = mock( TopLevelTransaction.class );
+        when( db.beginTx() ).thenReturn( tx );
+        when( runner.run( any( SessionState.class ), anyString(), Matchers.anyMap() ) )
+                .thenThrow( new NoTransactionEffectException() );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
+
+        // When
+        machine.run( "ROLLBACK", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
+
+        // Then
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+    }
+
     @Before
     public void setup()
     {
