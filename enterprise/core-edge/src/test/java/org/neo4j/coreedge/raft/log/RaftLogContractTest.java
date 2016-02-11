@@ -35,6 +35,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -116,26 +117,6 @@ public abstract class RaftLogContractTest
         assertThat( log.appendIndex(), is( 0L ) );
         assertThat( log.commitIndex(), is( 0L ) );
         assertThat( log.entryExists( 0 ), is( true ) );
-    }
-
-    @Test
-    public void shouldCommitOnlyOnce() throws Exception
-    {
-        RaftLog log = createRaftLog();
-
-        RaftLog.Listener listener = mock( RaftLog.Listener.class );
-        log.registerListener( listener );
-
-        RaftLogEntry logEntry = new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) );
-        log.append( logEntry );
-
-        log.commit( 10 );
-        log.commit( 10 );
-
-        assertThat( log.appendIndex(), is( 0L ) );
-        assertThat( log.commitIndex(), is( 0L ) );
-        assertThat( log.entryExists( 0 ), is( true ) );
-        verify( listener, times( 1 ) ).onCommitted( eq( logEntry.content() ), anyLong() );
     }
 
     @Test

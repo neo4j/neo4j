@@ -153,6 +153,58 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
     }
 
     @Test
+    public void shouldRestoreCorrectCommitAndAppendIndexOnStartupWhenTruncationRecordsArePresent() throws Exception
+    {
+        // Given
+        PhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        int term = 0;
+        ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
+        raftLog.append( new RaftLogEntry( term, content ) );
+        raftLog.append( new RaftLogEntry( term, content ) );
+        long entryIndex3 = raftLog.append( new RaftLogEntry( term, content ) );
+        long entryIndex4 = raftLog.append( new RaftLogEntry( term, content ) );
+
+        raftLog.commit( entryIndex3 );
+        raftLog.truncate( entryIndex4 );
+
+        // When
+        // we restart the raft log
+        life.remove( raftLog ); // stops the removed instance
+        raftLog = createRaftLog( 100 );
+
+        // Then
+        assertEquals( entryIndex3, raftLog.commitIndex() );
+        assertEquals( entryIndex3, raftLog.appendIndex() );
+    }
+
+    @Test
+    public void shouldRestoreCorrectCommitAndAppendIndexWithTruncationRecordsAndAppendedRecordsAfterThat() throws Exception
+    {
+        // Given
+        PhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        int term = 0;
+        ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
+        raftLog.append( new RaftLogEntry( term, content ) );
+        raftLog.append( new RaftLogEntry( term, content ) );
+        long entryIndex3 = raftLog.append( new RaftLogEntry( term, content ) );
+        long entryIndex4 = raftLog.append( new RaftLogEntry( term, content ) );
+
+        raftLog.commit( entryIndex3 );
+        raftLog.truncate( entryIndex4 );
+
+        long entryIndex5 = raftLog.append( new RaftLogEntry( term, content ) );
+
+        // When
+        // we restart the raft log
+        life.remove( raftLog ); // stops the removed instance
+        raftLog = createRaftLog( 100 );
+
+        // Then
+        assertEquals( entryIndex3, raftLog.commitIndex() );
+        assertEquals( entryIndex5, raftLog.appendIndex() );
+    }
+
+    @Test
     public void shouldReturnNullOnEndOfFile() throws Exception
     {
         PhysicalRaftLog raftLog = createRaftLog( 1 /* cache size */  );

@@ -23,8 +23,6 @@ import static java.lang.String.format;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
@@ -69,7 +67,6 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
 
     private final RaftEntryStore entryStore;
 
-    private final Set<Listener> listeners = new CopyOnWriteArraySet<>();
     private final PhysicalLogFiles logFiles;
 
     public PhysicalRaftLog( FileSystemAbstraction fileSystem, File directory, long rotateAtSize,
@@ -91,18 +88,6 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
 
         this.metadataCache = new RaftLogMetadataCache( entryCacheSize );
         this.entryStore = new PhysicalRaftEntryStore( logFile, metadataCache, marshal );
-    }
-
-    @Override
-    public void replay() throws Throwable
-    {
-
-    }
-
-    @Override
-    public void registerListener( Listener listener )
-    {
-        listeners.add( listener );
     }
 
     @Override
@@ -129,10 +114,6 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
             metadataCache.cacheMetadata( appendIndex.get(), entry.term(), entryStartPosition.newPosition() );
             writer.prepareForFlush().flush();
 
-            for ( Listener listener : listeners )
-            {
-                listener.onAppended( entry.content(), appendIndex.get() );
-            }
             logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
         }
         catch ( IOException e )
@@ -155,10 +136,6 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         {
             appendIndex.set( fromIndex - 1 );
 
-            for ( Listener listener : listeners )
-            {
-                listener.onTruncated( fromIndex );
-            }
             try
             {
                 writer.put( RecordType.TRUNCATE.value );
@@ -182,16 +159,11 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
             return;
         }
 
-        long actualNewCommitIndex = Math.min(newCommitIndex, appendIndex.get());
+        long actualNewCommitIndex = Math.min( newCommitIndex, appendIndex.get() );
 
         while ( commitIndex < actualNewCommitIndex )
         {
             commitIndex++;
-            for ( Listener listener : listeners )
-            {
-                ReplicatedContent content = readEntryContent( commitIndex );
-                listener.onCommitted( content, commitIndex );
-            }
         }
         try
         {
@@ -297,6 +269,11 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
                         break;
                     case APPEND:
                         appendIndex.set( record.getLogIndex() );
+                        break;
+                    case TRUNCATE:
+                        long truncateAtIndex = record.getLogIndex() - 1; // we must restore append/commit at before this index
+                        appendIndex.set( truncateAtIndex );
+                        commitIndex = Math.min( commitIndex, truncateAtIndex );
                         break;
                     default:
                         throw new IllegalStateException( "Record is of unknown type " + record );
