@@ -14,6 +14,7 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
   ExplorerCanvas
+  FindBugs-jsr305
   Graphite Integration for Metrics
   hazelcast-all
   Jackson
@@ -1395,6 +1396,7 @@ version.
 
 ------------------------------------------------------------------------------
 GNU Lesser General Public License, Version 2.1
+  FindBugs-Annotations
   Java Native Access
   Logback Access Module
   Logback Classic Module
