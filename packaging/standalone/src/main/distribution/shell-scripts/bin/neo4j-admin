@@ -58,6 +58,8 @@ cmd_upgrade_args() {
 cmd_upgrade() {
   cmd_upgrade_args "$@"
   declare -r source="${retval1}"
+
+  cat "${source}/conf/neo4j.properties" "${source}/conf/neo4j-server.properties" >"${NEO4J_ROOT}/conf/neo4j.conf"
 }
 
 bad_usage() {
