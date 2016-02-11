@@ -37,7 +37,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
-import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
@@ -74,7 +73,6 @@ public class UpgradableDatabaseTest
         public static Collection<String> versions()
         {
             return Arrays.asList(
-                    Legacy19Store.LEGACY_VERSION,
                     Legacy20Store.LEGACY_VERSION,
                     Legacy21Store.LEGACY_VERSION,
                     Legacy22Store.LEGACY_VERSION,

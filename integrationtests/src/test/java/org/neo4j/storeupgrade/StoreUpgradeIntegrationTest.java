@@ -19,24 +19,23 @@
  */
 package org.neo4j.storeupgrade;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -82,7 +81,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -93,13 +91,6 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 public class StoreUpgradeIntegrationTest
 {
     // NOTE: the zip files must contain the database files and NOT the graph.db folder itself!!!
-    private static final List<Store[]> STORES19 = Collections.singletonList(
-            new Store[]{new Store( "0.A.0-db.zip",
-                    4 /* node count */,
-                    4 /* last txId */,
-                    selectivities(),
-                    indexCounts()
-            )} );
     private static final List<Store[]> STORES20 = Arrays.asList(
             new Store[]{new Store( "/upgrade/0.A.1-db.zip",
                     1071 /* node count */,
@@ -163,7 +154,7 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
-            return IteratorUtil.asCollection( Iterables.concat( STORES19, STORES20, STORES21, STORES22, STORES23 ) );
+            return IteratorUtil.asCollection( Iterables.concat( STORES20, STORES21, STORES22, STORES23 ) );
         }
 
         @Rule
@@ -281,16 +272,31 @@ public class StoreUpgradeIntegrationTest
         }
     }
 
+    @RunWith( Parameterized.class )
     public static class StoreUpgradeFailingTest
     {
         @Rule
         public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
+        @Parameterized.Parameter(0)
+        public String ignored; // to make JUnit happy...
+        @Parameterized.Parameter(1)
+        public String dbFileName;
+
+        @Parameterized.Parameters( name = "{0}" )
+        public static Collection<String[]> parameters()
+        {
+            return Arrays.<String[]>asList(
+                    new String[]{"on a not cleanly shutdown database", "0.A.3-to-be-recovered.zip"},
+                    new String[]{"on a 1.9 store", "0.A.0-db.zip"}
+            );
+        }
+
         @Test
-        public void migratingFromANotCleanlyShutdownStoreShouldNotStartAndFail() throws Throwable
+        public void migrationShouldFail() throws Throwable
         {
             // migrate the store using a single instance
-            File dir = Unzip.unzip( getClass(), "0.A.3-to-be-recovered.zip", testDir.graphDbDir() );
+            File dir = Unzip.unzip( getClass(), dbFileName, testDir.graphDbDir() );
             new File( dir, "messages.log" ).delete(); // clear the log
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
@@ -298,8 +304,7 @@ public class StoreUpgradeIntegrationTest
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             try
             {
-                GraphDatabaseService db = builder.newGraphDatabase();
-                db.shutdown();
+                builder.newGraphDatabase();
                 fail( "It should have failed." );
             }
             catch ( RuntimeException ex )

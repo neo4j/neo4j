@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
-import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
@@ -167,8 +166,6 @@ public class MigrationTestUtils
             return find21FormatStoreDirectory( targetDir );
         case Legacy20Store.LEGACY_VERSION:
             return find20FormatStoreDirectory( targetDir );
-        case Legacy19Store.LEGACY_VERSION:
-            return find19FormatStoreDirectory( targetDir );
         default:
             throw new IllegalArgumentException( "Unknown version" );
         }
@@ -197,16 +194,6 @@ public class MigrationTestUtils
     public static File find20FormatStoreDirectory( File targetDir ) throws IOException
     {
         return Unzip.unzip( Legacy20Store.class, "exampledb.zip", targetDir );
-    }
-
-    public static File find19FormatStoreDirectory( File targetDir ) throws IOException
-    {
-        return Unzip.unzip( Legacy19Store.class, "propkeydupdb.zip", targetDir );
-    }
-
-    public static File find19FormatHugeStoreDirectory( File targetDir ) throws IOException
-    {
-        return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip", targetDir );
     }
 
     public static boolean allLegacyStoreFilesHaveVersion( FileSystemAbstraction fs, File dir, String version )
