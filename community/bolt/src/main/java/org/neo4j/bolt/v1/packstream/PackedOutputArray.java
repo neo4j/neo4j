@@ -51,7 +51,10 @@ public class PackedOutputArray implements PackOutput
     @Override
     public PackOutput writeBytes( ByteBuffer buffer ) throws IOException
     {
-        data.write( buffer.array() );
+        while(buffer.remaining() > 0)
+        {
+            data.writeByte( buffer.get() );
+        }
         return this;
     }
 
