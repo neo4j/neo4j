@@ -19,12 +19,12 @@
  */
 package org.neo4j.bolt.v1.runtime.internal;
 
-import java.util.Collections;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
+
+import java.util.Collections;
 
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
@@ -32,9 +32,9 @@ import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
@@ -215,6 +215,19 @@ public class SessionStateMachineTest
     }
 
     @Test
+    public void shouldCallStartedWhenStartingProcessing() throws Throwable
+    {
+        // Given
+        TestCallback callback = new TestCallback();
+
+        // When
+        machine.init( "FunClient/1.2", null, callback );
+
+        // Then
+        assertThat( callback.startedCount, equalTo( 1 ) );
+    }
+
+    @Test
     public void shouldResetToIdleOnError() throws Throwable
     {
         // Given
@@ -245,6 +258,13 @@ public class SessionStateMachineTest
     {
         public int completedCount;
         public int ignoredCount;
+        public int startedCount;
+
+        @Override
+        public void started( Object attachment )
+        {
+            startedCount += 1;
+        }
 
         @Override
         public void completed( Object attachment )

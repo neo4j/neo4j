@@ -179,14 +179,14 @@ public class CoreEdgeMetricsIT
     private static final int TIME_STAMP = 0;
     private static final int METRICS_VALUE = 1;
 
-    private File metricsCsv( File dbDir, String metric )
+    public static File metricsCsv( File dbDir, String metric )
     {
         File csvFile = new File( dbDir, metric + ".csv" );
         assertEventually( "Metrics file should exist", csvFile::exists, is( true ), 20, SECONDS );
         return csvFile;
     }
 
-    private long readLastValue( File metricFile ) throws IOException
+    public static long readLastValue( File metricFile ) throws IOException
     {
         String[] fields = null;
         try ( BufferedReader reader = new BufferedReader( new FileReader( metricFile ) ) )

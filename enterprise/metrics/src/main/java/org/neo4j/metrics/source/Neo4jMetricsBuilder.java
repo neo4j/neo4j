@@ -19,10 +19,9 @@
  */
 package org.neo4j.metrics.source;
 
-import java.util.function.Supplier;
-
 import com.codahale.metrics.MetricRegistry;
 
+import java.util.function.Supplier;
 
 import org.neo4j.coreedge.raft.CoreMetaData;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
@@ -42,6 +41,7 @@ import org.neo4j.metrics.MetricsSettings;
 import org.neo4j.metrics.output.EventReporter;
 import org.neo4j.metrics.source.cluster.ClusterMetrics;
 import org.neo4j.metrics.source.cluster.NetworkMetrics;
+import org.neo4j.metrics.source.db.BoltMetrics;
 import org.neo4j.metrics.source.db.CheckPointingMetrics;
 import org.neo4j.metrics.source.db.CypherMetrics;
 import org.neo4j.metrics.source.db.EntityCountMetrics;
@@ -167,6 +167,12 @@ public class Neo4jMetricsBuilder
         if ( config.get( MetricsSettings.jvmThreadsEnabled ) )
         {
             life.add( new ThreadMetrics( registry ) );
+            result = true;
+        }
+
+        if( config.get( MetricsSettings.boltMessagesEnabled ))
+        {
+            life.add( new BoltMetrics( registry, dependencies.monitors() ));
             result = true;
         }
 

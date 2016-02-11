@@ -22,11 +22,11 @@ package org.neo4j.bolt.v1.messaging.msgprocess;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.logging.Log;
 import org.neo4j.bolt.v1.messaging.MessageHandler;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.logging.Log;
 
 /** Bridges the gap between incoming deserialized messages, the user environment and back. */
 public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
@@ -39,25 +39,16 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
 
     private Session session;
 
-    public TransportBridge( Log log )
+    public TransportBridge( Log log, Session session, MessageHandler<IOException> output,
+            Runnable onEachCompletedRequest )
     {
         this.resultStreamCallback = new RecordStreamCallback( log );
         this.simpleCallback = new MessageProcessingCallback<>( log );
         this.runCallback = new RunCallback( log );
-    }
-
-    /**
-     * Reset this bridge to be used for a different session. This method CANNOT be called while there are in-flight
-     * requests for this bridge running, doing so will cause protocol errors.
-     */
-    public TransportBridge reset( Session session, MessageHandler<IOException> output,
-            Runnable onEachCompletedRequest )
-    {
         this.session = session;
         this.simpleCallback.reset( output, onEachCompletedRequest );
         this.resultStreamCallback.reset( output, onEachCompletedRequest );
         this.runCallback.reset( output, onEachCompletedRequest );
-        return this;
     }
 
     @Override

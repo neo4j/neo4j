@@ -19,18 +19,19 @@
  */
 package org.neo4j.bolt;
 
-import java.io.File;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.bouncycastle.operator.OperatorCreationException;
+
+import java.io.File;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.time.Clock;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
@@ -38,6 +39,7 @@ import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.SocketTransport;
+import org.neo4j.bolt.v1.runtime.MonitoredSessions;
 import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.bolt.v1.runtime.internal.EncryptionRequiredSessions;
 import org.neo4j.bolt.v1.runtime.internal.StandardSessions;
@@ -59,6 +61,7 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
 
@@ -165,6 +168,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         JobScheduler scheduler();
 
         UsageData usageData();
+
+        Monitors monitors();
     }
 
     public BoltKernelExtension()
@@ -185,9 +190,11 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         final JobScheduler scheduler = dependencies.scheduler();
 
-        final Sessions sessions = new ThreadedSessions(
-                life.add( new StandardSessions( api, dependencies.usageData(), logging ) ),
-                scheduler, logging );
+        Sessions sessions =
+                new MonitoredSessions( dependencies.monitors(),
+                    new ThreadedSessions(
+                        life.add( new StandardSessions( api, dependencies.usageData(), logging ) ),
+                        scheduler, logging ), Clock.systemUTC() );
 
         List<NettyServer.ProtocolInitializer> connectors = new ArrayList<>();
 
@@ -217,18 +224,9 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                     break;
                 }
 
-                PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions;
-                if( requireEncryption )
-                {
-                    availableVersions = newVersions( logging, new EncryptionRequiredSessions( sessions ) );
-                }
-                else
-                {
-                    availableVersions = newVersions( logging, sessions );
-                }
-
                 connectors.add( new SocketTransport( socketAddress, sslCtx, logging.getInternalLogProvider(),
-                    availableVersions ) );
+                        newVersions( logging,
+                                requireEncryption ? new EncryptionRequiredSessions( sessions ) : sessions ) ) );
             }
         }
 

@@ -65,7 +65,9 @@ public class BoltProtocolV1 implements BoltProtocol
         this.output = new ChunkedOutput( channel, DEFAULT_BUFFER_SIZE );
         this.packer = new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( output ), output );
 
-        this.dechunker = new BoltV1Dechunker( new TransportBridge( log ).reset( session, packer, this::onMessageDone ), this::onMessageStarted );
+        this.dechunker = new BoltV1Dechunker(
+                new TransportBridge( log, session, packer, this::onMessageDone ),
+                this::onMessageStarted );
     }
 
     /**
