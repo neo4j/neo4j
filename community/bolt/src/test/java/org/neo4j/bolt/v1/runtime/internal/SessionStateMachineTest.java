@@ -19,12 +19,12 @@
  */
 package org.neo4j.bolt.v1.runtime.internal;
 
-import java.util.Collections;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
+
+import java.util.Collections;
 
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
@@ -32,9 +32,9 @@ import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
@@ -232,6 +232,23 @@ public class SessionStateMachineTest
         // Then
         assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
         assertThat( callback.completedCount, equalTo( 1 ) );
+    }
+
+    @Test
+    public void shouldErrorWhenOutOfOrderRollback() throws Throwable
+    {
+        // Given
+        final TopLevelTransaction tx = mock( TopLevelTransaction.class );
+        when( db.beginTx() ).thenReturn( tx );
+        when( runner.run( any( SessionState.class ), anyString(), Matchers.anyMap() ) )
+                .thenThrow( new NoTransactionEffectException() );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
+
+        // When
+        machine.run( "ROLLBACK", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
+
+        // Then
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
     }
 
     @Before
