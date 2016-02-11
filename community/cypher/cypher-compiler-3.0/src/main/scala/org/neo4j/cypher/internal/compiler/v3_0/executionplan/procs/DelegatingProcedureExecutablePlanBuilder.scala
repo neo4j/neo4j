@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutablePlanBuilder, ExecutionPlan, PlanFingerprint, PlanFingerprintReference, SCHEMA_WRITE}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, PlanContext, ProcedureName, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, PlanContext, ProcedureName, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, PreparedQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.TypeSpec
@@ -51,7 +51,7 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
           }
           //type check arguments
           args.zip(signature.inputSignature).foreach {
-            case (arg, field) => typeCheck(inputQuery.semanticTable)(arg, field)
+            case (arg, field) => typeCheck(inputQuery.semanticTable)(arg, field, signature)
           }
         }
 
@@ -115,13 +115,18 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
   private def typeProp(ctx: QueryContext)(relType: RelTypeName, prop: PropertyKeyName) =
     (ctx.getOrCreateRelTypeId(relType.name), ctx.getOrCreatePropertyKeyId(prop.name))
 
-  private def typeCheck(semanticTable: SemanticTable)(exp: Expression, field: FieldSignature) = {
+  private def typeCheck(semanticTable: SemanticTable)(exp: Expression, field: FieldSignature, proc: ProcedureSignature) = {
     val actual = semanticTable.types(exp).actual
     val expected = field.typ
     val intersected = actual intersectOrCoerce expected.covariant
     if (intersected == TypeSpec.none)
       throw new CypherTypeException(
-        s"""${field.name} expects $expected, but got ${actual.mkString(",", "or")}""")
+        s"""Parameter `${field.name}` for procedure `${proc.name}`
+            |expects value of type ${semanticTable.types(exp).actual.toShortString} but got value of type ${field.typ}.
+            |
+        |Usage: CALL ${proc.name}(${proc.inputSignature.map(s => s"<${s.name}>").mkString(", ")})
+            |${proc.inputSignature.map(s => s"    ${s.name} (type ${s.typ})").mkString("Parameters:\n", "\n","")}
+        """.stripMargin)
   }
 }
 
