@@ -58,6 +58,8 @@ case class ProcedureSignature(name: ProcedureName,
                               outputSignature: Seq[FieldSignature],
                               mode: ProcedureCallMode = LazyReadOnlyCallMode)
 
-case class ProcedureName(namespace: Seq[String], name: String)
+case class ProcedureName(namespace: Seq[String], name: String) {
+  override def toString = s"""${namespace.mkString(".")}.$name"""
+}
 
 case class FieldSignature(name: String, typ: CypherType)

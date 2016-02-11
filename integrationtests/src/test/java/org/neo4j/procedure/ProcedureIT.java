@@ -81,6 +81,24 @@ public class ProcedureIT
     }
 
     @Test
+    public void shouldGiveNiceErrorMessageOnWrongStaticType() throws Throwable
+    {
+        //Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage(
+                "Parameter `name` for procedure `org.neo4j.procedure.simpleArgument`\n" +
+                "expects value of type String but got value of type Integer.\n\n" +
+                "Usage: CALL org.neo4j.procedure.simpleArgument(<name>)\n" +
+                "Parameters:\n" +
+                "    name (type Integer)"  );
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            Result res = db.execute( "CALL org.neo4j.procedure.simpleArgument('42')");
+        }
+    }
+
+    @Test
     public void shouldCallProcedureWithGenericArgument() throws Throwable
     {
         // Given

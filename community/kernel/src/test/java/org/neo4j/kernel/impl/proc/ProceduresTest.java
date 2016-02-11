@@ -90,7 +90,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldNotAllowCallingNonExistantProcedure() throws Throwable
+    public void shouldNotAllowCallingNonExistingProcedure() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
@@ -105,7 +105,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldNotAllowRegisteringConflicingName() throws Throwable
+    public void shouldNotAllowRegisteringConflictingName() throws Throwable
     {
         // Given
         procs.register( procedure );
@@ -145,7 +145,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldSignalNonExistantProcedure() throws Throwable
+    public void shouldSignalNonExistingProcedure() throws Throwable
     {
         // Expect
         exception.expect( ProcedureException.class );
