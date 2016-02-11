@@ -177,9 +177,9 @@ class MatchTest extends DocumentingTest {
         }
       }
       section("Relationship variable in variable length relationships") {
-        p("When the connection between two nodes is of variable length, a relationship variable becomes a collection of relationships.")
+        p("When the connection between two nodes is of variable length, a relationship variable becomes a list of relationships.")
         query("MATCH (actor { name:'Charlie Sheen' })-[r:ACTED_IN*2]-(co_actor) RETURN r", assertActedInRelationshipsAreReturned) {
-          p("Returns a collection of relationships.")
+          p("Returns a list of relationships.")
           resultTable()
         }
       }

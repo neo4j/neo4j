@@ -41,9 +41,9 @@ class SyntaxTest extends DocumentingTestBase {
   def section = "syntax"
 
   val common_arguments = List(
-    "collection" -> "An expression that returns a collection",
+    "list" -> "An expression that returns a list",
     "variable" -> "This is the variable that can be used from the predicate.",
-    "predicate" -> "A predicate that is tested against all items in the collection."
+    "predicate" -> "A predicate that is tested against all items in the list."
   )
 
 

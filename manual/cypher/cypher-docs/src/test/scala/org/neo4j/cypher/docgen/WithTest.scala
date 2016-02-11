@@ -54,9 +54,9 @@ class WithTest extends DocumentingTestBase {
   @Test def sort_collect_results() {
     testQuery(
       title = "Sort results before using collect on them",
-      text = "You can sort your results before passing them to collect, thus sorting the resulting collection.",
+      text = "You can sort your results before passing them to collect, thus sorting the resulting list.",
       queryText = """match (n) with n order by n.name desc limit 3 return collect(n.name)""",
-      optionalResultExplanation = """A list of the names of people in reverse order, limited to 3, in a collection.""",
+      optionalResultExplanation = """A list of the names of people in reverse order, limited to 3, in a list.""",
       assertions = (p) => assertEquals(List(List("Emil", "David", "Ceasar")), p.columnAs[Seq[String]]("collect(n.name)").toList))
   }
 

@@ -47,17 +47,17 @@ class FunctionsTest extends DocumentingTestBase {
   def section = "functions"
 
   val common_arguments = List(
-    "collection" -> "An expression that returns a collection",
+    "list" -> "An expression that returns a list",
     "variable" -> "This is the variable that can be used from the predicate.",
-    "predicate" -> "A predicate that is tested against all items in the collection."
+    "predicate" -> "A predicate that is tested against all items in the list."
   )
 
   @Test def all() {
     testThis(
       title = "ALL",
-      syntax = "ALL(variable in collection WHERE predicate)",
+      syntax = "ALL(variable in list WHERE predicate)",
       arguments = common_arguments,
-      text = """Tests whether a predicate holds for all element of this collection collection.""",
+      text = """Tests whether a predicate holds for all element of this list.""",
       queryText = """match p=(a)-[*1..3]->(b) where a.name='Alice' and b.name='Daniel' and all(x in nodes(p) WHERE x.age > 30) return p""",
       returns = """All nodes in the returned paths will have an `age` property of at least 30.""",
       assertions = (p) => assertEquals(1, p.toSeq.length))
@@ -66,9 +66,9 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def any() {
     testThis(
       title = "ANY",
-      syntax = "ANY(variable in collection WHERE predicate)",
+      syntax = "ANY(variable in list WHERE predicate)",
       arguments = common_arguments,
-      text = """Tests whether a predicate holds for at least one element in the collection.""",
+      text = """Tests whether a predicate holds for at least one element in the list.""",
       queryText = """match (a) where a.name='Eskil' and any(x in a.array WHERE x = "one") return a""",
       returns = """All nodes in the returned paths has at least one `one` value set in the array property named `array`.""",
       assertions = (p) => assertEquals(List(Map("a"->node("E"))), p.toList))
@@ -77,9 +77,9 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def none() {
     testThis(
       title = "NONE",
-      syntax = "NONE(variable in collection WHERE predicate)",
+      syntax = "NONE(variable in list WHERE predicate)",
       arguments = common_arguments,
-      text = """Returns true if the predicate holds for no element in the collection.""",
+      text = """Returns true if the predicate holds for no element in the list.""",
       queryText = """match p=(n)-[*1..3]->(b) where n.name='Alice' and NONE(x in nodes(p) WHERE x.age = 25) return p""",
       returns = """No nodes in the returned paths has a `age` property set to `25`.""",
       assertions = (p) => assertEquals(2, p.toSeq.length))
@@ -88,9 +88,9 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def single() {
     testThis(
       title = "SINGLE",
-      syntax = "SINGLE(variable in collection WHERE predicate)",
+      syntax = "SINGLE(variable in list WHERE predicate)",
       arguments = common_arguments,
-      text = """Returns true if the predicate holds for exactly one of the elements in the collection.""",
+      text = """Returns true if the predicate holds for exactly one of the elements in the list.""",
       queryText = """match p=(n)-->(b) where n.name='Alice' and SINGLE(var in nodes(p) WHERE var.eyes = "blue") return p""",
       returns = """Exactly one node in every returned path will have the `eyes` property set to `"blue"`.""",
       assertions = (p) => assertEquals(1, p.toSeq.length))
@@ -121,11 +121,11 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def size() {
     testThis(
       title = "SIZE",
-      syntax = "SIZE( collection )",
-      arguments = List("collection" -> "An expression that returns a collection"),
-      text = """To return or filter on the size of a collection, use the `SIZE()` function.""",
+      syntax = "SIZE( list )",
+      arguments = List("list" -> "An expression that returns a list"),
+      text = """To return or filter on the size of a list, use the `size()` function.""",
       queryText = """return size(['Alice', 'Bob']) as col""",
-      returns = """The number of items in the collection is returned by the query.""",
+      returns = """The number of items in the list is returned by the query.""",
       assertions = (col) => assertEquals(2, col.columnAs[Int]("col").toList.head))
   }
 
@@ -133,10 +133,10 @@ class FunctionsTest extends DocumentingTestBase {
     testThis(
       title = "SIZE of pattern expression",
       syntax = "SIZE( pattern expression )",
-      arguments = List("pattern expression" -> "A pattern expression that returns a collection"),
+      arguments = List("pattern expression" -> "A pattern expression that returns a list"),
       text = """
-               |This is the same `SIZE()` method described before,
-               |but instead of passing in a collection directly, you provide a pattern expression
+               |This is the same `size()` method described before,
+               |but instead of passing in a list directly, you provide a pattern expression
                |that can be used in a match query to provide a new set of results.
                |The size of the result is calculated, not the length of the expression itself.
                |""".stripMargin,
@@ -172,7 +172,7 @@ class FunctionsTest extends DocumentingTestBase {
       title = "LABELS",
       syntax = "LABELS( node )",
       arguments = List("node" -> "Any expression that returns a single node"),
-      text = """Returns a collection of string representations for the labels attached to a node.""",
+      text = """Returns a list of string representations for the labels attached to a node.""",
       queryText = """match (a) where a.name='Alice' return labels(a)""",
       returns = """The labels of `n` is returned by the query.""",
       assertions = {
@@ -188,7 +188,7 @@ class FunctionsTest extends DocumentingTestBase {
       title = "KEYS",
       syntax = "KEYS(  property-container )",
       arguments = List("property-container" -> "A node, a relationship, or a literal map."),
-      text = """Returns a collection of string representations for the property names of a node, relationship, or map.""",
+      text = """Returns a list of string representations for the property names of a node, relationship, or map.""",
       queryText = """match (a) where a.name='Alice' return keys(a)""",
       returns = """The name of the properties of `n` is returned by the query.""",
       assertions = {
@@ -202,15 +202,15 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def extract() {
     testThis(
       title = "EXTRACT",
-      syntax = "EXTRACT( variable in collection | expression )",
+      syntax = "EXTRACT( variable in list | expression )",
       arguments = List(
-        "collection" -> "An expression that returns a collection",
+        "list" -> "An expression that returns a list",
         "variable" -> "The closure will have a variable introduced in it's context. Here you decide which variable to use.",
-        "expression" -> "This expression will run once per value in the collection, and produces the result collection."
+        "expression" -> "This expression will run once per value in the list, and produces the result list."
       ),
-      text = """To return a single property, or the value of a function from a collection of nodes or relationships,
- you can use `EXTRACT`. It will go through a collection, run an expression on every element, and return the results
- in an collection with these values. It works like the `map` method in functional languages such as Lisp and Scala.""",
+      text = """To return a single property, or the value of a function from a list of nodes or relationships,
+ you can use `EXTRACT`. It will go through a list, run an expression on every element, and return the results
+ in a list with these values. It works like the `map` method in functional languages such as Lisp and Scala.""",
       queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' and b.name='Bob' and c.name='Daniel' return extract(n in nodes(p) | n.age) AS extracted""",
       returns = """The age property of all nodes in the path are returned.""",
       assertions = (p) => assertEquals(List(Map("extracted" -> List(38, 25, 54))), p.toList))
@@ -219,16 +219,16 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def reduce() {
     testThis(
       title = "REDUCE",
-      syntax = "REDUCE( accumulator = initial, variable in collection | expression )",
+      syntax = "REDUCE( accumulator = initial, variable in list | expression )",
       arguments = List(
-        "accumulator" -> "A variable that will hold the result and the partial results as the collection is iterated",
+        "accumulator" -> "A variable that will hold the result and the partial results as the list is iterated",
         "initial"    -> "An expression that runs once to give a starting value to the accumulator",
-        "collection" -> "An expression that returns a collection",
+        "list" -> "An expression that returns a list",
         "variable" -> "The closure will have a variable introduced in it's context. Here you decide which variable to use.",
-        "expression" -> "This expression will run once per value in the collection, and produces the result value."
+        "expression" -> "This expression will run once per value in the list, and produces the result value."
       ),
-      text = """To run an expression against individual elements of a collection, and store the result of the expression in
- an accumulator, you can use `REDUCE`. It will go through a collection, run an expression on every element, storing the partial result
+      text = """To run an expression against individual elements of a list, and store the result of the expression in
+ an accumulator, you can use `REDUCE`. It will go through a list, run an expression on every element, storing the partial result
  in the accumulator. It works like the `fold` or `reduce` method in functional languages such as Lisp and Scala.""",
       queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' and b.name='Bob' and c.name='Daniel' return reduce(totalAge = 0, n in nodes(p) | totalAge + n.age) AS reduction""",
       returns = """The age property of all nodes in the path are summed and returned as a single value.""",
@@ -240,9 +240,9 @@ class FunctionsTest extends DocumentingTestBase {
       title = "HEAD",
       syntax = "HEAD( expression )",
       arguments = List(
-        "expression" -> "This expression should return a collection of some kind."
+        "expression" -> "This expression should return a list of some kind."
       ),
-      text = "`HEAD` returns the first element in a collection.",
+      text = "`HEAD` returns the first element in a list.",
       queryText = """match (a) where a.name='Eskil' return a.array, head(a.array)""",
       returns = "The first node in the path is returned.",
       assertions = (p) => assertEquals(List("one"), p.columnAs[List[_]]("head(a.array)").toList))
@@ -253,9 +253,9 @@ class FunctionsTest extends DocumentingTestBase {
       title = "LAST",
       syntax = "LAST( expression )",
       arguments = List(
-        "expression" -> "This expression should return a collection of some kind."
+        "expression" -> "This expression should return a list of some kind."
       ),
-      text = "`LAST` returns the last element in a collection.",
+      text = "`LAST` returns the last element in a list.",
       queryText = """match (a) where a.name='Eskil' return a.array, last(a.array)""",
       returns = "The last node in the path is returned.",
       assertions = (p) => assertEquals(List("three"), p.columnAs[List[_]]("last(a.array)").toList))
@@ -266,9 +266,9 @@ class FunctionsTest extends DocumentingTestBase {
       title = "TAIL",
       syntax = "TAIL( expression )",
       arguments = List(
-        "expression" -> "This expression should return a collection of some kind."
+        "expression" -> "This expression should return a list of some kind."
       ),
-      text = "`TAIL` returns all but the first element in a collection.",
+      text = "`TAIL` returns all but the first element in a list.",
       queryText = """match (a) where a.name='Eskil' return a.array, tail(a.array)""",
       returns = "This returns the property named `array` and all elements of that property except the first one.",
       assertions = (p) => {
@@ -280,9 +280,9 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def filter() {
     testThis(
       title = "FILTER",
-      syntax = "FILTER(variable in collection WHERE predicate)",
+      syntax = "FILTER(variable in list WHERE predicate)",
       arguments = common_arguments,
-      text = "`FILTER` returns all the elements in a collection that comply to a predicate.",
+      text = "`FILTER` returns all the elements in a list that comply to a predicate.",
       queryText = """match (a) where a.name='Eskil' return a.array, filter(x in a.array WHERE size(x) = 3)""",
       returns = "This returns the property named `array` and a list of values in it, which have size `3`.",
       assertions = (p) => {

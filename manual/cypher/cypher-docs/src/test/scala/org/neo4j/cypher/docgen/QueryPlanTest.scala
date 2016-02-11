@@ -441,7 +441,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Unwind",
       text =
-        """Takes a collection of values and returns one row per item in the collection.""".stripMargin,
+        """Takes a list of values and returns one row per item in the list.""".stripMargin,
       queryText = """UNWIND range(1,5) as value return value;""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Unwind"))
     )
