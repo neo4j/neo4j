@@ -115,7 +115,7 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
   }
 }
 
-// Used to format values coming from Cypher. Maps, collections, nodes, relationships and paths all have custom
+// Used to format values coming from Cypher. Maps, lists, nodes, relationships and paths all have custom
 // formatting applied to them
 class ValueFormatter(db: GraphDatabaseQueryService, tx: Transaction) extends (Any => String) with CypherSerializer with GraphIcing {
   def apply(x: Any): String = {

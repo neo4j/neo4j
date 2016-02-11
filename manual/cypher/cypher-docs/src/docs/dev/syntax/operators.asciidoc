@@ -25,11 +25,11 @@ The boolean operators are `AND`, `OR`, `XOR`, `NOT`.
 Strings can be concatenated using the `+` operator.
 For regular expression matching the `=~` operator is used.
 
-[[query-operators-collection]]
-== Collection operators ==
+[[query-operators-list]]
+== List operators ==
 
-Collections can be concatenated using the `+` operator.
-To check if an element exists in a collection, you can use the +IN+ operator.
+Lists can be concatenated using the `+` operator.
+To check if an element exists in a list, you can use the +IN+ operator.
 
 [[query-operators-property]]
 == Property operators ==

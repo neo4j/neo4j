@@ -51,7 +51,7 @@ Cypher is a textual, declarative query language.
 It uses a form of {WP_AA}[ASCII art] to represent graph-related patterns.
 SQL-like clauses and keywords (eg, `MATCH`, `WHERE`, `DELETE`) are used to combine these patterns and specify desired actions.
 
-This combination tells Neo4j which patterns to match and what to do with the matching items (eg, nodes, relationships, paths, collections).
+This combination tells Neo4j which patterns to match and what to do with the matching items (eg, nodes, relationships, paths, lists).
 However, as a {WP_DP}[declarative] language, Cypher does _not_ tell Neo4j how to find nodes, traverse relationships, etc.
 (This level of control is available from Neo4j's {WP_Java}[Java] {WP_API}[APIs], see <<server-unmanaged-extensions>>)
 
