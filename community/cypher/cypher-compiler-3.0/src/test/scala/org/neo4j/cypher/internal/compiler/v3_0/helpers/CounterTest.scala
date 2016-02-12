@@ -33,6 +33,10 @@ class CounterTest extends CypherFunSuite {
     (Counter(7) -= 1) should equal(6l)
   }
 
+  test("resets counter") {
+    Counter(10).reset(5).counted should equal(5)
+  }
+
   test("streams all values") {
     Counter().values.take(5).toList should equal(List(1l, 2l, 3l, 4l, 5l))
   }

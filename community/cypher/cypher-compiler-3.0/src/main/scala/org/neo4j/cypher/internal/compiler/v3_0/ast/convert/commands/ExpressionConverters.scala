@@ -245,6 +245,7 @@ object ExpressionConverters {
     case e: ast.In => in(e)
     case e: ast.StartsWith => predicates.StartsWith(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
     case e: ast.EndsWith => predicates.EndsWith(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
+    case e: ast.CoerceTo => commandexpressions.CoerceTo(toCommandExpression(e.expr), e.typ)
     case e: ast.Contains => predicates.Contains(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
     case e: ast.IsNull => predicates.IsNull(toCommandExpression(e.lhs))
     case e: ast.IsNotNull => predicates.Not(predicates.IsNull(toCommandExpression(e.lhs)))

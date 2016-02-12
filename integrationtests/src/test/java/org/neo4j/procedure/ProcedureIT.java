@@ -27,6 +27,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -298,6 +299,66 @@ public class ProcedureIT
         }
     }
 
+    @Test
+    public void shouldCoerceLongToDoubleAtRuntimeWhenCallingProcedure() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.squareDouble", map( "value", 4L ) );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "result", 16.0d ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCoerceListOfNumbersToDoublesAtRuntimeWhenCallingProcedure() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.avgNumberList({param})", map( "param", Arrays.<Number>asList(1L, 2L, 3L) ) );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "result", 2.0d ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCoerceListOfMixedNumbers() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.avgDoubleList([{long}, {double}])", map( "long", 1L, "double", 2.0d ) );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "result", 1.5d ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCoerceDoubleToLongAtRuntimeWhenCallingProcedure() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.squareLong", map( "value", 4L ) );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "someVal", 16L ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -331,6 +392,21 @@ public class ProcedureIT
             this.someVal = someVal;
         }
     }
+
+    public static class DoubleOutput
+    {
+        public double result = 0.0d;
+
+        public DoubleOutput()
+        {
+        }
+
+        public DoubleOutput( double result)
+        {
+            this.result = result;
+        }
+    }
+
 
     public static class NodeOutput
     {
@@ -396,6 +472,38 @@ public class ProcedureIT
             NodeOutput nodeOutput = new NodeOutput();
             nodeOutput.setNode( db.getNodeById( id ) );
             return Stream.of( nodeOutput );
+        }
+
+        @Procedure
+        public Stream<DoubleOutput> squareDouble( @Name("value") double value )
+        {
+            DoubleOutput output = new DoubleOutput( value * value );
+            return Stream.of( output );
+        }
+
+        @Procedure
+        public Stream<DoubleOutput> avgNumberList( @Name("list") List<Number> list )
+        {
+            double sum = list.stream().reduce( (l, r) -> l.doubleValue() + r.doubleValue()).orElse(0.0d).doubleValue();
+            int count = list.size();
+            DoubleOutput output = new DoubleOutput( sum / count );
+            return Stream.of( output );
+        }
+
+        @Procedure
+        public Stream<DoubleOutput> avgDoubleList( @Name("list") List<Double> list )
+        {
+            double sum = list.stream().reduce( (l, r) -> l + r ).orElse(0.0d);
+            int count = list.size();
+            DoubleOutput output = new DoubleOutput( sum / count );
+            return Stream.of( output );
+        }
+
+        @Procedure
+        public Stream<Output> squareLong( @Name("value") long value )
+        {
+            Output output = new Output( value * value );
+            return Stream.of( output );
         }
 
         @Procedure
