@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# Copyright (c) 2016 "Neo Technology,"
+# Network Engine for Objects in Lund AB [http://neotechnology.com]
+#
+# This file is part of Neo4j.
+#
+# Neo4j is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+set -o errexit -o nounset -o pipefail
+[[ "${TRACE:-}" ]] && set -o xtrace
+
+PROGRAM="$(basename "$0")"
+NEO4J_ROOT="$(cd "$(dirname "$0")"/.. && dirs -l +0)"
+readonly PROGRAM NEO4J_ROOT
+
+cmd_upgrade_args() {
+  declare source=''
+
+  while [[ -n "${1:-}" ]]; do
+    declare arg="$1"
+    shift
+    case "${arg}" in
+      -h|--help)
+        usage
+        ;;
+      -f)
+        if [[ -n "${1:-}" ]]; then
+          source="${1}"
+          shift
+        fi
+        ;;
+      --from=*)
+        set -- "-f" "${arg#*=}" "$@"
+        ;;
+      --from)
+        ;;
+      *)
+        bad_usage "unrecognized argument ${arg}"
+        ;;
+    esac
+  done
+
+  [[ -z "${source}" ]] && bad_usage "you must provide the --from option with an argument"
+
+  retval1="${source}"
+}
+
+cmd_upgrade() {
+  cmd_upgrade_args "$@"
+  declare -r source="${retval1}"
+
+  cat "${source}/conf/neo4j.properties" "${source}/conf/neo4j-server.properties" >"${NEO4J_ROOT}/conf/neo4j.conf"
+
+  declare dir
+  for dir in "${source}"/data/*; do
+    contains "$(basename "${dir}")" "dbms" "log" && continue
+    cp -R "${dir}" "${NEO4J_ROOT}/data/databases"
+  done
+}
+
+# returns 0 if the first argument appears amongst the remaining arguments, non-zero otherwise
+# for example
+#   contains d a b c d => 0
+#   contains e a b c d => 1
+contains() {
+  declare -r item="${1}"
+  shift
+  declare -r array=("${@}")
+  for i in "${array[@]}"; do
+    [[ "${item}" = "${i}" ]] && return 0
+  done
+  return 1
+}
+
+bad_usage() {
+  echo "Error: $1" >&2
+  echo "$(usage)" >&2
+  exit 1
+}
+
+usage() {
+  echo "Usage:
+  ${PROGRAM} help
+  ${PROGRAM} upgrade [--from|-f]=<source>"
+  exit 0
+}
+
+main() {
+  [[ -z "${1:-}" ]] && bad_usage "you must provide a command"
+  declare -r command="$1"
+  shift
+  case "${command}" in
+    upgrade)        cmd_upgrade "$@" ;;
+    help|--help|-h) usage ;;
+    *)              bad_usage "unrecognised command ${command}" ;;
+  esac
+}
+
+main "$@"
