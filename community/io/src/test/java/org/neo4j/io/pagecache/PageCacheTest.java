@@ -205,6 +205,80 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         pagedFile.close();
     }
 
+    @Test( expected = IllegalArgumentException.class )
+    public void pageCacheFlushAndForceMustThrowOnNullIOPSLimiter() throws Exception
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        cache.flushAndForce( null );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void pagedFileFlushAndForceMustThrowOnNullIOPSLimiter() throws Exception
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = cache.map( file( "a" ), filePageSize ) )
+        {
+            pf.flushAndForce( null );
+        }
+    }
+
+    @Test
+    public void pageCacheFlushAndForceMustQueryTheGivenIOPSLimiter() throws Exception
+    {
+        int pagesToDirty = 10_000;
+        PageCache cache = getPageCache( fs, nextPowerOf2( 2 * pagesToDirty ), pageCachePageSize, PageCacheTracer.NULL );
+        PagedFile pfA = cache.map( existingFile( "a" ), filePageSize );
+        PagedFile pfB = cache.map( existingFile( "b" ), filePageSize );
+
+        dirtyManyPages( pfA, pagesToDirty );
+        dirtyManyPages( pfB, pagesToDirty );
+
+        AtomicInteger callbackCounter = new AtomicInteger();
+        AtomicInteger ioCounter = new AtomicInteger();
+        cache.flushAndForce( (previousStamp, recentlyCompletedIOs, swapper) -> {
+            ioCounter.addAndGet( recentlyCompletedIOs );
+            return callbackCounter.getAndIncrement();
+        });
+        pfA.close();
+        pfB.close();
+
+        assertThat( callbackCounter.get(), greaterThan( 0 ) );
+        assertThat( ioCounter.get(), greaterThanOrEqualTo( pagesToDirty * 2 - 30 ) ); // -30 because of the eviction thread
+    }
+
+    @Test
+    public void pagedFileFlushAndForceMustQueryTheGivenIOPSLimiter() throws Exception
+    {
+        int pagesToDirty = 10_000;
+        PageCache cache = getPageCache( fs, nextPowerOf2( pagesToDirty ), pageCachePageSize, PageCacheTracer.NULL );
+        PagedFile pf = cache.map( file( "a" ), filePageSize );
+
+        // Dirty a bunch of data
+        dirtyManyPages( pf, pagesToDirty );
+
+        AtomicInteger callbackCounter = new AtomicInteger();
+        AtomicInteger ioCounter = new AtomicInteger();
+        pf.flushAndForce( (previousStamp, recentlyCompletedIOs, swapper) -> {
+            ioCounter.addAndGet( recentlyCompletedIOs );
+            return callbackCounter.getAndIncrement();
+        });
+        pf.close();
+
+        assertThat( callbackCounter.get(), greaterThan( 0 ) );
+        assertThat( ioCounter.get(), greaterThanOrEqualTo( pagesToDirty - 30 ) ); // -30 because of the eviction thread
+    }
+
+    private void dirtyManyPages( PagedFile pf, int pagesToDirty ) throws IOException
+    {
+        try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            for ( int i = 0; i < pagesToDirty; i++ )
+            {
+                assertTrue( cursor.next() );
+            }
+        }
+    }
+
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void repeatablyWritesFlushedFromPageFileMustBeExternallyObservable() throws IOException
     {
@@ -1609,10 +1683,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             finally
             {
-                for ( PageCursor cursor : cursors )
-                {
-                    cursor.close();
-                }
+                cursors.forEach( PageCursor::close );
             }
         }
     }
@@ -2005,13 +2076,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             }
 
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
-            {
-                for ( int i = 0; i < pinsForWrite; i++ )
-                {
-                    assertTrue( cursor.next() );
-                }
-            }
+            dirtyManyPages( pagedFile, pinsForWrite );
         }
 
         assertThat( "wrong read pin count", readCount.get(), is( pinsForRead ) );
@@ -2133,13 +2198,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
 
         assertThat( pagedFile.getLastPageId(), is( 9L ) );
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
-        {
-            for ( int i = 0; i < 15; i++ )
-            {
-                assertTrue( cursor.next() );
-            }
-        }
+        dirtyManyPages( pagedFile, 15 );
         try
         {
             assertThat( pagedFile.getLastPageId(), is( 14L ) );
@@ -3242,51 +3301,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 // THEN eviction happening here should not result in any exception
                 assertTrue( cursor.next() );
             }
-        }
-    }
-
-    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
-    public void mustFlushDirtyPagesInTheBackground() throws Exception
-    {
-        final CountDownLatch swapOutLatch = new CountDownLatch( 1 );
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory()
-        {
-            @Override
-            public PageSwapper createPageSwapper(
-                    File file, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist ) throws IOException
-            {
-                PageSwapper delegate = super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist );
-                return new DelegatingPageSwapper( delegate )
-                {
-                    @Override
-                    public long write( long filePageId, Page page ) throws IOException
-                    {
-                        try
-                        {
-                            return super.write( filePageId, page );
-                        }
-                        finally
-                        {
-                            swapOutLatch.countDown();
-                        }
-                    }
-                };
-            }
-        };
-        swapperFactory.setFileSystemAbstraction( fs );
-
-        try ( PageCache pageCache = createPageCache(
-                swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-              PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize ) )
-        {
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
-            {
-                assertTrue( cursor.next() );
-                writeRecords( cursor );
-            }
-
-            swapOutLatch.await();
-            verifyRecordsInFile( file( "a" ), recordsPerFilePage );
         }
     }
 

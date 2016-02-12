@@ -20,8 +20,10 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
+import java.io.Flushable;
 import java.io.IOException;
 
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -194,27 +196,40 @@ final class MuninnPagedFile implements PagedFile
     @Override
     public void flushAndForce() throws IOException
     {
+        flushAndForce( IOLimiter.unlimited() );
+    }
+
+    @Override
+    public void flushAndForce( IOLimiter limiter ) throws IOException
+    {
+        if ( limiter == null )
+        {
+            throw new IllegalArgumentException( "IOPSLimiter cannot be null" );
+        }
         try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
         {
-            flushAndForceInternal( flushEvent.flushEventOpportunity(), false );
+            flushAndForceInternal( flushEvent.flushEventOpportunity(), false, limiter );
             syncDevice();
         }
     }
 
-    public void flushAndForceForClose() throws IOException
+    void flushAndForceForClose() throws IOException
     {
         try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
         {
-            flushAndForceInternal( flushEvent.flushEventOpportunity(), true );
+            flushAndForceInternal( flushEvent.flushEventOpportunity(), true, IOLimiter.unlimited() );
             syncDevice();
         }
     }
 
-    void flushAndForceInternal( FlushEventOpportunity flushOpportunity, boolean forClosing ) throws IOException
+    void flushAndForceInternal( FlushEventOpportunity flushOpportunity, boolean forClosing, IOLimiter limiter )
+            throws IOException
     {
         pageCache.pauseBackgroundFlushTask();
+        Flushable flushable = swapper::force;
         MuninnPage[] pages = new MuninnPage[translationTableChunkSize];
         long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
+        long limiterStamp = IOLimiter.INITIAL_STAMP;
         try
         {
             for ( Object[] chunk : translationTable )
@@ -262,12 +277,15 @@ final class MuninnPagedFile implements PagedFile
                     }
                     if ( pagesGrabbed > 0 )
                     {
-                        pagesGrabbed = vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
+                        vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
+                        limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, flushable );
+                        pagesGrabbed = 0;
                     }
                 }
                 if ( pagesGrabbed > 0 )
                 {
                     vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
+                    limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, flushable );
                 }
             }
 
@@ -279,7 +297,7 @@ final class MuninnPagedFile implements PagedFile
         }
     }
 
-    private int vectoredFlush(
+    private void vectoredFlush(
             MuninnPage[] pages, int pagesGrabbed, FlushEventOpportunity flushOpportunity, boolean forClosing )
             throws IOException
     {
@@ -307,7 +325,6 @@ final class MuninnPagedFile implements PagedFile
             flush.done();
 
             // There are now 0 'grabbed' pages
-            return 0;
         }
         catch ( IOException ioe )
         {
