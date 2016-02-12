@@ -246,6 +246,21 @@ public class ReflectiveProcedureTest
         assertEquals("singleName", proc.signature().name().toString() );
     }
 
+    @Test
+    public void shouldGiveHelpfulErrorOnNullMessageException() throws Throwable
+    {
+        // Given
+        CallableProcedure proc = compile( ProcedureThatThrowsNullMsgExceptionAtInvocation.class ).get( 0 );
+
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Failed to invoke procedure `org.neo4j.kernel.impl.proc.throwsAtInvocation`: " +
+                                 "`java.lang.IndexOutOfBoundsException` was thrown when invoking the procedure." );
+
+        // When
+        proc.apply( new BasicContext(), new Object[0] );
+    }
+
     public static class MyOutputRecord
     {
         public String name;
@@ -371,6 +386,26 @@ public class ReflectiveProcedureTest
         public Stream<MyOutputRecord> test( )
         {
             return null;
+        }
+    }
+
+    public static class ProcedureThatThrowsNullMsgExceptionAtInvocation
+    {
+        @Procedure
+        public Stream<MyOutputRecord> throwsAtInvocation( )
+        {
+            throw new IndexOutOfBoundsException();
+        }
+    }
+
+    public static class ProcedureThatThrowsNullMsgExceptionMidStream
+    {
+        @Procedure
+        public Stream<MyOutputRecord> throwsInStream( )
+        {
+            return Stream.generate( () -> {
+                throw new IndexOutOfBoundsException();
+            });
         }
     }
 
