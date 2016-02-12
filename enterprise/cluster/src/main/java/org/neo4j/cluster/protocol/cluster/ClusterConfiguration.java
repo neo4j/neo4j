@@ -46,7 +46,6 @@ public class ClusterConfiguration
     private final List<URI> candidateMembers;
     private Map<InstanceId, URI> members;
     private Map<String, InstanceId> roles = new HashMap<String, InstanceId>();
-    private int allowedFailures = 1;
 
     public ClusterConfiguration( String name, StringLogger logger, String... members )
     {
@@ -171,7 +170,8 @@ public class ClusterConfiguration
 
     public int getAllowedFailures()
     {
-        return allowedFailures;
+        assert members.size() > 0;
+        return (members.size() - 1) / 2;
     }
 
     public void left()
