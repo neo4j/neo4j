@@ -20,6 +20,7 @@
 package org.neo4j.logging;
 
 import java.util.function.Consumer;
+import javax.annotation.Nonnull;
 
 /**
  * A {@link Log} implementation that discards all messages
@@ -46,6 +47,7 @@ public final class NullLog implements Log
         return false;
     }
 
+    @Nonnull
     @Override
     public Logger debugLogger()
     {
@@ -53,20 +55,21 @@ public final class NullLog implements Log
     }
 
     @Override
-    public void debug( String message )
+    public void debug( @Nonnull String message )
     {
     }
 
     @Override
-    public void debug( String message, Throwable throwable )
+    public void debug( @Nonnull String message, @Nonnull Throwable throwable )
     {
     }
 
     @Override
-    public void debug( String format, Object... arguments )
+    public void debug( @Nonnull String format, @Nonnull Object... arguments )
     {
     }
 
+    @Nonnull
     @Override
     public Logger infoLogger()
     {
@@ -74,20 +77,21 @@ public final class NullLog implements Log
     }
 
     @Override
-    public void info( String message )
+    public void info( @Nonnull String message )
     {
     }
 
     @Override
-    public void info( String message, Throwable throwable )
+    public void info( @Nonnull String message, @Nonnull Throwable throwable )
     {
     }
 
     @Override
-    public void info( String format, Object... arguments )
+    public void info( @Nonnull String format, @Nonnull Object... arguments )
     {
     }
 
+    @Nonnull
     @Override
     public Logger warnLogger()
     {
@@ -95,20 +99,21 @@ public final class NullLog implements Log
     }
 
     @Override
-    public void warn( String message )
+    public void warn( @Nonnull String message )
     {
     }
 
     @Override
-    public void warn( String message, Throwable throwable )
+    public void warn( @Nonnull String message, @Nonnull Throwable throwable )
     {
     }
 
     @Override
-    public void warn( String format, Object... arguments )
+    public void warn( @Nonnull String format, @Nonnull Object... arguments )
     {
     }
 
+    @Nonnull
     @Override
     public Logger errorLogger()
     {
@@ -116,22 +121,22 @@ public final class NullLog implements Log
     }
 
     @Override
-    public void error( String message )
+    public void error( @Nonnull String message )
     {
     }
 
     @Override
-    public void error( String message, Throwable throwable )
+    public void error( @Nonnull String message, @Nonnull Throwable throwable )
     {
     }
 
     @Override
-    public void error( String format, Object... arguments )
+    public void error( @Nonnull String format, @Nonnull Object... arguments )
     {
     }
 
     @Override
-    public void bulk( Consumer<Log> consumer )
+    public void bulk( @Nonnull Consumer<Log> consumer )
     {
         consumer.accept( this );
     }

@@ -47,6 +47,10 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>${test.runner.jvm.settings}</argLine>
@@ -99,7 +103,33 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>findbugs-maven-plugin</artifactId>
-          <version>2.5.2</version>
+          <version>3.0.3</version>
+          <configuration>
+            <!--
+                Enables analysis which takes more memory but finds more bugs.
+                If you run out of memory, changes the value of the effort element
+                to 'Low'.
+            -->
+            <effort>Max</effort>
+            <!-- (values are low, medium, and max) -->
+            <threshold>Medium</threshold>
+            <!-- Fail the build or only generate report -->
+            <failOnError>false</failOnError>
+            <!-- Produces XML report -->
+            <xmlOutput>true</xmlOutput>
+            <includeTests>true</includeTests>
+            <!-- Configures the directory in which the XML report is created -->
+            <findbugsXmlOutputDirectory>${project.build.directory}/findbugs</findbugsXmlOutputDirectory>
+          </configuration>
+          <executions>
+            <!-- Run with as part of the build -->
+              <execution>
+                <phase>verify</phase>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -311,15 +341,6 @@
                 </goals>
               </execution>
             </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>findbugs-maven-plugin</artifactId>
-            <configuration>
-              <xmlOutput>true</xmlOutput>
-              <findbugsXmlOutput>true</findbugsXmlOutput>
-              <!-- For jenkins to pick stuff up -->
-            </configuration>
           </plugin>
         </plugins>
       </build>
@@ -542,6 +563,12 @@
       </dependency>
 
       <!-- other -->
+      <dependency>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <version>3.0.3</version>
+        <type>maven-plugin</type>
+      </dependency>
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>

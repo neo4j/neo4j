@@ -21,6 +21,7 @@ package org.neo4j.legacy.consistency;
 
 import java.io.PrintWriter;
 import java.util.function.Supplier;
+import javax.annotation.Nonnull;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.logging.AbstractPrintWriterLogger;
@@ -30,14 +31,15 @@ public class ConsistencyReportLogger extends AbstractPrintWriterLogger
 {
     private final String prefix;
 
-    public ConsistencyReportLogger( Supplier<PrintWriter> writerSupplier, Object lock, String prefix, boolean autoFlush )
+    public ConsistencyReportLogger( @Nonnull Supplier<PrintWriter> writerSupplier, @Nonnull Object lock,
+            @Nonnull String prefix, boolean autoFlush )
     {
         super( writerSupplier, lock, autoFlush );
         this.prefix = prefix;
     }
 
     @Override
-    protected void writeLog( PrintWriter out, String message )
+    protected void writeLog( @Nonnull PrintWriter out, @Nonnull String message )
     {
         out.write( prefix );
         out.write( ": " );
@@ -46,7 +48,7 @@ public class ConsistencyReportLogger extends AbstractPrintWriterLogger
     }
 
     @Override
-    protected void writeLog( PrintWriter out, String message, Throwable throwable )
+    protected void writeLog( @Nonnull PrintWriter out, @Nonnull String message, @Nonnull Throwable throwable )
     {
         out.write( prefix );
         out.write( ": " );
@@ -58,7 +60,7 @@ public class ConsistencyReportLogger extends AbstractPrintWriterLogger
     }
 
     @Override
-    protected Logger getBulkLogger( PrintWriter out, Object lock )
+    protected Logger getBulkLogger( @Nonnull PrintWriter out, @Nonnull Object lock )
     {
         return new ConsistencyReportLogger( Suppliers.singleton( out ), lock, prefix, false );
     }

@@ -139,6 +139,7 @@
       <aka>LGPL2.1</aka>
       <aka>GNU Lesser General Public License</aka>
       <aka>GNU Lesser General Public License (LGPL), Version 2.1</aka>
+      <aka>GNU Lesser Public License</aka>
     </license>
     <license name="MIT License">
       <aka>MIT</aka>
@@ -156,4 +157,3 @@
   </dual-licenses>
 
 </licensing-requirements>
-

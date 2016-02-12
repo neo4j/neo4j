@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.function.Consumer;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.neo4j.concurrent.AsyncEvent;
 import org.neo4j.logging.Log;
@@ -34,27 +36,27 @@ import static java.util.Objects.requireNonNull;
 
 public final class AsyncLogEvent extends AsyncEvent
 {
-    static AsyncLogEvent logEvent( Logger logger, String message )
+    static AsyncLogEvent logEvent( @Nonnull Logger logger, @Nonnull String message )
     {
-        return new AsyncLogEvent( logger, requireNonNull( message, "message" ), null );
+        return new AsyncLogEvent( requireNonNull( logger, "logger" ), requireNonNull( message, "message" ), null );
     }
 
-    static AsyncLogEvent logEvent( Logger logger, String message, Throwable throwable )
+    static AsyncLogEvent logEvent( @Nonnull Logger logger, @Nonnull String message, @Nonnull Throwable throwable )
     {
-        return new AsyncLogEvent( logger, requireNonNull( message, "message" ),
+        return new AsyncLogEvent( requireNonNull( logger, "logger" ), requireNonNull( message, "message" ),
                 requireNonNull( throwable, "Throwable" ) );
     }
 
-    static AsyncLogEvent logEvent( Logger logger, String format, Object... arguments )
+    static AsyncLogEvent logEvent( @Nonnull Logger logger, @Nonnull String format, @Nullable Object... arguments )
     {
-        return new AsyncLogEvent( logger, requireNonNull( format, "format" ),
+        return new AsyncLogEvent( requireNonNull( logger, "logger" ), requireNonNull( format, "format" ),
                 arguments == null ? new Object[0] : arguments );
     }
 
-    static AsyncLogEvent bulkLogEvent( Log log, final Consumer<Log> consumer )
+    static AsyncLogEvent bulkLogEvent( @Nonnull Log log, @Nonnull final Consumer<Log> consumer )
     {
         requireNonNull( consumer, "Consumer<Log>" );
-        return new AsyncLogEvent( log, null, new BulkLogger()
+        return new AsyncLogEvent( requireNonNull( log, "log" ), new BulkLogger()
         {
             @Override
             void process( long timestamp, Object target )
@@ -70,10 +72,10 @@ public final class AsyncLogEvent extends AsyncEvent
         } );
     }
 
-    static AsyncLogEvent bulkLogEvent( Logger logger, final Consumer<Logger> consumer )
+    static AsyncLogEvent bulkLogEvent( @Nonnull Logger logger, @Nonnull final Consumer<Logger> consumer )
     {
         requireNonNull( consumer, "Consumer<Logger>" );
-        return new AsyncLogEvent( logger, null, new BulkLogger()
+        return new AsyncLogEvent( requireNonNull( logger, "logger" ), new BulkLogger()
         {
             @Override
             void process( long timestamp, Object target )
@@ -115,7 +117,12 @@ public final class AsyncLogEvent extends AsyncEvent
     private final String message;
     private final Object parameter;
 
-    private AsyncLogEvent( Object target, String message, Object parameter )
+    private AsyncLogEvent( @Nonnull Object target, @Nullable Object parameter )
+    {
+        this( target, "", parameter );
+    }
+
+    private AsyncLogEvent( @Nonnull Object target, @Nonnull String message, @Nullable Object parameter )
     {
         this.target = target;
         this.message = message;

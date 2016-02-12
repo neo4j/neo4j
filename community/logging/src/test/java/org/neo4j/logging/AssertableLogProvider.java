@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import javax.annotation.Nonnull;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -141,25 +142,25 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         }
 
         @Override
-        public void log( String message )
+        public void log( @Nonnull String message )
         {
             logCalls.add( new LogCall( context, level, message, null, null ) );
         }
 
         @Override
-        public void log( String message, Throwable throwable )
+        public void log( @Nonnull String message, @Nonnull Throwable throwable )
         {
             logCalls.add( new LogCall( context, level, message, null, throwable ) );
         }
 
         @Override
-        public void log( String format, Object... arguments )
+        public void log( @Nonnull String format, @Nonnull Object... arguments )
         {
             logCalls.add( new LogCall( context, level, format, arguments, null ) );
         }
 
         @Override
-        public void bulk( Consumer<Logger> consumer )
+        public void bulk( @Nonnull Consumer<Logger> consumer )
         {
             consumer.accept( this );
         }
@@ -186,24 +187,28 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
             return debugEnabled;
         }
 
+        @Nonnull
         @Override
         public Logger debugLogger()
         {
             return debugLogger;
         }
 
+        @Nonnull
         @Override
         public Logger infoLogger()
         {
             return infoLogger;
         }
 
+        @Nonnull
         @Override
         public Logger warnLogger()
         {
             return warnLogger;
         }
 
+        @Nonnull
         @Override
         public Logger errorLogger()
         {
@@ -211,7 +216,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         }
 
         @Override
-        public void bulk( Consumer<Log> consumer )
+        public void bulk( @Nonnull Consumer<Log> consumer )
         {
             consumer.accept( this );
         }

@@ -20,6 +20,7 @@
 package org.neo4j.logging;
 
 import java.util.function.Consumer;
+import javax.annotation.Nonnull;
 
 /**
  * A log into which various levels of messages can be written
@@ -34,6 +35,7 @@ public interface Log
     /**
      * @return a {@link Logger} instance for writing debug messages
      */
+    @Nonnull
     Logger debugLogger();
 
     /**
@@ -41,7 +43,7 @@ public interface Log
      *
      * @param message The message to be written
      */
-    void debug( String message );
+    void debug( @Nonnull String message );
 
     /**
      * Shorthand for {@code debugLogger().log( message, throwable )}
@@ -49,7 +51,7 @@ public interface Log
      * @param message   The message to be written
      * @param throwable An exception that will also be written
      */
-    void debug( String message, Throwable throwable );
+    void debug( @Nonnull String message, @Nonnull Throwable throwable );
 
     /**
      * Shorthand for {@code debugLogger().log( format, arguments )}
@@ -57,11 +59,12 @@ public interface Log
      * @param format    A string format for writing a message
      * @param arguments Arguments to substitute into the message according to the format
      */
-    void debug( String format, Object... arguments );
+    void debug( @Nonnull String format, @Nonnull Object... arguments );
 
     /**
      * @return a {@link Logger} instance for writing info messages
      */
+    @Nonnull
     Logger infoLogger();
 
     /**
@@ -69,7 +72,7 @@ public interface Log
      *
      * @param message The message to be written
      */
-    void info( String message );
+    void info( @Nonnull String message );
 
     /**
      * Shorthand for {@code infoLogger().log( message, throwable )}
@@ -77,7 +80,7 @@ public interface Log
      * @param message   The message to be written
      * @param throwable An exception that will also be written
      */
-    void info( String message, Throwable throwable );
+    void info( @Nonnull String message, @Nonnull Throwable throwable );
 
     /**
      * Shorthand for {@code infoLogger().log( format, arguments )}
@@ -85,11 +88,12 @@ public interface Log
      * @param format    A string format for writing a message
      * @param arguments Arguments to substitute into the message according to the format
      */
-    void info( String format, Object... arguments );
+    void info( @Nonnull String format, @Nonnull Object... arguments );
 
     /**
      * @return a {@link Logger} instance for writing warn messages
      */
+    @Nonnull
     Logger warnLogger();
 
     /**
@@ -97,7 +101,7 @@ public interface Log
      *
      * @param message The message to be written
      */
-    void warn( String message );
+    void warn( @Nonnull String message );
 
     /**
      * Shorthand for {@code warnLogger().log( message, throwable )}
@@ -105,7 +109,7 @@ public interface Log
      * @param message   The message to be written
      * @param throwable An exception that will also be written
      */
-    void warn( String message, Throwable throwable );
+    void warn( @Nonnull String message, @Nonnull Throwable throwable );
 
     /**
      * Shorthand for {@code warnLogger().log( format, arguments )}
@@ -113,11 +117,12 @@ public interface Log
      * @param format    A string format for writing a message
      * @param arguments Arguments to substitute into the message according to the format
      */
-    void warn( String format, Object... arguments );
+    void warn( @Nonnull String format, @Nonnull Object... arguments );
 
     /**
      * @return a {@link Logger} instance for writing error messages
      */
+    @Nonnull
     Logger errorLogger();
 
     /**
@@ -125,7 +130,7 @@ public interface Log
      *
      * @param message The message to be written
      */
-    void error( String message );
+    void error( @Nonnull String message );
 
     /**
      * Shorthand for {@code errorLogger().log( message, throwable )}
@@ -133,7 +138,7 @@ public interface Log
      * @param message   The message to be written
      * @param throwable An exception that will also be written
      */
-    void error( String message, Throwable throwable );
+    void error( @Nonnull String message, @Nonnull Throwable throwable );
 
     /**
      * Shorthand for {@code errorLogger().log( format, arguments )}
@@ -141,7 +146,7 @@ public interface Log
      * @param format    A string format for writing a message
      * @param arguments Arguments to substitute into the message according to the {@code format}
      */
-    void error( String format, Object... arguments );
+    void error( @Nonnull String format, @Nonnull Object... arguments );
 
     /**
      * Used to temporarily log several messages in bulk. The implementation may choose to
@@ -149,5 +154,5 @@ public interface Log
      *
      * @param consumer A consumer for the bulk {@link Log}
      */
-    void bulk( Consumer<Log> consumer );
+    void bulk( @Nonnull Consumer<Log> consumer );
 }

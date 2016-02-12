@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nonnull;
 
 import org.neo4j.function.Suppliers;
 
@@ -378,6 +379,7 @@ public class FormattedLog extends AbstractLog
         return Level.DEBUG.compareTo( levelRef.get() ) >= 0;
     }
 
+    @Nonnull
     @Override
     public Logger debugLogger()
     {
@@ -392,6 +394,7 @@ public class FormattedLog extends AbstractLog
         return Level.INFO.compareTo( levelRef.get() ) >= 0;
     }
 
+    @Nonnull
     @Override
     public Logger infoLogger()
     {
@@ -406,6 +409,7 @@ public class FormattedLog extends AbstractLog
         return Level.WARN.compareTo( levelRef.get() ) >= 0;
     }
 
+    @Nonnull
     @Override
     public Logger warnLogger()
     {
@@ -420,6 +424,7 @@ public class FormattedLog extends AbstractLog
         return Level.ERROR.compareTo( levelRef.get() ) >= 0;
     }
 
+    @Nonnull
     @Override
     public Logger errorLogger()
     {
@@ -427,7 +432,7 @@ public class FormattedLog extends AbstractLog
     }
 
     @Override
-    public void bulk( Consumer<Log> consumer )
+    public void bulk( @Nonnull Consumer<Log> consumer )
     {
         PrintWriter writer;
         synchronized (lock)
@@ -446,7 +451,7 @@ public class FormattedLog extends AbstractLog
         private final String prefix;
         private final DateFormat format;
 
-        public FormattedLogger( Supplier<PrintWriter> writerSupplier, String prefix )
+        public FormattedLogger( @Nonnull Supplier<PrintWriter> writerSupplier, @Nonnull String prefix )
         {
             super( writerSupplier, lock, autoFlush );
             this.prefix = prefix;
@@ -455,7 +460,7 @@ public class FormattedLog extends AbstractLog
         }
 
         @Override
-        protected void writeLog( PrintWriter out, String message )
+        protected void writeLog( @Nonnull PrintWriter out, @Nonnull String message )
         {
             lineStart( out );
             out.write( message );
@@ -463,7 +468,7 @@ public class FormattedLog extends AbstractLog
         }
 
         @Override
-        protected void writeLog( PrintWriter out, String message, Throwable throwable )
+        protected void writeLog( @Nonnull PrintWriter out, @Nonnull String message, @Nonnull Throwable throwable )
         {
             lineStart( out );
             out.write( message );
@@ -477,7 +482,7 @@ public class FormattedLog extends AbstractLog
         }
 
         @Override
-        protected Logger getBulkLogger( PrintWriter out, Object lock )
+        protected Logger getBulkLogger( @Nonnull PrintWriter out, @Nonnull Object lock )
         {
             return new FormattedLogger( Suppliers.singleton( out ), prefix );
         }

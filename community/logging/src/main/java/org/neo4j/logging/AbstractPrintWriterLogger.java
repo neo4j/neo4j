@@ -22,6 +22,7 @@ package org.neo4j.logging;
 import java.io.PrintWriter;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import javax.annotation.Nonnull;
 
 import static java.util.Objects.requireNonNull;
 
@@ -39,7 +40,8 @@ public abstract class AbstractPrintWriterLogger implements Logger
      * @param lock           An object that will be used to synchronize all writes on
      * @param autoFlush      Whether to flush the writer after each log message is written
      */
-    protected AbstractPrintWriterLogger( Supplier<PrintWriter> writerSupplier, Object lock, boolean autoFlush )
+    protected AbstractPrintWriterLogger( @Nonnull Supplier<PrintWriter> writerSupplier, @Nonnull Object lock,
+            boolean autoFlush )
     {
         this.writerSupplier = writerSupplier;
         this.lock = lock;
@@ -47,7 +49,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
     }
 
     @Override
-    public void log( String message )
+    public void log( @Nonnull String message )
     {
         requireNonNull( message, "message must not be null" );
         PrintWriter writer;
@@ -60,7 +62,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
     }
 
     @Override
-    public void log( String message, Throwable throwable )
+    public void log( @Nonnull String message, @Nonnull Throwable throwable )
     {
         requireNonNull( message, "message must not be null" );
         if ( throwable == null )
@@ -78,7 +80,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
     }
 
     @Override
-    public void log( String format, Object... arguments )
+    public void log( @Nonnull String format, @Nonnull Object... arguments )
     {
         requireNonNull( format, "format must not be null" );
         if ( arguments == null || arguments.length == 0 )
@@ -97,7 +99,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
     }
 
     @Override
-    public void bulk( Consumer<Logger> consumer )
+    public void bulk( @Nonnull Consumer<Logger> consumer )
     {
         requireNonNull( consumer, "consumer must not be null" );
         PrintWriter writer;
@@ -110,33 +112,34 @@ public abstract class AbstractPrintWriterLogger implements Logger
     }
 
     /**
-     * Invoked when a log line should be written. This method will only be called synchronously (whilst a lock is held on the lock object
-     * provided during construction).
-     *
-     * @param writer  the writer to write to
-     * @param message the message to write
-     */
-    protected abstract void writeLog( PrintWriter writer, String message );
-
-    /**
-     * Invoked when a log line should be written. This method will only be called synchronously (whilst a lock is held on the lock object
-     * provided during construction).
-     *
-     * @param writer    the writer to write to
-     * @param message   the message to write
-     * @param throwable the exception to append to the log message
-     */
-    protected abstract void writeLog( PrintWriter writer, String message, Throwable throwable );
-
-    /**
-     * Return a variant of the logger which will output to the specified writer (whilst holding a lock on the specified object) in a bulk
-     * manner (no flushing, etc).
+     * Invoked when a log line should be written. This method will only be called synchronously (whilst a lock is held
+     * on the lock object provided during construction).
      *
      * @param writer the writer to write to
-     * @param lock   the object on which to lock
+     * @param message the message to write
+     */
+    protected abstract void writeLog( @Nonnull PrintWriter writer, @Nonnull String message );
+
+    /**
+     * Invoked when a log line should be written. This method will only be called synchronously (whilst a lock is held
+     * on the lock object provided during construction).
+     *
+     * @param writer the writer to write to
+     * @param message the message to write
+     * @param throwable the exception to append to the log message
+     */
+    protected abstract void writeLog( @Nonnull PrintWriter writer, @Nonnull String message,
+            @Nonnull Throwable throwable );
+
+    /**
+     * Return a variant of the logger which will output to the specified writer (whilst holding a lock on the specified
+     * object) in a bulk manner (no flushing, etc).
+     *
+     * @param writer the writer to write to
+     * @param lock the object on which to lock
      * @return a new logger for bulk writes
      */
-    protected abstract Logger getBulkLogger( PrintWriter writer, Object lock );
+    protected abstract Logger getBulkLogger( @Nonnull PrintWriter writer, @Nonnull Object lock );
 
     private void maybeFlush( PrintWriter writer )
     {
