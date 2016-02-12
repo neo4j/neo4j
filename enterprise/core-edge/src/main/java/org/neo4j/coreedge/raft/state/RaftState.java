@@ -128,16 +128,12 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
 
     public void update( Outcome<MEMBER> outcome ) throws RaftStorageException
     {
+        termState.update( outcome.getTerm() );
+        voteState.votedFor( outcome.getVotedFor(), outcome.getTerm() );
         try
         {
-            if ( termState.update( outcome.getTerm() ) )
-            {
-                termStorage.persistStoreData( termState );
-            }
-            if ( voteState.update( outcome.getVotedFor(), outcome.getTerm() ) )
-            {
-                voteStorage.persistStoreData( voteState );
-            }
+            termStorage.persistStoreData( termState );
+            voteStorage.persistStoreData( voteState );
         }
         catch ( IOException e )
         {

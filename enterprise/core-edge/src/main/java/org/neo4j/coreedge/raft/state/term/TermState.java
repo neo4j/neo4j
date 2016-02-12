@@ -52,12 +52,10 @@ public class TermState
      *
      * @param newTerm The new value.
      */
-    public boolean update( long newTerm )
+    public void update( long newTerm )
     {
         failIfInvalid( newTerm );
-        boolean changed = term != newTerm;
         term = newTerm;
-        return changed;
     }
 
     /**
