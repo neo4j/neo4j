@@ -25,18 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -44,6 +33,13 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import static java.lang.System.lineSeparator;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -87,15 +83,15 @@ public class ProcedureIT
         //Expect
         exception.expect( QueryExecutionException.class );
         exception.expectMessage(
-                "Parameter `name` for procedure `org.neo4j.procedure.simpleArgument`\n" +
-                "expects value of type String but got value of type Integer.\n\n" +
-                "Usage: CALL org.neo4j.procedure.simpleArgument(<name>)\n" +
-                "Parameters:\n" +
+                "Parameter `name` for procedure `org.neo4j.procedure.simpleArgument`" + lineSeparator() +
+                "expects value of type String but got value of type Integer." + lineSeparator() + lineSeparator() +
+                "Usage: CALL org.neo4j.procedure.simpleArgument(<name>)" + lineSeparator() +
+                "Parameters:" + lineSeparator() +
                 "    name (type Integer)"  );
         // When
         try ( Transaction ignore = db.beginTx() )
         {
-            Result res = db.execute( "CALL org.neo4j.procedure.simpleArgument('42')");
+                db.execute( "CALL org.neo4j.procedure.simpleArgument('42')");
         }
     }
 
