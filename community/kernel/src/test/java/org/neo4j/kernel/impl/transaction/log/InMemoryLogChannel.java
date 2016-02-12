@@ -28,16 +28,21 @@ import org.neo4j.io.fs.StoreChannel;
 
 public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChannel
 {
-    private static final Flushable NO_OP_FLUSHABLE = new Flushable()
+    private final byte[] bytes;
+    private final ByteBuffer asWriter;
+    private final ByteBuffer asReader;
+
+    public InMemoryLogChannel()
     {
-        @Override
-        public void flush() throws IOException
-        {
-        }
-    };
-    private final byte[] bytes = new byte[1000];
-    private final ByteBuffer asWriter = ByteBuffer.wrap( bytes );
-    private final ByteBuffer asReader = ByteBuffer.wrap( bytes );
+        this(1000);
+    }
+
+    public InMemoryLogChannel( int bufferSize )
+    {
+        bytes = new byte[bufferSize];
+        asWriter = ByteBuffer.wrap( bytes );
+        asReader = ByteBuffer.wrap( bytes );
+    }
 
     public void reset()
     {
@@ -224,4 +229,11 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     {
         return asWriter.remaining();
     }
+    private static final Flushable NO_OP_FLUSHABLE = new Flushable()
+    {
+        @Override
+        public void flush() throws IOException
+        {
+        }
+    };
 }
