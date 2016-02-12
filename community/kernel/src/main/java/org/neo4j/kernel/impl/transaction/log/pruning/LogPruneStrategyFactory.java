@@ -92,7 +92,7 @@ public class LogPruneStrategyFactory
                 case "true":
                     return NO_PRUNING;
                 case "false":
-                    final TransactionCountThreshold thresholdToUse = new TransactionCountThreshold( 1 );
+                    final EntryCountThreshold thresholdToUse = new EntryCountThreshold( 1 );
                     return new ThresholdBasedPruneStrategy( fileSystem, logFileInformation, files, thresholdToUse );
                 default:
                     throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
@@ -121,17 +121,18 @@ public class LogPruneStrategyFactory
                 thresholdToUse = new FileSizeThreshold( fileSystem, thresholdValue );
                 break;
             case "txs":
-                thresholdToUse = new TransactionCountThreshold( thresholdValue );
+            case "entries": // txs and entries are synonyms
+                thresholdToUse = new EntryCountThreshold( thresholdValue );
                 break;
             case "hours":
-                thresholdToUse = new TransactionTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.HOURS, thresholdValue );
+                thresholdToUse = new EntryTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.HOURS, thresholdValue );
                 break;
             case "days":
-                thresholdToUse = new TransactionTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.DAYS, thresholdValue );
+                thresholdToUse = new EntryTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.DAYS, thresholdValue );
                 break;
             default:
                 throw new IllegalArgumentException( "Invalid log pruning configuration value '" + originalConfigValue +
-                        "'. Invalid type '" + type + "', valid are files, size, txs, hours, days." );
+                        "'. Invalid type '" + type + "', valid are files, size, txs, entries, hours, days." );
         }
         return thresholdToUse;
     }

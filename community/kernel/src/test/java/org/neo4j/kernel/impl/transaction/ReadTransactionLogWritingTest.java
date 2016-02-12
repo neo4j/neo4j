@@ -102,7 +102,7 @@ public class ReadTransactionLogWritingTest
             filterNeostoreLogicalLog( fs, storeDir.getPath(), logicalLogCounter );
 
             long txLogRecordCount = db.getDependencyResolver()
-                    .resolveDependency( LogFileInformation.class ).getLastCommittedTxId();
+                    .resolveDependency( LogFileInformation.class ).getLastEntryId();
 
             return logicalLogCounter.getCount() + txLogRecordCount;
         }

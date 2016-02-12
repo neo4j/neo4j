@@ -36,7 +36,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TransactionTimespanThresholdTest
+public class EntryTimespanThresholdTest
 {
     private final File file = mock( File.class );
     private final LogFileInformation source = mock( LogFileInformation.class );
@@ -47,8 +47,8 @@ public class TransactionTimespanThresholdTest
     {
         // given
         FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
-        final TransactionTimespanThreshold threshold =
-                new TransactionTimespanThreshold( clock, TimeUnit.MILLISECONDS, 200 );
+        final EntryTimespanThreshold threshold =
+                new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 200 );
 
         when( source.getFirstStartRecordTimestamp( version ) ).thenReturn( 800l );
 
@@ -65,8 +65,8 @@ public class TransactionTimespanThresholdTest
     {
         // given
         FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
-        final TransactionTimespanThreshold threshold =
-                new TransactionTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
+        final EntryTimespanThreshold threshold =
+                new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 
         when( source.getFirstStartRecordTimestamp( version ) ).thenReturn( 800l );
 
@@ -83,8 +83,8 @@ public class TransactionTimespanThresholdTest
     {
         // given
         FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
-        final TransactionTimespanThreshold threshold =
-                new TransactionTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
+        final EntryTimespanThreshold threshold =
+                new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 
         when( source.getFirstStartRecordTimestamp( version ) ).thenThrow( new IllegalLogFormatException( version, 3 ) );
 
@@ -101,8 +101,8 @@ public class TransactionTimespanThresholdTest
     {
         // given
         FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
-        final TransactionTimespanThreshold threshold =
-                new TransactionTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
+        final EntryTimespanThreshold threshold =
+                new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 
         final IllegalLogFormatException ex = new IllegalLogFormatException( version, 5 );
         when( source.getFirstStartRecordTimestamp( version ) ).thenThrow( ex );
@@ -123,8 +123,8 @@ public class TransactionTimespanThresholdTest
     {
         // given
         FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
-        final TransactionTimespanThreshold threshold =
-                new TransactionTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
+        final EntryTimespanThreshold threshold =
+                new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 
         final IOException ex = new IOException(  );
         when( source.getFirstStartRecordTimestamp( version ) ).thenThrow( ex );

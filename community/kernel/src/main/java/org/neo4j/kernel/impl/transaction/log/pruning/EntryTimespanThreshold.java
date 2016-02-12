@@ -27,14 +27,14 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
-public final class TransactionTimespanThreshold implements Threshold
+public final class EntryTimespanThreshold implements Threshold
 {
     private final long timeToKeepInMillis;
     private final Clock clock;
 
     private long lowerLimit;
 
-    TransactionTimespanThreshold( Clock clock, TimeUnit timeUnit, long timeToKeep )
+    EntryTimespanThreshold( Clock clock, TimeUnit timeUnit, long timeToKeep )
     {
         this.clock = clock;
         this.timeToKeepInMillis = timeUnit.toMillis( timeToKeep );
