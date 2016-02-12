@@ -47,32 +47,35 @@ public class VoteState<MEMBER>
         return votedFor;
     }
 
-    public void votedFor( MEMBER votedFor, long term )
+    public boolean update( MEMBER votedFor, long term )
     {
-        assert ensureVoteIsUniquePerTerm( votedFor, term ) : "Votes for any instance should always be in more recent terms";
-
-        this.votedFor = votedFor;
-        this.term = term;
-    }
-
-    private boolean ensureVoteIsUniquePerTerm( MEMBER votedFor, long term )
-    {
-        if ( votedFor == null && this.votedFor == null )
+        if ( termChanged( term ) )
         {
-            return true;
-        }
-        else if ( votedFor == null )
-        {
-            return term > this.term;
-        }
-        else if ( this.votedFor == null )
-        {
+            this.votedFor = votedFor;
+            this.term = term;
             return true;
         }
         else
         {
-            return this.votedFor.equals( votedFor ) || term > this.term;
+            if ( this.votedFor == null )
+            {
+                if ( votedFor != null )
+                {
+                    this.votedFor = votedFor;
+                    return true;
+                }
+            }
+            else if ( !this.votedFor.equals( votedFor ) )
+            {
+                throw new IllegalArgumentException( "Can only vote once per term." );
+            }
+            return false;
         }
+    }
+
+    private boolean termChanged( long term )
+    {
+        return term != this.term;
     }
 
     public long term()
