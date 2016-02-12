@@ -29,15 +29,13 @@ import org.neo4j.storageengine.api.ReadPastEndException;
 
 public class InMemoryClosableChannel implements ReadableClosablePositionAwareChannel, FlushablePositionAwareChannel
 {
-    private static final Flushable NO_OP_FLUSHABLE = () -> { };
-
     private final byte[] bytes;
     private final ByteBuffer asWriter;
     private final ByteBuffer asReader;
 
     public InMemoryClosableChannel()
     {
-        this( new byte[1000] );
+        this( 1000 );
     }
 
     public InMemoryClosableChannel( byte[] bytes )
@@ -46,6 +44,12 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         this.asWriter = ByteBuffer.wrap( this.bytes );
         this.asReader = ByteBuffer.wrap( this.bytes );
     }
+
+    public InMemoryClosableChannel( int bufferSize )
+    {
+        this( new byte[bufferSize] );
+    }
+
 
     public void reset()
     {
@@ -232,5 +236,5 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
     {
         return asWriter.remaining();
     }
-
+    private static final Flushable NO_OP_FLUSHABLE = () -> { };
 }
