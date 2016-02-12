@@ -243,7 +243,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, this, locks, operations,
-                    storageEngine.storeReadLayer().acquireStatement(), procedures );
+                    storeLayer.acquireStatement(), procedures );
         }
         currentStatement.acquire();
         return currentStatement;

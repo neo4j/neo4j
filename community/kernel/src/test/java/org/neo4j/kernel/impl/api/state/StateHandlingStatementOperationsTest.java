@@ -26,6 +26,7 @@ import org.mockito.stubbing.Answer;
 import java.util.Collections;
 import java.util.Set;
 
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
@@ -450,7 +451,7 @@ public class StateHandlingStatementOperationsTest
         StoreStatementWithSingleFreshIndexReader( IndexReader reader )
         {
             super( mock( NeoStores.class ), new ReentrantLockService(), () -> mock( IndexReaderFactory.class ),
-                    () -> mock( LabelScanReader.class ) );
+                    () -> mock( LabelScanReader.class ), mock( Pool.class ) );
             this.reader = reader;
         }
 
