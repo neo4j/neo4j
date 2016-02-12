@@ -28,7 +28,6 @@ import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -254,7 +253,7 @@ public class ClusterManager
      * @return a port number
      * @throws IOException if no open port could be found
      */
-    private static int findFreePort( final int minPort, final int maxPort, final Collection<Integer> except )
+    private static int findFreePort( final int minPort, final int maxPort, final Set<Integer> except )
             throws IOException
     {
         int port;
