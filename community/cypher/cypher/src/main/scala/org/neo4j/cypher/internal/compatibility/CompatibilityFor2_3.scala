@@ -22,20 +22,20 @@ package org.neo4j.cypher.internal.compatibility
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher.{QueryStatistics, _}
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compiler.{v3_0, v2_3}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult, EntityAccessor}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, DPPlannerName, ExplainMode => ExplainModev2_3, GreedyPlannerName, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev2_3, PlannerName, ProfileMode => ProfileModev2_3, _}
+import org.neo4j.cypher.internal.compiler.{v2_3, v3_0}
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v2_3.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v2_3.{CypherException => InternalCypherException}
 import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
+import org.neo4j.cypher.{QueryStatistics, _}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
@@ -158,11 +158,11 @@ trait CompatibilityFor2_3 {
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = {
     import org.neo4j.cypher.internal.helpers.wrappersFor2_3._
-
+    val notificationLogger = new RecordingNotificationLogger
     val preparedQueryForV_2_3 =
       Try(compiler.prepareQuery(preParsedQuery.statement,
                                 preParsedQuery.rawStatement,
-                                as2_3(preParsedQuery.notificationLogger),
+                                notificationLogger,
                                 preParsedQuery.planner.name,
                                 Some(as2_3(preParsedQuery.offset)), tracer))
     new ParsedQuery {
@@ -173,7 +173,7 @@ trait CompatibilityFor2_3 {
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
 
         // Log notifications/warnings from planning
-        planImpl.notifications.map(as3_0).foreach(preParsedQuery.notificationLogger += _)
+        planImpl.notifications.foreach(notificationLogger += _)
 
         (new ExecutionPlanWrapper(planImpl), extractedParameters)
       }

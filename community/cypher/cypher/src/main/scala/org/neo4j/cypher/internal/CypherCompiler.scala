@@ -42,8 +42,7 @@ object CypherCompiler {
 
 case class PreParsedQuery(statement: String, rawStatement: String, version: CypherVersion,
                           executionMode: CypherExecutionMode, planner: CypherPlanner, runtime: CypherRuntime,
-                          updateStrategy: CypherUpdateStrategy,
-                          notificationLogger: InternalNotificationLogger)
+                          updateStrategy: CypherUpdateStrategy)
                          (val offset: InputPosition) {
   val statementWithVersionAndPlanner = {
     val plannerInfo = planner match {
@@ -97,7 +96,6 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = exceptionHandlerFor3_0.runSafely{
-    val logger = new RecordingNotificationLogger
     val preParsedStatement = CypherPreParser(queryText)
     val CypherStatementWithOptions(statement, offset, version, planner, runtime, updateStrategy, mode) =
       CypherStatementWithOptions(preParsedStatement)
@@ -112,7 +110,7 @@ class CypherCompiler(graph: GraphDatabaseService,
     assertValidOptions(CypherStatementWithOptions(preParsedStatement), cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime)
 
     PreParsedQuery(statement, queryText, cypherVersion, pickedExecutionMode,
-      pickedPlanner, pickedRuntime, pickedUpdateStrategy, logger)(offset)
+      pickedPlanner, pickedRuntime, pickedUpdateStrategy)(offset)
   }
 
   private def pick[O <: CypherOption](candidate: Option[O], companion: CypherOptionCompanion[O], configured: Option[O]): O = {

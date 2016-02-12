@@ -160,10 +160,11 @@ trait CompatibilityFor3_0 {
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = {
+    val notificationLogger = new RecordingNotificationLogger
     val preparedQueryForV_3_0 =
       Try(compiler.prepareQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
-        preParsedQuery.notificationLogger,
+        notificationLogger,
         preParsedQuery.planner.name,
         Some(preParsedQuery.offset), tracer))
     new ParsedQuery {
@@ -174,7 +175,7 @@ trait CompatibilityFor3_0 {
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_3_0.get, planContext, tracer)
 
         // Log notifications/warnings from planning
-        planImpl.notifications.foreach(preParsedQuery.notificationLogger += _)
+        planImpl.notifications.foreach(notificationLogger += _)
 
         (new ExecutionPlanWrapper(planImpl), extractedParameters)
       }
