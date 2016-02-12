@@ -27,9 +27,21 @@ import org.neo4j.io.fs.StoreChannel;
 
 public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChannel
 {
-    private final byte[] bytes = new byte[1000];
-    private final ByteBuffer asWriter = ByteBuffer.wrap( bytes );
-    private final ByteBuffer asReader = ByteBuffer.wrap( bytes );
+    private final byte[] bytes;
+    private final ByteBuffer asWriter;
+    private final ByteBuffer asReader;
+
+    public InMemoryLogChannel()
+    {
+        this(1000);
+    }
+
+    public InMemoryLogChannel( int bufferSize )
+    {
+        bytes = new byte[bufferSize];
+        asWriter = ByteBuffer.wrap( bytes );
+        asReader = ByteBuffer.wrap( bytes );
+    }
 
     public void reset()
     {

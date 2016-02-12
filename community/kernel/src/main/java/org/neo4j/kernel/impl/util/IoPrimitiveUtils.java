@@ -56,7 +56,7 @@ public abstract class IoPrimitiveUtils
     {
         short lengthShort = channel.getShort();
         byte lengthByte = channel.get();
-        int length = (lengthByte << 16) | lengthShort;
+        int length = (lengthByte << 16) | (lengthShort & 0xFFFF);
         byte[] chars = new byte[length];
         channel.get( chars, length );
         return new String(chars, "UTF-8");
