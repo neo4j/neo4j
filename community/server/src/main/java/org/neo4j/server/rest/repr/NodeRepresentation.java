@@ -23,6 +23,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.server.rest.transactional.TransactionStateChecker;
 
 import java.util.Collection;
 
@@ -32,11 +33,17 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
         EntityRepresentation
 {
     private final Node node;
+    private TransactionStateChecker checker;
 
     public NodeRepresentation( Node node )
     {
         super( RepresentationType.NODE );
         this.node = node;
+    }
+
+    public void setTransactionStateChecker( TransactionStateChecker checker )
+    {
+        this.checker = checker;
     }
 
     @Override
@@ -108,7 +115,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
     {
         return ValueRepresentation.template( path( "/relationships/out/{-list|&|types}" ) );
     }
-    
+
     @Mapping( "labels" )
     public ValueRepresentation labelsUriTemplate()
     {
@@ -142,29 +149,44 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
     @Mapping( "metadata" )
     public MapRepresentation metadata()
     {
-        Collection<String> labels = IteratorUtil.asCollection( new IterableWrapper<String, Label>( node.getLabels() )
+        if ( isDeleted() )
         {
-            @Override
-            protected String underlyingObjectToObject( Label label )
+            return new MapRepresentation( map( "id", node.getId(), "deleted", true ) );
+        }
+        else
+        {
+            Collection<String> labels = IteratorUtil.asCollection( new IterableWrapper<String,Label>( node.getLabels() )
             {
-                return label.name();
-            }
-        });
-        return new MapRepresentation( map( "id", node.getId(), "labels" , labels ) );
+                @Override
+                protected String underlyingObjectToObject( Label label )
+                {
+                    return label.name();
+                }
+            } );
+            return new MapRepresentation( map( "id", node.getId(), "labels", labels ) );
+        }
+    }
+
+    private boolean isDeleted()
+    {
+        return checker != null && checker.isNodeDeletedInCurrentTx( node.getId() );
     }
 
     @Override
     void extraData( MappingSerializer serializer )
     {
-        MappingWriter writer = serializer.writer;
-        MappingWriter properties = writer.newMapping( RepresentationType.PROPERTIES, "data" );
-        new PropertiesRepresentation( node ).serialize( properties );
-        if ( writer.isInteractive() )
+        if ( !isDeleted() )
         {
-            serializer.putList( "relationship_types", ListRepresentation.relationshipTypes(
-                    node.getGraphDatabase().getAllRelationshipTypes() ) );
+            MappingWriter writer = serializer.writer;
+            MappingWriter properties = writer.newMapping( RepresentationType.PROPERTIES, "data" );
+            new PropertiesRepresentation( node ).serialize( properties );
+            if ( writer.isInteractive() )
+            {
+                serializer.putList( "relationship_types", ListRepresentation.relationshipTypes(
+                        node.getGraphDatabase().getAllRelationshipTypes() ) );
+            }
+            properties.done();
         }
-        properties.done();
     }
 
     public static ListRepresentation list( Iterable<Node> nodes )

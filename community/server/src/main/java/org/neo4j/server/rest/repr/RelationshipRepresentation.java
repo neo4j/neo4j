@@ -21,6 +21,7 @@ package org.neo4j.server.rest.repr;
 
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.server.rest.transactional.TransactionStateChecker;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -28,11 +29,17 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
         EntityRepresentation
 {
     private final Relationship rel;
+    private TransactionStateChecker checker;
 
     public RelationshipRepresentation( Relationship rel )
     {
         super( RepresentationType.RELATIONSHIP );
         this.rel = rel;
+    }
+
+    public void setTransactionStateChecker( TransactionStateChecker checker )
+    {
+        this.checker = checker;
     }
 
     @Override
@@ -95,15 +102,30 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
     @Mapping( "metadata" )
     public MapRepresentation metadata()
     {
-        return new MapRepresentation( map( "id", rel.getId(), "type", rel.getType().name() ) );
+        if ( isDeleted() )
+        {
+            return new MapRepresentation( map( "id", rel.getId(), "deleted", true ) );
+        }
+        else
+        {
+            return new MapRepresentation( map( "id", rel.getId(), "type", rel.getType().name() ) );
+        }
+    }
+
+    private boolean isDeleted()
+    {
+        return checker != null && checker.isRelationshipDeletedInCurrentTx( rel.getId() );
     }
 
     @Override
     void extraData( MappingSerializer serializer )
     {
-        MappingWriter properties = serializer.writer.newMapping( RepresentationType.PROPERTIES, "data" );
-        new PropertiesRepresentation( rel ).serialize( properties );
-        properties.done();
+        if ( !isDeleted() )
+        {
+            MappingWriter properties = serializer.writer.newMapping( RepresentationType.PROPERTIES, "data" );
+            new PropertiesRepresentation( rel ).serialize( properties );
+            properties.done();
+        }
     }
 
     public static ListRepresentation list( Iterable<Relationship> relationships )

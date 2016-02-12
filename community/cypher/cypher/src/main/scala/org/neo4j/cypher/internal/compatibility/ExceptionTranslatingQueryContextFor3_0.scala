@@ -194,8 +194,8 @@ class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends Delega
     override def all: Iterator[T] =
       translateException(super.all)
 
-    override def isDeleted(obj: T): Boolean =
-      translateException(super.isDeleted(obj))
+    override def isDeletedInThisTx(obj: T): Boolean =
+      translateException(super.isDeletedInThisTx(obj))
   }
 
 }

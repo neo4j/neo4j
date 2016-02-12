@@ -21,12 +21,44 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.PathImpl
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CustomMatchers
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.{EntityNotFoundException, ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
 import org.neo4j.graphdb._
 
 import scala.util.Random
 
 class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
+
+  test("returning properties of deleted nodes should throw exception") {
+    createNode("p" -> 0)
+
+    val query = "MATCH (n) DELETE n RETURN n.p"
+
+    an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
+  }
+
+  test("returning labels of deleted nodes should throw exception") {
+    createLabeledNode("A")
+
+    val query = "MATCH (n:A) DELETE n RETURN labels(n)"
+
+    an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
+  }
+
+  test("returning properties of deleted relationships should throw exception") {
+    relate(createNode(), createNode(), "T", Map("p" -> "a property"))
+
+    val query = "MATCH ()-[r]->() DELETE r RETURN r.p"
+
+    an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
+  }
+
+  test("returning the type of deleted relationships should throw exception") {
+    relate(createNode(), createNode(), "T")
+
+    val query = "MATCH ()-[r:T]->() DELETE r RETURN type(r)"
+
+    an [EntityNotFoundException] should be thrownBy updateWithBothPlanners(query)
+  }
 
   test("should choke on an invalid unicode literal") {
     val query = "RETURN '\\uH' AS a"

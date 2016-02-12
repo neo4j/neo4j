@@ -2171,7 +2171,7 @@ class EagerizationAcceptanceTest
         |  ON CREATE
         |    SET b2.deleted = false
         |)
-        |RETURN count(*), b.deleted
+        |RETURN count(*)
       """.stripMargin
 
     val result = updateWithBothPlanners(query)

@@ -30,12 +30,13 @@ import scala.collection.Map
 trait CypherSerializer {
 
   protected def serializeProperties(x: PropertyContainer, qtx: QueryContext): String = {
-    val (ops, id) = x match {
-      case n: Node => (qtx.nodeOps, n.getId)
-      case r: Relationship => (qtx.relationshipOps, r.getId)
+    val (ops, id, deleted) = x match {
+      case n: Node => (qtx.nodeOps, n.getId, qtx.nodeOps.isDeletedInThisTx(n))
+      case r: Relationship => (qtx.relationshipOps, r.getId, qtx.relationshipOps.isDeletedInThisTx(r))
     }
 
-    val keyValStrings = ops.propertyKeyIds(id).
+    val keyValStrings = if (deleted) Iterator("deleted")
+    else ops.propertyKeyIds(id).
       map(pkId => qtx.getPropertyKeyName(pkId) + ":" + serialize(ops.getProperty(id, pkId), qtx))
 
     keyValStrings.mkString("{", ",", "}")

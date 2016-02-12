@@ -58,10 +58,12 @@ import static org.neo4j.server.rest.domain.JsonHelper.writeValue;
  */
 public class ExecutionResultSerializer
 {
-    public ExecutionResultSerializer( OutputStream output, URI baseUri, LogProvider logProvider )
+    public ExecutionResultSerializer( OutputStream output, URI baseUri, LogProvider logProvider, TransitionalPeriodTransactionMessContainer container )
     {
         this.baseUri = baseUri;
         this.log = logProvider.getLog( getClass() );
+        this.container = container;
+        JSON_FACTORY.setCodec( new Neo4jJsonCodec( container ) );
         JsonGenerator generator = null;
         try
         {
@@ -393,10 +395,11 @@ public class ExecutionResultSerializer
 
     private State currentState = State.EMPTY;
 
-    private static final JsonFactory JSON_FACTORY = new JsonFactory( new Neo4jJsonCodec() ).disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
+    private static final JsonFactory JSON_FACTORY = new JsonFactory().disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
     private final JsonGenerator out;
     private final URI baseUri;
     private final Log log;
+    private final TransitionalPeriodTransactionMessContainer container;
 
     private void ensureDocumentOpen() throws IOException
     {
@@ -433,22 +436,17 @@ public class ExecutionResultSerializer
         out.writeArrayFieldStart( "data" );
         try
         {
-            data.accept( new Result.ResultVisitor<IOException>()
-            {
-                @Override
-                public boolean visit( Result.ResultRow row ) throws IOException
+            data.accept( row -> {
+                out.writeStartObject();
+                try
                 {
-                    out.writeStartObject();
-                    try
-                    {
-                        writer.write( out, columns, row );
-                    }
-                    finally
-                    {
-                        out.writeEndObject();
-                    }
-                    return true;
+                    writer.write( out, columns, row, TransactionStateChecker.create( container ) );
                 }
+                finally
+                {
+                    out.writeEndObject();
+                }
+                return true;
             } );
         }
         finally

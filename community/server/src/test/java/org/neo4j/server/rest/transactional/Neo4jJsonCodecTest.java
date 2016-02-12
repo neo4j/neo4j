@@ -28,9 +28,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -39,7 +42,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class Neo4jJsonCodecTest
+public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
 {
 
     private Neo4jJsonCodec jsonCodec;
@@ -48,7 +51,7 @@ public class Neo4jJsonCodecTest
     @Before
     public void init() throws IOException
     {
-        jsonCodec = new Neo4jJsonCodec();
+        jsonCodec = new Neo4jJsonCodec( TPTPMC );
         jsonGenerator = mock( JsonGenerator.class );
     }
 
@@ -59,14 +62,58 @@ public class Neo4jJsonCodecTest
         PropertyContainer propertyContainer = mock( PropertyContainer.class );
         when( propertyContainer.getAllProperties() ).thenThrow( RuntimeException.class );
 
+        boolean exceptionThrown = false;
         //When
         try
         {
             jsonCodec.writeValue( jsonGenerator, propertyContainer );
         }
+        catch ( IllegalArgumentException e )
+        {
+            //Then
+            verify( jsonGenerator, times( 0 ) ).writeEndObject();
+            exceptionThrown = true;
+        }
+
+        assertTrue( exceptionThrown );
+    }
+
+    @Test
+    public void testNodeWriting() throws IOException
+    {
+        //Given
+        PropertyContainer node = mock( Node.class );
+        when( node.getAllProperties() ).thenThrow( RuntimeException.class );
+
+        //When
+        try
+        {
+            jsonCodec.writeValue( jsonGenerator, node );
+        }
+        catch ( RuntimeException e )
+        {
+            // do nothing
+        }
+
+        //Then
+        verify( jsonGenerator, times( 1 ) ).writeEndObject();
+    }
+
+    @Test
+    public void testRelationshipWriting() throws IOException
+    {
+        //Given
+        PropertyContainer relationship = mock( Relationship.class );
+        when( relationship.getAllProperties() ).thenThrow( RuntimeException.class );
+
+        //When
+        try
+        {
+            jsonCodec.writeValue( jsonGenerator, relationship );
+        }
         catch ( Exception e )
         {
-
+            // do nothing
         }
 
         //Then

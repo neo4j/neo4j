@@ -44,4 +44,9 @@ public class TransitionalPeriodTransactionMessContainer
         return new TransitionalTxManagementKernelTransaction( txInterruptor, txBridge );
     }
 
+    public ThreadToStatementContextBridge getBridge()
+    {
+        return txBridge;
+    }
+
 }
