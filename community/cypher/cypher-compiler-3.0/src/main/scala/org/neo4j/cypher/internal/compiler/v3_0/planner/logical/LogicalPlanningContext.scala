@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_0.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.eagerness.PlanEagerness
 import org.neo4j.cypher.internal.compiler.v3_0.{devNullLogger, InternalNotificationLogger}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Variable
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.QueryGraphSolverInput
@@ -36,7 +38,8 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   notificationLogger: InternalNotificationLogger = devNullLogger,
                                   useErrorsOverWarnings: Boolean = false,
                                   errorIfShortestPathFallbackUsedAtRuntime: Boolean = false,
-                                  config: QueryPlannerConfiguration = QueryPlannerConfiguration.default) {
+                                  config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
+                                  planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanEagerness(PlanUpdates)) {
   def withStrictness(strictness: StrictnessMode) = copy(input = input.withPreferredStrictness(strictness))
 
   def recurse(plan: LogicalPlan) = copy(input = input.recurse(plan))

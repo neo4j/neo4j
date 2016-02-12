@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.eagerness.PlanEagerness
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{countStorePlanner, verifyBestPlan}
 import org.neo4j.cypher.internal.frontend.v3_0.Rewriter
@@ -32,13 +31,12 @@ QueryGraphs and EventHorizons
 case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart,
                            planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
                            expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
-                           planWithTail: LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] = PlanWithTail(),
-                           planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanEagerness(PlanUpdates)) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
+                           planWithTail: LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] = PlanWithTail()) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
 
   override def apply(in: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val partPlan = countStorePlanner(in).getOrElse(planPart(in, context, None))
     val firstPlannerQuery = true
-    val planWithUpdates = planUpdates(in, partPlan, firstPlannerQuery)(context)
+    val planWithUpdates = context.planUpdates(in, partPlan, firstPlannerQuery)(context)
     val projectedPlan = planEventHorizon(in, planWithUpdates)
     val projectedContext = context.recurse(projectedPlan)
     val expressionRewriter = expressionRewriterFactory(projectedContext)

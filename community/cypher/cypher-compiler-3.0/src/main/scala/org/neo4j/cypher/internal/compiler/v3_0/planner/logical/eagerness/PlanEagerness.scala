@@ -31,7 +31,7 @@ case class PlanEagerness(planUpdates: LogicalPlanningFunction3[PlannerQuery, Log
 
     //--------------
     // Plan eagerness before updates (on lhs)
-    // This is needed to protect the reads from updates from the same QG.
+    // This is necessary to protect the reads from _updates from the same QG_.
     // (I) Protect reads from future writes
     val (thisReadOverlapsWrites, conflictIsInThisQG) = readOverlapsFutureWrites(plannerQuery, lhs, head, containsMerge)
 
@@ -49,7 +49,7 @@ case class PlanEagerness(planUpdates: LogicalPlanningFunction3[PlannerQuery, Log
     // Plan eagerness after updates
     // (II) Protect writes from future reads
     val thisWriteOverlapsFutureReads = writeOverlapsFutureReads(plannerQuery, head)
-    // (III) Protect merge reads from future writes, or normal reads against updates down the line
+    // (III) Protect merge reads from future writes, or normal reads against updates in _subsequent_ QGs
     val thisReadOverlapsFutureWrites = (containsMerge || !conflictIsInThisQG) && thisReadOverlapsWrites
 
     if (thisWriteOverlapsFutureReads || thisReadOverlapsFutureWrites)
@@ -62,7 +62,7 @@ case class PlanEagerness(planUpdates: LogicalPlanningFunction3[PlannerQuery, Log
                                        containsMerge: Boolean): (Boolean, Boolean) = {
 
     val thisRead: Read = readQGWithoutStableNodeVariable(plannerQuery, lhs, head)
-    val allUpdates = plannerQuery.allQueryGraphs.map(_.updates)
+    val allUpdates: Seq[Update] = plannerQuery.allQueryGraphs.map(_.updates)
 
     // Merge needs to see it's own changes, so if the conflict is only between the reads and writes of MERGE,
     // we should not be eager

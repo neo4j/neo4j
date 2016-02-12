@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
-case class ForeachApply(left: LogicalPlan, right: LogicalPlan, variable: String, expression: Expression)(val solved: PlannerQuery with CardinalityEstimation)
+case class ForeachApply(left: LogicalPlan, right: LogicalPlan, variable: String, expression: Expression)
+                       (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
 
   val lhs = Some(left)

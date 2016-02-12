@@ -30,18 +30,19 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{ContainerIndex, PathExpressi
 case object PlanUpdates
   extends LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] {
 
-  override def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean)
+  override def apply(query: PlannerQuery, in: LogicalPlan, isFirstPlannerQuery: Boolean)
                     (implicit context: LogicalPlanningContext): LogicalPlan =
     query.queryGraph.mutatingPatterns.foldLeft(in) {
-      case (acc, pattern) => planUpdate(query, acc, pattern, firstPlannerQuery)
+      case (acc, pattern) => planUpdate(query, acc, pattern, isFirstPlannerQuery)
     }
 
   private def planUpdate(query: PlannerQuery, source: LogicalPlan, pattern: MutatingPattern, first: Boolean)
                           (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    def planAllUpdatesRecursively(query: PlannerQuery, plan: LogicalPlan): LogicalPlan = {
+    def planAllUpdatesRecursively(query: PlannerQuery, plan: LogicalPlan)
+                                 (implicit context: LogicalPlanningContext): LogicalPlan = {
       query.allPlannerQueries.foldLeft((plan, true)) {
-        case ((accPlan, innerFirst), plannerQuery) => (this.apply(plannerQuery, accPlan, innerFirst), false)
+        case ((accPlan, innerFirst), plannerQuery) => (context.planUpdates(plannerQuery, accPlan, innerFirst), false)
       }._1
     }
 

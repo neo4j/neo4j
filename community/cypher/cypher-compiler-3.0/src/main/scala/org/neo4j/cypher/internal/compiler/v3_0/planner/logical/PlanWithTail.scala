@@ -30,8 +30,7 @@ which in most cases is then rewritten away by LogicalPlan rewriting.
 */
 case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
                         planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
-                        planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart,
-                        planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanEagerness(PlanUpdates))
+                        planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart)
   extends LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] {
 
   override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = {
@@ -41,7 +40,7 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
         val row = context.logicalPlanProducer.planArgumentRowFrom(lhs)
         val partPlan = planPart(plannerQuery, lhsContext, Some(row))
         val firstPlannerQuery = false
-        val planWithUpdates = planUpdates(plannerQuery, partPlan, firstPlannerQuery)(context)
+        val planWithUpdates = context.planUpdates(plannerQuery, partPlan, firstPlannerQuery)(context)
 
         val applyPlan = context.logicalPlanProducer.planTailApply(lhs, planWithUpdates)
 
