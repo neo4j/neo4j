@@ -445,6 +445,22 @@ class LoadCsvAcceptanceTest
     assertStats(result, nodesCreated = 3, propertiesWritten = 3)
   }
 
+  test("should not project too much when there is an aggregation on a with after load csv") {
+    val url = createCSVTempFileURL({
+      writer =>
+        writer.println("10")
+    }).cypherEscape
+    val query  = s"""LOAD CSV FROM '$url' as row
+                   |WITH row where row[0] = 10
+                   |WITH distinct toInt(row[0]) as data
+                   |MERGE (c:City {data:data})
+                   |RETURN count(*) as c""".stripMargin
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+    result.columnAs("c").toList should equal(List(0))
+    result.close()
+  }
+
   private def ensureNoIllegalCharsInWindowsFilePath(filename: String) = {
     // isWindows?
     if ('\\' == File.separatorChar) {

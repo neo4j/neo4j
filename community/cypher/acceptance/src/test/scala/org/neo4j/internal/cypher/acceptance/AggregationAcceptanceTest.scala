@@ -243,4 +243,19 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
 
     result.toList should equal(List(Map("foo" -> 42, "bar" -> 42, "baz" -> Map("y" -> 1))))
   }
+
+  test("should not project too much when aggregating in a WITH before merge and after a WITH with filter") {
+    val n = createLabeledNode(Map("prop" -> 42), "A")
+
+    val query =
+      """|UNWIND [42] as props
+         |WITH props WHERE props > 32
+         |WITH distinct props as p
+         |MERGE (a:A {prop:p})
+         |RETURN a.prop as prop""".stripMargin
+
+    val result = executeWithAllPlannersAndCompatibilityMode(query)
+
+    result.toList should equal(List(Map("prop" -> 42)))
+  }
 }
