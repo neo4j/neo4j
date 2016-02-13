@@ -26,7 +26,7 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
  * are needed by the Muninn page cache.
  * <p>
  * The SequenceLock supports non-blocking optimistic concurrent read locks, non-blocking concurrent write locks,
- * and non-blocking pessimistic freeze (read-only) and exclusive locks.
+ * and non-blocking pessimistic flush and exclusive locks.
  * <p>
  * The optimistic read lock works through validation, so at the end of the critical section, the read lock has to be
  * validated and, if the validation fails, the critical section has to be retried. The read-lock acquires a stamp
@@ -34,19 +34,19 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
  * invalidated if any write lock or exclusive lock was overlapping with the read lock.
  * <p>
  * The concurrent write locks works by assuming that writes are always non-conflicting, so no validation is required.
- * However, the write locks will check if a pessimistic freeze or exclusive lock is held at the start of the critical
+ * However, the write locks will check if a pessimistic exclusive lock is held at the start of the critical
  * section, and if so, fail to be acquired. The write locks will invalidate all optimistic read locks. The write lock
- * is
- * try-lock only, and will never block.
+ * is try-lock only, and will never block.
  * <p>
- * The freeze lock is also non-blocking (try-lock only), but can only be held by one thread at a time for
- * implementation reasons. Freeze lock is meant to "freeze" the data. This means that freeze locks do not invalidate
- * optimistic read locks, but do prevent write and exclusive locks. Likewise, if a write or exclusive lock is held,
- * the attempt to take a freeze lock will fail.
+ * The flush lock is also non-blocking (try-lock only), but can only be held by one thread at a time for
+ * implementation reasons. The flush lock is meant for flushing the data in a page. This means that flush locks do not
+ * invalidate optimistic read locks, nor does it prevent overlapping write locks. However, it does prevent other
+ * overlapping flush and exclusive locks. Likewise, if another flush or exclusive lock is held, the attempt to take the
+ * flush lock will fail.
  * <p>
  * The exclusive lock will also invalidate the optimistic read locks. The exclusive lock is try-lock only, and will
- * never block. If a write or freeze lock is currently held, the attempt to take the exclusive lock will fail, and
- * the exclusive lock will likewise prevent write and freeze locks from being taken.
+ * never block. If a write or flush lock is currently held, the attempt to take the exclusive lock will fail, and
+ * the exclusive lock will likewise prevent write and flush locks from being taken.
  */
 public class SequenceLock
 {
@@ -59,7 +59,7 @@ public class SequenceLock
      *
      * With 17 writer count bits, the layout looks like this:
      *
-     * ┏━ Freeze lock bit
+     * ┏━ Flush lock bit
      * ┃┏━ Exclusive lock bit
      * ┃┃    ┏━ Count of currently concurrently held write locks, 17 bits.
      * ┃┃    ┃                  ┏━ 45 bits for the read lock sequence, incremented on write & exclusive unlock.
@@ -69,22 +69,18 @@ public class SequenceLock
      */
     private static final long CNT_BITS = 17;
 
-    // TODO once the background flush task has been removed from the MuninnPageCache, the "freeze" lock can be renamed
-    // TODO to a "flush" lock, since it is only used for flushing pages. The flush lock does NOT need to exclude writers
-    // TODO but DOES need to exclusive the exclusive lock. Thus, flushing will no longer interfere with the performance
-    // TODO of reads and writes - it'll only prevent eviction, which is precisely minimum behaviour we want.
     private static final long BITS_IN_LONG = 64;
-    private static final long EXL_LOCK_BITS = 1;
-    private static final long FRZ_LOCK_BITS = 1;
-    private static final long SEQ_BITS = BITS_IN_LONG - FRZ_LOCK_BITS - EXL_LOCK_BITS - CNT_BITS;
+    private static final long EXL_LOCK_BITS = 1; // Exclusive lock bits (only 1 is supported)
+    private static final long FLS_LOCK_BITS = 1; // Flush lock bits (only 1 is supported)
+    private static final long SEQ_BITS = BITS_IN_LONG - FLS_LOCK_BITS - EXL_LOCK_BITS - CNT_BITS;
     private static final long CNT_UNIT = 1L << SEQ_BITS;
     private static final long SEQ_MASK = CNT_UNIT - 1L;
     private static final long SEQ_IMSK = ~SEQ_MASK;
     private static final long CNT_MASK = ((1L << CNT_BITS) - 1L) << SEQ_BITS;
     private static final long EXL_MASK = (1L << CNT_BITS + SEQ_BITS);
-    private static final long FRZ_MASK = (1L << CNT_BITS + SEQ_BITS + 1L);
-    private static final long FRZ_IMSK = ~FRZ_MASK;
-    private static final long FAE_MASK = FRZ_MASK + EXL_MASK; // "freeze and/or exclusive" mask
+    private static final long FLS_MASK = (1L << CNT_BITS + SEQ_BITS + 1L);
+    private static final long FLS_IMSK = ~FLS_MASK;
+    private static final long FAE_MASK = FLS_MASK + EXL_MASK; // "flush and/or exclusive" mask
     private static final long UNL_MASK = FAE_MASK + CNT_MASK; // unlocked mask
 
     private static final long STATE = UnsafeUtil.getFieldOffset( SequenceLock.class, "state" );
@@ -108,8 +104,8 @@ public class SequenceLock
     }
 
     /**
-     * Start an optimistic critical section, and return a stamp that can be used to validate if the read-lock was
-     * consistent. That is, if no write or exclusive lock was overlapping with the optimistic read-lock.
+     * Start an optimistic critical section, and return a stamp that can be used to validate if the read lock was
+     * consistent. That is, if no write or exclusive lock was overlapping with the optimistic read lock.
      *
      * @return A stamp that must be passed to {@link #validateReadLock(long)} to validate the critical section.
      */
@@ -129,7 +125,7 @@ public class SequenceLock
     public boolean validateReadLock( long stamp )
     {
         UnsafeUtil.loadFence();
-        return (getState() & FRZ_IMSK) == stamp;
+        return (getState() & FLS_IMSK) == stamp;
     }
 
     /**
@@ -147,7 +143,7 @@ public class SequenceLock
         for (; ; )
         {
             s = getState();
-            boolean unwritablyLocked = (s & FAE_MASK) != 0;
+            boolean unwritablyLocked = (s & EXL_MASK) != 0;
             boolean writeCountOverflow = (s & CNT_MASK) == CNT_MASK;
 
             // bitwise-OR to reduce branching and allow more ILP
@@ -170,7 +166,7 @@ public class SequenceLock
         {
             throwWriteLockOverflow( s );
         }
-        // Otherwise it was either exclusively or freeze locked
+        // Otherwise it was exclusively locked
         return false;
     }
 
@@ -209,7 +205,7 @@ public class SequenceLock
 
     /**
      * Grab the exclusive lock if it is immediately available. Exclusive locks will invalidate any overlapping
-     * optimistic read lock, and fail write and freeze locks. If any write or freeze locks are currently taken, or if
+     * optimistic read lock, and fail write and flush locks. If any write or flush locks are currently taken, or if
      * the exclusive lock is already taken, then the attempt to grab an exclusive lock will fail.
      * <p>
      * Successfully grabbed exclusive locks must always be paired with a corresponding {@link #unlockExclusive()}.
@@ -263,39 +259,43 @@ public class SequenceLock
     }
 
     /**
-     * Grab the freeze lock if it is immediately available. Freeze locks prevent overlapping write and exclusive locks,
-     * but do not invalidate optimistic read locks. Only one freeze lock can be held at a time. If any freeze, write,
-     * or exclusive lock is already held, the attempt to take the freeze lock will fail.
+     * Grab the flush lock if it is immediately available. Flush locks prevent overlapping exclusive locks,
+     * but do not invalidate optimistic read locks, nor do they prevent overlapping write locks. Only one flush lock
+     * can be held at a time. If any flush or exclusive lock is already held, the attempt to take the flush lock will
+     * fail.
      * <p>
-     * Successfully grabbed freeze locks must always be paired with a corresponding {@link #unlockFreeze()}.
+     * Successfully grabbed flush locks must always be paired with a corresponding {@link #unlockFlush()}.
      *
-     * @return {@code true} if we successfully got the freeze lock, {@code false} otherwise.
+     * @return {@code true} if we successfully got the flush lock, {@code false} otherwise.
      */
-    public boolean tryFreezeLock()
+    public boolean tryFlushLock()
     {
         long s = getState();
-        return ((s & UNL_MASK) == 0) && compareAndSetState( s, s + FRZ_MASK );
+        return ((s & FAE_MASK) == 0) && compareAndSetState( s, s + FLS_MASK );
     }
 
     /**
-     * Unlock the currently held freeze lock.
+     * Unlock the currently held flush lock.
      */
-    public void unlockFreeze()
+    public void unlockFlush()
     {
-        long s = getState();
-        if ( (s & FRZ_MASK) != FRZ_MASK )
+        long s, n;
+        do
         {
-            throwUnmatchedUnlockFreeze( s );
+            s = getState();
+            if ( (s & FLS_MASK) != FLS_MASK )
+            {
+                throwUnmatchedUnlockFlush( s );
+            }
+            // We don't increment the sequence with nextSeq here, because flush locks don't invalidate readers
+            n = s - FLS_MASK;
         }
-        // We don't increment the sequence with nextSeq here, because freeze locks don't invalidate readers
-        long n = s - FRZ_MASK;
-        // Freeze locks prevent any state modifications from write and exclusive locks
-        unconditionallySetState( n );
+        while ( !compareAndSetState( s, n ) );
     }
 
-    private void throwUnmatchedUnlockFreeze( long s )
+    private void throwUnmatchedUnlockFlush( long s )
     {
-        throw new IllegalMonitorStateException( "Unmatched unlockFreeze: " + describeState( s ) );
+        throw new IllegalMonitorStateException( "Unmatched unlockFlush: " + describeState( s ) );
     }
 
     @Override
@@ -307,12 +307,10 @@ public class SequenceLock
 
     private String describeState( long s )
     {
-        long excl = s >>> CNT_BITS + SEQ_BITS;
+        long flush = s >>> CNT_BITS + SEQ_BITS + EXL_LOCK_BITS;
+        long excl = (s & EXL_MASK) >>> CNT_BITS + SEQ_BITS;
         long cnt = (s & CNT_MASK) >> SEQ_BITS;
         long seq = s & SEQ_MASK;
-        StringBuilder sb = new StringBuilder( "SequenceLock[Excl: " ).append( excl );
-        sb.append( ", Ws: " ).append( cnt );
-        sb.append( ", S: " ).append( seq ).append( ']' );
-        return sb.toString();
+        return "SequenceLock[Flush: " + flush + ", Excl: " + excl + ", Ws: " + cnt + ", S: " + seq + ']';
     }
 }

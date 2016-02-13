@@ -251,7 +251,7 @@ final class MuninnPagedFile implements PagedFile
                         if ( element instanceof MuninnPage )
                         {
                             MuninnPage page = (MuninnPage) element;
-                            if ( !(forClosing? page.tryExclusiveLock() : page.tryFreezeLock()) )
+                            if ( !(forClosing? page.tryExclusiveLock() : page.tryFlushLock()) )
                             {
                                 continue;
                             }
@@ -270,7 +270,7 @@ final class MuninnPagedFile implements PagedFile
                             }
                             else
                             {
-                                page.unlockFreeze();
+                                page.unlockFlush();
                             }
                         }
                         break;
@@ -350,7 +350,7 @@ final class MuninnPagedFile implements PagedFile
                 }
                 else
                 {
-                    pages[j].unlockFreeze();
+                    pages[j].unlockFlush();
                 }
             }
         }
