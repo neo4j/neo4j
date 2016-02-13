@@ -81,16 +81,16 @@ include::{sources}/remove.asciidoc[]
 
 include::{sources}/foreach.asciidoc[]
 
+include::{sources}/call.asciidoc[]
+
 include::{sources}/index.asciidoc[]
 
 include::{sources}/constraint.asciidoc[]
 
 include::{sources}/import.asciidoc[]
 
-include::{sources}/call.asciidoc[]
-
 ++++
-<div class="col cardgeneral c3-1 c6-2"><div class="blk">
+<div class="col cardgeneral c3-3 c6-3"><div class="blk">
 ++++
 
 [options="header", cols=",m"]
@@ -110,7 +110,7 @@ include::{sources}/call.asciidoc[]
 ++++
 
 ++++
-<div class="col cardgeneral c3-1 c6-3"><div class="blk">
+<div class="col cardgeneral c3-3 c4-3 c5-3 c6-3"><div class="blk">
 ++++
 
 [options="header", cols="a"]
@@ -165,7 +165,7 @@ include::{sources}/create-unique.asciidoc[]
 
 
 ++++
-<div class="col cardperformance c2-2 c3-3 c4-4 c5-1 c6-6"><div class="blk">
+<div class="col cardperformance c2-2 c3-1 c4-4 c5-3 c6-6"><div class="blk">
 ++++
 
 [options="header", cols="a"]

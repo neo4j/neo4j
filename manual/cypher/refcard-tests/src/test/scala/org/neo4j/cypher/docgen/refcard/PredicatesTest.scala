@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 class PredicatesTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Predicates"
-  val css = "general c2-2 c3-3 c4-1 c5-4 c6-6"
+  val css = "general c2-2 c3-3 c4-1 c5-1 c6-4"
   override val linkId = "query-where"
 
   override def assert(name: String, result: InternalExecutionResult) {
