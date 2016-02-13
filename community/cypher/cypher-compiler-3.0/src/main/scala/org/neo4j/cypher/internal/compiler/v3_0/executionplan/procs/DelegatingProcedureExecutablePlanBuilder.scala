@@ -132,7 +132,7 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
             |expects value of type ${semanticTable.types(exp).actual.toShortString} but got value of type ${field.typ}.
             |
         |Usage: CALL ${proc.name}(${proc.inputSignature.map(s => s"<${s.name}>").mkString(", ")})
-            |${proc.inputSignature.map(s => s"    ${s.name} (type ${s.typ})").mkString("Parameters:\n", "\n","")}
+            |${proc.inputSignature.map(s => s"    ${s.name} (type ${s.typ})").mkString("Parameters:" + System.lineSeparator(), System.lineSeparator(),"")}
         """.stripMargin)
   }
 }
