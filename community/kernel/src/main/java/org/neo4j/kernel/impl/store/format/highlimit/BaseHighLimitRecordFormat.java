@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.busted;
+package org.neo4j.kernel.impl.store.format.highlimit;
 
 import java.io.IOException;
 import java.util.function.Function;
@@ -26,20 +26,20 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
-import org.neo4j.kernel.impl.store.format.busted.Reference.DataAdapter;
+import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
 import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.offsetForId;
 import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdForRecord;
-import static org.neo4j.kernel.impl.store.format.busted.Reference.PAGE_CURSOR_ADAPTER;
+import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR_ADAPTER;
 
 /**
  * Base class for record format which utilizes dynamically sized references to other record IDs and with ability
  * to use record units, meaning that a record may span two physical records in the store. This to keep store size
  * low and only have records that have big references occupy double amount of space. This format supports up to
- * 58-bit IDs, which is roughly 280 quadrillion. With that size the ID limits can be considered busted,
+ * 58-bit IDs, which is roughly 280 quadrillion. With that size the ID limits can be considered highlimit,
  * hence the format name. The IDs take up between 3-8B depending on the size of the ID where relative ID
  * references are used as often as possible. See {@link Reference}.
  *
@@ -75,14 +75,14 @@ import static org.neo4j.kernel.impl.store.format.busted.Reference.PAGE_CURSOR_AD
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-abstract class BaseBustedRecordFormat<RECORD extends AbstractBaseRecord>
+abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         extends BaseOneByteHeaderRecordFormat<RECORD>
 {
     static final long NULL = Record.NULL_REFERENCE.intValue();
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
     static final int HEADER_BIT_FIRST_RECORD_UNIT = 0b0000_0100;
 
-    protected BaseBustedRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
+    protected BaseHighLimitRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
     {
         super( recordSize, recordHeaderSize, IN_USE_BIT );
     }

@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.busted;
+package org.neo4j.kernel.impl.store.format.highlimit;
 
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.store.format.busted.Reference.DataAdapter;
+import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
-class NodeRecordFormat extends BaseBustedRecordFormat<NodeRecord>
+class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
 {
     private static final long NULL_LABELS = Record.NO_LABELS_FIELD.intValue();
     private static final int RECORD_SIZE = 16;
