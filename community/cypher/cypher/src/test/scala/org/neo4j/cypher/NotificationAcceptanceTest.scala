@@ -409,4 +409,53 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     res.notifications should be(empty)
   }
+
+  test("do not warn when creating a node with non-existent label when using load csv") {
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE (n:Category)")
+
+    result.notifications shouldBe empty
+  }
+
+  test("do not warn when merging a node with non-existent label when using load csv") {
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row MERGE (n:Category)")
+
+    result.notifications shouldBe empty
+  }
+
+  test("do not warn when setting on a node a non-existent label when using load csv") {
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE (n) SET n:Category")
+
+    result.notifications shouldBe empty
+  }
+
+  test("do not warn when creating a rel with non-existent type when using load csv") {
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE ()-[:T]->()")
+
+    result.notifications shouldBe empty
+  }
+
+  test("do not warn when merging a rel with non-existent type when using load csv") {
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row MERGE ()-[:T]->()")
+
+    result.notifications shouldBe empty
+  }
+
+  test("do not warn when creating a node with non-existent prop key id when using load csv") {
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE (n) SET n.p = 'a'")
+
+    result.notifications shouldBe empty
+  }
+
+  test("do not warn when merging a node with non-existent prop key id when using load csv") {
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row MERGE (n) ON CREATE SET n.p = 'a'")
+
+    result.notifications shouldBe empty
+  }
 }
