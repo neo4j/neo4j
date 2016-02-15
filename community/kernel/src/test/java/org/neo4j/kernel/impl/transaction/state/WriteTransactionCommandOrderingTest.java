@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -190,7 +191,12 @@ public class WriteTransactionCommandOrderingTest
         when( schemaRuleChanges.changes() ).thenReturn(
                 Collections.<RecordProxy<Long,SchemaRecord,SchemaRule>>emptyList() );
 
-        return new TransactionRecordState( mock( NeoStores.class ), mock( IntegrityValidator.class ), recordChangeSet,
+        NeoStores neoStores = mock( NeoStores.class );
+        when( neoStores.getNodeStore() ).thenReturn( mock( NodeStore.class ) );
+        when( neoStores.getRelationshipGroupStore() ).thenReturn( mock( RelationshipGroupStore.class ) );
+        when( neoStores.getRelationshipStore() ).thenReturn( mock( RelationshipStore.class ) );
+
+        return new TransactionRecordState( neoStores, mock( IntegrityValidator.class ), recordChangeSet,
                 0, null, null, null, null, null );
     }
 
