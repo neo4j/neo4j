@@ -37,7 +37,11 @@ class RangeFunctionTest extends CypherFunSuite {
     range(-5, -12, -2) should be(Seq(-5, -7, -9, -11))
   }
 
-  private def range(start: Int, end: Int, step: Int) = {
+  test("range should not overflow when more than 32bits") {
+    range(2147483647L, 2147483648L, 1L) should be(Seq(2147483647L, 2147483648L))
+  }
+
+  private def range(start: Long, end: Long, step: Long) = {
     val expr = RangeFunction(Literal(start), Literal(end), Literal(step))
     expr(ExecutionContext.empty)(QueryStateHelper.empty)
   }
