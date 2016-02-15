@@ -22,8 +22,6 @@ package org.neo4j.cypher.javacompat.internal;
 import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -47,8 +45,7 @@ public class ServerExecutionEngine extends ExecutionEngine implements QueryExecu
     }
 
     @Override
-    protected
-    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, LogProvider logProvider )
+    protected org.neo4j.cypher.internal.ExecutionEngine createInnerEngine( GraphDatabaseService database, LogProvider logProvider )
     {
         return serverExecutionEngine = new org.neo4j.cypher.internal.ServerExecutionEngine( database, logProvider );
     }

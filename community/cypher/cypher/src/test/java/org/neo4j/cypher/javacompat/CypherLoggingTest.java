@@ -23,8 +23,8 @@ import java.io.IOException;
 
 import org.junit.Test;
 
+import org.neo4j.cypher.javacompat.internal.ExecutionEngine;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -44,7 +44,7 @@ public class CypherLoggingTest
         engine.execute( "MATCH (n) RETURN n" );
 
         // then
-        inLog( org.neo4j.cypher.ExecutionEngine.class );
+        inLog( org.neo4j.cypher.internal.ExecutionEngine.class );
         logProvider.assertNoLoggingOccurred();
     }
 

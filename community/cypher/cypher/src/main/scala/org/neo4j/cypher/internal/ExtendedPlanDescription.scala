@@ -17,7 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal
+
 /**
- * Execute Cypher queries from Java code.
- */
-package org.neo4j.cypher.javacompat;
+  * this class contains extra information about identifiers
+  */
+trait ExtendedPlanDescription extends PlanDescription {
+  def identifiers: Set[String]
+  def extendedChildren: Seq[ExtendedPlanDescription]
+}

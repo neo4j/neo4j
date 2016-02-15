@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.javacompat;
+package org.neo4j.cypher.javacompat.internal;
 
 import scala.collection.JavaConversions;
 
@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.neo4j.cypher.CypherException;
+import org.neo4j.cypher.internal.ExtendedExecutionResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
@@ -49,14 +50,10 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
  * Either iterate directly over the ExecutionResult to retrieve each row of the result
  * set, or use <code>columnAs()</code> to access a single column with result objects
  * cast to a type.
- *
- * @deprecated See {@link org.neo4j.graphdb.Result}, and use
- * {@link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)} instead.
  */
-@Deprecated
 public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Result
 {
-    private final org.neo4j.cypher.ExtendedExecutionResult inner;
+    private final ExtendedExecutionResult inner;
 
     /**
      * Initialized lazily and should be accessed with {@link #innerIterator()} method
@@ -68,10 +65,10 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
      * Constructor used by the Cypher framework. End-users should not
      * create an ExecutionResult directly, but instead use the result
      * returned from calling {@link ExecutionEngine#execute(String)}.
-     * 
+     *
      * @param   projection Execution result projection to use.
      */
-    public ExecutionResult( org.neo4j.cypher.ExtendedExecutionResult projection )
+    public ExecutionResult( ExtendedExecutionResult projection )
     {
         inner = Objects.requireNonNull( projection );
         //if updating query we must fetch the iterator right away in order to eagerly perform updates

@@ -22,6 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.util
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.{PlanDescription, ExecutionEngine}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.IDPSolverMonitor
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting

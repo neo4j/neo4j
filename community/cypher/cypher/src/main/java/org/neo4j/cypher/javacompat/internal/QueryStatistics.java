@@ -17,22 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.javacompat;
-
-import java.util.Map;
+package org.neo4j.cypher.javacompat.internal;
 
 /**
  * Holds statistics for the execution of a query.
- *
- * @deprecated See {@link org.neo4j.graphdb.QueryStatistics} which you can get from {@link org.neo4j.graphdb.Result}
- * when using {@link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)}.
  */
-@Deprecated
 public class QueryStatistics implements org.neo4j.graphdb.QueryStatistics
 {
-    private final org.neo4j.cypher.QueryStatistics inner;
+    private final org.neo4j.cypher.internal.QueryStatistics inner;
 
-    QueryStatistics( org.neo4j.cypher.QueryStatistics inner )
+    QueryStatistics( org.neo4j.cypher.internal.QueryStatistics inner )
     {
         this.inner = inner;
     }

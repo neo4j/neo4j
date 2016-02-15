@@ -24,6 +24,9 @@ import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.cypher.javacompat.internal.ExecutionEngine;
+import org.neo4j.cypher.javacompat.internal.ExecutionResult;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
@@ -41,7 +44,7 @@ public class ExecutionEngineTests
         ExecutionEngine executionEngine = new ExecutionEngine( database.getGraphDatabaseService() );
 
         ExecutionResult result = executionEngine.execute( "RETURN { key : 'Value' , " +
-                "collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}" );
+                                                          "collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}" );
 
         Map firstRowValue = (Map) result.iterator().next().values().iterator().next();
         assertThat( (String) firstRowValue.get( "key" ), is( "Value" ) );

@@ -22,7 +22,7 @@ package org.neo4j.server.database;
 import javax.ws.rs.ext.Provider;
 
 import com.sun.jersey.api.core.HttpContext;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.cypher.javacompat.internal.ExecutionEngine;
 
 /**
  * This exists as a convenience for extension authors, to access the cypher execution engine.

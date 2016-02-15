@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.kernel.api.exceptions.schema.{NoSuchIndexException, DropIndexFailureException}
 import java.util.concurrent.TimeUnit
 import java.io.{FileOutputStream, File}

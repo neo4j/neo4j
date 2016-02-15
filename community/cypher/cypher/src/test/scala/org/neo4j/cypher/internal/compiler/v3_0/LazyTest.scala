@@ -28,7 +28,7 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.{ExecutionResult, ExecutionEngine, ExecutionPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{GreaterThan, True}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CountingIterator, Counter}

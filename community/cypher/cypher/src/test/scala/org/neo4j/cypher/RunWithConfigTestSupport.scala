@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import java.util
 
+import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestGraphDatabaseFactory
 

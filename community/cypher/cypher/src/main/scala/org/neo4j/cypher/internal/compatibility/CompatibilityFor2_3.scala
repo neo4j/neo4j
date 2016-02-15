@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher.internal._
+import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
@@ -32,10 +32,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, DPPlanner
 import org.neo4j.cypher.internal.compiler.{v2_3, v3_0}
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v2_3.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.frontend.v2_3.{CypherException => InternalCypherException}
+import org.neo4j.cypher.internal.frontend.v2_3.{CypherException => InternalCypherException, InputPosition => InternalInputPosition}
 import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
-import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.cypher.{QueryStatistics, _}
+import org.neo4j.cypher.internal.{CypherExecutionMode, ExtendedExecutionResult, ExtendedPlanDescription, LastCommittedTxIdProvider, ParsedQuery, PreParsedQuery, QueryStatistics, TransactionInfo}
+import org.neo4j.cypher.javacompat.internal.ProfilerStatistics
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
@@ -168,7 +168,7 @@ trait CompatibilityFor2_3 {
     new ParsedQuery {
       def isPeriodicCommit = preparedQueryForV_2_3.map(_.isPeriodicCommit).getOrElse(false)
 
-      def plan(statement: Statement, tracer: v3_0.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_3.runSafely {
+      def plan(statement: Statement, tracer: v3_0.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_3.runSafely {
         val planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
 
@@ -182,7 +182,7 @@ trait CompatibilityFor2_3 {
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3) extends ExecutionPlan {
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3) extends org.neo4j.cypher.internal.ExecutionPlan {
 
     private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo): QueryContext = {
       val ctx = new TransactionBoundQueryContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
@@ -342,7 +342,7 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
     getClass.getName + "@" + Integer.toHexString(hashCode())
   }
 
-  private implicit class ConvertibleCompilerInputPosition(pos: frontend.v2_3.InputPosition) {
+  private implicit class ConvertibleCompilerInputPosition(pos: InternalInputPosition) {
     def asInputPosition = new InputPosition(pos.offset, pos.line, pos.column)
   }
 }
@@ -369,7 +369,7 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
 
   def name = exceptionHandlerFor2_3.runSafely { inner.name }
 
-  def asJava: javacompat.PlanDescription = exceptionHandlerFor2_3.runSafely { asJava(self) }
+  def asJava: javacompat.internal.PlanDescription = exceptionHandlerFor2_3.runSafely { asJava(self) }
 
   override def toString: String = {
     val NL = System.lineSeparator()
@@ -378,7 +378,7 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
     }
   }
 
-  def asJava(in: ExtendedPlanDescription): javacompat.PlanDescription = new javacompat.PlanDescription {
+  def asJava(in: ExtendedPlanDescription): javacompat.internal.PlanDescription = new javacompat.internal.PlanDescription {
     def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
       def getDbHits: Long = extract { case DbHits(count) => count}
 
@@ -396,7 +396,7 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
 
     def getIdentifiers: util.Set[String] = identifiers.asJava
 
-    def getChildren: util.List[javacompat.PlanDescription] = in.extendedChildren.toList.map(_.asJava).asJava
+    def getChildren: util.List[javacompat.internal.PlanDescription] = in.extendedChildren.toList.map(_.asJava).asJava
 
     override def toString: String = self.toString
   }

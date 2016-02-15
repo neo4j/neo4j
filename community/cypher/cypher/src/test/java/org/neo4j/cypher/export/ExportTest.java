@@ -31,7 +31,7 @@ import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.internal.ExecutionResult;
 import org.neo4j.graphalgo.impl.util.PathImpl;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;

@@ -17,16 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal
 
-/**
-  * this class contains extra information about identifiers
-  *
-  * @deprecated See { @link org.neo4j.graphdb.ExecutionPlanDescription}, and use
-  * { @link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)} instead.
-  */
-@Deprecated
-trait ExtendedPlanDescription extends PlanDescription {
-  def identifiers: Set[String]
-  def extendedChildren: Seq[ExtendedPlanDescription]
+import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb.{Notification, QueryExecutionType}
+
+trait ExtendedExecutionResult extends ExecutionResult {
+  def planDescriptionRequested: Boolean
+  def executionType: QueryExecutionType
+  def notifications: Iterable[Notification]
+  def accept[EX <: Exception](visitor: ResultVisitor[EX])
 }

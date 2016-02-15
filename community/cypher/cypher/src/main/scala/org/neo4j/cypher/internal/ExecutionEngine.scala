@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal
 
 import java.lang.Boolean.FALSE
 import java.util.{Map => JavaMap}
 
+import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaResultValueConverter
 import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.v3_0.{LRUCache => LRUCachev3_0, _}
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
-import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -43,10 +43,7 @@ trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
 /**
   * This class construct and initialize both the cypher compiler and the cypher runtime, which is a very expensive
   * operation so please make sure this will be constructed only once and properly reused.
-  *
-  * @deprecated use { @link org.neo4j.graphdb.GraphDatabaseService#execute(String)} instead.
   */
-@Deprecated
 class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = NullLogProvider.getInstance()) {
 
   require(graph != null, "Can't work with a null graph database")

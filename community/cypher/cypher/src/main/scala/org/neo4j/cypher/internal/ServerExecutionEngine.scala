@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.ExecutionEngine
 import org.neo4j.logging.{NullLogProvider, LogProvider}
 
 /**
