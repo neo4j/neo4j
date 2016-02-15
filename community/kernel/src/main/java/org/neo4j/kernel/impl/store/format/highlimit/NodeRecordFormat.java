@@ -35,6 +35,10 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     private static final int HAS_PROPERTY_BIT     = 0b0010_0000;
     private static final int HAS_LABELS_BIT       = 0b0100_0000;
 
+    public NodeRecordFormat( RecordIO<NodeRecord> recordIO )
+    {
+        super( fixedRecordSize( RECORD_SIZE ), 0, recordIO );
+    }
     public NodeRecordFormat()
     {
         super( fixedRecordSize( RECORD_SIZE ), 0 );

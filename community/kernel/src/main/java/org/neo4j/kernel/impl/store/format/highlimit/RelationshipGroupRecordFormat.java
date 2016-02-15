@@ -37,6 +37,11 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
         super( fixedRecordSize( RECORD_SIZE ), 0 );
     }
 
+    public RelationshipGroupRecordFormat( RecordIO<RelationshipGroupRecord> recordIO )
+    {
+        super( fixedRecordSize( RECORD_SIZE ), 0, recordIO );
+    }
+
     @Override
     public RelationshipGroupRecord newRecord()
     {

@@ -31,8 +31,6 @@ import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
-import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.offsetForId;
-import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdForRecord;
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR_ADAPTER;
 
 /**
@@ -81,18 +79,22 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     static final long NULL = Record.NULL_REFERENCE.intValue();
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
     static final int HEADER_BIT_FIRST_RECORD_UNIT = 0b0000_0100;
+    // Default to community record format
+    private final RecordIO<RECORD> recordIO; // = new RecordIO.CommunityRecordIO<>();
 
-    protected BaseHighLimitRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
+    protected BaseHighLimitRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize,
+            RecordIO<RECORD> recordIO )
     {
         super( recordSize, recordHeaderSize, IN_USE_BIT );
+        this.recordIO = recordIO;
     }
 
     @Override
     protected final void doRead( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile,
             long headerByte, boolean inUse ) throws IOException
     {
-        boolean recordUnit = has( headerByte, HEADER_BIT_RECORD_UNIT );
-        if ( recordUnit )
+        boolean doubleRecordUnit = has( headerByte, HEADER_BIT_RECORD_UNIT );
+        if ( doubleRecordUnit )
         {
             boolean firstRecordUnit = has( headerByte, HEADER_BIT_FIRST_RECORD_UNIT );
             if ( !firstRecordUnit )
@@ -100,40 +102,14 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
                 // This is a record unit and not even the first one, so you cannot go here directly and read it,
                 // it may only be read as part of reading the primary unit.
                 record.clear();
+                // Return and try again
                 return;
+            } else {
+                recordIO.read( record, primaryCursor, recordSize, storeFile,
+                        ( readAdapter ) -> doReadInternal( record, primaryCursor, recordSize, headerByte, inUse,
+                                readAdapter ) );
             }
-        }
-
-        if ( recordUnit )
-        {
-            int primaryEndOffset = primaryCursor.getOffset() + recordSize - 1 /*we've already read the header byte*/;
-
-            // This is a record that is split into multiple record units. We need a bit more clever
-            // data structures here. For the time being this means instantiating one object,
-            // but the trade-off is a great reduction in complexity.
-            long secondaryId = Reference.decode( primaryCursor, PAGE_CURSOR_ADAPTER );
-            @SuppressWarnings( "resource" )
-            SecondaryPageCursorReadDataAdapter readAdapter = new SecondaryPageCursorReadDataAdapter(
-                    primaryCursor, storeFile,
-                    pageIdForRecord( secondaryId, storeFile.pageSize(), recordSize ),
-                    offsetForId( secondaryId, storeFile.pageSize(), recordSize ),
-                    primaryEndOffset, PagedFile.PF_SHARED_READ_LOCK );
-
-            try ( SecondaryPageCursorControl secondaryPageCursorControl = readAdapter )
-            {
-                do
-                {
-                    // (re)sets offsets for both cursors
-                    secondaryPageCursorControl.reposition();
-                    doReadInternal( record, primaryCursor, recordSize, headerByte, inUse, readAdapter );
-                }
-                while ( secondaryPageCursorControl.shouldRetry() );
-
-                record.setSecondaryId( secondaryId );
-            }
-        }
-        else
-        {
+        } else {
             doReadInternal( record, primaryCursor, recordSize, headerByte, inUse, PAGE_CURSOR_ADAPTER );
         }
     }
@@ -154,20 +130,15 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         headerByte = set( headerByte, HEADER_BIT_FIRST_RECORD_UNIT, true );
         primaryCursor.putByte( headerByte );
 
-        DataAdapter<PageCursor> dataAdapter = PAGE_CURSOR_ADAPTER;
         if ( record.requiresTwoUnits() )
         {
-            int primaryEndOffset = primaryCursor.getOffset() + recordSize - 1 /*we've already written the header byte*/;
-
-            // Write using the normal adapter since the first reference we write cannot really overflow
-            // into the secondary record
-            Reference.encode( record.getSecondaryId(), primaryCursor, PAGE_CURSOR_ADAPTER );
-            dataAdapter = new SecondaryPageCursorWriteDataAdapter(
-                    pageIdForRecord( record.getSecondaryId(), storeFile.pageSize(), recordSize ),
-                    offsetForId( record.getSecondaryId(), storeFile.pageSize(), recordSize ), primaryEndOffset );
+            recordIO.write( record, primaryCursor, recordSize, storeFile,
+                    ( dataAdapter ) -> doWriteInternal( record, primaryCursor, dataAdapter ) );
         }
-
-        doWriteInternal( record, primaryCursor, dataAdapter );
+        else
+        {
+            doWriteInternal( record, primaryCursor, PAGE_CURSOR_ADAPTER );
+        }
     }
 
     protected abstract void doWriteInternal( RECORD record, PageCursor cursor, DataAdapter<PageCursor> adapter )
