@@ -297,7 +297,7 @@ public class StoreUpgradeIntegrationTest
         {
             // migrate the store using a single instance
             File dir = Unzip.unzip( getClass(), dbFileName, testDir.graphDbDir() );
-            new File( dir, "messages.log" ).delete(); // clear the log
+            new File( dir, "debug.log" ).delete(); // clear the log
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
@@ -391,7 +391,7 @@ public class StoreUpgradeIntegrationTest
         public File prepareDirectory( File targetDir ) throws IOException
         {
             Unzip.unzip( getClass(), resourceName, targetDir );
-            new File( targetDir, "messages.log" ).delete(); // clear the log
+            new File( targetDir, "debug.log" ).delete(); // clear the log
             return targetDir;
         }
 

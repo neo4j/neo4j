@@ -51,7 +51,7 @@ public class TestStoreAccess
     {
         EphemeralFileSystemAbstraction snapshot = produceUncleanStore();
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
-        File messages = new File( storeDir, "messages.log" );
+        File messages = new File( storeDir, "debug.log" );
         snapshot.deleteFile( messages );
 
         PageCache pageCache = pageCacheRule.getPageCache( snapshot );

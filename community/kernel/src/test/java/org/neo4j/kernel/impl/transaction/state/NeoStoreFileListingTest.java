@@ -56,7 +56,7 @@ public class NeoStoreFileListingTest
 
     private final static String[] STANDARD_STORE_DIR_FILES = new String[]{
             "lock",
-            "messages.log",
+            "debug.log",
             "neostore",
             "neostore.id",
             "neostore.counts.db.a",
