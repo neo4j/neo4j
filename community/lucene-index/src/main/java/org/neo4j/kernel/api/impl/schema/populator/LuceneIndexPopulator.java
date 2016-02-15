@@ -59,8 +59,6 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     @Override
     public void add( List<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
     {
-        includeSamples( updates );
-
         Iterator<Document> documents = updates.stream()
                 .map( LuceneIndexPopulator::updateAsDocument )
                 .iterator();
@@ -92,8 +90,6 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     }
 
     protected abstract void flush() throws IOException;
-
-    protected abstract void includeSamples( List<NodePropertyUpdate> updates );
 
     private static Document updateAsDocument( NodePropertyUpdate update )
     {

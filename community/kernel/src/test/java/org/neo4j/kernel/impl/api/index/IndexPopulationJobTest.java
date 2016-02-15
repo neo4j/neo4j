@@ -117,10 +117,13 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
+        NodePropertyUpdate update = add( nodeId, 0, value, new long[]{0} );
+
         verify( populator ).create();
-        verify( populator ).add( singletonList( add( nodeId, 0, value, new long[]{0} ) ) );
+        verify( populator ).includeSample( update );
+        verify( populator ).add( singletonList( update ) );
         verify( populator ).verifyDeferredConstraints( indexStoreView );
-        verify( populator ).sampleResult( any( DoubleLong.Out.class) );
+        verify( populator ).sampleResult( any( DoubleLong.Out.class ) );
         verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );
@@ -160,11 +163,16 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
+        NodePropertyUpdate update1 = add( node1, 0, value, new long[]{0} );
+        NodePropertyUpdate update2 = add( node4, 0, value, new long[]{0} );
+
         verify( populator ).create();
-        verify( populator ).add( Collections.singletonList( add( node1, 0, value, new long[]{0} ) ) );
-        verify( populator ).add( Collections.singletonList( add( node4, 0, value, new long[]{0} ) ) );
+        verify( populator ).includeSample( update1 );
+        verify( populator ).add( Collections.singletonList( update1 ) );
+        verify( populator ).includeSample( update2 );
+        verify( populator ).add( Collections.singletonList( update2 ) );
         verify( populator ).verifyDeferredConstraints( indexStoreView );
-        verify( populator ).sampleResult( any( DoubleLong.Out.class) );
+        verify( populator ).sampleResult( any( DoubleLong.Out.class ) );
         verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );

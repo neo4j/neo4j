@@ -95,7 +95,7 @@ public class NonUniqueLuceneIndexPopulatorTest
     }
 
     @Test
-    public void sampleAddedUpdates() throws Exception
+    public void sampleIncludedUpdates() throws Exception
     {
         populator = newPopulator();
 
@@ -104,7 +104,7 @@ public class NonUniqueLuceneIndexPopulatorTest
                 NodePropertyUpdate.add( 2, 1, "bbb", new long[]{1} ),
                 NodePropertyUpdate.add( 3, 1, "ccc", new long[]{1} ) );
 
-        populator.add( updates );
+        updates.forEach( populator::includeSample );
 
         Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
         long indexSize = populator.sampleResult( register );
@@ -117,7 +117,7 @@ public class NonUniqueLuceneIndexPopulatorTest
     }
 
     @Test
-    public void sampleAddedUpdatesWithDuplicates() throws Exception
+    public void sampleIncludedUpdatesWithDuplicates() throws Exception
     {
         populator = newPopulator();
 
@@ -126,7 +126,7 @@ public class NonUniqueLuceneIndexPopulatorTest
                 NodePropertyUpdate.add( 2, 1, "bar", new long[]{1} ),
                 NodePropertyUpdate.add( 3, 1, "foo", new long[]{1} ) );
 
-        populator.add( updates );
+        updates.forEach( populator::includeSample );
 
         Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
         long indexSize = populator.sampleResult( register );

@@ -108,6 +108,8 @@ public interface IndexPopulator
      */
     void markAsFailed( String failure ) throws IOException;
 
+    void includeSample( NodePropertyUpdate update );
+
     long sampleResult( DoubleLong.Out result );
 
     class Adapter implements IndexPopulator
@@ -145,6 +147,11 @@ public interface IndexPopulator
 
         @Override
         public void markAsFailed( String failure )
+        {
+        }
+
+        @Override
+        public void includeSample( NodePropertyUpdate update )
         {
         }
 

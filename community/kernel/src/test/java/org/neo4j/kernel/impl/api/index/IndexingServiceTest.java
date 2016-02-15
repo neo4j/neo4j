@@ -237,6 +237,7 @@ public class IndexingServiceTest
         assertEquals( InternalIndexState.ONLINE, proxy.getState() );
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
+        order.verify( populator ).includeSample( add( 1, "value1" ) );
         order.verify( populator ).add( singletonList( add( 1, "value1" ) ) );
 
 

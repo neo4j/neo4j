@@ -221,7 +221,6 @@ public class IndexCRUDIT
             {
                 ReadOperations statement = ctxSupplier.get().readOperations();
                 updatesCommitted.add( update );
-                addValueToSample( update.getNodeId(), update.getValueAfter() );
             }
         }
 
@@ -263,6 +262,12 @@ public class IndexCRUDIT
         @Override
         public void markAsFailed( String failure )
         {
+        }
+
+        @Override
+        public void includeSample( NodePropertyUpdate update )
+        {
+            addValueToSample( update.getNodeId(), update.getValueAfter() );
         }
 
         @Override

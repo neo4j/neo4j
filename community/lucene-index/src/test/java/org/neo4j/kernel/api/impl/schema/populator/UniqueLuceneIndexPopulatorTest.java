@@ -508,7 +508,7 @@ public class UniqueLuceneIndexPopulatorTest
     }
 
     @Test
-    public void sampleAddedUpdates() throws Exception
+    public void sampleIncludedUpdates() throws Exception
     {
         populator = newPopulator();
         List<NodePropertyUpdate> updates = Arrays.asList(
@@ -517,7 +517,7 @@ public class UniqueLuceneIndexPopulatorTest
                 NodePropertyUpdate.add( 3, 1, "baz", new long[]{1} ),
                 NodePropertyUpdate.add( 4, 1, "qux", new long[]{1} ) );
 
-        populator.add( updates );
+        updates.forEach( populator::includeSample );
 
         Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
         long indexSize = populator.sampleResult( register );

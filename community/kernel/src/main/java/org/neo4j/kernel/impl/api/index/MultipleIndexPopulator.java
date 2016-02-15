@@ -308,6 +308,12 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
+    public void includeSample( NodePropertyUpdate update )
+    {
+        throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
+    }
+
+    @Override
     public long sampleResult( Out result )
     {
         throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
@@ -503,6 +509,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             if ( isApplicable( update ) )
             {
+                populator.includeSample( update );
                 addApplicable( update );
             }
         }

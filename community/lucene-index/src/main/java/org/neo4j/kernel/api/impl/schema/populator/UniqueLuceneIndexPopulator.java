@@ -53,12 +53,6 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    protected void includeSamples( List<NodePropertyUpdate> updates )
-    {
-        sampler.increment( updates.size() );
-    }
-
-    @Override
     public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
         luceneIndex.verifyUniqueness( accessor, descriptor.getPropertyKeyId() );
@@ -115,6 +109,12 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
                 throw new UnsupportedOperationException( "should not remove() from populating index" );
             }
         };
+    }
+
+    @Override
+    public void includeSample( NodePropertyUpdate update )
+    {
+        sampler.increment( 1 );
     }
 
     @Override

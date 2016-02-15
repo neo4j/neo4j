@@ -174,6 +174,11 @@ class InMemoryIndex
         }
 
         @Override
+        public void includeSample( NodePropertyUpdate update )
+        {
+        }
+
+        @Override
         public long sampleResult( DoubleLong.Out result )
         {
             try

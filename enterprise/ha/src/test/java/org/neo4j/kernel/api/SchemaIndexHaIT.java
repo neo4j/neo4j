@@ -471,6 +471,12 @@ public class SchemaIndexHaIT
         }
 
         @Override
+        public void includeSample( NodePropertyUpdate update )
+        {
+            delegate.includeSample( update );
+        }
+
+        @Override
         public long sampleResult( DoubleLong.Out result )
         {
             return delegate.sampleResult( result );
