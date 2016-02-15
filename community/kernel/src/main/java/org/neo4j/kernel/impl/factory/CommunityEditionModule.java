@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.FullSpeedCheckPointFlushControl;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -63,8 +64,7 @@ import org.neo4j.udc.UsageData;
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
  * that are specific to the Community edition.
  */
-public class CommunityEditionModule
-    extends EditionModule
+public class CommunityEditionModule extends EditionModule
 {
     public CommunityEditionModule( PlatformModule platformModule )
     {
@@ -107,6 +107,8 @@ public class CommunityEditionModule
 
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
+        checkPointFlushControl = new FullSpeedCheckPointFlushControl();
+
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
@@ -119,8 +121,7 @@ public class CommunityEditionModule
 
     protected SchemaWriteGuard createSchemaWriteGuard()
     {
-        return () -> {
-        };
+        return () -> {};
     }
 
     protected TokenCreator createRelationshipTypeCreator( Config config, DataSourceManager dataSourceManager,

@@ -37,6 +37,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -260,7 +261,8 @@ public class TestRecoveryScenarios
                     @Override
                     void flush( GraphDatabaseAPI db )
                     {
-                        db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce();
+                        IOLimiter limiter = IOLimiter.unlimited();
+                        db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( limiter );
                     }
                 },
         FLUSH_PAGE_CACHE

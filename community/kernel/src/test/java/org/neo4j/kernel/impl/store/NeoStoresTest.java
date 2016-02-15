@@ -45,6 +45,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -557,7 +558,7 @@ public class NeoStoresTest
         assertEquals( 10l, metaDataStore.getLatestConstraintIntroducingTx() );
 
         // when
-        neoStores.flush();
+        neoStores.flush( IOLimiter.unlimited() );
         neoStores.close();
         neoStores = sf.openAllNeoStores();
 

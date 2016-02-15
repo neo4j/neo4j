@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import java.util.Collection;
 import java.util.stream.Stream;
 
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -93,8 +94,9 @@ public interface StorageEngine
     /**
      * Flushes and forces all changes down to underlying storage. This is a blocking call and when it returns
      * all changes applied to this storage engine will be durable.
+     * @param limiter The {@link IOLimiter} used to moderate the rate of IO caused by the flush process.
      */
-    void flushAndForce();
+    void flushAndForce( IOLimiter limiter );
 
     /**
      * Registers diagnostics about the storage onto {@link DiagnosticsManager}.

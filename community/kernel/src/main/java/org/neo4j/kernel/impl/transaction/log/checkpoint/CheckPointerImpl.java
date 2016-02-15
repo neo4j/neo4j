@@ -40,26 +40,50 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final TransactionAppender appender;
     private final TransactionIdStore transactionIdStore;
     private final CheckPointThreshold threshold;
-    private final StorageEngine storageEngine;;
+    private final StorageEngine storageEngine;
     private final LogPruning logPruning;
     private final DatabaseHealth databaseHealth;
+    private final CheckPointFlushControl flushControl;
     private final Log msgLog;
     private final CheckPointTracer tracer;
     private final Lock lock;
 
     private long lastCheckPointedTx;
 
-    public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
-            StorageEngine storageEngine, LogPruning logPruning, TransactionAppender appender, DatabaseHealth databaseHealth,
-            LogProvider logProvider, CheckPointTracer tracer )
+    public CheckPointerImpl(
+            TransactionIdStore transactionIdStore,
+            CheckPointThreshold threshold,
+            StorageEngine storageEngine,
+            LogPruning logPruning,
+            TransactionAppender appender,
+            DatabaseHealth databaseHealth,
+            LogProvider logProvider,
+            CheckPointTracer tracer,
+            CheckPointFlushControl checkPointFlushControl )
     {
-        this( transactionIdStore, threshold, storageEngine, logPruning, appender, databaseHealth, logProvider, tracer,
+        this( transactionIdStore,
+                threshold,
+                storageEngine,
+                logPruning,
+                appender,
+                databaseHealth,
+                logProvider,
+                tracer,
+                checkPointFlushControl,
                 new ReentrantLock() );
     }
 
-    public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
-            StorageEngine storageEngine, LogPruning logPruning, TransactionAppender appender, DatabaseHealth databaseHealth,
-            LogProvider logProvider, CheckPointTracer tracer, Lock lock )
+    public CheckPointerImpl(
+            TransactionIdStore transactionIdStore,
+            CheckPointThreshold threshold,
+            StorageEngine storageEngine,
+            LogPruning logPruning,
+            TransactionAppender appender,
+            DatabaseHealth databaseHealth,
+            LogProvider logProvider,
+            CheckPointTracer tracer,
+            CheckPointFlushControl flushControl,
+            Lock lock )
     {
         this.appender = appender;
         this.transactionIdStore = transactionIdStore;
@@ -67,6 +91,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.storageEngine = storageEngine;
         this.logPruning = logPruning;
         this.databaseHealth = databaseHealth;
+        this.flushControl = flushControl;
         this.msgLog = logProvider.getLog( CheckPointerImpl.class );
         this.tracer = tracer;
         this.lock = lock;
@@ -164,7 +189,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
          * earlier check point and replay from there all the log entries. Everything will be ok.
          */
         msgLog.info( prefix + " Starting store flush..." );
-        storageEngine.flushAndForce();
+        storageEngine.flushAndForce( flushControl.getIOLimiter() );
         msgLog.info( prefix + " Store flush completed" );
 
         /*

@@ -49,6 +49,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -127,6 +128,7 @@ public class BackupServiceIT
 
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     private final Monitors monitors = new Monitors();
+    private final IOLimiter limiter = IOLimiter.unlimited();
     private File storeDir;
     private File backupDir;
     public int backupPort = 8200;
@@ -451,7 +453,7 @@ public class BackupServiceIT
         createAndIndexNode( db, 3 );
         createAndIndexNode( db, 4 );
 
-        db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce();
+        db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( limiter );
         long txId = db.getDependencyResolver().resolveDependency( TransactionIdStore.class )
                 .getLastCommittedTransactionId();
 
@@ -675,7 +677,7 @@ public class BackupServiceIT
             barrier.awaitUninterruptibly();
 
             createAndIndexNode( db, 1 );
-            resolver.resolveDependency( StorageEngine.class ).flushAndForce();
+            resolver.resolveDependency( StorageEngine.class ).flushAndForce( limiter );
 
             barrier.release();
         } );
@@ -804,7 +806,7 @@ public class BackupServiceIT
         assertEquals( txId, logHeader.lastCommittedTxId );
     }
 
-    private void checkLastCommittedTxIdInLogAndNeoStore( long txId, long txIdFromOrigin ) throws IOException
+    private void checkLastCommittedTxIdInLogAndNeoStore( long txId, long txIdFromOrigin ) throws Exception
     {
         // Assert last committed transaction can be found in tx log and is the last tx in the log
         LifeSupport life = new LifeSupport();

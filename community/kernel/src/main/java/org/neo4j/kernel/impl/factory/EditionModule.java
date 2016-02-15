@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointFlushControl;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
@@ -74,6 +75,8 @@ public abstract class EditionModule
     public ConstraintSemantics constraintSemantics;
 
     public CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
+
+    public CheckPointFlushControl checkPointFlushControl;
 
     protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver)
     {

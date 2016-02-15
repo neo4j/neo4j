@@ -76,6 +76,6 @@ public interface IOLimiter
      */
     static IOLimiter unlimited()
     {
-        return ( previousStamp, recentlyCompletedIOs, flushable ) -> 0;
+        return ( previousStamp, recentlyCompletedIOs, flushable ) -> previousStamp;
     }
 }

@@ -31,6 +31,7 @@ import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.NeoStoresDiagnostics;
@@ -163,7 +164,7 @@ public class NeoStores implements AutoCloseable
         }
     }
 
-    public void flush()
+    public void flush( IOLimiter limiter )
     {
         try
         {
@@ -172,7 +173,7 @@ public class NeoStores implements AutoCloseable
             {
                 counts.rotate( getMetaDataStore().getLastCommittedTransactionId() );
             }
-            pageCache.flushAndForce();
+            pageCache.flushAndForce( limiter );
         }
         catch ( IOException e )
         {

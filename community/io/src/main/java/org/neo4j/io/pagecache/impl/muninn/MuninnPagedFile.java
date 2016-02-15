@@ -226,6 +226,7 @@ final class MuninnPagedFile implements PagedFile
             throws IOException
     {
         pageCache.pauseBackgroundFlushTask();
+        // TODO it'd be awesome if, on Linux, we'd call sync_file_range(2) instead of fsync
         Flushable flushable = swapper::force;
         MuninnPage[] pages = new MuninnPage[translationTableChunkSize];
         long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.

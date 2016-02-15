@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStoreExtension;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -254,6 +255,6 @@ public class UniqueIndexRecoveryTests
 
     private void flushAll()
     {
-        db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce();
+        db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( IOLimiter.unlimited() );
     }
 }

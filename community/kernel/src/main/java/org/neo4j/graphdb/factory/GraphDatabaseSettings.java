@@ -204,6 +204,16 @@ public abstract class GraphDatabaseSettings
                   "for seconds, and 'ms' for milliseconds." )
     public static final Setting<Long> check_point_interval_time = setting( "dbms.checkpoint.interval.time", DURATION, "5m" );
 
+    @Description( "Configures the maximum amount of IO that the background check-point process should consume. " +
+                  "This setting is advisory, and is ignored in Neo4j Community Edition, and is followed to best " +
+                  "effort in Enterprise Edition. The setting is expressed in IOs per second. Restricting the number " +
+                  "of IOPS consumed by the check-point process, will leave more IO bandwidth for things that are " +
+                  "critical for transaction response time, such as appending to the transaction log. This only " +
+                  "matters if both the store files and the transaction logs are placed on the same logical storage " +
+                  "device. If that is the case, then limiting the check-point process to, say, half of the IO " +
+                  "bandwidth of your system is a good place to start.")
+    public static final Setting<Integer> check_point_iops_limit = setting( "dbms.checkpoint.iops.limit", INTEGER, "-1" );
+
     // Auto Indexing
     @Description("Controls the auto indexing feature for nodes. Setting it to `false` shuts it down, " +
             "while `true` enables it by default for properties "

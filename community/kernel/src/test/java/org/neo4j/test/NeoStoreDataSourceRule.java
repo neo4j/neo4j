@@ -26,6 +26,9 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.FullSpeedCheckPointFlushControl;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.api.TokenNameLookup;
@@ -92,7 +95,9 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new StartupStatisticsProvider(), null,
                 new CommunityCommitProcessFactory(), mock( InternalAutoIndexing.class ), pageCache,
                 new StandardConstraintSemantics(), monitors,
-                new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ), mock(Procedures.class) );
+                new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ),
+                mock( Procedures.class ),
+                new FullSpeedCheckPointFlushControl() );
 
         return dataSource;
     }

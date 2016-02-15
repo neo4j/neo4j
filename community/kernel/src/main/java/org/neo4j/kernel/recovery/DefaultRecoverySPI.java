@@ -25,6 +25,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
@@ -59,7 +60,8 @@ public class DefaultRecoverySPI implements Recovery.SPI
     @Override
     public void forceEverything()
     {
-        storageEngine.flushAndForce();
+        IOLimiter unlimited = IOLimiter.unlimited(); // Runs during recovery; go as fast as possible.
+        storageEngine.flushAndForce( unlimited );
     }
 
     @Override

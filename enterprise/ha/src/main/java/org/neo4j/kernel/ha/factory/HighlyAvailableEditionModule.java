@@ -129,6 +129,7 @@ import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
+import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableCheckPointFlushControl;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -169,6 +170,8 @@ public class HighlyAvailableEditionModule
 
     public HighlyAvailableEditionModule( final PlatformModule platformModule )
     {
+        checkPointFlushControl = new ConfigurableCheckPointFlushControl( platformModule.config );
+
         final LifeSupport life = platformModule.life;
         life.add( platformModule.dataSourceManager );
 
@@ -240,7 +243,6 @@ public class HighlyAvailableEditionModule
 
 
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-
 
         ClusterClientModule clusterClientModule = new ClusterClientModule( clusteringLife, dependencies, monitors,
                 config, logging, electionCredentialsProvider );

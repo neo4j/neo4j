@@ -116,6 +116,7 @@ import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
+import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableCheckPointFlushControl;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -180,6 +181,8 @@ public class EnterpriseCoreEditionModule
     public EnterpriseCoreEditionModule( final PlatformModule platformModule,
                                         DiscoveryServiceFactory discoveryServiceFactory )
     {
+        checkPointFlushControl = new ConfigurableCheckPointFlushControl( platformModule.config );
+
         final org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
         final LogService logging = platformModule.logging;

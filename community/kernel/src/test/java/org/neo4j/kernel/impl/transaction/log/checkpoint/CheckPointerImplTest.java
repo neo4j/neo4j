@@ -20,21 +20,20 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 
@@ -65,10 +64,11 @@ public class CheckPointerImplTest
     private final TransactionAppender appender = mock( TransactionAppender.class );
     private final DatabaseHealth health = mock( DatabaseHealth.class );
     private final CheckPointTracer tracer = mock( CheckPointTracer.class, RETURNS_MOCKS );
+    private final CheckPointFlushControl flushControl = mock( CheckPointFlushControl.class );
 
-    private final long initialTransactionId = 2l;
-    private final long transactionId = 42l;
-    private final LogPosition logPosition = new LogPosition( 16l, 233l );
+    private final long initialTransactionId = 2L;
+    private final long transactionId = 42L;
+    private final LogPosition logPosition = new LogPosition( 16L, 233L );
 
     @Test
     public void shouldNotFlushIfItIsNotNeeded() throws Throwable
@@ -104,7 +104,7 @@ public class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( storageEngine, times( 1 ) ).flushAndForce();
+        verify( storageEngine, times( 1 ) ).flushAndForce( null );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold, times( 1 ) ).initialize( initialTransactionId );
@@ -130,7 +130,7 @@ public class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( storageEngine, times( 1 ) ).flushAndForce();
+        verify( storageEngine, times( 1 ) ).flushAndForce( null );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold, times( 1 ) ).initialize( initialTransactionId );
@@ -156,7 +156,7 @@ public class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( storageEngine, times( 1 ) ).flushAndForce();
+        verify( storageEngine, times( 1 ) ).flushAndForce( null );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold, times( 1 ) ).initialize( initialTransactionId );
@@ -174,16 +174,11 @@ public class CheckPointerImplTest
         ReentrantLock reentrantLock = new ReentrantLock();
         final Lock spyLock = spy( reentrantLock );
 
-        doAnswer( new Answer()
-        {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                verify( appender ).checkPoint( any( LogPosition.class ), any( LogCheckPointEvent.class ) );
-                reset( appender );
-                invocation.callRealMethod();
-                return null;
-            }
+        doAnswer( invocation -> {
+            verify( appender ).checkPoint( any( LogPosition.class ), any( LogCheckPointEvent.class ) );
+            reset( appender );
+            invocation.callRealMethod();
+            return null;
         } ).when( spyLock ).unlock();
 
         final CheckPointerImpl checkPointing = checkPointer( spyLock );
@@ -245,10 +240,32 @@ public class CheckPointerImplTest
         verifyNoMoreInteractions( appender );
     }
 
+    @Test
+    public void mustUseIoLimiterFromFlushControl() throws Throwable
+    {
+        IOLimiter limiter = (stamp, ios, flushable) -> 42;
+        when( flushControl.getIOLimiter() ).thenReturn( limiter );
+        when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( true, false );
+        mockTxIdStore();
+        CheckPointerImpl checkPointing = checkPointer();
+
+        checkPointing.start();
+        checkPointing.checkPointIfNeeded( INFO );
+
+        verify( storageEngine ).flushAndForce( limiter );
+    }
+
+
+    // TODO must flush as fast as possible during force check point
+    // TODO must flush as fast as possible during try check point
+    // TODO must request fastest possible flush when force check point is called during background check point
+    // TODO must flush at background rate during background check point
+    // TODO must flush at background rate during background check point after forced check point
+
     private CheckPointerImpl checkPointer( Lock lock )
     {
         return new CheckPointerImpl( txIdStore, threshold, storageEngine, logPruning, appender, health,
-                NullLogProvider.getInstance(), tracer, lock );
+                NullLogProvider.getInstance(), tracer, flushControl, lock );
     }
 
     private CheckPointerImpl checkPointer()

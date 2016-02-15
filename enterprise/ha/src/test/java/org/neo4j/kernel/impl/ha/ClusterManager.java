@@ -23,7 +23,6 @@ import org.w3c.dom.Document;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -71,6 +70,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
@@ -1370,7 +1370,8 @@ public class ClusterManager
             {
                 if ( !exceptSet.contains( db ) )
                 {
-                    db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce();
+                    IOLimiter limiter = IOLimiter.unlimited();
+                    db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( limiter );
                 }
             }
         }

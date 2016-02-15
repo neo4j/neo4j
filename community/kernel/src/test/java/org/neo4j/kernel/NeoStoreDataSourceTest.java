@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource.Diagnostics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
@@ -40,6 +41,7 @@ import org.neo4j.test.NeoStoreDataSourceRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -98,10 +100,11 @@ public class NeoStoreDataSourceTest
         ds.init();
         ds.start();
         verify( pageCache, never() ).flushAndForce();
+        verify( pageCache, never() ).flushAndForce( any( IOLimiter.class ) );
 
         ds.stop();
         ds.shutdown();
-        verify( pageCache ).flushAndForce();
+        verify( pageCache ).flushAndForce( IOLimiter.unlimited() );
     }
 
     @Test
@@ -120,7 +123,7 @@ public class NeoStoreDataSourceTest
 
         ds.stop();
         ds.shutdown();
-        verify( pageCache ).flushAndForce();
+        verify( pageCache ).flushAndForce( IOLimiter.unlimited() );
     }
 
     @Test
@@ -139,7 +142,7 @@ public class NeoStoreDataSourceTest
 
         ds.stop();
         ds.shutdown();
-        verify( pageCache, never() ).flushAndForce();
+        verify( pageCache, never() ).flushAndForce( IOLimiter.unlimited() );
     }
 
     @Test
