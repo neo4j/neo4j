@@ -94,7 +94,7 @@ abstract class BaseBustedRecordFormat<RECORD extends AbstractBaseRecord>
         boolean recordUnit = has( headerByte, HEADER_BIT_RECORD_UNIT );
         if ( recordUnit )
         {
-            boolean firstRecordUnit = has( headerByte, HEADER_BIT_FIRST_RECORD_UNIT);
+            boolean firstRecordUnit = has( headerByte, HEADER_BIT_FIRST_RECORD_UNIT );
             if ( !firstRecordUnit )
             {
                 // This is a record unit and not even the first one, so you cannot go here directly and read it,
@@ -104,9 +104,6 @@ abstract class BaseBustedRecordFormat<RECORD extends AbstractBaseRecord>
             }
         }
 
-        long secondaryId = -1;
-        DataAdapter<PageCursor> dataAdapter = PAGE_CURSOR_ADAPTER;
-        SecondaryPageCursorControl secondaryPageCursorControl = SecondaryPageCursorControl.NULL;
         if ( recordUnit )
         {
             int primaryEndOffset = primaryCursor.getOffset() + recordSize - 1 /*we've already read the header byte*/;
@@ -114,34 +111,30 @@ abstract class BaseBustedRecordFormat<RECORD extends AbstractBaseRecord>
             // This is a record that is split into multiple record units. We need a bit more clever
             // data structures here. For the time being this means instantiating one object,
             // but the trade-off is a great reduction in complexity.
-            secondaryId = Reference.decode( primaryCursor, dataAdapter );
+            long secondaryId = Reference.decode( primaryCursor, PAGE_CURSOR_ADAPTER );
             @SuppressWarnings( "resource" )
             SecondaryPageCursorReadDataAdapter readAdapter = new SecondaryPageCursorReadDataAdapter(
                     primaryCursor, storeFile,
                     pageIdForRecord( secondaryId, storeFile.pageSize(), recordSize ),
                     offsetForId( secondaryId, storeFile.pageSize(), recordSize ),
                     primaryEndOffset, PagedFile.PF_SHARED_READ_LOCK );
-            dataAdapter = readAdapter;
-            secondaryPageCursorControl = readAdapter;
-        }
 
-        try
-        {
-            do
+            try ( SecondaryPageCursorControl secondaryPageCursorControl = readAdapter )
             {
-                // (re)sets offsets for both cursors
-                secondaryPageCursorControl.reposition();
-                doReadInternal( record, primaryCursor, recordSize, headerByte, inUse, dataAdapter );
-            }
-            while ( secondaryPageCursorControl.shouldRetry() );
-            if ( recordUnit )
-            {
+                do
+                {
+                    // (re)sets offsets for both cursors
+                    secondaryPageCursorControl.reposition();
+                    doReadInternal( record, primaryCursor, recordSize, headerByte, inUse, readAdapter );
+                }
+                while ( secondaryPageCursorControl.shouldRetry() );
+
                 record.setSecondaryId( secondaryId );
             }
         }
-        finally
+        else
         {
-            secondaryPageCursorControl.close();
+            doReadInternal( record, primaryCursor, recordSize, headerByte, inUse, PAGE_CURSOR_ADAPTER );
         }
     }
 

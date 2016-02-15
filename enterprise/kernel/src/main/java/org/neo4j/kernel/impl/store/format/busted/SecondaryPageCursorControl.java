@@ -48,23 +48,4 @@ interface SecondaryPageCursorControl extends AutoCloseable
 
     @Override
     void close();
-
-    public static final SecondaryPageCursorControl NULL = new SecondaryPageCursorControl()
-    {
-        @Override
-        public boolean shouldRetry() throws IOException
-        {
-            return false;
-        }
-
-        @Override
-        public void reposition()
-        {   // No need
-        }
-
-        @Override
-        public void close()
-        {   // Nothing to close
-        }
-    };
 }
