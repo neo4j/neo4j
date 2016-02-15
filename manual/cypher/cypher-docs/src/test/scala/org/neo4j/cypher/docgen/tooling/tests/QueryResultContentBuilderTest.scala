@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.docgen.tooling.tests
 
-import org.neo4j.cypher.ExecutionEngine
+import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.docgen.tooling._
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite

@@ -19,26 +19,24 @@
  */
 package org.neo4j.cypher.docgen
 
+import java.io.{File, FileOutputStream, OutputStreamWriter, PrintWriter, Writer}
 import java.nio.charset.StandardCharsets
 
-import org.neo4j.cypher.internal.RewindableExecutionResult
+import org.junit.{After, Before, Test}
+import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
-import org.neo4j.graphdb.index.Index
-import org.junit.Test
-import scala.collection.JavaConverters._
-import java.io.{ File, FileOutputStream, OutputStreamWriter, PrintWriter, Writer }
-import org.neo4j.graphdb._
-import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.visualization.asciidoc.AsciidocHelper
-import org.neo4j.cypher.javacompat.GraphImpl
-import org.neo4j.cypher._
-import org.neo4j.test.{GraphDatabaseServiceCleaner, ImpermanentGraphDatabase, TestGraphDatabaseFactory,
-GraphDescription}
-import org.scalatest.Assertions
-import org.junit.Before
-import org.junit.After
 import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.internal.javacompat.GraphImpl
+import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionResult, RewindableExecutionResult}
+import org.neo4j.graphdb._
+import org.neo4j.graphdb.index.Index
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.test.{GraphDatabaseServiceCleaner, GraphDescription, TestGraphDatabaseFactory}
+import org.neo4j.visualization.asciidoc.AsciidocHelper
+import org.scalatest.Assertions
+
+import scala.collection.JavaConverters._
 
 /*
 Use this base class for refcard tests
