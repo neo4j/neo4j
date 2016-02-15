@@ -40,6 +40,8 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -70,13 +72,13 @@ public class ReplicatedTransactionCommitProcessTest
         LockTokenManager currentReplicatedLockState = mock( LockTokenManager.class );
         when( currentReplicatedLockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest<>( null, 0 ) );
 
-        when( future.waitUntilCommitted( anyInt(), any( TimeUnit.class ) ) ).thenReturn( 23l );
+        when( future.waitUntilCommitted( anyInt(), any( TimeUnit.class ) ) ).thenReturn( 23L );
         CommittingTransactions txFutures = mock( CommittingTransactionsRegistry.class );
         when( txFutures.register( any( LocalOperationId.class ) ) ).thenReturn( future );
 
         // when
         new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ),
-                1, NullLogService.getInstance(), txFutures, new Monitors() )
+                new ConstantTimeRetryStrategy( 1, SECONDS ), NullLogService.getInstance(), txFutures, new Monitors() )
                 .commit( tx(), NULL, INTERNAL );
 
         // then
@@ -88,7 +90,6 @@ public class ReplicatedTransactionCommitProcessTest
     {
         // given
         Replicator replicator = mock( Replicator.class );
-        ReplicatedTransactionStateMachine transactionStateMachine = mock( ReplicatedTransactionStateMachine.class );
         CommittingTransaction future = mock( CommittingTransaction.class );
 
         LockTokenManager currentReplicatedLockState = mock( LockTokenManager.class );
@@ -97,11 +98,12 @@ public class ReplicatedTransactionCommitProcessTest
         CommittingTransactions txFutures = mock( CommittingTransactionsRegistry.class );
         when( txFutures.register( any( LocalOperationId.class ) ) ).thenReturn( future );
 
-        when( future.waitUntilCommitted( anyInt(), any( TimeUnit.class ) ) ).thenThrow( TimeoutException.class ).thenReturn( 23l );
+        when( future.waitUntilCommitted( anyInt(), any( TimeUnit.class ) ) ).thenThrow( TimeoutException.class )
+                .thenReturn( 23L );
 
         // when
         new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ),
-                1, NullLogService.getInstance(), txFutures, new Monitors() )
+                new ConstantTimeRetryStrategy( 1, SECONDS ), NullLogService.getInstance(), txFutures, new Monitors() )
                 .commit( tx(), NULL, INTERNAL );
 
         // then
@@ -113,11 +115,13 @@ public class ReplicatedTransactionCommitProcessTest
     {
         // given
         Replicator replicator = mock( Replicator.class );
-        doThrow( Replicator.ReplicationFailedException.class ).when( replicator ).replicate( any( ReplicatedContent.class) );
+        doThrow( Replicator.ReplicationFailedException.class ).when( replicator )
+                .replicate( any( ReplicatedContent.class ) );
 
         TransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess( replicator,
                 new LocalSessionPool( coreMember ),
-                0, NullLogService.getInstance(), mock(CommittingTransactions.class), new Monitors() );
+                new ConstantTimeRetryStrategy( 1, SECONDS ), NullLogService.getInstance(),
+                mock( CommittingTransactions.class ), new Monitors() );
 
         // when
         try

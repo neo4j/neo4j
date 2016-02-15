@@ -24,6 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchupServer;
@@ -63,6 +64,7 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedPropertyKeyTokenHolde
 import org.neo4j.coreedge.raft.replication.token.ReplicatedRelationshipTypeTokenHolder;
 import org.neo4j.coreedge.raft.replication.tx.CommittingTransactions;
 import org.neo4j.coreedge.raft.replication.tx.CommittingTransactionsRegistry;
+import org.neo4j.coreedge.raft.replication.tx.ExpontentialBackoffStrategy;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionCommitProcess;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.coreedge.raft.roles.Role;
@@ -384,8 +386,7 @@ public class EnterpriseCoreEditionModule
             stateMachines.add( replicatedTxStateMachine );
 
             return new ReplicatedTransactionCommitProcess( replicator, localSessionPool,
-                    config.get( CoreEdgeClusterSettings.tx_replication_retry_interval ),
-                    logging, committingTransactions, monitors
+                    new ExpontentialBackoffStrategy( 10, TimeUnit.SECONDS ), logging, committingTransactions, monitors
             );
         };
     }
