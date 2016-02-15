@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.kernel.impl.util.Codecs;
+import org.neo4j.string.HexString;
 
 /**
  * Client: <connect>
@@ -186,7 +186,7 @@ public class DocExchangeExample implements Iterable<DocExchangeExample.Event>
     private void addEvent( String actor, String payload, String currentMessage, Type type )
     {
         events.add( new Event(
-                actor, type, Codecs.decodeHexString( payload.replace( " ", "" ) ), currentMessage ) );
+                actor, type, HexString.decodeHexString( payload.replace( " ", "" ) ), currentMessage ) );
     }
 
     @Override

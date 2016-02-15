@@ -31,15 +31,16 @@
   </scm>
 
   <modules>
+    <module>common</module>
     <module>resource</module>
     <module>collections</module>
     <module>primitive-collections</module>
     <module>graphdb-api</module>
     <module>unsafe</module>
-    <module>function</module>
-    <module>io</module>
+   <module>io</module>
     <module>csv</module>
     <module>logging</module>
+    <module>security</module>
     <module>neo4j-slf4j</module>
     <module>codegen</module>
     <module>kernel</module>

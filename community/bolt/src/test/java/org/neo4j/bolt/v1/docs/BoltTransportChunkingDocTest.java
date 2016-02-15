@@ -32,7 +32,7 @@ import org.neo4j.bolt.v1.transport.socket.Chunker;
 import static java.lang.Integer.parseInt;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.kernel.impl.util.Codecs.decodeHexString;
+import static org.neo4j.string.HexString.decodeHexString;
 import static org.neo4j.kernel.impl.util.HexPrinter.hex;
 
 @RunWith( Parameterized.class )

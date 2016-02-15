@@ -17,21 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.string;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
 /**
- * Utility class for converting strings to and from UTF-8 encoded bytes.
- * @deprecated this will be moved out of public API in subsequent releases
+ * Utilities for working with UTF8 encoding and decoding.
  */
-@Deprecated
-public final class UTF8
+public class UTF8
 {
-    // Neo4j developers: Use org.neo4j.string.UTF8 instead.
-    
     public static final Function<String, byte[]> encode = UTF8::encode;
 
     public static final Function<byte[], String> decode = UTF8::decode;
@@ -76,5 +72,4 @@ public final class UTF8
     {
         // No need to instantiate, all methods are static
     }
-
 }
