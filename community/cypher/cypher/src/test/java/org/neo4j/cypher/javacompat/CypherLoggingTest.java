@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import org.neo4j.cypher.javacompat.internal.ExecutionEngine;
+import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;

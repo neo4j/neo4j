@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.javacompat.internal;
+package org.neo4j.cypher.internal.javacompat;
 
 import scala.collection.JavaConversions;
 
@@ -92,7 +92,7 @@ class Description implements ExecutionPlanDescription
     @Override
     public ProfilerStatistics getProfilerStatistics()
     {
-        final org.neo4j.cypher.javacompat.internal.ProfilerStatistics statistics;
+        final org.neo4j.cypher.internal.javacompat.ProfilerStatistics statistics;
         try
         {
             statistics = description.asJava().getProfilerStatistics();

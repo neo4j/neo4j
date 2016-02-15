@@ -25,8 +25,8 @@ import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.cypher.javacompat.internal.ExecutionEngine;
-import org.neo4j.cypher.javacompat.internal.ExecutionResult;
+import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
+import org.neo4j.cypher.internal.javacompat.ExecutionResult;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 

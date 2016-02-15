@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
+import org.neo4j.cypher.internal.javacompat.ServerExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 

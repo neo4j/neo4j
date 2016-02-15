@@ -17,20 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.javacompat.internal;
+package org.neo4j.cypher.internal.javacompat;
 
-/**
- * Profiler statistics for a single execution step of a Cypher query execution plan
- */
-public interface ProfilerStatistics
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+
+@Service.Implementation(QueryEngineProvider.class)
+public class CypherEngineProvider extends QueryEngineProvider
 {
-    /**
-     * @return number of rows processed by the associated execution step
-     */
-    long getRows();
+    public CypherEngineProvider()
+    {
+        super( "cypher" );
+    }
 
-    /**
-     * @return number of database hits (potential disk accesses) caused by executing the associated execution step
-     */
-    long getDbHits();
+    @Override
+    protected QueryExecutionEngine createEngine( GraphDatabaseAPI graphAPI )
+    {
+        LogService logService = graphAPI.getDependencyResolver().resolveDependency( LogService.class );
+        return new ServerExecutionEngine( graphAPI, logService.getInternalLogProvider() );
+    }
 }

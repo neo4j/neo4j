@@ -23,7 +23,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.logging.{NullLogProvider, LogProvider}
 
 /**
- * This is used by {@link org.neo4j.cypher.javacompat.internal.ServerExecutionEngine} to provide additional
+ * This is used by {@link org.neo4j.cypher.internal.javacompact.ServerExecutionEngine} to provide additional
  * API to REST server
  *
  */

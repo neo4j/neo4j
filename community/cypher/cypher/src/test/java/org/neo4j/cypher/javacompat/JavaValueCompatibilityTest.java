@@ -27,8 +27,8 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.cypher.javacompat.internal.ExecutionEngine;
-import org.neo4j.cypher.javacompat.internal.ExecutionResult;
+import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
+import org.neo4j.cypher.internal.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.test.TestGraphDatabaseFactory;

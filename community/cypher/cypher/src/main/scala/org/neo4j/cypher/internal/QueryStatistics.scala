@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 // Whenever you add a field here, please update the following classes:
 //
-// org.neo4j.cypher.javacompat.internal.QueryStatistics
+// org.neo4j.cypher.internal.javacompact.QueryStatistics
 // org.neo4j.server.rest.repr.CypherResultRepresentation
 // org.neo4j.server.rest.CypherFunctionalTest
 // org.neo4j.cypher.QueryStatisticsTestSupport

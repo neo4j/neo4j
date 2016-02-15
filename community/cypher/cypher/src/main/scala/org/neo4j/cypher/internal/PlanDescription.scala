@@ -33,7 +33,7 @@ trait PlanDescription {
   def children: Seq[PlanDescription] = throw new UnsupportedOperationException("This should not have been called")
   def hasProfilerStatistics: Boolean = throw new UnsupportedOperationException("This should not have been called")
 
-  def asJava: org.neo4j.cypher.javacompat.internal.PlanDescription
+  def asJava: javacompat.PlanDescription
 
   def render(builder: StringBuilder) {}
   def render(builder: StringBuilder, separator: String, levelSuffix: String) {}

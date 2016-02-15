@@ -33,9 +33,9 @@ import org.neo4j.cypher.internal.compiler.{v2_3, v3_0}
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v2_3.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v2_3.{CypherException => InternalCypherException, InputPosition => InternalInputPosition}
+import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
 import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.internal.{CypherExecutionMode, ExtendedExecutionResult, ExtendedPlanDescription, LastCommittedTxIdProvider, ParsedQuery, PreParsedQuery, QueryStatistics, TransactionInfo}
-import org.neo4j.cypher.javacompat.internal.ProfilerStatistics
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
@@ -369,7 +369,7 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
 
   def name = exceptionHandlerFor2_3.runSafely { inner.name }
 
-  def asJava: javacompat.internal.PlanDescription = exceptionHandlerFor2_3.runSafely { asJava(self) }
+  def asJava: PlanDescription = exceptionHandlerFor2_3.runSafely { asJava(self) }
 
   override def toString: String = {
     val NL = System.lineSeparator()
@@ -378,7 +378,7 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
     }
   }
 
-  def asJava(in: ExtendedPlanDescription): javacompat.internal.PlanDescription = new javacompat.internal.PlanDescription {
+  def asJava(in: ExtendedPlanDescription): PlanDescription = new PlanDescription {
     def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
       def getDbHits: Long = extract { case DbHits(count) => count}
 
@@ -396,7 +396,7 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
 
     def getIdentifiers: util.Set[String] = identifiers.asJava
 
-    def getChildren: util.List[javacompat.internal.PlanDescription] = in.extendedChildren.toList.map(_.asJava).asJava
+    def getChildren: util.List[PlanDescription] = in.extendedChildren.toList.map(_.asJava).asJava
 
     override def toString: String = self.toString
   }
