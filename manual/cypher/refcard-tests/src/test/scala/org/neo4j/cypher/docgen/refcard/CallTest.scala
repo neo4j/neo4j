@@ -77,7 +77,7 @@ class CallTest extends RefcardTest with QueryStatisticsTestSupport {
 CALL sys.db.labels
 ###
 
-Call a procedure with no arguments.
+This invokes the built-in procedure sys.db.labels, which lists all in-use labels in the database.
 
 ### assertion=arg
 //
@@ -85,7 +85,7 @@ Call a procedure with no arguments.
 CALL procWithArg('foo')
 ###
 
-For a procedure that takes argument you can provide the arguments explicitly.
+For a procedure that takes arguments, these can be provided explicitly.
 
 ### assertion=arg parameters=arg
 //
@@ -94,7 +94,8 @@ CALL procWithArg
 ###
 
 For a procedure that takes arguments you can also provide the arguments implicitly via parameters.
-Note that the keys in the parameter map must match the names of the procedure argument, e.g. `{input: 'foo'}`.
+Note that the keys in the parameter map must match the names of the procedure argument, e.g. `{input: 'foo'}`, if the procedure defines one argument with the name `input`.
+
 """
 }
 
