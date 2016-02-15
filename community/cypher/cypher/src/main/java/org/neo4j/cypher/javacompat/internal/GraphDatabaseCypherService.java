@@ -30,8 +30,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.AccessMode;
-import org.neo4j.kernel.api.KernelTransaction;
 
 public class GraphDatabaseCypherService implements GraphDatabaseQueryService
 {

@@ -304,7 +304,7 @@ enum BlockType
                     prettifiedStatements.add( state.engine.prettify( webQuery ) );
                     try (Transaction tx = state.database.beginTx())
                     {
-                        state.database.schema().awaitIndexesOnline( 10000, TimeUnit.SECONDS );
+                        state.database.getGraphDatabaseService().schema().awaitIndexesOnline( 10000, TimeUnit.SECONDS );
                         tx.success();
                     }
                 }
@@ -457,7 +457,7 @@ enum BlockType
             }
             else
             {
-                writer.emit( out, Walker.fullGraph( state.database ) );
+                writer.emit( out, Walker.fullGraph( state.database.getGraphDatabaseService() ) );
             }
             tx.success();
         }

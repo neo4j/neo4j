@@ -39,8 +39,9 @@ import org.mockito.Matchers;
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult;
 import org.neo4j.cypher.javacompat.internal.DocsExecutionEngine;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -57,7 +58,7 @@ import static org.mockito.Mockito.when;
 
 public class BlockTypeTest
 {
-    private GraphDatabaseService database;
+    private GraphDatabaseQueryService database;
     private DocsExecutionEngine engine;
     private State state;
 
@@ -83,7 +84,7 @@ public class BlockTypeTest
     @Before
     public void setup() throws SQLException
     {
-        database = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        database = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase());
         engine = new DocsExecutionEngine( database );
         Connection conn = DriverManager.getConnection( "jdbc:hsqldb:mem:graphgisttests;shutdown=true" );
         conn.setAutoCommit( true );
@@ -93,7 +94,7 @@ public class BlockTypeTest
     @After
     public void tearDown()
     {
-        database.shutdown();
+        database.getGraphDatabaseService().shutdown();
     }
 
     @Test
@@ -219,7 +220,7 @@ public class BlockTypeTest
     @Test
     public void graph()
     {
-        database.execute( "CREATE (n:Person {name:\"Adam\"});" );
+        engine.execute( "CREATE (n:Person {name:\"Adam\"});" );
         Block block = Block.getBlock( Arrays.asList( "// graph:xyz" ) );
         assertThat( block.type, sameInstance( BlockType.GRAPH ) );
         String output;
@@ -273,7 +274,7 @@ public class BlockTypeTest
     @Test
     public void graphWithoutId()
     {
-        database.execute( "CREATE (n:Person {name:\"Adam\"});" );
+        engine.execute( "CREATE (n:Person {name:\"Adam\"});" );
         Block block = Block.getBlock( Arrays.asList( "//graph" ) );
         assertThat( block.type, sameInstance( BlockType.GRAPH ) );
         String output;

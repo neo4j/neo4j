@@ -23,8 +23,8 @@ import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
-import org.neo4j.graphdb.{Node, GraphDatabaseService}
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.graphdb.Node
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 import scala.collection.JavaConverters._
 
-class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDatabaseService)
+class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDatabaseQueryService)
   extends TransactionBoundTokenContext(initialStatement) with PlanContext {
 
   @Deprecated
@@ -86,13 +86,13 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
   }
 
   def checkNodeIndex(idxName: String) {
-    if (!gdb.index().existsForNodes(idxName)) {
+    if (!statement.readOperations().nodeLegacyIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
   def checkRelIndex(idxName: String)  {
-    if ( !gdb.index().existsForRelationships(idxName) ) {
+    if (!statement.readOperations().relationshipLegacyIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
@@ -117,7 +117,7 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
   val statistics: GraphStatistics =
     InstrumentedGraphStatistics(TransactionBoundGraphStatistics(statement), MutableGraphStatisticsSnapshot())
 
-  val txIdProvider: () => Long = gdb.asInstanceOf[GraphDatabaseAPI]
+  val txIdProvider: () => Long = gdb
     .getDependencyResolver
     .resolveDependency(classOf[TransactionIdStore])
     .getLastCommittedTransactionId

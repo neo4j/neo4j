@@ -19,20 +19,22 @@
  */
 package org.neo4j.cypher;
 
-import java.io.IOException;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.cypher.internal.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static java.lang.String.format;
@@ -53,6 +55,7 @@ public class ManyMergesStressTest
     public void shouldWorkFine() throws IOException
     {
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseQueryService graph = new GraphDatabaseCypherService( db );
 
         Label person = Label.label( "Person" );
 
@@ -80,7 +83,7 @@ public class ManyMergesStressTest
             tx.success();
         }
 
-        ExecutionEngine engine = new ExecutionEngine( db );
+        ExecutionEngine engine = new ExecutionEngine( graph );
 
         for( int count = 0; count < TRIES; count++ )
         {

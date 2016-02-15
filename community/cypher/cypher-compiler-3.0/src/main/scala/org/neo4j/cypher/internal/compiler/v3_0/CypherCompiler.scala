@@ -34,8 +34,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticTable, inSequence}
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
+import org.neo4j.kernel.GraphDatabaseQueryService
 
 trait AstRewritingMonitor {
   def abortedRewriting(obj: AnyRef)
@@ -71,7 +71,7 @@ case class CypherCompilerConfiguration(queryCacheSize: Int,
 object CypherCompilerFactory {
   val monitorTag = "cypher3.0"
 
-  def costBasedCompiler(graph: GraphDatabaseService, config: CypherCompilerConfiguration, clock: Clock, structure: CodeStructure[GeneratedQuery],
+  def costBasedCompiler(graph: GraphDatabaseQueryService, config: CypherCompilerConfiguration, clock: Clock, structure: CodeStructure[GeneratedQuery],
                         monitors: Monitors, logger: InfoLogger,
                         rewriterSequencer: (String) => RewriterStepSequencer,
                         plannerName: Option[CostBasedPlannerName],
@@ -117,7 +117,7 @@ object CypherCompilerFactory {
     new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
   }
 
-  def ruleBasedCompiler(graph: GraphDatabaseService,
+  def ruleBasedCompiler(graph: GraphDatabaseQueryService,
                         config: CypherCompilerConfiguration, clock: Clock, monitors: Monitors,
                         rewriterSequencer: (String) => RewriterStepSequencer): CypherCompiler = {
     val parser = new CypherParser

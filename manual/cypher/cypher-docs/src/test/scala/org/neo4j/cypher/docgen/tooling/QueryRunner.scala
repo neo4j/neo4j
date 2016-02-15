@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
+import org.neo4j.graphdb.Transaction
+import org.neo4j.kernel.GraphDatabaseQueryService
 
 import scala.collection.immutable.Iterable
 import scala.util.{Failure, Success, Try}
@@ -37,7 +38,7 @@ import scala.util.{Failure, Success, Try}
  * we drop the database and create a new one. This way we can make sure that two queries don't affect each other more than
  * necessary.
  */
-class QueryRunner(formatter: (GraphDatabaseService, Transaction) => InternalExecutionResult => Content) extends GraphIcing {
+class QueryRunner(formatter: (GraphDatabaseQueryService, Transaction) => InternalExecutionResult => Content) extends GraphIcing {
 
   def runQueries(contentsWithInit: Seq[ContentWithInit], title: String): TestRunResult = {
 

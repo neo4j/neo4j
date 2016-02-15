@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.{RelationshipProxy, ThreadToStatementContextBridge}
 import org.neo4j.graphdb.security.URLAccessValidationError
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.{GraphDatabaseQueryService, GraphDatabaseAPI}
 import java.util.function.Predicate
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphalgo.impl.path.ShortestPath
@@ -52,7 +52,7 @@ import org.neo4j.graphalgo.impl.path.ShortestPath
 import scala.collection.JavaConverters._
 import scala.collection.{Iterator, mutable}
 
-final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
+final class TransactionBoundQueryContext(graph: GraphDatabaseQueryService,
                                          var tx: Transaction,
                                          val isTopLevelTx: Boolean,
                                          initialStatement: Statement)
@@ -110,10 +110,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     }
   }
 
-  def createNode(): Node =
+  override def createNode(): Node =
     graph.createNode()
 
-  def createRelationship(start: Node, end: Node, relType: String) =
+  override def createRelationship(start: Node, end: Node, relType: String) =
     start.createRelationshipTo(end, withName(relType))
 
   def createRelationship(start: Long, end: Long, relType: Int) = {
@@ -323,73 +323,75 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
     }
 
-    def setProperty(id: Long, propertyKeyId: Int, value: Any) {
+    override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
       statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value) )
     }
 
-    def getById(id: Long) = try {
+    override def getById(id: Long) = try {
       graph.getNodeById(id)
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
     }
 
-    def all: Iterator[Node] = graph.getAllNodes.iterator().asScala
+    override def all: Iterator[Node] =
+      JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetAll())(getById)
 
-    def indexGet(name: String, key: String, value: Any): Iterator[Node] =
-      graph.index.forNodes(name).get(key, value).iterator().asScala
+    override def indexGet(name: String, key: String, value: Any): Iterator[Node] =
+      JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodeLegacyIndexGet(name, key, value))(getById)
 
-    def indexQuery(name: String, query: Any): Iterator[Node] =
-      graph.index.forNodes(name).query(query).iterator().asScala
+    override def indexQuery(name: String, query: Any): Iterator[Node] =
+      JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodeLegacyIndexQuery(name, query))(getById)
 
-    def isDeleted(n: Node): Boolean =
+    override def isDeleted(n: Node): Boolean =
       kernelStatement.hasTxStateWithChanges && kernelStatement.txState().nodeIsDeletedInThisTx(n.getId)
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
-    def delete(obj: Relationship) {
+    override def delete(obj: Relationship) {
       statement.dataWriteOperations().relationshipDelete(obj.getId)
     }
 
-    def propertyKeyIds(id: Long): Iterator[Int] =
+    override def propertyKeyIds(id: Long): Iterator[Int] =
       asScala(statement.readOperations().relationshipGetPropertyKeys(id))
 
-    def getProperty(id: Long, propertyKeyId: Int): Any =
+    override def getProperty(id: Long, propertyKeyId: Int): Any =
       statement.readOperations().relationshipGetProperty(id, propertyKeyId)
 
-    def hasProperty(id: Long, propertyKey: Int) =
+    override def hasProperty(id: Long, propertyKey: Int) =
       statement.readOperations().relationshipHasProperty(id, propertyKey)
 
-    def removeProperty(id: Long, propertyKeyId: Int) {
+    override def removeProperty(id: Long, propertyKeyId: Int) {
       statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
     }
 
-    def setProperty(id: Long, propertyKeyId: Int, value: Any) {
+    override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
       statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value) )
     }
 
-    def getById(id: Long) = try {
+    override def getById(id: Long) = try {
       graph.getRelationshipById(id)
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
 
-    def all: Iterator[Relationship] =
-      graph.getAllRelationships.iterator().asScala
+    override def all: Iterator[Relationship] = {
+      JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().relationshipsGetAll())(getById)
+    }
 
-    def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
-      graph.index.forRelationships(name).get(key, value).iterator().asScala
+    override def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
+      JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().relationshipLegacyIndexGet(name, key, value, -1, -1))(getById)
 
-    def indexQuery(name: String, query: Any): Iterator[Relationship] =
-      graph.index.forRelationships(name).query(query).iterator().asScala
+    override def indexQuery(name: String, query: Any): Iterator[Relationship] =
+      JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().relationshipLegacyIndexQuery(name, query, -1, -1))(getById)
 
-    def isDeleted(r: Relationship): Boolean =
+    override def isDeleted(r: Relationship): Boolean =
       kernelStatement.hasTxStateWithChanges && kernelStatement.txState().relationshipIsDeletedInThisTx(r.getId)
   }
 
-  def getOrCreatePropertyKeyId(propertyKey: String) =
+  override def getOrCreatePropertyKeyId(propertyKey: String) =
     statement.tokenWriteOperations().propertyKeyGetOrCreateForName(propertyKey)
 
-  def upgrade(context: QueryContext): LockingQueryContext = new RepeatableReadQueryContext(context, new Locker {
+  override def upgrade(context: QueryContext): LockingQueryContext = new RepeatableReadQueryContext(context, new Locker {
     private val locks = new mutable.ListBuffer[Lock]
 
     def releaseAllLocks() {
@@ -404,15 +406,15 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {
     def primitiveLongIteratorToScalaIterator(primitiveIterator: PrimitiveLongIterator): Iterator[Long] =
       new Iterator[Long] {
-        def hasNext: Boolean = primitiveIterator.hasNext
+        override def hasNext: Boolean = primitiveIterator.hasNext
 
-        def next(): Long = primitiveIterator.next
+        override def next(): Long = primitiveIterator.next
       }
   }
 
-  def getOrCreateFromSchemaState[K, V](key: K, creator: => V) = {
+  override def getOrCreateFromSchemaState[K, V](key: K, creator: => V) = {
     val javaCreator = new java.util.function.Function[K, V]() {
-      def apply(key: K) = creator
+      override def apply(key: K) = creator
     }
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
@@ -463,7 +465,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     statement.schemaWriteOperations().constraintDrop(new RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
   override def getImportURL(url: URL): Either[String,URL] = graph match {
-    case db: GraphDatabaseAPI =>
+    case db: GraphDatabaseQueryService =>
       try {
         Right(db.validateURLAccess(url))
       } catch {
@@ -499,7 +501,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       case (Some(min), Some(max)) => Evaluators.includingDepths(min, max)
     }
 
-    val baseTraversalDescription: TraversalDescription = graph.traversalDescription()
+    val baseTraversalDescription: TraversalDescription = graph.getGraphDatabaseService.traversalDescription()
       .evaluator(depthEval)
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)
 

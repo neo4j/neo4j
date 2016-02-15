@@ -23,10 +23,9 @@ import org.neo4j.cypher.internal.compatibility.exceptionHandlerFor3_0
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -62,7 +61,7 @@ case class PreParsedQuery(statement: String, rawStatement: String, version: Cyph
   }
 }
 
-class CypherCompiler(graph: GraphDatabaseService,
+class CypherCompiler(graph: GraphDatabaseQueryService,
                      kernelAPI: KernelAPI,
                      kernelMonitors: KernelMonitors,
                      configuredVersion: CypherVersion,
@@ -159,9 +158,9 @@ class CypherCompiler(graph: GraphDatabaseService,
     getSetting(graph, setting, DEFAULT_QUERY_PLAN_TTL)
   }
 
-  private def getSetting[A](gds: GraphDatabaseService, configLookup: Config => A, default: A): A = gds match {
+  private def getSetting[A](gds: GraphDatabaseQueryService, configLookup: Config => A, default: A): A = gds match {
     // TODO: Cypher should not be pulling out components from casted interfaces, it should ask for Config as a dep
-    case (gdbApi:GraphDatabaseAPI) => configLookup(gdbApi.getDependencyResolver.resolveDependency(classOf[Config]))
+    case (gdbApi:GraphDatabaseQueryService) => configLookup(gdbApi.getDependencyResolver.resolveDependency(classOf[Config]))
     case _ => default
   }
 }

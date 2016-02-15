@@ -24,11 +24,11 @@ import java.util
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.{PlanDescription, ExecutionEngine}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.IDPSolverMonitor
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.{cypher_idp_solver_duration_threshold, cypher_idp_solver_table_threshold}
-import org.neo4j.kernel.{GraphDatabaseAPI, monitoring}
+import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.ImpermanentGraphDatabase
 
 import scala.collection.JavaConverters._
@@ -191,7 +191,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
       val config = databaseConfig() + (configKey -> configValue.toString)
       runWithConfig(config.toSeq: _*) {
         (engine, db) =>
-          graph = db.asInstanceOf[GraphDatabaseAPI]
+          graph = db
           makeLargeMatrixDataset(100)
           val monitor = TestIDPSolverMonitor()
           val monitors: monitoring.Monitors = graph.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
@@ -232,12 +232,12 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
     }
   }
 
-  private def runWithConfig(m: (Setting[_], String)*)(run: (ExecutionEngine, GraphDatabaseService) => Unit) = {
+  private def runWithConfig(m: (Setting[_], String)*)(run: (ExecutionEngine, GraphDatabaseQueryService) => Unit) = {
     val config: util.Map[String, String] = m.map {
       case (setting, value) => setting.name() -> value
     }.toMap.asJava
 
-    val graph = new ImpermanentGraphDatabase(config)
+    val graph = new GraphDatabaseCypherService(new ImpermanentGraphDatabase(config))
     try {
       val engine = new ExecutionEngine(graph)
       run(engine, graph)

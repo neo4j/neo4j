@@ -25,11 +25,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 
 class Result
 {
@@ -39,7 +39,7 @@ class Result
     final Set<Long> nodeIds = new HashSet<>();
     final Set<Long> relationshipIds = new HashSet<>();
 
-    public Result( String query, InternalExecutionResult result, GraphDatabaseService database )
+    public Result( String query, InternalExecutionResult result, GraphDatabaseQueryService database )
     {
         this.query = query;
         text = result.dumpToString();

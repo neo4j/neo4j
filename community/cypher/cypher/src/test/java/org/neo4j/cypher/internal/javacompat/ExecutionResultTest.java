@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.ArithmeticException;
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
@@ -53,7 +54,7 @@ public class ExecutionResultTest
     @Before
     public void initializeExecutionEngine() throws Exception
     {
-        engine = new ExecutionEngine( db );
+        engine = new ExecutionEngine( new GraphDatabaseCypherService(db) );
     }
 
     //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created

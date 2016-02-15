@@ -33,10 +33,11 @@ import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.javacompat.GraphImpl
 import org.neo4j.cypher.internal.{ExecutionEngine, RewindableExecutionResult}
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.index.Index
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.configuration.Settings
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.api.index.IndexingService
@@ -52,10 +53,9 @@ import org.scalatest.junit.JUnitSuite
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
-
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
-  def db: GraphDatabaseAPI
+  def db: GraphDatabaseQueryService
 
   def niceify(in: String): String = in.toLowerCase.replace(" ", "-")
 
@@ -129,7 +129,7 @@ trait DocumentationHelper extends GraphIcing {
     val writer = new GraphvizWriter(getGraphvizStyle)
 
     db.inTx {
-      writer.emit(out, Walker.fullGraph(db))
+      writer.emit(out, Walker.fullGraph(db.getGraphDatabaseService))
     }
 
     val graphOutput = """["dot", "%s.svg", "neoviz", "%s"]
@@ -157,7 +157,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   }
 
   def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String = "",
-                          prepare: GraphDatabaseAPI => Unit, assertions: InternalExecutionResult => Unit) {
+                          prepare: GraphDatabaseQueryService => Unit, assertions: InternalExecutionResult => Unit) {
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(prepare), Map.empty, assertions)
   }
 
@@ -170,7 +170,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
                                    queryText: String,
                                    realQuery: Option[String],
                                    expectedException: Option[ClassTag[_ <: CypherException]],
-                                   prepare: Option[GraphDatabaseAPI => Unit],
+                                   prepare: Option[GraphDatabaseQueryService => Unit],
                                    assertions: InternalExecutionResult => Unit) {
     preparationQueries = List()
 
@@ -238,7 +238,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
                                 queryText: String,
                                 optionalResultExplanation: String,
                                 expectedException: Option[ClassTag[_ <: CypherException]],
-                                prepare: Option[GraphDatabaseAPI => Unit],
+                                prepare: Option[GraphDatabaseQueryService => Unit],
                                 parameters: Map[String, Any],
                                 assertions: InternalExecutionResult => Unit)
   {
@@ -255,7 +255,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
       if (generateInitialGraphForConsole) {
         val out = new StringWriter()
         db.inTx {
-          new SubGraphExporter(DatabaseSubGraph.from(db)).export(new PrintWriter(out))
+          new SubGraphExporter(DatabaseSubGraph.from(db.getGraphDatabaseService)).export(new PrintWriter(out))
           consoleData = out.toString
         }
       }
@@ -286,9 +286,9 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     }
   }
 
-  def prepareForTest(title: String, prepare: Option[GraphDatabaseAPI => Unit]) {
+  def prepareForTest(title: String, prepare: Option[GraphDatabaseQueryService => Unit]) {
     prepare.foreach {
-      (prepareStep: GraphDatabaseAPI => Any) => prepareStep(db)
+      (prepareStep: GraphDatabaseQueryService => Any) => prepareStep(db)
     }
     if (preparationQueries.nonEmpty) {
       dumpPreparationQueries(preparationQueries, dir, title)
@@ -330,7 +330,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     results.headOption
   }
 
-  var db: GraphDatabaseAPI = null
+  var db: GraphDatabaseQueryService = null
   var engine: ExecutionEngine = null
   var nodeMap: Map[String, Long] = null
   var nodeIndex: Index[Node] = null
@@ -441,17 +441,17 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
   override def hardReset() {
     tearDown()
-    db = newTestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
+    db = new GraphDatabaseCypherService(newTestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
       setConfig(GraphDatabaseSettings.node_keys_indexable, "name").
       setConfig(GraphDatabaseSettings.node_auto_indexing, Settings.TRUE).
-      newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
+      newGraphDatabase())
     engine = new ExecutionEngine(db)
 
     softReset()
   }
 
   override def softReset() {
-    cleanDatabaseContent(db)
+    cleanDatabaseContent(db.getGraphDatabaseService)
 
     db.inTx {
       db.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
@@ -462,7 +462,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
       val description = GraphDescription.create(g)
 
 
-      nodeMap = description.create(db).asScala.map {
+      nodeMap = description.create(db.getGraphDatabaseService).asScala.map {
         case (name, node) => name -> node.getId
       }.toMap
 

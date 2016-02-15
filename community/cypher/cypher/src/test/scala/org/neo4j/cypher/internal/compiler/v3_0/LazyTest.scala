@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols.CTInteger
 import org.neo4j.cypher.internal.spi.v3_0.MonoDirectionalTraversalMatcher
 import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.Iterables.asResourceIterable
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.api.OperationsFacade
@@ -183,7 +183,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("graph global queries are lazy") {
     //Given:
-    val fakeGraph = mock[GraphDatabaseAPI]
+    val fakeGraph = mock[GraphDatabaseQueryService]
     val tx = mock[Transaction]
     val nodeManager = mock[NodeManager]
     val dependencies = mock[DependencyResolver]

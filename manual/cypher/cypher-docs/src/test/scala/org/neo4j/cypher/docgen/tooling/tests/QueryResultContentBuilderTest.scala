@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.docgen.tooling._
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class QueryResultContentBuilderTest extends CypherFunSuite {
@@ -44,7 +45,7 @@ class QueryResultContentBuilderTest extends CypherFunSuite {
   def runQuery(query: String, init: String = ""): Content = {
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
     if (init != "") db.execute(init)
-    val engine = new ExecutionEngine(db)
+    val engine = new ExecutionEngine(new GraphDatabaseCypherService(db))
     val builder = new QueryResultContentBuilder(x => x.toString)
     val queryResult = RewindableExecutionResult(engine.execute(query))
 

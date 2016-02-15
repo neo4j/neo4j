@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer.Compilatio
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -489,7 +490,7 @@ order by a.COL1""")
   test("createEngineWithSpecifiedParserVersion") {
     val config = Map[Setting[_], String](GraphDatabaseSettings.cypher_parser_version ->  "2.3")
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava)
-    val engine = new ExecutionEngine(db)
+    val engine = new ExecutionEngine(new GraphDatabaseCypherService(db))
 
     try {
       // This syntax is valid today, but should give an exception in 1.5
@@ -1055,6 +1056,6 @@ order by a.COL1""")
     val db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder("target/readonly")
       .setConfig( GraphDatabaseSettings.read_only, "true" )
       .newGraphDatabase()
-    new ExecutionEngine(db)
+    new ExecutionEngine(new GraphDatabaseCypherService(db))
   }
 }

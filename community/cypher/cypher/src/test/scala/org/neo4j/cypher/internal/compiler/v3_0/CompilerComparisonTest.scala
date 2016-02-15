@@ -32,12 +32,12 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
-import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, GeneratedQueryStructure, TransactionBoundPlanContext, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionBoundTransactionalContext}
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.xml.Elem
@@ -57,7 +57,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     errorIfShortestPathFallbackUsedAtRuntime = true
   )
 
-  val compilers = Seq[(String, GraphDatabaseService => CypherCompiler)](
+  val compilers = Seq[(String, GraphDatabaseQueryService => CypherCompiler)](
     "legacy (rule)" -> legacyCompiler,
     "ronja (idp)" -> ronjaCompiler(IDPPlannerName),
     "ronja (dp)" -> ronjaCompiler(DPPlannerName)
@@ -287,7 +287,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   private val rewriterSequencer = RewriterStepSequencer.newPlain _
 
-  private def ronjaCompiler(plannerName: CostBasedPlannerName, metricsFactoryInput: MetricsFactory = SimpleMetricsFactory)(graph: GraphDatabaseService): CypherCompiler = {
+  private def ronjaCompiler(plannerName: CostBasedPlannerName, metricsFactoryInput: MetricsFactory = SimpleMetricsFactory)(graph: GraphDatabaseQueryService): CypherCompiler = {
     val kernelMonitors = new KernelMonitors()
     val monitors = new WrappedMonitors3_0(kernelMonitors)
     val parser = new CypherParser
@@ -320,7 +320,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors)
   }
 
-  private def legacyCompiler(graph: GraphDatabaseService): CypherCompiler = {
+  private def legacyCompiler(graph: GraphDatabaseQueryService): CypherCompiler = {
     val kernelMonitors = new KernelMonitors()
     val monitors = new WrappedMonitors3_0(kernelMonitors)
     val parser = new CypherParser
@@ -377,7 +377,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   private def executionResults: Seq[DataSetResults] = (for ((dataSet, queries) <- queriesByDataSet) yield {
     val (dataSetName, dataSetDir) = dataSet
-    val db = new GraphDatabaseFactory().newEmbeddedDatabase(dataSetDir).asInstanceOf[GraphDatabaseAPI]
+    val db = new GraphDatabaseCypherService(new GraphDatabaseFactory().newEmbeddedDatabase(dataSetDir))
     try {
       val queryResults = for ((queryName, queryText) <- queries) yield {
         val results = for ((compilerName, compilerCreator) <- compilers) yield {
@@ -535,7 +535,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     println(s"report written to ${report.getAbsolutePath}")
   }
 
-  private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseAPI): (List[Map[String, Any]], InternalExecutionResult) = {
+  private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseQueryService): (List[Map[String, Any]], InternalExecutionResult) = {
     val (plan: ExecutionPlan, parameters) = db.withTx {
       tx =>
         val planContext = new TransactionBoundPlanContext(db.statement, db)

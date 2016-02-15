@@ -24,10 +24,9 @@ import java.util.Collections
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor}
-import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class QueryExecutionMonitorTest extends CypherFunSuite {
@@ -207,25 +206,22 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     verify(monitor, times(1)).endSuccess(session)
   }
 
-  var graph: GraphDatabaseService = null
+  var graph: GraphDatabaseQueryService = null
   var monitor: QueryExecutionMonitor = null
   var engine: ExecutionEngine = null
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
     monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
+    val monitors = graph.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
+    monitors.addMonitorListener(monitor)
     engine = new ExecutionEngine(graph)
   }
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    if (graph != null) graph.shutdown()
+    if (graph != null) graph.getGraphDatabaseService.shutdown()
   }
 
-  private def monitors(graph: GraphDatabaseService): Monitors = {
-    val graphAPI = graph.asInstanceOf[GraphDatabaseAPI]
-    graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
-  }
 }

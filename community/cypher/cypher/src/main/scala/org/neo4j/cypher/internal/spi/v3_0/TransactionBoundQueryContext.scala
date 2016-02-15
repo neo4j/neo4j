@@ -43,24 +43,23 @@ import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.api.txstate.TxStateHolder
-import org.neo4j.kernel.impl.api.{KernelStatement => InternalKernelStatement}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
 
-final class TransactionBoundQueryContext(val transactionalContext: TransactionalContext[GraphDatabaseAPI,Statement,TxStateHolder])(implicit indexSearchMonitor: IndexSearchMonitor)
+final class TransactionBoundQueryContext(val transactionalContext: TransactionalContext[GraphDatabaseQueryService,Statement,TxStateHolder])(implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext {
 
-  type Graph = GraphDatabaseAPI
+  type Graph = GraphDatabaseQueryService
 
   type KernelStatement = Statement
 
@@ -326,13 +325,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
     }
 
-    override def all: Iterator[Node] = transactionalContext.graph.getAllNodes.iterator().asScala
+    override def all: Iterator[Node] =
+      JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetAll())(getById)
 
     override def indexGet(name: String, key: String, value: Any): Iterator[Node] =
-      transactionalContext.graph.index.forNodes(name).get(key, value).iterator().asScala
+      JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeLegacyIndexGet(name, key, value))(getById)
 
     override def indexQuery(name: String, query: Any): Iterator[Node] =
-      transactionalContext.graph.index.forNodes(name).query(query).iterator().asScala
+      JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeLegacyIndexQuery(name, query))(getById)
 
     override def isDeletedInThisTx(n: Node): Boolean = isDeletedInThisTx(n.getId)
 
@@ -382,13 +382,15 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
 
-    override def all: Iterator[Relationship] = transactionalContext.graph.getAllRelationships.iterator().asScala
+    override def all: Iterator[Relationship] = {
+      JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().relationshipsGetAll())(getById)
+    }
 
     override def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
-      transactionalContext.graph.index.forRelationships(name).get(key, value).iterator().asScala
+      JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().relationshipLegacyIndexGet(name, key, value, -1, -1))(getById)
 
     override def indexQuery(name: String, query: Any): Iterator[Relationship] =
-      transactionalContext.graph.index.forRelationships(name).query(query).iterator().asScala
+      JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().relationshipLegacyIndexQuery(name, query, -1, -1))(getById)
 
     override def isDeletedInThisTx(r: Relationship): Boolean =
       isDeletedInThisTx(r.getId)
@@ -468,7 +470,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     transactionalContext.statement.schemaWriteOperations().constraintDrop(new RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
   override def getImportURL(url: URL): Either[String,URL] = transactionalContext.graph match {
-    case db: GraphDatabaseAPI =>
+    case db: GraphDatabaseQueryService =>
       try {
         Right(db.validateURLAccess(url))
       } catch {
@@ -496,7 +498,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case (Some(min), Some(max)) => Evaluators.includingDepths(min, max)
     }
 
-    val baseTraversalDescription: TraversalDescription = transactionalContext.graph.traversalDescription()
+    val baseTraversalDescription: TraversalDescription = transactionalContext.graph.getGraphDatabaseService
+      .traversalDescription()
       .evaluator(depthEval)
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)
 

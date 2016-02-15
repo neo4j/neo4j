@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.QuerySession
 
 case class PreparedPlanExecution(plan: ExecutionPlan, executionMode: CypherExecutionMode, extractedParams: Map[String, Any]) {
-  def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any], session: QuerySession) =
+  def execute(graph: GraphDatabaseQueryService, txInfo: TransactionInfo, params: Map[String, Any], session: QuerySession) =
     plan.run(graph, txInfo, executionMode, params ++ extractedParams, session)
 
-  def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any], session: QuerySession) =
+  def profile(graph: GraphDatabaseQueryService, txInfo: TransactionInfo, params: Map[String, Any], session: QuerySession) =
     plan.run(graph, txInfo, CypherExecutionMode.profile, params ++ extractedParams, session)
 }

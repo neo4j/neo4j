@@ -26,10 +26,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.DynamicIterable
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -40,20 +41,20 @@ import scala.collection.JavaConverters._
 
 class TransactionBoundQueryContextTest extends CypherFunSuite {
 
-  var graph: GraphDatabaseAPI = null
+  var graph: GraphDatabaseQueryService = null
   var outerTx: Transaction = null
   var statement: Statement = null
   val indexSearchMonitor = mock[IndexSearchMonitor]
 
   override def beforeEach() {
     super.beforeEach()
-    graph = new TestGraphDatabaseFactory().newImpermanentDatabase().asInstanceOf[GraphDatabaseAPI]
+    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
     outerTx = mock[Transaction]
     statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, new Procedures())
   }
 
   override def afterEach() {
-    graph.shutdown()
+    graph.getGraphDatabaseService.shutdown()
   }
 
   test ("should_mark_transaction_successful_if_successful") {
@@ -127,9 +128,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test ("should deny file URLs when not allowed by config") {
     // GIVEN
-    graph.shutdown()
+    graph.getGraphDatabaseService.shutdown()
     val config = Map[Setting[_], String](GraphDatabaseSettings.allow_file_urls -> "false")
-    graph = new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava).asInstanceOf[GraphDatabaseAPI]
+    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
     val tx = graph.beginTx()
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val transactionalContext = new TransactionBoundTransactionalContext(graph, outerTx, isTopLevelTx = true, stmt)

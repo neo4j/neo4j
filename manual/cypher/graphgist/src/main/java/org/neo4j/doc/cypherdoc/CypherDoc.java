@@ -29,10 +29,11 @@ import java.sql.SQLException;
 import java.util.*;
 
 import org.neo4j.cypher.javacompat.internal.DocsExecutionEngine;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 /**
@@ -72,7 +73,8 @@ public final class CypherDoc
         //TODO remove config when compiled plans are feature complete
         Map<Setting<?>, String> config = new HashMap<>();
         config.put( GraphDatabaseSettings.cypher_runtime, "INTERPRETED" );
-        GraphDatabaseService database = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase(config);
+        GraphDatabaseQueryService database = new GraphDatabaseCypherService(
+                new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( config ) );
 
         Connection conn = null;
         TestFailureException failure = null;
@@ -94,7 +96,7 @@ public final class CypherDoc
         }
         finally
         {
-            database.shutdown();
+            database.getGraphDatabaseService().shutdown();
             if ( failure != null )
             {
                 dumpStoreFiles( fs, failure, "after-shutdown" );

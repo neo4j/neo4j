@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import java.util
 
 import org.neo4j.cypher.internal.ExecutionEngine
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestGraphDatabaseFactory
 
@@ -32,7 +33,7 @@ trait RunWithConfigTestSupport {
     val config: util.Map[Setting[_], String] = m.toMap.asJava
     val graph = new TestGraphDatabaseFactory().newImpermanentDatabase(config)
     try {
-      val engine = new ExecutionEngine(graph)
+      val engine = new ExecutionEngine(new GraphDatabaseCypherService(graph))
       run(engine)
     } finally {
       graph.shutdown()

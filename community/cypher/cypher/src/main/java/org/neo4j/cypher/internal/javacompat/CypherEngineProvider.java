@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -37,6 +38,6 @@ public class CypherEngineProvider extends QueryEngineProvider
     protected QueryExecutionEngine createEngine( GraphDatabaseAPI graphAPI )
     {
         LogService logService = graphAPI.getDependencyResolver().resolveDependency( LogService.class );
-        return new ExecutionEngine( graphAPI, logService.getInternalLogProvider() );
+        return new ExecutionEngine( new GraphDatabaseCypherService( graphAPI ), logService.getInternalLogProvider() );
     }
 }

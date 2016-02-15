@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.junit.Test;
 
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -49,6 +50,8 @@ public class CypherLoggingTest
 
     private ExecutionEngine engineWithLogger( LogProvider logProvider ) throws IOException
     {
-        return new ExecutionEngine( new TestGraphDatabaseFactory().newImpermanentDatabase(), logProvider );
+        return new ExecutionEngine(
+                new GraphDatabaseCypherService( new TestGraphDatabaseFactory().newImpermanentDatabase() ),
+                logProvider );
     }
 }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.docgen.tooling
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.GraphDatabaseQueryService
 
 case class ContentWithInit(init: Seq[String], queryResultPlaceHolder: QueryResultPlaceHolder) {
 
@@ -260,7 +260,7 @@ sealed trait QueryAssertions
 
 case class ResultAssertions(f: InternalExecutionResult => Unit) extends QueryAssertions
 
-case class ResultAndDbAssertions(f: (InternalExecutionResult, GraphDatabaseService) => Unit) extends QueryAssertions
+case class ResultAndDbAssertions(f: (InternalExecutionResult, GraphDatabaseQueryService) => Unit) extends QueryAssertions
 
 case object NoAssertions extends QueryAssertions
 

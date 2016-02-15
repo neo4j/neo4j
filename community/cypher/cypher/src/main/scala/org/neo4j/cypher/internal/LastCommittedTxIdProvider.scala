@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
-case class LastCommittedTxIdProvider(db: GraphDatabaseService) extends (() => Long) {
+case class LastCommittedTxIdProvider(db: GraphDatabaseQueryService) extends (() => Long) {
 
-  private val resolver = db.asInstanceOf[GraphDatabaseAPI].getDependencyResolver
+  private val resolver = db.getDependencyResolver
 
   override def apply(): Long = {
     val txIdStore = resolver.resolveDependency(classOf[TransactionIdStore])

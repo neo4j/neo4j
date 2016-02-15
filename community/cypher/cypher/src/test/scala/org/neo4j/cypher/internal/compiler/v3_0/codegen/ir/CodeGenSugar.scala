@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSear
 import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -53,7 +53,7 @@ trait CodeGenSugar extends MockitoSugar {
   }
 
   def compileAndExecute(plan: LogicalPlan,
-                        graphDb: GraphDatabaseAPI,
+                        graphDb: GraphDatabaseQueryService,
                         mode: ExecutionMode = NormalMode,
                         params: Map[String, AnyRef] = Map.empty,
                         taskCloser: TaskCloser = new TaskCloser) = {
@@ -61,7 +61,7 @@ trait CodeGenSugar extends MockitoSugar {
   }
 
   def executeCompiled(plan: CompiledPlan,
-                      graphDb: GraphDatabaseAPI,
+                      graphDb: GraphDatabaseQueryService,
                       mode: ExecutionMode = NormalMode,
                       params: Map[String, AnyRef] = Map.empty,
                       taskCloser: TaskCloser = new TaskCloser): InternalExecutionResult = {
@@ -128,7 +128,7 @@ trait CodeGenSugar extends MockitoSugar {
 
   private def mockQueryContext() = {
     val qc = mock[QueryContext]
-    val transactionalContext = mock[TransactionalContext[GraphDatabaseAPI, Statement, TxStateHolder]]
+    val transactionalContext = mock[TransactionalContext[GraphDatabaseQueryService, Statement, TxStateHolder]]
     val statement = mock[Statement]
     when(qc.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext[qc.Graph, qc.KernelStatement, qc.StateView]])
     when(transactionalContext.statement).thenReturn(statement)

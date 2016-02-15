@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -39,7 +39,7 @@ public class DocsExecutionEngine
      * Creates an execution engine around the give graph database
      * @param database The database to wrap
      */
-    public DocsExecutionEngine( GraphDatabaseService database )
+    public DocsExecutionEngine( GraphDatabaseQueryService database )
     {
         this( database, NullLogProvider.getInstance() );
     }
@@ -50,13 +50,13 @@ public class DocsExecutionEngine
      * @param database The database to wrap
      * @param logProvider A Log provider for cypher-statements
      */
-    public DocsExecutionEngine( GraphDatabaseService database, LogProvider logProvider )
+    public DocsExecutionEngine( GraphDatabaseQueryService database, LogProvider logProvider )
     {
         inner = (org.neo4j.cypher.internal.DocsExecutionEngine) createInnerEngine( database, logProvider );
     }
 
-    protected
-    org.neo4j.cypher.internal.ExecutionEngine createInnerEngine( GraphDatabaseService database, LogProvider logProvider )
+    protected org.neo4j.cypher.internal.ExecutionEngine createInnerEngine( GraphDatabaseQueryService database,
+            LogProvider logProvider )
     {
         return new org.neo4j.cypher.internal.DocsExecutionEngine( database, logProvider, null, null );
     }

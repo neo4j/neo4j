@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.query.QuerySession
 
 final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
 
 trait ExecutionPlan {
-  def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult
+  def run(graph: GraphDatabaseQueryService, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult
 
   def isPeriodicCommit: Boolean
 

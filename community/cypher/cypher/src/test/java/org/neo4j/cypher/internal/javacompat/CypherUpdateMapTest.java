@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.not;
@@ -38,7 +40,7 @@ public class CypherUpdateMapTest
 {
 
     private ExecutionEngine engine;
-    private GraphDatabaseService gdb;
+    private GraphDatabaseQueryService gdb;
 
     @Test
     public void updateNodeByMapParameter()
@@ -52,8 +54,8 @@ public class CypherUpdateMapTest
 
         Node node1 = getNodeByIdInTx( 0 );
 
-        assertThat( node1, inTx( gdb, hasProperty( "key1" ).withValue( "value1" ) ) );
-        assertThat( node1, inTx( gdb, hasProperty( "key2" ).withValue( 1234 ) ) );
+        assertThat( node1, inTxS( hasProperty( "key1" ).withValue( "value1" ) ) );
+        assertThat( node1, inTxS( hasProperty( "key2" ).withValue( 1234 ) ) );
 
         engine.execute(
                 "MATCH (n:Reference) SET n = {data} RETURN n",
@@ -64,9 +66,14 @@ public class CypherUpdateMapTest
 
         Node node2 = getNodeByIdInTx( 0 );
 
-        assertThat( node2, inTx( gdb, not( hasProperty( "key1" ) ) ) );
-        assertThat( node2, inTx( gdb, not( hasProperty( "key2" ) ) ) );
-        assertThat( node2, inTx( gdb, hasProperty( "key3" ).withValue(5678) ) );
+        assertThat( node2, inTxS( not( hasProperty( "key1" ) ) ) );
+        assertThat( node2, inTxS( not( hasProperty( "key2" ) ) ) );
+        assertThat( node2, inTxS( hasProperty( "key3" ).withValue(5678) ) );
+    }
+
+    public <T> Matcher<? super T> inTxS( final Matcher<T> inner )
+    {
+        return inTx( gdb.getGraphDatabaseService(), inner, false );
     }
 
     private Node getNodeByIdInTx( int nodeId )
@@ -80,13 +87,13 @@ public class CypherUpdateMapTest
     @Before
     public void setup()
     {
-        gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        gdb = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase());
         engine = new ExecutionEngine(gdb);
     }
 
     @After
     public void cleanup()
     {
-        gdb.shutdown();
+        gdb.getGraphDatabaseService().shutdown();
     }
 }

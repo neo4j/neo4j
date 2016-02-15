@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.helpers
 
+import java.util
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.graphdb.Label._
 import org.neo4j.graphdb._
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.transaction.TransactionStats
@@ -40,10 +41,27 @@ trait GraphIcing {
     }
   }
 
-  implicit class RichGraphDatabaseService(graph: GraphDatabaseService)
-    extends RichGraphDatabaseAPI(graph.asInstanceOf[GraphDatabaseAPI])
+  implicit class RichGraphDatabaseAPI(mad: GraphDatabaseQueryService) {
 
-  implicit class RichGraphDatabaseAPI(graph: GraphDatabaseAPI) {
+    var graph = mad.getGraphDatabaseService
+
+    def getAllNodes() = graph.getAllNodes
+
+    def getAllRelationships() = graph.getAllRelationships
+
+    def getAllRelationshipTypes() = graph.getAllRelationshipTypes
+
+    def index() = graph.index
+
+    def schema() = graph.schema
+
+    def shutdown() = graph.shutdown()
+
+    def createNode(label: Label) = graph.createNode(label)
+
+    def execute(query: String) = graph.execute(query)
+
+    def execute(query: String, params: util.HashMap[String, Object]) = graph.execute(query, params)
 
     def indexPropsForLabel(label: String): List[List[String]] = {
       val indexDefs = graph.schema.getIndexes(Label.label(label)).asScala.toList

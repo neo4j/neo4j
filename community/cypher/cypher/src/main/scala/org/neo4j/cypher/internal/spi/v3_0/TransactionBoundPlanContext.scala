@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
-import org.neo4j.graphdb.{GraphDatabaseService, Node}
+import org.neo4j.graphdb.Node
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
@@ -37,7 +38,7 @@ import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProced
 
 import scala.collection.JavaConverters._
 
-class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseService)
+class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseQueryService)
   extends TransactionBoundTokenContext(statement) with PlanContext {
 
   @Deprecated
@@ -89,13 +90,13 @@ class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseSe
   }
 
   def checkNodeIndex(idxName: String) {
-    if (!gdb.index().existsForNodes(idxName)) {
+    if (!statement.readOperations().nodeLegacyIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
   def checkRelIndex(idxName: String)  {
-    if ( !gdb.index().existsForRelationships(idxName) ) {
+    if (!statement.readOperations().relationshipLegacyIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
