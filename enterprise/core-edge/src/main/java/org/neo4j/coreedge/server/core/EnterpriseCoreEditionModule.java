@@ -29,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.neo4j.cluster.ExecutorLifecycleAdapter;
 import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
@@ -98,11 +97,13 @@ import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.coreedge.server.logging.BetterMessageLogger;
 import org.neo4j.coreedge.server.logging.MessageLogger;
+import org.neo4j.coreedge.server.logging.NullMessageLogger;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -125,7 +126,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -204,8 +204,15 @@ public class EnterpriseCoreEditionModule
                 config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
                 config.get( CoreEdgeClusterSettings.raft_advertised_address ) );
 
-        final MessageLogger<AdvertisedSocketAddress> messageLogger =
-                new BetterMessageLogger<>( myself.getRaftAddress(), raftMessagesLog( storeDir ) );
+        final MessageLogger<AdvertisedSocketAddress> messageLogger;
+        if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
+        {
+            messageLogger = new BetterMessageLogger<>( myself.getRaftAddress(), raftMessagesLog( storeDir ) );
+        }
+        else
+        {
+            messageLogger = new NullMessageLogger<>();
+        }
 
         LoggingOutbound<AdvertisedSocketAddress> loggingOutbound = new LoggingOutbound<>(
                 senderService, myself.getRaftAddress(), messageLogger );
