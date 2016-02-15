@@ -32,4 +32,9 @@ package org.neo4j.cursor;
  */
 public interface Cursor<T> extends RawCursor<T,RuntimeException>
 {
+    @Override
+    boolean next();
+
+    @Override
+    void close();
 }
