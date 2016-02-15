@@ -144,8 +144,8 @@ public class TypeMappers
         types.sort( (a,b)->a.toString().compareTo( b.toString() ) );
 
         return new ProcedureException( Status.Statement.InvalidType,
-                "Don't know how to map `%s` to the Neo4j Type System.\n" +
-                "Please refer to to the documentation for full details.\n" +
+                "Don't know how to map `%s` to the Neo4j Type System.%n" +
+                "Please refer to to the documentation for full details.%n" +
                 "For your reference, known types are: %s", cls, types );
     }
 

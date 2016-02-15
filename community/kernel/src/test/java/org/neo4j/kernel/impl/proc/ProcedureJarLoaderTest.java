@@ -118,15 +118,15 @@ public class ProcedureJarLoaderTest
 
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class\n" +
-                                 "that you define, with public non-final fields defining the fields in the record.\n" +
+        exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
+                                 "that you define, with public non-final fields defining the fields in the record.%n" +
                                  "If you''d like your procedure to return `boolean`, you could define a record class " +
-                                 "like:\n" +
-                                 "public class Output '{'\n" +
-                                 "    public boolean out;\n" +
-                                 "'}'\n" +
-                                 "\n" +
-                                 "And then define your procedure as returning `Stream<Output>`." );
+                                 "like:%n" +
+                                 "public class Output '{'%n" +
+                                 "    public boolean out;%n" +
+                                 "'}'%n" +
+                                 "%n" +
+                                 "And then define your procedure as returning `Stream<Output>`." ));
 
         // When
         jarloader.loadProcedures( jar );
@@ -157,8 +157,8 @@ public class ProcedureJarLoaderTest
 
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class\n" +
-                                 "that you define and not a Stream<?>." );
+        exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
+                                 "that you define and not a Stream<?>." ));
 
         // When
         jarloader.loadProcedures( jar );
@@ -172,8 +172,8 @@ public class ProcedureJarLoaderTest
 
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class\n" +
-                                 "that you define and not a raw Stream." );
+        exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
+                                 "that you define and not a raw Stream." ));
 
         // When
         jarloader.loadProcedures( jar );
@@ -187,9 +187,9 @@ public class ProcedureJarLoaderTest
 
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class\n" +
+        exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
                                  "that you define and not a parameterized type such as java.util.List<org.neo4j" +
-                                 ".kernel.impl.proc.ProcedureJarLoaderTest$Output>.");
+                                 ".kernel.impl.proc.ProcedureJarLoaderTest$Output>."));
 
         // When
         jarloader.loadProcedures( jar );

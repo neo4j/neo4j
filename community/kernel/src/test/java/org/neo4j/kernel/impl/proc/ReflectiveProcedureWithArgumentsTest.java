@@ -102,9 +102,9 @@ public class ReflectiveProcedureWithArgumentsTest
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Argument at position 0 in method `listCoolPeople` " +
-                                 "is missing an `@Name` annotation.\n" +
-                                 "Please add the annotation, recompile the class and try again." );
+        exception.expectMessage( String.format("Argument at position 0 in method `listCoolPeople` " +
+                                 "is missing an `@Name` annotation.%n" +
+                                 "Please add the annotation, recompile the class and try again." ));
 
         // When
         compile( ClassWithProcedureWithoutAnnotatedArgs.class );
