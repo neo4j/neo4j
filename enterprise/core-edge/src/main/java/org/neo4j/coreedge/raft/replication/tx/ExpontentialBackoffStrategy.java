@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 public class ExpontentialBackoffStrategy implements RetryStrategy
 {
     private long timeout;
-    private long previous;
 
     public ExpontentialBackoffStrategy( long initialTimeout, TimeUnit timeUnit )
     {
@@ -32,16 +31,14 @@ public class ExpontentialBackoffStrategy implements RetryStrategy
     }
 
     @Override
-    public long nextTimeout()
+    public long get()
     {
-        previous = timeout;
-        timeout = 2 * timeout;
         return timeout;
     }
 
     @Override
-    public long previousTimeout()
+    public void increaseTimeout()
     {
-        return previous;
+        timeout = 2 * timeout;
     }
 }

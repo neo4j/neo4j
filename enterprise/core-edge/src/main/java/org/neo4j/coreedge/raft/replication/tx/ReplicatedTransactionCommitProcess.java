@@ -104,7 +104,8 @@ public class ReplicatedTransactionCommitProcess implements TransactionCommitProc
 
                 try
                 {
-                    Long txId = futureTxId.waitUntilCommitted( retryStrategy.nextTimeout(), TimeUnit.MILLISECONDS );
+                    Long txId = futureTxId.waitUntilCommitted( retryStrategy.get(), TimeUnit.MILLISECONDS );
+                    retryStrategy.increaseTimeout();
                     sessionPool.releaseSession( operationContext );
 
                     return txId;
@@ -118,7 +119,7 @@ public class ReplicatedTransactionCommitProcess implements TransactionCommitProc
                 catch ( TimeoutException e )
                 {
                     log.info( "Replication of %s timed out after %d %s; retrying.",
-                            operationContext, retryStrategy.previousTimeout(), TimeUnit.MILLISECONDS );
+                            operationContext, retryStrategy.get(), TimeUnit.MILLISECONDS );
                     txRetryMonitor.retry();
                 }
             }

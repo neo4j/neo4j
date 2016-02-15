@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ConstantTimeRetryStrategy implements RetryStrategy
 {
-    private final long timeout;
+    private long timeout;
 
     public ConstantTimeRetryStrategy( long backoffTime, TimeUnit timeUnit )
     {
@@ -31,14 +31,13 @@ public class ConstantTimeRetryStrategy implements RetryStrategy
     }
 
     @Override
-    public long nextTimeout()
+    public long get()
     {
         return timeout;
     }
 
     @Override
-    public long previousTimeout()
+    public void increaseTimeout()
     {
-        return timeout;
     }
 }
