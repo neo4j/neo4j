@@ -23,6 +23,8 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Supplier;
@@ -40,12 +42,10 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
 
-import static org.junit.Assert.assertEquals;
-
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @Ignore( "Not a test, a base class for testing formats" )
@@ -63,10 +63,11 @@ public abstract class RecordFormatTest
     @ClassRule
     public static final RandomRule random = new RandomRule();
 
+    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule( false /*true here later*/ );
     @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule( false /*true here later*/ );
+    public final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fsRule );
+
     public RecordKeys keys = FullyCoveringRecordKeys.INSTANCE;
 
     private final RecordFormats formats;

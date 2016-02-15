@@ -58,8 +58,8 @@ public abstract class BaseOneByteHeaderRecordFormat<RECORD extends AbstractBaseR
 
     /**
      * Reads contents at {@code cursor} into the given record. This method is only called if the {@link RecordLoad}
-     * mode in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int, PagedFile)} thinks it's OK to load the record,
-     * given its inUse status.
+     * mode in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int, PagedFile)} thinks it's OK to load the
+     * record, given its inUse status.
      *
      * @param record to put read data into, replacing any existing data in that record object.
      * @param cursor {@link PageCursor} to read data from.
@@ -67,7 +67,7 @@ public abstract class BaseOneByteHeaderRecordFormat<RECORD extends AbstractBaseR
      * @param recordSize size of records of this format. This is passed in like this since not all formats
      * know the record size in advance, but may be read from store header when opening the store.
      * @param storeFile {@link PagedFile} to get additional {@link PageCursor} from, if need be.
-     * @param headerByte the first byte read, in order to determine inUse status.
+     * @param headerByte the first byte read, in order to determine inUse status and other header flags.
      * @param inUse whether or not the record is in use. Keep in mind that this method may be called
      * even on an unused record, depending on {@link RecordLoad} mode.
      * @throws IOException on error reading.

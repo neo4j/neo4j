@@ -236,6 +236,11 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      */
     int getStoreHeaderInt();
 
+    /**
+     * Called once all changes to a record is ready to be converted into a command.
+     *
+     * @param record record to prepare, potentially updating it with more information before converting into a command.
+     */
     void prepareForCommit( RECORD record );
 
     Predicate<AbstractBaseRecord> IN_USE = AbstractBaseRecord::inUse;

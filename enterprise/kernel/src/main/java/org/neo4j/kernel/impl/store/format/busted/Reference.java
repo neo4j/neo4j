@@ -82,6 +82,9 @@ enum Reference
         }
     };
 
+    // Take one copy here since Enum#values() does an unnecessary defensive copy every time.
+    private static final Reference[] ENCODINGS = Reference.values();
+
     private final int numberOfBytes;
     private final short highHeader;
     private final short headerMask;
@@ -89,7 +92,7 @@ enum Reference
     private short signBitMask;
     private final long valueOverflowMask;
 
-    private Reference( int numberOfBytes, byte header, int headerBits )
+    Reference( int numberOfBytes, byte header, int headerBits )
     {
         this.numberOfBytes = numberOfBytes;
         this.headerShift = Byte.SIZE - headerBits;
@@ -101,7 +104,7 @@ enum Reference
 
     private long valueMask( int numberOfBytes, int headerShift )
     {
-        long mask = (long)Math.pow( 2, headerShift ) - 1;
+        long mask = ( 1L << headerShift ) - 1;
         for ( int i = 0; i < numberOfBytes - 1; i++ )
         {
             mask <<= 8;
@@ -163,9 +166,6 @@ enum Reference
     {
         return Long.SIZE - Long.numberOfLeadingZeros( ~valueOverflowMask );
     }
-
-    // Take one copy here since Enum#values() does an unnecessary defensive copy every time.
-    private static final Reference[] ENCODINGS = Reference.values();
 
     public static <TARGET> void encode( long reference, TARGET target, DataAdapter<TARGET> adapter ) throws IOException
     {

@@ -83,6 +83,7 @@ class SecondaryPageCursorReadDataAdapter implements DataAdapter<PageCursor>, Sec
     {
         primaryCursor.setOffset( primaryInitialOffset );
         secondaryCursor.setOffset( secondaryOffset );
+        switched = false;
     }
 
     @Override

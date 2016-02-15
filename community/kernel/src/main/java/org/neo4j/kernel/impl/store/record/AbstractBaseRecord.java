@@ -30,6 +30,7 @@ import org.neo4j.helpers.CloneableInPublic;
  */
 public abstract class AbstractBaseRecord implements CloneableInPublic
 {
+    public static final int NO_ID = -1;
     private long id;
     // Used for the "record unit" feature where one logical record may span two physical records,
     // as to still keep low and fixed record size, but support occasionally bigger records.
@@ -47,7 +48,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     {
         this.inUse = inUse;
         this.created = false;
-        this.secondaryId = -1;
+        this.secondaryId = NO_ID;
         return this;
     }
 
@@ -61,7 +62,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     {
         inUse = false;
         created = false;
-        secondaryId = -1;
+        secondaryId = NO_ID;
     }
 
     public long getId()
@@ -80,7 +81,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     }
 
     /**
-     * Sets a secondary record unit ID for this record. If this is set to something other than {@code -1}
+     * Sets a secondary record unit ID for this record. If this is set to something other than {@link #NO_ID}
      * then {@link #requiresTwoUnits()} will return {@code true}.
      */
     public void setSecondaryId( long id )
@@ -101,7 +102,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
      */
     public boolean requiresTwoUnits()
     {
-        return this.secondaryId != -1;
+        return this.secondaryId != NO_ID;
     }
 
     public final boolean inUse()

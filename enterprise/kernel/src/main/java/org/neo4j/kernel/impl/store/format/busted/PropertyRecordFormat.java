@@ -55,7 +55,7 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
         record.initialize( inUse,
                 Reference.decode( cursor, PAGE_CURSOR_ADAPTER ),
                 Reference.decode( cursor, PAGE_CURSOR_ADAPTER ) );
-        while ( blockCount --> 0 )
+        while ( blockCount-- > 0 )
         {
             record.addLoadedBlock( cursor.getLong() );
         }

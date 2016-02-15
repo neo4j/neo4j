@@ -93,7 +93,7 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
             throws IOException;
 
     /**
-     * For lack of better term this is to be called when all changes about a record has been gathered
+     * Called when all changes about a record has been gathered
      * and before it's time to convert into a command. The original reason for introducing this is the
      * thing with record units, where we need to know whether or not a record will span two units
      * before even writing to the log as a command. The format is the pluggable entity which knows
