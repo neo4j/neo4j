@@ -134,7 +134,6 @@ public class ReplicatedIdAllocationStateMachine implements StateMachine
     @Override
     public void flush() throws IOException
     {
-        IdAllocationState copy = new IdAllocationState( idAllocationState );
-        storage.persistStoreData( copy );
+        storage.persistStoreData( new IdAllocationState( idAllocationState ) );
     }
 }

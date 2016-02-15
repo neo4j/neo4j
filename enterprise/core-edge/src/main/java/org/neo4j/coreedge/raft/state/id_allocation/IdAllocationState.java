@@ -54,7 +54,7 @@ import static java.util.Arrays.copyOf;
  * |  15x 8-byte                      |
  * +----------------------------------+
  */
-public class IdAllocationState implements Message
+public class IdAllocationState
 {
     private final long[] firstUnallocated;
     private final long[] lastIdRangeStartForMe;

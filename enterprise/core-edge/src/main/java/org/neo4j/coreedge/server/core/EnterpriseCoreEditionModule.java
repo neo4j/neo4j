@@ -39,7 +39,6 @@ import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
-import org.neo4j.coreedge.raft.log.PhysicalRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
@@ -83,7 +82,7 @@ import org.neo4j.coreedge.server.Expiration;
 import org.neo4j.coreedge.server.ExpiryScheduler;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.SenderService;
-import org.neo4j.coreedge.server.core.locks.InMemoryReplicatedLockTokenState;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenState;
 import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.server.core.locks.LockTokenManager;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
@@ -115,7 +114,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -206,12 +204,12 @@ public class EnterpriseCoreEditionModule
 
         LocalSessionPool localSessionPool = new LocalSessionPool( myself );
 
-        StateStorage<InMemoryReplicatedLockTokenState<CoreMember>> lockTokenState;
+        StateStorage<ReplicatedLockTokenState<CoreMember>> lockTokenState;
         try
         {
             lockTokenState = life.add( new DurableStateStorage<>(
                     fileSystem, new File( clusterStateDirectory, "lock-token-state" ), "lock-token",
-                    new InMemoryReplicatedLockTokenState.Marshal<>( new CoreMemberMarshal() ),
+                    new ReplicatedLockTokenState.Marshal<>( new CoreMemberMarshal() ),
                     config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ),
                     databaseHealthSupplier, logProvider
             ) );

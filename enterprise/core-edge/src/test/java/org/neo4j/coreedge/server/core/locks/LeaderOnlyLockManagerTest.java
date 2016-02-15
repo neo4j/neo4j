@@ -49,7 +49,7 @@ public class LeaderOnlyLockManagerTest
 
         StateMachines stateMachines = new StateMachines();
         ReplicatedLockTokenStateMachine<RaftTestMember> replicatedLockStateMachine =
-                new ReplicatedLockTokenStateMachine<>( new StubStateStorage( new InMemoryReplicatedLockTokenState<>() ) );
+                new ReplicatedLockTokenStateMachine<>( new StubStateStorage( new ReplicatedLockTokenState<>() ) );
         stateMachines.add( replicatedLockStateMachine );
         DirectReplicator replicator = new DirectReplicator( stateMachines );
 
@@ -76,7 +76,7 @@ public class LeaderOnlyLockManagerTest
 
         StateMachines stateMachines = new StateMachines();
         ReplicatedLockTokenStateMachine<RaftTestMember> replicatedLockStateMachine =
-                new ReplicatedLockTokenStateMachine<>( new StubStateStorage( new InMemoryReplicatedLockTokenState<>() ) );
+                new ReplicatedLockTokenStateMachine<>( new StubStateStorage( new ReplicatedLockTokenState<>() ) );
         stateMachines.add( replicatedLockStateMachine );
         DirectReplicator replicator = new DirectReplicator( stateMachines );
 

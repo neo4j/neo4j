@@ -31,10 +31,10 @@ import org.neo4j.coreedge.raft.state.StateStorage;
  */
 public class ReplicatedLockTokenStateMachine<MEMBER> extends LockTokenManager implements StateMachine
 {
-    private InMemoryReplicatedLockTokenState<MEMBER> state;
-    private final StateStorage<InMemoryReplicatedLockTokenState<MEMBER>> storage;
+    private ReplicatedLockTokenState<MEMBER> state;
+    private final StateStorage<ReplicatedLockTokenState<MEMBER>> storage;
 
-    public ReplicatedLockTokenStateMachine( StateStorage<InMemoryReplicatedLockTokenState<MEMBER>> storage )
+    public ReplicatedLockTokenStateMachine( StateStorage<ReplicatedLockTokenState<MEMBER>> storage )
     {
         this.storage = storage;
         this.state = storage.getInitialState();
@@ -59,8 +59,7 @@ public class ReplicatedLockTokenStateMachine<MEMBER> extends LockTokenManager im
     @Override
     public void flush() throws IOException
     {
-        InMemoryReplicatedLockTokenState<MEMBER> copy = new InMemoryReplicatedLockTokenState<MEMBER>( state );
-        storage.persistStoreData( copy );
+        storage.persistStoreData( state );
     }
 
     @Override
