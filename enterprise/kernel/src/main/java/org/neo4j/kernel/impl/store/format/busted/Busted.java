@@ -45,7 +45,8 @@ public class Busted implements RecordFormats
     @Override
     public String storeVersion()
     {
-        return "vE.B.0";
+        // Community.Busted.Zero
+        return "vC.B.0";
     }
 
     @Override
