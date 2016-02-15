@@ -31,7 +31,7 @@ trait TypeSafeMathSupport {
       case (l: Byte, r: Byte)   => l + r
       case (l: Byte, r: Double) => l + r
       case (l: Byte, r: Float)  => l + r
-      case (l: Byte, r: Int)    => l + r
+      case (l: Byte, r: Int)    => l + r.toLong
       case (l: Byte, r: Long)   => l + r
       case (l: Byte, r: Short)  => l + r
 
@@ -49,10 +49,10 @@ trait TypeSafeMathSupport {
       case (l: Float, r: Long)   => l + r
       case (l: Float, r: Short)  => l + r
 
-      case (l: Int, r: Byte)   => l + r
+      case (l: Int, r: Byte)   => l.toLong + r
       case (l: Int, r: Double) => l + r
       case (l: Int, r: Float)  => l + r
-      case (l: Int, r: Int)    => l + r
+      case (l: Int, r: Int)    => l.toLong + r.toLong
       case (l: Int, r: Long)   => l + r
       case (l: Int, r: Short)  => l + r
 
@@ -131,7 +131,7 @@ trait TypeSafeMathSupport {
       case (l: Byte, r: Byte)   => l - r
       case (l: Byte, r: Double) => l - r
       case (l: Byte, r: Float)  => l - r
-      case (l: Byte, r: Int)    => l - r
+      case (l: Byte, r: Int)    => l - r.toLong
       case (l: Byte, r: Long)   => l - r
       case (l: Byte, r: Short)  => l - r
 
@@ -152,7 +152,7 @@ trait TypeSafeMathSupport {
       case (l: Int, r: Byte)   => l - r
       case (l: Int, r: Double) => l - r
       case (l: Int, r: Float)  => l - r
-      case (l: Int, r: Int)    => l - r
+      case (l: Int, r: Int)    => l.toLong - r.toLong
       case (l: Int, r: Long)   => l - r
       case (l: Int, r: Short)  => l - r
 
@@ -166,7 +166,7 @@ trait TypeSafeMathSupport {
       case (l: Short, r: Byte)   => l - r
       case (l: Short, r: Double) => l - r
       case (l: Short, r: Float)  => l - r
-      case (l: Short, r: Int)    => l - r
+      case (l: Short, r: Int)    => l - r.toLong
       case (l: Short, r: Long)   => l - r
       case (l: Short, r: Short)  => l - r
 
@@ -181,7 +181,7 @@ trait TypeSafeMathSupport {
       case (l: Byte, r: Byte)   => l * r
       case (l: Byte, r: Double) => l * r
       case (l: Byte, r: Float)  => l * r
-      case (l: Byte, r: Int)    => l * r
+      case (l: Byte, r: Int)    => l * r.toLong
       case (l: Byte, r: Long)   => l * r
       case (l: Byte, r: Short)  => l * r
 
@@ -202,9 +202,9 @@ trait TypeSafeMathSupport {
       case (l: Int, r: Byte)   => l * r
       case (l: Int, r: Double) => l * r
       case (l: Int, r: Float)  => l * r
-      case (l: Int, r: Int)    => l * r
+      case (l: Int, r: Int)    => l.toLong * r.toLong
       case (l: Int, r: Long)   => l * r
-      case (l: Int, r: Short)  => l * r
+      case (l: Int, r: Short)  => l.toLong * r.toLong
 
       case (l: Long, r: Byte)   => l * r
       case (l: Long, r: Double) => l * r
@@ -213,10 +213,10 @@ trait TypeSafeMathSupport {
       case (l: Long, r: Long)   => l * r
       case (l: Long, r: Short)  => l * r
 
-      case (l: Short, r: Byte)   => l * r
+      case (l: Short, r: Byte)   => l.toLong * r
       case (l: Short, r: Double) => l * r
       case (l: Short, r: Float)  => l * r
-      case (l: Short, r: Int)    => l * r
+      case (l: Short, r: Int)    => l * r.toLong
       case (l: Short, r: Long)   => l * r
       case (l: Short, r: Short)  => l * r
 
