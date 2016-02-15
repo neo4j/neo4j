@@ -157,7 +157,7 @@ abstract class BaseBustedRecordFormat<RECORD extends AbstractBaseRecord>
         DataAdapter<PageCursor> dataAdapter = PAGE_CURSOR_ADAPTER;
         if ( record.requiresTwoUnits() )
         {
-            int primaryEndOffset = primaryCursor.getOffset() + recordSize - 1 /*we've already read the header byte*/;
+            int primaryEndOffset = primaryCursor.getOffset() + recordSize - 1 /*we've already written the header byte*/;
 
             // Write using the normal adapter since the first reference we write cannot really overflow
             // into the secondary record
