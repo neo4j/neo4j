@@ -249,7 +249,7 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
       throw new InvalidArgumentException("step argument to range() cannot be zero")
 
     val exclusiveEndVal = inclusiveEndVal + stepVal.signum
-    startVal until exclusiveEndVal by stepVal toList
+    (startVal until exclusiveEndVal by stepVal).toIterable
   }
 
   def arguments = Seq(start, end, step)
