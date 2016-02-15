@@ -19,16 +19,19 @@
  */
 package org.neo4j.kernel.api.impl.schema.sampler;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
@@ -38,6 +41,9 @@ import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.IndexReaderStub;
+import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
+import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
+import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.register.Register;
@@ -60,7 +66,7 @@ public class NonUniqueLuceneIndexSamplerTest
     public void nonUniqueSamplingCancel() throws IndexNotFoundKernelException, IOException
     {
         Terms terms = getTerms( "test", 1 );
-        Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "a", terms, "id", terms, "b", terms );
+        Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "string", terms, "id", terms, "string", terms );
         IndexReaderStub indexReader = new IndexReaderStub( new SamplingFields( fieldTermsMap ) );
         when( indexSearcher.getIndexReader() ).thenReturn( indexReader );
 
@@ -78,7 +84,7 @@ public class NonUniqueLuceneIndexSamplerTest
         Terms aTerms = getTerms( "a", 1 );
         Terms idTerms = getTerms( "id", 2 );
         Terms bTerms = getTerms( "b", 3 );
-        Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "a", aTerms, "id", idTerms, "b", bTerms );
+        Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "string", aTerms, "id", idTerms, "array", bTerms );
         IndexReaderStub indexReader = new IndexReaderStub( new SamplingFields( fieldTermsMap ) );
         when( indexSearcher.getIndexReader() ).thenReturn( indexReader );
 
@@ -91,6 +97,38 @@ public class NonUniqueLuceneIndexSamplerTest
         // total values
         assertEquals( 4, register.readSecond() );
         assertEquals( 4, sample );
+    }
+
+    @Test
+    public void samplingOfLargeNumericValues() throws Exception
+    {
+        try ( RAMDirectory dir = new RAMDirectory();
+              IndexPartition indexPartition = new IndexPartition( new File( "testPartition" ), dir ) )
+        {
+            insertDocument( indexPartition, 1, Long.MAX_VALUE );
+            insertDocument( indexPartition, 2, Integer.MAX_VALUE );
+
+            indexPartition.maybeRefreshBlocking();
+
+            long indexSize;
+            long uniqueElements;
+            long sampleSize;
+
+            try ( PartitionSearcher searcher = indexPartition.acquireSearcher() )
+            {
+                NonUniqueLuceneIndexSampler sampler = new NonUniqueLuceneIndexSampler( searcher.getIndexSearcher(),
+                        taskControl.newInstance(), new IndexSamplingConfig( new Config() ) );
+
+                Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
+                indexSize = sampler.sampleIndex( register );
+                uniqueElements = register.readFirst();
+                sampleSize = register.readSecond();
+            }
+
+            assertEquals( 2, indexSize );
+            assertEquals( 2, uniqueElements );
+            assertEquals( 2, sampleSize );
+        }
     }
 
     private NonUniqueLuceneIndexSampler createSampler()
@@ -106,6 +144,12 @@ public class NonUniqueLuceneIndexSamplerTest
         when( termsEnum.next() ).thenReturn( new BytesRef( value.getBytes() ) ).thenReturn( null );
         when( termsEnum.docFreq() ).thenReturn( frequency );
         return terms;
+    }
+
+    private static void insertDocument( IndexPartition partition, long nodeId, Object propertyValue ) throws IOException
+    {
+        Document doc = LuceneDocumentStructure.documentRepresentingProperty( nodeId, propertyValue );
+        partition.getIndexWriter().addDocument( doc );
     }
 
     private class SamplingFields extends Fields

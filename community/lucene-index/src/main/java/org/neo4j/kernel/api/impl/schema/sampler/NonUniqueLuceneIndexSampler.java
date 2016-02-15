@@ -32,6 +32,7 @@ import java.util.Set;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.register.Register;
@@ -69,7 +70,7 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
                     Terms terms = readerContext.reader().terms( fieldName );
                     if ( terms != null )
                     {
-                        TermsEnum termsEnum = terms.iterator();
+                        TermsEnum termsEnum = LuceneDocumentStructure.originalTerms( terms, fieldName );
                         BytesRef termsRef;
                         while ( (termsRef = termsEnum.next()) != null )
                         {
