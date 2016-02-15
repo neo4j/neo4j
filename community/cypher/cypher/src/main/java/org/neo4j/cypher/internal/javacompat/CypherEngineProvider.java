@@ -37,6 +37,6 @@ public class CypherEngineProvider extends QueryEngineProvider
     protected QueryExecutionEngine createEngine( GraphDatabaseAPI graphAPI )
     {
         LogService logService = graphAPI.getDependencyResolver().resolveDependency( LogService.class );
-        return new ServerExecutionEngine( graphAPI, logService.getInternalLogProvider() );
+        return new ExecutionEngine( graphAPI, logService.getInternalLogProvider() );
     }
 }

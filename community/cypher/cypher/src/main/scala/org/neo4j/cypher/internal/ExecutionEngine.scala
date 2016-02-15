@@ -220,6 +220,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
 
   def prettify(query: String): String = Prettifier(query)
 
+  def isPeriodicCommit(query: String) = parseQuery(query).isPeriodicCommit
+
   private def createCompiler: CypherCompiler = {
     val version = CypherVersion(optGraphSetting[String](
       graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.default.name))

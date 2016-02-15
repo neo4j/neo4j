@@ -24,6 +24,10 @@ import java.util.Map;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.GraphDatabaseService;
 
+import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -34,7 +38,7 @@ import org.neo4j.logging.NullLogProvider;
  * operation so please make sure this will be constructed only once and properly reused.
  *
  */
-public class ExecutionEngine
+public class ExecutionEngine implements QueryExecutionEngine
 {
     private org.neo4j.cypher.internal.ExecutionEngine inner;
 
@@ -130,5 +134,38 @@ public class ExecutionEngine
     public String prettify( String query )
     {
         return inner.prettify( query );
+    }
+
+    @Override
+    public Result executeQuery( String query, Map<String, Object> parameters, QuerySession querySession ) throws
+            QueryExecutionKernelException
+    {
+        try
+        {
+            return new ExecutionResult( inner.execute( query, parameters, querySession ) );
+        }
+        catch ( CypherException e )
+        {
+            throw new QueryExecutionKernelException( e );
+        }
+    }
+
+    @Override
+    public boolean isPeriodicCommit( String query )
+    {
+        return inner.isPeriodicCommit( query );
+    }
+
+    @Override
+    public Result profileQuery( String query, Map<String, Object> parameters, QuerySession session ) throws QueryExecutionKernelException
+    {
+        try
+        {
+            return new ExecutionResult( inner.profile( query, parameters, session ) );
+        }
+        catch ( CypherException e )
+        {
+            throw new QueryExecutionKernelException( e );
+        }
     }
 }
