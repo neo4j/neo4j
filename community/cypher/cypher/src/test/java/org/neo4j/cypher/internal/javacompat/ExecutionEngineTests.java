@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.javacompat;
+package org.neo4j.cypher.internal.javacompat;
 
 import java.util.List;
 import java.util.Map;
@@ -25,8 +25,6 @@ import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
-import org.neo4j.cypher.internal.javacompat.ExecutionResult;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 

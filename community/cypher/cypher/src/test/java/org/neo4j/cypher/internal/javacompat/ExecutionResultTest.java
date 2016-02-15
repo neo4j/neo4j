@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.javacompat;
+package org.neo4j.cypher.internal.javacompat;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.ArithmeticException;
-import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
-import org.neo4j.cypher.internal.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
