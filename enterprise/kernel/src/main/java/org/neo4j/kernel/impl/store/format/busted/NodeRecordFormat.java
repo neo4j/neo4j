@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.store.format.busted.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
-public class NodeRecordFormat extends BaseBustedRecordFormat<NodeRecord>
+class NodeRecordFormat extends BaseBustedRecordFormat<NodeRecord>
 {
     private static final long NULL_LABELS = Record.NO_LABELS_FIELD.intValue();
     private static final int RECORD_SIZE = 16;

@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 import static org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat.readData;
 
-public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
+class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
 {
     public static final int RECORD_HEADER_SIZE = 1/*header byte*/ + 3/*# of bytes*/ + 8/*max size of next reference*/;
                                             // = 12

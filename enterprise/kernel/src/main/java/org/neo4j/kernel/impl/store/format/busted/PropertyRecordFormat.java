@@ -32,7 +32,7 @@ import static org.neo4j.kernel.impl.store.format.busted.Reference.PAGE_CURSOR_AD
  * {@link PropertyRecord} format which currently has some wasted space in the end due to hard coded
  * limit of 4 blocks per record, whereas the record size is 64.
  */
-public class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
+class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 {
     private static final int RECORD_SIZE = 48;
 

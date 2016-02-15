@@ -75,7 +75,7 @@ import static org.neo4j.kernel.impl.store.format.busted.Reference.PAGE_CURSOR_AD
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-public abstract class BaseBustedRecordFormat<RECORD extends AbstractBaseRecord>
+abstract class BaseBustedRecordFormat<RECORD extends AbstractBaseRecord>
         extends BaseOneByteHeaderRecordFormat<RECORD>
 {
     static final long NULL = Record.NULL_REFERENCE.intValue();

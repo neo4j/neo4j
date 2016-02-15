@@ -24,7 +24,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.busted.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-public class RelationshipGroupRecordFormat extends BaseBustedRecordFormat<RelationshipGroupRecord>
+class RelationshipGroupRecordFormat extends BaseBustedRecordFormat<RelationshipGroupRecord>
 {
     private static final int RECORD_SIZE = 32;
     private static final int HAS_OUTGOING_BIT = 0b0000_1000;

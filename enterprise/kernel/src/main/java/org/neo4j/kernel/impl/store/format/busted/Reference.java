@@ -38,7 +38,7 @@ import static java.lang.String.format;
  *
  * @author Mattias Persson
  */
-public enum Reference
+enum Reference
 {
     // bit masks below contain one bit for 's' (sign) so actual address space is one bit less than advertised
 
