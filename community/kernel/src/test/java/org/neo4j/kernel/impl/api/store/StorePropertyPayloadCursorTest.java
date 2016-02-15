@@ -63,6 +63,32 @@ public class StorePropertyPayloadCursorTest
     public static class BasicContract
     {
         @Test
+        public void nextShouldAlwaysReturnFalseWhenNotInitialized()
+        {
+            StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor( mock( DynamicStringStore.class ),
+                    mock( DynamicArrayStore.class ) );
+
+            assertFalse( cursor.next() );
+
+            // Should still be true the Nth time
+            assertFalse( cursor.next() );
+        }
+
+        @Test
+        public void nextShouldAlwaysReturnFalseWhenCleared()
+        {
+            StorePropertyPayloadCursor cursor = newCursor( "cat-dog" );
+
+            assertTrue( cursor.next() );
+
+            cursor.clear();
+
+            // Should still be true the Nth time
+            assertFalse( cursor.next() );
+            assertFalse( cursor.next() );
+        }
+
+        @Test
         public void shouldBeOkToClearUnusedCursor()
         {
             // Given

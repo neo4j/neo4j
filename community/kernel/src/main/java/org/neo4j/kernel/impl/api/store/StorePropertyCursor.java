@@ -42,7 +42,6 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     private final RecordCursor<PropertyRecord> recordCursor;
 
     private Lock lock;
-    private boolean initialized;
 
     public StorePropertyCursor( PropertyStore propertyStore, Consumer<StorePropertyCursor> instanceCache )
     {
@@ -56,14 +55,14 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     {
         this.lock = lock;
         propertyStore.placeRecordCursor( firstPropertyId, recordCursor, NORMAL );
-        this.initialized = false;
+        payload.clear();
         return this;
     }
 
     @Override
     public boolean next()
     {
-        if ( initialized && payload.next() )
+        if ( payload.next() )
         {
             return true;
         }
@@ -74,7 +73,6 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
         }
         PropertyRecord propertyRecord = recordCursor.get();
         payload.init( propertyRecord.getBlocks(), propertyRecord.getNumberOfBlocks() );
-        initialized = true;
 
         if ( !payload.next() )
         {

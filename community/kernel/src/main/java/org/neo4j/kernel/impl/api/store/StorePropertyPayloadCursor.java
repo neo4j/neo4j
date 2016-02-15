@@ -54,18 +54,12 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  * Cursor that provides a view on property blocks of a particular property record.
  * This cursor is reusable and can be re-initialized with
  * {@link #init(long[], int)} method and cleaned up using {@link #clear()} method.
- * <p/>
- * During initialization {@link #MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY} number of longs is read from
- * the given {@linkplain PageCursor}. This is done eagerly to avoid reading property blocks from different versions
- * of the page.
- * <p/>
- * Internally, this cursor is mainly an array of {@link #MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY} and a current-position
- * pointer.
+ * <p>
+ * During initialization the raw property block {@code long}s are read from
+ * the given property record.
  */
 class StorePropertyPayloadCursor
 {
-    static final int MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY = PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE / 8;
-
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private static final int INTERNAL_BYTE_ARRAY_SIZE = 4096;
     private static final int INITIAL_POSITION = -1;
@@ -84,7 +78,7 @@ class StorePropertyPayloadCursor
 
     private long[] data;
     private int position = INITIAL_POSITION;
-    private int numberOfBlocks;
+    private int numberOfBlocks = 0;
 
     StorePropertyPayloadCursor( DynamicStringStore stringStore, DynamicArrayStore arrayStore )
     {
@@ -102,7 +96,8 @@ class StorePropertyPayloadCursor
 
     void clear()
     {
-        position = numberOfBlocks;
+        position = INITIAL_POSITION;
+        numberOfBlocks = 0;
     }
 
     boolean next()
@@ -111,10 +106,11 @@ class StorePropertyPayloadCursor
         {
             position = 0;
         }
-        else
+        else if ( position < numberOfBlocks )
         {
             position += currentBlocksUsed();
         }
+
         if ( position >= numberOfBlocks )
         {
             return false;
