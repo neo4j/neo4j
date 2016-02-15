@@ -34,6 +34,7 @@
     <doclint-groups>reference</doclint-groups>
     <neo4j.java.version>1.8</neo4j.java.version>
     <jetty.version>9.2.9.v20150224</jetty.version>
+    <findbugs.version>3.0.0</findbugs.version>
   </properties>
 
   <modules>
@@ -46,10 +47,6 @@
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-      </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
@@ -310,6 +307,21 @@
         <module>packaging</module>
         <module>packaging/installer-linux</module>
       </modules>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>findbugs-maven-plugin</artifactId>
+            <dependencies>
+              <dependency>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>annotations</artifactId>
+                <version>${findbugs.version}</version>
+              </dependency>
+            </dependencies>
+          </plugin>
+        </plugins>
+      </build>
       <properties>
         <attach-docs-phase>verify</attach-docs-phase>
       </properties>
@@ -564,12 +576,6 @@
 
       <!-- other -->
       <dependency>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <version>3.0.3</version>
-        <type>maven-plugin</type>
-      </dependency>
-      <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
         <version>2.2.4</version>
@@ -779,6 +785,13 @@
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-graphite</artifactId>
         <version>3.1.2</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>annotations</artifactId>
+        <version>${findbugs.version}</version>
+        <scope>provided</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>

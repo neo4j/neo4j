@@ -31,7 +31,6 @@ Apache Software License, Version 2.0
   Commons Digester
   Commons Lang
   Commons Logging
-  FindBugs-jsr305
   Lucene Core
   Lucene Memory
 
@@ -40,9 +39,6 @@ Common Development and Distribution License Version 1.1
 
 GNU General Public License, version 2 with the Classpath Exception
   jsr311-api
-
-GNU Lesser General Public License, Version 2.1
-  FindBugs-Annotations
 
 Dependencies with multiple licenses
 -----------------------------------

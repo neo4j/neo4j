@@ -33,7 +33,6 @@ Apache Software License, Version 2.0
   Commons Lang
   Commons Logging
   Data Mapper for Jackson
-  FindBugs-jsr305
   Jackson
   Lucene Core
   Lucene Memory
@@ -47,9 +46,6 @@ GNU General Public License, version 2 with the Classpath Exception
   jersey-client
   jersey-core
   jsr311-api
-
-GNU Lesser General Public License, Version 2.1
-  FindBugs-Annotations
 
 Dependencies with multiple licenses
 -----------------------------------

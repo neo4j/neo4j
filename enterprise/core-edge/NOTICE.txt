@@ -25,7 +25,6 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
-  FindBugs-jsr305
   hazelcast-all
   Lucene Common Analyzers
   Lucene Core
@@ -33,7 +32,4 @@ Apache Software License, Version 2.0
   Lucene QueryParsers
   Netty/All-in-One
   The Netty Project
-
-GNU Lesser General Public License, Version 2.1
-  FindBugs-Annotations
 

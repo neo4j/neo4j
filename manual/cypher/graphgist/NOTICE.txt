@@ -30,7 +30,6 @@ Apache Software License, Version 2.0
   Commons IO
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
-  FindBugs-jsr305
   Jackson
   Lucene Common Analyzers
   Lucene Core
@@ -46,9 +45,6 @@ BSD - Scala License
 BSD License
   ASM Core
   Scala Compiler
-
-GNU Lesser General Public License, Version 2.1
-  FindBugs-Annotations
 
 HSQLDB License, a BSD open source license
   HyperSQL Database
