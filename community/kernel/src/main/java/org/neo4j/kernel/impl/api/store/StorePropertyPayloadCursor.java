@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.ShortArray;
-import org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.util.Bits;
