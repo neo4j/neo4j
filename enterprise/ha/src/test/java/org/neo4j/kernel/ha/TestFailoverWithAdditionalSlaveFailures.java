@@ -45,7 +45,8 @@ public class TestFailoverWithAdditionalSlaveFailures
 {
     @Rule
     public LoggerRule logger = new LoggerRule();
-    public TargetDirectory dir = TargetDirectory.forTest( getClass() );
+    @Rule
+    public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
 
     // parameters
     private int clusterSize;
@@ -83,11 +84,13 @@ public class TestFailoverWithAdditionalSlaveFailures
 
     private void testFailoverWithAdditionalSlave( int clusterSize, int[] slaveIndexes ) throws Throwable
     {
-        ClusterManager manager = new ClusterManager( ClusterManager.clusterOfSize( clusterSize ),
-                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ), stringMap(
-                ClusterSettings.default_timeout.name(),    "1",
-                ClusterSettings.heartbeat_interval.name(), "1",
-                ClusterSettings.heartbeat_timeout.name(),  "2" ) );
+        ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) ).
+                withProvider( ClusterManager.clusterOfSize( clusterSize ) )
+                .withSharedConfig( stringMap(
+                        ClusterSettings.default_timeout.name(),    "1",
+                        ClusterSettings.heartbeat_interval.name(), "1",
+                        ClusterSettings.heartbeat_timeout.name(),  "2" ) )
+                .build();
 
         try
         {
