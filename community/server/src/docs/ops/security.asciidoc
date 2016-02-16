@@ -5,7 +5,7 @@
 
 By default, the Neo4j Server is bundled with a Web server that binds to host +localhost+ on port +7474+, answering only requests from the local machine.
 
-This is configured in _neo4j.conf_:
+This is configured in <<file-locations, _neo4j.conf_>>:
 
 [source,properties]
 ----

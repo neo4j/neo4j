@@ -10,7 +10,7 @@
 
 == Important server configuration parameters ==
 
-The main configuration file for Neo4j is _neo4j.conf_.
+The main configuration file for Neo4j is <<file-locations, _neo4j.conf_>>.
 This file contains several important settings, and although the defaults are sensible
 administrators might choose to make changes (especially to the port settings).
 
