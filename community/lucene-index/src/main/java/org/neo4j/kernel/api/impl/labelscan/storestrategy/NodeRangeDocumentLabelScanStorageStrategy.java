@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.labelscan.storestrategy;
 
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 
@@ -79,8 +80,22 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     @Override
     public PrimitiveLongIterator nodesWithLabel( IndexSearcher searcher, int labelId )
     {
-        return concat(
-                new PageOfRangesIterator( format, searcher, RANGES_PER_PAGE, format.labelQuery( labelId ), labelId ) );
+        return concat( new PageOfRangesIterator( format, searcher, RANGES_PER_PAGE, format.labelQuery( labelId ),
+                Occur.MUST, labelId ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesWithAnyOfLabels( IndexSearcher searcher, int[] labelIds )
+    {
+        return concat( new PageOfRangesIterator( format, searcher, RANGES_PER_PAGE,
+                format.labelsQuery( Occur.SHOULD, labelIds ), Occur.SHOULD, labelIds ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesWithAllLabels( IndexSearcher searcher, int[] labelIds )
+    {
+        return concat( new PageOfRangesIterator( format, searcher, RANGES_PER_PAGE,
+                format.labelsQuery( Occur.MUST, labelIds ), Occur.MUST, labelIds ) );
     }
 
     @Override
