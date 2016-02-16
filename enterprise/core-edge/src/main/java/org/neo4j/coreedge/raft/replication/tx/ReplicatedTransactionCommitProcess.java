@@ -79,6 +79,7 @@ public class ReplicatedTransactionCommitProcess implements TransactionCommitProc
             throw new TransactionFailureException( "Could not create immutable transaction for replication", e );
         }
 
+        RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
         boolean hasNeverReplicated = true;
         boolean interrupted = false;
         try ( CommittingTransaction futureTxId = txFutures.register( operationContext.localOperationId() ) )
@@ -104,8 +105,7 @@ public class ReplicatedTransactionCommitProcess implements TransactionCommitProc
 
                 try
                 {
-                    Long txId = futureTxId.waitUntilCommitted( retryStrategy.get(), TimeUnit.MILLISECONDS );
-                    retryStrategy.increaseTimeout();
+                    Long txId = futureTxId.waitUntilCommitted( timeout.getMillis(), TimeUnit.MILLISECONDS );
                     sessionPool.releaseSession( operationContext );
 
                     return txId;
@@ -119,7 +119,8 @@ public class ReplicatedTransactionCommitProcess implements TransactionCommitProc
                 catch ( TimeoutException e )
                 {
                     log.info( "Replication of %s timed out after %d %s; retrying.",
-                            operationContext, retryStrategy.get(), TimeUnit.MILLISECONDS );
+                            operationContext, timeout.getMillis(), TimeUnit.MILLISECONDS );
+                    timeout.increment();
                     txRetryMonitor.retry();
                 }
             }

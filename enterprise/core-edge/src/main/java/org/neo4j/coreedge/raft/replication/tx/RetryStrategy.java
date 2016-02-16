@@ -21,6 +21,11 @@ package org.neo4j.coreedge.raft.replication.tx;
 
 public interface RetryStrategy
 {
-    long get();
-    void increaseTimeout();
+    Timeout newTimeout();
+
+    interface Timeout
+    {
+        long getMillis();
+        void increment();
+    }
 }

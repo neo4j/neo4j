@@ -34,15 +34,16 @@ public class ExpontentialBackoffStrategyTest
     {
         // given
         ExpontentialBackoffStrategy strategy = new ExpontentialBackoffStrategy( 1, MILLISECONDS );
+        RetryStrategy.Timeout timeout = strategy.newTimeout();
 
         // when
         for ( int i = 0; i < NUMBER_OF_ACCESSES; i++ )
         {
-            strategy.increaseTimeout();
+            timeout.increment();
         }
 
         // then
-        assertEquals( 2 << NUMBER_OF_ACCESSES - 1, strategy.get() );
+        assertEquals( 2 << NUMBER_OF_ACCESSES - 1, timeout.getMillis() );
     }
 
     @Test
@@ -50,14 +51,15 @@ public class ExpontentialBackoffStrategyTest
     {
         // given
         ExpontentialBackoffStrategy strategy = new ExpontentialBackoffStrategy( 1, MILLISECONDS );
+        RetryStrategy.Timeout timeout = strategy.newTimeout();
 
         // when
         for ( int i = 0; i <= NUMBER_OF_ACCESSES; i++ )
         {
-            strategy.increaseTimeout();
+            timeout.increment();
         }
 
         // then
-        assertEquals( 2 << NUMBER_OF_ACCESSES, strategy.get() );
+        assertEquals( 2 << NUMBER_OF_ACCESSES, timeout.getMillis() );
     }
 }

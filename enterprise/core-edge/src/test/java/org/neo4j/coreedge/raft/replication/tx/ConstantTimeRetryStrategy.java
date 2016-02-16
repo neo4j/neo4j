@@ -23,21 +23,30 @@ import java.util.concurrent.TimeUnit;
 
 public class ConstantTimeRetryStrategy implements RetryStrategy
 {
-    private long timeout;
+    private final Timeout constantTimeout;
 
     public ConstantTimeRetryStrategy( long backoffTime, TimeUnit timeUnit )
     {
-        this.timeout = timeUnit.toMillis( backoffTime );
+        long backoffTimeMillis = timeUnit.toMillis( backoffTime );
+
+        constantTimeout = new Timeout()
+        {
+            @Override
+            public long getMillis()
+            {
+                return backoffTimeMillis;
+            }
+
+            @Override
+            public void increment()
+            {
+            }
+        };
     }
 
     @Override
-    public long get()
+    public Timeout newTimeout()
     {
-        return timeout;
-    }
-
-    @Override
-    public void increaseTimeout()
-    {
+        return constantTimeout;
     }
 }

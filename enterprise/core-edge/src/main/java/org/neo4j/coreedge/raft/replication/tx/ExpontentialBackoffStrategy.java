@@ -23,22 +23,31 @@ import java.util.concurrent.TimeUnit;
 
 public class ExpontentialBackoffStrategy implements RetryStrategy
 {
-    private long timeout;
+    private final long initialBackoffTimeMillis;
 
-    public ExpontentialBackoffStrategy( long initialTimeout, TimeUnit timeUnit )
+    public ExpontentialBackoffStrategy( long initialBackoffTime, TimeUnit timeUnit )
     {
-        this.timeout = timeUnit.toMillis( initialTimeout );
+        initialBackoffTimeMillis = timeUnit.toMillis( initialBackoffTime );
     }
 
     @Override
-    public long get()
+    public Timeout newTimeout()
     {
-        return timeout;
-    }
+        return new Timeout()
+        {
+            private long backoffTimeMillis = initialBackoffTimeMillis;
 
-    @Override
-    public void increaseTimeout()
-    {
-        timeout = 2 * timeout;
+            @Override
+            public long getMillis()
+            {
+                return backoffTimeMillis;
+            }
+
+            @Override
+            public void increment()
+            {
+                backoffTimeMillis = backoffTimeMillis * 2;
+            }
+        };
     }
 }
