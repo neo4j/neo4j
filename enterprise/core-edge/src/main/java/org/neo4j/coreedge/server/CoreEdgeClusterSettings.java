@@ -27,11 +27,14 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.MANDATORY;
+import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.list;
+import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description("Settings for Core-Edge Clusters")
@@ -167,4 +170,16 @@ public class CoreEdgeClusterSettings
     @Description("The number of operations to be processed before the state machines flush to disk")
     public static final Setting<Integer> state_machine_flush_window_size =
             setting( "core_edge.state_machine_flush_window_size", INTEGER, "100" );
+
+    @Description( "RAFT log implementation" )
+    public static final Setting<String> raft_log_implementation =
+            setting( "core_edge.raft_log_implementation", STRING, "PHYSICAL" );
+
+    @Description( "RAFT log rotation size" )
+    public static final Setting<Long> raft_log_rotation_size =
+            setting( "core_edge.raft_log_rotation_size", BYTES, "25M", min( 1024L ) );
+
+    @Description("RAFT meta data cache size (in unit of entries)")
+    public static final Setting<Integer> raft_log_meta_data_cache_size =
+            setting( "core_edge.raft_log_meta_data_cache_size", INTEGER, "100000" );
 }
