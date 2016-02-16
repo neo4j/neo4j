@@ -34,24 +34,14 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
 
-  type KernelStatement = inner.KernelStatement
-
   type EntityAccessor = inner.EntityAccessor
 
-  override def statement: KernelStatement = inner.statement
+  override def transactionalContext: TransactionalContext = inner.transactionalContext
 
   override def entityAccessor: EntityAccessor = inner.entityAccessor
 
-  override def isOpen: Boolean = inner.isOpen
-
-  override def isTopLevelTx: Boolean = inner.isTopLevelTx
-
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     singleDbHit(inner.setLabelsOnNode(node, labelIds))
-
-  override def close(success: Boolean) {
-    inner.close(success)
-  }
 
   override def createNode(): Node = singleDbHit(inner.createNode())
 
@@ -138,10 +128,6 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] =
     singleDbHit(inner.lockingUniqueIndexSeek(index, value))
-
-  override def commitAndRestartTx() {
-    inner.commitAndRestartTx()
-  }
 
   override def getRelTypeId(relType: String): Int = singleDbHit(inner.getRelTypeId(relType))
 
@@ -232,4 +218,19 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   override def acquireExclusiveLock(obj: Long): Unit = inner.acquireExclusiveLock(obj)
 
   override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
+}
+
+class DelegatingTransactionalContext(val inner: TransactionalContext) extends TransactionalContext {
+
+  type KernelStatement = inner.KernelStatement
+
+  override def commitAndRestartTx() { inner.commitAndRestartTx() }
+
+  override def isTopLevelTx: Boolean = inner.isTopLevelTx
+
+  override def statement: KernelStatement = inner.statement
+
+  override def isOpen: Boolean = inner.isOpen
+
+  override def close(success: Boolean) { inner.close(success) }
 }

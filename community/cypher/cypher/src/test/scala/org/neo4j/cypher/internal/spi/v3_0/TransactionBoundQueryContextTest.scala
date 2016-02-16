@@ -62,7 +62,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val context = new TransactionBoundQueryContext(graph, outerTx, isTopLevelTx = true, statement)(indexSearchMonitor)
 
     // WHEN
-    context.close(success = true)
+    context.transactionalContext.close(success = true)
 
     // THEN
     verify (outerTx).success ()
@@ -76,7 +76,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val context = new TransactionBoundQueryContext(graph, outerTx, isTopLevelTx = true, statement)(indexSearchMonitor)
 
     // WHEN
-    context.close(success = false)
+    context.transactionalContext.close(success = false)
 
     // THEN
     verify (outerTx).failure ()

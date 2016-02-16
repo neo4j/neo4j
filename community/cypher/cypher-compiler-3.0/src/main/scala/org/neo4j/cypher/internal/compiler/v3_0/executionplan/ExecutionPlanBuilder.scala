@@ -177,7 +177,7 @@ object InterpretedExecutionPlanBuilder {
       builder.setQueryContext(builderContext)
 
       if (periodicCommit.isDefined) {
-        if (!builderContext.isTopLevelTx)
+        if (!builderContext.transactionalContext.isTopLevelTx)
           throw new PeriodicCommitInOpenTransactionException()
         builder.setLoadCsvPeriodicCommitObserver(periodicCommit.get.batchRowCount)
       }

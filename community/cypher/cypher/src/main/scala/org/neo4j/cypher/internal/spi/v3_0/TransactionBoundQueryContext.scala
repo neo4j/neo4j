@@ -59,11 +59,9 @@ import scala.collection.JavaConverters._
 
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                          var tx: Transaction,
-                                         val isTopLevelTx: Boolean,
+                                         isTopLevelTx: Boolean,
                                          initialStatement: Statement)(implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(initialStatement) with QueryContext {
-
-  type KernelStatement = Statement
 
   type EntityAccessor = NodeManager
 
@@ -73,30 +71,46 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   val relationshipOps = new RelationshipOperations
   val relationshipActions = graph.getDependencyResolver.resolveDependency(classOf[RelationshipProxy.RelationshipActions])
 
-  override def statement = _statement
+  val transactionalContext = new TransactionalContext {
+    override type KernelStatement = Statement
+
+    override def isTopLevelTx: Boolean = TransactionBoundQueryContext.this.isTopLevelTx
+
+    override def statement = _statement
+
+    override def isOpen = open
+
+    override def close(success: Boolean): Unit = {
+      try {
+        _statement.close()
+
+        if (success)
+          tx.success()
+        else
+          tx.failure()
+        tx.close()
+      }
+      finally {
+        open = false
+      }
+    }
+
+    override def commitAndRestartTx() {
+      tx.success()
+      tx.close()
+
+      tx = graph.beginTx()
+      _statement = txBridge.get()
+    }
+  }
 
   override def entityAccessor = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
-  override def isOpen = open
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (_statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
   }
 
-  override def close(success: Boolean) {
-    try {
-      _statement.close()
-
-      if (success)
-        tx.success()
-      else
-        tx.failure()
-      tx.close()
-    }
-    finally {
-      open = false
-    }
-  }
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = {
     if (open) {
@@ -517,14 +531,6 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   private val tokenNameLookup = new StatementTokenNameLookup(_statement.readOperations())
 
-  override def commitAndRestartTx() {
-    tx.success()
-    tx.close()
-
-    tx = graph.beginTx()
-    _statement = txBridge.get()
-  }
-
   // Legacy dependency between kernel and compiler
   override def variableLengthPathExpand(node: PatternNode,
                                         realNode: Node,
@@ -586,10 +592,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   override def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]) =
-    callProcedure(name, args, statement.readOperations().procedureCallRead )
+    callProcedure(name, args, transactionalContext.statement.readOperations().procedureCallRead )
 
   override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]) =
-    callProcedure(name, args, statement.dataWriteOperations().procedureCallWrite )
+    callProcedure(name, args, transactionalContext.statement.dataWriteOperations().procedureCallWrite )
 
   private def callProcedure(name: ProcedureName, args: Seq[Any],
                             call: (proc.ProcedureSignature.ProcedureName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]) = {

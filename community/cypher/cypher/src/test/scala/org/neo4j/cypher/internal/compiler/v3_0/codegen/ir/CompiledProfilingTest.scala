@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, plans}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_0.symbols
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -55,7 +55,10 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
     val statement = mock[Statement]
     val queryContext = mock[QueryContext]
-    when(queryContext.statement).thenReturn(statement.asInstanceOf[queryContext.KernelStatement])
+    val transactionalContext: TransactionalContext = mock[TransactionalContext]
+    when(queryContext.transactionalContext).thenReturn(transactionalContext)
+    when(transactionalContext.statement).thenReturn(statement.asInstanceOf[transactionalContext.KernelStatement])
+
     val readOps = mock[ReadOperations]
     val entityAccessor = mock[NodeManager]
     when(entityAccessor.newNodeProxyById(anyLong())).thenReturn(mock[NodeProxy])

@@ -26,7 +26,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.{CodeGenContext, JoinTableMethod, Variable}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticTable, symbols}
 import org.neo4j.graphdb.Node
@@ -44,13 +44,14 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private val entityAccessor = mock[NodeManager]
   private val statement = mock[Statement]
   private val queryContext = mock[QueryContext]
+  private val transactionalContext = mock[TransactionalContext]
   private val readOps = mock[ReadOperations]
   private val allNodeIds = mutable.ArrayBuffer[Long]()
 
   // used by instructions that generate probe tables
   private implicit val codeGenContext = new CodeGenContext(SemanticTable(), Map.empty)
-
-  when(queryContext.statement).thenReturn(statement.asInstanceOf[queryContext.KernelStatement])
+  when(queryContext.transactionalContext).thenReturn(transactionalContext)
+  when(transactionalContext.statement).thenReturn(statement.asInstanceOf[transactionalContext.KernelStatement])
   when(queryContext.entityAccessor).thenReturn(entityAccessor.asInstanceOf[queryContext.EntityAccessor])
   when(statement.readOperations()).thenReturn(readOps)
   when(readOps.nodesGetAll()).then(new Answer[PrimitiveLongIterator] {

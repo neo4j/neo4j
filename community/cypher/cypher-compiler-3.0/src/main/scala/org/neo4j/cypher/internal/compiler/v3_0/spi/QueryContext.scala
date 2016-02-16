@@ -45,13 +45,11 @@ import scala.collection.Iterator
  */
 trait QueryContext extends TokenContext {
 
-  type KernelStatement
-
   type EntityAccessor
 
-  def statement: KernelStatement
-
   def entityAccessor: EntityAccessor
+
+  def transactionalContext: TransactionalContext
 
   def nodeOps: Operations[Node]
 
@@ -87,12 +85,6 @@ trait QueryContext extends TokenContext {
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int)
 
-  def isOpen: Boolean
-
-  def isTopLevelTx: Boolean
-
-  def close(success: Boolean)
-
   def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node]
 
   def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[Node]
@@ -127,8 +119,6 @@ trait QueryContext extends TokenContext {
    * This should not be used. We'll remove sooner (or later). Don't do it.
    */
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T
-
-  def commitAndRestartTx()
 
   def relationshipStartNode(rel: Relationship): Node
 
@@ -197,4 +187,19 @@ trait Operations[T <: PropertyContainer] {
   def acquireExclusiveLock(obj: Long): Unit
 
   def releaseExclusiveLock(obj: Long): Unit
+}
+
+trait TransactionalContext {
+
+  type KernelStatement
+
+  def statement: KernelStatement
+
+  def isOpen: Boolean
+
+  def isTopLevelTx: Boolean
+
+  def close(success: Boolean)
+
+  def commitAndRestartTx()
 }

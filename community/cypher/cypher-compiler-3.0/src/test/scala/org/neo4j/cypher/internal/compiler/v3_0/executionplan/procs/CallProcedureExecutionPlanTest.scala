@@ -116,6 +116,7 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
     }
   }
 
+  when(ctx.transactionalContext).thenReturn(mock[TransactionalContext])
   when(ctx.callReadOnlyProcedure(any[ProcedureName], any[Seq[AnyRef]])).thenAnswer(procedureResult)
   when(ctx.callReadWriteProcedure(any[ProcedureName], any[Seq[AnyRef]])).thenAnswer(procedureResult)
 }

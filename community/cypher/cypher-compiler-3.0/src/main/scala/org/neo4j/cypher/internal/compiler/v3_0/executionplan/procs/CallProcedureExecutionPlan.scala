@@ -49,7 +49,7 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArg
     val input = evaluateArguments(ctx, params)
 
     val taskCloser = new TaskCloser
-    taskCloser.addTask(ctx.close)
+    taskCloser.addTask(ctx.transactionalContext.close)
 
     planType match {
       case NormalMode => createNormalExecutionResult(ctx, taskCloser, input, planType)
@@ -94,7 +94,7 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArg
     PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren, Seq(DbHits(1), Rows(rowCounter.counted)), Set.empty)
 
   private def fail(f: FieldSignature, ctx: QueryContext) = {
-    ctx.close(success = false)
+    ctx.transactionalContext.close(success = false)
     throw new ParameterNotFoundException(
       s"""Procedure ${signature.name.name} expected an argument with ${f.name} with type ${f.typ}"""
     )
