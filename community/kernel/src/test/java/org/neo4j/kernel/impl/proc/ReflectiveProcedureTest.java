@@ -37,8 +37,8 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicContext;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.logging.Log;
-import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Procedure;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.contains;
@@ -188,15 +188,15 @@ public class ReflectiveProcedureTest
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Procedures must return a Stream of records, where a record is a concrete class\n" +
-                                 "that you define, with public non-final fields defining the fields in the record.\n" +
+        exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
+                                 "that you define, with public non-final fields defining the fields in the record.%n" +
                                  "If you''d like your procedure to return `String`, you could define a record class " +
-                                 "like:\n" +
-                                 "public class Output '{'\n" +
-                                 "    public String out;\n" +
-                                 "'}'\n" +
-                                 "\n" +
-                                 "And then define your procedure as returning `Stream<Output>`." );
+                                 "like:%n" +
+                                 "public class Output '{'%n" +
+                                 "    public String out;%n" +
+                                 "'}'%n" +
+                                 "%n" +
+                                 "And then define your procedure as returning `Stream<Output>`." ));
 
         // When
         compile( ProcedureWithInvalidRecordOutput.class ).get( 0 );
@@ -207,10 +207,10 @@ public class ReflectiveProcedureTest
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "The field `gdb` in the class named `ProcedureWithStaticContextAnnotatedField` is " +
-                                 "annotated as a @Context field,\n" +
-                                 "but it is static. @Context fields must be public, non-final and non-static,\n" +
-                                 "because they are reset each time a procedure is invoked." );
+        exception.expectMessage( String.format("The field `gdb` in the class named `ProcedureWithStaticContextAnnotatedField` is " +
+                                 "annotated as a @Context field,%n" +
+                                 "but it is static. @Context fields must be public, non-final and non-static,%n" +
+                                 "because they are reset each time a procedure is invoked." ));
 
         // When
         compile( ProcedureWithStaticContextAnnotatedField.class ).get( 0 );

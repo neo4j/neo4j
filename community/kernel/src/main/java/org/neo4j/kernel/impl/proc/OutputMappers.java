@@ -142,7 +142,7 @@ public class OutputMappers
         if (!(genericReturnType instanceof ParameterizedType))
         {
             throw new ProcedureException( Status.Procedure.TypeError,
-                    "Procedures must return a Stream of records, where a record is a concrete class\n" +
+                    "Procedures must return a Stream of records, where a record is a concrete class%n" +
                     "that you define and not a raw Stream.");
         }
 
@@ -151,14 +151,14 @@ public class OutputMappers
         if ( recordType instanceof WildcardType)
         {
             throw new ProcedureException( Status.Procedure.TypeError,
-                    "Procedures must return a Stream of records, where a record is a concrete class\n" +
+                    "Procedures must return a Stream of records, where a record is a concrete class%n" +
                     "that you define and not a Stream<?>.");
         }
         if (recordType instanceof ParameterizedType)
         {
             ParameterizedType type = (ParameterizedType) recordType;
             throw new ProcedureException( Status.Procedure.TypeError,
-                    "Procedures must return a Stream of records, where a record is a concrete class\n" +
+                    "Procedures must return a Stream of records, where a record is a concrete class%n" +
                     "that you define and not a parameterized type such as %s.", type);
         }
 
@@ -219,13 +219,13 @@ public class OutputMappers
     private ProcedureException invalidReturnType( Class<?> userClass )
     {
         return new ProcedureException( Status.Procedure.TypeError,
-                "Procedures must return a Stream of records, where a record is a concrete class\n" +
-                "that you define, with public non-final fields defining the fields in the record.\n" +
-                "If you''d like your procedure to return `%s`, you could define a record class like:\n" +
-                "public class Output '{'\n" +
-                "    public %s out;\n" +
-                "'}'\n" +
-                "\n" +
+                "Procedures must return a Stream of records, where a record is a concrete class%n" +
+                "that you define, with public non-final fields defining the fields in the record.%n" +
+                "If you''d like your procedure to return `%s`, you could define a record class like:%n" +
+                "public class Output '{'%n" +
+                "    public %s out;%n" +
+                "'}'%n" +
+                "%n" +
                 "And then define your procedure as returning `Stream<Output>`.",
                 userClass.getSimpleName(), userClass.getSimpleName());
     }
