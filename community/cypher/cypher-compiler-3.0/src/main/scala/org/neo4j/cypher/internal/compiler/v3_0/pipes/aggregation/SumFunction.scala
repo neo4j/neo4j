@@ -31,7 +31,7 @@ class SumFunction(val value: Expression)
 
   def name = "SUM"
 
-  private var sum: OverflowAwareSum[_] = OverflowAwareSum(0)
+  private var sum: OverflowAwareSum[_] = OverflowAwareSum(0L)
   def result = sum.value
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {

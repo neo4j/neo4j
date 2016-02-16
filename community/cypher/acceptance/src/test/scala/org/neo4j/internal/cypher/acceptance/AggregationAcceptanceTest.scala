@@ -23,6 +23,7 @@ import org.neo4j.cypher.{SyntaxException, NewPlannerTestSupport, ExecutionEngine
 import org.neo4j.graphdb.Node
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
   test("should handle aggregates inside non aggregate expressions") {
     executeWithAllPlannersAndCompatibilityMode(
       "MATCH (a { name: 'Andres' })<-[:FATHER]-(child) RETURN {foo:a.name='Andres',kids:collect(child.name)}"
@@ -257,5 +258,10 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     result.toList should equal(List(Map("prop" -> 42)))
+  }
+
+  test("should not overflow when doing summation") {
+    executeWithAllPlanners("unwind range(1000000,2000000) as i with i limit 3000 return sum(i)").toList should equal(
+      List(Map("sum(i)" -> 3004498500L)))
   }
 }
