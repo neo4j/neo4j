@@ -27,6 +27,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.{ExecutionResult, ExecutionEngine, ExecutionPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Literal, Variable}
@@ -38,9 +39,9 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CTInteger
 import org.neo4j.cypher.internal.spi.v3_0.MonoDirectionalTraversalMatcher
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
-import org.neo4j.helpers.collection.Iterables.asResourceIterable
-import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.api.OperationsFacade
@@ -183,7 +184,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("graph global queries are lazy") {
     //Given:
-    val fakeGraph = mock[GraphDatabaseQueryService]
+    val fakeGraph = mock[GraphDatabaseAPI]
     val tx = mock[Transaction]
     val nodeManager = mock[NodeManager]
     val dependencies = mock[DependencyResolver]
@@ -217,10 +218,12 @@ class LazyTest extends ExecutionEngineFunSuite {
     val n4 = mock[Node]
     val n5 = mock[Node]
     val n6 = mock[Node]
-    val nodesIterator = java.util.Arrays.asList( n0, n1, n2, n3, n4, n5, n6 ).iterator()
-    when(fakeGraph.getAllNodes).thenReturn(asResourceIterable(new java.lang.Iterable[Node](){
-      override def iterator() = nodesIterator
-    }))
+    val nodesIterator = List( n0, n1, n2, n3, n4, n5, n6 ).iterator
+    val allNodeIdsIterator = new PrimitiveLongIterator {
+      override def hasNext = nodesIterator.hasNext
+      override def next() = nodesIterator.next().getId()
+    }
+    when(fakeReadStatement.nodesGetAll).thenReturn(allNodeIdsIterator)
 
     val cache = new LRUCache[String, (ExecutionPlan, Map[String, Any])](1)
     when(fakeReadStatement.schemaStateGetOrCreate(any(), any())).then(
@@ -228,11 +231,11 @@ class LazyTest extends ExecutionEngineFunSuite {
         def answer(invocation: InvocationOnMock) = { cache }
     })
 
-    val engine = new ExecutionEngine(fakeGraph)
+    val engine = new ExecutionEngine(new GraphDatabaseCypherService(fakeGraph))
 
     //When:
     graph.inTx {
-      engine.execute("match (n) return n limit 5", Map.empty[String,Any]).toList
+      engine.execute("match (n) return n limit 4", Map.empty[String,Any]).toList
     }
 
     //Then:
