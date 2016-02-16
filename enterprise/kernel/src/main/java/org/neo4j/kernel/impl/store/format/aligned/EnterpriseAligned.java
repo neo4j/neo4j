@@ -17,11 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit;
+package org.neo4j.kernel.impl.store.format.aligned;
 
 
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.aligned.Aligned;
+import org.neo4j.kernel.impl.store.format.aligned.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.aligned.RelationshipGroupRecordFormat;
+import org.neo4j.kernel.impl.store.format.aligned.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -30,17 +34,17 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
  * Record format with very high limits, 50-bit per ID, as well the ability to use two record units per record, while at
  * the same time keeping store size small.
  *
- * @see HighLimit
+ * @see Aligned
  */
-public class EnterpriseHighLimit extends HighLimit
+public class EnterpriseAligned extends Aligned
 {
-    public static final RecordFormats RECORD_FORMATS = new EnterpriseHighLimit();
+    public static final RecordFormats RECORD_FORMATS = new EnterpriseAligned();
 
     @Override
     public String storeVersion()
     {
-        // Enterprise.HighLimit.Zero
-        return "vE.H.0";
+        // Enterprise.Aligned.Zero
+        return "vE.A.0";
     }
 
     @Override

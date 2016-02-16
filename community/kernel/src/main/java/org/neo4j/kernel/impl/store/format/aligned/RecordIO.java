@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit;
+package org.neo4j.kernel.impl.store.format.aligned;
 
 import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
+import org.neo4j.kernel.impl.store.format.aligned.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**

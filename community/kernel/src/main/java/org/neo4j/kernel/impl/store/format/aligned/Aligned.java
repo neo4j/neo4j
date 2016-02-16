@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit;
+package org.neo4j.kernel.impl.store.format.aligned;
 
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -36,17 +36,17 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 /**
  * Record format with very high limits, 50-bit per ID, while at the same time keeping store size small.
  *
- * @see BaseHighLimitRecordFormat
+ * @see BaseAlignedRecordFormat
  */
-public class HighLimit implements RecordFormats
+public class Aligned implements RecordFormats
 {
-    public static final RecordFormats RECORD_FORMATS = new HighLimit();
+    public static final RecordFormats RECORD_FORMATS = new Aligned();
 
     @Override
     public String storeVersion()
     {
-        // Community.HighLimit.Zero
-        return "vC.H.0";
+        // Community.Aligned.Zero
+        return "vC.A.0";
     }
 
     @Override

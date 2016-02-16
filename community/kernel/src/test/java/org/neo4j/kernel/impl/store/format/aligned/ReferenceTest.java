@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit;
+package org.neo4j.kernel.impl.store.format.aligned;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,11 +26,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.StubPageCursor;
+import org.neo4j.kernel.impl.store.format.aligned.Reference;
 import org.neo4j.test.RandomRule;
 
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR_ADAPTER;
+import static org.neo4j.kernel.impl.store.format.aligned.Reference.PAGE_CURSOR_ADAPTER;
 
 public class ReferenceTest
 {

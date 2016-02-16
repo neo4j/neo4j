@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.store.format;
 
 
-import org.neo4j.kernel.impl.store.format.highlimit.EnterpriseHighLimit;
+import org.neo4j.kernel.impl.store.format.aligned.EnterpriseAligned;
 
 public class EnterpriseHighLimitRecordFormatTest extends RecordFormatTest
 {
@@ -29,6 +29,6 @@ public class EnterpriseHighLimitRecordFormatTest extends RecordFormatTest
 
     public EnterpriseHighLimitRecordFormatTest()
     {
-        super( EnterpriseHighLimit.RECORD_FORMATS, _50_BIT_LIMITS );
+        super( EnterpriseAligned.RECORD_FORMATS, _50_BIT_LIMITS );
     }
 }

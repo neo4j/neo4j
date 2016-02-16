@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit;
+package org.neo4j.kernel.impl.store.format.aligned;
 
 import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
+import org.neo4j.kernel.impl.store.format.aligned.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRecord>
+class RelationshipRecordFormat extends BaseAlignedRecordFormat<RelationshipRecord>
 {
     private static final int RECORD_SIZE = 32;
     private static final int FIRST_IN_START_BIT = 0b0000_1000;

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit;
+package org.neo4j.kernel.impl.store.format.aligned;
 
 import java.io.IOException;
 import java.util.function.Function;
@@ -26,12 +26,12 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
-import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
+import org.neo4j.kernel.impl.store.format.aligned.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
-import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR_ADAPTER;
+import static org.neo4j.kernel.impl.store.format.aligned.Reference.PAGE_CURSOR_ADAPTER;
 
 /**
  * Base class for record format which utilizes dynamically sized references to other record IDs and with ability
@@ -73,7 +73,7 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
+abstract class BaseAlignedRecordFormat<RECORD extends AbstractBaseRecord>
         extends BaseOneByteHeaderRecordFormat<RECORD>
 {
     static final long NULL = Record.NULL_REFERENCE.intValue();
@@ -82,7 +82,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     // Default to community record format
     private final RecordIO<RECORD> recordIO; // = new RecordIO.CommunityRecordIO<>();
 
-    protected BaseHighLimitRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize,
+    protected BaseAlignedRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize,
             RecordIO<RECORD> recordIO )
     {
         super( recordSize, recordHeaderSize, IN_USE_BIT );
@@ -104,12 +104,15 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
                 record.clear();
                 // Return and try again
                 return;
-            } else {
-                recordIO.read( record, primaryCursor, recordSize, storeFile,
-                        ( readAdapter ) -> doReadInternal( record, primaryCursor, recordSize, headerByte, inUse,
-                                readAdapter ) );
             }
-        } else {
+            else
+            {
+                recordIO.read( record, primaryCursor, recordSize, storeFile, ( readAdapter ) -> doReadInternal( record,
+                        primaryCursor, recordSize, headerByte, inUse, readAdapter ) );
+            }
+        }
+        else
+        {
             doReadInternal( record, primaryCursor, recordSize, headerByte, inUse, PAGE_CURSOR_ADAPTER );
         }
     }
