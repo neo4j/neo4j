@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store.format.highlimit;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
@@ -37,8 +36,8 @@ public interface RecordIO<RECORD extends AbstractBaseRecord>
     void read( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile,
             Consumer<DataAdapter<PageCursor>> reader ) throws IOException;
 
-    void write( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile,
-            ThrowingConsumer<DataAdapter<PageCursor>, IOException> writer ) throws IOException;
+    DataAdapter<PageCursor> getWriteAdapter( RECORD record, PageCursor primaryCursor, int recordSize,
+            PagedFile storeFile ) throws IOException;
 
     /**
      * Community implementation only supports single record units.
@@ -54,8 +53,8 @@ public interface RecordIO<RECORD extends AbstractBaseRecord>
         }
 
         @Override
-        public void write( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile,
-                ThrowingConsumer<DataAdapter<PageCursor>, IOException> writer ) throws IOException
+        public DataAdapter<PageCursor> getWriteAdapter( RECORD record, PageCursor primaryCursor, int recordSize,
+                PagedFile storeFile ) throws IOException
         {
             throw new IOException( "Community edition only supports single record units" );
         }

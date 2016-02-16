@@ -132,8 +132,8 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
 
         if ( record.requiresTwoUnits() )
         {
-            recordIO.write( record, primaryCursor, recordSize, storeFile,
-                    ( dataAdapter ) -> doWriteInternal( record, primaryCursor, dataAdapter ) );
+            doWriteInternal( record, primaryCursor,
+                    recordIO.getWriteAdapter( record, primaryCursor, recordSize, storeFile ) );
         }
         else
         {

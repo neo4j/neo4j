@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store.format.highlimit;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
@@ -70,18 +69,17 @@ public class EnterpriseRecordIO<RECORD extends AbstractBaseRecord> implements Re
     }
 
     @Override
-    public void write( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile,
-            ThrowingConsumer<DataAdapter<PageCursor>, IOException> writer ) throws IOException
+    public DataAdapter<PageCursor> getWriteAdapter( RECORD record, PageCursor primaryCursor, int recordSize,
+            PagedFile storeFile ) throws IOException
     {
         int primaryEndOffset = primaryCursor.getOffset() + recordSize - 1 /*we've already written the header byte*/;
 
         // Write using the normal adapter since the first reference we write cannot really overflow
         // into the secondary record
         Reference.encode( record.getSecondaryId(), primaryCursor, PAGE_CURSOR_ADAPTER );
-        DataAdapter<PageCursor> dataAdapter = new SecondaryPageCursorWriteDataAdapter(
+
+        return new SecondaryPageCursorWriteDataAdapter(
                 pageIdForRecord( record.getSecondaryId(), storeFile.pageSize(), recordSize ),
                 offsetForId( record.getSecondaryId(), storeFile.pageSize(), recordSize ), primaryEndOffset );
-
-        writer.accept( dataAdapter );
     }
 }
