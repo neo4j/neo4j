@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
-import org.apache.lucene.document.Document;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,12 +34,12 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.register.Register.DoubleLong;
 
-public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneIndexPopulator
+public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     private final IndexDescriptor descriptor;
     private final UniqueIndexSampler sampler;
 
-    public DeferredConstraintVerificationUniqueLuceneIndexPopulator(LuceneSchemaIndex index, IndexDescriptor descriptor )
+    public UniqueLuceneIndexPopulator(LuceneSchemaIndex index, IndexDescriptor descriptor )
     {
         super( index );
         this.descriptor = descriptor;
@@ -52,15 +50,6 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
     protected void flush() throws IOException
     {
         // no need to do anything yet.
-    }
-
-    @Override
-    public void add( long nodeId, Object propertyValue )
-            throws IndexEntryConflictException, IOException
-    {
-        sampler.increment( 1 );
-        Document doc = LuceneDocumentStructure.documentRepresentingProperty( nodeId, propertyValue );
-        writer.addDocument( doc );
     }
 
     @Override
@@ -120,6 +109,12 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
                 throw new UnsupportedOperationException( "should not remove() from populating index" );
             }
         };
+    }
+
+    @Override
+    public void includeSample( NodePropertyUpdate update )
+    {
+        sampler.increment( 1 );
     }
 
     @Override

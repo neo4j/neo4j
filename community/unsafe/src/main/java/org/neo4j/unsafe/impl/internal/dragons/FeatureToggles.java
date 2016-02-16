@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.internal.dragons;
 
+import java.util.Objects;
+
 /**
  * Feature toggles are used for features that are possible to configure, but where the configuration is always fixed in
  * a production system.
@@ -142,42 +144,44 @@ public class FeatureToggles
     }
 
     /**
-     * Helps creating a JVM parameter for setting a {@code boolean} feature toggle.
+     * Set the value of a system property.
+     * <p>
+     * The name of the system property is computed based on the provided class and local name.
      *
      * @param location the class that owns the flag.
      * @param name the local name of the flag.
-     * @param value the value to assign to the feature toggle.
-     * @return the parameter to pass to the command line of the forked JVM.
+     * @param value the value to assign to the system property.
      */
-    public static String toggle( Class<?> location, String name, boolean value )
+    public static void set( Class<?> location, String name, Object value )
     {
-        return toggle( name( location, name ), Boolean.toString( value ) );
+        System.setProperty( name( location, name ), Objects.toString( value ) );
     }
 
     /**
-     * Helps creating a JVM parameter for setting a {@code long} or {@code int} feature toggle.
+     * Clear the value of a system property.
+     * <p>
+     * The name of the system property is computed based on the provided class and local name.
      *
      * @param location the class that owns the flag.
      * @param name the local name of the flag.
-     * @param value the value to assign to the feature toggle.
-     * @return the parameter to pass to the command line of the forked JVM.
      */
-    public static String toggle( Class<?> location, String name, long value )
+    public static void clear( Class<?> location, String name )
     {
-        return toggle( name( location, name ), Long.toString( value ) );
+        System.clearProperty( name( location, name ) );
     }
 
     /**
-     * Helps creating a JVM parameter for setting an {@code enum} feature toggle.
+     * Helps creating a JVM parameter for setting a feature toggle of an arbitrary type.
+     * Given value will be converted to string using {@link Objects#toString(Object)} method.
      *
      * @param location the class that owns the flag.
      * @param name the local name of the flag.
      * @param value the value to assign to the feature toggle.
      * @return the parameter to pass to the command line of the forked JVM.
      */
-    public static String toggle( Class<?> location, String name, Enum<?> value )
+    public static String toggle( Class<?> location, String name, Object value )
     {
-        return toggle( name( location, name ), value.name() );
+        return toggle( name( location, name ), Objects.toString( value ) );
     }
 
     // <implementation>

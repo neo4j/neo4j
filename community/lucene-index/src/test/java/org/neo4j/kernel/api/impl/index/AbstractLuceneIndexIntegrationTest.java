@@ -181,7 +181,7 @@ public class AbstractLuceneIndexIntegrationTest
     {
         TestLuceneIndex( PartitionedIndexStorage indexStorage )
         {
-            super( indexStorage );
+            super( indexStorage, IndexWriterConfigs::standard );
         }
     }
 

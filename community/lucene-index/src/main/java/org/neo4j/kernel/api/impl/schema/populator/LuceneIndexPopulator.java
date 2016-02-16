@@ -19,11 +19,18 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
-import java.io.IOException;
+import org.apache.lucene.document.Document;
 
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
+
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 public abstract class LuceneIndexPopulator implements IndexPopulator
 {
@@ -50,6 +57,18 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     }
 
     @Override
+    public void add( List<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
+    {
+        // Lucene documents stored in a ThreadLocal and reused so we can't create an eager collection of documents here
+        // That is why we create a lazy Iterator and then Iterable
+        Iterator<Document> documents = updates.stream()
+                .map( LuceneIndexPopulator::updateAsDocument )
+                .iterator();
+
+        writer.addDocuments( () -> documents );
+    }
+
+    @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
         try
@@ -73,4 +92,9 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     }
 
     protected abstract void flush() throws IOException;
+
+    private static Document updateAsDocument( NodePropertyUpdate update )
+    {
+        return LuceneDocumentStructure.documentRepresentingProperty( update.getNodeId(), update.getValueAfter() );
+    }
 }

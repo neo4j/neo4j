@@ -48,6 +48,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -292,6 +293,31 @@ public class MultipleIndexPopulatorTest
 
         verify( indexUpdater1 ).close();
         checkPopulatorFailure( indexPopulator1 );
+    }
+
+    @Test
+    public void testMultiplePropertyUpdateFailures()
+            throws IOException, IndexEntryConflictException
+    {
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        NodePropertyUpdate update1 = NodePropertyUpdate.add( 1, 1, "foo", new long[]{1} );
+        NodePropertyUpdate update2 = NodePropertyUpdate.add( 2, 1, "bar", new long[]{1} );
+        IndexUpdater updater = mock( IndexUpdater.class );
+        IndexPopulator populator = createIndexPopulator( updater );
+
+        addPopulator( populator, 1 );
+
+        doThrow( getPopulatorException() ).when( updater ).process( any( NodePropertyUpdate.class ) );
+
+        IndexUpdater multipleIndexUpdater = multipleIndexPopulator.newPopulatingUpdater( propertyAccessor );
+
+        multipleIndexUpdater.process( update1 );
+        multipleIndexUpdater.process( update2 );
+
+        verify( updater ).process( update1 );
+        verify( updater, never() ).process( update2 );
+        verify( updater ).close();
+        checkPopulatorFailure( populator );
     }
 
     private NodePropertyUpdate createNodePropertyUpdate()

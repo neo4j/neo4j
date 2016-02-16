@@ -20,11 +20,14 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -47,7 +50,6 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
@@ -79,16 +81,17 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  */
 public class MultipleIndexPopulator implements IndexPopulator
 {
-    // Concurrency queue since multiple concurrent threads may enqueue updates into it
-    private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<>();
+    // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
+    // to have fast #size() method since it might be drained in batches
+    protected final Queue<NodePropertyUpdate> queue = new LinkedBlockingQueue<>();
 
-    // Populators are added into this list. The same thread adding populators will later call #indexAllNodes
-    // So doesn't need to be synchronized
-    private final List<IndexPopulation> populations = new LinkedList<>();
+    // Populators are added into this list. The same thread adding populators will later call #indexAllNodes but
+    // different threads might fail individual populators
+    protected final Map<IndexDescriptor,IndexPopulation> populations = new ConcurrentHashMap<>();
 
     private final IndexStoreView storeView;
     private final LogProvider logProvider;
-    private final Log log;
+    protected final Log log;
 
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
     {
@@ -105,8 +108,16 @@ public class MultipleIndexPopulator implements IndexPopulator
             FailedIndexProxyFactory failedIndexProxyFactory,
             String indexUserDescription )
     {
-        populations.add( new IndexPopulation( populator, descriptor, config, providerDescriptor,
+        populations.put( descriptor, createPopulation( populator, descriptor, config, providerDescriptor,
                 flipper, failedIndexProxyFactory, indexUserDescription ) );
+    }
+
+    protected IndexPopulation createPopulation( IndexPopulator populator, IndexDescriptor descriptor,
+            IndexConfiguration config, Descriptor providerDescriptor, FlippableIndexProxy flipper,
+            FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
+    {
+        return new IndexPopulation( populator, descriptor, config, providerDescriptor, flipper, failedIndexProxyFactory,
+                indexUserDescription );
     }
 
     public boolean hasPopulators()
@@ -117,18 +128,19 @@ public class MultipleIndexPopulator implements IndexPopulator
     @Override
     public void create()
     {
-        for ( int i = 0; i < populations.size(); )
+        for ( Map.Entry<IndexDescriptor,IndexPopulation> entry : populations.entrySet() )
         {
-            IndexPopulation population = populations.get( i );
-            log.info( "Index population started: [%s]", population.getIndexUserDescription() );
+            IndexDescriptor descriptor = entry.getKey();
+            IndexPopulation population = entry.getValue();
+
+            log.info( "Index population started: [%s]", population.indexUserDescription );
             try
             {
                 population.populator.create();
-                i++; // only increment here on success since we remove from list on failure
             }
             catch ( Throwable t )
             {
-                fail( i, t );
+                fail( descriptor, t );
             }
         }
     }
@@ -140,7 +152,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void add( long nodeId, Object propertyValue )
+    public void add( List<NodePropertyUpdate> updates )
     {
         throw new UnsupportedOperationException( "Can't populate directly using this populator implementation. " );
     }
@@ -171,15 +183,20 @@ public class MultipleIndexPopulator implements IndexPopulator
      */
     public void fail( Throwable t )
     {
-        while ( !populations.isEmpty() )
+        for ( IndexDescriptor descriptor : populations.keySet() )
         {
-            fail( 0, t );
+            fail( descriptor, t );
         }
     }
 
-    private void fail( int index, Throwable t )
+    protected void fail( IndexDescriptor descriptor, Throwable t )
     {
-        IndexPopulation population = populations.remove( index );
+        IndexPopulation population = populations.remove( descriptor );
+        boolean populationHasAlreadyFailed = population == null;
+        if ( populationHasAlreadyFailed )
+        {
+            return;
+        }
 
         // If the cause of index population failure is a conflict in a (unique) index, the conflict is the
         // failure
@@ -196,7 +213,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         // Index conflicts are expected (for unique indexes) so we don't need to log them.
         if ( !(t instanceof IndexEntryConflictException) /*TODO: && this is a unique index...*/ )
         {
-            log.error( format( "Failed to populate index: [%s]", population.getIndexUserDescription() ), t );
+            log.error( format( "Failed to populate index: [%s]", population.indexUserDescription ), t );
         }
 
         // The flipper will have already flipped to a failed index context here, but
@@ -215,7 +232,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         catch ( Throwable e )
         {
             log.error( format( "Unable to close failed populator for index: [%s]",
-                    population.getIndexUserDescription() ), e );
+                    population.indexUserDescription ), e );
         }
     }
 
@@ -227,17 +244,18 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     public void verifyAllDeferredConstraints( PropertyAccessor accessor )
     {
-        for ( int i = 0; i < populations.size(); )
+        for ( Map.Entry<IndexDescriptor,IndexPopulation> entry : populations.entrySet() )
         {
-            IndexPopulation population = populations.get( i );
+            IndexDescriptor descriptor = entry.getKey();
+            IndexPopulation population = entry.getValue();
+
             try
             {
                 population.populator.verifyDeferredConstraints( accessor );
-                i++; // only increment here on success since we remove from list on failure
             }
             catch ( Throwable t )
             {
-                fail( i, t );
+                fail( descriptor, t );
             }
         }
     }
@@ -245,18 +263,19 @@ public class MultipleIndexPopulator implements IndexPopulator
     @Override
     public MultipleIndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
-        List<IndexUpdater> updaters = new ArrayList<>();
-        for ( int i = 0; i < populations.size(); )
+        Map<IndexDescriptor,IndexUpdater> updaters = new HashMap<>();
+        for ( Map.Entry<IndexDescriptor,IndexPopulation> entry : populations.entrySet() )
         {
-            IndexPopulation population = populations.get( i );
+            IndexDescriptor descriptor = entry.getKey();
+            IndexPopulation population = entry.getValue();
+
             try
             {
-                updaters.add( population.populator.newPopulatingUpdater( accessor ) );
-                i++; // only increment here on success since we remove from list on failure
+                updaters.put( descriptor, population.populator.newPopulatingUpdater( accessor ) );
             }
             catch ( Throwable t )
             {
-                fail( i, t );
+                fail( descriptor, t );
                 // It's OK, just don't include this updater, right?
             }
         }
@@ -266,17 +285,18 @@ public class MultipleIndexPopulator implements IndexPopulator
     @Override
     public void close( boolean populationCompletedSuccessfully )
     {
-        for ( int i = 0; i < populations.size(); )
+        for ( Map.Entry<IndexDescriptor,IndexPopulation> entry : populations.entrySet() )
         {
-            IndexPopulation population = populations.get( i );
+            IndexDescriptor descriptor = entry.getKey();
+            IndexPopulation population = entry.getValue();
+
             try
             {
                 population.populator.close( populationCompletedSuccessfully );
-                i++; // only increment here on success since we remove from list on failure
             }
             catch ( Throwable t )
             {
-                fail( i, t );
+                fail( descriptor, t );
             }
         }
     }
@@ -288,6 +308,12 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
+    public void includeSample( NodePropertyUpdate update )
+    {
+        throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
+    }
+
+    @Override
     public long sampleResult( Out result )
     {
         throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
@@ -295,46 +321,37 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     public void replaceIndexCounts( long uniqueElements, long maxUniqueElements, long indexSize )
     {
-        populations.forEach( population ->
+        populations.values().forEach( population ->
                 storeView.replaceIndexCounts( population.descriptor, uniqueElements,
                         maxUniqueElements, indexSize ) );
     }
 
     public void flipAfterPopulation()
     {
-        for ( int i = 0; i < populations.size(); )
+        for ( Map.Entry<IndexDescriptor,IndexPopulation> entry : populations.entrySet() )
         {
-            IndexPopulation populator = populations.get( i );
+            IndexDescriptor descriptor = entry.getKey();
+            IndexPopulation population = entry.getValue();
+
             try
             {
-                populator.flip();
-                i++; // only increment here on success since we remove from list on failure
+                population.flip();
             }
             catch ( Throwable t )
             {
-                fail( i, t );
+                fail( descriptor, t );
             }
         }
     }
 
     private int[] propertyKeyIds()
     {
-        int[] ids = new int[populations.size()];
-        for ( int i = 0; i < populations.size(); i++ )
-        {
-            ids[i] = populations.get( i ).descriptor.getPropertyKeyId();
-        }
-        return ids;
+        return populations.keySet().stream().mapToInt( IndexDescriptor::getPropertyKeyId ).toArray();
     }
 
     private int[] labelIds()
     {
-        int[] ids = new int[populations.size()];
-        for ( int i = 0; i < populations.size(); i++ )
-        {
-            ids[i] = populations.get( i ).descriptor.getLabelId();
-        }
-        return ids;
+        return populations.keySet().stream().mapToInt( IndexDescriptor::getLabelId ).toArray();
     }
 
     public void cancel()
@@ -343,7 +360,12 @@ public class MultipleIndexPopulator implements IndexPopulator
         close( false );
     }
 
-    private void populateFromQueueIfAvailable( final long currentlyIndexedNodeId )
+    protected void populateFromQueue( long currentlyIndexedNodeId )
+    {
+        populateFromQueueIfAvailable( currentlyIndexedNodeId );
+    }
+
+    private void populateFromQueueIfAvailable( long currentlyIndexedNodeId )
     {
         if ( !queue.isEmpty() )
         {
@@ -366,12 +388,12 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private static class MultipleIndexUpdater implements IndexUpdater
     {
-        private final List<IndexUpdater> updaters;
+        private final Map<IndexDescriptor,IndexUpdater> updaters;
         private final MultipleIndexPopulator multipleIndexPopulator;
         private final Log log;
 
-        MultipleIndexUpdater( MultipleIndexPopulator multipleIndexPopulator, List<IndexUpdater> updaters,
-                LogProvider logProvider )
+        MultipleIndexUpdater( MultipleIndexPopulator multipleIndexPopulator,
+                Map<IndexDescriptor, IndexUpdater> updaters, LogProvider logProvider )
         {
             this.multipleIndexPopulator = multipleIndexPopulator;
             this.updaters = updaters;
@@ -387,16 +409,19 @@ public class MultipleIndexPopulator implements IndexPopulator
         @Override
         public void process( NodePropertyUpdate update )
         {
-            for ( int i = 0; i < updaters.size(); )
+            Iterator<Map.Entry<IndexDescriptor,IndexUpdater>> entries = updaters.entrySet().iterator();
+            while ( entries.hasNext() )
             {
-                IndexPopulation populator = multipleIndexPopulator.getPopulator(i);
+                Map.Entry<IndexDescriptor,IndexUpdater> entry = entries.next();
+                IndexDescriptor descriptor = entry.getKey();
+                IndexUpdater updater = entry.getValue();
+
+                IndexPopulation populator = multipleIndexPopulator.getPopulation( descriptor );
                 if ( populator.isApplicable( update ) )
                 {
-                    IndexUpdater updater = updaters.get( i );
                     try
                     {
                         updater.process( update );
-                        i++; // only increment here on success since we remove from list on failure
                     }
                     catch ( Throwable t )
                     {
@@ -408,13 +433,9 @@ public class MultipleIndexPopulator implements IndexPopulator
                         {
                             log.error( format( "Failed to close index updater: [%s]", updater ), ce );
                         }
-                        updaters.remove( i );
-                        multipleIndexPopulator.fail( i, t );
+                        entries.remove();
+                        multipleIndexPopulator.fail( descriptor, t );
                     }
-                }
-                else
-                {
-                    i++; // only increment here on success (ignored) since we remove from list on failure
                 }
             }
         }
@@ -422,29 +443,32 @@ public class MultipleIndexPopulator implements IndexPopulator
         @Override
         public void close()
         {
-            for ( int i = 0; i < updaters.size(); )
+            Iterator<Map.Entry<IndexDescriptor,IndexUpdater>> entries = updaters.entrySet().iterator();
+            while ( entries.hasNext() )
             {
-                IndexUpdater updater = updaters.get( i );
+                Map.Entry<IndexDescriptor,IndexUpdater> entry = entries.next();
+                IndexDescriptor descriptor = entry.getKey();
+                IndexUpdater updater = entry.getValue();
+
                 try
                 {
                     updater.close();
-                    i++; // only increment here on success since we remove from list on failure
                 }
                 catch ( Throwable t )
                 {
-                    updaters.remove( i );
-                    multipleIndexPopulator.fail( i, t );
+                    entries.remove();
+                    multipleIndexPopulator.fail( descriptor, t );
                 }
             }
         }
     }
 
-    private IndexPopulation getPopulator( int index )
+    private IndexPopulation getPopulation( IndexDescriptor descriptor )
     {
-        return populations.get( index );
+        return populations.get( descriptor );
     }
 
-    private class IndexPopulation
+    protected class IndexPopulation
     {
         final IndexPopulator populator;
         final IndexDescriptor descriptor;
@@ -474,45 +498,48 @@ public class MultipleIndexPopulator implements IndexPopulator
             this.indexCountsRemover = new IndexCountsRemover( storeView, descriptor );
         }
 
-        public void flipToFailed( Throwable t )
+        private void flipToFailed( Throwable t )
         {
             flipper.flipTo( new FailedIndexProxy( descriptor, config, providerDescriptor, indexUserDescription,
                     populator, failure( t ), indexCountsRemover, logProvider ) );
         }
 
-        public void add( NodePropertyUpdate update )
+        private void add( NodePropertyUpdate update )
                 throws IndexEntryConflictException, IOException
         {
             if ( isApplicable( update ) )
             {
-                populator.add( update.getNodeId(), update.getValueAfter() );
+                populator.includeSample( update );
+                addApplicable( update );
             }
         }
 
-        boolean isApplicable( NodePropertyUpdate update )
+        protected void addApplicable( NodePropertyUpdate update )
+                throws IOException, IndexEntryConflictException
+        {
+            populator.add( Collections.singletonList( update ) );
+        }
+
+        private boolean isApplicable( NodePropertyUpdate update )
         {
             return update.forLabel( descriptor.getLabelId() ) &&
                    update.getPropertyKeyId() == descriptor.getPropertyKeyId();
         }
 
-        void flip() throws FlipFailedKernelException
+        private void flip() throws FlipFailedKernelException
         {
             flipper.flip( () -> {
                 populateFromQueueIfAvailable( Long.MAX_VALUE );
                 DoubleLongRegister result = Registers.newDoubleLongRegister();
                 long indexSize = populator.sampleResult( result );
-                storeView.replaceIndexCounts( descriptor, result.readFirst(), result.readSecond(),
-                        indexSize );
+                long uniqueElements = result.readFirst();
+                long sampleSize = result.readSecond();
+                storeView.replaceIndexCounts( descriptor, uniqueElements, sampleSize, indexSize );
 
                 populator.close( true );
                 return null;
             }, failedIndexProxyFactory );
             log.info( "Index population completed. Index is now online: [%s]", indexUserDescription );
-        }
-
-        public String getIndexUserDescription()
-        {
-            return indexUserDescription;
         }
     }
 
@@ -522,23 +549,24 @@ public class MultipleIndexPopulator implements IndexPopulator
         public boolean visit( NodePropertyUpdate update ) throws IndexPopulationFailedKernelException
         {
             add( update );
-            populateFromQueueIfAvailable( update.getNodeId() );
+            populateFromQueue( update.getNodeId() );
             return false;
         }
 
         private void add( NodePropertyUpdate update )
         {
-            for ( int i = 0; i < populations.size(); )
+            for ( Map.Entry<IndexDescriptor,IndexPopulation> entry : populations.entrySet() )
             {
-                IndexPopulation populator = populations.get( i );
+                IndexDescriptor descriptor = entry.getKey();
+                IndexPopulation population = entry.getValue();
+
                 try
                 {
-                    populator.add( update );
-                    i++; // only increment here on success since we remove from list on failure
+                    population.add( update );
                 }
                 catch ( Throwable t )
                 {
-                    fail( i, t );
+                    fail( descriptor, t );
                 }
             }
         }

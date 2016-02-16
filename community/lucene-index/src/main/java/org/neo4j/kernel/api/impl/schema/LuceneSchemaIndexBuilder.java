@@ -19,9 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+
 import java.util.Map;
 
+import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.configuration.Config;
@@ -41,6 +46,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
 {
     private IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
     private IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
+    private Factory<IndexWriterConfig> writerConfigFactory = IndexWriterConfigs::standard;
 
     private LuceneSchemaIndexBuilder()
     {
@@ -48,6 +54,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
 
     /**
      * Create new lucene schema index builder.
+     *
      * @return new LuceneSchemaIndexBuilder
      */
     public static LuceneSchemaIndexBuilder create()
@@ -57,6 +64,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
 
     /**
      * Specify lucene schema index sampling config
+     *
      * @param samplingConfig sampling config
      * @return index builder
      */
@@ -68,6 +76,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
 
     /**
      * Specify lucene schema index sampling buffer size
+     *
      * @param size sampling buffer size
      * @return index builder
      */
@@ -81,6 +90,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
 
     /**
      * Specify lucene schema index config
+     *
      * @param indexConfig index config
      * @return index builder
      */
@@ -91,7 +101,20 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
     }
 
     /**
+     * Specify {@link Factory} of lucene {@link IndexWriterConfig} to create {@link IndexWriter}s.
+     *
+     * @param writerConfigFactory the supplier of writer configs
+     * @return index builder
+     */
+    public LuceneSchemaIndexBuilder withWriterConfig( Factory<IndexWriterConfig> writerConfigFactory )
+    {
+        this.writerConfigFactory = writerConfigFactory;
+        return this;
+    }
+
+    /**
      * Transform builder to build unique index
+     *
      * @return index builder
      */
     public LuceneSchemaIndexBuilder uniqueIndex()
@@ -102,11 +125,12 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
 
     /**
      * Build lucene schema index with specified configuration
+     *
      * @return lucene schema index
      */
     public LuceneSchemaIndex build()
     {
-        return new LuceneSchemaIndex( storageBuilder.build(), indexConfig, samplingConfig );
+        return new LuceneSchemaIndex( storageBuilder.build(), indexConfig, samplingConfig, writerConfigFactory );
     }
 
 }

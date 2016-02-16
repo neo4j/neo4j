@@ -29,11 +29,9 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.Thread.currentThread;
-
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 
 /**
@@ -45,7 +43,7 @@ import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 public class IndexPopulationJob implements Runnable
 {
     private final IndexingService.Monitor monitor;
-    private final MultipleIndexPopulator populator;
+    private final MultipleIndexPopulator multiPopulator;
     private final IndexStoreView storeView;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
     private final Runnable schemaStateChangeCallback;
@@ -54,11 +52,11 @@ public class IndexPopulationJob implements Runnable
     private volatile boolean cancelled;
 
     public IndexPopulationJob( IndexStoreView storeView,
-                               LogProvider logProvider,
+                               MultipleIndexPopulator multiPopulator,
                                IndexingService.Monitor monitor,
                                Runnable schemaStateChangeCallback )
     {
-        this.populator = new MultipleIndexPopulator( storeView, logProvider );
+        this.multiPopulator = multiPopulator;
         this.storeView = storeView;
         this.schemaStateChangeCallback = schemaStateChangeCallback;
         this.monitor = monitor;
@@ -85,7 +83,7 @@ public class IndexPopulationJob implements Runnable
             FailedIndexProxyFactory failedIndexProxyFactory )
     {
         assert storeScan == null : "Population have already started, too late to add populators at this point";
-        this.populator.addPopulator( populator, descriptor, providerDescriptor, config, flipper,
+        this.multiPopulator.addPopulator( populator, descriptor, providerDescriptor, config, flipper,
                 failedIndexProxyFactory, indexUserDescription );
     }
 
@@ -96,7 +94,7 @@ public class IndexPopulationJob implements Runnable
     @Override
     public void run()
     {
-        assert populator.hasPopulators() : "No index populators was added so there'd be no point in running this job";
+        assert multiPopulator.hasPopulators() : "No index populators was added so there'd be no point in running this job";
         assert storeScan == null : "Population have already started";
 
         String oldThreadName = currentThread().getName();
@@ -106,25 +104,25 @@ public class IndexPopulationJob implements Runnable
         {
             try
             {
-                populator.create();
-                populator.replaceIndexCounts( 0, 0, 0 );
+                multiPopulator.create();
+                multiPopulator.replaceIndexCounts( 0, 0, 0 );
 
                 indexAllNodes();
                 verifyDeferredConstraints();
                 if ( cancelled )
                 {
-                    populator.cancel();
+                    multiPopulator.cancel();
                     // We remain in POPULATING state
                     return;
                 }
 
-                populator.flipAfterPopulation();
+                multiPopulator.flipAfterPopulation();
 
                 schemaStateChangeCallback.run();
             }
             catch ( Throwable t )
             {
-                populator.fail( t );
+                multiPopulator.fail( t );
             }
         }
         finally
@@ -136,7 +134,7 @@ public class IndexPopulationJob implements Runnable
 
     private void indexAllNodes() throws IndexPopulationFailedKernelException
     {
-        storeScan = populator.indexAllNodes();
+        storeScan = multiPopulator.indexAllNodes();
         storeScan.run();
     }
 
@@ -153,7 +151,7 @@ public class IndexPopulationJob implements Runnable
     private void verifyDeferredConstraints()
     {
         monitor.verifyDeferredConstraints();
-        populator.verifyAllDeferredConstraints( storeView );
+        multiPopulator.verifyAllDeferredConstraints( storeView );
     }
 
     public Future<Void> cancel()
@@ -176,13 +174,13 @@ public class IndexPopulationJob implements Runnable
      */
     public void update( NodePropertyUpdate update )
     {
-        populator.queue( update );
+        multiPopulator.queue( update );
     }
 
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[populator:" + populator + "]";
+        return getClass().getSimpleName() + "[populator:" + multiPopulator + "]";
     }
 
     public void awaitCompletion() throws InterruptedException

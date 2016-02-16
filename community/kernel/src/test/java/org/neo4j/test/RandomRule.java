@@ -24,10 +24,10 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.util.Random;
+
 import org.neo4j.test.Randoms.Configuration;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Exceptions.withMessage;
 
 /**
@@ -103,6 +103,11 @@ public class RandomRule implements TestRule
     public int nextInt( int n )
     {
         return random.nextInt( n );
+    }
+
+    public int nextInt( int origin, int bound )
+    {
+        return random.nextInt( (bound - origin) + 1 ) + origin;
     }
 
     public double nextGaussian()

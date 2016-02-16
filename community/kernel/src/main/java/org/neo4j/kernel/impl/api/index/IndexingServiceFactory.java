@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
@@ -33,7 +34,7 @@ import org.neo4j.logging.LogProvider;
  */
 public class IndexingServiceFactory
 {
-    public static IndexingService createIndexingService( IndexSamplingConfig samplingConfig,
+    public static IndexingService createIndexingService( Config config,
                                           JobScheduler scheduler,
                                           SchemaIndexProviderMap providerMap,
                                           IndexStoreView storeView,
@@ -50,6 +51,8 @@ public class IndexingServiceFactory
                                              ") is on your classpath." );
         }
 
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
+        MultiPopulatorFactory multiPopulatorFactory = MultiPopulatorFactory.forConfig( config );
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory factory =
                 new IndexSamplingControllerFactory( samplingConfig, storeView, scheduler, tokenNameLookup, logProvider );
@@ -58,6 +61,7 @@ public class IndexingServiceFactory
                 samplingConfig, storeView, providerMap, tokenNameLookup, logProvider);
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
-                indexSamplingController, tokenNameLookup, scheduler, schemaStateChangeCallback, logProvider, monitor );
+                indexSamplingController, tokenNameLookup, scheduler, schemaStateChangeCallback,
+                multiPopulatorFactory, logProvider, monitor );
     }
 }

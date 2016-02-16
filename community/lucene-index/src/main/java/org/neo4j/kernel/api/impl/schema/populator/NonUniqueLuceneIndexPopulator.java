@@ -49,13 +49,6 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void add( long nodeId, Object propertyValue ) throws IOException
-    {
-        sampler.include( LuceneDocumentStructure.encodedStringValue( propertyValue ) );
-        writer.addDocument( LuceneDocumentStructure.documentRepresentingProperty( nodeId, propertyValue ) );
-    }
-
-    @Override
     public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
         // no constraints to verify so do nothing
@@ -111,6 +104,12 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
                 throw new UnsupportedOperationException( "Should not remove() from populating index." );
             }
         };
+    }
+
+    @Override
+    public void includeSample( NodePropertyUpdate update )
+    {
+        sampler.include( LuceneDocumentStructure.encodedStringValue( update.getValueAfter() ) );
     }
 
     @Override

@@ -22,14 +22,17 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -61,9 +64,61 @@ import org.neo4j.test.EmbeddedDatabaseRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.runners.Parameterized.Parameter;
+import static org.junit.runners.Parameterized.Parameters;
 
+@RunWith( Parameterized.class )
 public class IndexStatisticsTest
 {
+    private static final double UNIQUE_NAMES = 10.0;
+    private static final String[] NAMES = new String[]{
+            "Andres", "Davide", "Jakub", "Chris", "Tobias", "Stefan", "Petra", "Rickard", "Mattias", "Emil", "Chris",
+            "Chris"
+    };
+
+    private static final int CREATION_MULTIPLIER = 10_000;
+    private static final int MISSED_UPDATES_TOLERANCE = NAMES.length;
+    private static final double DOUBLE_ERROR_TOLERANCE = 0.00001d;
+
+    @Parameter
+    public boolean multiThreadedPopulationEnabled;
+
+    @Rule
+    public DatabaseRule dbRule = new EmbeddedDatabaseRule()
+    {
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
+        {
+            super.configure( builder );
+            // make sure we don't sample in these tests
+            builder.setConfig( GraphDatabaseSettings.index_background_sampling_enabled, "false" );
+            builder.setConfig( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled,
+                    multiThreadedPopulationEnabled + "" );
+        }
+    };
+
+    private GraphDatabaseService db;
+    private ThreadToStatementContextBridge bridge;
+    private final IndexOnlineMonitor indexOnlineMonitor = new IndexOnlineMonitor();
+
+    @Parameters(name = "multiThreadedIndexPopulationEnabled = {0}")
+    public static Object[] multiThreadedIndexPopulationEnabledValues()
+    {
+        return new Object[]{true, false};
+    }
+
+    @Before
+    public void before()
+    {
+        GraphDatabaseAPI graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
+        this.db = graphDatabaseAPI;
+        DependencyResolver dependencyResolver = graphDatabaseAPI.getDependencyResolver();
+        this.bridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
+        graphDatabaseAPI.getDependencyResolver()
+                .resolveDependency( Monitors.class )
+                .addMonitorListener( indexOnlineMonitor );
+    }
+
     @Test
     public void shouldProvideIndexStatisticsForDataCreatedWhenPopulationBeforeTheIndexIsOnline() throws KernelException
     {
@@ -618,47 +673,9 @@ public class IndexStatisticsTest
         assertEquals( message, expected, actual, tolerance );
     }
 
-    private static final double UNIQUE_NAMES = 10.0;
-    private static final String[] NAMES = new String[]{
-            "Andres", "Davide", "Jakub", "Chris", "Tobias", "Stefan", "Petra", "Rickard", "Mattias", "Emil", "Chris",
-            "Chris"
-    };
-
-    private static final int CREATION_MULTIPLIER = 10_000;
-    private static final int MISSED_UPDATES_TOLERANCE = NAMES.length;
-    private static final double DOUBLE_ERROR_TOLERANCE = 0.00001d;
-
-    @Rule
-    public DatabaseRule dbRule = new EmbeddedDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            super.configure( builder );
-            // make sure we don't sample in these tests
-            builder.setConfig( GraphDatabaseSettings.index_background_sampling_enabled, "false" );
-        }
-    };
-
-    private GraphDatabaseService db;
-    private ThreadToStatementContextBridge bridge;
-    private final IndexOnlineMonitor indexOnlineMonitor = new IndexOnlineMonitor();
-
-    @Before
-    public void before()
-    {
-        GraphDatabaseAPI graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
-        this.db = graphDatabaseAPI;
-        DependencyResolver dependencyResolver = graphDatabaseAPI.getDependencyResolver();
-        this.bridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
-        graphDatabaseAPI.getDependencyResolver()
-                        .resolveDependency( Monitors.class )
-                        .addMonitorListener( indexOnlineMonitor );
-    }
-
     private static class IndexOnlineMonitor extends IndexingService.MonitorAdapter
     {
-        private final Set<IndexDescriptor> onlineIndexes = new HashSet<>();
+        private final Set<IndexDescriptor> onlineIndexes = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
         @Override
         public void populationCompleteOn( IndexDescriptor descriptor )

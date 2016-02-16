@@ -32,6 +32,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -102,14 +103,14 @@ public class LuceneSchemaIndexPopulatorTest
     public void addingValuesShouldPersistThem() throws Exception
     {
         // WHEN
-        index.add( 1, "First" );
-        index.add( 2, "Second" );
-        index.add( 3, (byte)1 );
-        index.add( 4, (short)2 );
-        index.add( 5, 3 );
-        index.add( 6, 4L );
-        index.add( 7, 5F );
-        index.add( 8, 6D );
+        addUpdate( index, 1, "First" );
+        addUpdate( index, 2, "Second" );
+        addUpdate( index, 3, (byte) 1 );
+        addUpdate( index, 4, (short) 2 );
+        addUpdate( index, 5, 3 );
+        addUpdate( index, 6, 4L );
+        addUpdate( index, 7, 5F );
+        addUpdate( index, 8, 6D );
 
         // THEN
         assertIndexedValues(
@@ -127,9 +128,9 @@ public class LuceneSchemaIndexPopulatorTest
     public void multipleEqualValues() throws Exception
     {
         // WHEN
-        index.add( 1, "value" );
-        index.add( 2, "value" );
-        index.add( 3, "value" );
+        addUpdate( index, 1, "value" );
+        addUpdate( index, 2, "value" );
+        addUpdate( index, 3, "value" );
 
         // THEN
         assertIndexedValues(
@@ -140,9 +141,9 @@ public class LuceneSchemaIndexPopulatorTest
     public void multipleEqualValuesWithUpdateThatRemovesOne() throws Exception
     {
         // WHEN
-        index.add( 1, "value" );
-        index.add( 2, "value" );
-        index.add( 3, "value" );
+        addUpdate( index, 1, "value" );
+        addUpdate( index, 2, "value" );
+        addUpdate( index, 3, "value" );
         updatePopulator( index, asList( remove( 2, "value" ) ), indexStoreView );
 
         // THEN
@@ -154,10 +155,10 @@ public class LuceneSchemaIndexPopulatorTest
     public void changeUpdatesInterleavedWithAdds() throws Exception
     {
         // WHEN
-        index.add( 1, "1" );
-        index.add( 2, "2" );
+        addUpdate( index, 1, "1" );
+        addUpdate( index, 2, "2" );
         updatePopulator( index, asList( change( 1, "1", "1a" ) ), indexStoreView );
-        index.add( 3, "3" );
+        addUpdate( index, 3, "3" );
 
         // THEN
         assertIndexedValues(
@@ -171,10 +172,10 @@ public class LuceneSchemaIndexPopulatorTest
     public void addUpdatesInterleavedWithAdds() throws Exception
     {
         // WHEN
-        index.add( 1, "1" );
-        index.add( 2, "2" );
-        updatePopulator( index,  asList( remove( 1, "1" ), add( 1, "1a" ) ), indexStoreView );
-        index.add( 3, "3" );
+        addUpdate( index, 1, "1" );
+        addUpdate( index, 2, "2" );
+        updatePopulator( index, asList( remove( 1, "1" ), add( 1, "1a" ) ), indexStoreView );
+        addUpdate( index, 3, "3" );
 
         // THEN
         assertIndexedValues(
@@ -188,10 +189,10 @@ public class LuceneSchemaIndexPopulatorTest
     public void removeUpdatesInterleavedWithAdds() throws Exception
     {
         // WHEN
-        index.add( 1, "1" );
-        index.add( 2, "2" );
-        updatePopulator( index,  asList( remove( 2, "2" ) ), indexStoreView );
-        index.add( 3, "3" );
+        addUpdate( index, 1, "1" );
+        addUpdate( index, 2, "2" );
+        updatePopulator( index, asList( remove( 2, "2" ) ), indexStoreView );
+        addUpdate( index, 3, "3" );
 
         // THEN
         assertIndexedValues(
@@ -204,12 +205,12 @@ public class LuceneSchemaIndexPopulatorTest
     public void multipleInterleaves() throws Exception
     {
         // WHEN
-        index.add( 1, "1" );
-        index.add( 2, "2" );
-        updatePopulator( index,  asList( change( 1, "1", "1a" ), change( 2, "2", "2a" ) ), indexStoreView );
-        index.add( 3, "3" );
-        index.add( 4, "4" );
-        updatePopulator( index,  asList( change( 1, "1a", "1b" ), change( 4, "4", "4a" ) ), indexStoreView );
+        addUpdate( index, 1, "1" );
+        addUpdate( index, 2, "2" );
+        updatePopulator( index, asList( change( 1, "1", "1a" ), change( 2, "2", "2a" ) ), indexStoreView );
+        addUpdate( index, 3, "3" );
+        addUpdate( index, 4, "4" );
+        updatePopulator( index, asList( change( 1, "1a", "1b" ), change( 4, "4", "4a" ) ), indexStoreView );
 
         // THEN
         assertIndexedValues(
@@ -289,6 +290,12 @@ public class LuceneSchemaIndexPopulatorTest
         assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId ) );
         reader = DirectoryReader.open( directory );
         searcher = new IndexSearcher( reader );
+    }
+
+    private static void addUpdate( IndexPopulator populator, long nodeId, Object value )
+            throws IOException, IndexEntryConflictException
+    {
+        populator.add( Collections.singletonList( NodePropertyUpdate.add( nodeId, 0, value, new long[]{0} ) ) );
     }
 
     private static void updatePopulator(

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -130,9 +131,12 @@ class InMemoryIndex
         }
 
         @Override
-        public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
+        public void add( List<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
         {
-            InMemoryIndex.this.add( nodeId, propertyValue, false );
+            for ( NodePropertyUpdate update : updates )
+            {
+                InMemoryIndex.this.add( update.getNodeId(), update.getValueAfter(), false );
+            }
         }
 
         @Override
@@ -167,6 +171,11 @@ class InMemoryIndex
         {
             failure = failureString;
             state = InternalIndexState.FAILED;
+        }
+
+        @Override
+        public void includeSample( NodePropertyUpdate update )
+        {
         }
 
         @Override

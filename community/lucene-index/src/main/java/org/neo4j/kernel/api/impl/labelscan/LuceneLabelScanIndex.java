@@ -24,6 +24,7 @@ import java.io.UncheckedIOException;
 import java.util.List;
 
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
@@ -51,7 +52,7 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
 
     public LuceneLabelScanIndex( BitmapDocumentFormat format, PartitionedIndexStorage indexStorage )
     {
-        super( indexStorage );
+        super( indexStorage, IndexWriterConfigs::standard );
         this.format = format;
         this.storageStrategy = new NodeRangeDocumentLabelScanStorageStrategy( format );
     }

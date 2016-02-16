@@ -42,6 +42,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -85,6 +86,7 @@ import org.neo4j.test.DoubleLatch;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -115,6 +117,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
@@ -207,7 +210,7 @@ public class IndexingServiceTest
         when( populator.newPopulatingUpdater( storeView ) ).thenReturn( updater );
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        doAnswer( afterAwaiting( latch ) ).when( populator ).add( anyLong(), any() );
+        doAnswer( afterAwaiting( latch ) ).when( populator ).add( any() );
 
         IndexingService indexingService =
                 newIndexingServiceWithMockedDependencies( populator, accessor, withData( add( 1, "value1" ) ) );
@@ -234,7 +237,8 @@ public class IndexingServiceTest
         assertEquals( InternalIndexState.ONLINE, proxy.getState() );
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
-        order.verify( populator ).add( 1, "value1" );
+        order.verify( populator ).includeSample( add( 1, "value1" ) );
+        order.verify( populator ).add( singletonList( add( 1, "value1" ) ) );
 
 
         // invoked from indexAllNodes(), empty because the id we added (2) is bigger than the one we indexed (1)
@@ -318,9 +322,8 @@ public class IndexingServiceTest
         IndexRule populatingIndex = indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
         IndexRule failedIndex     = indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
-        life.add( IndexingServiceFactory.createIndexingService( new IndexSamplingConfig( new Config() ),
-                mock( JobScheduler.class ), providerMap, mock( IndexStoreView.class ), mockLookup,
-                asList( onlineIndex, populatingIndex, failedIndex ),
+        life.add( IndexingServiceFactory.createIndexingService( new Config(), mock( JobScheduler.class ), providerMap,
+                mock( IndexStoreView.class ), mockLookup, asList( onlineIndex, populatingIndex, failedIndex ),
                 logProvider, IndexingService.NO_MONITOR, DO_NOTHING_CALLBACK ) );
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( ONLINE );
@@ -356,7 +359,7 @@ public class IndexingServiceTest
         IndexRule populatingIndex = indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
         IndexRule failedIndex     = indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( new IndexSamplingConfig( new Config() ),
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( new Config(),
                 mock( JobScheduler.class ), providerMap, storeView, mockLookup,
                 asList( onlineIndex, populatingIndex, failedIndex ), logProvider, IndexingService.NO_MONITOR,
                 DO_NOTHING_CALLBACK );
@@ -843,7 +846,7 @@ public class IndexingServiceTest
         }
 
         @Override
-        public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
+        public void add( List<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
         {
             latch.awaitStart();
         }
@@ -902,7 +905,10 @@ public class IndexingServiceTest
         when( nameLookup.labelGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "label" ) );
         when( nameLookup.propertyKeyGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "property" ) );
 
-        return life.add( IndexingServiceFactory.createIndexingService( new IndexSamplingConfig( new Config() ),
+        Config config = new Config( stringMap(
+                GraphDatabaseSettings.multi_threaded_schema_index_population_enabled.name(), "false" ) );
+
+        return life.add( IndexingServiceFactory.createIndexingService( config,
                         life.add( new Neo4jJobScheduler() ),
                         new DefaultSchemaIndexProviderMap( indexProvider ),
                         storeView,
