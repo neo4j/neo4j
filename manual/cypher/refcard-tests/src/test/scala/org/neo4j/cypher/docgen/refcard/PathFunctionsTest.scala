@@ -26,7 +26,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class PathFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
   val title = "Path Functions"
-  val css = "general c3-3 c4-3 c5-2 c6-5"
+  val css = "general c3-3 c4-2 c5-5 c6-5"
   override val linkId = "query-functions-collection"
 
   override def assert(name: String, result: InternalExecutionResult) {

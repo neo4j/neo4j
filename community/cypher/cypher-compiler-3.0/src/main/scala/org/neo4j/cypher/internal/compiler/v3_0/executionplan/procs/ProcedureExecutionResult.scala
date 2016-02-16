@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaResultValueConverter
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, InternalResultVisitor, ProcedureSignature, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_0.{ProfileMode, ExecutionMode, InternalQueryStatistics, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, ProcedureSignature, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics, ProfileMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.ProfilerStatisticsNotReadyException
 
 import scala.collection.JavaConverters._
@@ -64,6 +64,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
 
   override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
     executionResults.foreach { res => visitor.visit(new ResultRowImpl(resultAsRefMap(res))) }
+    success()
     close()
   }
 

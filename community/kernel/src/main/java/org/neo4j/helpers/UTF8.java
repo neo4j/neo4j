@@ -25,9 +25,13 @@ import java.util.function.Function;
 
 /**
  * Utility class for converting strings to and from UTF-8 encoded bytes.
+ * @deprecated this will be moved out of public API in subsequent releases
  */
+@Deprecated
 public final class UTF8
 {
+    // Neo4j developers: Use org.neo4j.string.UTF8 instead.
+    
     public static final Function<String, byte[]> encode = UTF8::encode;
 
     public static final Function<byte[], String> decode = UTF8::decode;

@@ -19,6 +19,10 @@
  */
 package org.neo4j.helpers;
 
+/**
+ * @deprecated please use {@link java.time.Clock} instead
+ */
+@Deprecated
 public interface Clock
 {
     Clock SYSTEM_CLOCK = new Clock()

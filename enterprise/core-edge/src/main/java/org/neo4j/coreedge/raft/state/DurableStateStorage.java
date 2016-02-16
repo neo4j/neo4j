@@ -70,7 +70,7 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
         this.initialState = recoveryStatus.recoveredState();
 
         Log log = logProvider.getLog( getClass() );
-        log.info( "%s state restored, up to level %d.", name, marshal.ordinal( initialState ) );
+        log.info( "%s state restored, up to ordinal %d", name, marshal.ordinal( initialState ) );
     }
 
     @Override

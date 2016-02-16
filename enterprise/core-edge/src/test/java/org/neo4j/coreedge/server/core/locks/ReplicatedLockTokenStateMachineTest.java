@@ -19,13 +19,23 @@
  */
 package org.neo4j.coreedge.server.core.locks;
 
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.function.Supplier;
+
+import org.neo4j.coreedge.raft.state.DurableStateStorage;
+import org.neo4j.coreedge.raft.state.StateMarshal;
 import org.neo4j.coreedge.raft.state.StubStateStorage;
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
-
+import static org.mockito.Mockito.mock;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 public class ReplicatedLockTokenStateMachineTest
@@ -35,7 +45,7 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new StubStateStorage<>( new InMemoryReplicatedLockTokenState<RaftTestMember>() ) );
+                new StubStateStorage<>( new ReplicatedLockTokenState<>() ) );
 
         // when
         int initialTokenId = stateMachine.currentToken().id();
@@ -48,8 +58,8 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldIssueNextLockTokenCandidateId() throws Exception
     {
         // given
-        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new StubStateStorage<>( new InMemoryReplicatedLockTokenState<RaftTestMember>() ) );
+        ReplicatedLockTokenStateMachine<Object> stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new StubStateStorage<>( new ReplicatedLockTokenState<>() ) );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
@@ -64,7 +74,7 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new StubStateStorage<>( new InMemoryReplicatedLockTokenState<RaftTestMember>() ) );
+                new StubStateStorage<>( new ReplicatedLockTokenState<>() ) );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
@@ -85,7 +95,7 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new StubStateStorage<>( new InMemoryReplicatedLockTokenState<RaftTestMember>() ) );
+                new StubStateStorage<>( new ReplicatedLockTokenState<>() ) );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
@@ -106,7 +116,7 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new StubStateStorage<>( new InMemoryReplicatedLockTokenState<RaftTestMember>() ) );
+                new StubStateStorage<>( new ReplicatedLockTokenState<>() ) );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
@@ -131,7 +141,7 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new StubStateStorage<>( new InMemoryReplicatedLockTokenState<RaftTestMember>() ) );
+                new StubStateStorage<>( new ReplicatedLockTokenState<>() ) );
         int firstCandidateId = stateMachine.nextCandidateId();
 
         // when
@@ -163,5 +173,57 @@ public class ReplicatedLockTokenStateMachineTest
 
         // then
         assertEquals( stateMachine.currentToken().id(), firstCandidateId + 1 );
+    }
+
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
+    @Test
+    public void shouldPersistAndRecoverState() throws Exception
+    {
+        // given
+        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        fsa.mkdir( testDir.directory() );
+
+        StateMarshal<ReplicatedLockTokenState<CoreMember>> marshal = new ReplicatedLockTokenState.Marshal<>( new CoreMember.CoreMemberMarshal() );
+
+        DurableStateStorage<ReplicatedLockTokenState<CoreMember>> storage = new DurableStateStorage<>( fsa, testDir.directory(),
+                "state", marshal, 100, health(), NullLogProvider.getInstance() );
+
+        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>( storage );
+
+        CoreMember memberA = new CoreMember(
+                new AdvertisedSocketAddress( "1" ),
+                new AdvertisedSocketAddress( "2" ) );
+
+        CoreMember memberB = new CoreMember(
+                new AdvertisedSocketAddress( "3" ),
+                new AdvertisedSocketAddress( "4" ) );
+
+        // when
+        int candidateId;
+
+        candidateId = 0;
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( memberA, candidateId ), 0 );
+        candidateId = 1;
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( memberB, candidateId ), 1 );
+
+        stateMachine.flush();
+        fsa.crash();
+
+        // then
+        DurableStateStorage<ReplicatedLockTokenState<CoreMember>> storage2 = new DurableStateStorage<>(
+                fsa, testDir.directory(), "state", marshal, 100,
+                health(), NullLogProvider.getInstance() );
+
+        ReplicatedLockTokenState<CoreMember> initialState = storage2.getInitialState();
+
+        assertEquals( memberB, initialState.get().owner() );
+        assertEquals( candidateId, initialState.get().id() );
+    }
+
+    private Supplier<DatabaseHealth> health()
+    {
+        return mock( Supplier.class );
     }
 }

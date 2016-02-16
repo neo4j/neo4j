@@ -31,10 +31,10 @@ import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.raft.state.StateMachine;
+import org.neo4j.coreedge.raft.state.StateMachines;
 import org.neo4j.coreedge.raft.state.StubStateStorage;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.raft.state.StateMachines;
 import org.neo4j.coreedge.server.core.locks.LockTokenManager;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -44,6 +44,8 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
@@ -80,7 +82,7 @@ public class CommitProcessStateMachineCollaborationTest
         stateMachines.add( stateMachine );
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
-                replicator, sessionPool, 100,
+                replicator, sessionPool, new ExpontentialBackoffStrategy( 10, SECONDS ),
                 NullLogService.getInstance(), txFutures, new Monitors() );
 
         // when
@@ -112,7 +114,7 @@ public class CommitProcessStateMachineCollaborationTest
         stateMachines.add( stateMachine );
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
-                replicator, sessionPool, 1,
+                replicator, sessionPool, new ExpontentialBackoffStrategy( 10, SECONDS ),
                 NullLogService.getInstance(), txFutures, new Monitors() );
 
         // when

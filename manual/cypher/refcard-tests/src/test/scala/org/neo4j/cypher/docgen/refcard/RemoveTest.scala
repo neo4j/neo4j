@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 class RemoveTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A:Person", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "REMOVE"
-  val css = "write c2-2 c4-3 c5-4 c6-2"
+  val css = "write c2-2 c4-3 c5-4 c6-1"
   override val linkId = "query-remove"
 
   override def assert(name: String, result: InternalExecutionResult) {
