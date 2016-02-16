@@ -241,15 +241,15 @@ case class RandFunction() extends Expression {
 
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    val startVal = asInt(start(ctx))
-    val inclusiveEndVal = asInt(end(ctx))
-    val stepVal = asInt(step(ctx))
+    val startVal = asLong(start(ctx))
+    val inclusiveEndVal = asLong(end(ctx))
+    val stepVal = asLong(step(ctx))
 
-    if (stepVal == 0)
+    if (stepVal == 0L)
       throw new InvalidArgumentException("step argument to range() cannot be zero")
 
     val exclusiveEndVal = inclusiveEndVal + stepVal.signum
-    new Range(startVal, exclusiveEndVal, stepVal).toList
+    (startVal until exclusiveEndVal by stepVal).toIterable
   }
 
   def arguments = Seq(start, end, step)
