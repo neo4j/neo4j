@@ -57,7 +57,6 @@ import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.CypherExecutorProvider;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseProvider;
-import org.neo4j.server.database.ExecutionEngineProvider;
 import org.neo4j.server.database.GraphDatabaseServiceProvider;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.guard.GuardingRequestFilter;
@@ -542,7 +541,6 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new InputFormatProvider( repository ) );
         singletons.add( new OutputFormatProvider( repository ) );
         singletons.add( new CypherExecutorProvider( cypherExecutor ) );
-        singletons.add( new ExecutionEngineProvider( cypherExecutor ) );
 
         singletons.add( providerForSingleton( transactionFacade, TransactionFacade.class ) );
         singletons.add( providerForSingleton( authManager, AuthManager.class ) );

@@ -19,24 +19,24 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
-import org.neo4j.graphdb.index.Index
+import java.io.{File, PrintWriter, StringWriter}
+
 import org.junit.Test
-import scala.collection.JavaConverters._
-import java.io.{StringWriter, File, PrintWriter}
-import org.neo4j.graphdb._
-import org.neo4j.visualization.asciidoc.AsciidocHelper
-import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher._
-import export.{DatabaseSubGraph, SubGraphExporter}
-import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
-import org.scalatest.Assertions
-import org.neo4j.test.AsciiDocGenerator
-import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
-import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.tooling.GlobalGraphOperations
+import org.neo4j.cypher.export.{DatabaseSubGraph, SubGraphExporter}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
+import org.neo4j.cypher.internal.javacompat.GraphImpl
+import org.neo4j.cypher.internal.{ExecutionEngine, RewindableExecutionResult}
+import org.neo4j.graphdb._
+import org.neo4j.graphdb.index.Index
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
+import org.neo4j.test.{AsciiDocGenerator, GraphDescription, TestGraphDatabaseFactory}
+import org.neo4j.visualization.asciidoc.AsciidocHelper
+import org.scalatest.Assertions
+
+import scala.collection.JavaConverters._
 
 /*
 Use this base class for tests that are more flowing text with queries intersected in the middle of the text.

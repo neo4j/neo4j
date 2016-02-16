@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.javacompat;
+package org.neo4j.cypher.internal.javacompat;
 
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
@@ -41,7 +42,7 @@ public class ExecutionEngineTests
         ExecutionEngine executionEngine = new ExecutionEngine( database.getGraphDatabaseService() );
 
         ExecutionResult result = executionEngine.execute( "RETURN { key : 'Value' , " +
-                "collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}" );
+                                                          "collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}" );
 
         Map firstRowValue = (Map) result.iterator().next().values().iterator().next();
         assertThat( (String) firstRowValue.get( "key" ), is( "Value" ) );

@@ -17,13 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.javacompat;
+package org.neo4j.cypher.internal.javacompat;
 
 import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.GraphDatabaseService;
 
+import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -33,12 +37,10 @@ import org.neo4j.logging.NullLogProvider;
  * This class construct and initialize both the cypher compiler and the cypher runtime, which is a very expensive
  * operation so please make sure this will be constructed only once and properly reused.
  *
- * @deprecated use {@link org.neo4j.graphdb.GraphDatabaseService#execute(String)} instead.
  */
-@Deprecated
-public class ExecutionEngine
+public class ExecutionEngine implements QueryExecutionEngine
 {
-    private org.neo4j.cypher.ExecutionEngine inner;
+    private org.neo4j.cypher.internal.ExecutionEngine inner;
 
     /**
      * Creates an execution engine around the give graph database
@@ -59,10 +61,9 @@ public class ExecutionEngine
         inner = createInnerEngine( database, logProvider );
     }
 
-    protected
-    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, LogProvider logProvider )
+    protected org.neo4j.cypher.internal.ExecutionEngine createInnerEngine( GraphDatabaseService database, LogProvider logProvider )
     {
-        return new org.neo4j.cypher.ExecutionEngine( database, logProvider );
+        return new org.neo4j.cypher.internal.ExecutionEngine( database, logProvider );
     }
 
     /**
@@ -133,5 +134,38 @@ public class ExecutionEngine
     public String prettify( String query )
     {
         return inner.prettify( query );
+    }
+
+    @Override
+    public Result executeQuery( String query, Map<String, Object> parameters, QuerySession querySession ) throws
+            QueryExecutionKernelException
+    {
+        try
+        {
+            return new ExecutionResult( inner.execute( query, parameters, querySession ) );
+        }
+        catch ( CypherException e )
+        {
+            throw new QueryExecutionKernelException( e );
+        }
+    }
+
+    @Override
+    public boolean isPeriodicCommit( String query )
+    {
+        return inner.isPeriodicCommit( query );
+    }
+
+    @Override
+    public Result profileQuery( String query, Map<String, Object> parameters, QuerySession session ) throws QueryExecutionKernelException
+    {
+        try
+        {
+            return new ExecutionResult( inner.profile( query, parameters, session ) );
+        }
+        catch ( CypherException e )
+        {
+            throw new QueryExecutionKernelException( e );
+        }
     }
 }

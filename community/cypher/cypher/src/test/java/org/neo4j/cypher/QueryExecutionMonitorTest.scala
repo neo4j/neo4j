@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import java.util.Collections
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI

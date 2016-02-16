@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import java.io.{File, PrintWriter}
 import java.util.concurrent.TimeUnit
 
+import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer

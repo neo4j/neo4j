@@ -17,33 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
-
-import java.io.PrintWriter
-
-import org.neo4j.graphdb.ResourceIterator
-
-/**
-  * @deprecated See { @link org.neo4j.graphdb.Result}, and use
-  * { @link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)} instead.
-  */
-@Deprecated
-trait ExecutionResult extends Iterator[Map[String, Any]] {
-  def columns: List[String]
-  def javaColumns: java.util.List[String]
-  def javaColumnAs[T](column: String): ResourceIterator[T]
-  def columnAs[T](column: String): Iterator[T]
-  def javaIterator: ResourceIterator[java.util.Map[String, Any]]
-  def dumpToString(writer: PrintWriter)
-  def dumpToString(): String
-  def queryStatistics(): QueryStatistics
-  def executionPlanDescription(): PlanDescription
-  def close()
-}
+package org.neo4j.cypher.internal
 
 // Whenever you add a field here, please update the following classes:
 //
-// org.neo4j.cypher.javacompat.QueryStatistics
+// org.neo4j.cypher.internal.javacompact.QueryStatistics
 // org.neo4j.server.rest.repr.CypherResultRepresentation
 // org.neo4j.server.rest.CypherFunctionalTest
 // org.neo4j.cypher.QueryStatisticsTestSupport
@@ -98,4 +76,3 @@ case class QueryStatistics(nodesCreated: Int = 0,
   }
 
 }
-

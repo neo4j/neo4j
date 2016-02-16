@@ -22,9 +22,7 @@ package org.neo4j.cypher.internal
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_0.{RuntimeName, PlannerName}
-import org.neo4j.cypher.{ExtendedPlanDescription, CypherVersion, PlanDescription}
-import org.neo4j.cypher.javacompat.{PlanDescription => JPlanDescription}
-
+import org.neo4j.cypher.CypherVersion
 
 class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: CypherVersion, planner: PlannerName, runtime: RuntimeName)
   extends ExtendedPlanDescription {
@@ -35,7 +33,7 @@ class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: Cypher
 
   def name = inner.name
 
-  def asJava = new JPlanDescription {
+  def asJava = new javacompat.PlanDescription {
     val getName = name
 
     val getProfilerStatistics = childAsJava.getProfilerStatistics

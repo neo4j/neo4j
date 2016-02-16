@@ -56,7 +56,7 @@ public class DocsExecutionEngine
     }
 
     protected
-    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, LogProvider logProvider )
+    org.neo4j.cypher.internal.ExecutionEngine createInnerEngine( GraphDatabaseService database, LogProvider logProvider )
     {
         return new org.neo4j.cypher.internal.DocsExecutionEngine( database, logProvider, null, null );
     }
@@ -70,7 +70,7 @@ public class DocsExecutionEngine
      */
     public InternalExecutionResult execute( String query ) throws CypherException
     {
-        return (InternalExecutionResult) inner.internalExecute( query, Collections.<String, Object> emptyMap() );
+        return inner.internalExecute( query, Collections.<String, Object> emptyMap() );
     }
 
     /**
@@ -83,7 +83,7 @@ public class DocsExecutionEngine
      */
     public InternalExecutionResult execute( String query, Map<String,Object> params ) throws CypherException
     {
-        return (InternalExecutionResult) inner.internalExecute( query, params );
+        return inner.internalExecute( query, params );
     }
 
     /**
@@ -99,7 +99,7 @@ public class DocsExecutionEngine
      */
     public InternalExecutionResult profile( String query ) throws CypherException
     {
-        return (InternalExecutionResult) inner.internalProfile( query, Collections.<String, Object> emptyMap() );
+        return inner.internalProfile( query, Collections.<String, Object> emptyMap() );
     }
 
     /**
@@ -116,7 +116,7 @@ public class DocsExecutionEngine
      */
     public InternalExecutionResult profile( String query, Map<String,Object> params ) throws CypherException
     {
-        return (InternalExecutionResult) inner.internalProfile( query, params );
+        return inner.internalProfile( query, params );
     }
 
     /**

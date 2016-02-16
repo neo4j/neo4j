@@ -19,9 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.internal.ExtendedExecutionResult
 import org.neo4j.cypher.internal.compatibility.CompatibilityPlanDescriptionFor3_0
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.{ExecutionEngineFunSuite, ExtendedExecutionResult}
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {

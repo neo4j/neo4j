@@ -19,19 +19,10 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.ExecutionEngine
-import org.neo4j.logging.{NullLogProvider, LogProvider}
-
 /**
- * This is used by {@link org.neo4j.cypher.javacompat.internal.ServerExecutionEngine} to provide additional
- * API to REST server
- *
- */
-class ServerExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = NullLogProvider.getInstance)
-  extends ExecutionEngine(graph, logProvider) {
-
-  def isPeriodicCommit(query: String) = parseQuery(query).isPeriodicCommit
+  * this class contains extra information about identifiers
+  */
+trait ExtendedPlanDescription extends PlanDescription {
+  def identifiers: Set[String]
+  def extendedChildren: Seq[ExtendedPlanDescription]
 }
-
-

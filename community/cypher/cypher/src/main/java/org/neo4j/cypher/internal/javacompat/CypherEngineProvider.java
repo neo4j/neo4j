@@ -17,32 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.database;
+package org.neo4j.cypher.internal.javacompat;
 
-import javax.ws.rs.ext.Provider;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 
-import com.sun.jersey.api.core.HttpContext;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-
-/**
- * This exists as a convenience for extension authors, to access the cypher execution engine.
- *
- * @deprecated Use {@link org.neo4j.graphdb.GraphDatabaseService#execute(String)} instead.
- */
-@Deprecated @Provider
-public class ExecutionEngineProvider extends InjectableProvider<ExecutionEngine>
+@Service.Implementation(QueryEngineProvider.class)
+public class CypherEngineProvider extends QueryEngineProvider
 {
-    public CypherExecutor cypherExecutor;
-
-    public ExecutionEngineProvider( CypherExecutor cypherExecutor )
+    public CypherEngineProvider()
     {
-        super( ExecutionEngine.class );
-        this.cypherExecutor = cypherExecutor;
+        super( "cypher" );
     }
 
     @Override
-    public ExecutionEngine getValue( HttpContext httpContext )
+    protected QueryExecutionEngine createEngine( GraphDatabaseAPI graphAPI )
     {
-        return cypherExecutor.getExecutionEngine();
+        LogService logService = graphAPI.getDependencyResolver().resolveDependency( LogService.class );
+        return new ExecutionEngine( graphAPI, logService.getInternalLogProvider() );
     }
 }

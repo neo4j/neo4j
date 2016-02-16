@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.javacompat;
+package org.neo4j.cypher.internal.javacompat;
 
 import scala.collection.JavaConversions;
 
@@ -28,17 +28,18 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import org.neo4j.cypher.ExtendedPlanDescription;
+import org.neo4j.cypher.internal.ExtendedPlanDescription;
 import org.neo4j.cypher.ProfilerStatisticsNotReadyException;
+import org.neo4j.cypher.internal.PlanDescription;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 
 import static org.neo4j.helpers.Exceptions.withCause;
 
 class Description implements ExecutionPlanDescription
 {
-    private final org.neo4j.cypher.PlanDescription description;
+    private final org.neo4j.cypher.internal.PlanDescription description;
 
-    public Description( org.neo4j.cypher.PlanDescription description )
+    public Description( PlanDescription description )
     {
         this.description = description;
     }
@@ -59,7 +60,7 @@ class Description implements ExecutionPlanDescription
     public List<ExecutionPlanDescription> getChildren()
     {
         List<ExecutionPlanDescription> result = new ArrayList<>();
-        for ( org.neo4j.cypher.PlanDescription child : JavaConversions.asJavaIterable( description.children() ) )
+        for ( PlanDescription child : JavaConversions.asJavaIterable( description.children() ) )
         {
             result.add( new Description( child ) );
         }
@@ -91,7 +92,7 @@ class Description implements ExecutionPlanDescription
     @Override
     public ProfilerStatistics getProfilerStatistics()
     {
-        final org.neo4j.cypher.javacompat.ProfilerStatistics statistics;
+        final org.neo4j.cypher.internal.javacompat.ProfilerStatistics statistics;
         try
         {
             statistics = description.asJava().getProfilerStatistics();

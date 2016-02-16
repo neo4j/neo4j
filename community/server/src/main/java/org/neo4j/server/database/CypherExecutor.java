@@ -19,21 +19,21 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
+import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class CypherExecutor extends LifecycleAdapter
 {
     private final Database database;
-    private ServerExecutionEngine executionEngine;
+    private ExecutionEngine executionEngine;
 
     public CypherExecutor( Database database )
     {
         this.database = database;
     }
 
-    public ServerExecutionEngine getExecutionEngine()
+    public ExecutionEngine getExecutionEngine()
     {
         return executionEngine;
     }
@@ -41,8 +41,8 @@ public class CypherExecutor extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        this.executionEngine = (ServerExecutionEngine) database.getGraph().getDependencyResolver()
-                                                               .resolveDependency( QueryExecutionEngine.class );
+        this.executionEngine = (ExecutionEngine) database.getGraph().getDependencyResolver()
+                .resolveDependency( QueryExecutionEngine.class );
     }
 
     @Override

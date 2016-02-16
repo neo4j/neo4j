@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import java.util
 
+import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.{CompiledRuntimeName, CostBasedPlannerName}

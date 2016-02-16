@@ -17,7 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/**
- * Execute Cypher queries from Java code.
- */
-package org.neo4j.cypher.javacompat;
+package org.neo4j.cypher.internal
+
+import java.io.PrintWriter
+
+import org.neo4j.graphdb.ResourceIterator
+
+trait ExecutionResult extends Iterator[Map[String, Any]] {
+  def columns: List[String]
+  def javaColumns: java.util.List[String]
+  def javaColumnAs[T](column: String): ResourceIterator[T]
+  def columnAs[T](column: String): Iterator[T]
+  def javaIterator: ResourceIterator[java.util.Map[String, Any]]
+  def dumpToString(writer: PrintWriter)
+  def dumpToString(): String
+  def queryStatistics(): QueryStatistics
+  def executionPlanDescription(): PlanDescription
+  def close()
+}

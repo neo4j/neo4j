@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
 import scala.collection.JavaConverters._

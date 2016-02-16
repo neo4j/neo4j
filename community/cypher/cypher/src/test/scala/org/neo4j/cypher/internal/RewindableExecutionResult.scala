@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
-import org.neo4j.cypher.{ExecutionResult, InternalException}
+import org.neo4j.cypher.InternalException
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
 
 object RewindableExecutionResult {

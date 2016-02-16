@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.ExtendedExecutionResult
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement

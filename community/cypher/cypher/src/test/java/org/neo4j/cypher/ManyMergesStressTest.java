@@ -27,7 +27,8 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
+import org.neo4j.cypher.internal.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -79,7 +80,7 @@ public class ManyMergesStressTest
             tx.success();
         }
 
-        org.neo4j.cypher.javacompat.ExecutionEngine engine = new org.neo4j.cypher.javacompat.ExecutionEngine( db );
+        ExecutionEngine engine = new ExecutionEngine( db );
 
         for( int count = 0; count < TRIES; count++ )
         {

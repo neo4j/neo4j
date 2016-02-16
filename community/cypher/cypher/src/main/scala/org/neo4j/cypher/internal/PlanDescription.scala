@@ -17,13 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal
+
 /**
  * Abstract description of an execution plan
- * @deprecated See { @link org.neo4j.graphdb.ExecutionPlanDescription}, and use
- * { @link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)} instead.
  */
-@Deprecated
 trait PlanDescription {
   self =>
 

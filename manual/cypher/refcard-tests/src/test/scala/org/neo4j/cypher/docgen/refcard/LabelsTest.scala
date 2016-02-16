@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.docgen.refcard
 
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
-import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 
 class LabelsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A:Person KNOWS ROOT")

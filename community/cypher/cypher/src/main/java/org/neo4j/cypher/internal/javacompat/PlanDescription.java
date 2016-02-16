@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.javacompat;
+package org.neo4j.cypher.internal.javacompat;
 
 
 import java.util.List;
@@ -30,17 +30,13 @@ import org.neo4j.cypher.ProfilerStatisticsNotReadyException;
  * Instances describe single execution steps in a Cypher query execution plan
  *
  * Execution plans form a tree of execution steps.  Each step is described by a PlanDescription object.
- *
- * @deprecated See {@link org.neo4j.graphdb.ExecutionPlanDescription} which you can get from {@link org.neo4j.graphdb.Result}
- * when using {@link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)}.
  */
-@Deprecated
 public interface PlanDescription
 {
     /**
      * @return descriptive name for this kind of execution step
      */
-    public String getName();
+    String getName();
 
     /**
      * Retrieve argument map for the associated execution step
@@ -50,21 +46,21 @@ public interface PlanDescription
      *
      * @return a map containing arguments that describe this execution step in more detail
      */
-    public Map<String, Object> getArguments();
+    Map<String, Object> getArguments();
 
     /**
      * @return list of previous (child) execution step descriptions
      */
-    public List<PlanDescription> getChildren();
+    List<PlanDescription> getChildren();
 
     /**
      * @return true, if ProfilerStatistics are available for this execution step
      */
-    public boolean hasProfilerStatistics();
+    boolean hasProfilerStatistics();
 
     /**
      * @return profiler statistics for this execution step iff available
      * @throws ProfilerStatisticsNotReadyException iff profiler statistics are not available
      */
-    public ProfilerStatistics getProfilerStatistics() throws ProfilerStatisticsNotReadyException;
+    ProfilerStatistics getProfilerStatistics() throws ProfilerStatisticsNotReadyException;
 }

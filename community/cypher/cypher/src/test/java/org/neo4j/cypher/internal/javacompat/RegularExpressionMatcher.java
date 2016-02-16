@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.javacompat;
-
-import java.util.regex.Pattern;
+package org.neo4j.cypher.internal.javacompat;
 
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+
+import java.util.regex.Pattern;
 
 public class RegularExpressionMatcher extends TypeSafeMatcher<String>
 {

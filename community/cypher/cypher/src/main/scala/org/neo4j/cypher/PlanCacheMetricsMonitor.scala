@@ -21,6 +21,8 @@ package org.neo4j.cypher
 
 import java.util.concurrent.atomic.AtomicLong
 
+import org.neo4j.cypher.internal.StringCacheMonitor
+
 class PlanCacheMetricsMonitor extends StringCacheMonitor {
   private val counter = new AtomicLong()
   override def cacheDiscard(ignored1: String, ignored2: String): Unit = {

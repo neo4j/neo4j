@@ -109,8 +109,6 @@ class SerializationAcceptanceTest extends ExecutionEngineFunSuite with QueryStat
     graph.inTx {
       val result = execute(query)
 
-      println(result.dumpToString())
-
       result.dumpToString() should include(":T[0]{deleted}")
       result.dumpToString() should include("Node[0]{deleted}")
       result.dumpToString() should not include("Node[1]{deleted}")

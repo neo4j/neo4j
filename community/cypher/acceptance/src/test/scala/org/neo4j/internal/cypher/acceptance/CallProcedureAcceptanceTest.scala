@@ -167,7 +167,6 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     // Given
     relate(createNode("A" -> 1), createNode("B" -> 1), "R" ->1)
     execute("MATCH (a) DETACH DELETE a")
-    println(execute("MATCH (a) RETURN count(a)").toList)
 
     // When
     val result = execute("CALL sys.db.propertyKeys")

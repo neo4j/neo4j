@@ -17,26 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.javacompat;
+package org.neo4j.cypher.internal
 
-import java.util.Map;
+import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb.{Notification, QueryExecutionType}
 
-/**
- * Profiler statistics for a single execution step of a Cypher query execution plan
- *
- * @deprecated See {@link org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics} which you can get from an {@link org.neo4j.graphdb.ExecutionPlanDescription}
- * when using {@link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)}.
- */
-@Deprecated
-public interface ProfilerStatistics
-{
-    /**
-     * @return number of rows processed by the associated execution step
-     */
-    long getRows();
-
-    /**
-     * @return number of database hits (potential disk accesses) caused by executing the associated execution step
-     */
-    long getDbHits();
+trait ExtendedExecutionResult extends ExecutionResult {
+  def planDescriptionRequested: Boolean
+  def executionType: QueryExecutionType
+  def notifications: Iterable[Notification]
+  def accept[EX <: Exception](visitor: ResultVisitor[EX])
 }
