@@ -26,19 +26,23 @@ import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 class RangeFunctionTest extends CypherFunSuite {
 
   test("range returns inclusive collection of integers") {
-    range(0, 10, 1) should be(Seq(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
-    range(5, 12, 2) should be(Seq(5, 7, 9, 11))
-    range(-3, 5, 1) should be(Seq(-3, -2, -1, 0, 1, 2, 3, 4, 5))
-    range(-30, 50, 10) should be(Seq(-30, -20, -10, 0, 10, 20, 30, 40, 50))
+    range(0, 10, 1).toSeq should be(Seq(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+    range(5, 12, 2).toSeq should be(Seq(5, 7, 9, 11))
+    range(-3, 5, 1).toSeq should be(Seq(-3, -2, -1, 0, 1, 2, 3, 4, 5))
+    range(-30, 50, 10).toSeq should be(Seq(-30, -20, -10, 0, 10, 20, 30, 40, 50))
   }
 
   test("range returns inclusive collection of integers for negative step values") {
-    range(0, -10, -1) should be(Seq(0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10))
-    range(-5, -12, -2) should be(Seq(-5, -7, -9, -11))
+    range(0, -10, -1).toSeq should be(Seq(0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10))
+    range(-5, -12, -2).toSeq should be(Seq(-5, -7, -9, -11))
   }
 
-  private def range(start: Int, end: Int, step: Int) = {
+  test("range should not overflow when more than 32bits") {
+    range(2147483647L, 2147483648L, 1L).toSeq should be(Seq(2147483647L, 2147483648L))
+  }
+
+  private def range(start: Long, end: Long, step: Long): Iterable[Long] = {
     val expr = RangeFunction(Literal(start), Literal(end), Literal(step))
-    expr(ExecutionContext.empty)(QueryStateHelper.empty)
+    expr(ExecutionContext.empty)(QueryStateHelper.empty).asInstanceOf[Iterable[Long]]
   }
 }
