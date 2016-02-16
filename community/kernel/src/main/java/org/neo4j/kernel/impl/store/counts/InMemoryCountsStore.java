@@ -44,7 +44,7 @@ public class InMemoryCountsStore implements CountsStore
     //TODO Always return long, not long[]. This requires splitting index keys into 4 keys, one for each value.
     private final ConcurrentHashMap<CountsKey,long[]> map;
     private final OutOfOrderSequence lastTxId = new ArrayQueueOutOfOrderSequence( BASE_TX_ID, 100, EMPTY_METADATA );
-    private CountsSnapshot snapshot;
+    private volatile CountsSnapshot snapshot;
     private final DatabaseHealth databaseHealth;
 
     public InMemoryCountsStore( CountsSnapshot snapshot, DatabaseHealth databaseHealth )
@@ -214,23 +214,25 @@ public class InMemoryCountsStore implements CountsStore
         }
     }
 
-    /**
-     * Iterates over the values of the counts store, but does not guarantee atomicity.
-     * Should only be used in situations where you know updates will not be applied.
-     *
-     * @param action the action to be called
-     */
+    @Override
+    public boolean haveSeenTxId(long txId)
+    {
+        return lastTxId.seen( txId, EMPTY_METADATA );
+    }
+
     @Override
     public void forEach( BiConsumer<CountsKey,long[]> action )
     {
+        lock.writeLock().lock();
         map.forEach( action );
+        lock.writeLock().unlock();
     }
 
     /**
      * This is essentially a deep copy of a map, necessary since our values in the map are long arrays. The crucial
      * part is the Arrays.copyOf() for the value.
      */
-    private static Map<CountsKey,long[]> copyOfMap( Map<CountsKey,long[]> mapToCopy )
+    private static ConcurrentHashMap<CountsKey,long[]> copyOfMap( Map<CountsKey,long[]> mapToCopy )
     {
         ConcurrentHashMap<CountsKey,long[]> newMap = new ConcurrentHashMap<>();
         mapToCopy.forEach( ( key, value ) -> newMap.put( key, Arrays.copyOf( value, value.length ) ) );

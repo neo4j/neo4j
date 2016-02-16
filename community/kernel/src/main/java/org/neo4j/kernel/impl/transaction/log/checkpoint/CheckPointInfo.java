@@ -21,8 +21,24 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 
-public interface CheckPointInfo
+public class CheckPointInfo
 {
-    long lastClosedTransactionId();
-    CountsSnapshot snapshot();
+    private final long lastClosedTransactionId;
+    private final CountsSnapshot snapshot;
+
+    public CheckPointInfo(long lastClosedTransactionId, CountsSnapshot snapshot )
+    {
+        this.lastClosedTransactionId = lastClosedTransactionId;
+        this.snapshot = snapshot;
+    }
+
+    public CountsSnapshot getSnapshot()
+    {
+        return snapshot;
+    }
+
+    public long getLastClosedTransactionId()
+    {
+        return lastClosedTransactionId;
+    }
 }

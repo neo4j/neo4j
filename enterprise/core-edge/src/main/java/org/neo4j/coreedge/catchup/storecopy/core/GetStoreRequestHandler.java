@@ -62,7 +62,7 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
     protected void channelRead0( ChannelHandlerContext ctx, GetStoreRequest msg ) throws Exception
     {
         CheckPointInfo checkPointInfo = checkPointerSupplier.get().tryCheckPoint(new SimpleTriggerInfo("Store copy"));
-        CountsSnapshot snapshot = checkPointInfo.snapshot();
+        CountsSnapshot snapshot = checkPointInfo.getSnapshot();
         sendFiles( ctx );
         sendSnapshot( ctx, snapshot );
         protocol.expect( NextMessage.MESSAGE_TYPE );

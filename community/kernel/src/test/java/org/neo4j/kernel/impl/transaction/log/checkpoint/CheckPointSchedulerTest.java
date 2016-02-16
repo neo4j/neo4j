@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 
@@ -42,6 +41,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.checkPoint;
 
 public class CheckPointSchedulerTest
@@ -141,20 +141,7 @@ public class CheckPointSchedulerTest
             {
                 checkPointerLatch.start();
                 checkPointerLatch.awaitFinish();
-                return new CheckPointInfo()
-                {
-                    @Override
-                    public long lastClosedTransactionId()
-                    {
-                        return 42;
-                    }
-
-                    @Override
-                    public CountsSnapshot snapshot()
-                    {
-                        return null;
-                    }
-                };
+                return new CheckPointInfo(42, NO_SNAPSHOT);
             }
 
             @Override

@@ -19,44 +19,67 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.kernel.impl.api.CountsAccessor.Updater;
 
 
 class UpdaterFactory
 {
-    Updater getUpdater( CountsStore countsStore, long txId )
+    Updater getUpdater( CountsStore countsStore, long txId, TransactionApplicationMode mode )
     {
-        return new Updater()
+        if ( mode == TransactionApplicationMode.RECOVERY && countsStore.haveSeenTxId( txId ) )
         {
-            private final Map<CountsKey,long[]> updates = new ConcurrentHashMap<>();
-
-            @Override
-            public void incrementNodeCount( int labelId, long delta )
+            return new Updater()
             {
-                updates.put( CountsKeyFactory.nodeKey( labelId ), new long[]{delta} );
-            }
-
-            @Override
-            public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
-            {
-                updates.put( CountsKeyFactory.relationshipKey( startLabelId, typeId, endLabelId ), new long[]{delta} );
-            }
-
-            @Override
-            public void close()
-            {
-                if ( countsStore != null )
+                @Override
+                public void incrementNodeCount( int labelId, long delta )
                 {
-                    countsStore.updateAll( txId, updates );
                 }
-            }
-        };
+
+                @Override
+                public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
+                {
+                }
+
+                @Override
+                public void close()
+                {
+                }
+            };
+        }
+        else
+        {
+            return new Updater()
+            {
+                private final ConcurrentHashMap<CountsKey,long[]> updates = new ConcurrentHashMap<>();
+
+                @Override
+                public void incrementNodeCount( int labelId, long delta )
+                {
+                    updates.put( CountsKeyFactory.nodeKey( labelId ), new long[]{delta} );
+                }
+
+                @Override
+                public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
+                {
+                    updates.put( CountsKeyFactory.relationshipKey( startLabelId, typeId, endLabelId ),
+                            new long[]{delta} );
+                }
+
+                @Override
+                public void close()
+                {
+                    if ( countsStore != null )
+                    {
+                        countsStore.updateAll( txId, updates );
+                    }
+                }
+            };
+        }
     }
 }

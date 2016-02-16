@@ -20,13 +20,10 @@
 package org.neo4j.kernel.impl.store.counts;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.storageengine.api.ReadableChannel;
 
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
@@ -42,7 +39,7 @@ public class CountsSnapshotDeserializer
         long txid = data.getLong();
         int size = data.getInt();
 
-        Map<CountsKey,long[]> map = new ConcurrentHashMap<>( size );
+        ConcurrentHashMap<CountsKey,long[]> map = new ConcurrentHashMap<>( size );
         CountsKey key;
         long[] value;
         for ( int i = 0; i < size; i++ )

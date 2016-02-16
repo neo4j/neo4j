@@ -33,12 +33,11 @@ public class DualCountsStoreUpdater implements CountsAccessor.Updater
     public DualCountsStoreUpdater( long txId, CountsStorageService countsStorageService, CountsTracker countsTracker,
             TransactionApplicationMode mode )
     {
-        countsStorageUpdater = countsStorageService.apply( txId );
+        countsStorageUpdater = countsStorageService.apply( txId, mode );
         Optional<CountsAccessor.Updater> result = countsTracker.apply( txId );
-        this.countsTrackerUpdater = result.isPresent() ? result.get() : null;
+        this.countsTrackerUpdater = result.orElse( null );
         assert this.countsTrackerUpdater != null || mode == TransactionApplicationMode.RECOVERY;
     }
-
 
     @Override
     public void incrementNodeCount( int labelId, long delta )

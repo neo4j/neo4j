@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 
 public class CountsSnapshot
 {
-    public static final CountsSnapshot NO_SNAPSHOT = null;
+    public static final CountsSnapshot NO_SNAPSHOT = new CountsSnapshot( -1 );
     final private Map<CountsKey,long[]> map;
     final private long txId;
 
@@ -38,7 +38,7 @@ public class CountsSnapshot
 
     public CountsSnapshot( long txId )
     {
-        this( txId, new ConcurrentHashMap<>() );
+        this( txId, new HashMap<>() );
     }
 
     public Map<CountsKey,long[]> getMap()

@@ -54,7 +54,6 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -97,14 +96,15 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
@@ -340,7 +340,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
                 CountsStorageServiceImpl countsStorageService = new CountsStorageServiceImpl();
                 countsStorageService.initialize( new CountsSnapshot( lastTxId ), databaseHealth );
-                initializer.initialize( countsStorageService.updaterFor( lastTxId ) );
+                initializer.initialize( countsStorageService.updaterFor( lastTxId, INTERNAL ) );
                 return countsStorageService.snapshot( lastTxId );
             }
         }
@@ -685,8 +685,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         if ( !Legacy23Store.LEGACY_VERSION.equals( versionToUpgradeFrom ) )
         {
             // write a check point in the log in order to make recovery work in the newer version
-            new StoreMigratorCheckPointer( storeDir, fileSystem )
-                    .checkPoint( logVersion, lastCommittedTx, CountsSnapshot.NO_SNAPSHOT);
+            doCheckpointWithSnapshot( storeDir,logVersion,lastCommittedTx, NO_SNAPSHOT );
         }
     }
 
@@ -711,11 +710,17 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             long lastCommittedTx = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
 
             // write a check point in the log in order to make recovery work in the newer version
-            new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint( logVersion, lastCommittedTx, snapshot );
+            doCheckpointWithSnapshot( storeDir,logVersion,lastCommittedTx, snapshot );
             break;
         default:
             throw new IllegalStateException( "Unknown version to upgrade from: " + versionToMigrateFrom );
         }
+    }
+
+    private void doCheckpointWithSnapshot(File storeDir, long logVersion, long lastCommittedTx, CountsSnapshot snapshot)
+            throws IOException
+    {
+        new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint( logVersion, lastCommittedTx, snapshot );
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir ) throws IOException

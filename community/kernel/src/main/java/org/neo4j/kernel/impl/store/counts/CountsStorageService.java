@@ -23,14 +23,15 @@ import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public interface CountsStorageService extends CountsAccessor, CountsVisitor.Visitable
 {
-    CountsAccessor.Updater updaterFor( long txId );
+    CountsAccessor.Updater updaterFor( long txId, TransactionApplicationMode mode );
 
     CountsAccessor.IndexStatsUpdater indexStatsUpdater();
 
-    Updater apply( long txId );
+    Updater apply( long txId, TransactionApplicationMode mode );
 
     CountsSnapshot snapshot( long txId );
 

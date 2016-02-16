@@ -70,7 +70,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
     private final GraphDatabaseAPI graphDatabaseAPI;
     private final LogProvider logProvider;
     private final Monitors monitors;
-    private volatile BackupServer server;
+    private BackupServer server;
     private final BackupProvider backupProvider;
     private volatile URI me;
 

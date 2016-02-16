@@ -159,7 +159,7 @@ public class StoreCopyServer
 
             // copy counts snapshot
             monitor.startStreamingCountsSnapshot();
-            snapshotWriter.write( checkPointInfo.snapshot() );
+            snapshotWriter.write( checkPointInfo.getSnapshot() );
             monitor.finishStreamingCountsSnapshot();
 
             // Copy the store files
@@ -183,7 +183,7 @@ public class StoreCopyServer
                 monitor.finishStreamingStoreFiles();
             }
 
-            return anonymous( checkPointInfo.lastClosedTransactionId() );
+            return anonymous( checkPointInfo.getLastClosedTransactionId() );
         }
         catch ( IOException e )
         {

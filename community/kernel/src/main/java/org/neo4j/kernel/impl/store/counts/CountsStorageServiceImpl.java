@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
 import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public class CountsStorageServiceImpl implements CountsStorageService
 {
@@ -41,9 +42,9 @@ public class CountsStorageServiceImpl implements CountsStorageService
     }
 
     @Override
-    public Updater updaterFor( long txId )
+    public Updater updaterFor( long txId, TransactionApplicationMode mode )
     {
-        return updaterFactory.getUpdater( countsStore, txId );
+        return updaterFactory.getUpdater( countsStore, txId, mode );
     }
 
     public IndexStatsUpdater indexStatsUpdater()
@@ -52,9 +53,9 @@ public class CountsStorageServiceImpl implements CountsStorageService
     }
 
     @Override
-    public Updater apply( long txId )
+    public Updater apply( long txId, TransactionApplicationMode mode )
     {
-        return updaterFor( txId );
+        return updaterFor( txId, mode );
     }
 
     @Override

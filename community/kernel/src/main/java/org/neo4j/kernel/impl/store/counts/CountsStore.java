@@ -53,6 +53,7 @@ public interface CountsStore
 
     /**
      * Applies the corresponding key in the store with the given delta.
+     *
      * @param key The key in the store to replace.
      * @param delta The new value for the given key in this store.
      */
@@ -60,6 +61,7 @@ public interface CountsStore
 
     /**
      * Overwrites the corresponding key in the store with the replacement value.
+     *
      * @param key The key in the store to replace.
      * @param replacement The new value for the given key in this store.
      */
@@ -75,6 +77,14 @@ public interface CountsStore
      * @throws IllegalStateException If called before the previous invocation of this method returns.
      */
     CountsSnapshot snapshot( long txId );
+
+    /**
+     * Checks the given transaction id against the already seen transaction ids and returns true if this transaction
+     * id has been applied to the counts store already.
+     * @param txId
+     * @return True if this txid has already been applied.
+     */
+    boolean haveSeenTxId( long txId );
 
     /**
      * Execute the action on each counts entry of store

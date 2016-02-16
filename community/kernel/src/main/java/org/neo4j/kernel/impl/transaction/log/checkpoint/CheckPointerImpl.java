@@ -36,6 +36,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
+
 
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 {
@@ -118,20 +120,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             {
                 msgLog.info(
                         info.describe( lastCheckPointedTx ) + " Check pointing was already running, completed now" );
-                return new CheckPointInfo()
-                {
-                    @Override
-                    public long lastClosedTransactionId()
-                    {
-                        return lastCheckPointedTx;
-                    }
-
-                    @Override
-                    public CountsSnapshot snapshot()
-                    {
-                        return lastCountsSnapshot;
-                    }
-                };
+                return new CheckPointInfo(lastCheckPointedTx, lastCountsSnapshot);
             }
             finally
             {
@@ -153,20 +142,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
                     return doCheckPoint( info, event );
                 }
             }
-            return new CheckPointInfo()
-            {
-                @Override
-                public long lastClosedTransactionId()
-                {
-                    return -1;
-                }
-
-                @Override
-                public CountsSnapshot snapshot()
-                {
-                    return null;
-                }
-            };
+            return new CheckPointInfo(-1, NO_SNAPSHOT);
         }
         finally
         {
@@ -207,7 +183,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 
         msgLog.info( prefix + " Starting Counts Store Snapshot Operation..." );
         CountsSnapshot snapshot = storageEngine.getSnapshotFromCountsStorageService( lastClosedTransactionId );
-        msgLog.info( prefix + " Counts Store Snapshot completed." );
+        msgLog.info( prefix + " Counts Store Snapshot completed. Booyah!" );
 
         msgLog.info( prefix + " Starting appending check point entry into the tx log..." );
         appender.checkPoint( logPosition, logCheckPointEvent, snapshot );
@@ -224,20 +200,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 
         lastCheckPointedTx = lastClosedTransactionId;
         lastCountsSnapshot = snapshot;
-        return new CheckPointInfo(){
-
-            @Override
-            public long lastClosedTransactionId()
-            {
-                return lastClosedTransactionId;
-            }
-
-            @Override
-            public CountsSnapshot snapshot()
-            {
-                return snapshot;
-            }
-        };
+        return new CheckPointInfo(lastClosedTransactionId, snapshot);
     }
 
 }

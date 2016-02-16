@@ -26,7 +26,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
@@ -189,7 +188,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     @Test( expected = IllegalArgumentException.class )
     public void throwsExceptionOnWrongValueLengthForEntityNode() throws IOException
     {
-        Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
+        ConcurrentHashMap<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
         brokenMap.put( nodeKey( 1 ), new long[]{1, 1} );
         CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
         serialize( logChannel, brokenSnapshot );
@@ -198,7 +197,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     @Test( expected = IllegalArgumentException.class )
     public void throwsExceptionOnWrongValueLengthForEntityRelationship() throws IOException
     {
-        Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
+        ConcurrentHashMap<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
         brokenMap.put( relationshipKey( 1, 1, 1 ), new long[]{1, 1} );
         CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
         serialize( logChannel, brokenSnapshot );
@@ -207,7 +206,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     @Test( expected = IllegalArgumentException.class )
     public void throwsExceptionOnWrongValueLengthForIndexSample() throws IOException
     {
-        Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
+        ConcurrentHashMap<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
         brokenMap.put( indexSampleKey( 1, 1 ), new long[]{1} );
         CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
         serialize( logChannel, brokenSnapshot );
@@ -216,7 +215,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     @Test( expected = IllegalArgumentException.class )
     public void throwsExceptionOnWrongValueLengthForIndexStatistics() throws IOException
     {
-        Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
+        ConcurrentHashMap<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
         brokenMap.put( indexStatisticsKey( 1, 1 ), new long[]{1} );
         CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
         serialize( logChannel, brokenSnapshot );

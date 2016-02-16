@@ -30,9 +30,9 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
  */
 public class CountsStoreMapGenerator
 {
-    public static Map<CountsKey,long[]> simpleCountStoreMap( int num )
+    public static ConcurrentHashMap<CountsKey,long[]> simpleCountStoreMap( int num )
     {
-        Map<CountsKey,long[]> map = new ConcurrentHashMap<>();
+        ConcurrentHashMap<CountsKey,long[]> map = new ConcurrentHashMap<>();
         addNodeKeys( num, map );
         addRelationshipKeys( num, map );
         addIndexSampleKeys( num, map );

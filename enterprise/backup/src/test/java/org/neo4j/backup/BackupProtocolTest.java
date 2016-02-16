@@ -22,22 +22,20 @@ package org.neo4j.backup;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.backup.BackupClient.BackupRequestType;
-import org.neo4j.com.KnownDataByteChannel;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.com.storecopy.ToNetworkCountsSnapshotWriter;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -120,8 +118,10 @@ public class BackupProtocolTest
             this.receivedForensics = forensics;
             try
             {
-                snapshotWriter.write( new CountsSnapshot( 42, Collections.singletonMap( CountsKeyFactory.nodeKey( 24 ),
-                        new long[]{12} ) ) );
+                snapshotWriter.write( new CountsSnapshot( 42, new ConcurrentHashMap<CountsKey,long[]>()
+                {{
+                    put( CountsKeyFactory.nodeKey( 24 ), new long[]{12} );
+                }} ) );
                 writer.close();
             }
             catch ( IOException e )

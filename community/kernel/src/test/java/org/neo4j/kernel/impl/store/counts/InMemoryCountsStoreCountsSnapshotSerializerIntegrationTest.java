@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -53,7 +54,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
     {
         //GIVEN
         InMemoryClosableChannel tempChannel = new InMemoryClosableChannel();
-        Map<CountsKey,long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 1 );
+        ConcurrentHashMap<CountsKey,long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 1 );
         CountsSnapshot countsSnapshot = new CountsSnapshot( 1, map );
 
         //WHEN
@@ -85,7 +86,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
         File tempFile = new File( testDir.directory(), "temp" );
         StoreChannel rawChannel = fs.create( tempFile );
 
-        Map<CountsKey, long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 100000 );
+        ConcurrentHashMap<CountsKey, long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 100000 );
         CountsSnapshot countsSnapshot = new CountsSnapshot( 1, map );
         CountsSnapshot recovered;
 
