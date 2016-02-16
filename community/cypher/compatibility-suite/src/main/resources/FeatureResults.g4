@@ -12,7 +12,7 @@ value : node
       | map
       ;
 
-node : '(' (label)* (WS propertyMap)? ')' ;
+node : '(' (label)* WS? (propertyMap)? ')' ;
 
 relationship : '[' relationshipType (WS propertyMap)* ']' ;
 
@@ -49,7 +49,9 @@ propertyValue : value ;
 
 relationshipType : ':' SymbolicNameString ;
 
-label : ':' SymbolicNameString ;
+label : ':' labelName ;
+
+labelName : SymbolicNameString ;
 
 IntegerLiteral : ('-')? DecimalLiteral ;
 

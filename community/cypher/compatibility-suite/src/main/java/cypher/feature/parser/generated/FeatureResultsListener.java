@@ -227,6 +227,16 @@ public interface FeatureResultsListener extends ParseTreeListener {
 	 */
 	void exitLabel(FeatureResultsParser.LabelContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link FeatureResultsParser#labelName}.
+	 * @param ctx the parse tree
+	 */
+	void enterLabelName(FeatureResultsParser.LabelNameContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FeatureResultsParser#labelName}.
+	 * @param ctx the parse tree
+	 */
+	void exitLabelName(FeatureResultsParser.LabelNameContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link FeatureResultsParser#string}.
 	 * @param ctx the parse tree
 	 */

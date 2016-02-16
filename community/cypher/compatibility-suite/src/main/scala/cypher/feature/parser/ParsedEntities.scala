@@ -2,22 +2,24 @@ package cypher.feature.parser
 
 import java.lang.Iterable
 import java.util
-import org.neo4j.graphdb._
+import java.util.Collections.emptyList
+import java.util.function.Consumer
 
-import scala.collection.JavaConverters._
+import org.neo4j.graphdb._
 
 trait ParsedEntities {
 
-  def parsedNode(labels: Seq[String] = Seq.empty, properties: Map[String, AnyRef] = Map.empty): Node = {
-    new EmptyNode() {
+  def parsedNode(labelNames: Iterable[String] = emptyList(), properties: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()): Node = {
+    new ParsedNode() {
       override def getLabels: Iterable[Label] = {
-        val seq: Seq[Label] = labels.map(labelName => new Label {
-          override def name(): String = labelName
+        val list = new util.ArrayList[Label]()
+        labelNames.forEach(new Consumer[String] {
+          override def accept(t: String): Unit = list.add(Label.label(t))
         })
-        seq.toIterable.asJava
+        list
       }
 
-      override def getAllProperties: util.Map[String, AnyRef] = properties.asJava
+      override def getAllProperties: util.Map[String, AnyRef] = properties
     }
   }
 

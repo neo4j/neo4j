@@ -275,6 +275,18 @@ public class FeatureResultsBaseListener implements FeatureResultsListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterLabelName(FeatureResultsParser.LabelNameContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitLabelName(FeatureResultsParser.LabelNameContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterString(FeatureResultsParser.StringContext ctx) { }
 	/**
 	 * {@inheritDoc}

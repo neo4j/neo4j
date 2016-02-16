@@ -97,13 +97,19 @@ class expectedResultsParserTest extends FunSuite with Matchers with ParsedEntiti
       asMap("k0" -> Long.valueOf(0), "k1" -> lang.Double.valueOf(1e-10), "k2" -> null, "k3" -> TRUE))
   }
 
-  // TODO: nodes and rels
+  test("should parse nodes") {
+    parse("()") should equal(parsedNode())
+    parse("(:T)") should equal(parsedNode(asList("T")))
+    parse("(:T:T2:longlabel)") should equal(parsedNode(asList("T", "T2", "longlabel")))
+  }
 
-//    test("should parse nodes") {
-//      parse("()") should equal(parsedNode())
-//    }
+  test("should parse nodes with properties") {
+    parse("({key:'value'})") should equal(parsedNode(properties = asMap("key" -> "value")))
+    parse("({key:0})") should equal(parsedNode(properties = asMap("key" -> Long.valueOf(0L))))
+    parse("({key:null, key2:[]})") should equal(parsedNode(properties = asMap("key" -> null, "key2" -> emptyList())))
+  }
 
-  def asMap(tuples: (String, AnyRef)*) = {
+  def asMap(tuples: (String, AnyRef)*): util.Map[String, AnyRef] = {
     val map = new util.HashMap[String, AnyRef]()
     tuples.foreach {
       case (k, v) => map.put(k, v)

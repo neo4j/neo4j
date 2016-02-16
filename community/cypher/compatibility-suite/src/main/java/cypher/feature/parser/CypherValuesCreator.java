@@ -22,17 +22,22 @@ package cypher.feature.parser;
 import cypher.feature.parser.generated.FeatureResultsBaseListener;
 import cypher.feature.parser.generated.FeatureResultsParser;
 
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
+
+import org.neo4j.graphdb.Label;
 
 class CypherValuesCreator extends FeatureResultsBaseListener
 {
     private Stack<Object> workload;
     private Stack<Integer> listCounters;
     private Stack<Integer> mapCounters;
+    private List<Label> labels;
 
     private static final String INFINITY = "Inf";
 
@@ -41,6 +46,7 @@ class CypherValuesCreator extends FeatureResultsBaseListener
         this.workload = new Stack<>();
         this.listCounters = new Stack<>();
         this.mapCounters = new Stack<>();
+        this.labels = new ArrayList<>();
     }
 
     Object parsed()
@@ -115,7 +121,7 @@ class CypherValuesCreator extends FeatureResultsBaseListener
     }
 
     @Override
-    public void enterMap( FeatureResultsParser.MapContext ctx )
+    public void enterPropertyMap( FeatureResultsParser.PropertyMapContext ctx )
     {
         mapCounters.push( 0 );
     }
@@ -127,10 +133,10 @@ class CypherValuesCreator extends FeatureResultsBaseListener
     }
 
     @Override
-    public void exitMap( FeatureResultsParser.MapContext ctx )
+    public void exitPropertyMap( FeatureResultsParser.PropertyMapContext ctx )
     {
         int counter = mapCounters.pop();
-        Map<String, Object> map = new HashMap<>(  );
+        Map<String,Object> map = new HashMap<>();
         for ( int i = 0; i < counter; ++i )
         {
             Object value = workload.pop();
@@ -144,5 +150,41 @@ class CypherValuesCreator extends FeatureResultsBaseListener
     public void enterPropertyKey( FeatureResultsParser.PropertyKeyContext ctx )
     {
         workload.push( ctx.getText() );
+    }
+
+    @Override
+    public void enterLabelName( FeatureResultsParser.LabelNameContext ctx )
+    {
+        labels.add( Label.label( ctx.getText() ) );
+    }
+
+    @Override
+    public void exitNode( FeatureResultsParser.NodeContext ctx )
+    {
+        final Map<String,Object> properties;
+        if ( workload.empty() )
+        {
+            properties = new HashMap<>();
+        }
+        else
+        {
+            properties = (Map<String,Object>) workload.pop();
+        }
+        final ArrayList<Label> nodeLabels = new ArrayList<>( labels );
+        labels.clear();
+        workload.push( new ParsedNode()
+        {
+            @Override
+            public Map<String,Object> getAllProperties()
+            {
+                return properties;
+            }
+
+            @Override
+            public Iterable<Label> getLabels()
+            {
+                return nodeLabels;
+            }
+        } );
     }
 }
