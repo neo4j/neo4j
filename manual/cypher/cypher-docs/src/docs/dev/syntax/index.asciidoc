@@ -33,7 +33,7 @@ include::../ql/introduction/pattern.asciidoc[]
 
 :leveloffset: 2
 
-include::../ql/syntax/collections.asciidoc[]
+include::../ql/syntax/lists.asciidoc[]
 
 :leveloffset: 2
 

@@ -12,8 +12,8 @@ Another is to create data from parameter lists that are provided to the query.
 
 `UNWIND` requires you to specify a new name for the inner values.
 
-include::unwind-a-collection.asciidoc[]
+include::unwind-a-list.asciidoc[]
 
-include::create-a-distinct-collection.asciidoc[]
+include::create-a-distinct-list.asciidoc[]
 
-include::create-nodes-from-a-collection-parameter.asciidoc[]
+include::create-nodes-from-a-list-parameter.asciidoc[]
