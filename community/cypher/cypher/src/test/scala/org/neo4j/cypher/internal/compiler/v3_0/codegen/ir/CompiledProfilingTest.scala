@@ -55,9 +55,9 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
     val statement = mock[Statement]
     val queryContext = mock[QueryContext]
-    val transactionalContext: TransactionalContext = mock[TransactionalContext]
-    when(queryContext.transactionalContext).thenReturn(transactionalContext)
-    when(transactionalContext.statement).thenReturn(statement.asInstanceOf[transactionalContext.KernelStatement])
+    val transactionalContext = mock[TransactionalContext[GraphDatabaseAPI,Statement]]
+    when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext[queryContext.Graph, queryContext.KernelStatement]])
+    when(transactionalContext.statement).thenReturn(statement)
 
     val readOps = mock[ReadOperations]
     val entityAccessor = mock[NodeManager]

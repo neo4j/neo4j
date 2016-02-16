@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Add, Expression, SignedDecimalIntegerLiteral, StringLiteral}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{ParameterNotFoundException, DummyPosition, InvalidArgumentException, symbols}
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.api.Statement
 
 import scala.collection.mutable
 
@@ -116,7 +118,7 @@ class CallProcedureExecutionPlanTest extends CypherFunSuite {
     }
   }
 
-  when(ctx.transactionalContext).thenReturn(mock[TransactionalContext])
+  when(ctx.transactionalContext).thenReturn(mock[TransactionalContext[GraphDatabaseAPI,Statement]].asInstanceOf[TransactionalContext[ctx.Graph,ctx.KernelStatement]])
   when(ctx.callReadOnlyProcedure(any[ProcedureName], any[Seq[AnyRef]])).thenAnswer(procedureResult)
   when(ctx.callReadWriteProcedure(any[ProcedureName], any[Seq[AnyRef]])).thenAnswer(procedureResult)
 }

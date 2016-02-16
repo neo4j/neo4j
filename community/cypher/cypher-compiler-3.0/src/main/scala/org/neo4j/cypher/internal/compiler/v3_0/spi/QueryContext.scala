@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_0.spi
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v3_0.InternalQueryStatistics
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
@@ -44,12 +44,15 @@ import scala.collection.Iterator
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
 trait QueryContext extends TokenContext {
+  type Graph
+
+  type KernelStatement
 
   type EntityAccessor
 
   def entityAccessor: EntityAccessor
 
-  def transactionalContext: TransactionalContext
+  def transactionalContext: TransactionalContext[Graph, KernelStatement]
 
   def nodeOps: Operations[Node]
 
@@ -189,9 +192,9 @@ trait Operations[T <: PropertyContainer] {
   def releaseExclusiveLock(obj: Long): Unit
 }
 
-trait TransactionalContext {
+trait TransactionalContext[Graph,KernelStatement] {
 
-  type KernelStatement
+  def newContext(): TransactionalContext[Graph,KernelStatement]
 
   def statement: KernelStatement
 
@@ -202,4 +205,6 @@ trait TransactionalContext {
   def close(success: Boolean)
 
   def commitAndRestartTx()
+
+  def graph: Graph
 }

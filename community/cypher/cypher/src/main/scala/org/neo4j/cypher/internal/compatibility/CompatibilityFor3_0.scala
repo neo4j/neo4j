@@ -189,7 +189,8 @@ trait CompatibilityFor3_0 {
 
     private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
       val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
-      val ctx = new TransactionBoundQueryContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)(searchMonitor)
+      val transactionalContext = new TransactionBoundTransactionalContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
+      val ctx = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
       new ExceptionTranslatingQueryContextFor3_0(ctx)
     }
 

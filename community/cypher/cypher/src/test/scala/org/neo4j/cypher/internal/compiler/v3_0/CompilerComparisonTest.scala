@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
-import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundPlanContext, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, GeneratedQueryStructure, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
@@ -544,7 +544,8 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
     db.withTx {
       tx =>
-        val queryContext = new TransactionBoundQueryContext(db, tx, true, db.statement)(indexSearchMonitor)
+        val transactionalContext = new TransactionBoundTransactionalContext(db, tx, true, db.statement)
+        val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
         val result = plan.run(queryContext, ProfileMode, parameters)
         (result.toList, result)
     }

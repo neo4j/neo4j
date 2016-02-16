@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.spi
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{KernelPredicate, Expander}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
@@ -34,9 +34,13 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
 
+  type Graph = inner.Graph
+
+  type KernelStatement = inner.KernelStatement
+
   type EntityAccessor = inner.EntityAccessor
 
-  override def transactionalContext: TransactionalContext = inner.transactionalContext
+  override def transactionalContext: TransactionalContext[Graph, KernelStatement] = inner.transactionalContext
 
   override def entityAccessor: EntityAccessor = inner.entityAccessor
 
@@ -220,9 +224,7 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
 }
 
-class DelegatingTransactionalContext(val inner: TransactionalContext) extends TransactionalContext {
-
-  type KernelStatement = inner.KernelStatement
+class DelegatingTransactionalContext[Graph, KernelStatement](val inner: TransactionalContext[Graph, KernelStatement]) extends TransactionalContext[Graph, KernelStatement] {
 
   override def commitAndRestartTx() { inner.commitAndRestartTx() }
 
@@ -233,4 +235,8 @@ class DelegatingTransactionalContext(val inner: TransactionalContext) extends Tr
   override def isOpen: Boolean = inner.isOpen
 
   override def close(success: Boolean) { inner.close(success) }
+
+  override def graph: Graph = inner.graph
+
+  override def newContext(): TransactionalContext[Graph, KernelStatement] = inner.newContext()
 }

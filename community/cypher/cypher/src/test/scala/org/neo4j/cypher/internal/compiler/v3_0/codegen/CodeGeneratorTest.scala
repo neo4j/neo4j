@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{ParameterNotFoundException, Sema
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.Clock
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -914,11 +915,11 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   })
 
   private val queryContext = mock[QueryContext]
-  private val transactionalContext = mock[TransactionalContext]
+  private val transactionalContext = mock[TransactionalContext[GraphDatabaseAPI,org.neo4j.kernel.api.Statement]]
   private val ro = mock[ReadOperations]
   private val statement = mock[org.neo4j.kernel.api.Statement]
-  when(queryContext.transactionalContext).thenReturn(transactionalContext)
-  when(transactionalContext.statement).thenReturn(statement.asInstanceOf[transactionalContext.KernelStatement])
+  when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext[queryContext.Graph, queryContext.KernelStatement]])
+  when(transactionalContext.statement).thenReturn(statement)
   when(queryContext.entityAccessor).thenReturn(nodeManager.asInstanceOf[queryContext.EntityAccessor])
   when(statement.readOperations()).thenReturn(ro)
   when(ro.nodesGetAll()).thenAnswer(new Answer[PrimitiveLongIterator] {

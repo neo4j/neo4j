@@ -59,7 +59,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test ("should_mark_transaction_successful_if_successful") {
     // GIVEN
     when (outerTx.failure () ).thenThrow (new AssertionError ("Shouldn't be called") )
-    val context = new TransactionBoundQueryContext(graph, outerTx, isTopLevelTx = true, statement)(indexSearchMonitor)
+    val transactionalContext = new TransactionBoundTransactionalContext(graph, outerTx, isTopLevelTx = true, statement)
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // WHEN
     context.transactionalContext.close(success = true)
@@ -73,8 +74,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test ("should_mark_transaction_failed_if_not_successful") {
     // GIVEN
     when (outerTx.success () ).thenThrow (new AssertionError ("Shouldn't be called") )
-    val context = new TransactionBoundQueryContext(graph, outerTx, isTopLevelTx = true, statement)(indexSearchMonitor)
-
+    val transactionalContext = new TransactionBoundTransactionalContext(graph, outerTx, isTopLevelTx = true, statement)
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
     context.transactionalContext.close(success = false)
 
@@ -91,7 +92,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     val tx = graph.beginTx()
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val context = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, stmt)(indexSearchMonitor)
+    val transactionalContext = new TransactionBoundTransactionalContext(graph, outerTx, isTopLevelTx = true, stmt)
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // WHEN
     val iterable = DynamicIterable( context.getRelationshipsForIds(node, SemanticDirection.BOTH, None) )
@@ -111,7 +113,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     val tx = graph.beginTx()
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val context = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, stmt)(indexSearchMonitor)
+    val transactionalContext = new TransactionBoundTransactionalContext(graph, outerTx, isTopLevelTx = true, stmt)
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // THEN
     context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal (Right(new URL("http://localhost:7474/data.csv")))
@@ -129,7 +132,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     graph = new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava).asInstanceOf[GraphDatabaseAPI]
     val tx = graph.beginTx()
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val context = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, stmt)(indexSearchMonitor)
+    val transactionalContext = new TransactionBoundTransactionalContext(graph, outerTx, isTopLevelTx = true, stmt)
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // THEN
     context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal (Right(new URL("http://localhost:7474/data.csv")))
