@@ -77,7 +77,7 @@ public class DesktopConfigurator
 
     public String getDatabaseDirectory()
     {
-        return config.get( ServerSettings.legacy_db_location ).getAbsolutePath();
+        return dbDir.getAbsolutePath();
     }
 
     public int getServerPort(){ return config.get( ServerSettings.webserver_port ); }

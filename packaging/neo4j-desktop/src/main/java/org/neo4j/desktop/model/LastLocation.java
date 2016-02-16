@@ -21,6 +21,10 @@ package org.neo4j.desktop.model;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Scanner;
 
 public class LastLocation
@@ -43,6 +47,21 @@ public class LastLocation
             {
                 fnfe.printStackTrace();
             }
+        }
+
+        return location;
+    }
+
+    public static String setLastLocation( String location )
+    {
+        try
+        {
+            java.nio.file.Files.write( Paths.get( ".dblocation" ),location.getBytes() );
+        }
+        catch ( IOException ioe )
+        {
+            System.out.println( "Error saving DB location" );
+            System.out.println( ioe );
         }
 
         return location;

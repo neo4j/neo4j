@@ -30,6 +30,7 @@ import java.io.IOException;
 import javax.swing.*;
 
 import org.neo4j.desktop.model.DesktopModel;
+import org.neo4j.desktop.model.LastLocation;
 import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 
 import static javax.swing.JFileChooser.APPROVE_OPTION;
@@ -78,10 +79,7 @@ class BrowseForDatabaseActionListener implements ActionListener
 
                 validLocation = true;
 
-                try ( FileWriter fileWriter = new FileWriter( new File( ".dblocation" ) ) )
-                {
-                    fileWriter.write( selectedFile.getAbsolutePath() );
-                }
+                LastLocation.setLastLocation( selectedFile.getAbsolutePath() );
             }
             catch ( UnsuitableDirectoryException ude )
             {
@@ -94,11 +92,6 @@ class BrowseForDatabaseActionListener implements ActionListener
                 {
                     cancelled = true;
                 }
-            }
-            catch ( IOException ioe )
-            {
-                System.out.println( "Error saving DB location" );
-                System.out.println( ioe );
             }
         }
     }

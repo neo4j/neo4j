@@ -75,8 +75,10 @@
       <component name="Shell scripts" id="449" customizedId="" displayDescription="false" hideHelpButton="false" selected="true" changeable="true" downloadable="false" hidden="false">
         <description />
         <include all="false">
+          <entry location="bin/Neo4j-Management" fileType="regular" />
           <entry location="bin/neo4j-import" fileType="regular" />
           <entry location="bin/neo4j-shell" fileType="regular" />
+          <entry location="bin/Neo4j-Management.psd1" fileType="regular" />
         </include>
         <dependencies />
       </component>
@@ -738,7 +740,7 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
       </topLevelFiles>
     </macosArchive>
   </mediaSets>
-  <buildIds buildAll="false">
+  <buildIds buildAll="true">
     <mediaSet refId="25" />
     <mediaSet refId="26" />
     <mediaSet refId="444" />
