@@ -106,7 +106,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     }
 
     @Test
-    public void shoulAllowSchemaWriteAccessInFullMode() throws Throwable
+    public void shouldAllowSchemaWriteAccessInFullMode() throws Throwable
     {
         // Given
         KernelTransactionImplementation tx = newTransaction();

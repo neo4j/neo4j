@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
@@ -58,6 +59,7 @@ public class KernelTransactionTestBase
     protected final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
     protected final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
     protected final TransactionHeaderInformationFactory headerInformationFactory =  mock( TransactionHeaderInformationFactory.class );
+    protected final SchemaWriteGuard schemaWriteGuard = mock( SchemaWriteGuard.class );
     protected final FakeClock clock = new FakeClock();
     protected final KernelTransactions kernelTransactions = mock( KernelTransactions.class );
 
@@ -78,9 +80,9 @@ public class KernelTransactionTestBase
 
     public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted )
     {
-        return new KernelTransactionImplementation( null, null, new NoOpClient(), hooks, null, null, headerInformationFactory,
-                commitProcess, transactionMonitor, legacyIndexState, kernelTransactions, clock, TransactionTracer.NULL,
-                storageEngine, lastTransactionIdWhenStarted );
+        return new KernelTransactionImplementation( null, schemaWriteGuard, new NoOpClient(), hooks, null, null,
+                headerInformationFactory, commitProcess, transactionMonitor, legacyIndexState, kernelTransactions,
+                clock, TransactionTracer.NULL, storageEngine, lastTransactionIdWhenStarted );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess
