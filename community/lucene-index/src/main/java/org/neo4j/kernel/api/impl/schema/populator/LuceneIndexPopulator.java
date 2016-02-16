@@ -59,6 +59,8 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     @Override
     public void add( List<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
     {
+        // Lucene documents stored in a ThreadLocal and reused so we can't create an eager collection of documents here
+        // That is why we create a lazy Iterator and then Iterable
         Iterator<Document> documents = updates.stream()
                 .map( LuceneIndexPopulator::updateAsDocument )
                 .iterator();

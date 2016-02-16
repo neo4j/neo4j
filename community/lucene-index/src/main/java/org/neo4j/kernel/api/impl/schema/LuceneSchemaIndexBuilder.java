@@ -23,8 +23,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 
 import java.util.Map;
-import java.util.function.Supplier;
 
+import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
@@ -46,7 +46,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
 {
     private IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
     private IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
-    private Supplier<IndexWriterConfig> writerConfigSupplier = IndexWriterConfigs::standard;
+    private Factory<IndexWriterConfig> writerConfigFactory = IndexWriterConfigs::standard;
 
     private LuceneSchemaIndexBuilder()
     {
@@ -101,14 +101,14 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
     }
 
     /**
-     * Specify {@link Supplier} of lucene {@link IndexWriterConfig} to create {@link IndexWriter}s.
+     * Specify {@link Factory} of lucene {@link IndexWriterConfig} to create {@link IndexWriter}s.
      *
-     * @param writerConfigSupplier the supplier of writer configs
+     * @param writerConfigFactory the supplier of writer configs
      * @return index builder
      */
-    public LuceneSchemaIndexBuilder withWriterConfig( Supplier<IndexWriterConfig> writerConfigSupplier )
+    public LuceneSchemaIndexBuilder withWriterConfig( Factory<IndexWriterConfig> writerConfigFactory )
     {
-        this.writerConfigSupplier = writerConfigSupplier;
+        this.writerConfigFactory = writerConfigFactory;
         return this;
     }
 
@@ -130,7 +130,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
      */
     public LuceneSchemaIndex build()
     {
-        return new LuceneSchemaIndex( storageBuilder.build(), indexConfig, samplingConfig, writerConfigSupplier );
+        return new LuceneSchemaIndex( storageBuilder.build(), indexConfig, samplingConfig, writerConfigFactory );
     }
 
 }

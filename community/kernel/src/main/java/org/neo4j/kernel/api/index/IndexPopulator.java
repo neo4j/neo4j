@@ -108,6 +108,11 @@ public interface IndexPopulator
      */
     void markAsFailed( String failure ) throws IOException;
 
+    /**
+     * Add the given {@link NodePropertyUpdate update} to the sampler for this index.
+     *
+     * @param update update to include in sample
+     */
     void includeSample( NodePropertyUpdate update );
 
     long sampleResult( DoubleLong.Out result );

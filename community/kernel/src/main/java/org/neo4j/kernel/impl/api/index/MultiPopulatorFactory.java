@@ -23,6 +23,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
+/**
+ * Factory that is able to create either {@link MultipleIndexPopulator} or {@link BatchingMultipleIndexPopulator}
+ * depending on the given config.
+ *
+ * @see GraphDatabaseSettings#multi_threaded_schema_index_population_enabled
+ */
 public abstract class MultiPopulatorFactory
 {
     private MultiPopulatorFactory()

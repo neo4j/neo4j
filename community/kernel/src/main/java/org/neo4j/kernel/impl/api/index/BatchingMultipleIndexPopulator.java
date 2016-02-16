@@ -67,15 +67,12 @@ import static org.neo4j.helpers.NamedThreadFactory.daemon;
 public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 {
     public static final String QUEUE_THRESHOLD_NAME = "queue_threshold";
-    public static final String TASK_QUEUE_SIZE_NAME = "task_queue_size";
-    public static final String AWAIT_TIMEOUT_MINUTES_NAME = "await_timeout_minutes";
-    public static final String BATCH_SIZE_NAME = "batch_size";
+    static final String TASK_QUEUE_SIZE_NAME = "task_queue_size";
+    static final String AWAIT_TIMEOUT_MINUTES_NAME = "await_timeout_minutes";
+    static final String BATCH_SIZE_NAME = "batch_size";
 
     private static final String EOL = System.lineSeparator();
     private static final String FLUSH_THREAD_NAME_PREFIX = "Index Population Flush Thread";
-    private static final String LUCENE_MERGE_THREAD_NAME_PREFIX = "Lucene Merge Thread";
-
-    private static final int TASKS_COMPLETION_CHECK_INTERVAL_MS = 100;
 
     private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( getClass(), QUEUE_THRESHOLD_NAME, 20_000 );
     private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME, 100_000 );
@@ -168,10 +165,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
                        "flush tasks to complete." + EOL + this );
 
             Supplier<Boolean> allSubmittedTasksCompleted = () -> activeTasks.get() == 0;
-            long awaitTimeoutMillis = TimeUnit.MINUTES.toMillis( AWAIT_TIMEOUT_MINUTES );
-
-            Predicates.await( allSubmittedTasksCompleted, awaitTimeoutMillis, TASKS_COMPLETION_CHECK_INTERVAL_MS,
-                    TimeUnit.MILLISECONDS );
+            Predicates.await( allSubmittedTasksCompleted, AWAIT_TIMEOUT_MINUTES, TimeUnit.MINUTES );
         }
         catch ( TimeoutException e )
         {
@@ -207,8 +201,8 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     {
         if ( batch.size() >= BATCH_SIZE )
         {
-            flush( descriptor, batch );
             batchedUpdates.remove( descriptor );
+            flush( descriptor, batch );
         }
     }
 
@@ -223,11 +217,11 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
             Map.Entry<IndexDescriptor,List<NodePropertyUpdate>> entry = entries.next();
             IndexDescriptor indexDescriptor = entry.getKey();
             List<NodePropertyUpdate> updates = entry.getValue();
+            entries.remove();
             if ( updates != null && !updates.isEmpty() )
             {
                 flush( indexDescriptor, updates );
             }
-            entries.remove();
         }
     }
 
@@ -295,7 +289,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     private void handleTimeout()
     {
         throw new IllegalStateException( "Index population tasks were not able to complete in " +
-                                         AWAIT_TIMEOUT_MINUTES + " minutes." + EOL + this + EOL + findStackTraces() );
+                                         AWAIT_TIMEOUT_MINUTES + " minutes." + EOL + this + EOL + allStackTraces() );
     }
 
     private void handleInterrupt()
@@ -320,27 +314,18 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     /**
-     * Finds all threads and corresponding stack traces relevant for this populator which can potentially cause the
-     * {@link ExecutorService executor} to not terminate in {@link #AWAIT_TIMEOUT_MINUTES} minutes. Such threads are
-     * ones used by executor itself and Lucene Merge threads which can cause stalls of writers.
+     * Finds all threads and corresponding stack traces which can potentially cause the
+     * {@link ExecutorService executor} to not terminate in {@link #AWAIT_TIMEOUT_MINUTES} minutes.
      *
-     * @return thread dump as string for all relevant threads.
+     * @return thread dump as string.
      */
-    private static String findStackTraces()
+    private static String allStackTraces()
     {
         return Thread.getAllStackTraces()
                 .entrySet()
                 .stream()
-                .filter( entry -> isFlushOrLuceneMergeThread( entry.getKey() ) )
                 .map( entry -> Exceptions.stringify( entry.getKey(), entry.getValue() ) )
                 .collect( joining() );
-    }
-
-    private static boolean isFlushOrLuceneMergeThread( Thread thread )
-    {
-        String name = thread.getName().toLowerCase().trim();
-        return name.startsWith( FLUSH_THREAD_NAME_PREFIX.toLowerCase() ) ||
-               name.startsWith( LUCENE_MERGE_THREAD_NAME_PREFIX.toLowerCase() );
     }
 
     /**

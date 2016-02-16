@@ -21,6 +21,7 @@ package schema;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,7 +30,6 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -91,12 +91,13 @@ public class MultipleIndexPopulationStressIT
 {
     private static final String[] TOKENS = new String[] {"One", "Two", "Three", "Four"};
 
-    @Rule
     public final RandomRule random = new RandomRule();
-    @Rule
     public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    @Rule
     public final CleanupRule cleanup = new CleanupRule();
+
+    @Rule
+    public final RuleChain ruleChain = RuleChain.outerRule( random ).around( directory ).around( cleanup );
+
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Test
@@ -108,8 +109,7 @@ public class MultipleIndexPopulationStressIT
     @Test
     public void shouldPopulateMultipleIndexPopulatorsUnderStressMultiThreaded() throws Exception
     {
-        int concurrentUpdatesQueueFlushThreshold = ThreadLocalRandom.current().nextInt( 100, 5000 );
-        System.out.println( "Concurrent Updates Queue Threshold: " + concurrentUpdatesQueueFlushThreshold );
+        int concurrentUpdatesQueueFlushThreshold = random.nextInt( 100, 5000 );
         FeatureToggles.set( BatchingMultipleIndexPopulator.class, BatchingMultipleIndexPopulator.QUEUE_THRESHOLD_NAME,
                 concurrentUpdatesQueueFlushThreshold );
         try
