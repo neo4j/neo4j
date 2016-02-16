@@ -8,7 +8,7 @@ That engine can be tuned in the same way as the other embedded configurations, u
 Specifying Neo4j tuning properties
 ----------------------------------
 
-The _conf/neo4j.conf_ file in the server distribution, is the main configuration file for Neo4j.
+In the server distribution _neo4j.conf_ is the main configuration file for Neo4j.
 On restarting the server the tuning enhancements specified in this file will be loaded and configured into the underlying database engine.
 
 Specifying JVM tuning properties
