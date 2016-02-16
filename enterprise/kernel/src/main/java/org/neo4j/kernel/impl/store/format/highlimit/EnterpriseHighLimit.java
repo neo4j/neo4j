@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.format.highlimit;
 
 
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -33,6 +34,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
  */
 public class EnterpriseHighLimit extends HighLimit
 {
+    public static final RecordFormats RECORD_FORMATS = new EnterpriseHighLimit();
+
     @Override
     public String storeVersion()
     {
