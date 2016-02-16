@@ -189,7 +189,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
                 createOutputSnippet( traverserToString( traversal.traverse( admins ) ) ) );
         String query = "start admins=node("
                        + admins.getId()
-                       + ") match admins<-[:PART_OF*0..]-group<-[:MEMBER_OF]-user return user.name, group.name";
+                       + ") match (admins)<-[:PART_OF*0..]-(group)<-[:MEMBER_OF]-(user) return user.name, group.name";
         gen.get().addSnippet( "query-get-admins", createCypherSnippet( query ) );
         String result = db.execute( query )
                 .resultAsString();
@@ -209,7 +209,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
                 createOutputSnippet( traverserToString( traversal.traverse( jale ) ) ) );
         query = "start jale=node("
                 + jale.getId()
-                + ") match jale-[:MEMBER_OF]->()-[:PART_OF*0..]->group return group.name";
+                + ") match (jale)-[:MEMBER_OF]->()-[:PART_OF*0..]->(group) return group.name";
         gen.get().addSnippet( "query-get-user-memberships", createCypherSnippet( query ) );
         result = db.execute( query )
                 .resultAsString();
@@ -231,7 +231,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
                 createOutputSnippet( traverserToString( traversal.traverse( referenceNode ) ) ) );
         query = "start refNode=node("
                 + referenceNode.getId()
-                + ") match refNode<-[:ROOT]->()<-[:PART_OF*0..]-group return group.name";
+                + ") match (refNode)<-[:ROOT]->()<-[:PART_OF*0..]-(group) return group.name";
         gen.get().addSnippet( "query-get-groups", createCypherSnippet( query ) );
         result = db.execute( query )
                 .resultAsString();
@@ -252,7 +252,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
         gen.get().addSnippet( "o-get-members",
                 createOutputSnippet( traverserToString( traversal.traverse( referenceNode ) ) ) );
         query = "start refNode=node("+ referenceNode.getId() +") " +
-        		"match refNode<-[:ROOT]->root, p=root<-[PART_OF*0..]-()<-[:MEMBER_OF]-user " +
+        		"match (refNode)<-[:ROOT]->(root), p=(root)<-[PART_OF*0..]-()<-[:MEMBER_OF]-(user) " +
         		"return user.name, min(length(p)) " +
         		"order by min(length(p)), user.name";
         gen.get().addSnippet( "query-get-members", createCypherSnippet( query ) );
@@ -265,7 +265,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
 
         /* more advanced example
         query = "start refNode=node("+ referenceNode.getId() +") " +
-                "match p=refNode<-[:ROOT]->parent<-[:PART_OF*0..]-group, group<-[:MEMBER_OF]-user return group.name, user.name, LENGTH(p) " +
+                "match p=(refNode)<-[:ROOT]->(parent)<-[:PART_OF*0..]-(group), (group)<-[:MEMBER_OF]-(user) return group.name, user.name, LENGTH(p) " +
                 "order by LENGTH(p)";
                 */
     }
