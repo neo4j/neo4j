@@ -26,7 +26,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class LabelsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A:Person KNOWS ROOT")
   val title = "Labels"
-  val css = "general c2-1 c3-2 c4-1 c5-3 c6-3"
+  val css = "general c2-1 c3-2 c4-1 c5-2 c6-6"
   override val linkId = "cypherdoc-labels-constraints-and-indexes"
 
   override def assert(name: String, result: InternalExecutionResult) {
