@@ -82,7 +82,8 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
         return graph.validateURLAccess( url );
     }
 
-    @Override
+    // This provides backwards compatibility to the older API for places that cannot (yet) stop using it.
+    // TODO: Remove this when possible (remove RULE, remove older compilers)
     public GraphDatabaseAPI getGraphDatabaseService()
     {
         return graph;

@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.kernel.{GraphDatabaseQueryService, NeoStoreDataSource}
+import org.neo4j.kernel.NeoStoreDataSource
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.BeforeAndAfterAll
 
 class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAll {
 
-  var db: GraphDatabaseQueryService = null
+  var db: GraphDatabaseCypherService = null
   var lastCommittedTxIdProvider: LastCommittedTxIdProvider = null
 
   override protected def beforeAll(): Unit = {

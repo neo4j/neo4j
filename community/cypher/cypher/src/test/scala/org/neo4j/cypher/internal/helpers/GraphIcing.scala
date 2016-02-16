@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.helpers
 import java.util
 import java.util.concurrent.TimeUnit
 
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Label._
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -41,9 +42,9 @@ trait GraphIcing {
     }
   }
 
-  implicit class RichGraphDatabaseAPI(mad: GraphDatabaseQueryService) {
+  implicit class RichGraphDatabaseAPI(graphService: GraphDatabaseQueryService) {
 
-    var graph = mad.getGraphDatabaseService
+    var graph = graphService.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def getAllNodes() = graph.getAllNodes
 

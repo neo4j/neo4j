@@ -30,7 +30,6 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -41,7 +40,7 @@ import scala.collection.JavaConverters._
 
 class TransactionBoundQueryContextTest extends CypherFunSuite {
 
-  var graph: GraphDatabaseQueryService = null
+  var graph: GraphDatabaseCypherService = null
   var outerTx: Transaction = null
   var statement: Statement = null
   val indexSearchMonitor = mock[IndexSearchMonitor]

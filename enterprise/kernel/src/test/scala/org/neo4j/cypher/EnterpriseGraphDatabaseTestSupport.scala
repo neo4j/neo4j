@@ -21,13 +21,12 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
 trait EnterpriseGraphDatabaseTestSupport extends GraphDatabaseTestSupport {
   self: CypherFunSuite =>
 
-  override protected def createGraphDatabase(): GraphDatabaseQueryService = {
+  override protected def createGraphDatabase() = {
     new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase())
   }
 }

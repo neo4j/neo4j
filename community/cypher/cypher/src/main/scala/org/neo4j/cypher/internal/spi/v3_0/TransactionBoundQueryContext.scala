@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType._
@@ -498,7 +499,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case (Some(min), Some(max)) => Evaluators.includingDepths(min, max)
     }
 
-    val baseTraversalDescription: TraversalDescription = transactionalContext.graph.getGraphDatabaseService
+    // The RULE compiler makes use of older kernel API capabilities for variable length expanding
+    // TODO: Consider re-writing this using similar code to the COST var-length expand
+    val baseTraversalDescription: TraversalDescription = transactionalContext.graph.asInstanceOf[GraphDatabaseCypherService]
+      .getGraphDatabaseService
       .traversalDescription()
       .evaluator(depthEval)
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)

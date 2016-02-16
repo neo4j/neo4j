@@ -40,7 +40,7 @@ public class CypherUpdateMapTest
 {
 
     private ExecutionEngine engine;
-    private GraphDatabaseQueryService gdb;
+    private GraphDatabaseCypherService gdb;
 
     @Test
     public void updateNodeByMapParameter()

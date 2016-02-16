@@ -298,12 +298,12 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
   }
 
-  implicit class RichGraph(mad: GraphDatabaseQueryService) {
-    def statement = mad.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val graph = mad.getGraphDatabaseService
+  implicit class RichGraph(graph: GraphDatabaseQueryService) {
+    def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
+    val gds = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def withTx[T](f: Transaction => T): T = {
-      val tx = mad.beginTx()
+      val tx = graph.beginTx()
       try {
         val result = f(tx)
         tx.success()
@@ -313,17 +313,17 @@ class ActualCostCalculationTest extends CypherFunSuite {
       }
     }
 
-    def shutdown() = graph.shutdown()
+    def shutdown() = gds.shutdown()
 
-    def createNode(label: Label) = graph.createNode(label)
+    def createNode(label: Label) = gds.createNode(label)
 
     def createIndex(label: Label, propertyName: String) = {
-      mad.withTx { _ =>
-        graph.schema().indexFor(label).on(propertyName).create()
+      graph.withTx { _ =>
+        gds.schema().indexFor(label).on(propertyName).create()
       }
 
-      mad.withTx { _ =>
-        graph.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
+      graph.withTx { _ =>
+        gds.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
       }
     }
   }

@@ -36,11 +36,12 @@ import org.neo4j.cypher.internal.frontend.v2_3.{CypherException => InternalCyphe
 import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
 import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.internal.{CypherExecutionMode, ExtendedExecutionResult, ExtendedPlanDescription, LastCommittedTxIdProvider, ParsedQuery, PreParsedQuery, QueryStatistics, TransactionInfo}
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.{GraphDatabaseQueryService}
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
@@ -439,7 +440,7 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseQueryService,
 
     val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
     CypherCompilerFactory.costBasedCompiler(
-      graph.getGraphDatabaseService, new EntityAccessorWrapper2_3(nodeManager), config, clock, GeneratedQueryStructure, new WrappedMonitors2_3( kernelMonitors ),
+      graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService, new EntityAccessorWrapper2_3(nodeManager), config, clock, GeneratedQueryStructure, new WrappedMonitors2_3( kernelMonitors ),
       new StringInfoLogger2_3( log ), rewriterSequencer, plannerName, runtimeName)
   }
 
@@ -454,7 +455,7 @@ case class CompatibilityFor2_3Rule(graph: GraphDatabaseQueryService,
   protected val compiler = {
     val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
     CypherCompilerFactory.ruleBasedCompiler(
-            graph.getGraphDatabaseService, new EntityAccessorWrapper2_3(nodeManager), config, clock, new WrappedMonitors2_3( kernelMonitors ), rewriterSequencer)
+      graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService, new EntityAccessorWrapper2_3(nodeManager), config, clock, new WrappedMonitors2_3( kernelMonitors ), rewriterSequencer)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize

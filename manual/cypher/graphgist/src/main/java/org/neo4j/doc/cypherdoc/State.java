@@ -27,12 +27,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.javacompat.internal.DocsExecutionEngine;
-import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 
 class State
 {
     final DocsExecutionEngine engine;
-    final GraphDatabaseQueryService database;
+    final GraphDatabaseCypherService database;
     final Connection sqlDatabase;
     final File parentDirectory;
     final String url;
@@ -44,7 +44,7 @@ class State
     Result latestSqlResult;
     Result testedSqlResult;
 
-    State( DocsExecutionEngine engine, GraphDatabaseQueryService database, Connection sqlConnection,
+    State( DocsExecutionEngine engine, GraphDatabaseCypherService database, Connection sqlConnection,
             File parentDirectory,
             String url )
     {

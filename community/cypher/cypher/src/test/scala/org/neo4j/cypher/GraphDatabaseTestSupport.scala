@@ -40,7 +40,7 @@ import scala.collection.Map
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   self: CypherFunSuite  =>
 
-  var graph: GraphDatabaseQueryService = null
+  var graph: GraphDatabaseCypherService = null
   var nodes: List[Node] = null
 
   def databaseConfig(): Map[Setting[_],String] = Map()
@@ -50,7 +50,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     graph = createGraphDatabase()
   }
 
-  protected def createGraphDatabase(): GraphDatabaseQueryService = {
+  protected def createGraphDatabase() = {
     new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
   }
 
@@ -59,7 +59,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
       super.stopTest()
     }
     finally {
-      if (graph != null) graph.getGraphDatabaseService.shutdown()
+      if (graph != null) graph.shutdown()
     }
   }
 

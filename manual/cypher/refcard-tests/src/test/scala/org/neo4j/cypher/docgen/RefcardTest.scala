@@ -32,8 +32,7 @@ import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionResult, RewindableEx
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.index.Index
-import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.test.{GraphDatabaseServiceCleaner, GraphDescription, TestGraphDatabaseFactory}
+import org.neo4j.test.{GraphDescription, GraphDatabaseServiceCleaner, TestGraphDatabaseFactory}
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.scalatest.Assertions
 
@@ -44,7 +43,7 @@ Use this base class for refcard tests
  */
 abstract class RefcardTest extends Assertions with DocumentationHelper with GraphIcing {
 
-  var db: GraphDatabaseQueryService = null
+  var db: GraphDatabaseCypherService = null
   implicit var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
   var nodeIndex: Index[Node] = null

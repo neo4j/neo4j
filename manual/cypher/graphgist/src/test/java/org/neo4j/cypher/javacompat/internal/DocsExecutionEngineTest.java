@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -34,7 +33,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class DocsExecutionEngineTest
 {
-    private static GraphDatabaseQueryService database;
+    private static GraphDatabaseCypherService database;
     private static DocsExecutionEngine engine;
 
     @Before

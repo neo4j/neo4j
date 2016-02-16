@@ -24,14 +24,13 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.graphdb.{Node, RelationshipType}
-import org.neo4j.kernel.GraphDatabaseQueryService
 
 import scala.util.Random
 
 class PerformanceTest extends CypherFunSuite {
   val r = new Random()
 
-  var db: GraphDatabaseQueryService = null
+  var db: GraphDatabaseCypherService = null
   var engine: ExecutionEngine = null
 
   override def beforeEach() {

@@ -24,12 +24,13 @@ import java.util.Collections
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor}
 import org.neo4j.test.TestGraphDatabaseFactory
 
-class QueryExecutionMonitorTest extends CypherFunSuite {
+class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("monitor is not called if iterator not exhausted") {
     // given
@@ -221,7 +222,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    if (graph != null) graph.getGraphDatabaseService.shutdown()
+    if (graph != null) graph.shutdown()
   }
 
 }

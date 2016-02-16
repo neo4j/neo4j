@@ -41,5 +41,4 @@ public interface GraphDatabaseQueryService
     Relationship getRelationshipById(long id);
     Transaction beginTx();
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
-    GraphDatabaseAPI getGraphDatabaseService();
 }

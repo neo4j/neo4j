@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 import org.neo4j.cypher.javacompat.internal.DocsExecutionEngine;
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -58,7 +57,7 @@ import static org.mockito.Mockito.when;
 
 public class BlockTypeTest
 {
-    private GraphDatabaseQueryService database;
+    private GraphDatabaseCypherService database;
     private DocsExecutionEngine engine;
     private State state;
 

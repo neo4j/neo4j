@@ -55,7 +55,7 @@ import scala.reflect.ClassTag
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
-  def db: GraphDatabaseQueryService
+  def db: GraphDatabaseCypherService
 
   def niceify(in: String): String = in.toLowerCase.replace(" ", "-")
 
@@ -157,7 +157,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   }
 
   def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String = "",
-                          prepare: GraphDatabaseQueryService => Unit, assertions: InternalExecutionResult => Unit) {
+                          prepare: GraphDatabaseCypherService => Unit, assertions: InternalExecutionResult => Unit) {
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(prepare), Map.empty, assertions)
   }
 
@@ -170,7 +170,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
                                    queryText: String,
                                    realQuery: Option[String],
                                    expectedException: Option[ClassTag[_ <: CypherException]],
-                                   prepare: Option[GraphDatabaseQueryService => Unit],
+                                   prepare: Option[GraphDatabaseCypherService => Unit],
                                    assertions: InternalExecutionResult => Unit) {
     preparationQueries = List()
 
@@ -238,7 +238,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
                                 queryText: String,
                                 optionalResultExplanation: String,
                                 expectedException: Option[ClassTag[_ <: CypherException]],
-                                prepare: Option[GraphDatabaseQueryService => Unit],
+                                prepare: Option[GraphDatabaseCypherService => Unit],
                                 parameters: Map[String, Any],
                                 assertions: InternalExecutionResult => Unit)
   {
@@ -286,9 +286,9 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     }
   }
 
-  def prepareForTest(title: String, prepare: Option[GraphDatabaseQueryService => Unit]) {
+  def prepareForTest(title: String, prepare: Option[GraphDatabaseCypherService => Unit]) {
     prepare.foreach {
-      (prepareStep: GraphDatabaseQueryService => Any) => prepareStep(db)
+      (prepareStep: GraphDatabaseCypherService => Any) => prepareStep(db)
     }
     if (preparationQueries.nonEmpty) {
       dumpPreparationQueries(preparationQueries, dir, title)
@@ -330,7 +330,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     results.headOption
   }
 
-  var db: GraphDatabaseQueryService = null
+  var db: GraphDatabaseCypherService = null
   var engine: ExecutionEngine = null
   var nodeMap: Map[String, Long] = null
   var nodeIndex: Index[Node] = null

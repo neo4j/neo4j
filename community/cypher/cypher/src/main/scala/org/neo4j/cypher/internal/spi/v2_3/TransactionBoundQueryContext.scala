@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIter
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
@@ -501,7 +502,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseQueryService,
       case (Some(min), Some(max)) => Evaluators.includingDepths(min, max)
     }
 
-    val baseTraversalDescription: TraversalDescription = graph.getGraphDatabaseService.traversalDescription()
+    // The RULE compiler makes use of older kernel API capabilities for variable length expanding
+    // TODO: Consider re-writing this using similar code to the COST var-length expand
+    val baseTraversalDescription: TraversalDescription = graph.asInstanceOf[GraphDatabaseCypherService]
+      .getGraphDatabaseService.traversalDescription()
       .evaluator(depthEval)
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)
 

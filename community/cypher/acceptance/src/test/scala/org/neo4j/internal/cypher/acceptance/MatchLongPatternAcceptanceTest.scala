@@ -28,7 +28,7 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.{cypher_idp_solver_duration_threshold, cypher_idp_solver_table_threshold}
-import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
+import org.neo4j.kernel.monitoring
 import org.neo4j.test.ImpermanentGraphDatabase
 
 import scala.collection.JavaConverters._
@@ -232,7 +232,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
     }
   }
 
-  private def runWithConfig(m: (Setting[_], String)*)(run: (ExecutionEngine, GraphDatabaseQueryService) => Unit) = {
+  private def runWithConfig(m: (Setting[_], String)*)(run: (ExecutionEngine, GraphDatabaseCypherService) => Unit) = {
     val config: util.Map[String, String] = m.map {
       case (setting, value) => setting.name() -> value
     }.toMap.asJava

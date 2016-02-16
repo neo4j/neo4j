@@ -24,14 +24,13 @@ import java.io.{File, PrintWriter, StringWriter}
 import org.junit.Test
 import org.neo4j.cypher._
 import org.neo4j.cypher.export.{DatabaseSubGraph, SubGraphExporter}
-import org.neo4j.cypher.internal.{ExecutionEngine, RewindableExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
 import org.neo4j.cypher.internal.javacompat.GraphImpl
+import org.neo4j.cypher.internal.{ExecutionEngine, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.index.Index
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
 import org.neo4j.test.{AsciiDocGenerator, GraphDescription, TestGraphDatabaseFactory}
 import org.neo4j.visualization.asciidoc.AsciidocHelper
@@ -44,7 +43,7 @@ Use this base class for tests that are more flowing text with queries intersecte
  */
 abstract class ArticleTest extends Assertions with DocumentationHelper {
 
-  var db: GraphDatabaseQueryService = null
+  var db: GraphDatabaseCypherService = null
   implicit var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
   var nodeIndex: Index[Node] = null
