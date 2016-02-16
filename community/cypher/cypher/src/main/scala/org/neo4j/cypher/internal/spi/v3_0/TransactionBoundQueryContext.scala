@@ -25,8 +25,7 @@ import java.util.function.Predicate
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
-import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal
+import org.neo4j.cypher.{InternalException, internal}
 import org.neo4j.cypher.internal.compiler.v3_0.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.DirectionConverter.toGraphDb
@@ -42,6 +41,7 @@ import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
+import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
@@ -50,9 +50,8 @@ import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.api.{KernelStatement => InternalKernelStatement}
-import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy}
+import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
-import org.neo4j.graphdb.security.URLAccessValidationError
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -68,8 +67,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   val nodeOps = new NodeOperations
   val relationshipOps = new RelationshipOperations
-
-  private val relationshipActions = transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[RelationshipProxy.RelationshipActions])
 
   override def entityAccessor = transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
@@ -132,10 +129,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = types match {
     case None =>
       val relationships = transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
-      new BeansAPIRelationshipIterator(relationships, relationshipActions)
+      new BeansAPIRelationshipIterator(relationships, entityAccessor)
     case Some(typeIds) =>
       val relationships = transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds: _*)
-      new BeansAPIRelationshipIterator(relationships, relationshipActions)
+      new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }
 
   override def indexSeek(index: IndexDescriptor, value: Any) = {
