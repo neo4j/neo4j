@@ -21,6 +21,10 @@ package org.neo4j.helpers;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+/**
+ * @deprecated This class will be removed in the next major release.
+ */
+@Deprecated
 public class Counter
 {
     private volatile long count;

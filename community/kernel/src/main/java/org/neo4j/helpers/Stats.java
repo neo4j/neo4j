@@ -19,6 +19,10 @@
  */
 package org.neo4j.helpers;
 
+/**
+ * @deprecated This class will be removed in the next major release.
+ */
+@Deprecated
 public class Stats
 {
     private final String name;
