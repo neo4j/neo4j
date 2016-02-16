@@ -24,9 +24,11 @@ import java.lang.Long
 import java.util.Arrays.asList
 import java.util.Collections.{emptyList, emptyMap}
 import java.{lang, util}
+
+import org.neo4j.graphdb.{RelationshipType, Relationship, Label, Node}
 import org.scalatest.{FunSuite, Matchers}
 
-class expectedResultsParserTest extends FunSuite with Matchers with ParsedEntities {
+class expectedResultsParserTest extends FunSuite with Matchers {
 
   test("should parse null") {
     parse("null") should equal(null)
@@ -92,33 +94,56 @@ class expectedResultsParserTest extends FunSuite with Matchers with ParsedEntiti
 
   test("should parse maps") {
     parse("{}") should equal(emptyMap())
-    parse("{k0:'\n\r\f\t'}") should equal(asMap("k0" -> "\n\r\f\t"))
+    parse("{k0:'\n\r\f\t'}") should equal(asMap(Map("k0" -> "\n\r\f\t")))
     parse("{k0:0, k1:1.0e-10, k2:null, k3:true}") should equal(
-      asMap("k0" -> Long.valueOf(0), "k1" -> lang.Double.valueOf(1e-10), "k2" -> null, "k3" -> TRUE))
+      asMap(Map("k0" -> Long.valueOf(0), "k1" -> lang.Double.valueOf(1e-10), "k2" -> null, "k3" -> TRUE)))
   }
 
-  test("should parse nodes") {
+  test("should parse nodes with labels") {
     parse("()") should equal(parsedNode())
-    parse("(:T)") should equal(parsedNode(asList("T")))
-    parse("(:T:T2:longlabel)") should equal(parsedNode(asList("T", "T2", "longlabel")))
+    parse("(:T)") should equal(parsedNode(Seq("T")))
+    parse("(:T:T2:longlabel)") should equal(parsedNode(Seq("T", "T2", "longlabel")))
   }
 
   test("should parse nodes with properties") {
-    parse("({key:'value'})") should equal(parsedNode(properties = asMap("key" -> "value")))
-    parse("({key:0})") should equal(parsedNode(properties = asMap("key" -> Long.valueOf(0L))))
-    parse("({key:null, key2:[]})") should equal(parsedNode(properties = asMap("key" -> null, "key2" -> emptyList())))
+    parse("({key:'value'})") should equal(parsedNode(properties = Map("key" -> "value")))
+    parse("({key:0})") should equal(parsedNode(properties = Map("key" -> Long.valueOf(0L))))
+    parse("({key:null, key2:[]})") should equal(parsedNode(properties = Map("key" -> null, "key2" -> emptyList())))
   }
 
-  def asMap(tuples: (String, AnyRef)*): util.Map[String, AnyRef] = {
-    val map = new util.HashMap[String, AnyRef]()
-    tuples.foreach {
-      case (k, v) => map.put(k, v)
-    }
-    map
+  test("should parse nodes with labels and properties") {
+    parse("(:T {k:[]})") should equal(parsedNode(Seq("T"), Map("k" -> emptyList())))
+    val expected = parsedNode(Seq("T", "longlabel"),
+                              Map("k" -> emptyList(), "verylongkeywithonlyletters" -> lang.Double.valueOf("Infinity")))
+    parse("(:T:longlabel {k:[], verylongkeywithonlyletters:Inf})") should equal(expected)
+  }
+
+  test("should parse relationships") {
+    parse("[:T]") should equal(parsedRelationship("T"))
+    parse("[:T {k:0}]") should equal(parsedRelationship("T", Map("k" -> Long.valueOf(0L))))
   }
 
   private def parse(value: String) = {
     scalaResultsParser(value)
+  }
+
+  private def parsedRelationship(typ: String, properties: Map[String, AnyRef] = Map.empty): Relationship = {
+    ParsedRelationship.parsedRelationship(RelationshipType.withName(typ), asMap(properties))
+  }
+
+  private def parsedNode(labels: Seq[String] = Seq.empty, properties: Map[String, AnyRef] = Map.empty): Node = {
+    val list = new util.ArrayList[Label]()
+    labels.foreach(name => list.add(Label.label(name)))
+
+    ParsedNode.parsedNode(list, asMap(properties))
+  }
+
+  private def asMap(scalaMap: Map[String, AnyRef]): util.Map[String, AnyRef] = {
+    val map = new util.HashMap[String, AnyRef]()
+    scalaMap.foreach {
+      case (k, v) => map.put(k, v)
+    }
+    map
   }
 
 }

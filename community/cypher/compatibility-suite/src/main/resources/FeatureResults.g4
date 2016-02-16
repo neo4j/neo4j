@@ -47,7 +47,9 @@ propertyKey : SymbolicNameString ;
 
 propertyValue : value ;
 
-relationshipType : ':' SymbolicNameString ;
+relationshipType : ':' relationshipTypeName ;
+
+relationshipTypeName : SymbolicNameString ;
 
 label : ':' labelName ;
 

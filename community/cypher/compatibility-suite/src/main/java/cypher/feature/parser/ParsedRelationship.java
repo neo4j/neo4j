@@ -19,18 +19,14 @@
  */
 package cypher.feature.parser;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
-public class ParsedNode implements Node
+public class ParsedRelationship implements Relationship
 {
     @Override
     public long getId()
@@ -45,127 +41,37 @@ public class ParsedNode implements Node
     }
 
     @Override
-    public Iterable<Relationship> getRelationships()
+    public Node getStartNode()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean hasRelationship()
+    public Node getEndNode()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Iterable<Relationship> getRelationships( RelationshipType... types )
+    public Node getOtherNode( Node node )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
+    public Node[] getNodes()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean hasRelationship( RelationshipType... types )
+    public RelationshipType getType()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean hasRelationship( Direction direction, RelationshipType... types )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Iterable<Relationship> getRelationships( Direction dir )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean hasRelationship( Direction dir )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Iterable<Relationship> getRelationships( RelationshipType type, Direction dir )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean hasRelationship( RelationshipType type, Direction dir )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Relationship getSingleRelationship( RelationshipType type, Direction dir )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Relationship createRelationshipTo( Node otherNode, RelationshipType type )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Iterable<RelationshipType> getRelationshipTypes()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getDegree()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getDegree( RelationshipType type )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getDegree( Direction direction )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getDegree( RelationshipType type, Direction direction )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void addLabel( Label label )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void removeLabel( Label label )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean hasLabel( Label label )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Iterable<Label> getLabels()
+    public boolean isType( RelationshipType type )
     {
         throw new UnsupportedOperationException();
     }
@@ -231,23 +137,21 @@ public class ParsedNode implements Node
         {
             return false;
         }
-        else if ( obj instanceof ParsedNode )
+        else if ( obj instanceof ParsedRelationship )
         {
-            ParsedNode other = (ParsedNode) obj;
+            ParsedRelationship other = (ParsedRelationship) obj;
 
-            Set<Label> thisLabels = new HashSet<>();
-            getLabels().forEach( thisLabels::add );
-            Set<Label> otherLabels = new HashSet<>();
-            other.getLabels().forEach( otherLabels::add );
-            boolean labelEquality = thisLabels.equals( otherLabels );
+            boolean typeEquality = this.getType().equals( other.getType() );
             boolean propEquality = getAllProperties().equals( other.getAllProperties() );
-            return labelEquality && propEquality;
+            return typeEquality && propEquality;
         }
         return false;
     }
 
-    public static Node parsedNode(final Iterable<Label> labelNames, final Map<String, Object> properties) {
-        return new ParsedNode() {
+    public static Relationship parsedRelationship( final RelationshipType type, final Map<String,Object> properties )
+    {
+        return new ParsedRelationship()
+        {
             @Override
             public Map<String,Object> getAllProperties()
             {
@@ -255,10 +159,11 @@ public class ParsedNode implements Node
             }
 
             @Override
-            public Iterable<Label> getLabels()
+            public RelationshipType getType()
             {
-                return labelNames;
+                return type;
             }
         };
     }
+
 }

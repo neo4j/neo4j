@@ -217,6 +217,16 @@ public interface FeatureResultsListener extends ParseTreeListener {
 	 */
 	void exitRelationshipType(FeatureResultsParser.RelationshipTypeContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link FeatureResultsParser#relationshipTypeName}.
+	 * @param ctx the parse tree
+	 */
+	void enterRelationshipTypeName(FeatureResultsParser.RelationshipTypeNameContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FeatureResultsParser#relationshipTypeName}.
+	 * @param ctx the parse tree
+	 */
+	void exitRelationshipTypeName(FeatureResultsParser.RelationshipTypeNameContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link FeatureResultsParser#label}.
 	 * @param ctx the parse tree
 	 */

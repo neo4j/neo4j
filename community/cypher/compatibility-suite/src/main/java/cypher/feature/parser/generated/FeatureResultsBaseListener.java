@@ -263,6 +263,18 @@ public class FeatureResultsBaseListener implements FeatureResultsListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterRelationshipTypeName(FeatureResultsParser.RelationshipTypeNameContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitRelationshipTypeName(FeatureResultsParser.RelationshipTypeNameContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterLabel(FeatureResultsParser.LabelContext ctx) { }
 	/**
 	 * {@inheritDoc}

@@ -26,18 +26,18 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 
 class CypherValuesCreator extends FeatureResultsBaseListener
 {
     private Stack<Object> workload;
     private Stack<Integer> listCounters;
     private Stack<Integer> mapCounters;
-    private List<Label> labels;
+    private Stack<String> names;
 
     private static final String INFINITY = "Inf";
 
@@ -46,7 +46,7 @@ class CypherValuesCreator extends FeatureResultsBaseListener
         this.workload = new Stack<>();
         this.listCounters = new Stack<>();
         this.mapCounters = new Stack<>();
-        this.labels = new ArrayList<>();
+        this.names = new Stack<>();
     }
 
     Object parsed()
@@ -155,23 +155,18 @@ class CypherValuesCreator extends FeatureResultsBaseListener
     @Override
     public void enterLabelName( FeatureResultsParser.LabelNameContext ctx )
     {
-        labels.add( Label.label( ctx.getText() ) );
+        names.push( ctx.getText() );
     }
 
     @Override
     public void exitNode( FeatureResultsParser.NodeContext ctx )
     {
-        final Map<String,Object> properties;
-        if ( workload.empty() )
+        final Map<String,Object> properties = getMapOrEmpty();
+        final ArrayList<Label> nodeLabels = new ArrayList<>();
+        while ( !names.empty() )
         {
-            properties = new HashMap<>();
+            nodeLabels.add( Label.label( names.pop() ) );
         }
-        else
-        {
-            properties = (Map<String,Object>) workload.pop();
-        }
-        final ArrayList<Label> nodeLabels = new ArrayList<>( labels );
-        labels.clear();
         workload.push( new ParsedNode()
         {
             @Override
@@ -184,6 +179,45 @@ class CypherValuesCreator extends FeatureResultsBaseListener
             public Iterable<Label> getLabels()
             {
                 return nodeLabels;
+            }
+        } );
+    }
+
+    private Map<String,Object> getMapOrEmpty()
+    {
+        if ( workload.empty() )
+        {
+            return new HashMap<>();
+        }
+        else
+        {
+            return (Map<String,Object>) workload.pop();
+        }
+    }
+
+    @Override
+    public void enterRelationshipTypeName( FeatureResultsParser.RelationshipTypeNameContext ctx )
+    {
+        names.push( ctx.getText() );
+    }
+
+    @Override
+    public void exitRelationship( FeatureResultsParser.RelationshipContext ctx )
+    {
+        final Map<String,Object> properties = getMapOrEmpty();
+        final RelationshipType type = RelationshipType.withName( names.pop() );
+        workload.push( new ParsedRelationship()
+        {
+            @Override
+            public RelationshipType getType()
+            {
+                return type;
+            }
+
+            @Override
+            public Map<String,Object> getAllProperties()
+            {
+                return properties;
             }
         } );
     }
