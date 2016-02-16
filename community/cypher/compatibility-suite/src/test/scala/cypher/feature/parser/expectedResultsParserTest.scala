@@ -112,8 +112,7 @@ class expectedResultsParserTest extends FunSuite with Matchers with ParsedEntiti
   }
 
   private def parse(value: String) = {
-    val parser = new ResultsParser
-    parser.parse(value)
+    scalaResultsParser(value)
   }
 
 }

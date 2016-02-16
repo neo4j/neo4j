@@ -30,17 +30,15 @@ public class ResultsParser
     private FeatureResultsParser parser;
     private FeatureResultsLexer lexer;
     private ParseTreeWalker walker;
-    private CypherValuesCreator listener;
 
     ResultsParser()
     {
         this.lexer = new FeatureResultsLexer( new ANTLRInputStream( "" ) );
         this.parser = new FeatureResultsParser( new CommonTokenStream( lexer ) );
         this.walker = new ParseTreeWalker();
-        this.listener = new CypherValuesCreator();
     }
 
-    Object parse( String value )
+    Object parse( String value, CypherValuesCreator listener )
     {
         lexer.setInputStream( new ANTLRInputStream( value ) );
         walker.walk( listener, parser.value() );
