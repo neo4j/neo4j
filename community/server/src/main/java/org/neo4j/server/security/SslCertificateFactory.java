@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.security;
 
+import org.bouncycastle.jce.X509Principal;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.x509.X509V3CertificateGenerator;
+
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,22 +47,17 @@ import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Collection;
 import java.util.Date;
-
 import javax.crypto.NoSuchPaddingException;
-
-import org.bouncycastle.jce.X509Principal;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.x509.X509V3CertificateGenerator;
 
 public class SslCertificateFactory {
 
     private static final String CERTIFICATE_TYPE = "X.509";
     private static final String KEY_ENCRYPTION = "RSA";
-    
+
     {
         Security.addProvider(new BouncyCastleProvider());
     }
-    
+
     public void createSelfSignedCertificate(File certificatePath,
             File privateKeyPath, String hostName)
     {
@@ -84,14 +83,14 @@ public class SslCertificateFactory {
                     + ", OU=None, O=None L=None, C=None"));
 
             certGenertor.setPublicKey(keyPair.getPublic());
-            certGenertor.setSignatureAlgorithm("MD5WithRSAEncryption");
+            certGenertor.setSignatureAlgorithm("SHA512WithRSAEncryption");
 
             Certificate certificate = certGenertor.generate(
-                    keyPair.getPrivate(), "BC");            
+                    keyPair.getPrivate(), "BC");
 
             ensureFolderExists(certificatePath.getParentFile());
             ensureFolderExists(privateKeyPath.getParentFile());
-            
+
             fos = new FileOutputStream(certificatePath);
             fos.write(certificate.getEncoded());
             fos.close();
@@ -136,10 +135,10 @@ public class SslCertificateFactory {
     public PrivateKey loadPrivateKey(File privateKeyFile)
             throws IOException, NoSuchAlgorithmException,
             InvalidKeySpecException, NoSuchPaddingException,
-            InvalidKeyException, InvalidAlgorithmParameterException 
+            InvalidKeyException, InvalidAlgorithmParameterException
             {
         DataInputStream dis = null;
-        try 
+        try
         {
             FileInputStream fis = new FileInputStream(privateKeyFile);
             dis = new DataInputStream(fis);
@@ -149,10 +148,10 @@ public class SslCertificateFactory {
             KeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
 
             return KeyFactory.getInstance(KEY_ENCRYPTION).generatePrivate(keySpec);
-        } catch (FileNotFoundException e ) 
+        } catch (FileNotFoundException e )
         {
             throw new IOException("Could not find private key file to use for SSL support, see nested exception.", e);
-        } finally 
+        } finally
         {
             if (dis != null) {
                 try {
