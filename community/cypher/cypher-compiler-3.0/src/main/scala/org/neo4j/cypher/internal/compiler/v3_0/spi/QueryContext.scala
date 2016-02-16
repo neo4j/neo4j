@@ -50,9 +50,11 @@ trait QueryContext extends TokenContext {
 
   type EntityAccessor
 
+  type StateView
+
   def entityAccessor: EntityAccessor
 
-  def transactionalContext: TransactionalContext[Graph, KernelStatement]
+  def transactionalContext: TransactionalContext[Graph,KernelStatement,StateView]
 
   def nodeOps: Operations[Node]
 
@@ -192,9 +194,9 @@ trait Operations[T <: PropertyContainer] {
   def releaseExclusiveLock(obj: Long): Unit
 }
 
-trait TransactionalContext[Graph,KernelStatement] {
+trait TransactionalContext[Graph,KernelStatement,StateView] {
 
-  def newContext(): TransactionalContext[Graph,KernelStatement]
+  def newContext(): TransactionalContext[Graph,KernelStatement,StateView]
 
   def statement: KernelStatement
 
@@ -207,4 +209,6 @@ trait TransactionalContext[Graph,KernelStatement] {
   def commitAndRestartTx()
 
   def graph: Graph
+
+  def stateView: StateView
 }

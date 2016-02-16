@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
+import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
 import org.neo4j.test.TestGraphDatabaseFactory
 
@@ -55,8 +56,8 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
     val statement = mock[Statement]
     val queryContext = mock[QueryContext]
-    val transactionalContext = mock[TransactionalContext[GraphDatabaseAPI,Statement]]
-    when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext[queryContext.Graph, queryContext.KernelStatement]])
+    val transactionalContext = mock[TransactionalContext[GraphDatabaseAPI,Statement,TxStateHolder]]
+    when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext[queryContext.Graph, queryContext.KernelStatement, queryContext.StateView]])
     when(transactionalContext.statement).thenReturn(statement)
 
     val readOps = mock[ReadOperations]

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, QueryC
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.txstate.TxStateHolder
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
   val PlannerName = IDPPlannerName
@@ -36,7 +37,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
-    when(context.transactionalContext).thenReturn(mock[TransactionalContext[GraphDatabaseAPI, Statement]].asInstanceOf[TransactionalContext[context.Graph,context.KernelStatement]])
+    when(context.transactionalContext).thenReturn(mock[TransactionalContext[GraphDatabaseAPI, Statement, TxStateHolder]].asInstanceOf[TransactionalContext[context.Graph,context.KernelStatement, context.StateView]])
     val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = true, None, None, PlannerName), List.empty)
 
     // WHEN
@@ -71,7 +72,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
-    when(context.transactionalContext).thenReturn(mock[TransactionalContext[GraphDatabaseAPI, Statement]].asInstanceOf[TransactionalContext[context.Graph,context.KernelStatement]])
+    when(context.transactionalContext).thenReturn(mock[TransactionalContext[GraphDatabaseAPI, Statement, TxStateHolder]].asInstanceOf[TransactionalContext[context.Graph,context.KernelStatement, context.StateView]])
     val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty)
 
     // WHEN

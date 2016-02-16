@@ -38,6 +38,7 @@ import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
@@ -915,10 +916,10 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   })
 
   private val queryContext = mock[QueryContext]
-  private val transactionalContext = mock[TransactionalContext[GraphDatabaseAPI,org.neo4j.kernel.api.Statement]]
+  private val transactionalContext = mock[TransactionalContext[GraphDatabaseAPI,org.neo4j.kernel.api.Statement, TxStateHolder]]
   private val ro = mock[ReadOperations]
   private val statement = mock[org.neo4j.kernel.api.Statement]
-  when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext[queryContext.Graph, queryContext.KernelStatement]])
+  when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext[queryContext.Graph, queryContext.KernelStatement, queryContext.StateView]])
   when(transactionalContext.statement).thenReturn(statement)
   when(queryContext.entityAccessor).thenReturn(nodeManager.asInstanceOf[queryContext.EntityAccessor])
   when(statement.readOperations()).thenReturn(ro)

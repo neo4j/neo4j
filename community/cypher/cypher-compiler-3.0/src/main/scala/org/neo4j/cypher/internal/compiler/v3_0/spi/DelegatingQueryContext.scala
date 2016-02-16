@@ -40,7 +40,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   type EntityAccessor = inner.EntityAccessor
 
-  override def transactionalContext: TransactionalContext[Graph, KernelStatement] = inner.transactionalContext
+  type StateView = inner.StateView
+
+  override def transactionalContext: TransactionalContext[Graph,KernelStatement,StateView] = inner.transactionalContext
 
   override def entityAccessor: EntityAccessor = inner.entityAccessor
 
@@ -224,7 +226,7 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
 }
 
-class DelegatingTransactionalContext[Graph, KernelStatement](val inner: TransactionalContext[Graph, KernelStatement]) extends TransactionalContext[Graph, KernelStatement] {
+class DelegatingTransactionalContext[Graph,KernelStatement,StateView](val inner: TransactionalContext[Graph,KernelStatement,StateView]) extends TransactionalContext[Graph,KernelStatement,StateView] {
 
   override def commitAndRestartTx() { inner.commitAndRestartTx() }
 
@@ -238,5 +240,7 @@ class DelegatingTransactionalContext[Graph, KernelStatement](val inner: Transact
 
   override def graph: Graph = inner.graph
 
-  override def newContext(): TransactionalContext[Graph, KernelStatement] = inner.newContext()
+  override def newContext(): TransactionalContext[Graph,KernelStatement,StateView] = inner.newContext()
+
+  override def stateView: StateView = inner.stateView
 }

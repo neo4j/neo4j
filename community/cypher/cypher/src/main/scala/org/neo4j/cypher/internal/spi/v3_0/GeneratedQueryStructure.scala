@@ -854,7 +854,7 @@ private object Templates {
     put(self(), typeRef[TaskCloser], "closer", load("closer")).
     put(self(), typeRef[Statement], "statement",
       cast(typeRef[Statement],
-        invoke(invoke(load("queryContext"), method[QueryContext, TransactionalContext[_,_]]("transactionalContext")), method[TransactionalContext[_,_], Statement]("statement")))).
+        invoke(invoke(load("queryContext"), method[QueryContext, TransactionalContext[_,_,_]]("transactionalContext")), method[TransactionalContext[_,_,_], Statement]("statement")))).
     put(self(), typeRef[ReadOperations], "ro", invoke(get(self(), typeRef[Statement], "statement"), method[Statement, ReadOperations]("readOperations"))).
     put(self(), typeRef[ExecutionMode], "executionMode", load("executionMode")).
     put(self(), typeRef[Provider[InternalPlanDescription]], "description", load("description")).

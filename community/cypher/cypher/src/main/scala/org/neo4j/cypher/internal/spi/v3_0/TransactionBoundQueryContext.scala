@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, Relati
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.api.{KernelStatement => InternalKernelStatement}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
@@ -56,12 +57,14 @@ import org.neo4j.kernel.impl.locking.ResourceTypes
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
 
-final class TransactionBoundQueryContext(val transactionalContext: TransactionalContext[GraphDatabaseAPI,Statement])(implicit indexSearchMonitor: IndexSearchMonitor)
+final class TransactionBoundQueryContext(val transactionalContext: TransactionalContext[GraphDatabaseAPI,Statement,TxStateHolder])(implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext {
 
   type Graph = GraphDatabaseAPI
 
   type KernelStatement = Statement
+
+  type StateView = TxStateHolder
 
   type EntityAccessor = NodeManager
 
@@ -288,9 +291,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def nodeIsDense(node: Long): Boolean = transactionalContext.statement.readOperations().nodeIsDense(node)
 
-  private def kernelStatement: InternalKernelStatement =
-    transactionalContext.statement.asInstanceOf[InternalKernelStatement]
-
   class NodeOperations extends BaseOperations[Node] {
     override def delete(obj: Node) {
       transactionalContext.statement.dataWriteOperations().nodeDelete(obj.getId)
@@ -337,7 +337,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def isDeletedInThisTx(n: Node): Boolean = isDeletedInThisTx(n.getId)
 
     def isDeletedInThisTx(id: Long): Boolean =
-      kernelStatement.hasTxStateWithChanges && kernelStatement.txState().nodeIsDeletedInThisTx(id)
+      transactionalContext.stateView.hasTxStateWithChanges && transactionalContext.stateView.txState().nodeIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.NODE, obj)
@@ -394,7 +394,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       isDeletedInThisTx(r.getId)
 
     def isDeletedInThisTx(id: Long): Boolean =
-      kernelStatement.hasTxStateWithChanges && kernelStatement.txState().relationshipIsDeletedInThisTx(id)
+      transactionalContext.stateView.hasTxStateWithChanges && transactionalContext.stateView.txState().relationshipIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)

@@ -83,7 +83,7 @@ class SnitchingQueryContext extends QueryContext {
     ids.size
   }
 
-  override def transactionalContext: TransactionalContext[Graph, KernelStatement] = ???
+  override def transactionalContext: TransactionalContext[Graph, KernelStatement, StateView] = ???
 
   override def getOrCreateRelTypeId(relTypeName: String) = ???
 
