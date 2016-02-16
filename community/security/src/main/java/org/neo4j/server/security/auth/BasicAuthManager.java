@@ -42,7 +42,7 @@ public class BasicAuthManager implements AuthManager, UserManager
 {
     private final AuthenticationStrategy authStrategy;
     private final UserRepository users;
-    private final boolean authEnabled;
+    protected final boolean authEnabled;
 
     public BasicAuthManager( UserRepository users, AuthenticationStrategy authStrategy, boolean authEnabled )
     {
@@ -190,7 +190,7 @@ public class BasicAuthManager implements AuthManager, UserManager
         }
     }
 
-    private void assertAuthEnabled()
+    protected void assertAuthEnabled()
     {
         if ( !authEnabled )
         {
