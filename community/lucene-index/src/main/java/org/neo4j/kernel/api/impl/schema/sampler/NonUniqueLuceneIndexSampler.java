@@ -27,17 +27,15 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.helpers.TaskControl;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.register.Register;
-
-import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
 
 /**
  * Sampler for non-unique Lucene schema index.
@@ -92,8 +90,14 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
     private static Set<String> getFieldNamesToSample( LeafReaderContext readerContext ) throws IOException
     {
         Fields fields = readerContext.reader().fields();
-        Set<String> fieldNames = Iterables.toSet( fields );
-        assert fieldNames.remove( NODE_ID_KEY );
+        Set<String> fieldNames = new HashSet<>();
+        for ( String field : fields )
+        {
+            if ( !LuceneDocumentStructure.NODE_ID_KEY.equals( field ) )
+            {
+                fieldNames.add( field );
+            }
+        }
         return fieldNames;
     }
 }
