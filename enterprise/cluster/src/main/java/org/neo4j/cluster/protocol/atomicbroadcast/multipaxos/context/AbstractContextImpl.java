@@ -34,6 +34,7 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.helpers.collection.Iterables.limit;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
 /**
@@ -105,7 +106,9 @@ class AbstractContextImpl
     @Override
     public List<URI> getAcceptors()
     {
-        return commonState.configuration().getMemberURIs();
+        // Only use 2f+1 acceptors
+        return toList( limit( commonState.configuration()
+                .getAllowedFailures() * 2 + 1, commonState.configuration().getMemberURIs() ) );
     }
 
     @Override
