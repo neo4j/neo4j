@@ -19,28 +19,41 @@
  */
 package cypher
 
+import java.nio.file.Path
+import java.util
+
 import _root_.cucumber.api.DataTable
 import _root_.cucumber.api.scala.{EN, ScalaDsl}
+import cypher.GlueSteps._
+import cypher.cucumber.DataTableConverter._
 import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
-import cypher.cucumber.prettifier.prettifier
+import cypher.cucumber.prettifier.{makeTxSafe, prettifier}
+import cypher.feature.parser.parseFullTable
+import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
-import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{FunSuiteLike, Matchers}
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.util.Try
 
 class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
 
-  import cypher.GlueSteps._
-  import cypher.cucumber.DataTableConverter._
 
   var result: Result = null
   var graph: GraphDatabaseService = null
+
+  private def initEmpty() =
+    graph = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase()
+
+  Before() { _ =>
+    initEmpty()
+  }
 
   After() { _ =>
     // TODO: postpone this till the last scenario
@@ -60,6 +73,22 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
     graph.execute(s"cypher planner=rule runtime=interpreted $initQuery")
   }
 
+  Given(INIT_QUERY) { (initQuery: String) =>
+    val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+    graph = loadConfig(builder).newGraphDatabase()
+    assert(!initQuery.contains("cypher"), "init query should do specify pre parser options")
+    // init update queries should go with rule+interpreted regardless the database configuration
+    graph.execute(s"cypher planner=rule runtime=interpreted $initQuery")
+  }
+
+  Given(ANY) {
+    if (graph == null) initEmpty()
+  }
+
+  When(EXECUTING_QUERY) { (query: String) =>
+    result = graph.execute(query)
+  }
+
   When(RUNNING_QUERY) { (query: String) =>
     assert(!query.contains("cypher"), "init query should do specify pre parser options")
     result = graph.execute(query)
@@ -70,6 +99,13 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
     val p = params.toList[AnyRef]
     assert(p.size == 1)
     result = graph.execute(query, castParameters(p.head))
+  }
+
+  Then(EXPECT_RESULT) { (expectedTable: DataTable) =>
+    val expectedRows = parseFullTable(expectedTable)
+    val actualRows = makeTxSafe(graph, result)
+
+    expectedRows should represent(actualRows)
   }
 
   Then(RESULT) { (sorted: Boolean, names: DataTable) =>
@@ -101,13 +137,15 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
   }
 
   object sorter extends ((collection.Map[String, String], collection.Map[String, String]) => Boolean) {
+
     def apply(left: collection.Map[String, String], right: collection.Map[String, String]): Boolean = {
       val sortedKeys = left.keys.toList.sorted
       compareByKey(left, right, sortedKeys)
     }
 
     @tailrec
-    private def compareByKey(left: collection.Map[String, String], right: collection.Map[String, String], keys: collection.Seq[String]): Boolean = {
+    private def compareByKey(left: collection.Map[String, String], right: collection.Map[String, String],
+                             keys: collection.Seq[String]): Boolean = {
       if (keys.isEmpty)
         left.size < right.size
       else {
@@ -120,12 +158,79 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
       }
     }
   }
+
+
 }
 
 object GlueSteps {
+
   val INIT_DB = """^init: (.*)$"""
   val USING_DB = """^using: (.*)$"""
   val RUNNING_QUERY = """^running: (.*)$"""
   val RUNNING_PARAMETRIZED_QUERY = """^running parametrized: (.*)$"""
   val RESULT = """^(sorted )?result:$"""
+  val ANY = """^any graph$"""
+  val INIT_QUERY = """^the graph after having executed: (.*)$"""
+  val EXECUTING_QUERY = """^executing query: (.*)$"""
+  val EXPECT_RESULT = """^the result should be:$"""
+
+
+}
+
+
+case class represent(expected: util.List[util.Map[String, AnyRef]])
+  extends Matcher[util.List[util.Map[String, AnyRef]]] {
+
+  override def apply(actual: util.List[util.Map[String, AnyRef]]): MatchResult = {
+    MatchResult(matches = compare(expected, actual), "a mismatch found", "no mismatches found")
+  }
+
+
+  def compare(expected: util.List[util.Map[String, AnyRef]], actual: util.List[util.Map[String, AnyRef]]): Boolean = {
+    val expSorted = expected.asScala.toVector.map(_.asScala).sortBy(_.hashCode())
+    val actSorted = actual.asScala.toVector.map(_.asScala).sortBy(_.hashCode())
+
+    val bools = expSorted.zipWithIndex.map { case (expMap, index) =>
+      val b = cypherEqual(expSorted(index), actSorted(index))
+      if (!b)
+        println(s"not equal: $expMap and ${actSorted(index)}")
+      b
+    }
+    bools.reduce(_ && _)
+  }
+
+
+  def cypherEqual(expected: mutable.Map[String, AnyRef], actual: mutable.Map[String, AnyRef]) = {
+    val keys = expected.keySet == actual.keySet
+    val map = expected.keySet.map { key =>
+      cypherEqual2(expected(key), actual(key))
+    }
+    keys && map.reduce(_ && _)
+  }
+
+  def nodeEquals(expected: Node, actual: Node): Boolean = {
+    val labels = cypherEqual2(expected.getLabels, actual.getLabels)
+    val properties = cypherEqual2(expected.getAllProperties, actual.getAllProperties)
+
+    labels && properties
+  }
+
+  def relEquals(expected: Relationship, actual: Relationship): Boolean = ???
+
+  def pathEquals(expected: Path, actual: Path): Boolean = ???
+
+  def listEquals(expected: Seq[AnyRef], actual: Seq[AnyRef]): Boolean = ???
+
+  def mapEquals(expected: Map[String, AnyRef], actual: Map[String, AnyRef]): Boolean = ???
+
+  def cypherEqual2(expected: AnyRef, actual: AnyRef): Boolean = expected match {
+    case null => actual == null
+    case n: Node => nodeEquals(n, actual.asInstanceOf[Node])
+    case r: Relationship => relEquals(r, actual.asInstanceOf[Relationship])
+    case p: Path => pathEquals(p, actual.asInstanceOf[Path])
+    case l: Seq[_] => listEquals(l.asInstanceOf[Seq[AnyRef]], actual.asInstanceOf[Seq[AnyRef]])
+    case m: Map[_, _] => mapEquals(m.asInstanceOf[Map[String, AnyRef]], actual.asInstanceOf[Map[String, AnyRef]])
+    case _ => expected == actual
+  }
+
 }

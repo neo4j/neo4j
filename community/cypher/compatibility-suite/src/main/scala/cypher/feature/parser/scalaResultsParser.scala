@@ -19,6 +19,12 @@
  */
 package cypher.feature.parser
 
+import java.util
+
+import cucumber.api.DataTable
+
+import scala.collection.JavaConverters._
+
 object scalaResultsParser {
 
   private def parser = new ResultsParser
@@ -26,5 +32,24 @@ object scalaResultsParser {
 
   def apply(input: String): AnyRef = {
     parser.parse(input, listener)
+  }
+}
+
+object parseFullTable extends (DataTable => util.List[util.Map[String, AnyRef]]) {
+
+  override def apply(table: DataTable): util.List[util.Map[String, AnyRef]] = {
+    val keys = table.topCells().asScala
+    val cells = table.cells(1).asScala
+
+    val output = new util.ArrayList[util.Map[String, AnyRef]]
+    cells.zipWithIndex.foreach { case (list, index) =>
+      val map = new util.HashMap[String, AnyRef]()
+      list.asScala.foreach { value =>
+        val parsed = scalaResultsParser(value)
+        map.put(keys(index), parsed)
+      }
+      output.add(map)
+    }
+    output
   }
 }
