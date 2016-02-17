@@ -125,26 +125,7 @@ class SharedLock implements ForsetiLockManager.Lock
     }
 
     @Override
-    public int holderWaitListSize()
-    {
-        int size = 0;
-        for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
-        {
-            AtomicReferenceArray<ForsetiClient> holders = clientsHoldingThisLock[i];
-            for ( int j = 0; holders != null && j < holders.length(); j++ )
-            {
-                ForsetiClient client = holders.get( j );
-                if(client != null)
-                {
-                    size += client.waitListSize();
-                }
-            }
-        }
-        return size;
-    }
-
-    @Override
-    public boolean anyHolderIsWaitingFor( int clientId )
+    public int detectDeadlock( int clientId )
     {
         for ( int i = 0; i < clientsHoldingThisLock.length; i++ )
         {
@@ -154,11 +135,11 @@ class SharedLock implements ForsetiLockManager.Lock
                 ForsetiClient client = holders.get( j );
                 if(client != null && client.isWaitingFor( clientId ))
                 {
-                    return true;
+                    return client.id();
                 }
             }
         }
-        return false;
+        return -1;
     }
 
     public boolean tryAcquireUpdateLock( ForsetiClient client )

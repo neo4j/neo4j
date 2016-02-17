@@ -37,15 +37,9 @@ class ExclusiveLock implements ForsetiLockManager.Lock
     }
 
     @Override
-    public int holderWaitListSize()
+    public int detectDeadlock( int client )
     {
-        return owner.waitListSize();
-    }
-
-    @Override
-    public boolean anyHolderIsWaitingFor( int client )
-    {
-        return owner.isWaitingFor( client );
+        return owner.isWaitingFor( client ) ? owner.id() : -1;
     }
 
     @Override
