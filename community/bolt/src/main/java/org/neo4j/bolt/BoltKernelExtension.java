@@ -88,8 +88,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         public static final Function<ConfigValues,List<Configuration>> connector_group = Config.groups( "dbms.connector" );
 
         @Description( "Enable Neo4j Bolt" )
-        public static final Setting<Boolean> enabled =
-                setting( "enabled", BOOLEAN, "false" );
+        public static final Setting<Boolean> enabled = setting( "enabled", BOOLEAN, "false" );
 
         @Description( "Set the encryption level for Neo4j Bolt protocol ports" )
         public static final Setting<EncryptionLevel> tls_level =

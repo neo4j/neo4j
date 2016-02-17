@@ -51,7 +51,6 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
@@ -194,7 +193,7 @@ public class CommunityServerBuilder
             }
         }
 
-        properties.put( ServerSettings.auth_enabled.name(), "false" );
+        properties.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
 
         for ( Object key : arbitraryProperties.keySet() )

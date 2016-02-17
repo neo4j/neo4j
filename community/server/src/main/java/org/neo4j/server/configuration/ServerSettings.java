@@ -163,9 +163,6 @@ public interface ServerSettings
     @Description("Timeout for idle transactions.")
     Setting<Long> transaction_timeout = setting( "org.neo4j.server.transaction.timeout", DURATION, "60s" );
 
-    @Description("Enable auth requirement to access Neo4j.")
-    Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, TRUE );
-
     @Description("Enable the Bolt protocol")
     Setting<Boolean> bolt_enabled = BoltKernelExtension.Settings.enabled;
 
@@ -199,9 +196,6 @@ public interface ServerSettings
     @Internal
     Setting<Boolean> wadl_enabled = setting( "unsupported_wadl_generation_enabled", BOOLEAN,
             FALSE );
-
-    @Internal
-    Setting<File> auth_store = setting("dbms.security.auth_store.location", PATH, "data/dbms/auth");
 
     @Internal
     Setting<File> legacy_db_location = setting( "org.neo4j.server.database.location", PATH, "data/graph.db" );

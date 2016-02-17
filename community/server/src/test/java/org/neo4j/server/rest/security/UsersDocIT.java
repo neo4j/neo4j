@@ -28,15 +28,14 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-
 import javax.ws.rs.core.HttpHeaders;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -154,9 +153,9 @@ public class UsersDocIT extends ExclusiveServerTestBase
 
     public void startServer(boolean authEnabled) throws IOException
     {
-        File file = ServerTestUtils.getRelativeFile( ServerSettings.auth_store );
+        File file = ServerTestUtils.getRelativeFile( GraphDatabaseSettings.auth_store );
         FileUtils.deleteFile( file );
-        server = CommunityServerBuilder.server().withProperty( ServerSettings.auth_enabled.name(),
+        server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(),
                 Boolean.toString( authEnabled ) ).build();
         server.start();
     }

@@ -28,6 +28,7 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -54,10 +55,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     {
         ArrayList<String> config = new ArrayList<>();
 
-        for ( String param : params )
-        {
-            config.add( param );
-        }
+        Collections.addAll( config, params );
 
         return config.toArray( new String[config.size()] );
     }
