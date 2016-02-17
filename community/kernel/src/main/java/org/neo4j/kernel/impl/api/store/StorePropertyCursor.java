@@ -19,18 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.storageengine.api.PropertyItem;
+
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
  * Cursor for all properties on a node or relationship.
@@ -40,8 +39,8 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     private final PropertyStore propertyStore;
     private final Consumer<StorePropertyCursor> instanceCache;
     private final StorePropertyPayloadCursor payload;
+    private final RecordCursor<PropertyRecord> recordCursor;
 
-    private long nextPropertyRecordId;
     private Lock lock;
 
     public StorePropertyCursor( PropertyStore propertyStore, Consumer<StorePropertyCursor> instanceCache )
@@ -49,12 +48,14 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
         this.propertyStore = propertyStore;
         this.instanceCache = instanceCache;
         this.payload = new StorePropertyPayloadCursor( propertyStore.getStringStore(), propertyStore.getArrayStore() );
+        this.recordCursor = propertyStore.newRecordCursor( propertyStore.newRecord() );
     }
 
     public StorePropertyCursor init( long firstPropertyId, Lock lock )
     {
-        nextPropertyRecordId = firstPropertyId;
         this.lock = lock;
+        propertyStore.placeRecordCursor( firstPropertyId, recordCursor, NORMAL );
+        payload.clear();
         return this;
     }
 
@@ -66,33 +67,16 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
             return true;
         }
 
-        if ( nextPropertyRecordId == Record.NO_NEXT_PROPERTY.intValue() )
+        if ( !recordCursor.next() )
         {
             return false;
         }
-
-        long currentPropertyRecordId = nextPropertyRecordId;
-        try ( PageCursor cursor = propertyStore.newReadCursor( currentPropertyRecordId ) )
-        {
-            int offset = cursor.getOffset();
-            do
-            {
-                cursor.setOffset( offset );
-                nextPropertyRecordId = readNextPropertyRecordId( cursor );
-
-                payload.clear();
-                payload.init( cursor );
-            }
-            while ( cursor.shouldRetry() );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
+        PropertyRecord propertyRecord = recordCursor.get();
+        payload.init( propertyRecord.getBlocks(), propertyRecord.getNumberOfBlocks() );
 
         if ( !payload.next() )
         {
-            throw new NotFoundException( "Property record with id " + currentPropertyRecordId + " not in use" );
+            throw new NotFoundException( "Property record with id " + propertyRecord.getId() + " not in use" );
         }
         return true;
     }
@@ -106,7 +90,7 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     @Override
     public Object value()
     {
-        return payloadValueAsObject( payload );
+        return payload.value();
     }
 
     @Override
@@ -122,59 +106,11 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
         {
             payload.clear();
             instanceCache.accept( this );
+            recordCursor.close();
         }
         finally
         {
             lock.release();
         }
-    }
-
-    static Object payloadValueAsObject( StorePropertyPayloadCursor payload )
-    {
-        switch ( payload.type() )
-        {
-        case BOOL:
-            return payload.booleanValue();
-        case BYTE:
-            return payload.byteValue();
-        case SHORT:
-            return payload.shortValue();
-        case CHAR:
-            return payload.charValue();
-        case INT:
-            return payload.intValue();
-        case LONG:
-            return payload.longValue();
-        case FLOAT:
-            return payload.floatValue();
-        case DOUBLE:
-            return payload.doubleValue();
-        case SHORT_STRING:
-            return payload.shortStringValue();
-        case STRING:
-            return payload.stringValue();
-        case SHORT_ARRAY:
-            return payload.shortArrayValue();
-        case ARRAY:
-            return payload.arrayValue();
-        default:
-            throw new IllegalStateException( "No such type:" + payload.type() );
-        }
-    }
-
-    private static long readNextPropertyRecordId( PageCursor cursor )
-    {
-        byte modifiers = cursor.getByte();
-        // We don't care about previous pointer (prevProp)
-        cursor.getUnsignedInt();
-        long nextProp = cursor.getUnsignedInt();
-
-        long nextMod = (modifiers & 0x0FL) << 32;
-        return longFromIntAndMod( nextProp, nextMod );
-    }
-
-    private static long longFromIntAndMod( long base, long modifier )
-    {
-        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
     }
 }

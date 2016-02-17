@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -42,13 +43,13 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
     }
 
     @Override
-    public void doRead( NodeRecord record, PageCursor cursor, int recordSize, long inUseByte, boolean inUse )
+    public void doRead( NodeRecord record, PageCursor cursor, int recordSize, PagedFile storeFile, long headerByte, boolean inUse )
     {
         long nextRel = cursor.getUnsignedInt();
         long nextProp = cursor.getUnsignedInt();
 
-        long relModifier = (inUseByte & 0xEL) << 31;
-        long propModifier = (inUseByte & 0xF0L) << 28;
+        long relModifier = (headerByte & 0xEL) << 31;
+        long propModifier = (headerByte & 0xF0L) << 28;
 
         long lsbLabels = cursor.getUnsignedInt();
         long hsbLabels = cursor.getByte() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
@@ -62,7 +63,7 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
     }
 
     @Override
-    public void doWrite( NodeRecord record, PageCursor cursor )
+    public void doWrite( NodeRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
     {
         long nextRel = record.getNextRel();
         long nextProp = record.getNextProp();

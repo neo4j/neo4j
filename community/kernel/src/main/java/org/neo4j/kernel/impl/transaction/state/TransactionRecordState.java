@@ -30,7 +30,11 @@ import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -82,6 +86,9 @@ public class TransactionRecordState implements RecordState
     private final NeoStores neoStores;
     private final IntegrityValidator integrityValidator;
     private final NodeStore nodeStore;
+    private final RelationshipStore relationshipStore;
+    private final PropertyStore propertyStore;
+    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final MetaDataStore metaDataStore;
     private final SchemaStore schemaStore;
     private final RecordAccessSet recordChangeSet;
@@ -95,6 +102,7 @@ public class TransactionRecordState implements RecordState
     private RecordChanges<Long,NeoStoreRecord, Void> neoStoreRecord;
     private boolean prepared;
 
+
     public TransactionRecordState( NeoStores neoStores, IntegrityValidator integrityValidator,
             RecordChangeSet recordChangeSet, long lastCommittedTxWhenTransactionStarted,
             ResourceLocker locks,
@@ -105,6 +113,9 @@ public class TransactionRecordState implements RecordState
     {
         this.neoStores = neoStores;
         this.nodeStore = neoStores.getNodeStore();
+        this.relationshipStore = neoStores.getRelationshipStore();
+        this.propertyStore = neoStores.getPropertyStore();
+        this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.metaDataStore = neoStores.getMetaDataStore();
         this.schemaStore = neoStores.getSchemaStore();
         this.integrityValidator = integrityValidator;
@@ -157,7 +168,7 @@ public class TransactionRecordState implements RecordState
             int i = 0;
             for ( RecordProxy<Long, NodeRecord, Void> change : recordChangeSet.getNodeRecords().changes() )
             {
-                NodeRecord record = change.forReadingLinkage();
+                NodeRecord record = prepared( change, nodeStore );
                 integrityValidator.validateNodeRecord( record );
                 nodeCommands[i++] = new Command.NodeCommand( change.getBefore(), record );
             }
@@ -171,7 +182,8 @@ public class TransactionRecordState implements RecordState
             int i = 0;
             for ( RecordProxy<Long, RelationshipRecord, Void> change : recordChangeSet.getRelRecords().changes() )
             {
-                relCommands[i++] = new Command.RelationshipCommand( change.getBefore(), change.forReadingLinkage() );
+                relCommands[i++] = new Command.RelationshipCommand( change.getBefore(),
+                        prepared( change, relationshipStore ) );
             }
             Arrays.sort( relCommands, COMMAND_SORTER );
         }
@@ -184,7 +196,8 @@ public class TransactionRecordState implements RecordState
             for ( RecordProxy<Long, PropertyRecord, PrimitiveRecord> change :
                 recordChangeSet.getPropertyRecords().changes() )
             {
-                propCommands[i++] = new Command.PropertyCommand( change.getBefore(), change.forReadingLinkage() );
+                propCommands[i++] = new Command.PropertyCommand( change.getBefore(),
+                        prepared( change, propertyStore ) );
             }
             Arrays.sort( propCommands, COMMAND_SORTER );
         }
@@ -197,8 +210,8 @@ public class TransactionRecordState implements RecordState
             for ( RecordProxy<Long, RelationshipGroupRecord, Integer> change :
                 recordChangeSet.getRelGroupRecords().changes() )
             {
-                relGroupCommands[i++] =
-                        new Command.RelationshipGroupCommand( change.getBefore(), change.forReadingData() );
+                relGroupCommands[i++] = new Command.RelationshipGroupCommand( change.getBefore(),
+                        prepared( change, relationshipGroupStore ) );
             }
             Arrays.sort( relGroupCommands, COMMAND_SORTER );
         }
@@ -224,6 +237,14 @@ public class TransactionRecordState implements RecordState
                 + commands.size() + " instead";
 
         prepared = true;
+    }
+
+    private <RECORD extends AbstractBaseRecord> RECORD prepared(
+            RecordProxy<?,RECORD,?> proxy, RecordStore<RECORD> store )
+    {
+        RECORD after = proxy.forReadingLinkage();
+        store.prepareForCommit( after );
+        return after;
     }
 
     public void relCreate( long id, int typeId, long startNodeId, long endNodeId )

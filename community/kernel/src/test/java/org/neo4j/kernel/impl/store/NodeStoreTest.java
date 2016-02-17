@@ -43,6 +43,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -56,6 +57,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import static java.util.Arrays.asList;
 
@@ -77,6 +81,7 @@ public class NodeStoreTest
 
     private NodeStore nodeStore;
     private NeoStores neoStores;
+    private IdGeneratorFactory idGeneratorFactory;
 
     @After
     public void tearDown()
@@ -302,6 +307,52 @@ public class NodeStoreTest
         }
     }
 
+    @Test
+    public void shouldFreeSecondaryUnitIdOfDeletedRecord() throws Exception
+    {
+        // GIVEN
+        EphemeralFileSystemAbstraction fs = efs.get();
+        nodeStore = newNodeStore( fs );
+        NodeRecord record = new NodeRecord( 5L );
+        record.setRequiresSecondaryUnit( true );
+        record.setSecondaryUnitId( 10L );
+        record.setInUse( true );
+        nodeStore.updateRecord( record );
+        nodeStore.setHighestPossibleIdInUse( 10L );
+
+        // WHEN
+        record.setInUse( false );
+        nodeStore.updateRecord( record );
+
+        // THEN
+        IdGenerator idGenerator = idGeneratorFactory.get( IdType.NODE );
+        verify( idGenerator ).freeId( 5L );
+        verify( idGenerator ).freeId( 10L );
+    }
+
+    @Test
+    public void shouldFreeSecondaryUnitIdOfShrunkRecord() throws Exception
+    {
+        // GIVEN
+        EphemeralFileSystemAbstraction fs = efs.get();
+        nodeStore = newNodeStore( fs );
+        NodeRecord record = new NodeRecord( 5L );
+        record.setRequiresSecondaryUnit( true );
+        record.setSecondaryUnitId( 10L );
+        record.setInUse( true );
+        nodeStore.updateRecord( record );
+        nodeStore.setHighestPossibleIdInUse( 10L );
+
+        // WHEN
+        record.setRequiresSecondaryUnit( false );
+        nodeStore.updateRecord( record );
+
+        // THEN
+        IdGenerator idGenerator = idGeneratorFactory.get( IdType.NODE );
+        verify( idGenerator, times( 0 ) ).freeId( 5L );
+        verify( idGenerator ).freeId( 10L );
+    }
+
     private NodeStore newNodeStore( FileSystemAbstraction fs ) throws IOException
     {
         return newNodeStore( fs, pageCacheRule.getPageCache( fs ) );
@@ -311,7 +362,15 @@ public class NodeStoreTest
     {
         File storeDir = new File( "dir" );
         fs.mkdirs( storeDir );
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+        idGeneratorFactory = spy( new DefaultIdGeneratorFactory( fs )
+        {
+            @Override
+            protected IdGenerator instantiate( FileSystemAbstraction fs, File fileName, int grabSize, long maxValue,
+                    boolean aggressiveReuse, long highId )
+            {
+                return spy( super.instantiate( fs, fileName, grabSize, maxValue, aggressiveReuse, highId ) );
+            }
+        } );
         StoreFactory factory = new StoreFactory( storeDir, new Config(), idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance() );
         neoStores = factory.openAllNeoStores( true );

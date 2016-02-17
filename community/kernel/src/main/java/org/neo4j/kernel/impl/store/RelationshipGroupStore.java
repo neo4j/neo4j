@@ -54,4 +54,10 @@ public class RelationshipGroupStore extends ComposableRecordStore<RelationshipGr
     {
         processor.processRelationshipGroup( this, record );
     }
+
+    @Override
+    public void updateRecord( RelationshipGroupRecord record )
+    {
+        super.updateRecord( record );
+    }
 }

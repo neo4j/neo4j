@@ -41,13 +41,13 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -63,6 +63,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -229,6 +230,18 @@ public class StorePropertyCursorTest
         {
             when( propertyStore.getStringStore() ).thenReturn( stringStore );
             when( propertyStore.getArrayStore() ).thenReturn( arrayStore );
+            @SuppressWarnings( "rawtypes" )
+            RecordCursor recordCursor = mock( RecordCursor.class );
+            try
+            {
+                when( recordCursor.next() ).thenReturn( true );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+            when( recordCursor.get() ).thenReturn( new PropertyRecord( 42 ) );
+            when( propertyStore.newRecordCursor( any( PropertyRecord.class ) ) ).thenReturn( recordCursor );
         }
 
         @Test
@@ -250,9 +263,6 @@ public class StorePropertyCursorTest
         {
             // given
             int recordId = 42;
-            PageCursor pageCursor = mock( PageCursor.class );
-            when( propertyStore.newReadCursor( recordId ) ).thenReturn( pageCursor );
-            when( pageCursor.shouldRetry() ).thenReturn( false );
 
             StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore, cache );
 

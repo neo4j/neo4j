@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -35,7 +36,7 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
     }
 
     @Override
-    public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize )
+    public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
     {
         byte inUseByte = cursor.getByte();
         boolean inUse = isInUse( inUseByte );
@@ -51,7 +52,7 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
     }
 
     @Override
-    public void write( RECORD record, PageCursor cursor )
+    public void write( RECORD record, PageCursor cursor, int recordSize, PagedFile storeFile )
     {
         if ( record.inUse() )
         {

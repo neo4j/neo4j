@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -66,6 +67,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
@@ -93,7 +95,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -1081,6 +1082,48 @@ public class TransactionRecordStateTest
         }
     }
 
+    @Test
+    public void shouldPrepareRelevantRecords() throws Exception
+    {
+        // GIVEN
+        PrepareTrackingRecordFormats format = new PrepareTrackingRecordFormats( InternalRecordFormatSelector.select() );
+        NeoStores neoStores = neoStoresRule.open( format,
+                GraphDatabaseSettings.dense_node_threshold.name(), "1" );
+
+        // WHEN
+        TransactionRecordState state = newTransactionRecordState( neoStores );
+        state.nodeCreate( 0 );
+        state.relCreate( 0, 0, 0, 0 );
+        state.relCreate( 1, 0, 0, 0 );
+        state.relCreate( 2, 0, 0, 0 );
+        List<StorageCommand> commands = new ArrayList<>();
+        state.extractCommands( commands );
+
+        // THEN
+        int nodes = 0, rels = 0, groups = 0;
+        for ( StorageCommand command : commands )
+        {
+            if ( command instanceof NodeCommand )
+            {
+                assertTrue( format.node().prepared( ((NodeCommand) command).getAfter() ) );
+                nodes++;
+            }
+            else if ( command instanceof RelationshipCommand )
+            {
+                assertTrue( format.relationship().prepared( ((RelationshipCommand) command).getAfter() ) );
+                rels++;
+            }
+            else if ( command instanceof RelationshipGroupCommand )
+            {
+                assertTrue( format.relationshipGroup().prepared( ((RelationshipGroupCommand) command).getAfter() ) );
+                groups++;
+            }
+        }
+        assertEquals( 1, nodes );
+        assertEquals( 3, rels );
+        assertEquals( 1, groups );
+    }
+
     private long[] createRelationships( NeoStores neoStores, TransactionRecordState tx, long nodeId, int type,
             Direction direction, int count )
     {
@@ -1230,7 +1273,7 @@ public class TransactionRecordStateTest
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         RelationshipGroupGetter relationshipGroupGetter =
                 new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
-        PropertyDeleter propertyDeleter = new PropertyDeleter( neoStores.getPropertyStore(), propertyTraverser );
+        PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser );
         return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, 0,
                 new NoOpClient(),
                 new RelationshipCreator( relationshipGroupGetter,

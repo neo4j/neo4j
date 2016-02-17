@@ -80,6 +80,7 @@ public class NodeFirstRelationshipProcessor implements RecordProcessor<NodeRecor
         {
             groupRecord.setNext( nextGroupId = relGroupStore.nextId() );
         }
+        relGroupStore.prepareForCommit( groupRecord );
         relGroupStore.updateRecord( groupRecord );
         return id;
     }

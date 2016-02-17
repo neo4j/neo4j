@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -42,7 +43,7 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
     }
 
     @Override
-    public void doRead( RelationshipGroupRecord record, PageCursor cursor, int recordSize, long inUseByte, boolean inUse )
+    public void doRead( RelationshipGroupRecord record, PageCursor cursor, int recordSize, PagedFile storeFile, long headerByte, boolean inUse )
     {
         // [    ,   x] in use
         // [    ,xxx ] high next id bits
@@ -58,8 +59,8 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
         long nextLoopLowBits = cursor.getUnsignedInt();
         long owningNode = cursor.getUnsignedInt() | (((long)cursor.getByte()) << 32);
 
-        long nextMod = (inUseByte & 0xE) << 31;
-        long nextOutMod = (inUseByte & 0x70) << 28;
+        long nextMod = (headerByte & 0xE) << 31;
+        long nextOutMod = (headerByte & 0x70) << 28;
         long nextInMod = (highByte & 0xE) << 31;
         long nextLoopMod = (highByte & 0x70) << 28;
 
@@ -72,7 +73,7 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
     }
 
     @Override
-    public void doWrite( RelationshipGroupRecord record, PageCursor cursor )
+    public void doWrite( RelationshipGroupRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
     {
         long nextMod = record.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getNext() & 0x700000000L) >> 31;
         long nextOutMod = record.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstOut() & 0x700000000L) >> 28;

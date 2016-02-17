@@ -256,17 +256,22 @@ public class Exceptions
         }
     }
 
-    public static <T extends Throwable> T withMessage( T cause, String message )
+    public static void setMessage( Throwable cause, String message )
     {
         try
         {
             THROWABLE_MESSAGE_FIELD.set( cause, message );
-            return cause;
         }
         catch ( IllegalArgumentException | IllegalAccessException e )
         {
             throw new RuntimeException( e );
         }
+    }
+
+    public static <T extends Throwable> T withMessage( T cause, String message )
+    {
+        setMessage( cause, message );
+        return cause;
     }
 
     @Deprecated

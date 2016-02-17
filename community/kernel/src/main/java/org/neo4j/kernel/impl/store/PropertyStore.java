@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -32,14 +31,10 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.store.PropertyRecordCursor;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -203,23 +198,6 @@ public class PropertyStore extends ComposableRecordStore<PropertyRecord,NoStoreH
         }
     }
 
-    /**
-     * This method is too leaky and ignores the abstractions set in place by {@link RecordStore} and
-     * {@link AbstractBaseRecord}. The point is to get access to the raw record bytes from a {@link PageCursor}
-     * without creating/deserializing that data into objects.
-     */
-    public PageCursor newReadCursor( long recordId ) throws IOException
-    {
-        PageCursor cursor = storeFile.io( pageIdForRecord( recordId ), PagedFile.PF_SHARED_READ_LOCK );
-        if ( !cursor.next() )
-        {
-            cursor.close();
-            throw new InvalidRecordException( "Record not found: " + recordId );
-        }
-        cursor.setOffset( offsetForId( recordId ) );
-        return cursor;
-    }
-
     public Object getValue( PropertyBlock propertyBlock )
     {
         return propertyBlock.getType().getValue( propertyBlock, this );
@@ -378,18 +356,6 @@ public class PropertyStore extends ComposableRecordStore<PropertyRecord,NoStoreH
     public String toString()
     {
         return super.toString() + "[blocksPerRecord:" + PropertyType.getPayloadSizeLongs() + "]";
-    }
-
-    public PropertyRecordCursor getPropertyRecordCursor( PropertyRecordCursor cursor, long firstRecordId )
-    {
-        if ( cursor == null )
-        {
-            cursor = new PropertyRecordCursor( new PropertyRecord( -1 ), this );
-        }
-
-        cursor.init( firstRecordId );
-
-        return cursor;
     }
 
     public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId )

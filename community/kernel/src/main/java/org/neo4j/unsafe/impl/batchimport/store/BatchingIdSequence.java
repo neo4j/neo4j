@@ -27,7 +27,19 @@ import org.neo4j.kernel.impl.store.id.IdSequence;
  */
 public class BatchingIdSequence implements IdSequence
 {
+    private final long startId;
     private long nextId = 0;
+
+    public BatchingIdSequence()
+    {
+        this( 0 );
+    }
+
+    public BatchingIdSequence( long startId )
+    {
+        this.startId = startId;
+        this.nextId = startId;
+    }
 
     @Override
     public long nextId()
@@ -42,6 +54,6 @@ public class BatchingIdSequence implements IdSequence
 
     public void reset()
     {
-        nextId = 0;
+        nextId = startId;
     }
 }

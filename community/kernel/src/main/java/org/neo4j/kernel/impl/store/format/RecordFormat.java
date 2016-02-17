@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreHeader;
+import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -35,12 +39,12 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 public interface RecordFormat<RECORD extends AbstractBaseRecord>
 {
     /**
-     * Instantiates a new record to use in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int)}
-     * and {@link #write(AbstractBaseRecord, PageCursor)}. Records may be reused, which is why the instantiation
+     * Instantiates a new record to use in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int, PagedFile)}
+     * and {@link #write(AbstractBaseRecord, PageCursor, int, PagedFile)}. Records may be reused, which is why the instantiation
      * is separated from reading and writing.
      *
-     * @return a new record instance, usable in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int)}
-     * and {@link #write(AbstractBaseRecord, PageCursor)}.
+     * @return a new record instance, usable in {@link #read(AbstractBaseRecord, PageCursor, RecordLoad, int, PagedFile)}
+     * and {@link #write(AbstractBaseRecord, PageCursor, int, PagedFile)}.
      */
     RECORD newRecord();
 
@@ -82,16 +86,40 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * See {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)} for more information.
      * @param recordSize size of records of this format. This is passed in like this since not all formats
      * know the record size in advance, but may be read from store header when opening the store.
+     * @param storeFile {@link PagedFile} to get additional {@link PageCursor} from if needed.
+     * @throws IOException on error reading.
      */
-    void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize );
+    void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+            throws IOException;
+
+    /**
+     * Called when all changes about a record has been gathered
+     * and before it's time to convert into a command. The original reason for introducing this is the
+     * thing with record units, where we need to know whether or not a record will span two units
+     * before even writing to the log as a command. The format is the pluggable entity which knows
+     * about the format and therefore the potential length of it and can update the given record with
+     * additional information which needs to be written to the command, carried back inside the record
+     * itself.
+     *
+     * @param record record to prepare, potentially updating it with more information before converting
+     * into a command.
+     * @param recordSize size of each record.
+     * @param idSequence source of new ids if such are required be generated.
+     */
+    void prepare( RECORD record, int recordSize, IdSequence idSequence );
 
     /**
      * Writes record contents to the {@code cursor} in the format specified by this implementation.
      *
      * @param record containing data to write.
      * @param cursor {@link PageCursor} to write the record data into.
+     * @param recordSize size of records of this format. This is passed in like this since not all formats
+     * know the record size in advance, but may be read from store header when opening the store.
+     * @param storeFile {@link PagedFile} to get additional {@link PageCursor} from if needed.
+     * @throws IOException on error writing.
      */
-    void write( RECORD record, PageCursor cursor );
+    void write( RECORD record, PageCursor cursor, int recordSize, PagedFile storeFile )
+            throws IOException;
 
     /**
      * @param record to obtain "next" reference from.

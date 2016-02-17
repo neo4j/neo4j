@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -45,13 +46,13 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
     }
 
     @Override
-    public void doRead( RelationshipRecord record, PageCursor cursor, int recordSize, long inUseByte, boolean inUse )
+    public void doRead( RelationshipRecord record, PageCursor cursor, int recordSize, PagedFile storeFile, long headerByte, boolean inUse )
     {
         // [    ,   x] in use flag
         // [    ,xxx ] first node high order bits
         // [xxxx,    ] next prop high order bits
         long firstNode = cursor.getUnsignedInt();
-        long firstNodeMod = (inUseByte & 0xEL) << 31;
+        long firstNodeMod = (headerByte & 0xEL) << 31;
 
         long secondNode = cursor.getUnsignedInt();
 
@@ -78,7 +79,7 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
         long secondNextRelMod = (typeInt & 0x70000L) << 16;
 
         long nextProp = cursor.getUnsignedInt();
-        long nextPropMod = (inUseByte & 0xF0L) << 28;
+        long nextPropMod = (headerByte & 0xF0L) << 28;
 
         byte extraByte = cursor.getByte();
 
@@ -96,7 +97,7 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
     }
 
     @Override
-    public void doWrite( RelationshipRecord record, PageCursor cursor )
+    public void doWrite( RelationshipRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
     {
         long firstNode = record.getFirstNode();
         short firstNodeMod = (short)((firstNode & 0x700000000L) >> 31);

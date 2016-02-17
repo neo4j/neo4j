@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -27,9 +28,10 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static java.lang.String.format;
 
+import static org.neo4j.kernel.impl.store.record.DynamicRecord.NO_DATA;
+
 public class DynamicRecordFormat extends BaseRecordFormat<DynamicRecord>
 {
-    public static final byte[] NO_DATA = new byte[0];
     // (in_use+next high)(1 byte)+nr_of_bytes(3 bytes)+next_block(int)
     public static final int RECORD_HEADER_SIZE = 1 + 3 + 4; // = 8
 
@@ -45,7 +47,7 @@ public class DynamicRecordFormat extends BaseRecordFormat<DynamicRecord>
     }
 
     @Override
-    public void read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize )
+    public void read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
     {
         /*
          * First 4b
@@ -78,25 +80,30 @@ public class DynamicRecordFormat extends BaseRecordFormat<DynamicRecord>
                         record.getNextBlock(), record.getLength(), dataSize ) );
             }
 
-            if ( record.getLength() == 0 ) // don't go though the trouble of acquiring the window if we would read nothing
-            {
-                record.setData( NO_DATA );
-                return;
-            }
-
-            int len = record.getLength();
-            byte[] data = record.getData();
-            if ( data == null || data.length != len )
-            {
-                data = new byte[len];
-            }
-            cursor.getBytes( data );
-            record.setData( data );
+            readData( record, cursor );
         }
     }
 
+    public static void readData( DynamicRecord record, PageCursor cursor )
+    {
+        if ( record.getLength() == 0 ) // don't go though the trouble of acquiring the window if we would read nothing
+        {
+            record.setData( NO_DATA );
+            return;
+        }
+
+        int len = record.getLength();
+        byte[] data = record.getData();
+        if ( data == null || data.length != len )
+        {
+            data = new byte[len];
+        }
+        cursor.getBytes( data );
+        record.setData( data );
+    }
+
     @Override
-    public void write( DynamicRecord record, PageCursor cursor )
+    public void write( DynamicRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
     {
         if ( record.inUse() )
         {

@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -33,7 +31,6 @@ import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.ShortArray;
-import org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.util.Bits;
@@ -55,20 +52,13 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 /**
  * Cursor that provides a view on property blocks of a particular property record.
  * This cursor is reusable and can be re-initialized with
- * {@link #init(PageCursor)} method and cleaned up using {@link #clear()} method.
- * <p/>
- * During initialization {@link #MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY} number of longs is read from
- * the given {@linkplain PageCursor}. This is done eagerly to avoid reading property blocks from different versions
- * of the page.
- * <p/>
- * Internally, this cursor is mainly an array of {@link #MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY} and a current-position
- * pointer.
+ * {@link #init(long[], int)} method and cleaned up using {@link #clear()} method.
+ * <p>
+ * During initialization the raw property block {@code long}s are read from
+ * the given property record.
  */
 class StorePropertyPayloadCursor
 {
-    static final int MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY = PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE / 8;
-
-    private static final long PROPERTY_KEY_ID_BITMASK = 0xFFFFFFL;
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private static final int INTERNAL_BYTE_ARRAY_SIZE = 4096;
     private static final int INITIAL_POSITION = -1;
@@ -85,8 +75,9 @@ class StorePropertyPayloadCursor
     private RecordCursor<DynamicRecord> arrayRecordCursor;
     private ByteBuffer buffer = cachedBuffer;
 
-    private final long[] data = new long[MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY];
+    private long[] data;
     private int position = INITIAL_POSITION;
+    private int numberOfBlocks = 0;
 
     StorePropertyPayloadCursor( DynamicStringStore stringStore, DynamicArrayStore arrayStore )
     {
@@ -94,21 +85,18 @@ class StorePropertyPayloadCursor
         this.arrayStore = arrayStore;
     }
 
-    void init( PageCursor cursor )
+    void init( long[] blocks, int numberOfBlocks )
     {
-        for ( int i = 0; i < data.length; i++ )
-        {
-            data[i] = cursor.getLong();
-        }
+        position = INITIAL_POSITION;
+        buffer = cachedBuffer;
+        data = blocks;
+        this.numberOfBlocks = numberOfBlocks;
     }
 
     void clear()
     {
         position = INITIAL_POSITION;
-        buffer = cachedBuffer;
-        // Array of data should be filled with '0' because it is possible to call next() without calling init().
-        // In such case 'false' should be returned, which might not be the case if there is stale data in the buffer.
-        Arrays.fill( data, 0 );
+        numberOfBlocks = 0;
     }
 
     boolean next()
@@ -117,11 +105,12 @@ class StorePropertyPayloadCursor
         {
             position = 0;
         }
-        else
+        else if ( position < numberOfBlocks )
         {
             position += currentBlocksUsed();
         }
-        if ( position >= data.length )
+
+        if ( position >= numberOfBlocks )
         {
             return false;
         }
@@ -135,7 +124,7 @@ class StorePropertyPayloadCursor
 
     int propertyKeyId()
     {
-        return (int) (currentHeader() & PROPERTY_KEY_ID_BITMASK);
+        return PropertyBlock.keyIndexId( currentHeader() );
     }
 
     boolean booleanValue()
@@ -228,6 +217,40 @@ class StorePropertyPayloadCursor
         buffer.flip();
         return readArrayFromBuffer( buffer );
     }
+
+    Object value()
+    {
+        switch ( type() )
+        {
+        case BOOL:
+            return booleanValue();
+        case BYTE:
+            return byteValue();
+        case SHORT:
+            return shortValue();
+        case CHAR:
+            return charValue();
+        case INT:
+            return intValue();
+        case LONG:
+            return longValue();
+        case FLOAT:
+            return floatValue();
+        case DOUBLE:
+            return doubleValue();
+        case SHORT_STRING:
+            return shortStringValue();
+        case STRING:
+            return stringValue();
+        case SHORT_ARRAY:
+            return shortArrayValue();
+        case ARRAY:
+            return arrayValue();
+        default:
+            throw new IllegalStateException( "No such type:" + type() );
+        }
+    }
+
 
     private long currentHeader()
     {
