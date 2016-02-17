@@ -287,7 +287,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def indexSeek(graph: GraphDatabaseQueryService) = {
     graph.withTx { tx =>
       val transactionalContext = new Neo4jTransactionContext(graph, tx, true, graph.statement)
-      val ctx = new TransactionBoundPlanContext(transactionalContext, graph)
+      val ctx = new TransactionBoundPlanContext(transactionalContext)
       val literal = Literal(42)
 
       val labelId = ctx.getOptLabelId(LABEL.name()).get

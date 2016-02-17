@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.v3_0.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.DefaultIDPSolverConfig
@@ -34,7 +33,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.api.{DataWriteOperations, KernelAPI}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
+import org.neo4j.kernel.monitoring
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
@@ -233,7 +232,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     val tc = mock[ExtendedTransactionalContext]
     when(tc.statement).thenReturn(statement)
     when(tc.readOperations).thenReturn(statement.readOperations())
-    new TransactionBoundPlanContext(tc, graph)
+    when(tc.graph).thenReturn(graph)
+    new TransactionBoundPlanContext(tc)
   }
 
   def indexSearchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])

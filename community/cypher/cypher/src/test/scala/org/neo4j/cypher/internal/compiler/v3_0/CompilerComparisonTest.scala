@@ -541,7 +541,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val (plan: ExecutionPlan, parameters) = db.withTx {
       tx =>
         val transactionalContext = new Neo4jTransactionContext(db, tx, true, db.statement)
-        val planContext = new TransactionBoundPlanContext(transactionalContext, db)
+        val planContext = new TransactionBoundPlanContext(transactionalContext)
         compiler.planQuery(query, planContext, devNullLogger)
     }
 

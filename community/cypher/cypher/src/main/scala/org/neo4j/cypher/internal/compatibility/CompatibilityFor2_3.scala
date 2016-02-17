@@ -171,7 +171,7 @@ trait CompatibilityFor2_3 {
       def isPeriodicCommit = preparedQueryForV_2_3.map(_.isPeriodicCommit).getOrElse(false)
 
       def plan(transactionalContext: ExtendedTransactionalContext, tracer: v3_0.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_3.runSafely {
-        val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext, graph)
+        val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext)
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
 
         // Log notifications/warnings from planning

@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProced
 
 import scala.collection.JavaConverters._
 
-class TransactionBoundPlanContext(tc: ExtendedTransactionalContext, val gdb: GraphDatabaseQueryService)
+class TransactionBoundPlanContext(tc: ExtendedTransactionalContext)
   extends TransactionBoundTokenContext(tc.statement) with PlanContext {
 
   @Deprecated
@@ -119,7 +119,7 @@ class TransactionBoundPlanContext(tc: ExtendedTransactionalContext, val gdb: Gra
   val statistics: GraphStatistics =
     InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations), MutableGraphStatisticsSnapshot())
 
-  val txIdProvider = LastCommittedTxIdProvider(gdb)
+  val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
   override def procedureSignature(name: ProcedureName) = {
     val kn = new KernelProcedureSignature.ProcedureName(name.namespace.asJava, name.name)

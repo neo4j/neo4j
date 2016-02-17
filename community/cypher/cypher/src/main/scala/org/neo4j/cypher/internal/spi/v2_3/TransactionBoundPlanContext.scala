@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
@@ -34,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 import scala.collection.JavaConverters._
 
-class TransactionBoundPlanContext(tc: ExtendedTransactionalContext, val gdb: GraphDatabaseQueryService)
+class TransactionBoundPlanContext(tc: ExtendedTransactionalContext)
   extends TransactionBoundTokenContext(tc.statement) with PlanContext {
 
   @Deprecated
@@ -115,7 +114,7 @@ class TransactionBoundPlanContext(tc: ExtendedTransactionalContext, val gdb: Gra
   val statistics: GraphStatistics =
     InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations), MutableGraphStatisticsSnapshot())
 
-  val txIdProvider: () => Long = gdb
+  val txIdProvider: () => Long = tc.graph
     .getDependencyResolver
     .resolveDependency(classOf[TransactionIdStore])
     .getLastCommittedTransactionId
