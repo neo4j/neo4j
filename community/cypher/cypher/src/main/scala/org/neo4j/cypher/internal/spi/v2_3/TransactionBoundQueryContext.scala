@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, Relati
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.api.KernelStatement
-import org.neo4j.kernel.impl.core.{RelationshipProxy, ThreadToStatementContextBridge}
+import org.neo4j.kernel.impl.core.{NodeManager, ThreadToStatementContextBridge}
 import org.neo4j.kernel.security.URLAccessValidationError
 import org.neo4j.tooling.GlobalGraphOperations
 
@@ -63,10 +63,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   private var open = true
   private val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+  private val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
   val nodeOps = new NodeOperations
   val relationshipOps = new RelationshipOperations
-  val relationshipActions = graph.getDependencyResolver.resolveDependency(classOf[RelationshipProxy.RelationshipActions])
 
   def isOpen = open
 
@@ -142,13 +142,14 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def getOrCreateLabelId(labelName: String) =
     statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
-  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = types match {
-    case None =>
-      val relationships = statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
-      new BeansAPIRelationshipIterator(relationships, relationshipActions)
-    case Some(typeIds) =>
-      val relationships = statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds: _*)
-      new BeansAPIRelationshipIterator(relationships, relationshipActions)
+  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = {
+    val relationships = types match {
+      case None =>
+        statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
+      case Some(typeIds) =>
+        statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds: _*)
+    }
+    new BeansAPIRelationshipIterator(relationships, nodeManager)
   }
 
   def indexSeek(index: IndexDescriptor, value: Any) =
