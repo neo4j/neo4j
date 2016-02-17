@@ -80,7 +80,7 @@ public enum LogEntryVersion
     // -4 is correct, -3 can be found in some 2.3 milestones that's why we play it safe
     V2_2_4( -4, LogEntryParsersV2_2_4.class ),
     V2_3( -5, LogEntryParsersV2_3.class ),
-    V3_0( -6, LogEntryParsersV2_3.class );
+    V3_0( -6, LogEntryParsersV3_0.class );
 
     public static final LogEntryVersion CURRENT = V3_0;
     public static final byte NO_PARTICULAR_LOG_HEADER_FORMAT_VERSION = -1;

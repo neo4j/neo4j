@@ -41,6 +41,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.checkPoint;
 
 public class CheckPointSchedulerTest
@@ -136,21 +137,21 @@ public class CheckPointSchedulerTest
         CheckPointer checkPointer = new CheckPointer()
         {
             @Override
-            public long checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException
+            public CheckPointInfo checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException
             {
                 checkPointerLatch.start();
                 checkPointerLatch.awaitFinish();
-                return 42;
+                return new CheckPointInfo(42, NO_SNAPSHOT);
             }
 
             @Override
-            public long tryCheckPoint( TriggerInfo triggerInfo ) throws IOException
+            public CheckPointInfo tryCheckPoint( TriggerInfo triggerInfo ) throws IOException
             {
                 throw new RuntimeException( "this should have not been called" );
             }
 
             @Override
-            public long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException
+            public CheckPointInfo forceCheckPoint( TriggerInfo triggerInfo ) throws IOException
             {
                 throw new RuntimeException( "this should have not been called" );
             }

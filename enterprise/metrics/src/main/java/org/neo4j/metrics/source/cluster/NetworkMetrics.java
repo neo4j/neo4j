@@ -62,8 +62,7 @@ public class NetworkMetrics extends LifecycleAdapter
     public void start()
     {
         monitors.addMonitorListener( masterNetworkTransactionWrites, MasterServer.class.getName() );
-        monitors.addMonitorListener( masterNetworkStoreWrites, ToNetworkStoreWriter.class.getName(),
-                ToNetworkStoreWriter.STORE_COPIER_MONITOR_TAG );
+        monitors.addMonitorListener( masterNetworkStoreWrites, "storeCopier" );
         monitors.addMonitorListener( slaveNetworkTransactionWrites, MasterClient210.class.getName() );
 
         registry.register( MASTER_NETWORK_TX_WRITES, (Gauge<Long>) masterNetworkTransactionWrites::getBytesWritten );

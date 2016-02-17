@@ -19,7 +19,9 @@
  */
 package org.neo4j.coreedge.catchup.storecopy.edge;
 
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+
 public interface StoreFileStreamingCompleteListener
 {
-    void onFileStreamingComplete( long lastCommittedTxBeforeStoreCopy );
+    void onFileStreamingComplete( CountsSnapshot snapshot );
 }

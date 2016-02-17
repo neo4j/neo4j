@@ -21,14 +21,13 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
 {
     private final TransactionApplicationMode mode;
-    private final CountsTracker.Updater countsUpdater;
+    private final CountsAccessor.Updater countsUpdater;
 
     public CountsStoreTransactionApplier( TransactionApplicationMode mode, CountsAccessor.Updater countsUpdater )
     {

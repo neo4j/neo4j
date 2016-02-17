@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.countStore;
+package org.neo4j.kernel.impl.store.counts;
 
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 
@@ -34,18 +35,37 @@ public interface CountsStore
     /**
      * Returns the value for the corresponding key in the CountsStore. The length of the returned value depends on
      * the type of the CountsKey provided.
-     * @param key   A CountsKey for using to search in the CountsStore.
-     * @return
+     *
+     * @param key A CountsKey for using to search in the CountsStore.
+     * @return The value stores in the counts store for this key. A long array of length 1 or 2, which can be
+     * inferred by the key type.
      */
     long[] get( CountsKey key );
 
     /**
      * Accepts a map and for each key in the map, applies its value to the value of the corresponding key in the
      * internal map.
-     * @param txId    The ID value for this transaction.
-     * @param updates A map of updates to be applied to the corresponding keys in the internal map.
+     *
+     * @param txId The ID value for this transaction.
+     * @param deltas A map of deltas to be applied to the corresponding keys in the internal map.
      */
-    void updateAll( long txId, Map<CountsKey,long[]> updates );
+    void updateAll( long txId, Map<CountsKey,long[]> deltas );
+
+    /**
+     * Applies the corresponding key in the store with the given delta.
+     *
+     * @param key The key in the store to replace.
+     * @param delta The new value for the given key in this store.
+     */
+    void update( CountsKey key, long[] delta );
+
+    /**
+     * Overwrites the corresponding key in the store with the replacement value.
+     *
+     * @param key The key in the store to replace.
+     * @param replacement The new value for the given key in this store.
+     */
+    void replace( CountsKey key, long[] replacement );
 
     /**
      * This method is thread safe w.r.t updates to the CountStore, but not for performing concurrent snapshots.
@@ -57,4 +77,19 @@ public interface CountsStore
      * @throws IllegalStateException If called before the previous invocation of this method returns.
      */
     CountsSnapshot snapshot( long txId );
+
+    /**
+     * Checks the given transaction id against the already seen transaction ids and returns true if this transaction
+     * id has been applied to the counts store already.
+     * @param txId
+     * @return True if this txid has already been applied.
+     */
+    boolean haveSeenTxId( long txId );
+
+    /**
+     * Execute the action on each counts entry of store
+     *
+     * @param action the action to be called
+     */
+    void forEach( BiConsumer<CountsKey,long[]> action );
 }

@@ -39,6 +39,7 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionObligationResponse;
+import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.Clock;
@@ -386,7 +387,7 @@ public class MasterImplConversationStopFuzzIT
         }
 
         @Override
-        public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
+        public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer, SnapshotWriter snapshotWriter )
         {
             throw new UnsupportedOperationException();
         }

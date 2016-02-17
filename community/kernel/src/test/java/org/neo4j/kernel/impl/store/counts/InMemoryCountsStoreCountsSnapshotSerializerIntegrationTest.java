@@ -17,15 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.countStore;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
+package org.neo4j.kernel.impl.store.counts;
 
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -37,8 +38,8 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 import org.neo4j.test.TargetDirectory;
 
-import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotDeserializer.deserialize;
-import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshotDeserializer.deserialize;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshotSerializer.serialize;
 
 /**
  * Serializes and deserialize count stores to test that they produce the same count stores.
@@ -53,7 +54,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
     {
         //GIVEN
         InMemoryClosableChannel tempChannel = new InMemoryClosableChannel();
-        Map<CountsKey,long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 1 );
+        ConcurrentHashMap<CountsKey,long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 1 );
         CountsSnapshot countsSnapshot = new CountsSnapshot( 1, map );
 
         //WHEN
@@ -85,7 +86,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
         File tempFile = new File( testDir.directory(), "temp" );
         StoreChannel rawChannel = fs.create( tempFile );
 
-        Map<CountsKey, long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 100000 );
+        ConcurrentHashMap<CountsKey, long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 100000 );
         CountsSnapshot countsSnapshot = new CountsSnapshot( 1, map );
         CountsSnapshot recovered;
 

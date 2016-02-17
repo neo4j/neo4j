@@ -21,11 +21,12 @@ package org.neo4j.backup;
 
 import org.neo4j.com.Response;
 import org.neo4j.com.RequestContext;
+import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreWriter;
 
 public interface TheBackupInterface
 {
-    Response<Void> fullBackup( StoreWriter writer, boolean forensics );
+    Response<Void> fullBackup( StoreWriter writer, SnapshotWriter snapshotWriter, boolean forensics );
     
     Response<Void> incrementalBackup( RequestContext context );
 }

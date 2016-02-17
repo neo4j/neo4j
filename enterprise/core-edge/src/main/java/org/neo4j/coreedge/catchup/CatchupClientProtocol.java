@@ -38,7 +38,7 @@ public class CatchupClientProtocol
         MESSAGE_TYPE,
         STORE_ID,
         TX_PULL_RESPONSE,
-        STORE_COPY_FINISHED,
+        COUNTS_SNAPSHOT,
         TX_STREAM_FINISHED,
         FILE_HEADER,
         FILE_CONTENTS

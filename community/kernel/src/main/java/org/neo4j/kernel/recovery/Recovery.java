@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogRecoveryInfo;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -46,13 +48,15 @@ public class Recovery extends LifecycleAdapter
     {
         void forceEverything();
 
+        void initializeCounts( CountsSnapshot snapshot );
+
         Visitor<LogVersionedStoreChannel,Exception> getRecoverer();
 
         Iterator<LogVersionedStoreChannel> getLogFiles( long fromVersion ) throws IOException;
 
-        LogPosition getPositionToRecoverFrom() throws IOException;
+        LogRecoveryInfo getRecoveryInformation() throws IOException;
 
-        public void recoveryRequired();
+        void recoveryRequired();
     }
 
     private final SPI spi;
@@ -69,7 +73,9 @@ public class Recovery extends LifecycleAdapter
     @Override
     public void init() throws Throwable
     {
-        LogPosition recoveryPosition = spi.getPositionToRecoverFrom();
+        LogRecoveryInfo logRecoveryInfo = spi.getRecoveryInformation();
+        LogPosition recoveryPosition = logRecoveryInfo.getLogPosition();
+        spi.initializeCounts( logRecoveryInfo.getCountsSnapshot() );
         if ( LogPosition.UNSPECIFIED.equals( recoveryPosition ) )
         {
             return;

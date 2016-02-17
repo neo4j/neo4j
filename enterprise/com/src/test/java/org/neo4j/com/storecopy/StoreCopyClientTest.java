@@ -54,6 +54,7 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -257,7 +258,7 @@ public class StoreCopyClientTest
                 public Response<?> response;
 
                 @Override
-                public Response<?> copyStore( StoreWriter writer )
+                public Response<?> copyStore( StoreWriter writer, SnapshotWriter snapshotWriter )
                 {
                     NeoStoreDataSource neoStoreDataSource =
                             original.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
@@ -273,7 +274,7 @@ public class StoreCopyClientTest
 
                     RequestContext requestContext = new StoreCopyServer( neoStoreDataSource,
                             checkPointer, fs, originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ) )
-                            .flushStoresAndStreamStoreFiles( writer, false );
+                            .flushStoresAndStreamStoreFiles( writer, snapshotWriter, false );
 
                     final StoreId storeId = original.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                     .testAccessNeoStores().getMetaDataStore().getStoreId();

@@ -75,12 +75,12 @@ public class OnlineBackupKernelExtension implements Lifecycle
     private volatile URI me;
 
     public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI, final LogProvider logProvider,
-                                        final Monitors monitors, final NeoStoreDataSource neoStoreDataSource,
-                                        final Supplier<CheckPointer> checkPointerSupplier,
-                                        final Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                                        final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
-                                        final Supplier<LogFileInformation> logFileInformationSupplier,
-                                        final FileSystemAbstraction fileSystemAbstraction)
+            final Monitors monitors, final NeoStoreDataSource neoStoreDataSource,
+            final Supplier<CheckPointer> checkPointerSupplier,
+            final Supplier<TransactionIdStore> transactionIdStoreSupplier,
+            final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
+            final Supplier<LogFileInformation> logFileInformationSupplier,
+            final FileSystemAbstraction fileSystemAbstraction)
     {
         this( config, graphDatabaseAPI, () -> {
             TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
@@ -91,18 +91,18 @@ public class OnlineBackupKernelExtension implements Lifecycle
             LogFileInformation logFileInformation = logFileInformationSupplier.get();
             return new BackupImpl( copier, monitors,
                     logicalTransactionStore, transactionIdStore, logFileInformation, new Supplier<StoreId>()
-                    {
-                        @Override
-                        public StoreId get()
-                        {
-                            return graphDatabaseAPI.storeId();
-                        }
-                    } );
+            {
+                @Override
+                public StoreId get()
+                {
+                    return graphDatabaseAPI.storeId();
+                }
+            } );
         }, monitors, logProvider );
     }
 
     public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, BackupProvider provider,
-                                        Monitors monitors, LogProvider logProvider )
+            Monitors monitors, LogProvider logProvider )
     {
         this.config = config;
         this.graphDatabaseAPI = graphDatabaseAPI;
@@ -195,7 +195,12 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 {
                     try
                     {
-                        URI backupUri = createBackupURI();
+                        BackupServer server = OnlineBackupKernelExtension.this.server;
+                        if ( server == null )
+                        {
+                            return;
+                        }
+                        URI backupUri = createBackupURI( server );
                         ClusterMemberAvailability ha = getClusterMemberAvailability();
                         ha.memberIsAvailable( BACKUP, backupUri, storeId );
                     }
@@ -233,7 +238,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
         return graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
     }
 
-    private URI createBackupURI() {
+    private URI createBackupURI( BackupServer server ) {
         String hostString = ServerUtil.getHostString( server.getSocketAddress() );
         String host = hostString.contains( INADDR_ANY ) ? me.getHost() : hostString;
         int port = server.getSocketAddress().getPort();

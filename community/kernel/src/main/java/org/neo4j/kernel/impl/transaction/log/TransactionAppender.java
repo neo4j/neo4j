@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -36,7 +37,7 @@ public interface TransactionAppender
      * Appends a batch of transactions to a log, effectively committing the transactions.
      * After this method have returned the returned transaction id should be visible in
      * {@link TransactionIdStore#getLastCommittedTransactionId()}.
-     *
+     * <p>
      * Any failure happening inside this method will cause a {@link DatabaseHealth#panic(Throwable) kernel panic}.
      * Callers must make sure that successfully appended
      * transactions exiting this method are {@link Commitment#publishAsClosed()}}.
@@ -60,9 +61,11 @@ public interface TransactionAppender
      * After this method have returned the check point mark must have been flushed to disk.
      *
      * @param logPosition the log position contained in the written check point
-     * @param logCheckPointEvent  a trace event for the given check point operation.
+     * @param logCheckPointEvent a trace event for the given check point operation.
+     * @param snapshot A snapshot of the counts store to write to the transaction log.
      * @throws IOException if there was a problem appending the transaction. See method javadoc body for
      * how to handle exceptions in general thrown from this method.
      */
-    void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent ) throws IOException;
+    void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent, CountsSnapshot snapshot )
+            throws IOException;
 }

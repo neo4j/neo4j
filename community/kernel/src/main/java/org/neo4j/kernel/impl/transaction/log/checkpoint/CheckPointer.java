@@ -37,7 +37,7 @@ public interface CheckPointer
      * @return the transaction id used for the check pointing or -1 if check pointing wasn't needed
      * @throws IOException if writing the check point fails
      */
-    long checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException;
+    CheckPointInfo checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException;
 
     /**
      * This method tries the write of a check point in the transaction log. If there is no running check pointing it
@@ -49,7 +49,7 @@ public interface CheckPointer
      * @return the transaction id used for the check pointing
      * @throws IOException if writing the check point fails
      */
-    long tryCheckPoint( TriggerInfo triggerInfo ) throws IOException;
+    CheckPointInfo tryCheckPoint( TriggerInfo triggerInfo ) throws IOException;
 
     /**
      * This method forces the write of a check point in the transaction log.
@@ -60,5 +60,5 @@ public interface CheckPointer
      * @return the transaction id used for the check pointing
      * @throws IOException if writing the check point fails
      */
-    long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException;
+    CheckPointInfo forceCheckPoint( TriggerInfo triggerInfo ) throws IOException;
 }

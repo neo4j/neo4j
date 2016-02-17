@@ -48,6 +48,8 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+import org.neo4j.kernel.impl.store.counts.CountsStorageServiceImpl;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
@@ -72,6 +74,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -95,11 +98,13 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
@@ -124,9 +129,10 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
     private final SchemaIndexProvider schemaIndexProvider;
+    private DatabaseHealth databaseHealth;
 
     public StoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
-            LogService logService, SchemaIndexProvider schemaIndexProvider )
+            LogService logService, SchemaIndexProvider schemaIndexProvider, DatabaseHealth databaseHealth )
     {
         super( "Store files" );
         this.fileSystem = fileSystem;
@@ -134,6 +140,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         this.config = config;
         this.logService = logService;
         this.schemaIndexProvider = schemaIndexProvider;
+        this.databaseHealth = databaseHealth;
         this.legacyLogs = new LegacyLogs( fileSystem );
     }
 
@@ -309,7 +316,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         new PropertyDeduplicator( fileSystem, migrationDir, pageCache, schemaIndexProvider ).deduplicateProperties();
     }
 
-    private void rebuildCountsFromScratch( File storeDir, long lastTxId, PageCache pageCache ) throws IOException
+    private CountsSnapshot rebuildCountsFromScratch( File storeDir, long lastTxId, PageCache pageCache ) throws
+        IOException
     {
         final File storeFileBase = new File( storeDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
@@ -328,6 +336,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 life.add( new CountsTracker(
                         logService.getInternalLogProvider(), fileSystem, pageCache, config, storeFileBase )
                         .setInitializer( initializer ) );
+
+
+                CountsStorageServiceImpl countsStorageService = new CountsStorageServiceImpl();
+                countsStorageService.initialize( new CountsSnapshot( lastTxId ), databaseHealth );
+                initializer.initialize( countsStorageService.updaterFor( lastTxId, INTERNAL ) );
+                return countsStorageService.snapshot( lastTxId );
             }
         }
     }
@@ -671,7 +685,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         if ( !Legacy23Store.LEGACY_VERSION.equals( versionToUpgradeFrom ) )
         {
             // write a check point in the log in order to make recovery work in the newer version
-            new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint( logVersion, lastCommittedTx );
+            doCheckpointWithSnapshot( storeDir,logVersion,lastCommittedTx, NO_SNAPSHOT );
         }
     }
 
@@ -681,11 +695,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         switch ( versionToMigrateFrom )
         {
         case Legacy20Store.LEGACY_VERSION:
-        case Legacy23Store.LEGACY_VERSION:
-            // nothing to do
-            break;
         case Legacy21Store.LEGACY_VERSION:
         case Legacy22Store.LEGACY_VERSION:
+        case Legacy23Store.LEGACY_VERSION:
             // create counters from scratch
             Iterable<StoreFile> countsStoreFiles =
                     Iterables.iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );
@@ -693,11 +705,22 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     countsStoreFiles, true, false, StoreFileType.STORE );
             File neoStore = new File( storeDir, DEFAULT_NAME );
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
-            rebuildCountsFromScratch( storeDir, lastTxId, pageCache );
+            CountsSnapshot snapshot = rebuildCountsFromScratch( storeDir, lastTxId, pageCache );
+            long logVersion = MetaDataStore.getRecord( pageCache, neoStore, Position.LOG_VERSION );
+            long lastCommittedTx = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
+
+            // write a check point in the log in order to make recovery work in the newer version
+            doCheckpointWithSnapshot( storeDir,logVersion,lastCommittedTx, snapshot );
             break;
         default:
             throw new IllegalStateException( "Unknown version to upgrade from: " + versionToMigrateFrom );
         }
+    }
+
+    private void doCheckpointWithSnapshot(File storeDir, long logVersion, long lastCommittedTx, CountsSnapshot snapshot)
+            throws IOException
+    {
+        new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint( logVersion, lastCommittedTx, snapshot );
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir ) throws IOException

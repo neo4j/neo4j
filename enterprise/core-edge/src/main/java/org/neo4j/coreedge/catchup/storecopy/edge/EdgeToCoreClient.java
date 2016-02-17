@@ -28,6 +28,8 @@ import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 import org.neo4j.coreedge.catchup.ClientMessageTypeHandler;
 import org.neo4j.coreedge.catchup.RequestMessageTypeEncoder;
 import org.neo4j.coreedge.catchup.ResponseMessageTypeEncoder;
+import org.neo4j.coreedge.catchup.storecopy.CountsSnapshotDecoder;
+import org.neo4j.coreedge.catchup.storecopy.CountsSnapshotHandler;
 import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderDecoder;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;
@@ -84,8 +86,8 @@ public class EdgeToCoreClient extends CoreClient
             pipeline.addLast( new TxPullResponseDecoder( protocol ) );
             pipeline.addLast( new TxPullResponseHandler( protocol, owner ) );
 
-            pipeline.addLast( new StoreCopyFinishedResponseDecoder( protocol ) );
-            pipeline.addLast( new StoreCopyFinishedResponseHandler( protocol, owner ) );
+            pipeline.addLast( new CountsSnapshotDecoder( protocol ) );
+            pipeline.addLast( new CountsSnapshotHandler( protocol, owner ) );
 
             pipeline.addLast( new TxStreamFinishedResponseDecoder( protocol ) );
             pipeline.addLast( new TxStreamFinishedResponseHandler( protocol, owner ) );

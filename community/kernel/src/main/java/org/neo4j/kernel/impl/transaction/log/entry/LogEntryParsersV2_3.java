@@ -27,6 +27,8 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
 
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
+
 // 2.3
 public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
 {
@@ -140,7 +142,7 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
                 {
                     long logVersion = channel.getLong();
                     long byteOffset = channel.getLong();
-                    return new CheckPoint( version, new LogPosition( logVersion, byteOffset ) );
+                    return new CheckPoint( version, new LogPosition( logVersion, byteOffset ), NO_SNAPSHOT );
                 }
 
                 @Override

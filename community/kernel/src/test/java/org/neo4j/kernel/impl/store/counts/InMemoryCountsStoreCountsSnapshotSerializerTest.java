@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.countStore;
+package org.neo4j.kernel.impl.store.counts;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -26,7 +26,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
@@ -34,7 +33,7 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
-import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshotSerializer.serialize;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
@@ -189,7 +188,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     @Test( expected = IllegalArgumentException.class )
     public void throwsExceptionOnWrongValueLengthForEntityNode() throws IOException
     {
-        Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
+        ConcurrentHashMap<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
         brokenMap.put( nodeKey( 1 ), new long[]{1, 1} );
         CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
         serialize( logChannel, brokenSnapshot );
@@ -198,7 +197,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     @Test( expected = IllegalArgumentException.class )
     public void throwsExceptionOnWrongValueLengthForEntityRelationship() throws IOException
     {
-        Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
+        ConcurrentHashMap<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
         brokenMap.put( relationshipKey( 1, 1, 1 ), new long[]{1, 1} );
         CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
         serialize( logChannel, brokenSnapshot );
@@ -207,7 +206,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     @Test( expected = IllegalArgumentException.class )
     public void throwsExceptionOnWrongValueLengthForIndexSample() throws IOException
     {
-        Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
+        ConcurrentHashMap<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
         brokenMap.put( indexSampleKey( 1, 1 ), new long[]{1} );
         CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
         serialize( logChannel, brokenSnapshot );
@@ -216,7 +215,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
     @Test( expected = IllegalArgumentException.class )
     public void throwsExceptionOnWrongValueLengthForIndexStatistics() throws IOException
     {
-        Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
+        ConcurrentHashMap<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
         brokenMap.put( indexStatisticsKey( 1, 1 ), new long[]{1} );
         CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
         serialize( logChannel, brokenSnapshot );

@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.countStore;
+package org.neo4j.kernel.impl.store.counts;
 
+import java.io.Flushable;
 import java.io.IOException;
 import java.util.Map;
 
@@ -28,6 +29,7 @@ import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
 import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
 import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_NODE;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_RELATIONSHIP;
@@ -36,11 +38,11 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.INDEX_STATIS
 
 public class CountsSnapshotSerializer
 {
-    public static void serialize( FlushableChannel channel, CountsSnapshot countsSnapshot )
-            throws IOException
+    public static long serialize( WritableChannel channel, CountsSnapshot countsSnapshot ) throws IOException
     {
         channel.putLong( countsSnapshot.getTxId() );
         channel.putInt( countsSnapshot.getMap().size() );
+        long writtenBytes = 8 + 4;
 
         for ( Map.Entry<CountsKey,long[]> pair : countsSnapshot.getMap().entrySet() )
         {
@@ -60,6 +62,7 @@ public class CountsSnapshotSerializer
                 channel.put( ENTITY_NODE.code );
                 channel.putInt( nodeKey.getLabelId() );
                 channel.putLong( value[0] );
+                writtenBytes += 1 + 4 + 8;
                 break;
 
             case ENTITY_RELATIONSHIP:
@@ -74,6 +77,7 @@ public class CountsSnapshotSerializer
                 channel.putInt( relationshipKey.getTypeId() );
                 channel.putInt( relationshipKey.getEndLabelId() );
                 channel.putLong( value[0] );
+                writtenBytes += 1 + 4 + 4 + 4 + 8;
                 break;
 
             case INDEX_SAMPLE:
@@ -88,6 +92,7 @@ public class CountsSnapshotSerializer
                 channel.putInt( indexSampleKey.propertyKeyId() );
                 channel.putLong( value[0] );
                 channel.putLong( value[1] );
+                writtenBytes += 1 + 4 + 4 + 8 + 8;
                 break;
 
             case INDEX_STATISTICS:
@@ -102,6 +107,7 @@ public class CountsSnapshotSerializer
                 channel.putInt( indexStatisticsKey.propertyKeyId() );
                 channel.putLong( value[0] );
                 channel.putLong( value[1] );
+                writtenBytes += 1 + 4 + 4 + 8 + 8;
                 break;
 
             case EMPTY:
@@ -111,5 +117,6 @@ public class CountsSnapshotSerializer
                 throw new IllegalArgumentException( "The read CountsKey has an unknown type." );
             }
         }
+        return writtenBytes;
     }
 }

@@ -31,6 +31,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 
@@ -63,6 +64,10 @@ public class StoreCopyServer
         void startStreamingTransactions( long startTxId );
 
         void finishStreamingTransactions( long endTxId );
+
+        void startStreamingCountsSnapshot();
+
+        void finishStreamingCountsSnapshot();
 
         class Adapter implements Monitor
         {
@@ -105,6 +110,16 @@ public class StoreCopyServer
             public void finishStreamingTransactions( long endTxId )
             {   // empty
             }
+
+            @Override
+            public void startStreamingCountsSnapshot()
+            {   // empty
+            }
+
+            @Override
+            public void finishStreamingCountsSnapshot()
+            {   // empty
+            }
         }
     }
 
@@ -132,14 +147,20 @@ public class StoreCopyServer
     /**
      * @return a {@link RequestContext} specifying at which point the store copy started.
      */
-    public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer, boolean includeLogs )
+    public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer, SnapshotWriter snapshotWriter,
+            boolean includeLogs )
     {
         try
         {
             monitor.startTryCheckPoint();
-            long lastAppliedTransaction = checkPointer.tryCheckPoint( new SimpleTriggerInfo( "store copy" ) );
+            CheckPointInfo checkPointInfo = checkPointer.tryCheckPoint( new SimpleTriggerInfo( "store copy" ) );
             monitor.finishTryCheckPoint();
             ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( (int) ByteUnit.mebiBytes( 1 ) );
+
+            // copy counts snapshot
+            monitor.startStreamingCountsSnapshot();
+            snapshotWriter.write( checkPointInfo.getSnapshot() );
+            monitor.finishStreamingCountsSnapshot();
 
             // Copy the store files
             monitor.startStreamingStoreFiles();
@@ -151,8 +172,8 @@ public class StoreCopyServer
                     try ( StoreChannel fileChannel = fileSystem.open( file, "r" ) )
                     {
                         monitor.startStreamingStoreFile( file );
-                        writer.write( relativePath( storeDirectory, file ), fileChannel,
-                                temporaryBuffer, file.length() > 0 );
+                        writer.write( relativePath( storeDirectory, file ), fileChannel, temporaryBuffer,
+                                file.length() > 0 );
                         monitor.finishStreamingStoreFile( file );
                     }
                 }
@@ -162,7 +183,7 @@ public class StoreCopyServer
                 monitor.finishStreamingStoreFiles();
             }
 
-            return anonymous( lastAppliedTransaction );
+            return anonymous( checkPointInfo.getLastClosedTransactionId() );
         }
         catch ( IOException e )
         {

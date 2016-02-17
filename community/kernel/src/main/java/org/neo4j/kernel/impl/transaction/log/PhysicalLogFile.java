@@ -89,6 +89,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     @Override
     public void init() throws Throwable
     {
+        //TODO Remove this. This "bare bones" idea is fundamentally flawed.
         // Make sure at least a bare bones log file is available before recovery
         long lastLogVersionUsed = logVersionRepository.getCurrentLogVersion();
         channel = openLogChannelForVersion( lastLogVersionUsed );

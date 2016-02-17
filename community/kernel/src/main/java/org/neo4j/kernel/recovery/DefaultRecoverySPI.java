@@ -25,12 +25,14 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+import org.neo4j.kernel.impl.transaction.log.LogRecoveryInfo;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.storageengine.api.StorageEngine;
 
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.tryOpenForVersion;
 
 public class DefaultRecoverySPI implements Recovery.SPI
@@ -42,11 +44,10 @@ public class DefaultRecoverySPI implements Recovery.SPI
     private final PositionToRecoverFrom positionToRecoverFrom;
     private final StorageEngine storageEngine;
 
-    public DefaultRecoverySPI(
-            StorageEngine storageEngine,
-            Visitor<LogVersionedStoreChannel,Exception> logFileRecoverer,
-            PhysicalLogFiles logFiles, FileSystemAbstraction fileSystemAbstraction,
-            LogVersionRepository logVersionRepository, LatestCheckPointFinder checkPointFinder )
+    public DefaultRecoverySPI( StorageEngine storageEngine,
+            Visitor<LogVersionedStoreChannel,Exception> logFileRecoverer, PhysicalLogFiles logFiles,
+            FileSystemAbstraction fileSystemAbstraction, LogVersionRepository logVersionRepository,
+            LatestCheckPointFinder checkPointFinder )
     {
         this.storageEngine = storageEngine;
         this.logFileRecoverer = logFileRecoverer;
@@ -60,6 +61,15 @@ public class DefaultRecoverySPI implements Recovery.SPI
     public void forceEverything()
     {
         storageEngine.flushAndForce();
+    }
+
+    @Override
+    public void initializeCounts( CountsSnapshot snapshot )
+    {
+        if ( snapshot != NO_SNAPSHOT )
+        {
+            storageEngine.initFromSnapshot( snapshot );
+        }
     }
 
     @Override
@@ -105,7 +115,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
     }
 
     @Override
-    public LogPosition getPositionToRecoverFrom() throws IOException
+    public LogRecoveryInfo getRecoveryInformation() throws IOException
     {
         return positionToRecoverFrom.apply( logVersionRepository.getCurrentLogVersion() );
     }

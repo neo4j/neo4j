@@ -25,6 +25,8 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
+import org.neo4j.storageengine.api.ReadableChannel;
+
 /**
  * The counterpart of {@link BlockLogBuffer}, sits on the receiving end and
  * reads chunks of log. It is provided with a {@link ChannelBuffer} which feeds

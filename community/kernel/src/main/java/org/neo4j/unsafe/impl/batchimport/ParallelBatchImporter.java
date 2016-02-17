@@ -47,7 +47,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;

@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 
 public class StoreCopyClient
 {
@@ -33,19 +34,20 @@ public class StoreCopyClient
         this.coreClient = coreClient;
     }
 
-    public long copyStoreFiles( AdvertisedSocketAddress from, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
+    public CountsSnapshot copyStoreFiles( AdvertisedSocketAddress from, StoreFileStreams storeFileStreams ) throws
+            StoreCopyFailedException
     {
         coreClient.setStoreFileStreams( storeFileStreams );
 
-        CompletableFuture<Long> txId = new CompletableFuture<>();
-        StoreFileStreamingCompleteListener fileStreamingCompleteListener = txId::complete;
+        CompletableFuture<CountsSnapshot> snapshot = new CompletableFuture<>();
+        StoreFileStreamingCompleteListener fileStreamingCompleteListener = snapshot::complete;
 
         coreClient.addStoreFileStreamingCompleteListener( fileStreamingCompleteListener );
 
         try
         {
             coreClient.requestStore( from );
-            return txId.get();
+            return snapshot.get();
         }
         catch ( InterruptedException | ExecutionException e )
         {

@@ -34,11 +34,12 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChanne
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 
 public class VersionAwareLogEntryReaderTest
 {
-    private final VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
-            new RecordStorageCommandReaderFactory() );
+    private final VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
+            new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
 
     @Test
     public void shouldReadAStartLogEntry() throws IOException
@@ -110,7 +111,7 @@ public class VersionAwareLogEntryReaderTest
         // given
         LogEntryVersion version = LogEntryVersion.CURRENT;
         final LogPosition logPosition = new LogPosition( 42, 43 );
-        final CheckPoint checkPoint = new CheckPoint( version, logPosition );
+        final CheckPoint checkPoint = new CheckPoint( version, logPosition, NO_SNAPSHOT );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.put( version.byteCode() );
@@ -375,8 +376,8 @@ public class VersionAwareLogEntryReaderTest
     public void shouldParseStreamOfZerosAsEmptyLogEntries() throws Exception
     {
         // GIVEN
-        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory() );
+        LogEntryReader<ReadableClosablePositionAwareChannel> reader =
+                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         int count = 100;
         channel.put( new byte[count], count );
@@ -386,7 +387,7 @@ public class VersionAwareLogEntryReaderTest
         {
             LogEntry entry = reader.readLogEntry( channel );
             assertNull( entry );
-            assertEquals( i+1, channel.readerPosition() );
+            assertEquals( i + 1, channel.readerPosition() );
         }
     }
 }

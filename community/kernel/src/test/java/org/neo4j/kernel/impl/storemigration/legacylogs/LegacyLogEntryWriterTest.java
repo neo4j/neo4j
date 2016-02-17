@@ -24,18 +24,23 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -44,14 +49,17 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshotDeserializer.deserialize;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogFilename;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT_SNAPSHOT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.EMPTY_ADDITIONAL_ARRAY;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
@@ -134,7 +142,38 @@ public class LegacyLogEntryWriterTest
         verify( logEntryWriter, times( 1 ) ).writeCommitEntry( 84l, 85l );
     }
 
-    private Function<FlushableChannel, LogEntryWriter> liftToFactory( final LogEntryWriter logEntryWriter )
+    @Test
+    public void shouldWriteCountsSnapshotToTransactionLog() throws IOException
+    {
+        // given
+        InMemoryClosableChannel logChannel = new InMemoryClosableChannel();
+        LogEntryWriter logEntryWriter = new LogEntryWriter( logChannel );
+        LogPosition logPosition = new LogPosition( 1, 0 );
+        CountsSnapshot countsSnapshot = new CountsSnapshot( 1, new ConcurrentHashMap<CountsKey,long[]>()
+        {{
+            put( nodeKey( 1 ), new long[]{42} );
+            put( nodeKey( 2 ), new long[]{42} );
+        }} );
+
+        // when
+        logEntryWriter.writeCheckPointEntry( logPosition, countsSnapshot );
+
+        // then
+        byte current = logChannel.get(); //Don't care about this in this test.
+        byte type = logChannel.get();
+        assertEquals( CHECK_POINT_SNAPSHOT, type );
+        assertEquals( logPosition.getLogVersion(), logChannel.getLong() );
+        assertEquals( logPosition.getByteOffset(), logChannel.getLong() );
+        CountsSnapshot deserializedSnapshot = deserialize( logChannel );
+        assertArrayEquals( new long[]{42}, deserializedSnapshot.getMap().get( nodeKey( 1 ) ) );
+        assertArrayEquals( new long[]{42}, deserializedSnapshot.getMap().get( nodeKey( 2 ) ) );
+        assertEquals( 2, deserializedSnapshot.getMap().size() );
+
+
+    }
+
+
+    private Function<FlushableChannel,LogEntryWriter> liftToFactory( final LogEntryWriter logEntryWriter )
     {
         return ignored -> logEntryWriter;
     }

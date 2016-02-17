@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.countStore;
+package org.neo4j.kernel.impl.store.counts;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
+import org.neo4j.storageengine.api.ReadableChannel;
 
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
@@ -35,43 +34,43 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.value;
 
 public class CountsSnapshotDeserializer
 {
-    public static CountsSnapshot deserialize( ReadableClosableChannel channel ) throws IOException
+    public static CountsSnapshot deserialize( ReadableChannel data ) throws IOException
     {
-        long txid = channel.getLong();
-        int size = channel.getInt();
+        long txid = data.getLong();
+        int size = data.getInt();
 
-        Map<CountsKey,long[]> map = new ConcurrentHashMap<>( size );
+        ConcurrentHashMap<CountsKey,long[]> map = new ConcurrentHashMap<>( size );
         CountsKey key;
         long[] value;
         for ( int i = 0; i < size; i++ )
         {
-            CountsKeyType type = value( channel.get() );
+            CountsKeyType type = value( data.get() );
             switch ( type )
             {
             case ENTITY_NODE:
-                key = nodeKey( channel.getInt() );
-                value = new long[]{channel.getLong()};
+                key = nodeKey( data.getInt() );
+                value = new long[]{data.getLong()};
                 map.put( key, value );
                 break;
 
             case ENTITY_RELATIONSHIP:
-                int startLabelId = channel.getInt();
-                int typeId = channel.getInt();
-                int endLabelId = channel.getInt();
+                int startLabelId = data.getInt();
+                int typeId = data.getInt();
+                int endLabelId = data.getInt();
                 key = relationshipKey( startLabelId, typeId, endLabelId );
-                value = new long[]{channel.getLong()};
+                value = new long[]{data.getLong()};
                 map.put( key, value );
                 break;
 
             case INDEX_SAMPLE:
-                key = indexSampleKey( channel.getInt(), channel.getInt() );
-                value = new long[]{channel.getLong(), channel.getLong()};
+                key = indexSampleKey( data.getInt(), data.getInt() );
+                value = new long[]{data.getLong(), data.getLong()};
                 map.put( key, value );
                 break;
 
             case INDEX_STATISTICS:
-                key = indexStatisticsKey( channel.getInt(), channel.getInt() );
-                value = new long[]{channel.getLong(), channel.getLong()};
+                key = indexStatisticsKey( data.getInt(), data.getInt() );
+                value = new long[]{data.getLong(), data.getLong()};
                 map.put( key, value );
                 break;
 

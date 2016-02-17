@@ -23,12 +23,16 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshotSerializer;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.StorageCommand;
 
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT_SNAPSHOT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.COMMAND;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
@@ -86,10 +90,20 @@ public class LogEntryWriter
         }
     }
 
-    public void writeCheckPointEntry( LogPosition logPosition ) throws IOException
+    public void writeCheckPointEntry( LogPosition logPosition, CountsSnapshot snapshot ) throws IOException
     {
-        writeLogEntryHeader( CHECK_POINT );
-        channel.putLong( logPosition.getLogVersion() ).
-                putLong( logPosition.getByteOffset() );
+        if (snapshot == NO_SNAPSHOT)
+        {
+            writeLogEntryHeader( CHECK_POINT );
+            channel.putLong( logPosition.getLogVersion() );
+            channel.putLong( logPosition.getByteOffset() );
+        }
+        else
+        {
+            writeLogEntryHeader( CHECK_POINT_SNAPSHOT );
+            channel.putLong( logPosition.getLogVersion() );
+            channel.putLong( logPosition.getByteOffset() );
+            CountsSnapshotSerializer.serialize( channel, snapshot );
+        }
     }
 }

@@ -31,12 +31,14 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.KernelEventHandlers;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -47,6 +49,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.kernel.spi.legacyindex.IndexProviders;
@@ -117,6 +120,11 @@ public class StoreMigration
         LabelScanStoreProvider labelScanStoreProvider = kernelExtensions
                 .resolveDependency( LabelScanStoreProvider.class, HighestSelectionStrategy.getInstance() );
 
+        Log internalLog = logService.getInternalLog( getClass() );
+        DatabaseHealth databaseHealth =
+                new DatabaseHealth( new DatabasePanicEventGenerator( new KernelEventHandlers( internalLog ) ),
+                        internalLog );
+
         Log log = userLogProvider.getLog( StoreMigration.class );
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
@@ -129,7 +137,9 @@ public class StoreMigration
                     schemaIndexProvider,
                     labelScanStoreProvider,
                     legacyIndexProvider.getIndexProviders(),
-                    pageCache ).migrate( storeDirectory );
+                    pageCache,
+                    databaseHealth
+            ).migrate( storeDirectory );
             long duration = System.currentTimeMillis() - startTime;
             log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }

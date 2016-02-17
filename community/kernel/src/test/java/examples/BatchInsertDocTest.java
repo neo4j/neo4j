@@ -19,6 +19,10 @@
  */
 package examples;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -27,10 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -62,8 +62,7 @@ public class BatchInsertDocTest
         BatchInserter inserter = null;
         try
         {
-            inserter = BatchInserters.inserter(
-                    new File( "target/batchinserter-example" ).getAbsolutePath() );
+            inserter = BatchInserters.inserter( tempStoreDir );
 
             Label personLabel = Label.label( "Person" );
             inserter.createDeferredSchemaIndex( personLabel ).on( "name" ).create();
@@ -89,23 +88,22 @@ public class BatchInsertDocTest
         // END SNIPPET: insert
 
         // try it out from a normal db
-        GraphDatabaseService db =
-                new GraphDatabaseFactory().newEmbeddedDatabase(
-                    new File("target/batchinserter-example").getAbsolutePath() );
-        try ( Transaction tx = db.beginTx() )
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( tempStoreDir );
+        try
         {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            Label personLabelForTesting = Label.label( "Person" );
-            Node mNode = db.findNode( personLabelForTesting, "name", "Mattias" );
-            Node cNode = mNode.getSingleRelationship( RelationshipType.withName( "KNOWS" ), Direction.OUTGOING ).getEndNode();
-            assertThat( (String) cNode.getProperty( "name" ), is( "Chris" ) );
-            assertThat( db.schema()
-                    .getIndexes( personLabelForTesting )
-                    .iterator()
-                    .hasNext(), is( true ) );
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            }
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                Label personLabelForTesting = Label.label( "Person" );
+                Node mNode = db.findNode( personLabelForTesting, "name", "Mattias" );
+                Node cNode = mNode.getSingleRelationship( RelationshipType.withName( "KNOWS" ), Direction.OUTGOING ).getEndNode();
+                assertThat( cNode.getProperty( "name" ), is( "Chris" ) );
+                assertThat( db.schema().getIndexes( personLabelForTesting ).iterator().hasNext(), is( true ) );
+            }
         }
         finally
         {
@@ -116,11 +114,14 @@ public class BatchInsertDocTest
     @Test
     public void insertWithConfig() throws IOException
     {
+        // Make sure our scratch directory is clean
+        File tempStoreDir = new File( "target/batchinserter-example" ).getAbsoluteFile();
+        FileUtils.deleteRecursively( tempStoreDir );
+
         // START SNIPPET: configuredInsert
         Map<String, String> config = new HashMap<>();
         config.put( "dbms.pagecache.memory", "512m" );
-        BatchInserter inserter = BatchInserters.inserter(
-                new File( "target/batchinserter-example-config" ).getAbsolutePath(), config );
+        BatchInserter inserter = BatchInserters.inserter( tempStoreDir, config );
         // Insert data here ... and then shut down:
         inserter.shutdown();
         // END SNIPPET: configuredInsert
@@ -129,14 +130,14 @@ public class BatchInsertDocTest
     @Test
     public void insertWithConfigFile() throws IOException
     {
-        try ( Writer fw = fileSystem.openAsWriter( new File( "target/docs/batchinsert-config" ).getAbsoluteFile(),
-                StandardCharsets.UTF_8, false ) )
+        File docsConfigDir = new File( "target/docs/batchinsert-config" ).getAbsoluteFile();
+        try ( Writer fw = fileSystem.openAsWriter( docsConfigDir, StandardCharsets.UTF_8, false ) )
         {
             fw.append( "dbms.pagecache.memory=8m" );
         }
 
         // START SNIPPET: configFileInsert
-        try ( FileReader input = new FileReader( new File( "target/docs/batchinsert-config" ).getAbsoluteFile() ) )
+        try ( FileReader input = new FileReader( docsConfigDir ) )
         {
             Map<String, String> config = MapUtil.load( input );
             BatchInserter inserter = BatchInserters.inserter(

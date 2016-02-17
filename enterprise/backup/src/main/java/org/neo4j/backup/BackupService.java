@@ -33,6 +33,7 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ExternallyManagedPageCache;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
+import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
@@ -42,15 +43,15 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -60,6 +61,7 @@ import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -111,7 +113,7 @@ class BackupService
     private final LogProvider logProvider;
     private final Log log;
     private final Monitors monitors;
-    private final VersionAwareLogEntryReader entryReader;
+    private final VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> entryReader;
 
     BackupService()
     {
@@ -147,13 +149,13 @@ class BackupService
                 private BackupClient client;
 
                 @Override
-                public Response<?> copyStore( StoreWriter writer )
+                public Response<?> copyStore( StoreWriter writer, SnapshotWriter snapshotWriter )
                 {
                     client = new BackupClient( sourceHostNameOrIp, sourcePort, NullLogProvider.getInstance(),
                             StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, monitors.newMonitor(
                             ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ), entryReader );
                     client.start();
-                    return client.fullBackup( writer, forensics );
+                    return client.fullBackup( writer, snapshotWriter, forensics );
                 }
 
                 @Override
@@ -306,9 +308,11 @@ class BackupService
 
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         LogProvider logProvider = resolver.resolveDependency( LogService.class ).getInternalLogProvider();
-        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, logProvider, targetDb.storeId(),
-                timeout, unpacker, monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ),
-                monitors.newMonitor( RequestMonitor.class, BackupClient.class ), entryReader );
+        ByteCounterMonitor byteCounterMonitor = monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class );
+        RequestMonitor requestMonitor = monitors.newMonitor( RequestMonitor.class, BackupClient.class );
+        BackupClient client =
+                new BackupClient( sourceHostNameOrIp, sourcePort, logProvider, targetDb.storeId(), timeout, unpacker,
+                        byteCounterMonitor, requestMonitor, entryReader );
 
         boolean consistent = false;
         try

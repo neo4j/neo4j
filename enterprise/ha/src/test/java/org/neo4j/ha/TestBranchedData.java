@@ -66,8 +66,7 @@ public class TestBranchedData
     private final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( directory )
-            .around( life );
+    public final RuleChain ruleChain = RuleChain.outerRule( directory ).around( life );
 
     @Test
     public void migrationOfBranchedDataDirectories() throws Exception
@@ -258,8 +257,8 @@ public class TestBranchedData
         }
     }
 
-    @SuppressWarnings( "unchecked" )
-    private void createNode( GraphDatabaseService db, String name, Listener<Node>... additional )
+    @SafeVarargs
+    private final void createNode( GraphDatabaseService db, String name, Listener<Node>... additional )
     {
         try ( Transaction tx = db.beginTx() )
         {

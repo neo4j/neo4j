@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.com.storecopy.SnapshotWriter;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -75,7 +76,7 @@ public interface Master
 
     Response<Void> pullUpdates( RequestContext context );
 
-    Response<Void> copyStore( RequestContext context, StoreWriter writer );
+    Response<Void> copyStore( RequestContext context, StoreWriter writer, SnapshotWriter snapshotWriter );
 
     Response<LockResult> acquireExclusiveLock( RequestContext context, ResourceType type, long... resourceIds );
 

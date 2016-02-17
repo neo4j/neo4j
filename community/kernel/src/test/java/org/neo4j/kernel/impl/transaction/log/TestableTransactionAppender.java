@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
@@ -55,7 +56,8 @@ public class TestableTransactionAppender implements TransactionAppender
     }
 
     @Override
-    public void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent ) throws IOException
+    public void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent, CountsSnapshot snapshot )
+            throws IOException
     {
     }
 }

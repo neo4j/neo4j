@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.recovery;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encodeLogVersion;
 
@@ -154,7 +154,7 @@ public class LatestCheckPointFinderTest
     {
         // given
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 33 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 33 ), NO_SNAPSHOT );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( checkPoint, null );
 
@@ -171,7 +171,7 @@ public class LatestCheckPointFinderTest
         // given
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 16 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 33 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 33 ), NO_SNAPSHOT );
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, checkPoint, null );
 
         // when
@@ -186,7 +186,7 @@ public class LatestCheckPointFinderTest
     {
         // given
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 16 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 16 ), NO_SNAPSHOT );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 33 ) );
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, checkPoint, null );
 
@@ -202,7 +202,7 @@ public class LatestCheckPointFinderTest
     {
         // given
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 16 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 16 ), NO_SNAPSHOT );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 16 ) );
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn( start, checkPoint, null );
 
@@ -219,7 +219,7 @@ public class LatestCheckPointFinderTest
         // given
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 22 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 33 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 33 ), NO_SNAPSHOT );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 mock( CheckPoint.class ), start, checkPoint, null );
@@ -236,7 +236,7 @@ public class LatestCheckPointFinderTest
     {
         // given
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 22 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 22 ), NO_SNAPSHOT );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 33 ) );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
@@ -256,7 +256,7 @@ public class LatestCheckPointFinderTest
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         LogEntryStart start1 = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 22 ) );
         LogEntryStart start2 = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 16 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 33 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 33 ), NO_SNAPSHOT );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 start1, null, // first file
@@ -276,7 +276,7 @@ public class LatestCheckPointFinderTest
         // given
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 16 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 33 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 33 ), NO_SNAPSHOT );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 null, // first file
@@ -296,7 +296,7 @@ public class LatestCheckPointFinderTest
         // given
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 22 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 16 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 16 ), NO_SNAPSHOT );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 checkPoint, // first file
@@ -316,7 +316,7 @@ public class LatestCheckPointFinderTest
         // given
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 22 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 25 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 25 ), NO_SNAPSHOT );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 checkPoint, // first file
@@ -337,7 +337,7 @@ public class LatestCheckPointFinderTest
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
         LogEntry firstStart = new LogEntryStart(  0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 20 ) );
         LogEntry secondStart = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( olderLogVersion, 27 ) );
-        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 25 ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( olderLogVersion, 25 ), NO_SNAPSHOT );
 
         when( reader.readLogEntry( any( ReadableLogChannel.class ) ) ).thenReturn(
                 null, // first file

@@ -17,38 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.storecopy.edge;
+package org.neo4j.coreedge.catchup.storecopy;
 
-import java.util.List;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.channel.SimpleChannelInboundHandler;
 
-import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponse;
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import org.neo4j.coreedge.catchup.storecopy.edge.StoreFileStreamingCompleteListener;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 
-public class StoreCopyFinishedResponseDecoder extends MessageToMessageDecoder<ByteBuf>
+import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
+
+public class CountsSnapshotHandler extends SimpleChannelInboundHandler<CountsSnapshot>
 {
     private final CatchupClientProtocol protocol;
+    private StoreFileStreamingCompleteListener storeFileStreamingCompleteListener;
 
-    public StoreCopyFinishedResponseDecoder( CatchupClientProtocol protocol )
+    public CountsSnapshotHandler( CatchupClientProtocol protocol,
+            StoreFileStreamingCompleteListener storeFileStreamingCompleteListener )
     {
         this.protocol = protocol;
+        this.storeFileStreamingCompleteListener = storeFileStreamingCompleteListener;
     }
 
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, CountsSnapshot msg ) throws Exception
     {
-        if ( protocol.isExpecting( CatchupClientProtocol.NextMessage.STORE_COPY_FINISHED ) )
-        {
-            out.add( new StoreCopyFinishedResponse( msg.readLong() ) );
-        }
-        else
-        {
-            out.add( Unpooled.copiedBuffer( msg ) );
-        }
-
+        storeFileStreamingCompleteListener.onFileStreamingComplete( msg );
+        protocol.expect( NextMessage.MESSAGE_TYPE );
     }
 }

@@ -712,8 +712,6 @@ public class BackupServiceIT
 
         // When
         GraphDatabaseAPI db2 = dbRule.restartDatabase( ( fs, storeDirectory ) -> {
-            deleteAllBackedUpTransactionLogs();
-
             fileSystem.deleteRecursively( storeDir );
             fileSystem.mkdir( storeDir );
         } );
@@ -804,7 +802,7 @@ public class BackupServiceIT
         assertEquals( txId, logHeader.lastCommittedTxId );
     }
 
-    private void checkLastCommittedTxIdInLogAndNeoStore( long txId, long txIdFromOrigin ) throws IOException
+    private void checkLastCommittedTxIdInLogAndNeoStore( long txId, long txIdFromOrigin ) throws Exception
     {
         // Assert last committed transaction can be found in tx log and is the last tx in the log
         LifeSupport life = new LifeSupport();
@@ -812,12 +810,11 @@ public class BackupServiceIT
         LogicalTransactionStore transactionStore =
                 life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, backupDir, monitors ) );
         life.start();
-        try ( IOCursor<CommittedTransactionRepresentation> cursor =
-                      transactionStore.getTransactions( txId ) )
+        try ( IOCursor<CommittedTransactionRepresentation> cursor = transactionStore.getTransactions( txId ) )
         {
-            assertTrue( cursor.next() );
+            assertTrue( "should not be empty", cursor.next() );
             assertEquals( txId, cursor.get().getCommitEntry().getTxId() );
-            assertFalse( cursor.next() );
+            assertFalse( "should be empty", cursor.next() );
         }
         finally
         {

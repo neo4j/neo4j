@@ -17,30 +17,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.countStore;
+package org.neo4j.kernel.impl.store.counts;
 
-import java.util.Map;
+import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.logging.Log;
 
-import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-
-public class CountsSnapshot
+public class AlwaysHappyDatabaseHealth extends DatabaseHealth
 {
-    final private Map<CountsKey,long[]> map;
-    final private long txId;
 
-    public CountsSnapshot( long txId, Map<CountsKey,long[]> map )
+    public AlwaysHappyDatabaseHealth( DatabasePanicEventGenerator dbpe, Log log )
     {
-        this.map = map;
-        this.txId = txId;
+        super( dbpe, log );
     }
 
-    public Map<CountsKey,long[]> getMap()
+    public AlwaysHappyDatabaseHealth()
     {
-        return map;
+        super( null, null );
     }
 
-    public long getTxId()
+    @Override
+    public <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION
     {
-        return txId;
+    }
+
+    @Override
+    public void panic( Throwable cause )
+    {
+    }
+
+    @Override
+    public boolean isHealthy()
+    {
+        return true;
+    }
+
+    @Override
+    public void healed()
+    {
     }
 }

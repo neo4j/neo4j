@@ -17,22 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.countStore;
+package org.neo4j.kernel.impl.store.counts;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiConsumer;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
+import org.neo4j.kernel.internal.DatabaseHealth;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.function.Predicates.awaitForever;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class InMemoryCountsStore implements CountsStore
 {
@@ -40,25 +43,74 @@ public class InMemoryCountsStore implements CountsStore
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     //TODO Always return long, not long[]. This requires splitting index keys into 4 keys, one for each value.
     private final ConcurrentHashMap<CountsKey,long[]> map;
-    private final OutOfOrderSequence lastTxId = new ArrayQueueOutOfOrderSequence( 0L, 100, EMPTY_METADATA );
-    private CountsSnapshot snapshot;
+    private final OutOfOrderSequence lastTxId = new ArrayQueueOutOfOrderSequence( BASE_TX_ID, 100, EMPTY_METADATA );
+    private volatile CountsSnapshot snapshot;
+    private final DatabaseHealth databaseHealth;
 
-    public InMemoryCountsStore( CountsSnapshot snapshot )
+    public InMemoryCountsStore( CountsSnapshot snapshot, DatabaseHealth databaseHealth )
     {
+        this.databaseHealth = databaseHealth;
         map = new ConcurrentHashMap<>( snapshot.getMap() );
         lastTxId.set( snapshot.getTxId(), EMPTY_METADATA );
     }
 
-    public InMemoryCountsStore()
+    public InMemoryCountsStore( DatabaseHealth databaseHealth )
     {
-        map = new ConcurrentHashMap<>();
-        lastTxId.set( 0, EMPTY_METADATA );
+        this.databaseHealth = databaseHealth;
+        this.map = new ConcurrentHashMap<>();
     }
 
     @Override
     public long[] get( CountsKey key )
     {
         return map.get( key );
+    }
+
+    @Override
+    public void replace( CountsKey key, long[] replacement )
+    {
+        lock.readLock().lock();
+        try
+        {
+            if ( snapshot != null )
+            {
+                throw new IllegalStateException(
+                        "Cannot alter count store outside of a transaction while a snapshot is processing." );
+            }
+            map.put( key, replacement );
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public void update( CountsKey key, long[] delta )
+    {
+        lock.readLock().lock();
+        try
+        {
+            if ( snapshot != null )
+            {
+                throw new IllegalStateException(
+                        "Cannot alter count store outside of a transaction while a snapshot is processing." );
+            }
+            map.compute( key, ( k, v ) -> {
+                if ( v == null )
+                {
+                    return Arrays.copyOf( delta, delta.length );
+                }
+                else
+                {
+                    return updateEachValue( v, delta );
+                }
+            } );
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
     }
 
     @Override
@@ -71,6 +123,11 @@ public class InMemoryCountsStore implements CountsStore
             if ( snapshot != null && snapshot.getTxId() >= txId )
             {
                 applyUpdates( pairs, snapshot.getMap() );
+            }
+            if ( txId <= lastTxId.getHighestGapFreeNumber() )
+            {
+                throw new IllegalArgumentException( "Transaction ID " + txId + " has already been applied to the " +
+                        "CountsStore. Highest Gap-Free number: " + lastTxId.getHighestGapFreeNumber() );
             }
             lastTxId.offer( txId, EMPTY_METADATA );
         }
@@ -86,6 +143,7 @@ public class InMemoryCountsStore implements CountsStore
      * @param updates A map containing the diffs to apply to the corresponding values in the map.
      * @param map The map to be updated.
      */
+
     private void applyUpdates( Map<CountsKey,long[]> updates, Map<CountsKey,long[]> map )
     {
         updates.forEach( ( key, value ) -> map.compute( key, ( k, v ) -> {
@@ -138,10 +196,10 @@ public class InMemoryCountsStore implements CountsStore
 
         try
         {
-            //TODO We should NOT blindly wait forever. We also shouldn't have a timeout. The proposed solution is to
-            // wait forever unless the database has failed in the background. In that case we want to fail as well.
-            // This will allow us to not timeout prematurely but also not hang when the database is broken.
-            awaitForever( () -> lastTxId.getHighestGapFreeNumber() >= snapshot.getTxId(), 100, MILLISECONDS );
+            awaitForever(
+                    () -> ((lastTxId.getHighestGapFreeNumber() >= snapshot.getTxId()) && databaseHealth.isHealthy()),
+                    100, MILLISECONDS );
+            databaseHealth.assertHealthy( UnderlyingStorageException.class );
             return snapshot;
         }
         catch ( InterruptedException ex )
@@ -156,11 +214,25 @@ public class InMemoryCountsStore implements CountsStore
         }
     }
 
+    @Override
+    public boolean haveSeenTxId(long txId)
+    {
+        return lastTxId.seen( txId, EMPTY_METADATA );
+    }
+
+    @Override
+    public void forEach( BiConsumer<CountsKey,long[]> action )
+    {
+        lock.writeLock().lock();
+        map.forEach( action );
+        lock.writeLock().unlock();
+    }
+
     /**
      * This is essentially a deep copy of a map, necessary since our values in the map are long arrays. The crucial
      * part is the Arrays.copyOf() for the value.
      */
-    private static Map<CountsKey,long[]> copyOfMap( Map<CountsKey,long[]> mapToCopy )
+    private static ConcurrentHashMap<CountsKey,long[]> copyOfMap( Map<CountsKey,long[]> mapToCopy )
     {
         ConcurrentHashMap<CountsKey,long[]> newMap = new ConcurrentHashMap<>();
         mapToCopy.forEach( ( key, value ) -> newMap.put( key, Arrays.copyOf( value, value.length ) ) );

@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 
 import static java.util.Collections.singletonList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -48,6 +47,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.store.counts.CountsSnapshot.NO_SNAPSHOT;
 
 public class PhysicalTransactionCursorTest
 {
@@ -55,7 +55,7 @@ public class PhysicalTransactionCursorTest
     private final LogEntryReader<ReadableLogChannel> entryReader = mock( LogEntryReader.class );
 
     private static final LogEntry NULL_ENTRY = null;
-    private static final CheckPoint A_CHECK_POINT_ENTRY = new CheckPoint( LogPosition.UNSPECIFIED );
+    private static final CheckPoint A_CHECK_POINT_ENTRY = new CheckPoint( LogPosition.UNSPECIFIED, NO_SNAPSHOT );
     private static final LogEntryStart A_START_ENTRY = new LogEntryStart( 0, 0, 0l, 0l, null, LogPosition.UNSPECIFIED );
     private static final LogEntryCommit A_COMMIT_ENTRY = new OnePhaseCommit( 42, 0 );
     private static final LogEntryCommand A_COMMAND_ENTRY = new LogEntryCommand(

@@ -36,6 +36,7 @@ import org.neo4j.coreedge.server.Expiration;
 import org.neo4j.coreedge.server.ExpiryScheduler;
 import org.neo4j.coreedge.server.SenderService;
 import org.neo4j.helpers.Listeners;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -121,10 +122,10 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     }
 
     @Override
-    public void onFileStreamingComplete( final long lastCommittedTxBeforeStoreCopy )
+    public void onFileStreamingComplete( final CountsSnapshot countsSnapshot )
     {
         Listeners.notifyListeners( storeFileStreamingCompleteListeners,
-                listener -> listener.onFileStreamingComplete( lastCommittedTxBeforeStoreCopy ) );
+                listener -> listener.onFileStreamingComplete( countsSnapshot ) );
     }
 
     @Override

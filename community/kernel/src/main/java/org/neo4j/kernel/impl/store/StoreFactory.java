@@ -26,11 +26,11 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -68,10 +68,6 @@ public class StoreFactory
     private File neoStoreFileName;
     private PageCache pageCache;
     private RecordFormats recordFormats;
-
-    public StoreFactory()
-    {
-    }
 
     public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, LogProvider logProvider )
     {

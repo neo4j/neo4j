@@ -19,10 +19,10 @@
  */
 package org.neo4j.coreedge.catchup.storecopy.edge;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
-
-import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpWriter;
@@ -31,6 +31,7 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseListener;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.counts.CountsSnapshot;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
@@ -48,6 +49,7 @@ public class StoreFetcherTest
     {
         // given
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
+        when( storeCopyClient.copyStoreFiles( any(), any() ) ).thenReturn( new CountsSnapshot( 0 ) );
         TxPullClient txPullClient = mock( TxPullClient.class );
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
@@ -65,7 +67,7 @@ public class StoreFetcherTest
     }
 
     @Test
-    public void shouldSetLastPulledTransactionId() throws Exception
+    public void shouldWriteSnapshot() throws Exception
     {
         // given
         long lastFlushedTxId = 12;
@@ -74,8 +76,9 @@ public class StoreFetcherTest
         AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "localhost:2001" );
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
+        CountsSnapshot snapshot = new CountsSnapshot( lastFlushedTxId );
         when( storeCopyClient.copyStoreFiles( eq( localhost ), any( StoreFileStreams.class ) ) )
-                .thenReturn( lastFlushedTxId );
+                .thenReturn( snapshot );
 
         TxPullClient txPullClient = mock( TxPullClient.class );
         when( txPullClient.pullTransactions( eq( localhost ), anyLong(), any( TxPullResponseListener.class ) ) )
@@ -92,7 +95,7 @@ public class StoreFetcherTest
 
         // then
         verify( txPullClient ).pullTransactions( eq( localhost ), eq( lastFlushedTxId ), any( TxPullResponseListener.class ) );
-        verify( writer ).setCorrectTransactionId( lastPulledTxId );
+        verify( writer ).writeCheckpoint( snapshot );
     }
 
     @Test
@@ -100,6 +103,7 @@ public class StoreFetcherTest
     {
         // given
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
+        when( storeCopyClient.copyStoreFiles( any(), any() ) ).thenReturn( new CountsSnapshot( 0 ) );
         TxPullClient txPullClient = mock( TxPullClient.class );
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
