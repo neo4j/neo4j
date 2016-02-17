@@ -21,7 +21,9 @@ package org.neo4j.server.security.auth;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -44,6 +46,7 @@ import org.neo4j.string.UTF8;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
@@ -66,6 +69,9 @@ public class FileUserRepositoryTest
         );
     }
 
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
+
     public FileUserRepositoryTest( Configuration fsConfig, String fsType )
     {
         fs = Jimfs.newFileSystem( fsConfig );
@@ -77,7 +83,7 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
+        User user = new User( "jake", "admin", Credential.INACCESSIBLE, true );
         users.create( user );
 
         // When
@@ -92,7 +98,7 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
+        User user = new User( "jake", "admin", Credential.INACCESSIBLE, true );
         users.create( user );
 
         users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
@@ -110,7 +116,7 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
+        User user = new User( "jake", "admin", Credential.INACCESSIBLE, true );
         users.create( user );
 
         // When
@@ -166,7 +172,7 @@ public class FileUserRepositoryTest
 
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
         users.start();
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
+        User user = new User( "jake", "admin", Credential.INACCESSIBLE, true );
 
         // When
         try
@@ -188,11 +194,11 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
+        User user = new User( "jake", "admin", Credential.INACCESSIBLE, true );
         users.create( user );
 
         // When
-        User updatedUser = new User( "john", Credential.INACCESSIBLE, true );
+        User updatedUser = new User( "john", "admin", Credential.INACCESSIBLE, true );
         try
         {
             users.update( user, updatedUser );
@@ -210,12 +216,12 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
+        User user = new User( "jake", "admin", Credential.INACCESSIBLE, true );
         users.create( user );
-        User modifiedUser = new User( "jake", Credential.forPassword( "foo" ), false );
+        User modifiedUser = new User( "jake", "admin", Credential.forPassword( "foo" ), false );
 
         // When
-        User updatedUser = new User( "jake", Credential.forPassword( "bar" ), false );
+        User updatedUser = new User( "jake", "admin", Credential.forPassword( "bar" ), false );
         try
         {
             users.update( modifiedUser, updatedUser );
@@ -233,14 +239,18 @@ public class FileUserRepositoryTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Files.createDirectories( authFile.getParent() );
         Files.write( authFile, UTF8.encode(
-                "neo4j:fc4c600b43ffe4d5857b4439c35df88f:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" ) );
+                "neo4j:admin:fc4c600b43ffe4d5857b4439c35df88f:SHA-256," +
+                        "A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" +
+                "admin:admin:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" ) );
 
         // When
         FileUserRepository users = new FileUserRepository( authFile, logProvider );
+        thrown.expect( IllegalStateException.class );
+        thrown.expectMessage( startsWith( "Failed to read authentication file: " ) );
         users.start();
 
         // Then
-        assertThat( users.numberOfUsers(), equalTo( 0 ) );
+        assertThat( users.numberOfUsers(), equalTo( 1 ) );
         logProvider.assertExactly(
                 AssertableLogProvider.inLog( FileUserRepository.class ).error(
                         "Ignoring authorization file \"%s\" (%s)", authFile.toAbsolutePath(), "wrong number of line fields [line 1]"

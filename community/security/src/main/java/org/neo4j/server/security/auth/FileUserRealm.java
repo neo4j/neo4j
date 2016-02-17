@@ -23,7 +23,7 @@ import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.ExpiredCredentialsException;
-import org.apache.shiro.authc.SimpleAccount;
+import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.authc.credential.CredentialsMatcher;
 import org.apache.shiro.authz.AuthorizationInfo;
@@ -39,35 +39,37 @@ import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
  */
 public class FileUserRealm extends AuthorizingRealm
 {
-    private final FileUserRepository userRepository;
+    private final UserRepository userRepository;
 
-    private final CredentialsMatcher credentialsMatcher = new CredentialsMatcher()
-    {
-        @Override
-        public boolean doCredentialsMatch( AuthenticationToken token, AuthenticationInfo info )
-        {
-            UsernamePasswordToken usernamePasswordToken = (UsernamePasswordToken) token;
-            String infoUserName = (String) info.getPrincipals().getPrimaryPrincipal();
-            Credential infoCredential = (Credential) info.getCredentials();
+    private final CredentialsMatcher credentialsMatcher =
+            ( AuthenticationToken token, AuthenticationInfo info ) ->
+            {
+                UsernamePasswordToken usernamePasswordToken = (UsernamePasswordToken) token;
+                String infoUserName = (String) info.getPrincipals().getPrimaryPrincipal();
+                Credential infoCredential = (Credential) info.getCredentials();
 
-            boolean userNameMatches = infoUserName.equals( usernamePasswordToken.getUsername() );
-            boolean credentialsMatches =
-                    infoCredential.matchesPassword( new String( usernamePasswordToken.getPassword() ) );
+                boolean userNameMatches = infoUserName.equals( usernamePasswordToken.getUsername() );
+                boolean credentialsMatches =
+                        infoCredential.matchesPassword( new String( usernamePasswordToken.getPassword() ) );
 
-            return userNameMatches && credentialsMatches;
-        }
-    };
+                return userNameMatches && credentialsMatches;
+            };
 
-    public FileUserRealm( FileUserRepository userRepository )
+    private AccountBuilder accountBuilder;
+
+    public FileUserRealm( UserRepository userRepository )
     {
         this.userRepository = userRepository;
         setCredentialsMatcher( credentialsMatcher );
+        accountBuilder = new PredefinedGroupsAccountBuilder();
     }
 
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo( PrincipalCollection principals )
     {
-        return null;
+        User user = userRepository.findByName( (String) principals.getPrimaryPrincipal() );
+
+        return accountBuilder.buildAccount(user, getName());
     }
 
     @Override
@@ -77,13 +79,15 @@ public class FileUserRealm extends AuthorizingRealm
 
         User user = userRepository.findByName( usernamePasswordToken.getUsername() );
 
-        // TODO: This will not work if AuthenticationInfo is cached
+        // TODO: This will not work if AuthenticationInfo is cached,
+        // unless you always do SecurityManager.logout properly (which will invalidate the cache)
+        // For REST we may need to connect HttpSessionListener.sessionDestroyed with logout
         if (user.passwordChangeRequired())
         {
             throw new ExpiredCredentialsException("Password change required");
         }
 
-        return new SimpleAccount( user.name(), user.credentials(), getName() );
+        return new SimpleAuthenticationInfo( user.name(), user.credentials(), getName() );
     }
 
     int numberOfUsers()
@@ -91,13 +95,14 @@ public class FileUserRealm extends AuthorizingRealm
         return userRepository.numberOfUsers();
     }
 
-    User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws
+    User newUser( String username, String group, String initialPassword, boolean requirePasswordChange ) throws
             IOException, IllegalCredentialsException
     {
         assertValidName( username );
 
         User user = new User.Builder()
                 .withName( username )
+                .withGroup( group )
                 .withCredentials( Credential.forPassword( initialPassword ) )
                 .withRequiredPasswordChange( requirePasswordChange )
                 .build();

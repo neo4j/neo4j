@@ -32,15 +32,19 @@ public class User
     /** User name */
     private final String name;
 
+    /** User group */
+    private final String group;
+
     /** Authentication credentials used by the built in username/password authentication scheme */
     private final Credential credential;
 
     /** Whether a password change is needed */
     private final boolean passwordChangeRequired;
 
-    public User(String name, Credential credential, boolean passwordChangeRequired)
+    public User( String name, String group, Credential credential, boolean passwordChangeRequired )
     {
         this.name = name;
+        this.group = group;
         this.credential = credential;
         this.passwordChangeRequired = passwordChangeRequired;
     }
@@ -49,6 +53,8 @@ public class User
     {
         return name;
     }
+
+    public String group() { return group; }
 
     public Credential credentials()
     {
@@ -86,6 +92,10 @@ public class User
         {
             return false;
         }
+        if ( group != null ? !group.equals( user.group ) : user.group != null )
+        {
+            return false;
+        }
 
         return true;
     }
@@ -94,6 +104,7 @@ public class User
     public int hashCode()
     {
         int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + ( group != null ? group.hashCode() : 0);
         result = 31 * result + ( credential != null ? credential.hashCode() : 0);
         result = 31 * result + (passwordChangeRequired ? 1 : 0);
         return result;
@@ -104,6 +115,7 @@ public class User
     {
         return "User{" +
                 "name='" + name + '\'' +
+                ", group='" + group + '\'' +
                 ", credentials=" + credential +
                 ", passwordChangeRequired=" + passwordChangeRequired +
                 '}';
@@ -114,23 +126,26 @@ public class User
         private String name;
         private Credential credential = Credential.INACCESSIBLE;
         private boolean pwdChangeRequired;
+        private String group;
 
         public Builder() { }
 
         public Builder( User base )
         {
             name = base.name;
+            group = base.group;
             credential = base.credential;
             pwdChangeRequired = base.passwordChangeRequired;
         }
 
         public Builder withName( String name ) { this.name = name; return this; }
+        public Builder withGroup( String group ) { this.group = group; return this; }
         public Builder withCredentials( Credential creds ) { this.credential = creds; return this; }
         public Builder withRequiredPasswordChange( boolean change ) { this.pwdChangeRequired = change; return this; }
 
         public User build()
         {
-            return new User(name, credential, pwdChangeRequired );
+            return new User(name, group, credential, pwdChangeRequired );
         }
     }
 }

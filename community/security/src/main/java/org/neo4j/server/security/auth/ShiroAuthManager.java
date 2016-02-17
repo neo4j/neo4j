@@ -25,24 +25,37 @@ import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.subject.Subject;
-import org.apache.shiro.util.ThreadContext;
 
+import java.io.IOException;
 import java.time.Clock;
 
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 
 public class ShiroAuthManager extends BasicAuthManager
 {
     private final SecurityManager securityManager;
     private final FileUserRealm realm;
+    static final String DEFAULT_GROUP = "neo4j";
 
-    public ShiroAuthManager( FileUserRepository userRepository, Clock clock, boolean authEnabled )
+    public ShiroAuthManager( UserRepository userRepository, AuthenticationStrategy authStrategy, boolean authEnabled )
     {
-        super( userRepository, clock, authEnabled );
+        super( userRepository, authStrategy, authEnabled );
 
         realm = new FileUserRealm( userRepository );
         //  : Do not forget realm.setCacheManager(...) before going into production...
         securityManager = new DefaultSecurityManager( realm );
+    }
+
+    public ShiroAuthManager( UserRepository users, AuthenticationStrategy authStrategy )
+    {
+        this( users, authStrategy, true );
+    }
+
+    public ShiroAuthManager( UserRepository users, Clock clock, boolean authEnabled )
+    {
+        this( users, new RateLimitedAuthenticationStrategy( clock, 3 ), authEnabled );
     }
 
     @Override
@@ -50,33 +63,63 @@ public class ShiroAuthManager extends BasicAuthManager
     {
         if ( authEnabled && realm.numberOfUsers() == 0 )
         {
-            realm.newUser( "neo4j", "neo4j", true );
+            realm.newUser( "neo4j", DEFAULT_GROUP, "neo4j", true );
         }
     }
 
     @Override
     public AuthenticationResult authenticate( String username, String password )
     {
+        AuthSubject subject = login( username, password );
+
+        return subject.getAuthenticationResult();
+    }
+
+    @Override
+    public User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException,
+            IllegalCredentialsException
+    {
+        assertAuthEnabled();
+        return realm.newUser( username, DEFAULT_GROUP, initialPassword, requirePasswordChange );
+    }
+
+    public User newUser( String username, String group, String initialPassword, boolean requirePasswordChange ) throws
+            IOException,
+            IllegalCredentialsException
+    {
+        assertAuthEnabled();
+        return realm.newUser( username, group, initialPassword, requirePasswordChange );
+    }
+
+    public AuthSubject login( String username, String password )
+    {
         assertAuthEnabled();
 
-        ThreadContext.bind(securityManager);
-
         Subject subject = new Subject.Builder(securityManager).buildSubject();
-        ThreadContext.bind(subject);
 
         UsernamePasswordToken token = new UsernamePasswordToken( username, password );
-        try
+        AuthenticationResult result = AuthenticationResult.SUCCESS;
+
+        if ( !authStrategy.isAuthenticationPermitted( username ) )
         {
-            subject.login( token );
+            result = AuthenticationResult.TOO_MANY_ATTEMPTS;
         }
-        catch ( ExpiredCredentialsException e )
+        else
         {
-            return AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+            try
+            {
+                subject.login( token );
+            }
+            catch ( ExpiredCredentialsException e )
+            {
+                result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+            }
+            catch ( AuthenticationException e )
+            {
+                result = AuthenticationResult.FAILURE;
+            }
+            authStrategy.updateWithAuthenticationResult( result, username );
         }
-        catch ( AuthenticationException e )
-        {
-            return AuthenticationResult.FAILURE;
-        }
-        return AuthenticationResult.SUCCESS;
+        return new ShiroAuthSubject(this, subject, result);
     }
 }

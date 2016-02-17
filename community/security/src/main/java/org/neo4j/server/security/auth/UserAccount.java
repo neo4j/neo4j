@@ -19,19 +19,15 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.apache.shiro.authc.SimpleAccount;
 
-/**
- * Strategy for determining if the credentials presented by a user are valid
- */
-public interface AuthenticationStrategy
+import java.util.Collections;
+import java.util.Set;
+
+class UserAccount extends SimpleAccount
 {
-    boolean isAuthenticationPermitted( String username );
-
-    void updateWithAuthenticationResult( AuthenticationResult result, String username );
-
-    /**
-     * Verify a user by password
-     */
-    AuthenticationResult authenticate( User user, String password );
+    public UserAccount( String name, Credential credentials, String realm, Set<String> roleNames )
+    {
+        super( Collections.singletonList( name ), credentials, realm, roleNames, null );
+    }
 }

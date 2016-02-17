@@ -57,7 +57,7 @@ public class UserServiceTest
             return "neo4j";
         }
     };
-    private static final User NEO4J_USER = new User( "neo4j", Credential.forPassword( "neo4j" ), true );
+    private static final User NEO4J_USER = new User( "neo4j", "admin", Credential.forPassword( "neo4j" ), true );
 
     @Rule
     public ExpectedException exception = ExpectedException.none();

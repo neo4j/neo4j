@@ -19,19 +19,7 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.neo4j.kernel.api.security.AuthenticationResult;
-
-/**
- * Strategy for determining if the credentials presented by a user are valid
- */
-public interface AuthenticationStrategy
+public interface AccountBuilder
 {
-    boolean isAuthenticationPermitted( String username );
-
-    void updateWithAuthenticationResult( AuthenticationResult result, String username );
-
-    /**
-     * Verify a user by password
-     */
-    AuthenticationResult authenticate( User user, String password );
+    UserAccount buildAccount(User user, String realmName);
 }
