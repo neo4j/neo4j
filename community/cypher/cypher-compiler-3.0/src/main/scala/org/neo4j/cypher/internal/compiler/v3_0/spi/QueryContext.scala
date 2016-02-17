@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_0.spi
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v3_0.InternalQueryStatistics
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
@@ -44,14 +44,17 @@ import scala.collection.Iterator
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
 trait QueryContext extends TokenContext {
+  type Graph
 
   type KernelStatement
 
   type EntityAccessor
 
-  def statement: KernelStatement
+  type StateView
 
   def entityAccessor: EntityAccessor
+
+  def transactionalContext: TransactionalContext[Graph,KernelStatement,StateView]
 
   def nodeOps: Operations[Node]
 
@@ -87,12 +90,6 @@ trait QueryContext extends TokenContext {
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int)
 
-  def isOpen: Boolean
-
-  def isTopLevelTx: Boolean
-
-  def close(success: Boolean)
-
   def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node]
 
   def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[Node]
@@ -127,8 +124,6 @@ trait QueryContext extends TokenContext {
    * This should not be used. We'll remove sooner (or later). Don't do it.
    */
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T
-
-  def commitAndRestartTx()
 
   def relationshipStartNode(rel: Relationship): Node
 
@@ -197,4 +192,23 @@ trait Operations[T <: PropertyContainer] {
   def acquireExclusiveLock(obj: Long): Unit
 
   def releaseExclusiveLock(obj: Long): Unit
+}
+
+trait TransactionalContext[Graph,KernelStatement,StateView] {
+
+  def newContext(): TransactionalContext[Graph,KernelStatement,StateView]
+
+  def statement: KernelStatement
+
+  def isOpen: Boolean
+
+  def isTopLevelTx: Boolean
+
+  def close(success: Boolean)
+
+  def commitAndRestartTx()
+
+  def graph: Graph
+
+  def stateView: StateView
 }

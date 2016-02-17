@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilde
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -36,7 +36,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.{ParameterNotFoundException, Sema
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.Clock
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
@@ -913,10 +915,12 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     }
   })
 
-  val queryContext = mock[QueryContext]
-  val ro = mock[ReadOperations]
-  val statement = mock[org.neo4j.kernel.api.Statement]
-  when(queryContext.statement).thenReturn(statement.asInstanceOf[queryContext.KernelStatement])
+  private val queryContext = mock[QueryContext]
+  private val transactionalContext = mock[TransactionalContext[GraphDatabaseAPI,org.neo4j.kernel.api.Statement, TxStateHolder]]
+  private val ro = mock[ReadOperations]
+  private val statement = mock[org.neo4j.kernel.api.Statement]
+  when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext[queryContext.Graph, queryContext.KernelStatement, queryContext.StateView]])
+  when(transactionalContext.statement).thenReturn(statement)
   when(queryContext.entityAccessor).thenReturn(nodeManager.asInstanceOf[queryContext.EntityAccessor])
   when(statement.readOperations()).thenReturn(ro)
   when(ro.nodesGetAll()).thenAnswer(new Answer[PrimitiveLongIterator] {

@@ -135,7 +135,7 @@ class MutationTest extends ExecutionEngineFunSuite {
     val state = createQueryState
     createNodePipe.createResults(state).toList
 
-    state.query.close(success = true)
+    state.query.transactionalContext.close(success = true)
     tx.close()
 
     intercept[NotFoundException](graph.inTx(graph.getNodeById(node_id)))

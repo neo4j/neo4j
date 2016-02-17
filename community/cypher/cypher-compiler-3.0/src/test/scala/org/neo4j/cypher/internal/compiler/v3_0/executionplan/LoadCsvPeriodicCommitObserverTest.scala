@@ -24,13 +24,16 @@ import java.net.URL
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.ExternalCSVResource
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.txstate.TxStateHolder
 
 class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   var resourceUnderTest: LoadCsvPeriodicCommitObserver = _
-  var queryContext: QueryContext = _
+  var transactionalContext: TransactionalContext[_,_,_] = _
   var resource: ExternalCSVResource = _
   val url: URL = new URL("file:///tmp/something.csv")
 
@@ -40,11 +43,11 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
     // When
     val iterator = resourceUnderTest.getCsvIterator(url)
-    verify(queryContext, never()).commitAndRestartTx()
+    verify(transactionalContext, never()).commitAndRestartTx()
 
     iterator.next()
 
-    verify(queryContext, times(1)).commitAndRestartTx()
+    verify(transactionalContext, times(1)).commitAndRestartTx()
   }
 
   test("multiple iterators are still handled correctly only commit when the first iterator advances") {
@@ -58,10 +61,10 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
     // When
     iterator2.next()
 
-    verify(queryContext, never()).commitAndRestartTx()
+    verify(transactionalContext, never()).commitAndRestartTx()
 
     iterator1.next()
-    verify(queryContext, times(1)).commitAndRestartTx()
+    verify(transactionalContext, times(1)).commitAndRestartTx()
   }
 
   test("if a custom iterator is specified should be passed to the wrapped resource") {
@@ -73,7 +76,9 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
   }
 
   override protected def beforeEach() {
-    queryContext = mock[QueryContext]
+    val queryContext = mock[QueryContext]
+    transactionalContext = mock[TransactionalContext[GraphDatabaseAPI, Statement, TxStateHolder]]
+    when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext[queryContext.Graph,queryContext.KernelStatement, queryContext.StateView]])
     resource = mock[ExternalCSVResource]
     resourceUnderTest = new LoadCsvPeriodicCommitObserver(1, resource, queryContext)
   }

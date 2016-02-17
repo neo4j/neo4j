@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{KernelPredi
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{LabelAction, LabelSetOp}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{ProcedureName, IdempotentResult, ProcedureSignature, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, ProcedureName, IdempotentResult, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.graphdb.{PropertyContainer, Node, Path, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, UniquenessConstraint}
@@ -83,15 +83,11 @@ class SnitchingQueryContext extends QueryContext {
     ids.size
   }
 
-  override def isOpen: Boolean = ???
-
-  override def isTopLevelTx: Boolean = ???
+  override def transactionalContext: TransactionalContext[Graph, KernelStatement, StateView] = ???
 
   override def getOrCreateRelTypeId(relTypeName: String) = ???
 
   override def getOrCreateLabelId(labelName: String) = labels(labelName)
-
-  override def close(success: Boolean) {???}
 
   override def createNode() = ???
 
@@ -153,8 +149,6 @@ class SnitchingQueryContext extends QueryContext {
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
 
-  override def commitAndRestartTx() { ??? }
-
   override def getRelTypeId(relType: String): Int = ???
 
   override def getOptRelTypeId(relType: String): Option[Int] = ???
@@ -189,10 +183,6 @@ class SnitchingQueryContext extends QueryContext {
   override def lockNodes(nodeIds: Long*): Unit = ???
 
   override def lockRelationships(relIds: Long*): Unit = ???
-
-  override type KernelStatement = this.type
-
-  override def statement: KernelStatement = ???
 
   override type EntityAccessor = this.type
 

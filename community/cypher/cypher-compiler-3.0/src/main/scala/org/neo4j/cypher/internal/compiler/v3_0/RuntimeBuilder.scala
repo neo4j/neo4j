@@ -140,7 +140,7 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
         def run(queryContext: QueryContext,
                 executionMode: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
           val taskCloser = new TaskCloser
-          taskCloser.addTask(queryContext.close)
+          taskCloser.addTask(queryContext.transactionalContext.close)
           try {
             if (executionMode == ExplainMode) {
               //close all statements

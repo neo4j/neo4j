@@ -29,17 +29,17 @@ class NiceHasher(val original: Seq[Any]) {
     hash == other.hash && comparableValues.equals(other.comparableValues)
   }
 
-  lazy val comparableValues = original.map(NiceHasherValue.comparableValuesFun)
+  private lazy val comparableValues = original.map(NiceHasherValue.comparableValuesFun)
 
   override def toString = hashCode() + " : " + original.toString
 
-  lazy val hash = NiceHasherValue.seqHashFun(original)
+  private lazy val hash = NiceHasherValue.seqHashFun(original)
 
   override def hashCode() = hash
 }
 
 object NiceHasherValue {
-  def seqHashFun(seq: Seq[Any]): Int = seq.foldLeft(0) ((hashValue, element) => hashFun(element) + hashValue * 31 )
+  def seqHashFun(itr: Iterable[Any]): Int = itr.foldLeft(0) ((hashValue, element) => hashFun(element) + hashValue * 31 )
 
   def hashFun(y: Any): Int = y match {
     case x: Array[Int] => java.util.Arrays.hashCode(x)
@@ -48,14 +48,14 @@ object NiceHasherValue {
     case x: Array[AnyRef] => java.util.Arrays.deepHashCode(x)
     case null => 0
     case x: List[_] => seqHashFun(x)
-    case x: Map[String, _] => x.keySet.hashCode() * 31 + seqHashFun(x.values.toSeq)
+    case x: Map[_, _] => seqHashFun(x.keySet ++ x.values)
     case x => x.hashCode()
   }
 
   def comparableValuesFun(y: Any): Any = y match {
     case x: Array[_] => x.deep
     case x: List[_] => x.map(comparableValuesFun)
-    case x: Map[String, _] => x.keys.toSeq ++ x.values.map(comparableValuesFun)
+    case x: Map[_, _] => (x.keys ++ x.values).map(comparableValuesFun)
     case x => x
   }
 }
@@ -70,11 +70,11 @@ class NiceHasherValue(val original: Any) {
     hash == other.hash && (comparableValue equals other.comparableValue)
   }
 
-  lazy val comparableValue = NiceHasherValue.comparableValuesFun(original)
+  private lazy val comparableValue = NiceHasherValue.comparableValuesFun(original)
 
   override def toString = hashCode() + " : " + original.toString
 
-  lazy val hash = NiceHasherValue.hashFun(original)
+  private lazy val hash = NiceHasherValue.hashFun(original)
 
   override def hashCode() = hash
 }

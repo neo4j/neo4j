@@ -23,14 +23,13 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.api.RelationshipVisitor
-import org.neo4j.kernel.impl.core.RelationshipProxy
+import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy}
 
 /**
  * Converts a RelationshipIterator coming from the Kernel API into an Iterator[Relationship] while
  * still sticking to the fact that each relationship record is only loaded once.
  */
-class BeansAPIRelationshipIterator(relationships: RelationshipIterator,
-                                   actions: RelationshipActions)
+class BeansAPIRelationshipIterator(relationships: RelationshipIterator, nodeManager: NodeManager)
                                    extends Iterator[Relationship] with RelationshipVisitor[RuntimeException] {
   var nextRelationship: Relationship = null
 
@@ -46,6 +45,6 @@ class BeansAPIRelationshipIterator(relationships: RelationshipIterator,
   }
 
   def visit(relationshipId: Long, relationshipType: Int, startNode: Long, endNode: Long) {
-    nextRelationship = new RelationshipProxy(actions, relationshipId, startNode, relationshipType, endNode)
+    nextRelationship = nodeManager.newRelationshipProxy(relationshipId, startNode, relationshipType, endNode)
   }
 }

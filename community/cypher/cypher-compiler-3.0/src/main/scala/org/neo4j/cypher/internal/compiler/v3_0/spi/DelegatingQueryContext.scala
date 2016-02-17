@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.spi
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{KernelPredicate, Expander}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
@@ -34,24 +34,20 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
 
+  type Graph = inner.Graph
+
   type KernelStatement = inner.KernelStatement
 
   type EntityAccessor = inner.EntityAccessor
 
-  override def statement: KernelStatement = inner.statement
+  type StateView = inner.StateView
+
+  override def transactionalContext: TransactionalContext[Graph,KernelStatement,StateView] = inner.transactionalContext
 
   override def entityAccessor: EntityAccessor = inner.entityAccessor
 
-  override def isOpen: Boolean = inner.isOpen
-
-  override def isTopLevelTx: Boolean = inner.isTopLevelTx
-
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     singleDbHit(inner.setLabelsOnNode(node, labelIds))
-
-  override def close(success: Boolean) {
-    inner.close(success)
-  }
 
   override def createNode(): Node = singleDbHit(inner.createNode())
 
@@ -138,10 +134,6 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] =
     singleDbHit(inner.lockingUniqueIndexSeek(index, value))
-
-  override def commitAndRestartTx() {
-    inner.commitAndRestartTx()
-  }
 
   override def getRelTypeId(relType: String): Int = singleDbHit(inner.getRelTypeId(relType))
 
@@ -232,4 +224,23 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   override def acquireExclusiveLock(obj: Long): Unit = inner.acquireExclusiveLock(obj)
 
   override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
+}
+
+class DelegatingTransactionalContext[Graph,KernelStatement,StateView](val inner: TransactionalContext[Graph,KernelStatement,StateView]) extends TransactionalContext[Graph,KernelStatement,StateView] {
+
+  override def commitAndRestartTx() { inner.commitAndRestartTx() }
+
+  override def isTopLevelTx: Boolean = inner.isTopLevelTx
+
+  override def statement: KernelStatement = inner.statement
+
+  override def isOpen: Boolean = inner.isOpen
+
+  override def close(success: Boolean) { inner.close(success) }
+
+  override def graph: Graph = inner.graph
+
+  override def newContext(): TransactionalContext[Graph,KernelStatement,StateView] = inner.newContext()
+
+  override def stateView: StateView = inner.stateView
 }

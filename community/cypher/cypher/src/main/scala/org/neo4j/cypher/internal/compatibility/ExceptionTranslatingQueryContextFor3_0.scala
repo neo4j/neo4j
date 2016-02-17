@@ -30,11 +30,11 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 import scala.collection.Iterator
 
 class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends DelegatingQueryContext(inner) with ExceptionTranslationSupport {
+  override def transactionalContext =
+    new ExceptionTranslatingTransactionalContext(super.transactionalContext)
+
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(super.setLabelsOnNode(node, labelIds))
-
-  override def close(success: Boolean) =
-    translateException(super.close(success))
 
   override def createNode(): Node =
     translateException(super.createNode())
@@ -150,9 +150,6 @@ class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends Delega
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any) =
     translateException(super.lockingUniqueIndexSeek(index, value))
 
-  override def commitAndRestartTx() =
-    translateException(super.commitAndRestartTx())
-
   override def getImportURL(url: URL) =
     translateException(super.getImportURL(url))
 
@@ -198,5 +195,8 @@ class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends Delega
       translateException(super.isDeletedInThisTx(obj))
   }
 
+  class ExceptionTranslatingTransactionalContext(inner: TransactionalContext[Graph, KernelStatement, StateView]) extends DelegatingTransactionalContext(inner) {
+    override def close(success: Boolean) { translateException(super.close(success)) }
+  }
 }
 

@@ -40,7 +40,7 @@ case class PureSideEffectInternalExecutionResult(ctx: QueryContext,
   override def javaColumns: util.List[String] = java.util.Collections.emptyList()
 
   override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
-    ctx.close(success = true)
+    ctx.transactionalContext.close(success = true)
   }
 
   override def queryStatistics() = ctx.getOptStatistics.getOrElse(InternalQueryStatistics())

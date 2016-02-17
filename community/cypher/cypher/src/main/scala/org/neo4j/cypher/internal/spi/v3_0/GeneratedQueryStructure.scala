@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, ParameterNotFoundException, SemanticDirection, symbols}
@@ -854,7 +854,7 @@ private object Templates {
     put(self(), typeRef[TaskCloser], "closer", load("closer")).
     put(self(), typeRef[Statement], "statement",
       cast(typeRef[Statement],
-        invoke(load("queryContext"), method[QueryContext, Statement]("statement")))).
+        invoke(invoke(load("queryContext"), method[QueryContext, TransactionalContext[_,_,_]]("transactionalContext")), method[TransactionalContext[_,_,_], Statement]("statement")))).
     put(self(), typeRef[ReadOperations], "ro", invoke(get(self(), typeRef[Statement], "statement"), method[Statement, ReadOperations]("readOperations"))).
     put(self(), typeRef[ExecutionMode], "executionMode", load("executionMode")).
     put(self(), typeRef[Provider[InternalPlanDescription]], "description", load("description")).

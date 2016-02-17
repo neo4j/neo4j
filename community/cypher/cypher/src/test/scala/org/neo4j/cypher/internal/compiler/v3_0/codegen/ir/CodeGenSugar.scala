@@ -27,15 +27,16 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilde
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, InternalResultRow, InternalResultVisitor, PlanContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, GraphStatistics, InternalResultRow, InternalResultVisitor, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.scalatest.mock.MockitoSugar
 
@@ -67,9 +68,9 @@ trait CodeGenSugar extends MockitoSugar {
     val tx = graphDb.beginTx()
     try {
       val statement = graphDb.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-      val queryContext = new TransactionBoundQueryContext(graphDb, tx, true, statement)(mock[IndexSearchMonitor])
-      val result = plan.executionResultBuilder(queryContext, mode,
-        tracer(mode), params, taskCloser)
+      val transactionalContext = new TransactionBoundTransactionalContext(graphDb, tx, true, statement)
+      val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
+      val result = plan.executionResultBuilder(queryContext, mode, tracer(mode), params, taskCloser)
       tx.success()
       result.size
       result
@@ -127,8 +128,10 @@ trait CodeGenSugar extends MockitoSugar {
 
   private def mockQueryContext() = {
     val qc = mock[QueryContext]
+    val transactionalContext = mock[TransactionalContext[GraphDatabaseAPI, Statement, TxStateHolder]]
     val statement = mock[Statement]
-    when(qc.statement).thenReturn(statement.asInstanceOf[qc.KernelStatement])
+    when(qc.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext[qc.Graph, qc.KernelStatement, qc.StateView]])
+    when(transactionalContext.statement).thenReturn(statement)
 
     qc
   }

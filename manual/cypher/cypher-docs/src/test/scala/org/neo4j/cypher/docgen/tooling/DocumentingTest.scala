@@ -23,7 +23,7 @@ import java.io._
 import org.neo4j.cypher.internal.compiler.v3_0.CypherSerializer
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -118,7 +118,8 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
 // formatting applied to them
 class ValueFormatter(db: GraphDatabaseService, tx: Transaction) extends (Any => String) with CypherSerializer with GraphIcing {
   def apply(x: Any): String = {
-    val ctx = new TransactionBoundQueryContext(db.asInstanceOf[GraphDatabaseAPI], tx, true, db.statement)(QuietMonitor)
+    val transactionalContext = new TransactionBoundTransactionalContext(db.asInstanceOf[GraphDatabaseAPI], tx, true, db.statement)
+    val ctx = new TransactionBoundQueryContext(transactionalContext)(QuietMonitor)
     serialize(x, ctx)
   }
 }

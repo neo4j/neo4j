@@ -39,11 +39,11 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
     val countingCtx = new UpdateCountingQueryContext(ctx)
     if (planType == ExplainMode) {
       //close all statements
-      ctx.close(success = true)
+      ctx.transactionalContext.close(success = true)
       new ExplainExecutionResult(List.empty, description, queryType, Set.empty)
     } else {
       sideEffect(countingCtx)
-      ctx.close(success = true)
+      ctx.transactionalContext.close(success = true)
       PureSideEffectInternalExecutionResult(countingCtx, description, queryType, planType)
     }
   }
