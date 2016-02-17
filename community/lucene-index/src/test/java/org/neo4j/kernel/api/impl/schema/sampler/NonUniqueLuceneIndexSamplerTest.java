@@ -41,6 +41,7 @@ import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.IndexReaderStub;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
@@ -103,7 +104,8 @@ public class NonUniqueLuceneIndexSamplerTest
     public void samplingOfLargeNumericValues() throws Exception
     {
         try ( RAMDirectory dir = new RAMDirectory();
-              IndexPartition indexPartition = new IndexPartition( new File( "testPartition" ), dir ) )
+              IndexPartition indexPartition = new IndexPartition( new File( "testPartition" ), dir,
+                      IndexWriterConfigs.standard() ) )
         {
             insertDocument( indexPartition, 1, Long.MAX_VALUE );
             insertDocument( indexPartition, 2, Integer.MAX_VALUE );
