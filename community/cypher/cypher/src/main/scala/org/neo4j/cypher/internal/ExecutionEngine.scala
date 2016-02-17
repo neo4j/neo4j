@@ -27,33 +27,31 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaResultValueConverter
 import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.v3_0.{LRUCache => LRUCachev3_0, _}
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
-import org.neo4j.kernel.{GraphDatabaseAPI, api, monitoring}
+import org.neo4j.kernel.{GraphDatabaseQueryService, api, monitoring}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 
 import scala.collection.JavaConverters._
 
 trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
+
 /**
   * This class construct and initialize both the cypher compiler and the cypher runtime, which is a very expensive
   * operation so please make sure this will be constructed only once and properly reused.
   */
-class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = NullLogProvider.getInstance()) {
+class ExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance()) {
 
   require(graph != null, "Can't work with a null graph database")
 
   // true means we run inside REST server
   protected val isServer = false
-  protected val graphAPI = graph.asInstanceOf[GraphDatabaseAPI]
-  protected val kernel = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.api.KernelAPI])
-  private val lastCommittedTxId = LastCommittedTxIdProvider(graphAPI)
-  protected val kernelMonitors: monitoring.Monitors = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
+  protected val kernel = graph.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.api.KernelAPI])
+  private val lastCommittedTxId = LastCommittedTxIdProvider(graph)
+  protected val kernelMonitors: monitoring.Monitors = graph.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
   private val compilationTracer: CompilationTracer = {
     if(optGraphSetting(graph, GraphDatabaseSettings.cypher_compiler_tracing, FALSE))
       new TimingCompilationTracer(kernelMonitors.newMonitor(classOf[TimingCompilationTracer.EventListener]))
@@ -94,7 +92,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
     executionMonitor.startQueryExecution(session, query, javaParams)
 
     val (preparedPlanExecution, txInfo) = planQuery(query)
-    preparedPlanExecution.profile(graphAPI, txInfo, params, session)
+    preparedPlanExecution.profile(graph, txInfo, params, session)
   }
 
   @throws(classOf[SyntaxException])
@@ -120,7 +118,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
     val javaParams = javaValues.asDeepJavaResultMap(params).asInstanceOf[JavaMap[String, AnyRef]]
     executionMonitor.startQueryExecution(session, query, javaParams)
     val (preparedPlanExecution, txInfo) = planQuery(query)
-    preparedPlanExecution.execute(graphAPI, txInfo, params, session)
+    preparedPlanExecution.execute(graph, txInfo, params, session)
   }
 
   @throws(classOf[SyntaxException])
@@ -207,9 +205,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
     throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
   }
 
-  private val txBridge = graph.asInstanceOf[GraphDatabaseAPI]
-    .getDependencyResolver
-    .resolveDependency(classOf[ThreadToStatementContextBridge])
+  private val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
 
   private def getOrCreateFromSchemaState[V](statement: api.Statement, creator: => V) = {
     val javaCreator = new java.util.function.Function[ExecutionEngine, V]() {
@@ -258,18 +254,9 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
       GraphDatabaseSettings.query_cache_size.getDefaultValue.toInt
     )
 
-  private def optGraphSetting[V](graph: GraphDatabaseService, setting: Setting[V], defaultValue: V): V = {
-    def optGraphAs[T <: GraphDatabaseService : Manifest]: PartialFunction[GraphDatabaseService, T] = {
-      case (db: T) => db
-    }
-    optGraphAs[GraphDatabaseFacade]
-      .andThen(g => {
-        // TODO: Config should be passed in as a dependency to Cypher, not pulled out of casted interfaces
-        val config: Config = g.getDependencyResolver.resolveDependency(classOf[Config])
-        Option(config.get(setting))
-    })
-      .andThen(_.getOrElse(defaultValue))
-      .applyOrElse(graph, (_: GraphDatabaseService) => defaultValue)
+  private def optGraphSetting[V](graph: GraphDatabaseQueryService, setting: Setting[V], defaultValue: V): V = {
+    val config = graph.getDependencyResolver.resolveDependency(classOf[Config])
+    Option(config.get(setting)).getOrElse(defaultValue)
   }
 
 }

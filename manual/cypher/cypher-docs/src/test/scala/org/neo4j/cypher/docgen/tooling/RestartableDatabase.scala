@@ -39,14 +39,14 @@ package org.neo4j.cypher.docgen.tooling
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import org.neo4j.cypher.internal.ExecutionEngine
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.util.Try
 
 /* I exist so my users can have a restartable database that is lazily created */
 class RestartableDatabase(init: Seq[String], factory: TestGraphDatabaseFactory = new TestGraphDatabaseFactory()) {
-  private var _db: GraphDatabaseService = null
+  private var _db: GraphDatabaseCypherService = null
   private var _engine: ExecutionEngine = null
   private var _failures: Seq[QueryRunResult] = null
   private var _markedForRestart = false
@@ -58,7 +58,7 @@ class RestartableDatabase(init: Seq[String], factory: TestGraphDatabaseFactory =
 
   private def createAndStartIfNecessary() {
     if (_db == null) {
-      _db = factory.newImpermanentDatabase()
+      _db = new GraphDatabaseCypherService(factory.newImpermanentDatabase())
       _engine = new ExecutionEngine(_db)
       _failures = initialize(_engine, init)
     }
@@ -91,7 +91,7 @@ class RestartableDatabase(init: Seq[String], factory: TestGraphDatabaseFactory =
 
   private def restart() {
     if (_db == null) return
-    _db.shutdown()
+    _db.getGraphDatabaseService.shutdown()
     _db = null
     _markedForRestart = false
   }

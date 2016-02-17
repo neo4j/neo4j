@@ -22,7 +22,7 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.graphdb.{Label, Node, Relationship}
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 
 class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport with SoftReset {
 
@@ -82,7 +82,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
       assertions = (p) => assert(p.size === 1))
   }
 
-  def createTwoPersonNodesWithNames(db: GraphDatabaseAPI) = {
+  def createTwoPersonNodesWithNames(db: GraphDatabaseQueryService) = {
     db.inTx {
       db.createNode(Label.label("Person")).setProperty("name", "Node A")
       db.createNode(Label.label("Person")).setProperty("name", "Node B")
@@ -101,7 +101,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
   }
 
   @Test def set_property_to_a_collection() {
-    val createTwoNodesWithProperty = (db: GraphDatabaseAPI) => db.inTx {
+    val createTwoNodesWithProperty = (db: GraphDatabaseQueryService) => db.inTx {
       db.createNode().setProperty("name", "Andres")
       db.createNode().setProperty("name", "Michael")
     }

@@ -36,11 +36,12 @@ import org.neo4j.cypher.internal.frontend.v2_3.{CypherException => InternalCyphe
 import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
 import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.internal.{CypherExecutionMode, ExtendedExecutionResult, ExtendedPlanDescription, LastCommittedTxIdProvider, ParsedQuery, PreParsedQuery, QueryStatistics, TransactionInfo}
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
@@ -140,7 +141,7 @@ case class WrappedMonitors2_3(kernelMonitors: KernelMonitors) extends Monitors {
 trait CompatibilityFor2_3 {
   import org.neo4j.cypher.internal.compatibility.helpersv2_3._
 
-  val graph: GraphDatabaseService
+  val graph: GraphDatabaseQueryService
   val queryCacheSize: Int
   val kernelMonitors: KernelMonitors
   val kernelAPI: KernelAPI
@@ -184,12 +185,12 @@ trait CompatibilityFor2_3 {
 
   class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3) extends org.neo4j.cypher.internal.ExecutionPlan {
 
-    private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo): QueryContext = {
+    private def queryContext(graph: GraphDatabaseQueryService, txInfo: TransactionInfo): QueryContext = {
       val ctx = new TransactionBoundQueryContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
       new ExceptionTranslatingQueryContextFor2_3(ctx)
     }
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+    def run(graph: GraphDatabaseQueryService, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
       implicit val s = session
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev2_3
@@ -413,7 +414,7 @@ class EntityAccessorWrapper2_3(nodeManager: NodeManager) extends EntityAccessor 
   override def newRelationshipProxyById(id: Long): Relationship = nodeManager.newRelationshipProxyById(id)
 }
 
-case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
+case class CompatibilityFor2_3Cost(graph: GraphDatabaseQueryService,
                                    config: CypherCompilerConfiguration,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
@@ -437,24 +438,24 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
       case CypherRuntime.compiled => Some(CompiledRuntimeName)
     }
 
-    val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
+    val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
     CypherCompilerFactory.costBasedCompiler(
-      graph, new EntityAccessorWrapper2_3(nodeManager), config, clock, GeneratedQueryStructure, new WrappedMonitors2_3( kernelMonitors ),
+      graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService, new EntityAccessorWrapper2_3(nodeManager), config, clock, GeneratedQueryStructure, new WrappedMonitors2_3( kernelMonitors ),
       new StringInfoLogger2_3( log ), rewriterSequencer, plannerName, runtimeName)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize
 }
 
-case class CompatibilityFor2_3Rule(graph: GraphDatabaseService,
+case class CompatibilityFor2_3Rule(graph: GraphDatabaseQueryService,
                                    config: CypherCompilerConfiguration,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor2_3 {
   protected val compiler = {
-    val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
+    val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
     CypherCompilerFactory.ruleBasedCompiler(
-            graph, new EntityAccessorWrapper2_3(nodeManager), config, clock, new WrappedMonitors2_3( kernelMonitors ), rewriterSequencer)
+      graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService, new EntityAccessorWrapper2_3(nodeManager), config, clock, new WrappedMonitors2_3( kernelMonitors ), rewriterSequencer)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize

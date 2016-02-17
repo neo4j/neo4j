@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.javacompat;
 
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -42,7 +43,7 @@ public class JavaValueCompatibilityTest
     public void setUp() throws IOException
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
-        engine = new ExecutionEngine( db );
+        engine = new ExecutionEngine( new GraphDatabaseCypherService( db) );
     }
 
     @Test

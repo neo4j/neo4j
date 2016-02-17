@@ -17,15 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.kernel;
 
-import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.query.QuerySession
+import java.net.URL;
 
-case class PreparedPlanExecution(plan: ExecutionPlan, executionMode: CypherExecutionMode, extractedParams: Map[String, Any]) {
-  def execute(graph: GraphDatabaseQueryService, txInfo: TransactionInfo, params: Map[String, Any], session: QuerySession) =
-    plan.run(graph, txInfo, executionMode, params ++ extractedParams, session)
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.security.URLAccessValidationError;
 
-  def profile(graph: GraphDatabaseQueryService, txInfo: TransactionInfo, params: Map[String, Any], session: QuerySession) =
-    plan.run(graph, txInfo, CypherExecutionMode.profile, params ++ extractedParams, session)
+/*
+ * This is a trimmed down version of GraphDatabaseService and GraphDatabaseAPI, limited to a subset of functions needed
+ * by implementations of QueryExecutionEngine.
+ */
+public interface GraphDatabaseQueryService
+{
+    DependencyResolver getDependencyResolver();
+    Node createNode();
+    Node createNode( Label... labels );
+    Node getNodeById(long id);
+    Relationship getRelationshipById(long id);
+    Transaction beginTx();
+    URL validateURLAccess( URL url ) throws URLAccessValidationError;
 }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.graphdb.{Label, Node}
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.procedure.example.IndexingProcedure
 

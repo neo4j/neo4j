@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.scalatest.{Assertions, Matchers}
 
@@ -106,7 +106,7 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
   }
 
   private def runQueries(doc: Document): TestRunResult = {
-    val builder = (db: GraphDatabaseService, tx: Transaction) => new QueryResultContentBuilder(new ValueFormatter(db, tx))
+    val builder = (db: GraphDatabaseQueryService, tx: Transaction) => new QueryResultContentBuilder(new ValueFormatter(db, tx))
 
     val runner = new QueryRunner(builder)
     val result = runner.runQueries(contentsWithInit = doc.contentWithQueries, doc.title)
@@ -116,9 +116,9 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
 
 // Used to format values coming from Cypher. Maps, collections, nodes, relationships and paths all have custom
 // formatting applied to them
-class ValueFormatter(db: GraphDatabaseService, tx: Transaction) extends (Any => String) with CypherSerializer with GraphIcing {
+class ValueFormatter(db: GraphDatabaseQueryService, tx: Transaction) extends (Any => String) with CypherSerializer with GraphIcing {
   def apply(x: Any): String = {
-    val transactionalContext = new TransactionBoundTransactionalContext(db.asInstanceOf[GraphDatabaseAPI], tx, true, db.statement)
+    val transactionalContext = new TransactionBoundTransactionalContext(db, tx, true, db.statement)
     val ctx = new TransactionBoundQueryContext(transactionalContext)(QuietMonitor)
     serialize(x, ctx)
   }

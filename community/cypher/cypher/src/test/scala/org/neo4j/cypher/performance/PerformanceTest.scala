@@ -21,25 +21,26 @@ package org.neo4j.cypher.performance
 
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
-import org.neo4j.graphdb.{GraphDatabaseService, Node, RelationshipType}
+import org.neo4j.graphdb.{Node, RelationshipType}
 
 import scala.util.Random
 
 class PerformanceTest extends CypherFunSuite {
   val r = new Random()
 
-  var db: GraphDatabaseService = null
+  var db: GraphDatabaseCypherService = null
   var engine: ExecutionEngine = null
 
   override def beforeEach() {
     super.beforeEach()
-    db = new GraphDatabaseFactory().newEmbeddedDatabase("target/db");
+    db = new GraphDatabaseCypherService(new GraphDatabaseFactory().newEmbeddedDatabase("target/db"))
     engine = new ExecutionEngine(db)
   }
 
   override def afterEach() {
-    db.shutdown()
+    db.getGraphDatabaseService.shutdown()
     super.afterEach()
   }
 

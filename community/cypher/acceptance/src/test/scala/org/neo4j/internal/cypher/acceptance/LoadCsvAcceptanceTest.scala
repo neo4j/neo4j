@@ -25,9 +25,9 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.security.URLAccessRule
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.BeforeAndAfterAll
 import org.neo4j.graphdb.config.Configuration
@@ -354,10 +354,10 @@ class LoadCsvAcceptanceTest
   }
 
   test("should fail for file urls if local file access disallowed") {
-    val db = new TestGraphDatabaseFactory()
+    val db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.allow_file_urls, "false")
-      .newGraphDatabase()
+      .newGraphDatabase())
 
     intercept[LoadExternalResourceException] {
       new ExecutionEngine(db).execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line CREATE (a {name:line[0]})")
@@ -371,10 +371,10 @@ class LoadCsvAcceptanceTest
         writer.println("something")
     )
 
-    val db = new TestGraphDatabaseFactory()
+    val db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.load_csv_file_url_root, dir.toString)
-      .newGraphDatabase()
+      .newGraphDatabase())
 
     val result = new ExecutionEngine(db).execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line RETURN line[0] AS field")
     result.toList should equal(List(Map("field" -> "something")))
@@ -396,12 +396,12 @@ class LoadCsvAcceptanceTest
           }
     })
 
-    val db = new TestGraphDatabaseFactory()
+    val db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory()
       .addURLAccessRule( "testproto", new URLAccessRule {
         override def validate(config: Configuration, url: URL): URL = url
       })
       .newImpermanentDatabaseBuilder()
-      .newGraphDatabase()
+      .newGraphDatabase())
 
     val result = new ExecutionEngine(db).execute(s"LOAD CSV FROM 'testproto://foo.bar' AS line RETURN line[0] AS field")
     result.toList should equal(List(Map("field" -> "something")))

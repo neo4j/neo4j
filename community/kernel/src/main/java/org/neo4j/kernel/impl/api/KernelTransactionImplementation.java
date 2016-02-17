@@ -64,7 +64,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 {
     private enum TransactionType
     {
-        ANY,
+        READ,
         DATA
                 {
                     @Override
@@ -114,11 +114,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // State
     private TransactionState txState;
     private final LegacyIndexTransactionState legacyIndexTransactionState;
-    private TransactionType transactionType = TransactionType.ANY;
+    private TransactionType transactionType = TransactionType.READ; // Tracks current state of transaction, which will upgrade to WRITE or SCHEMA mode when necessary
     private TransactionHooks.TransactionHooksState hooksState;
     private KernelStatement currentStatement;
     private CloseListener closeListener;
-    private AccessMode accessMode = AccessMode.FULL;
+    private AccessMode accessMode = AccessMode.FULL; // Defines whether a transaction is allowed to upgrade to WRITE or SCHEMA mode
 
     private boolean beforeHookInvoked;
     private boolean closing, closed;

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.scalatest.Assertions
 
 
-class LazyIterator[T](count: Int, f: (Int, GraphDatabaseService) => T) extends Iterator[T]() with Assertions {
-  var db: Option[GraphDatabaseService] = None
+class LazyIterator[T](count: Int, f: (Int, GraphDatabaseQueryService) => T) extends Iterator[T]() with Assertions {
+  var db: Option[GraphDatabaseQueryService] = None
 
   def this(count: Int, f: Int => T) = {
     this(count, (count: Int, _) => f(count))

@@ -23,13 +23,13 @@ import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 
 import scala.collection.JavaConverters._
 
-class DocsExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = NullLogProvider.getInstance)
+class DocsExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance)
                          (implicit monitor: QueryExecutionMonitor, session: QuerySession)
   extends ExecutionEngine(graph, logProvider) {
 

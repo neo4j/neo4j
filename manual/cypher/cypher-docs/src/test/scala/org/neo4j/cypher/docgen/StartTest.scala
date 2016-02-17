@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 
 class StartTest extends DocumentingTestBase {
   override def graphDescription = List("A KNOWS B", "A KNOWS C")
@@ -41,7 +41,7 @@ class StartTest extends DocumentingTestBase {
 
   @Test def relationships_by_index() {
     generateConsole = false
-    val setPropertyAndUpdateLegacyIndex = (db: GraphDatabaseAPI) => db.inTx {
+    val setPropertyAndUpdateLegacyIndex = (db: GraphDatabaseQueryService) => db.inTx {
       val r = db.getRelationshipById(0)
       val property = "name"
       val value = "Andrés"

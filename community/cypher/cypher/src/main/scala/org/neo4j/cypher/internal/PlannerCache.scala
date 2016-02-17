@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.compatibility.{CompatibilityFor2_3, CompatibilityFor2_3Cost, CompatibilityFor2_3Rule, CompatibilityFor3_0, CompatibilityFor3_0Cost, CompatibilityFor3_0Rule}
 import org.neo4j.cypher.internal.compiler.v3_0.CypherCompilerConfiguration
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -33,7 +33,7 @@ sealed trait PlannerSpec
 final case class PlannerSpec_v2_3(planner: CypherPlanner, runtime: CypherRuntime) extends PlannerSpec
 final case class PlannerSpec_v3_0(planner: CypherPlanner, runtime: CypherRuntime, updateStrategy: CypherUpdateStrategy) extends PlannerSpec
 
-class PlannerFactory(graph: GraphDatabaseService, kernelAPI: KernelAPI, kernelMonitors: KernelMonitors, log: Log,
+class PlannerFactory(graph: GraphDatabaseQueryService, kernelAPI: KernelAPI, kernelMonitors: KernelMonitors, log: Log,
                      config: CypherCompilerConfiguration) {
 
   import helpers.wrappersFor2_3._

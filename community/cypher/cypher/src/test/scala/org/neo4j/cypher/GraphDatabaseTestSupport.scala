@@ -26,11 +26,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, Cyp
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.api.{DataWriteOperations, KernelAPI}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.{GraphDatabaseAPI, monitoring}
+import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
@@ -39,7 +40,7 @@ import scala.collection.Map
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   self: CypherFunSuite  =>
 
-  var graph: GraphDatabaseAPI = null
+  var graph: GraphDatabaseCypherService = null
   var nodes: List[Node] = null
 
   def databaseConfig(): Map[Setting[_],String] = Map()
@@ -49,8 +50,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     graph = createGraphDatabase()
   }
 
-  protected def createGraphDatabase(): GraphDatabaseAPI = {
-    new TestGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava).asInstanceOf[GraphDatabaseAPI]
+  protected def createGraphDatabase() = {
+    new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
   }
 
   override protected def stopTest() {

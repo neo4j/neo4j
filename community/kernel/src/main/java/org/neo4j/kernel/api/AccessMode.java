@@ -22,38 +22,95 @@ package org.neo4j.kernel.api;
 /** Controls the capabilities of a {@link KernelTransaction}. */
 public enum AccessMode
 {
+    /** No reading or writing allowed. */
+    NONE
+            {
+                @Override
+                public boolean allowsReads()
+                {
+                    return false;
+                }
+
+                @Override
+                public boolean allowsWrites()
+                {
+                    return false;
+                }
+
+                @Override
+                public boolean allowsSchemaWrites()
+                {
+                    return false;
+                }
+            },
+
     /** Allows reading data and schema, but not writing. */
     READ
-    {
-        @Override
-        public boolean allowsWrites()
-        {
-            return false;
-        }
+            {
+                @Override
+                public boolean allowsReads()
+                {
+                    return true;
+                }
 
-        @Override
-        public boolean allowsSchemaWrites()
-        {
-            return false;
-        }
-    },
+                @Override
+                public boolean allowsWrites()
+                {
+                    return false;
+                }
+
+                @Override
+                public boolean allowsSchemaWrites()
+                {
+                    return false;
+                }
+            },
+
+    /** Allows reading data and schema, but not writing. */
+    WRITE
+            {
+                @Override
+                public boolean allowsReads()
+                {
+                    return true;
+                }
+
+                @Override
+                public boolean allowsWrites()
+                {
+                    return true;
+                }
+
+                @Override
+                public boolean allowsSchemaWrites()
+                {
+                    return false;
+                }
+            },
 
     /** Allows all operations. */
     FULL
-    {
-        @Override
-        public boolean allowsWrites()
-        {
-            return true;
-        }
+            {
+                @Override
+                public boolean allowsReads()
+                {
+                    return true;
+                }
 
-        @Override
-        public boolean allowsSchemaWrites()
-        {
-            return true;
-        }
-    };
+                @Override
+                public boolean allowsWrites()
+                {
+                    return true;
+                }
 
+                @Override
+                public boolean allowsSchemaWrites()
+                {
+                    return true;
+                }
+            };
+
+    public abstract boolean allowsReads();
     public abstract boolean allowsWrites();
     public abstract boolean allowsSchemaWrites();
 }

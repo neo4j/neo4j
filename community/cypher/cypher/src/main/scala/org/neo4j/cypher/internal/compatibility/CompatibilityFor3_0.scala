@@ -34,14 +34,14 @@ import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, DPPlanner
 import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_0.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherException => InternalCypherException}
-import org.neo4j.cypher.internal.javacompat.ProfilerStatistics
+import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_0._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
-import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, Node, Path, QueryExecutionType, Relationship, ResourceIterator}
+import org.neo4j.graphdb.{InputPosition, Node, Path, QueryExecutionType, Relationship, ResourceIterator}
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -143,7 +143,7 @@ case class WrappedMonitors3_0(kernelMonitors: KernelMonitors) extends Monitors {
 }
 
 trait CompatibilityFor3_0 {
-  val graph: GraphDatabaseService
+  val graph: GraphDatabaseQueryService
   val queryCacheSize: Int
   val kernelMonitors: KernelMonitors
   val kernelAPI: KernelAPI
@@ -187,14 +187,14 @@ trait CompatibilityFor3_0 {
   class ExecutionPlanWrapper(inner: ExecutionPlan_v3_0) extends ExecutionPlan {
     import org.neo4j.cypher.internal.compatibility.helpersv3_0._
 
-    private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
+    private def queryContext(graph: GraphDatabaseQueryService, txInfo: TransactionInfo) = {
       val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
       val transactionalContext = new TransactionBoundTransactionalContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
       val ctx = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
       new ExceptionTranslatingQueryContextFor3_0(ctx)
     }
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+    def run(graph: GraphDatabaseQueryService, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
       implicit val s = session
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev3_0
@@ -413,7 +413,7 @@ case class CompatibilityPlanDescriptionFor3_0(inner: InternalPlanDescription, ve
 
   def name = exceptionHandlerFor3_0.runSafely { inner.name }
 
-  def asJava: javacompat.PlanDescription = exceptionHandlerFor3_0.runSafely { asJava(self) }
+  def asJava: PlanDescription = exceptionHandlerFor3_0.runSafely { asJava(self) }
 
   override def toString: String = {
     val NL = System.lineSeparator()
@@ -422,7 +422,7 @@ case class CompatibilityPlanDescriptionFor3_0(inner: InternalPlanDescription, ve
     }
   }
 
-  def asJava(in: ExtendedPlanDescription): javacompat.PlanDescription = new javacompat.PlanDescription {
+  def asJava(in: ExtendedPlanDescription): PlanDescription = new PlanDescription {
     def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
       def getDbHits: Long = extract { case DbHits(count) => count}
 
@@ -440,7 +440,7 @@ case class CompatibilityPlanDescriptionFor3_0(inner: InternalPlanDescription, ve
 
     def getIdentifiers: util.Set[String] = identifiers.asJava
 
-    def getChildren: util.List[javacompat.PlanDescription] = in.extendedChildren.toList.map(_.asJava).asJava
+    def getChildren: util.List[PlanDescription] = in.extendedChildren.toList.map(_.asJava).asJava
 
     override def toString: String = self.toString
   }
@@ -452,7 +452,7 @@ class StringInfoLogger3_0(log: Log) extends InfoLogger {
   }
 }
 
-case class CompatibilityFor3_0Cost(graph: GraphDatabaseService,
+case class CompatibilityFor3_0Cost(graph: GraphDatabaseQueryService,
                                    config: CypherCompilerConfiguration,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
@@ -488,7 +488,7 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseService,
   override val queryCacheSize: Int = config.queryCacheSize
 }
 
-case class CompatibilityFor3_0Rule(graph: GraphDatabaseService,
+case class CompatibilityFor3_0Rule(graph: GraphDatabaseQueryService,
                                    config: CypherCompilerConfiguration,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,

@@ -30,9 +30,11 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{LabelId, PropertyKeyId, SemanticDirection, ast}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, TransactionBoundPlanContext, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundPlanContext, TransactionBoundQueryContext}
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
 import scala.collection.mutable
@@ -58,7 +60,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   ignore("do the test") {
     val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
-    val graph: GraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(path))
+    val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(new GraphDatabaseFactory().newEmbeddedDatabase(new File(path)))
     try {
       graph.createIndex(LABEL, PROPERTY)
       val results = ResultTable.empty
@@ -84,7 +86,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   ignore("cost for eagerness") {
     val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
-    val graph: GraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(path))
+    val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(new GraphDatabaseFactory().newEmbeddedDatabase(new File(path)))
     try {
       graph.createIndex(LABEL, PROPERTY)
       val results = ResultTable.empty
@@ -110,7 +112,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   ignore("hash joins") {
     val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
-    val graph: GraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(path))
+    val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(new GraphDatabaseFactory().newEmbeddedDatabase(new File(path)))
     val labels = Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
     val x = ListBuffer.empty[Array[Double]]
     val y = ListBuffer.empty[Double]
@@ -179,7 +181,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     override def toString: String = s"$numberOfRows, $elapsed"
   }
 
-  private def expandResult(graph: GraphDatabaseService) = {
+  private def expandResult(graph: GraphDatabaseQueryService) = {
     val scan = labelScan
     val scanCost = medianPerRowCount(runSimulation(graph, scan)).head
     val simulation = runSimulation(graph, expand(scan, RELATIONSHIP)).map(_.subtractTime(scanCost.elapsed))
@@ -215,15 +217,15 @@ class ActualCostCalculationTest extends CypherFunSuite {
       sorted(values.size / 2)
     }
 
-  private def runSimulation(graph: GraphDatabaseService, pipe: Pipe): Seq[DataPoint] =
+  private def runSimulation(graph: GraphDatabaseQueryService, pipe: Pipe): Seq[DataPoint] =
     runSimulation(graph, Seq(pipe))
 
   //executes the provided pipes and returns execution times
-  private def runSimulation(graph: GraphDatabaseService, pipes: Seq[Pipe]) = {
+  private def runSimulation(graph: GraphDatabaseQueryService, pipes: Seq[Pipe]) = {
     val results = new ListBuffer[DataPoint]
     graph.withTx { tx =>
 
-      val transactionalContext = new TransactionBoundTransactionalContext(graph.asInstanceOf[GraphDatabaseAPI], tx, true, graph.statement)
+      val transactionalContext = new TransactionBoundTransactionalContext(graph, tx, true, graph.statement)
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val state = QueryStateHelper.emptyWith(queryContext)
       for (x <- 0 to 25) {
@@ -241,7 +243,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     results.sortBy(_.elapsed).slice(5, results.size - 5)
   }
 
-  private def setUpDb(graph: GraphDatabaseService, chunkSize: Int) {
+  private def setUpDb(graph: GraphDatabaseQueryService, chunkSize: Int) {
     graph.withTx { _ =>
       for (i <- 1 to chunkSize) {
         val node = graph.createNode(LABEL)
@@ -253,7 +255,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   //create a database where each subsequent label is more frequent
-  private def setupDbForJoins(graph: GraphDatabaseService, labels: Seq[String]) = {
+  private def setupDbForJoins(graph: GraphDatabaseQueryService, labels: Seq[String]) = {
     val nLabels = labels.size
     //divide so that each subsequent label is more frequent,
     //e.g. [100, 200, 300,...] with 100 + 200 + 300 ~ N
@@ -282,7 +284,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def eager(pipe: Pipe) = new EagerPipe(pipe)()
 
-  private def indexSeek(graph: GraphDatabaseService) = {
+  private def indexSeek(graph: GraphDatabaseQueryService) = {
     graph.withTx { _ =>
       val ctx = new TransactionBoundPlanContext(graph.statement, graph)
       val literal = Literal(42)
@@ -296,8 +298,9 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
   }
 
-  implicit class RichGraph(graph: GraphDatabaseService) {
-    def statement = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
+  implicit class RichGraph(graph: GraphDatabaseQueryService) {
+    def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
+    val gds = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def withTx[T](f: Transaction => T): T = {
       val tx = graph.beginTx()
@@ -310,13 +313,17 @@ class ActualCostCalculationTest extends CypherFunSuite {
       }
     }
 
+    def shutdown() = gds.shutdown()
+
+    def createNode(label: Label) = gds.createNode(label)
+
     def createIndex(label: Label, propertyName: String) = {
       graph.withTx { _ =>
-        graph.schema().indexFor(label).on(propertyName).create()
+        gds.schema().indexFor(label).on(propertyName).create()
       }
 
       graph.withTx { _ =>
-        graph.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
+        gds.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
       }
     }
   }

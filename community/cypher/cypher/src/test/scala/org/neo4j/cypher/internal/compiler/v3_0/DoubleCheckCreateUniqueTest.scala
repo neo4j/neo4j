@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_0
 
 import java.lang.Iterable
-import java.net.URL
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.{CreateUniqueAction, UniqueLink}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.event.{KernelEventHandler, TransactionEventHandler}
 import org.neo4j.graphdb.index.IndexManager
@@ -48,7 +48,7 @@ getRelationships on a node, we'll create a new relationship.
 
 class DoubleCheckCreateUniqueTest extends CypherFunSuite {
   var done = false
-  val db = new Wrapper(new TestGraphDatabaseFactory().newImpermanentDatabase().asInstanceOf[GraphDatabaseAPI])
+  val db = new Wrapper(new TestGraphDatabaseFactory().newImpermanentDatabase())
   var tx:Transaction = null
 
   test("double_check_unique") {
@@ -97,80 +97,13 @@ class DoubleCheckCreateUniqueTest extends CypherFunSuite {
   }
 }
 
-class Wrapper(delegate: GraphDatabaseAPI) extends GraphDatabaseAPI
-{
+class Wrapper(graph: GraphDatabaseService) extends GraphDatabaseCypherService(graph) {
   var afterGetRelationship: Node => Unit = (n) => {}
 
   override def createNode(): Node = {
-    val n = delegate.createNode()
+    val n = graph.createNode()
     new PausingNode(n, afterGetRelationship)
   }
-
-  override def createNode(labels: Label*): Node = delegate.createNode(labels:_*)
-
-  override def shutdown(): Unit = delegate.shutdown()
-
-  override def findNodesByLabelAndProperty(label: Label, key: String, value: scala.Any): ResourceIterable[Node] =
-    delegate.findNodesByLabelAndProperty(label, key, value)
-
-  override def registerKernelEventHandler(handler: KernelEventHandler): KernelEventHandler =
-    delegate.registerKernelEventHandler(handler)
-
-  override def unregisterTransactionEventHandler[T](handler: TransactionEventHandler[T]): TransactionEventHandler[T] =
-    delegate.unregisterTransactionEventHandler(handler)
-
-  override def getAllNodes: ResourceIterable[Node] = delegate.getAllNodes
-
-  override def getRelationshipById(id: Long): Relationship = delegate.getRelationshipById(id)
-
-  override def findNode(label: Label, key: String, value: scala.Any): Node = findNode(label, key, value)
-
-  override def execute(query: String): Result = delegate.execute(query)
-
-  override def execute(query: String, parameters: util.Map[String, AnyRef]): Result =
-    delegate.execute(query, parameters)
-
-  override def unregisterKernelEventHandler(handler: KernelEventHandler): KernelEventHandler =
-    delegate.unregisterKernelEventHandler(handler)
-
-  override def registerTransactionEventHandler[T](handler: TransactionEventHandler[T]): TransactionEventHandler[T] =
-    delegate.registerTransactionEventHandler(handler)
-
-  override def getAllRelationshipTypes: ResourceIterable[RelationshipType] = delegate.getAllRelationshipTypes
-
-  override def getAllRelationships: ResourceIterable[Relationship] = delegate.getAllRelationships
-
-  override def getAllPropertyKeys: ResourceIterable[String] = delegate.getAllPropertyKeys
-
-  override def getAllLabels: ResourceIterable[Label] = delegate.getAllLabels
-
-  override def traversalDescription(): TraversalDescription = delegate.traversalDescription()
-
-  override def index(): IndexManager = delegate.index()
-
-  override def getNodeById(id: Long): Node = delegate.getNodeById(id)
-
-  override def isAvailable(timeout: Long): Boolean = delegate.isAvailable(timeout)
-
-  override def schema(): Schema = delegate.schema()
-
-  override def findNodes(label: Label, key: String, value: scala.Any): ResourceIterator[Node] =
-    delegate.findNodes(label, key, value)
-
-  override def findNodes(label: Label): ResourceIterator[Node] = delegate.findNodes(label)
-
-  override def bidirectionalTraversalDescription(): BidirectionalTraversalDescription =
-    delegate.bidirectionalTraversalDescription()
-
-  override def beginTx(): Transaction = delegate.beginTx()
-
-  override def getDependencyResolver: DependencyResolver = delegate.getDependencyResolver
-
-  override def storeId(): StoreId = delegate.storeId()
-
-  override def validateURLAccess(url: URL): URL = delegate.validateURLAccess(url)
-
-  override def getStoreDir: String = delegate.getStoreDir
 }
 
 class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {

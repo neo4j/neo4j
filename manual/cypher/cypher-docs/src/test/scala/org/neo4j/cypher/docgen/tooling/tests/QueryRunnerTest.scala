@@ -24,6 +24,7 @@ import org.neo4j.cypher.docgen.tooling._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -57,7 +58,7 @@ class QueryRunnerTest extends CypherFunSuite {
     run(Seq(query), new TablePlaceHolder(assertions))
 
   private def run(initQueries: Seq[String], content: QueryResultPlaceHolder): TestRunResult = {
-    val formatter = (_: GraphDatabaseService, _: Transaction) => (_: InternalExecutionResult) => NoContent
+    val formatter = (_: GraphDatabaseQueryService, _: Transaction) => (_: InternalExecutionResult) => NoContent
     val runner = new QueryRunner(formatter)
     runner.runQueries(contentsWithInit = Seq(ContentWithInit(initQueries, content)), "title")
   }

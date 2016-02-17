@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.spi.v3_0
 
 import org.neo4j.cypher.internal.compiler.v3_0.spi.TransactionalContext
 import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
-case class TransactionBoundTransactionalContext(graph: GraphDatabaseAPI, initialTx: Transaction,
-                                                val isTopLevelTx: Boolean, initialStatement: Statement) extends TransactionalContext[GraphDatabaseAPI, Statement, TxStateHolder] {
+case class TransactionBoundTransactionalContext(graph: GraphDatabaseQueryService, initialTx: Transaction,
+                                                val isTopLevelTx: Boolean, initialStatement: Statement)
+  extends TransactionalContext[GraphDatabaseQueryService, Statement, TxStateHolder] {
   private var tx = initialTx
   private var open = true
   private var _statement = initialStatement

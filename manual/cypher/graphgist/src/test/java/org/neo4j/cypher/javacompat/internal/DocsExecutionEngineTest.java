@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -34,21 +33,21 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class DocsExecutionEngineTest
 {
-    private static GraphDatabaseService database;
+    private static GraphDatabaseCypherService database;
     private static DocsExecutionEngine engine;
 
     @Before
     public void setup()
     {
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        database = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();
+        database = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase());
         engine = new DocsExecutionEngine( database );
     }
 
     @After
     public void teardown()
     {
-        database.shutdown();
+        database.getGraphDatabaseService().shutdown();
     }
 
     @Test

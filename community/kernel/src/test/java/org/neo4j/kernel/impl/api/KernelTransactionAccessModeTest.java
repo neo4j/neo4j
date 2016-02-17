@@ -26,6 +26,7 @@ import org.junit.rules.ExpectedException;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransactionTestBase;
+import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
 
 import static org.junit.Assert.assertNotNull;
@@ -63,6 +64,34 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     }
 
     @Test
+    public void shouldNotAllowSchemaWriteAccessInWriteMode() throws Throwable
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction();
+        tx.setMode( AccessMode.WRITE );
+
+        // Expect
+        exception.expect( KernelException.class );
+
+        // When
+        tx.acquireStatement().schemaWriteOperations();
+    }
+
+    @Test
+    public void shouldAllowWritesInWriteMode() throws Throwable
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction();
+        tx.setMode( AccessMode.WRITE );
+
+        // When
+        DataWriteOperations writes = tx.acquireStatement().dataWriteOperations();
+
+        // Then
+        assertNotNull( writes );
+    }
+
+    @Test
     public void shouldAllowWritesInFullMode() throws Throwable
     {
         // Given
@@ -77,14 +106,14 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     }
 
     @Test
-    public void shoulAllowSchemaWriteAccessInFullMode() throws Throwable
+    public void shouldAllowSchemaWriteAccessInFullMode() throws Throwable
     {
         // Given
         KernelTransactionImplementation tx = newTransaction();
         tx.setMode( AccessMode.FULL );
 
         // When
-        DataWriteOperations writes = tx.acquireStatement().dataWriteOperations();
+        SchemaWriteOperations writes = tx.acquireStatement().schemaWriteOperations();
 
         // Then
         assertNotNull( writes );

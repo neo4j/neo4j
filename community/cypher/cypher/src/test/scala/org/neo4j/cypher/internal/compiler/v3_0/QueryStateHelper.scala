@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_0
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalCSVResource, NullPipeDecorator, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.graphdb.Transaction
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -34,11 +34,11 @@ import scala.collection.mutable
 object QueryStateHelper {
   def empty: QueryState = newWith()
 
-  def newWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalCSVResource = null,
-                params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator) =
+  def newWith(db: GraphDatabaseQueryService = null, query: QueryContext = null, resources: ExternalCSVResource = null,
+              params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator) =
     new QueryState(query = query, resources = resources, params = params, decorator = decorator, triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
 
-  def queryStateFrom(db: GraphDatabaseAPI, tx: Transaction, params: Map[String, Any] = Map.empty): QueryState = {
+  def queryStateFrom(db: GraphDatabaseQueryService, tx: Transaction, params: Map[String, Any] = Map.empty): QueryState = {
     val statement: Statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val searchMonitor = new KernelMonitors().newMonitor(classOf[IndexSearchMonitor])
     val transactionalContext = new TransactionBoundTransactionalContext(db, tx, true, statement)
