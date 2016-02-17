@@ -35,10 +35,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
-import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
@@ -68,10 +67,14 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.KernelEventHandlers;
+import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
+import static org.neo4j.kernel.api.proc.CallableProcedure.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
@@ -330,7 +333,16 @@ public class DataSourceModule
         ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platform.config, platform.storeDir, platform.dependencies, storeId, this.queryExecutor, coreAPIAvailabilityGuard, platform.urlAccessRule );
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply );
 
+        // Below components are not public API, but are made available for internal
+        // procedures to call, and to provide temporary workarounds for the following
+        // patterns:
+        //  - Batch-transaction imports (GDAPI, needs to be real and passed to background processing threads)
+        //  - Group-transaction writes (same pattern as above, but rather than splitting large transactions,
+        //                              combine lots of small ones)
+        //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
         procedures.registerComponent( DependencyResolver.class, (ctx) -> platform.dependencies );
+        procedures.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ) );
+        procedures.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> platform.graphDatabaseFacade );
 
         return procedures;
     }

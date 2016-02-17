@@ -301,10 +301,7 @@ public abstract class Service
                             }
                             catch ( Throwable e )
                             {
-                                if ( printServiceLoaderStackTraces )
-                                {
-                                    e.printStackTrace();
-                                }
+                                e.printStackTrace();
                             }
                         }
                         return null;

@@ -118,7 +118,7 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
     public GraphDatabaseDependencies kernelExtensions( Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses,
-                addAll( new ArrayList<KernelExtensionFactory<?>>(), kernelExtensions ),
+                addAll( new ArrayList<>(), kernelExtensions ),
                 urlAccessRules, queryEngineProviders );
     }
 

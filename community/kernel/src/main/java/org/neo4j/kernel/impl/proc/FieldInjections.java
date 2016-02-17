@@ -26,7 +26,6 @@ import java.lang.reflect.Modifier;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.function.ThrowingFunction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -51,20 +50,20 @@ public class FieldInjections
     {
         private final Field field;
         private final MethodHandle setter;
-        private final ThrowingFunction<CallableProcedure.Context, ?, ProcedureException> supplier;
+        private final ComponentRegistry.Provider<?> provider;
 
-        public FieldSetter( Field field, MethodHandle setter, ThrowingFunction<CallableProcedure.Context, ?,ProcedureException> supplier )
+        public FieldSetter( Field field, MethodHandle setter, ComponentRegistry.Provider<?> provider )
         {
             this.field = field;
             this.setter = setter;
-            this.supplier = supplier;
+            this.provider = provider;
         }
 
         void apply( CallableProcedure.Context ctx, Object object ) throws ProcedureException
         {
             try
             {
-                setter.invoke( object, supplier.apply( ctx ) );
+                setter.invoke( object, provider.apply( ctx ) );
             }
             catch ( Throwable e )
             {
@@ -115,8 +114,8 @@ public class FieldInjections
     {
         try
         {
-            ThrowingFunction<CallableProcedure.Context, ?,ProcedureException> supplier = components.supplierFor( field.getType() );
-            if( supplier == null )
+            ComponentRegistry.Provider<?> provider = components.providerFor( field.getType() );
+            if( provider == null )
             {
                 throw new ProcedureException( Status.Procedure.FailedRegistration,
                         "Unable to set up injection for procedure `%s`, the field `%s` " +
@@ -125,7 +124,7 @@ public class FieldInjections
             }
 
             MethodHandle setter = MethodHandles.lookup().unreflectSetter( field );
-            return new FieldSetter( field, setter, supplier );
+            return new FieldSetter( field, setter, provider );
         }
         catch ( IllegalAccessException e )
         {
@@ -140,7 +139,7 @@ public class FieldInjections
         if( !field.isAnnotationPresent( Context.class ) )
         {
             throw new ProcedureException(  Status.Procedure.FailedRegistration,
-                    "Field `%s` on `%s` is not annotated as a @Resource and is not static. " +
+                    "Field `%s` on `%s` is not annotated as a @"+Context.class.getSimpleName()+" and is not static. " +
                     "If you want to store state along with your procedure, please use a static field.",
                     field.getName(), cls.getSimpleName() );
         }

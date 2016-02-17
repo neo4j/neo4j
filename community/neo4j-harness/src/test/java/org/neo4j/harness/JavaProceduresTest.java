@@ -25,6 +25,12 @@ import org.junit.Test;
 
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
@@ -60,6 +66,60 @@ public class JavaProceduresTest
         }
     }
 
+    public static class MyProceduresUsingMyService
+    {
+        public static class OutputRecord
+        {
+            public String result;
+        }
+
+        @Context
+        public SomeService service;
+
+        @Procedure("hello")
+        public Stream<OutputRecord> hello()
+        {
+            OutputRecord t = new OutputRecord();
+            t.result = service.hello();
+            return Stream.of( t );
+        }
+    }
+
+    public static class SomeService
+    {
+        public String hello()
+        {
+            return "world";
+        }
+    }
+
+    // This ensures a non-public mechanism for adding new context components
+    // to Procedures is testable via Harness. While this is not public API,
+    // this is a vital mechanism to cover use cases Procedures need to cover,
+    // and is in place as an approach that should either eventually be made
+    // public, or the relevant use cases addressed in other ways.
+    public static class MyExtensionThatAddsInjectable
+            extends KernelExtensionFactory<MyExtensionThatAddsInjectable.Dependencies>
+    {
+        public MyExtensionThatAddsInjectable()
+        {
+            super( "my-ext" );
+        }
+
+        @Override
+        public Lifecycle newInstance( KernelContext context,
+                Dependencies dependencies ) throws Throwable
+        {
+            dependencies.procedures().registerComponent( SomeService.class, (ctx) -> new SomeService() );
+            return new LifecycleAdapter();
+        }
+
+        public interface Dependencies
+        {
+            Procedures procedures();
+        }
+    }
+
     @Test
     public void shouldLaunchWithDeclaredProcedures() throws Exception
     {
@@ -73,6 +133,7 @@ public class JavaProceduresTest
             JsonNode result = response.get( "results" ).get( 0 );
             assertEquals( "someNumber", result.get( "columns" ).get( 0 ).asText() );
             assertEquals( 1337, result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).asInt() );
+            assertEquals( "[]", response.get( "errors" ).toString() );
         }
     }
 
@@ -88,6 +149,23 @@ public class JavaProceduresTest
 
             String error = response.get( "errors" ).get( 0 ).get( "message" ).asText();
             assertEquals( "Failed to invoke procedure `org.neo4j.harness.procThatThrows`: This is an exception", error );
+        }
+    }
+
+    @Test
+    public void shouldWorkWithInjectableFromKernelExtension() throws Throwable
+    {
+        // When
+        try(ServerControls server = TestServerBuilders.newInProcessBuilder().withProcedure( MyProceduresUsingMyService.class ).newServer())
+        {
+            // Then
+            HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
+                    quotedJson( "{ 'statements': [ { 'statement': 'CALL hello' } ] }" ) );
+
+            JsonNode result = response.get( "results" ).get( 0 );
+            assertEquals( "result", result.get( "columns" ).get( 0 ).asText() );
+            assertEquals( "world", result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).asText() );
+            assertEquals( "[]", response.get( "errors" ).toString() );
         }
     }
 }
