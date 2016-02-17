@@ -31,14 +31,13 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, plans}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, TransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_0.symbols
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundTransactionalContext
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
 import org.neo4j.test.TestGraphDatabaseFactory
 
@@ -55,17 +54,14 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
       ScanAllNodes("OP1"), AcceptVisitor("OP2", Map("n" -> projectNode)))),
       Seq("n"), Map("OP1" -> id1, "OP2" -> id2, "X" -> new Id()))
 
-    val statement = mock[Statement]
-    val queryContext = mock[QueryContext]
-    val transactionalContext = mock[TransactionalContext[GraphDatabaseQueryService,Statement,TxStateHolder]]
-    when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext[queryContext.Graph, queryContext.KernelStatement, queryContext.StateView]])
-    when(transactionalContext.statement).thenReturn(statement)
-
     val readOps = mock[ReadOperations]
     val entityAccessor = mock[NodeManager]
+    val queryContext = mock[QueryContext]
+    val transactionalContext = mock[TransactionBoundTransactionalContext]
+    when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext])
+    when(transactionalContext.readOperations).thenReturn(readOps)
     when(entityAccessor.newNodeProxyById(anyLong())).thenReturn(mock[NodeProxy])
     when(queryContext.entityAccessor).thenReturn(entityAccessor.asInstanceOf[queryContext.EntityAccessor])
-    when(statement.readOperations()).thenReturn(readOps)
     when(readOps.nodesGetAll()).thenReturn(new PrimitiveLongIterator {
       private var counter = 0
 

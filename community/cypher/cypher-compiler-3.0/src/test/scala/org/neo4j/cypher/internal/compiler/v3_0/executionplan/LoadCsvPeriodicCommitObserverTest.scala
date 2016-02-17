@@ -26,14 +26,10 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.txstate.TxStateHolder
-
 class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   var resourceUnderTest: LoadCsvPeriodicCommitObserver = _
-  var transactionalContext: TransactionalContext[_,_,_] = _
+  var transactionalContext: TransactionalContext = _
   var resource: ExternalCSVResource = _
   val url: URL = new URL("file:///tmp/something.csv")
 
@@ -77,8 +73,8 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   override protected def beforeEach() {
     val queryContext = mock[QueryContext]
-    transactionalContext = mock[TransactionalContext[GraphDatabaseAPI, Statement, TxStateHolder]]
-    when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext[queryContext.Graph,queryContext.KernelStatement, queryContext.StateView]])
+    transactionalContext = mock[TransactionalContext]
+    when(queryContext.transactionalContext).thenReturn(transactionalContext)
     resource = mock[ExternalCSVResource]
     resourceUnderTest = new LoadCsvPeriodicCommitObserver(1, resource, queryContext)
   }

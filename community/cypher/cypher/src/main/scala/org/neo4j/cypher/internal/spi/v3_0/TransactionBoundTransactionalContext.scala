@@ -28,16 +28,17 @@ import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
 case class TransactionBoundTransactionalContext(graph: GraphDatabaseQueryService, initialTx: Transaction,
-                                                val isTopLevelTx: Boolean, initialStatement: Statement)
-  extends TransactionalContext[GraphDatabaseQueryService, Statement, TxStateHolder] {
+                                                val isTopLevelTx: Boolean, initialStatement: Statement) extends TransactionalContext {
   private var tx = initialTx
   private var open = true
   private var _statement = initialStatement
   private val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
 
-  override def statement = _statement
+  def statement = _statement
 
-  override def isOpen = open
+  override def readOperations = statement.readOperations()
+
+  def isOpen = open
 
   override def close(success: Boolean): Unit = {
     try {
@@ -62,12 +63,12 @@ case class TransactionBoundTransactionalContext(graph: GraphDatabaseQueryService
     _statement = txBridge.get()
   }
 
-  override def newContext() = {
+  def newContext() = {
     val isTopLevelTx = !txBridge.hasTransaction
     val tx = graph.beginTx()
     val statement = txBridge.get()
     new TransactionBoundTransactionalContext(graph, tx, isTopLevelTx, statement)
   }
 
-  override def stateView: TxStateHolder = statement.asInstanceOf[KernelStatement]
+  def stateView: TxStateHolder = statement.asInstanceOf[KernelStatement]
 }

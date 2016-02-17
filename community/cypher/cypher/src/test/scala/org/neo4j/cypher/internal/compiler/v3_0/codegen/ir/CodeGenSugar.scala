@@ -27,16 +27,15 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilde
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, GraphStatistics, InternalResultRow, InternalResultVisitor, PlanContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, InternalResultRow, InternalResultVisitor, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, GeneratedQueryStructure, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundQueryContext, TransactionBoundTransactionalContext}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.scalatest.mock.MockitoSugar
 
@@ -128,9 +127,9 @@ trait CodeGenSugar extends MockitoSugar {
 
   private def mockQueryContext() = {
     val qc = mock[QueryContext]
-    val transactionalContext = mock[TransactionalContext[GraphDatabaseQueryService, Statement, TxStateHolder]]
+    val transactionalContext = mock[TransactionBoundTransactionalContext]
     val statement = mock[Statement]
-    when(qc.transactionalContext).thenReturn(transactionalContext.asInstanceOf[TransactionalContext[qc.Graph, qc.KernelStatement, qc.StateView]])
+    when(qc.transactionalContext).thenReturn(transactionalContext)
     when(transactionalContext.statement).thenReturn(statement)
 
     qc

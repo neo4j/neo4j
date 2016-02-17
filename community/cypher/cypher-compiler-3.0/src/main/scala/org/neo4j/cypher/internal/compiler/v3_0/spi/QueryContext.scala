@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, K
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -44,17 +45,12 @@ import scala.collection.Iterator
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
 trait QueryContext extends TokenContext {
-  type Graph
-
-  type KernelStatement
 
   type EntityAccessor
 
-  type StateView
-
   def entityAccessor: EntityAccessor
 
-  def transactionalContext: TransactionalContext[Graph,KernelStatement,StateView]
+  def transactionalContext: TransactionalContext
 
   def nodeOps: Operations[Node]
 
@@ -194,13 +190,7 @@ trait Operations[T <: PropertyContainer] {
   def releaseExclusiveLock(obj: Long): Unit
 }
 
-trait TransactionalContext[Graph,KernelStatement,StateView] {
-
-  def newContext(): TransactionalContext[Graph,KernelStatement,StateView]
-
-  def statement: KernelStatement
-
-  def isOpen: Boolean
+trait TransactionalContext {
 
   def isTopLevelTx: Boolean
 
@@ -208,7 +198,6 @@ trait TransactionalContext[Graph,KernelStatement,StateView] {
 
   def commitAndRestartTx()
 
-  def graph: Graph
-
-  def stateView: StateView
+  // this should not be here, but it is needed by the code generation
+  def readOperations: ReadOperations
 }
