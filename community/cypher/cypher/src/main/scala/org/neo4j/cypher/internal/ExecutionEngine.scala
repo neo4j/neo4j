@@ -26,9 +26,11 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaResultValueConverter
 import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.v3_0.{LRUCache => LRUCachev3_0, _}
+import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
@@ -90,9 +92,8 @@ class ExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider
   def profile(query: String, params: Map[String, Any],session: QuerySession): ExtendedExecutionResult = {
     val javaParams = javaValues.asDeepJavaResultMap(params).asInstanceOf[JavaMap[String, AnyRef]]
     executionMonitor.startQueryExecution(session, query, javaParams)
-
-    val (preparedPlanExecution, txInfo) = planQuery(query)
-    preparedPlanExecution.profile(graph, txInfo, params, session)
+    val (preparedPlanExecution, transactionalContext) = planQuery(query)
+    preparedPlanExecution.profile(transactionalContext, params, session)
   }
 
   @throws(classOf[SyntaxException])
@@ -117,8 +118,8 @@ class ExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider
   def execute(query: String, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
     val javaParams = javaValues.asDeepJavaResultMap(params).asInstanceOf[JavaMap[String, AnyRef]]
     executionMonitor.startQueryExecution(session, query, javaParams)
-    val (preparedPlanExecution, txInfo) = planQuery(query)
-    preparedPlanExecution.execute(graph, txInfo, params, session)
+    val (preparedPlanExecution, transactionalContext) = planQuery(query)
+    preparedPlanExecution.execute(transactionalContext, params, session)
   }
 
   @throws(classOf[SyntaxException])
@@ -140,7 +141,7 @@ class ExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider
     preParsedQueries.getOrElseUpdate(queryText, compiler.preParseQuery(queryText))
 
   @throws(classOf[SyntaxException])
-  protected def planQuery(queryText: String): (PreparedPlanExecution, TransactionInfo) = {
+  protected def planQuery(queryText: String): (PreparedPlanExecution, ExtendedTransactionalContext) = {
     val phaseTracer = compilationTracer.compileQuery(queryText)
     try {
 
@@ -152,14 +153,12 @@ class ExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider
       while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
         // create transaction and query context
         var touched = false
-        val isTopLevelTx = !txBridge.hasTransaction
-        val tx = graph.beginTx()
-        val kernelStatement = txBridge.get()
+        val tc = TransactionContextFactory.open(graph,txBridge)
 
         val (plan: ExecutionPlan, extractedParameters) = try {
           // fetch plan cache
-          val cache: LRUCachev3_0[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(kernelStatement, {
-            cacheMonitor.cacheFlushDetected(kernelStatement)
+          val cache: LRUCachev3_0[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(tc.readOperations, {
+            cacheMonitor.cacheFlushDetected(tc.statement)
             new LRUCachev3_0[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
           })
 
@@ -167,10 +166,10 @@ class ExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider
             cacheAccessor.getOrElseUpdate(cache)(cacheKey, {
               touched = true
               val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
-              parsedQuery.plan(kernelStatement, phaseTracer)
+              parsedQuery.plan(tc, phaseTracer)
             })
           }.flatMap { case (candidatePlan, params) =>
-            if (!touched && candidatePlan.isStale(lastCommittedTxId, kernelStatement)) {
+            if (!touched && candidatePlan.isStale(lastCommittedTxId, tc)) {
               cacheAccessor.remove(cache)(cacheKey, queryText)
               None
             } else {
@@ -179,23 +178,15 @@ class ExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider
           }.next()
         } catch {
           case (t: Throwable) =>
-            kernelStatement.close()
-            tx.failure()
-            tx.close()
+            tc.close(success = false)
             throw t
         }
 
         if (touched) {
-          kernelStatement.close()
-          tx.success()
-          tx.close()
+          tc.close(success = true)
         } else {
-          // close the old statement reference after the statement has been "upgraded"
-          // to either a schema data or a schema statement, so that the locks are "handed over".
-          kernelStatement.close()
-          val preparedPlanExecution = PreparedPlanExecution(plan, executionMode, extractedParameters)
-          val txInfo = TransactionInfo(tx, isTopLevelTx, txBridge.get())
-          return (preparedPlanExecution, txInfo)
+          tc.cleanForReuse()
+          return (PreparedPlanExecution(plan, executionMode, extractedParameters), tc)
         }
 
         n += 1
@@ -207,11 +198,11 @@ class ExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider
 
   private val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
 
-  private def getOrCreateFromSchemaState[V](statement: api.Statement, creator: => V) = {
+  private def getOrCreateFromSchemaState[V](operations: ReadOperations, creator: => V) = {
     val javaCreator = new java.util.function.Function[ExecutionEngine, V]() {
       def apply(key: ExecutionEngine) = creator
     }
-    statement.readOperations().schemaStateGetOrCreate(this, javaCreator)
+    operations.schemaStateGetOrCreate(this, javaCreator)
   }
 
   def prettify(query: String): String = Prettifier(query)

@@ -23,6 +23,7 @@ import java.io.{File, FileWriter}
 import java.text.NumberFormat
 import java.util.{Date, Locale}
 
+import org.neo4j.cypher.internal.Neo4jTransactionContext
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
@@ -32,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
-import org.neo4j.cypher.internal.spi.TransactionBoundTransactionalContext
+import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
@@ -539,13 +540,14 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
   private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseQueryService): (List[Map[String, Any]], InternalExecutionResult) = {
     val (plan: ExecutionPlan, parameters) = db.withTx {
       tx =>
-        val planContext = new TransactionBoundPlanContext(db.statement, db)
+        val transactionalContext = new Neo4jTransactionContext(db, tx, true, db.statement)
+        val planContext = new TransactionBoundPlanContext(transactionalContext, db)
         compiler.planQuery(query, planContext, devNullLogger)
     }
 
     db.withTx {
       tx =>
-        val transactionalContext = new TransactionBoundTransactionalContext(db, tx, true, db.statement)
+        val transactionalContext = new Neo4jTransactionContext(db, tx, true, db.statement)
         val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
         val result = plan.run(queryContext, ProfileMode, parameters)
         (result.toList, result)

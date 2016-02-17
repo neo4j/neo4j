@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.codegen.ir
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.Neo4jTransactionContext
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.{Namer, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
@@ -30,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, InternalResultRow, InternalResultVisitor, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
-import org.neo4j.cypher.internal.spi.TransactionBoundTransactionalContext
+import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.GraphDatabaseService
@@ -68,7 +69,7 @@ trait CodeGenSugar extends MockitoSugar {
     val tx = graphDb.beginTx()
     try {
       val statement = graphDb.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-      val transactionalContext = new TransactionBoundTransactionalContext(graphDb, tx, true, statement)
+      val transactionalContext = new Neo4jTransactionContext(graphDb, tx, true, statement)
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val result = plan.executionResultBuilder(queryContext, mode, tracer(mode), params, taskCloser)
       tx.success()
@@ -128,7 +129,7 @@ trait CodeGenSugar extends MockitoSugar {
 
   private def mockQueryContext() = {
     val qc = mock[QueryContext]
-    val transactionalContext = mock[TransactionBoundTransactionalContext]
+    val transactionalContext = mock[ExtendedTransactionalContext]
     val statement = mock[Statement]
     when(qc.transactionalContext).thenReturn(transactionalContext)
     when(transactionalContext.statement).thenReturn(statement)
