@@ -67,10 +67,6 @@ class ScenarioClassifier {
               val query = definition.getArguments.get(0).getVal
               val tags = QueryTagger(query)
               Run(query, tags, None, docString)
-            case RUNNING_QUERY =>
-              val query = definition.getArguments.get(0).getVal
-              val tags = QueryTagger(query)
-              Run(query, tags, None, docString)
             case RUNNING_PARAMETRIZED_QUERY =>
               val query = definition.getArguments.get(0).getVal
               val converter = new TableConverter(streams.get(i18n.getLocale), null)

@@ -57,6 +57,8 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
     initEmpty()
   }
 
+
+
   After() { _ =>
     // TODO: postpone this till the last scenario
     graph.shutdown()
@@ -88,11 +90,6 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
   }
 
   When(EXECUTING_QUERY) { (query: String) =>
-    result = graph.execute(query)
-  }
-
-  When(RUNNING_QUERY) { (query: String) =>
-    assert(!query.contains("cypher"), "init query should do specify pre parser options")
     result = graph.execute(query)
   }
 
@@ -165,14 +162,12 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
     }
   }
 
-
 }
 
 object GlueSteps {
 
   val INIT_DB = """^init: (.*)$"""
   val USING_DB = """^using: (.*)$"""
-  val RUNNING_QUERY = """^running: (.*)$"""
   val RUNNING_PARAMETRIZED_QUERY = """^running parametrized: (.*)$"""
   val RESULT = """^(sorted )?result:$"""
   val ANY = """^any graph$"""
