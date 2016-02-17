@@ -21,11 +21,11 @@ package org.neo4j.coreedge.raft.replication.tx;
 
 import java.util.concurrent.TimeUnit;
 
-public class ExpontentialBackoffStrategy implements RetryStrategy
+public class ExponentialBackoffStrategy implements RetryStrategy
 {
     private final long initialBackoffTimeMillis;
 
-    public ExpontentialBackoffStrategy( long initialBackoffTime, TimeUnit timeUnit )
+    public ExponentialBackoffStrategy( long initialBackoffTime, TimeUnit timeUnit )
     {
         initialBackoffTimeMillis = timeUnit.toMillis( initialBackoffTime );
     }

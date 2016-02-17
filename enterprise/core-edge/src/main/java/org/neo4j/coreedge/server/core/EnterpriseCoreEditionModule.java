@@ -64,7 +64,7 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedPropertyKeyTokenHolde
 import org.neo4j.coreedge.raft.replication.token.ReplicatedRelationshipTypeTokenHolder;
 import org.neo4j.coreedge.raft.replication.tx.CommittingTransactions;
 import org.neo4j.coreedge.raft.replication.tx.CommittingTransactionsRegistry;
-import org.neo4j.coreedge.raft.replication.tx.ExpontentialBackoffStrategy;
+import org.neo4j.coreedge.raft.replication.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionCommitProcess;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.coreedge.raft.roles.Role;
@@ -386,7 +386,7 @@ public class EnterpriseCoreEditionModule
             stateMachines.add( replicatedTxStateMachine );
 
             return new ReplicatedTransactionCommitProcess( replicator, localSessionPool,
-                    new ExpontentialBackoffStrategy( 10, TimeUnit.SECONDS ), logging, committingTransactions, monitors
+                    new ExponentialBackoffStrategy( 10, TimeUnit.SECONDS ), logging, committingTransactions, monitors
             );
         };
     }

@@ -25,7 +25,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.junit.Assert.assertEquals;
 
-public class ExpontentialBackoffStrategyTest
+public class ExponentialBackoffStrategyTest
 {
     private static final int NUMBER_OF_ACCESSES = 5;
 
@@ -33,7 +33,7 @@ public class ExpontentialBackoffStrategyTest
     public void shouldDoubleEachTime() throws Exception
     {
         // given
-        ExpontentialBackoffStrategy strategy = new ExpontentialBackoffStrategy( 1, MILLISECONDS );
+        ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, MILLISECONDS );
         RetryStrategy.Timeout timeout = strategy.newTimeout();
 
         // when
@@ -50,7 +50,7 @@ public class ExpontentialBackoffStrategyTest
     public void shouldProvidePreviousTimeout() throws Exception
     {
         // given
-        ExpontentialBackoffStrategy strategy = new ExpontentialBackoffStrategy( 1, MILLISECONDS );
+        ExponentialBackoffStrategy strategy = new ExponentialBackoffStrategy( 1, MILLISECONDS );
         RetryStrategy.Timeout timeout = strategy.newTimeout();
 
         // when

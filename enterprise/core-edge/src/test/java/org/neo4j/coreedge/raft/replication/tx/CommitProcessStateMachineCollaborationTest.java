@@ -82,7 +82,7 @@ public class CommitProcessStateMachineCollaborationTest
         stateMachines.add( stateMachine );
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
-                replicator, sessionPool, new ExpontentialBackoffStrategy( 10, SECONDS ),
+                replicator, sessionPool, new ExponentialBackoffStrategy( 10, SECONDS ),
                 NullLogService.getInstance(), txFutures, new Monitors() );
 
         // when
@@ -114,7 +114,7 @@ public class CommitProcessStateMachineCollaborationTest
         stateMachines.add( stateMachine );
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
-                replicator, sessionPool, new ExpontentialBackoffStrategy( 10, SECONDS ),
+                replicator, sessionPool, new ExponentialBackoffStrategy( 10, SECONDS ),
                 NullLogService.getInstance(), txFutures, new Monitors() );
 
         // when
