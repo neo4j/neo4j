@@ -51,13 +51,14 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
   var graph: GraphDatabaseService = null
 
   private def initEmpty() =
-    graph = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase()
+    if (graph == null || !graph.isAvailable(1L)) {
+      val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+      graph = loadConfig(builder).newGraphDatabase()
+    }
 
   Before() { _ =>
     initEmpty()
   }
-
-
 
   After() { _ =>
     // TODO: postpone this till the last scenario
@@ -69,24 +70,17 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
     graph = loadConfig(builder).newGraphDatabase()
   }
 
-  Given(INIT_DB) { (initQuery: String) =>
-    val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-    graph = loadConfig(builder).newGraphDatabase()
-    assert(!initQuery.contains("cypher"), "init query should do specify pre parser options")
-    // init update queries should go with rule+interpreted regardless the database configuration
-    graph.execute(s"cypher planner=rule runtime=interpreted $initQuery")
-  }
-
-  Given(INIT_QUERY) { (initQuery: String) =>
-    val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-    graph = loadConfig(builder).newGraphDatabase()
-    assert(!initQuery.contains("cypher"), "init query should do specify pre parser options")
-    // init update queries should go with rule+interpreted regardless the database configuration
-    graph.execute(s"cypher planner=rule runtime=interpreted $initQuery")
-  }
-
   Given(ANY) {
-    if (graph == null) initEmpty()
+    initEmpty()
+  }
+
+  Given(EMPTY) {
+    initEmpty()
+  }
+
+  And(INIT_QUERY) { (query: String) =>
+    // side effects are necessary for setting up graph state
+    graph.execute(query)
   }
 
   When(EXECUTING_QUERY) { (query: String) =>
@@ -166,15 +160,23 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
 
 object GlueSteps {
 
-  val INIT_DB = """^init: (.*)$"""
   val USING_DB = """^using: (.*)$"""
   val RUNNING_PARAMETRIZED_QUERY = """^running parametrized: (.*)$"""
   val RESULT = """^(sorted )?result:$"""
-  val ANY = """^any graph$"""
-  val INIT_QUERY = """^the graph after having executed: (.*)$"""
-  val EXECUTING_QUERY = """^executing query: (.*)$"""
-  val EXPECT_RESULT = """^the result should be:$"""
+  // new constants:
 
+  // for Given
+  val ANY = "^any graph$"
+  val EMPTY = "^an empty graph$"
+
+  // for And
+  val INIT_QUERY = "^having executed: (.*)$"
+
+  // for When
+  val EXECUTING_QUERY = "^executing query: (.*)$"
+
+  // for Then
+  val EXPECT_RESULT = "^the result should be:$"
 
 }
 

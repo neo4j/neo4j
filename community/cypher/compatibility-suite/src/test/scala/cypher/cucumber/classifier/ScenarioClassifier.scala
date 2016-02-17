@@ -57,9 +57,6 @@ class ScenarioClassifier {
           definition.getPattern match {
             case ANY =>
               Init("", docString)
-            case INIT_DB =>
-              val query = definition.getArguments.get(0).getVal
-              Init(query, docString)
             case USING_DB =>
               val databaseName = definition.getArguments.get(0).getVal
               Using(databaseName, docString)

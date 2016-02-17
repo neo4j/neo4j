@@ -35,7 +35,8 @@ Feature: ReturnAcceptanceTest
       |  |
 
   Scenario: should limit to two hits
-    Given init: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
+    Given an empty graph
+      And having executed: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
     When executing query: MATCH (n) RETURN n LIMIT 2;
     Then result:
       | n             |
@@ -43,7 +44,8 @@ Feature: ReturnAcceptanceTest
       | ({name: "B"}) |
 
   Scenario: should start the result from second row
-    Given init: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
+    Given an empty graph
+      And having executed: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
     When executing query: MATCH (n) RETURN n ORDER BY n.name ASC SKIP 2;
     Then result:
       | n             |
@@ -52,7 +54,8 @@ Feature: ReturnAcceptanceTest
       | ({name: "E"}) |
 
   Scenario: should start the result from second row by param
-    Given init: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
+    Given an empty graph
+      And having executed: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
     When running parametrized: MATCH (n) RETURN n ORDER BY n.name ASC SKIP { skipAmount };
       | skipAmount |
       | 2          |
@@ -63,7 +66,8 @@ Feature: ReturnAcceptanceTest
       | ({name: "E"}) |
 
   Scenario: should get stuff in the middle
-    Given init: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
+    Given an empty graph
+      And having executed: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
     When executing query: MATCH (n) WHERE id(n) IN [0,1,2,3,4] RETURN n ORDER BY n.name ASC SKIP 2 LIMIT 2;
     Then result:
       | n             |
@@ -71,7 +75,8 @@ Feature: ReturnAcceptanceTest
       | ({name: "D"}) |
 
   Scenario: should get stuff in the middle by param
-    Given init: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
+    Given an empty graph
+      And having executed: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
     When running parametrized: MATCH (n) WHERE id(n) IN [0,1,2,3,4] RETURN n ORDER BY n.name ASC SKIP { s } LIMIT { l };
       | s | l |
       | 2 | 2 |
@@ -81,7 +86,8 @@ Feature: ReturnAcceptanceTest
       | ({name: "D"}) |
 
   Scenario: should sort on aggregated function
-    Given init: CREATE ({division: "A", age: 22}), ({division: "B", age: 33}), ({division: "B", age: 44}), ({division: "C", age: 55});
+    Given an empty graph
+      And having executed: CREATE ({division: "A", age: 22}), ({division: "B", age: 33}), ({division: "B", age: 44}), ({division: "C", age: 55});
     When executing query: MATCH (n) WHERE id(n) IN [0,1,2,3] RETURN n.division, max(n.age) ORDER BY max(n.age);
     Then sorted result:
       | n.division | max(n.age) |
@@ -97,7 +103,8 @@ Feature: ReturnAcceptanceTest
       | 3 |
 
   Scenario: should support sort and distinct
-    Given init: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"});
+    Given an empty graph
+      And having executed: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"});
     When executing query: MATCH (a) WHERE id(a) IN [0,1,2,0] RETURN DISTINCT a ORDER BY a.name;
     Then result:
       | a             |
@@ -106,7 +113,8 @@ Feature: ReturnAcceptanceTest
       | ({name: "C"}) |
 
   Scenario: should support column renaming
-    Given init: CREATE (:Singleton);
+    Given an empty graph
+      And having executed: CREATE (:Singleton);
     When executing query: MATCH (a) WHERE id(a) = 0 RETURN a as ColumnName;
     Then result:
       | ColumnName   |
@@ -120,7 +128,8 @@ Feature: ReturnAcceptanceTest
       | 1          |
 
   Scenario: should support ordering by a property after being distinctified
-    Given init: CREATE (:A)-[:T]->(:B);
+    Given an empty graph
+      And having executed: CREATE (:A)-[:T]->(:B);
     When executing query: MATCH (a)-->(b) WHERE id(a) = 0 RETURN DISTINCT b ORDER BY b.name;
     Then result:
       | b    |
@@ -168,7 +177,8 @@ Feature: ReturnAcceptanceTest
       | 1.0     |
 
   Scenario: count star should count everything in scope
-    Given init: CREATE (:l1), (:l2), (:l3);
+    Given an empty graph
+      And having executed: CREATE (:l1), (:l2), (:l3);
     When executing query: MATCH (a) RETURN a, count(*) ORDER BY count(*);
     Then result:
       | a     | count(*) |
@@ -191,7 +201,8 @@ Feature: ReturnAcceptanceTest
       | 63084              |
 
   Scenario: filter should work
-    Given init: CREATE (a { foo: 1 })-[:T]->({ foo: 1 }), (a)-[:T]->({ foo: 2 }), (a)-[:T]->({ foo: 3 });
+    Given an empty graph
+      And having executed: CREATE (a { foo: 1 })-[:T]->({ foo: 1 }), (a)-[:T]->({ foo: 2 }), (a)-[:T]->({ foo: 3 });
     When executing query: MATCH (a { foo: 1 }) MATCH p=(a)-->() RETURN filter(x IN nodes(p) WHERE x.foo > 2) AS n;
     Then result:
       | n            |
