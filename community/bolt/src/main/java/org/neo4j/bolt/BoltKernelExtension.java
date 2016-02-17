@@ -63,6 +63,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.bolt.BoltKernelExtension.EncryptionLevel.OPTIONAL;
@@ -169,6 +170,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         UsageData usageData();
 
         Monitors monitors();
+
+        AuthManager authManager();
     }
 
     public BoltKernelExtension()
@@ -225,7 +228,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
                 connectors.add( new SocketTransport( socketAddress, sslCtx, logging.getInternalLogProvider(),
                         newVersions( logging,
-                                requireEncryption ? new EncryptionRequiredSessions( sessions ) : sessions ) ) );
+                                requireEncryption ? new EncryptionRequiredSessions( sessions ) : sessions, dependencies.authManager() ) ) );
             }
         }
 
@@ -239,12 +242,12 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     }
 
     private PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> newVersions( LogService logging,
-            Sessions sessions )
+            Sessions sessions, AuthManager authManager )
     {
         PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions = longObjectMap();
         availableVersions.put(
                 BoltProtocolV1.VERSION,
-                ( channel, isEncrypted ) -> new BoltProtocolV1( logging, sessions.newSession( isEncrypted ), channel )
+                ( channel, isEncrypted ) -> new BoltProtocolV1( logging, sessions.newSession( isEncrypted ), channel, authManager )
         );
         return availableVersions;
     }

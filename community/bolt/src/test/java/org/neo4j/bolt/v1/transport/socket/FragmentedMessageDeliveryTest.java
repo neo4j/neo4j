@@ -38,6 +38,7 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.server.security.auth.AuthManager;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.mockito.Matchers.any;
@@ -115,7 +116,7 @@ public class FragmentedMessageDeliveryTest
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         when(ctx.channel()).thenReturn( ch );
 
-        BoltProtocolV1 protocol = new BoltProtocolV1( NullLogService.getInstance(), sess, ch );
+        BoltProtocolV1 protocol = new BoltProtocolV1( NullLogService.getInstance(), sess, ch, mock( AuthManager.class) );
 
         // When data arrives split up according to the current permutation
         for ( ByteBuf fragment : fragments )

@@ -35,6 +35,7 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
+import org.neo4j.server.security.auth.AuthManager;
 
 import static org.neo4j.bolt.v1.messaging.msgprocess.MessageProcessingCallback.publishError;
 
@@ -58,7 +59,7 @@ public class BoltProtocolV1 implements BoltProtocol
     private final Log log;
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
 
-    public BoltProtocolV1( final LogService logging, Session session, Channel channel )
+    public BoltProtocolV1( final LogService logging, Session session, Channel channel, AuthManager authManager )
     {
         this.log = logging.getInternalLog( getClass() );
         this.session = session;
@@ -66,7 +67,7 @@ public class BoltProtocolV1 implements BoltProtocol
         this.packer = new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( output ), output );
 
         this.dechunker = new BoltV1Dechunker(
-                new TransportBridge( log, session, packer, this::onMessageDone ),
+                new TransportBridge( log, session, packer, this::onMessageDone, authManager ),
                 this::onMessageStarted );
     }
 
