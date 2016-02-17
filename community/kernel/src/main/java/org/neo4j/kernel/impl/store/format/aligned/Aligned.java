@@ -52,19 +52,19 @@ public class Aligned implements RecordFormats
     @Override
     public RecordFormat<NodeRecord> node()
     {
-        return new NodeRecordFormat( new RecordIO.CommunityRecordIO<>() );
+        return new NodeRecordFormat( new CommunityRecordIO<>() );
     }
 
     @Override
     public RecordFormat<RelationshipRecord> relationship()
     {
-        return new RelationshipRecordFormat( new RecordIO.CommunityRecordIO<>() );
+        return new RelationshipRecordFormat( new CommunityRecordIO<>() );
     }
 
     @Override
     public RecordFormat<RelationshipGroupRecord> relationshipGroup()
     {
-        return new RelationshipGroupRecordFormat( new RecordIO.CommunityRecordIO<>() );
+        return new RelationshipGroupRecordFormat( new CommunityRecordIO<>() );
     }
 
     @Override

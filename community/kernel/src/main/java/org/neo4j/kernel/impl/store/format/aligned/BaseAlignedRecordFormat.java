@@ -80,7 +80,7 @@ abstract class BaseAlignedRecordFormat<RECORD extends AbstractBaseRecord>
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
     static final int HEADER_BIT_FIRST_RECORD_UNIT = 0b0000_0100;
     // Default to community record format
-    private final RecordIO<RECORD> recordIO; // = new RecordIO.CommunityRecordIO<>();
+    private final RecordIO<RECORD> recordIO;
 
     protected BaseAlignedRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize,
             RecordIO<RECORD> recordIO )

@@ -28,13 +28,21 @@ import org.neo4j.kernel.impl.store.format.aligned.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
- * Defines the logic of how to store records as record units.
+ * Community implementation only supports single record units.
  */
-public interface RecordIO<RECORD extends AbstractBaseRecord>
+public class CommunityRecordIO<RECORD extends AbstractBaseRecord> implements RecordIO<RECORD>
 {
-    void read( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile,
-            Consumer<DataAdapter<PageCursor>> reader ) throws IOException;
+    @Override
+    public void read( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile,
+            Consumer<DataAdapter<PageCursor>> reader ) throws IOException
+    {
+        throw new IOException( "Community edition only supports single record units" );
+    }
 
-    DataAdapter<PageCursor> getWriteAdapter( RECORD record, PageCursor primaryCursor, int recordSize,
-            PagedFile storeFile ) throws IOException;
+    @Override
+    public DataAdapter<PageCursor> getWriteAdapter( RECORD record, PageCursor primaryCursor, int recordSize,
+            PagedFile storeFile ) throws IOException
+    {
+        throw new IOException( "Community edition only supports single record units" );
+    }
 }

@@ -38,7 +38,6 @@ import static org.neo4j.kernel.impl.store.format.aligned.Reference.PAGE_CURSOR_A
  */
 public class EnterpriseRecordIO<RECORD extends AbstractBaseRecord> implements RecordIO<RECORD>
 {
-
     @Override
     public void read( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile,
             Consumer<DataAdapter<PageCursor>> reader ) throws IOException
