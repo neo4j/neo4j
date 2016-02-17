@@ -77,24 +77,6 @@
           </execution>
         </executions>
       </plugin>
-
-      <plugin>
-        <groupId>com.buschmais.jqassistant.scm</groupId>
-        <artifactId>jqassistant-maven-plugin</artifactId>
-        <version>1.1.1</version>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>scan</goal>
-              <goal>analyze</goal>
-            </goals>
-            <configuration>
-              <failOnViolations>true</failOnViolations>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
     <pluginManagement>
       <plugins>
@@ -278,23 +260,6 @@
       </plugins>
     </pluginManagement>
   </build>
-
-  <reporting>
-    <plugins>
-      <plugin>
-        <groupId>com.buschmais.jqassistant.scm</groupId>
-        <artifactId>jqassistant-maven-plugin</artifactId>
-        <version>1.1.1</version>
-        <reportSets>
-          <reportSet>
-            <reports>
-              <report>report</report>
-            </reports>
-          </reportSet>
-        </reportSets>
-      </plugin>
-    </plugins>
-  </reporting>
 
   <profiles>
     <!--
