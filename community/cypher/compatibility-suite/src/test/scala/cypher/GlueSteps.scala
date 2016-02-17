@@ -46,6 +46,7 @@ import scala.util.Try
 
 class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
 
+  val Background = new Step("Background")
 
   var result: Result = null
   var graph: GraphDatabaseService = null
@@ -63,6 +64,10 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
   After() { _ =>
     // TODO: postpone this till the last scenario
     graph.shutdown()
+  }
+
+  Background(BACKGROUND) {
+    // do nothing, but necessary for the scala match
   }
 
   Given(USING_DB) { (dbName: String) =>
@@ -163,7 +168,10 @@ object GlueSteps {
   val USING_DB = """^using: (.*)$"""
   val RUNNING_PARAMETRIZED_QUERY = """^running parametrized: (.*)$"""
   val RESULT = """^(sorted )?result:$"""
+
   // new constants:
+
+  val BACKGROUND = "^$"
 
   // for Given
   val ANY = "^any graph$"
