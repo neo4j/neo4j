@@ -126,13 +126,12 @@ enum Reference
         byte signBit = (byte) ((positive ? 0 : 1) << (headerShift - 1));
 
         // first (most significant) byte
-        adapter.put( (byte) (highHeader | signBit | (byte) ((absoluteReference & (0xFFL << shift)) >>> shift)),
-                source );
+        adapter.put( (byte) (highHeader | signBit | (byte) (absoluteReference >>> shift)), source );
 
         do // rest of the bytes
         {
             shift -= 8;
-            adapter.put( (byte) ((absoluteReference & (0xFFL << shift)) >>> shift), source );
+            adapter.put( (byte) (absoluteReference >>> shift), source );
         }
         while ( shift > 0 );
     }
