@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_0
+package org.neo4j.cypher.internal.spi
 
 import org.neo4j.cypher.internal.compiler.v3_0.spi.TransactionalContext
-import org.neo4j.graphdb.Transaction
+import org.neo4j.graphdb.{Lock, PropertyContainer, Transaction}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.txstate.TxStateHolder
@@ -32,7 +32,7 @@ case class TransactionBoundTransactionalContext(graph: GraphDatabaseQueryService
   private var tx = initialTx
   private var open = true
   private var _statement = initialStatement
-  private val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+  val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
 
   def statement = _statement
 
@@ -71,4 +71,7 @@ case class TransactionBoundTransactionalContext(graph: GraphDatabaseQueryService
   }
 
   def stateView: TxStateHolder = statement.asInstanceOf[KernelStatement]
+
+  // neded only for compatibility with 2.3
+  def acquireWriteLock(p: PropertyContainer): Lock = tx.acquireWriteLock(p)
 }

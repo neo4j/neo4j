@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_0
 
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalCSVResource, NullPipeDecorator, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, UpdateCountingQueryContext}
+import org.neo4j.cypher.internal.spi.TransactionBoundTransactionalContext
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
-import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext
 
 import scala.collection.mutable
 

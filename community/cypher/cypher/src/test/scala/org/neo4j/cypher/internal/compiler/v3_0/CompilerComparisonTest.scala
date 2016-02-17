@@ -32,7 +32,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
-import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionBoundTransactionalContext}
+import org.neo4j.cypher.internal.spi.TransactionBoundTransactionalContext
+import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory

@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, TransactionalC
 import org.neo4j.cypher.internal.frontend.v3_0.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_0.symbols
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundTransactionalContext
+import org.neo4j.cypher.internal.spi.TransactionBoundTransactionalContext
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}

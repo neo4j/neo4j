@@ -33,7 +33,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, NormalMode
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{ParameterNotFoundException, SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, GeneratedQueryStructure}
+import org.neo4j.cypher.internal.spi.TransactionBoundTransactionalContext
+import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.ReadOperations

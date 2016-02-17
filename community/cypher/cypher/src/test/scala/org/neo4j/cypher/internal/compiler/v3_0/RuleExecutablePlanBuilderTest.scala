@@ -42,7 +42,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, Rewriter, Scope, SemanticTable}
-import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, GeneratedQueryStructure, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.TransactionBoundTransactionalContext
+import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.Label.label
 import org.neo4j.helpers.Clock
 import org.scalatest.mock.MockitoSugar

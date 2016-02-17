@@ -25,6 +25,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.DynamicIterable
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.spi.TransactionBoundTransactionalContext
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._

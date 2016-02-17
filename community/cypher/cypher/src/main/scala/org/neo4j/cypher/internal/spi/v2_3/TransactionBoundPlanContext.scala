@@ -34,8 +34,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 import scala.collection.JavaConverters._
 
-class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDatabaseQueryService)
-  extends TransactionBoundTokenContext(initialStatement) with PlanContext {
+class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseQueryService)
+  extends TransactionBoundTokenContext(statement) with PlanContext {
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
@@ -74,8 +74,6 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
     val labelId = statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
-
-    val matchingConstraints = statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
 
     import scala.collection.JavaConverters._
     statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {

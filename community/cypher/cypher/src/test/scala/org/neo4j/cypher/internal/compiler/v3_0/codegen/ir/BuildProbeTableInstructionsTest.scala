@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.codegen.{CodeGenContext, JoinTabl
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticTable, symbols}
-import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundTransactionalContext
+import org.neo4j.cypher.internal.spi.TransactionBoundTransactionalContext
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.txstate.TxStateHolder

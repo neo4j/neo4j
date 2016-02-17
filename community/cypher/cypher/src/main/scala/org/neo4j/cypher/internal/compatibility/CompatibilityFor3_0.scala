@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotificatio
 import org.neo4j.cypher.internal.frontend.v3_0.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherException => InternalCypherException}
 import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
+import org.neo4j.cypher.internal.spi.TransactionBoundTransactionalContext
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_0._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}

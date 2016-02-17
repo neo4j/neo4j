@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotificatio
 import org.neo4j.cypher.internal.frontend.v2_3.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v2_3.{CypherException => InternalCypherException, InputPosition => InternalInputPosition}
 import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
+import org.neo4j.cypher.internal.spi.TransactionBoundTransactionalContext
 import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.internal.{CypherExecutionMode, ExtendedExecutionResult, ExtendedPlanDescription, LastCommittedTxIdProvider, ParsedQuery, PreParsedQuery, QueryStatistics, TransactionInfo}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -186,7 +187,8 @@ trait CompatibilityFor2_3 {
   class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3) extends org.neo4j.cypher.internal.ExecutionPlan {
 
     private def queryContext(graph: GraphDatabaseQueryService, txInfo: TransactionInfo): QueryContext = {
-      val ctx = new TransactionBoundQueryContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
+      val tc = new TransactionBoundTransactionalContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
+      val ctx = new TransactionBoundQueryContext(tc)
       new ExceptionTranslatingQueryContextFor2_3(ctx)
     }
 

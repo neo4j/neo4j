@@ -79,8 +79,6 @@ class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseQu
     val labelId = statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    val matchingConstraints = statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
-
     import scala.collection.JavaConverters._
     statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {
       case unique: UniquenessConstraint => unique
