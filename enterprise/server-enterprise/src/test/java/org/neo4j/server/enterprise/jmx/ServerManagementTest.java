@@ -28,15 +28,16 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.configuration.BaseServerConfigLoader;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
-import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.configuration.BaseServerConfigLoader;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ServerManagementTest
@@ -53,14 +54,14 @@ public class ServerManagementTest
     public void shouldBeAbleToRestartServer() throws Exception
     {
         // Given
-        String dbDirectory1 = baseDir.directory( "db1" ).getAbsolutePath();
-        String dbDirectory2 = baseDir.directory( "db2" ).getAbsolutePath();
+        String dataDirectory1 = baseDir.directory( "data1" ).getAbsolutePath();
+        String dataDirectory2 = baseDir.directory( "data2" ).getAbsolutePath();
 
         Config config = new BaseServerConfigLoader().loadConfig( null,
                 EnterpriseServerBuilder
                         .server()
                         .withDefaultDatabaseTuning()
-                        .usingDatabaseDir( dbDirectory1 )
+                        .usingDataDir( dataDirectory1 )
                         .createConfigFiles(), NullLog.getInstance() );
 
         // When
@@ -69,16 +70,18 @@ public class ServerManagementTest
         server.start();
 
         assertNotNull( server.getDatabase().getGraph() );
-        assertEquals( dbDirectory1, server.getDatabase().getLocation() );
+        assertEquals( config.get( ServerSettings.database_path ).getAbsolutePath(),
+                server.getDatabase().getLocation() );
 
         // Change the database location
-        config.augment( stringMap( ServerSettings.legacy_db_location.name(), dbDirectory2 ) );
+        config.augment( stringMap( ServerSettings.data_directory.name(), dataDirectory2 ) );
         ServerManagement bean = new ServerManagement( server );
         bean.restartServer();
 
         // Then
         assertNotNull( server.getDatabase().getGraph() );
-        assertEquals( dbDirectory2, server.getDatabase().getLocation() );
+        assertEquals( config.get( ServerSettings.database_path ).getAbsolutePath(),
+                server.getDatabase().getLocation() );
     }
 
     private static GraphDatabaseDependencies graphDbDependencies()

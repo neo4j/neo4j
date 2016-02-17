@@ -63,7 +63,7 @@ public class DesktopConfiguratorTest
         // Then
         assertEquals( storeDir.getAbsolutePath(), config.getDatabaseDirectory() );
 
-        File pathToStoreDir = config.configuration().get( ServerSettings.legacy_db_location );
+        File pathToStoreDir = config.configuration().get( ServerSettings.database_path );
         assertEquals( storeDir, pathToStoreDir );
     }
 }

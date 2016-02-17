@@ -42,8 +42,10 @@ import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.port;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -60,6 +62,12 @@ public interface ServerSettings
      * Default path for the configuration file. The path should always be get/set using System.property.
      */
     String SERVER_CONFIG_FILE = "config/neo4j.conf";
+
+    @Description("Name of the database to load")
+    Setting<String> active_database = setting( "dbms.active_database", STRING, "graph.db" );
+
+    @Description("Path of the data directory")
+    Setting<File> data_directory = setting( "dbms.directories.data", PATH, "data" );
 
     @Description("Maximum request header size")
     Setting<Integer> maximum_request_header_size =
@@ -198,7 +206,9 @@ public interface ServerSettings
             FALSE );
 
     @Internal
-    Setting<File> legacy_db_location = setting( "org.neo4j.server.database.location", PATH, "data/graph.db" );
+    Setting<File> database_path = derivedSetting( "dbms.internal.derived.directories.database",
+            data_directory, active_database,
+            ( data, current ) -> new File( new File( data, "databases" ), current ) );
 
     @Internal
     Setting<Boolean> webadmin_enabled = setting( "dbms.webadmin.enabled", BOOLEAN, TRUE );

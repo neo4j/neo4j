@@ -19,12 +19,6 @@
  */
 package org.neo4j.storeupgrade;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
@@ -36,6 +30,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -81,9 +82,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
@@ -188,12 +191,16 @@ public class StoreUpgradeIntegrationTest
         @Test
         public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
-            File dir = store.prepareDirectory( testDir.graphDbDir() );
+            File rootDir = testDir.directory();
+            File storeDir = new Config( stringMap( ServerSettings.data_directory.name(), rootDir.toString() ) )
+                    .get( ServerSettings.database_path );
 
-            File configFile = new File( dir, "neo4j.conf" );
+            store.prepareDirectory( storeDir );
+
+            File configFile = new File( rootDir, "neo4j.conf" );
             Properties props = new Properties();
             props.putAll( ServerTestUtils.getDefaultRelativeProperties() );
-            props.setProperty( ServerSettings.legacy_db_location.name(), dir.getAbsolutePath() );
+            props.setProperty( ServerSettings.data_directory.name(), rootDir.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
             props.store( new FileWriter( configFile ), "" );
@@ -219,7 +226,7 @@ public class StoreUpgradeIntegrationTest
                 System.clearProperty( ServerSettings.SERVER_CONFIG_FILE_KEY );
             }
 
-            assertConsistentStore( dir );
+            assertConsistentStore( storeDir );
         }
 
         @Test
@@ -390,6 +397,10 @@ public class StoreUpgradeIntegrationTest
 
         public File prepareDirectory( File targetDir ) throws IOException
         {
+            if ( !targetDir.exists() && !targetDir.mkdirs() )
+            {
+                throw new IOException( "Could not create directory " + targetDir );
+            }
             Unzip.unzip( getClass(), resourceName, targetDir );
             new File( targetDir, "messages.log" ).delete(); // clear the log
             return targetDir;

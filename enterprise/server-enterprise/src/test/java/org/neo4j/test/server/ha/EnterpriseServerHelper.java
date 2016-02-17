@@ -141,7 +141,7 @@ public class EnterpriseServerHelper
 
     private static EnterpriseNeoServer createServer( File databaseDir, boolean persistent ) throws IOException
     {
-        EnterpriseServerBuilder builder = EnterpriseServerBuilder.server().usingDatabaseDir( databaseDir.getAbsolutePath() );
+        EnterpriseServerBuilder builder = EnterpriseServerBuilder.server().usingDataDir( databaseDir.getAbsolutePath() );
         configureHostname( builder );
         if ( persistent ) builder = (EnterpriseServerBuilder) builder.persistent();
         builder.withDefaultDatabaseTuning();

@@ -29,9 +29,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -59,26 +59,28 @@ public class TestLifecycleManagedDatabase
     @Rule
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logProvider );
 
-    private File databaseDirectory;
+    private File dataDirectory;
     private Database theDatabase;
     private boolean deletionFailureOk;
     private LifecycleManagingDatabase.GraphFactory dbFactory;
+    private Config dbConfig;
 
     @Before
     public void setup() throws Exception
     {
-        databaseDirectory = createTempDir();
+        dataDirectory = createTempDir();
 
         dbFactory = mock( LifecycleManagingDatabase.GraphFactory.class );
         when(dbFactory.newGraphDatabase( any( Config.class ), any( GraphDatabaseFacadeFactory.Dependencies.class ) ))
                 .thenReturn( dbRule.getGraphDatabaseAPI() );
+        dbConfig = new Config(stringMap( ServerSettings.data_directory.name(), dataDirectory.getAbsolutePath() ) );
         theDatabase = newDatabase();
     }
 
     private LifecycleManagingDatabase newDatabase()
     {
-        Config dbConfig = new Config(stringMap( ServerSettings.legacy_db_location.name(), databaseDirectory.getAbsolutePath() ));
-        return new LifecycleManagingDatabase( dbConfig, dbFactory, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider ) );
+        return new LifecycleManagingDatabase( dbConfig, dbFactory,
+                GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider ) );
     }
 
     @After
@@ -88,7 +90,7 @@ public class TestLifecycleManagedDatabase
 
         try
         {
-            FileUtils.forceDelete( databaseDirectory );
+            FileUtils.forceDelete( dataDirectory );
         }
         catch ( IOException e )
         {
@@ -146,6 +148,6 @@ public class TestLifecycleManagedDatabase
     public void shouldBeAbleToGetLocation() throws Throwable
     {
         theDatabase.start();
-        assertThat( theDatabase.getLocation(), is( databaseDirectory.getAbsolutePath() ) );
+        assertThat( theDatabase.getLocation(), is( dbConfig.get( ServerSettings.database_path ).getAbsolutePath() ) );
     }
 }

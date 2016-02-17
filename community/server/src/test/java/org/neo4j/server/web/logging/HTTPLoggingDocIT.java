@@ -77,7 +77,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withProperty( ServerSettings.http_logging_enabled.name(), "false" )
                 .withProperty( ServerSettings.http_log_config_file.name(), configFile.getPath() )
-                .usingDatabaseDir( testDirectory.directory(
+                .usingDataDir( testDirectory.directory(
                         "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-dbdir"
                 ).getAbsolutePath() )
                 .build();
@@ -121,7 +121,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withProperty( ServerSettings.http_logging_enabled.name(), "true" )
                 .withProperty( ServerSettings.http_log_config_file.name(), configFile.getPath() )
-                .usingDatabaseDir( testDirectory.directory(
+                .usingDataDir( testDirectory.directory(
                         "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-dbdir"
                 ).getAbsolutePath() )
                 .build();
@@ -162,7 +162,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
                 .withProperty( ServerSettings.http_logging_enabled.name(), "true" )
                 .withProperty( ServerSettings.http_content_logging_enabled.name(), "true" )
                 .withProperty( ServerSettings.http_log_config_file.name(), configFile.getPath() )
-                .usingDatabaseDir( testDirectory.directory( "givenDebugContentLoggingEnabledShouldLogContent-dbdir" )
+                .usingDataDir( testDirectory.directory( "givenDebugContentLoggingEnabledShouldLogContent-datadir" )
                         .getAbsolutePath() )
                 .build();
 
@@ -207,7 +207,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
                 .withPreflightTasks( new EnsurePreparedForHttpLogging( config ) )
                 .withProperty( ServerSettings.http_logging_enabled.name(), "true" )
                 .withProperty( ServerSettings.http_log_config_file.name(), configFile.getPath() )
-                .usingDatabaseDir( confDir.getAbsolutePath() )
+                .usingDataDir( confDir.getAbsolutePath() )
                 .build();
     }
 

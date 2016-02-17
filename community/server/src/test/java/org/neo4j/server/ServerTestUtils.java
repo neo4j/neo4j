@@ -85,7 +85,7 @@ public class ServerTestUtils
 
     public static void addDefaultRelativeProperties( Map<String,String> properties, File temporaryFolder )
     {
-        addRelativeProperty( temporaryFolder, properties, ServerSettings.legacy_db_location );
+        addRelativeProperty( temporaryFolder, properties, ServerSettings.data_directory );
         addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.auth_store );
         addRelativeProperty( temporaryFolder, properties, ServerSettings.tls_certificate_file );
         addRelativeProperty( temporaryFolder, properties, ServerSettings.tls_key_file );

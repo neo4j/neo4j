@@ -34,7 +34,7 @@ import static org.neo4j.helpers.collection.Pair.pair;
  * <li>Configuration file can be specified by <strong>--config=path/to/config.properties</strong> or
  * <strong>-C=path/to/config.properties</strong></li>
  * <li>Specific overridden configuration options, directly specified as arguments can be specified with
- * <strong>-c key=value</strong>, for example <strong>-c org.neo4j.server.database.location=my/own/path</strong>
+ * <strong>-c key=value</strong>, for example <strong>-c dbms.active_database=foo.db</strong>
  * or enabled boolean properties with <strong>-c key</strong>, f.ex <strong>-c org.neo4j.server.webserver.port</strong>
  * </ul>
  */

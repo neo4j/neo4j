@@ -5,8 +5,8 @@
 
     <replaceregexp
             file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j.conf"
-            match="org.neo4j.server.database.location=.*"
-            replace="org.neo4j.server.database.location=/var/lib/neo4j"
+            match="dbms.directories.data=.*"
+            replace="dbms.directories.data=/var/lib/neo4j/data"
             />
 
     <replaceregexp

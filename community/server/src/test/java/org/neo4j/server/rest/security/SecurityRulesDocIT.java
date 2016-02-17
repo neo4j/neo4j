@@ -82,7 +82,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     {
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyFailingSecurityRule.class.getCanonicalName() )
-                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         gen.get().addSnippet(
@@ -108,7 +108,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyFailingSecurityRule.class.getCanonicalName(),
                 PermanentlyPassingSecurityRule.class.getCanonicalName() )
-                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
@@ -128,7 +128,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 NoAccessToDatabaseSecurityRule.class.getCanonicalName(),
                 NoAccessToWebAdminSecurityRule.class.getCanonicalName() )
-                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
@@ -149,7 +149,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     {
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyPassingSecurityRule.class.getCanonicalName() )
-                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
@@ -189,7 +189,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
                         mountPoint )
                 .withSecurityRules(
                         PermanentlyFailingSecurityRuleWithWildcardPath.class.getCanonicalName() )
-                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 
@@ -238,7 +238,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
                         mountPoint )
                 .withSecurityRules(
                         PermanentlyFailingSecurityRuleWithComplexWildcardPath.class.getCanonicalName() )
-                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         gen.get().addSnippet(
@@ -270,7 +270,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyForbiddenSecurityRule.class.getCanonicalName(),
                 PermanentlyPassingSecurityRule.class.getCanonicalName() )
-                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );

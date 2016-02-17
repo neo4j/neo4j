@@ -19,18 +19,18 @@
  */
 package org.neo4j.server;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.configuration.ServerSettings;
@@ -40,6 +40,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -82,8 +83,8 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws IOException
     {
         // When
-        int resultCode = start( bootstrapper, commandLineConfig(
-                "-c", configOption( ServerSettings.legacy_db_location.name(), tempDir.getRoot().getAbsolutePath()),
+        int resultCode = start( bootstrapper, commandLineConfig( 
+                "-c", configOption( ServerSettings.data_directory.name(), tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( GraphDatabaseSettings.auth_store.name(), tempDir.newFile().getAbsolutePath()),
                 "-c", configOption( ServerSettings.tls_certificate_file.name(), new File(tempDir.getRoot(), "cert.cert").getAbsolutePath()),
                 "-c", configOption( ServerSettings.tls_key_file.name(), new File(tempDir.getRoot(), "key.key").getAbsolutePath())

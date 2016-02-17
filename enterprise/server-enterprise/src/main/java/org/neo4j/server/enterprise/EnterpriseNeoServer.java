@@ -73,22 +73,22 @@ public class EnterpriseNeoServer extends CommunityNeoServer
     }
 
     private static final GraphFactory HA_FACTORY = ( config, dependencies ) -> {
-        File storeDir = config.get( ServerSettings.legacy_db_location );
+        File storeDir = config.get( ServerSettings.database_path );
         return new HighlyAvailableGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 
     private static final GraphFactory ENTERPRISE_FACTORY = ( config, dependencies ) -> {
-        File storeDir = config.get( ServerSettings.legacy_db_location );
+        File storeDir = config.get( ServerSettings.database_path );
         return new EnterpriseGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 
     private static final GraphFactory CORE_FACTORY = ( config, dependencies ) -> {
-        File storeDir = config.get( ServerSettings.legacy_db_location );
+        File storeDir = config.get( ServerSettings.database_path );
         return new CoreGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 
     private static final GraphFactory EDGE_FACTORY = ( config, dependencies ) -> {
-        File storeDir = config.get( ServerSettings.legacy_db_location );
+        File storeDir = config.get( ServerSettings.database_path );
         return new EdgeGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 

@@ -46,8 +46,7 @@ The following process is recommended:
   the master of the cluster last.
 
 .Upgrade the database store on the previous master
- . Install Neo4j {neo4j-version} on the previous master, keeping the database
-  store (typically _data/databases/graph.db_) from the previous version.
+ . Install Neo4j {neo4j-version} on the previous master, keeping the database store (typically _data/graph.db_) from the previous version.
  . Disable HA in the configuration, by setting `org.neo4j.server.database.mode=SINGLE`.
  . <<deployment-upgrading,Upgrade as described for a single instance of Neo4j>> (this may involve configuring with `allow_store_upgrade=true`, as described in <<explicit-upgrade, "Explicit Upgrades">>).
  . Once upgraded, shut down Neo4j again.

@@ -62,7 +62,7 @@ public class EnterpriseVersionAndEditionServiceIT extends ExclusiveServerTestBas
     {
         clock = new FakeClock();
         server = EnterpriseServerBuilder.server()
-                .usingDatabaseDir( staticFolder.getRoot().getAbsolutePath() )
+                .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
                 .withClock( clock )
                 .build();
 

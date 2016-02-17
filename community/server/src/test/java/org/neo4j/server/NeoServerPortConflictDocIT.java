@@ -46,7 +46,7 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
             AssertableLogProvider logProvider = new AssertableLogProvider();
             CommunityNeoServer server = CommunityServerBuilder.server( logProvider )
                     .onPort( contestedPort )
-                    .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                    .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                     .onHost( Jetty9WebServer.DEFAULT_ADDRESS )
                     .build();
             try

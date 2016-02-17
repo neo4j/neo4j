@@ -57,7 +57,7 @@ public class EnterpriseServerIT
     {
         // Given
         NeoServer server = EnterpriseServerBuilder.server()
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDataDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
                 .withProperty( server_id.name(), "1" )
                 .withProperty( initial_hosts.name(), ":5001" )
@@ -89,7 +89,7 @@ public class EnterpriseServerIT
         // Given
         NeoServer server = EnterpriseServerBuilder.server()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDataDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
                 .withProperty( server_id.name(), "1" )
                 .withProperty( initial_hosts.name(), ":5001" )
@@ -121,7 +121,7 @@ public class EnterpriseServerIT
         NeoServer server = EnterpriseServerBuilder.server()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" )
                 .withProperty( HaSettings.ha_status_auth_enabled.name(), "false" )
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .usingDataDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
                 .withProperty( server_id.name(), "1" )
                 .withProperty( initial_hosts.name(), ":5001" )
