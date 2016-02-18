@@ -46,7 +46,7 @@ public class LegacyIndexAddDropConcurrently
     {
         // Given
         ExecutorService exec = Executors.newFixedThreadPool( 4 );
-        final GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        final GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
         List<Callable<Object>> jobs = new ArrayList<>();
         for ( int i = 0; i < 4; i++ )

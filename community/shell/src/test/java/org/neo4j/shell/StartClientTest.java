@@ -71,7 +71,7 @@ public class StartClientTest
     @Before
     public void startDatabase()
     {
-        db.getGraphDatabaseService();
+        db.getGraphDatabaseAPI();
     }
 
     @Test
@@ -84,9 +84,9 @@ public class StartClientTest
         StartClient.main(new String[]{"-file", getClass().getResource( "/testshell.txt" ).getFile()});
 
         // Then
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
         {
-            assertThat( (String) db.getGraphDatabaseService().getNodeById( 0 ).getProperty( "foo" ),
+            assertThat( (String) db.getGraphDatabaseAPI().getNodeById( 0 ).getProperty( "foo" ),
                     equalTo( "bar" ) );
             tx.success();
         }
@@ -111,9 +111,9 @@ public class StartClientTest
         }
 
         // Then
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
         {
-            assertThat( (String) db.getGraphDatabaseService().getNodeById( 0 ).getProperty( "foo" ),
+            assertThat( (String) db.getGraphDatabaseAPI().getNodeById( 0 ).getProperty( "foo" ),
                     equalTo( "bar" ) );
             tx.success();
         }

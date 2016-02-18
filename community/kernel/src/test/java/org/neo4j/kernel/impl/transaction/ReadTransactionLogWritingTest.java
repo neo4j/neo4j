@@ -130,7 +130,7 @@ public class ReadTransactionLogWritingTest
 
     private void executeTransaction( Runnable runnable, boolean success )
     {
-        try ( Transaction tx = dbr.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbr.getGraphDatabaseAPI().beginTx() )
         {
             runnable.run();
             if ( success )
@@ -142,41 +142,24 @@ public class ReadTransactionLogWritingTest
 
     private Runnable getRelationships()
     {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                assertEquals( 1, count( node.getRelationships() ) );
-            }
-        };
+        return () -> assertEquals( 1, count( node.getRelationships() ) );
     }
 
     private Runnable getNodesFromRelationship()
     {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                relationship.getEndNode();
-                relationship.getStartNode();
-                relationship.getNodes();
-                relationship.getOtherNode( node );
-            }
+        return () -> {
+            relationship.getEndNode();
+            relationship.getStartNode();
+            relationship.getNodes();
+            relationship.getOtherNode( node );
         };
     }
 
     private Runnable getById()
     {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                dbr.getGraphDatabaseService().getNodeById( node.getId() );
-                dbr.getGraphDatabaseService().getRelationshipById( relationship.getId() );
-            }
+        return () -> {
+            dbr.getGraphDatabaseAPI().getNodeById( node.getId() );
+            dbr.getGraphDatabaseAPI().getRelationshipById( relationship.getId() );
         };
     }
 

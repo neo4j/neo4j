@@ -79,7 +79,7 @@ public class BigStoreIT implements RelationshipType
     {
         // Delete before just to be sure
         deleteFileOrDirectory( new File( PATH ) );
-        db = dbRule.getGraphDatabaseService();
+        db = dbRule.getGraphDatabaseAPI();
     }
 
     @Override

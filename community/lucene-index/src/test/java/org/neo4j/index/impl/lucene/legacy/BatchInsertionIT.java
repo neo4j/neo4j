@@ -67,7 +67,7 @@ public class BatchInsertionIT
         inserter.shutdown();
 
         // Then
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             assertThat( count( db.findNodes( label( "User" ), "name", "Bob" ) ), equalTo(1) );
@@ -94,7 +94,7 @@ public class BatchInsertionIT
         inserter.shutdown();
 
         // Then
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try(Transaction tx = db.beginTx())
         {
             assertThat( count( db.findNodes( label( "Banana" ), "name", "Bob" ) ), equalTo(0) );
@@ -120,7 +120,7 @@ public class BatchInsertionIT
         inserter.setNodeProperty( nodeId, "a", finalValue );
         inserter.shutdown();
 
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try(Transaction ignored = db.beginTx())
         {
             assertThat( db.getNodeById( nodeId ).getProperty( "a" ), equalTo( finalValue ) );
@@ -147,7 +147,7 @@ public class BatchInsertionIT
         inserter.setNodeProperty( nodeId, "a", finalValue1 );
         inserter.shutdown();
 
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try(Transaction ignored = db.beginTx())
         {
             assertThat( db.getNodeById( nodeId ).getProperty( "a" ), equalTo( finalValue1 ) );

@@ -60,7 +60,7 @@ public class SchemaIndexWaitingAcceptanceTest
     public void shouldTimeoutWatingForIndexToComeOnline() throws Exception
     {
         // given
-        GraphDatabaseService db = rule.getGraphDatabaseService();
+        GraphDatabaseService db = rule.getGraphDatabaseAPI();
         DoubleLatch latch = provider.installPopulationJobCompletionLatch();
 
         IndexDefinition index;
@@ -95,7 +95,7 @@ public class SchemaIndexWaitingAcceptanceTest
     public void shouldTimeoutWatingForAllIndexesToComeOnline() throws Exception
     {
         // given
-        GraphDatabaseService db = rule.getGraphDatabaseService();
+        GraphDatabaseService db = rule.getGraphDatabaseAPI();
         DoubleLatch latch = provider.installPopulationJobCompletionLatch();
 
         try ( Transaction tx = db.beginTx() )

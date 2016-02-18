@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +38,9 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,6 +51,9 @@ import static org.hamcrest.core.IsNull.nullValue;
 
 public class ExecutionResultTest
 {
+    private static final Map<String,Object> NO_PARAMS = Collections.emptyMap();
+    private static final QuerySession SESSION = QueryEngineProvider.embeddedSession();
+
     @Rule
     public final ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
     private ExecutionEngine engine;
@@ -54,7 +61,7 @@ public class ExecutionResultTest
     @Before
     public void initializeExecutionEngine() throws Exception
     {
-        engine = new ExecutionEngine( new GraphDatabaseCypherService(db) );
+        engine = new ExecutionEngine( new GraphDatabaseCypherService( db ), NullLogProvider.getInstance() );
     }
 
     //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
@@ -64,13 +71,12 @@ public class ExecutionResultTest
         // Given an execution result that has been started but not exhausted
         createNode();
         createNode();
-        ExecutionResult executionResult = engine.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" );
-        ResourceIterator<Map<String,Object>> resultIterator = executionResult.iterator();
-        resultIterator.next();
+        Result executionResult = engine.executeQuery( "CYPHER runtime=interpreted MATCH (n) RETURN n", NO_PARAMS, SESSION );
+        executionResult.next();
         assertThat( activeTransaction(), is( notNullValue() ) );
 
         // When
-        resultIterator.close();
+        executionResult.close();
 
         // Then
         assertThat( activeTransaction(), is( nullValue() ) );
@@ -83,7 +89,7 @@ public class ExecutionResultTest
         // Given an execution result that has been started but not exhausted
         createNode();
         createNode();
-        ExecutionResult executionResult = engine.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" );
+        Result executionResult = engine.executeQuery( "CYPHER runtime=interpreted MATCH (n) RETURN n", NO_PARAMS, SESSION );
         ResourceIterator<Node> resultIterator = executionResult.columnAs( "n" );
         resultIterator.next();
         assertThat( activeTransaction(), is( notNullValue() ) );
@@ -98,20 +104,13 @@ public class ExecutionResultTest
     @Test( expected = ArithmeticException.class )
     public void shouldThrowAppropriateException() throws Exception
     {
-        engine.execute( "RETURN rand()/0" ).iterator().next();
+        engine.executeQuery( "RETURN rand()/0", NO_PARAMS, SESSION ).next();
     }
 
     @Test( expected = ArithmeticException.class )
     public void shouldThrowAppropriateExceptionAlsoWhenVisiting() throws Exception
     {
-        engine.execute( "RETURN rand()/0" ).accept( new Result.ResultVisitor()
-        {
-            @Override
-            public boolean visit( Result.ResultRow row )
-            {
-                return true;
-            }
-        } );
+        engine.executeQuery( "RETURN rand()/0", NO_PARAMS, SESSION ).accept( row -> true );
     }
 
     @Test
@@ -190,15 +189,10 @@ public class ExecutionResultTest
         final List<Result.ResultRow> listResult = new ArrayList<>();
         try ( Result result = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
         {
-            result.accept( new Result.ResultVisitor<RuntimeException>()
-            {
-                @Override
-                public boolean visit( Result.ResultRow row ) throws RuntimeException
-                {
-                    listResult.add( row );
-                    // return false so that no more result rows would be visited
-                    return false;
-                }
+            result.accept( row -> {
+                listResult.add( row );
+                // return false so that no more result rows would be visited
+                return false;
             } );
         }
 

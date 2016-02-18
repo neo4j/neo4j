@@ -22,10 +22,15 @@ package org.neo4j.cypher.internal.javacompat;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
+import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
@@ -34,21 +39,25 @@ import static org.junit.Assert.assertThat;
 
 public class ExecutionEngineTests
 {
+    private static final Map<String,Object> NO_PARAMS = Collections.emptyMap();
+    private static final QuerySession SESSION = QueryEngineProvider.embeddedSession();
+
     @Rule
     public DatabaseRule database = new ImpermanentDatabaseRule();
 
     @Test
     public void shouldConvertListsAndMapsWhenPassingFromScalaToJava() throws Exception
     {
-        ExecutionEngine executionEngine = new ExecutionEngine( new GraphDatabaseCypherService(database.getGraphDatabaseService()) );
+        GraphDatabaseCypherService graph = new GraphDatabaseCypherService( this.database.getGraphDatabaseAPI() );
+        ExecutionEngine executionEngine = new ExecutionEngine( graph, NullLogProvider.getInstance() );
 
-        ExecutionResult result = executionEngine.execute( "RETURN { key : 'Value' , " +
-                                                          "collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}" );
+        Result result = executionEngine.executeQuery(
+                "RETURN { key : 'Value' , collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}", NO_PARAMS, SESSION );
 
-        Map firstRowValue = (Map) result.iterator().next().values().iterator().next();
-        assertThat( (String) firstRowValue.get( "key" ), is( "Value" ) );
+        Map firstRowValue = (Map) result.next().values().iterator().next();
+        assertThat( firstRowValue.get( "key" ), is( "Value" ) );
         List theList = (List) firstRowValue.get( "collectionKey" );
-        assertThat( (String) ((Map) theList.get( 0 )).get( "inner" ), is( "Map1" ) );
-        assertThat( (String) ((Map) theList.get( 1 )).get( "inner" ), is( "Map2" ) );
+        assertThat( ((Map) theList.get( 0 )).get( "inner" ), is( "Map1" ) );
+        assertThat( ((Map) theList.get( 1 )).get( "inner" ), is( "Map2" ) );
     }
 }

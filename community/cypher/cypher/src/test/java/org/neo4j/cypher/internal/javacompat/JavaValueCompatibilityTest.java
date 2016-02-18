@@ -24,12 +24,16 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,21 +41,22 @@ import static org.hamcrest.Matchers.isA;
 
 public class JavaValueCompatibilityTest
 {
+    private static final Map<String,Object> NO_PARAMS = Collections.emptyMap();
+    private static final QuerySession SESSION = QueryEngineProvider.embeddedSession();
     private ExecutionEngine engine;
 
     @Before
     public void setUp() throws IOException
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
-        engine = new ExecutionEngine( new GraphDatabaseCypherService( db) );
+        engine = new ExecutionEngine( new GraphDatabaseCypherService( db ), NullLogProvider.getInstance() );
     }
 
     @Test
     public void collections_in_collections_look_aiight() throws Exception
     {
-        ExecutionResult execute = engine.execute( "CREATE (n:TheNode) RETURN [[ [1,2],[3,4] ],[[5,6]]] as x" );
-        ResourceIterator<Map<String, Object>> iterator = execute.iterator();
-        Map<String, Object> next = iterator.next();
+        Result result = engine.executeQuery( "CREATE (n:TheNode) RETURN [[ [1,2],[3,4] ],[[5,6]]] as x", NO_PARAMS, SESSION );
+        Map<String, Object> next = result.next();
         @SuppressWarnings("unchecked") //We know it's a collection.
         List<List<Object>> x = (List<List<Object>>)next.get( "x" );
         Iterable objects = x.get( 0 );

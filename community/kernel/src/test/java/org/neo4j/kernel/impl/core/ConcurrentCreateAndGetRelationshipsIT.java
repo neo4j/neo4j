@@ -46,12 +46,12 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
  * Ensures the absence of an issue where iterating through a {@link RelationshipIterator} would result in
  * {@link ArrayIndexOutOfBoundsException} due to incrementing an array index too eagerly so that a consecutive
  * call to {@link RelationshipIterator#next()} would try to get the internal type iterator with a too high index.
- * 
+ *
  * This test is probabilistic in trying to produce the issue. There's a chance this test will be unsuccessful in
  * reproducing the issue (test being successful where it should have failed), but it will never randomly fail
  * where it should have been successful. After the point where the issue has been fixed this test will use
  * the full 0.5 seconds to try to reproduce it.
- * 
+ *
  */
 public class ConcurrentCreateAndGetRelationshipsIT
 {
@@ -59,19 +59,19 @@ public class ConcurrentCreateAndGetRelationshipsIT
     public void tryToReproduceTheIssue() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         CountDownLatch startSignal = new CountDownLatch( 1 );
         AtomicBoolean stopSignal = new AtomicBoolean();
         AtomicReference<Exception> failure = new AtomicReference<Exception>();
         Node parentNode = createNode( db );
         Collection<Worker> workers = createWorkers( db, startSignal, stopSignal, failure, parentNode );
-        
+
         // WHEN
         startSignal.countDown();
         sleep( 500 );
         stopSignal.set( true );
         awaitWorkersToEnd( workers );
-        
+
         // THEN
         if ( failure.get() != null )
         {
@@ -147,7 +147,7 @@ public class ConcurrentCreateAndGetRelationshipsIT
                 {
                     // ArrayIndexOutOfBoundsException happens here
                     count( parentNode.getRelationships( RELTYPE, OUTGOING ) );
-                    
+
                     parentNode.createRelationshipTo( db.createNode(), RELTYPE );
                     tx.success();
                 }

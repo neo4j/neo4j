@@ -59,7 +59,7 @@ public class GraphTransactionRule
 
     public Transaction begin()
     {
-        tx = database.getGraphDatabaseService().beginTx();
+        tx = database.getGraphDatabaseAPI().beginTx();
         return tx;
     }
 

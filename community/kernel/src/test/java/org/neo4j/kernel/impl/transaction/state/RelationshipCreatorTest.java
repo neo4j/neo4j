@@ -88,7 +88,7 @@ public class RelationshipCreatorTest
 
     private long createNodeWithRelationships( int count )
     {
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();

@@ -84,14 +84,14 @@ public class CreateAndLoadDenseNodeIT
     {
         createDbIfNecessary();
         dbRule.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
-        db = dbRule.getGraphDatabaseService();
+        db = dbRule.getGraphDatabaseAPI();
     }
 
     private void createDbIfNecessary()
     {
         if ( !new File( dbRule.getStoreDir(), "neostore" ).exists() )
         {
-            db = dbRule.getGraphDatabaseService();
+            db = dbRule.getGraphDatabaseAPI();
             try ( BatchTransaction tx = beginBatchTx( db ) )
             {
                 Node node = db.createNode();
