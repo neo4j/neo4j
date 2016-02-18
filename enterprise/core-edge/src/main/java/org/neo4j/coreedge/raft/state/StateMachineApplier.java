@@ -21,7 +21,6 @@ package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.raft.ConsensusListener;
@@ -39,7 +38,7 @@ public class StateMachineApplier extends LifecycleAdapter implements ConsensusLi
 {
     public static final long NOTHING_APPLIED = -1;
 
-    private final StateMachine stateMachine;
+    private StateMachine stateMachine;
     private final ReadableRaftLog raftLog;
     private final StateStorage<LastAppliedState> lastAppliedStorage;
     private final int flushEvery;
@@ -52,7 +51,6 @@ public class StateMachineApplier extends LifecycleAdapter implements ConsensusLi
     private long commitIndex = NOTHING_APPLIED;
 
     public StateMachineApplier(
-            StateMachine stateMachine,
             ReadableRaftLog raftLog,
             StateStorage<LastAppliedState> lastAppliedStorage,
             Executor executor,
@@ -60,13 +58,17 @@ public class StateMachineApplier extends LifecycleAdapter implements ConsensusLi
             Supplier<DatabaseHealth> dbHealth,
             LogProvider logProvider )
     {
-        this.stateMachine = stateMachine;
         this.raftLog = raftLog;
         this.lastAppliedStorage = lastAppliedStorage;
         this.flushEvery = flushEvery;
         this.log = logProvider.getLog( getClass() );
         this.dbHealth = dbHealth;
         this.executor = executor;
+    }
+
+    public void setStateMachine( StateMachine stateMachine )
+    {
+        this.stateMachine = stateMachine;
     }
 
     @Override

@@ -47,10 +47,11 @@ public class LeaderOnlyLockManagerTest
         // given
         RaftTestMember me = member( 0 );
 
-        StateMachines stateMachines = new StateMachines();
+        PendingLockTokensRequests pendingLockTokensRequests = new PendingLockTokensRequests();
         ReplicatedLockTokenStateMachine<RaftTestMember> replicatedLockStateMachine =
-                new ReplicatedLockTokenStateMachine<>( new InMemoryStateStorage( new ReplicatedLockTokenState<>() ) );
-        stateMachines.add( replicatedLockStateMachine );
+                new ReplicatedLockTokenStateMachine<>( new InMemoryStateStorage( new ReplicatedLockTokenState<>() ),
+                        pendingLockTokensRequests );
+        StateMachines stateMachines = new StateMachines(replicatedLockStateMachine);
         DirectReplicator replicator = new DirectReplicator( stateMachines );
 
         LeaderLocator<RaftTestMember> leaderLocator = mock( LeaderLocator.class );
@@ -59,7 +60,7 @@ public class LeaderOnlyLockManagerTest
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
         LeaderOnlyLockManager<RaftTestMember> lockManager = new LeaderOnlyLockManager<>( me, replicator, leaderLocator,
-                locks, replicatedLockStateMachine, LEADER_LOCK_TOKEN_TIMEOUT );
+                locks, pendingLockTokensRequests, LEADER_LOCK_TOKEN_TIMEOUT );
 
         // when
         lockManager.newClient().acquireExclusive( ResourceTypes.NODE, 0L );
@@ -74,10 +75,9 @@ public class LeaderOnlyLockManagerTest
         RaftTestMember me = member( 0 );
         RaftTestMember leader = member( 1 );
 
-        StateMachines stateMachines = new StateMachines();
         ReplicatedLockTokenStateMachine<RaftTestMember> replicatedLockStateMachine =
-                new ReplicatedLockTokenStateMachine<>( new InMemoryStateStorage( new ReplicatedLockTokenState<>() ) );
-        stateMachines.add( replicatedLockStateMachine );
+                new ReplicatedLockTokenStateMachine<>( new InMemoryStateStorage( new ReplicatedLockTokenState<>() ) , new PendingLockTokensRequests<>());
+        StateMachines stateMachines = new StateMachines(replicatedLockStateMachine);
         DirectReplicator replicator = new DirectReplicator( stateMachines );
 
         LeaderLocator<RaftTestMember> leaderLocator = mock( LeaderLocator.class );
@@ -86,7 +86,7 @@ public class LeaderOnlyLockManagerTest
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
         LeaderOnlyLockManager<RaftTestMember> lockManager = new LeaderOnlyLockManager<>( me, replicator, leaderLocator,
-                locks, replicatedLockStateMachine, LEADER_LOCK_TOKEN_TIMEOUT );
+                locks, new PendingLockTokensRequests<>(), LEADER_LOCK_TOKEN_TIMEOUT );
 
         // when
         Locks.Client lockClient = lockManager.newClient();

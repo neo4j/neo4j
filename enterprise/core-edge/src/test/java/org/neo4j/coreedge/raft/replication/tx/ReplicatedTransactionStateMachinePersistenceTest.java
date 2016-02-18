@@ -42,7 +42,8 @@ import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.coreedge.server.core.locks.LockTokenManager;
+import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -59,10 +60,13 @@ public class ReplicatedTransactionStateMachinePersistenceTest
         when( commitProcess.commit( any(), any(), any() ) ).thenThrow( new TransactionFailureException( "testing" ) )
                 .thenReturn( 123L );
 
-        ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = stateMachine( commitProcess, new GlobalSessionTrackerState<RaftTestMember>() );
+        RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
+        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( 99L );
+
+        ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = stateMachine( commitProcess,
+                new GlobalSessionTrackerState<>(), recoverTransactionLogState );
 
         ReplicatedTransaction<RaftTestMember> rtx = replicatedTx();
-        stateMachine.setLastCommittedIndex( 99 );
 
         // when
         try
@@ -133,9 +137,12 @@ public class ReplicatedTransactionStateMachinePersistenceTest
         // given
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
 
-        GlobalSessionTrackerState<RaftTestMember> sessionTrackerState = spy( new
-                GlobalSessionTrackerState<>() );
-        ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = stateMachine( commitProcess, sessionTrackerState );
+        GlobalSessionTrackerState<RaftTestMember> sessionTrackerState = spy( new GlobalSessionTrackerState<>() );
+
+        RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
+        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+
+        ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = stateMachine( commitProcess, sessionTrackerState, recoverTransactionLogState );
 
         ReplicatedTransaction<RaftTestMember> rtx = replicatedTx();
 
@@ -156,14 +163,16 @@ public class ReplicatedTransactionStateMachinePersistenceTest
     }
 
     public ReplicatedTransactionStateMachine<RaftTestMember> stateMachine( TransactionCommitProcess commitProcess,
-                                                                           GlobalSessionTrackerState<RaftTestMember> sessionTrackerState )
+                                                                           GlobalSessionTrackerState<RaftTestMember> sessionTrackerState, RecoverTransactionLogState recoverTransactionLogState )
     {
         return new ReplicatedTransactionStateMachine<>(
                 commitProcess,
                 new GlobalSession<>( UUID.randomUUID(), RaftTestMember.member( 1 ) ),
-                mock( LockTokenManager.class, RETURNS_MOCKS ),
+                mock( ReplicatedLockTokenStateMachine.class, RETURNS_MOCKS ),
                 new CommittingTransactionsRegistry(),
-                new InMemoryStateStorage<>( sessionTrackerState ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( sessionTrackerState ),
+                NullLogProvider.getInstance(),
+                recoverTransactionLogState );
     }
 
     private ReplicatedTransaction<RaftTestMember> replicatedTx() throws java.io.IOException

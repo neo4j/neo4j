@@ -54,8 +54,9 @@ public class StateMachineApplierTest
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         StateMachine stateMachine = mock( StateMachine.class );
         InMemoryStateStorage<LastAppliedState> lastApplied = new InMemoryStateStorage<>( new LastAppliedState( -1 ) );
-        StateMachineApplier applier = new StateMachineApplier( stateMachine, raftLog, lastApplied,
+        StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
                 Runnable::run, 10, health(), getInstance() );
+        applier.setStateMachine( stateMachine );
 
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
         raftLog.commit( 0 );
@@ -75,7 +76,7 @@ public class StateMachineApplierTest
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         StateMachine stateMachine = mock( StateMachine.class );
         InMemoryStateStorage<LastAppliedState> lastApplied = new InMemoryStateStorage<>( new LastAppliedState( -1 ) );
-        StateMachineApplier applier = new StateMachineApplier( stateMachine, raftLog, lastApplied,
+        StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
                 Runnable::run, 10, health(), getInstance() );
 
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
@@ -95,8 +96,10 @@ public class StateMachineApplierTest
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         StateMachine stateMachine = mock( StateMachine.class );
         InMemoryStateStorage<LastAppliedState> lastApplied = new InMemoryStateStorage<>( new LastAppliedState( -1 ) );
-        StateMachineApplier applier = new StateMachineApplier( stateMachine, raftLog, lastApplied,
+        StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
                 Runnable::run, 10, health(), getInstance() );
+
+        applier.setStateMachine( stateMachine );
 
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
         raftLog.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
@@ -122,8 +125,10 @@ public class StateMachineApplierTest
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         StateMachine stateMachine = mock( StateMachine.class );
         InMemoryStateStorage<LastAppliedState> lastApplied = new InMemoryStateStorage<>( new LastAppliedState( -1 ) );
-        StateMachineApplier applier = new StateMachineApplier( stateMachine, raftLog, lastApplied,
+        StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
                 Runnable::run, 5, health(), getInstance() );
+
+        applier.setStateMachine( stateMachine );
 
         for ( int i = 0; i < 50; i++ )
         {
@@ -145,8 +150,9 @@ public class StateMachineApplierTest
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         StateMachine stateMachine = mock( StateMachine.class );
         InMemoryStateStorage<LastAppliedState> lastApplied = new InMemoryStateStorage<>( new LastAppliedState( -1 ) );
-        StateMachineApplier applier = new StateMachineApplier( stateMachine, raftLog, lastApplied,
+        StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
                 Runnable::run, 5, health(), getInstance() );
+        applier.setStateMachine( stateMachine );
 
         for ( int i = 0; i < 50; i++ )
         {
@@ -175,9 +181,9 @@ public class StateMachineApplierTest
         DatabaseHealth health = mock( DatabaseHealth.class );
         when( healthSupplier.get() ).thenReturn( health );
 
-        StateMachineApplier applier = new StateMachineApplier( stateMachine, raftLog, lastApplied,
+        StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
                 Runnable::run, 5, healthSupplier, getInstance() );
-
+        applier.setStateMachine( stateMachine );
 
         raftLog.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
         raftLog.commit( 0 );
@@ -203,9 +209,9 @@ public class StateMachineApplierTest
         DatabaseHealth health = mock( DatabaseHealth.class );
         when( healthSupplier.get() ).thenReturn( health );
 
-        StateMachineApplier applier = new StateMachineApplier( stateMachine, raftLog, lastApplied,
+        StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
                 Runnable::run, 5, healthSupplier, getInstance() );
-
+        applier.setStateMachine( stateMachine );
 
         raftLog.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
         raftLog.commit( 0 );

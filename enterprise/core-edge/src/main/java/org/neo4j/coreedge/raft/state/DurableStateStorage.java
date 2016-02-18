@@ -49,6 +49,7 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
                                 StateMarshal<STATE> marshal, int numberOfEntriesBeforeRotation,
                                 Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
             throws IOException
+            // TODO Move file opening to start-time so that constructor doesn't need to throw exceptions
     {
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.marshal = marshal;

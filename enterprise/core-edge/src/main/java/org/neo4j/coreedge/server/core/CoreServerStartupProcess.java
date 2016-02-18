@@ -33,7 +33,6 @@ import org.neo4j.coreedge.raft.state.StateMachineApplier;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.String.format;
@@ -41,7 +40,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class CoreServerStartupProcess
 {
-
     public static LifeSupport createLifeSupport(
             DataSourceManager dataSourceManager,
             ReplicatedIdGeneratorFactory idGeneratorFactory,
@@ -51,15 +49,11 @@ public class CoreServerStartupProcess
             CatchupServer catchupServer,
             DelayedRenewableTimeoutService raftTimeoutService,
             MembershipWaiter<CoreMember> membershipWaiter,
-            long joinCatchupTimeout,
-            RecoverTransactionLogState recoverTransactionLogState,
-            Lifecycle tokenLife )
+            long joinCatchupTimeout )
     {
         LifeSupport services = new LifeSupport();
         services.add( dataSourceManager );
         services.add( idGeneratorFactory );
-        services.add( recoverTransactionLogState );
-        services.add( tokenLife );
         services.add( recoverableStateMachine );
         services.add( raftServer );
         services.add( catchupServer );
