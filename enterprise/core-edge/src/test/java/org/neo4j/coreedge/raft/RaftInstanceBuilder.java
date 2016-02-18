@@ -29,6 +29,7 @@ import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.replication.LeaderOnlyReplicator;
 import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
+import org.neo4j.coreedge.raft.state.LastAppliedTrackingStateMachine;
 import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.raft.state.StateMachines;
 import org.neo4j.coreedge.raft.state.StateStorage;
@@ -74,7 +75,7 @@ public class RaftInstanceBuilder<MEMBER>
     private StateStorage<RaftMembershipState<MEMBER>> raftMembership =
             new StubStateStorage<>( new RaftMembershipState<>() );
     private Monitors monitors = new Monitors();
-    private StateMachine stateMachine = new StateMachines();
+    private LastAppliedTrackingStateMachine stateMachine = new LastAppliedTrackingStateMachine( new StateMachines() );
     private int flushAfter = 1;
 
     public RaftInstanceBuilder( MEMBER member, int expectedClusterSize, RaftGroup.Builder<MEMBER> memberSetBuilder )
@@ -142,7 +143,7 @@ public class RaftInstanceBuilder<MEMBER>
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> stateMachine( StateMachine stateMachine )
+    public RaftInstanceBuilder<MEMBER> stateMachine( LastAppliedTrackingStateMachine stateMachine )
     {
         this.stateMachine = stateMachine;
         return this;

@@ -28,6 +28,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftInstanceBuilder;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
+import org.neo4j.coreedge.raft.state.LastAppliedTrackingStateMachine;
 import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
@@ -62,7 +63,7 @@ public class RaftInstanceLogTest
 
         raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .raftLog( testEntryLog )
-                .stateMachine( stateMachine )
+                .stateMachine( new LastAppliedTrackingStateMachine( stateMachine ) )
                 .build();
     }
 
