@@ -227,4 +227,27 @@ enum Reference
         throw new UnsupportedOperationException( "Reference with first byte " + firstByte + " wasn't recognized"
                 + " as a reference" );
     }
+
+
+    /**
+     * Convert provided reference to be relative to basisReference
+     * @param reference reference that will be converter to relative
+     * @param basisReference conversion basis
+     * @return reference relative to basisReference
+     */
+    public static long toRelative( long reference, long basisReference )
+    {
+        return Math.subtractExact( reference , basisReference );
+    }
+
+    /**
+     * Convert provided relative to basis reference into absolute
+     * @param relativeReference relative reference to convert
+     * @param basisReference basis reference
+     * @return absolute reference
+     */
+    public static long toAbsolute( long relativeReference, long basisReference )
+    {
+        return Math.addExact( relativeReference, basisReference );
+    }
 }
