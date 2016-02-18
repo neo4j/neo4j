@@ -23,6 +23,7 @@ import java.util
 
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.query.QueryEngineProvider
 import org.scalatest.Assertions
 
 import scala.collection.JavaConverters._
@@ -219,7 +220,9 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
       Map("name" -> "Michael", "prefers" -> "Java"),
       Map("name" -> "Peter", "prefers" -> "Java"))
 
-    intercept[CypherTypeException](eengine.execute("cypher planner=rule create ({params})", Map("params" -> maps)))
+    intercept[CypherTypeException](
+      eengine.execute("cypher planner=rule create ({params})", Map("params" -> maps), QueryEngineProvider.embeddedSession())
+    )
   }
 
   test("fail to create from two iterables") {

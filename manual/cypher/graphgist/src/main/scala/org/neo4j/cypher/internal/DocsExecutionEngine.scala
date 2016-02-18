@@ -24,7 +24,7 @@ import java.util.{Map => JavaMap}
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
+import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 
 import scala.collection.JavaConverters._
@@ -35,9 +35,9 @@ class DocsExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProv
 
   @throws(classOf[SyntaxException])
   def internalExecute(query: String, params: JavaMap[String, Any]): InternalExecutionResult =
-    RewindableExecutionResult(execute(query, params.asScala.toMap))
+    RewindableExecutionResult(execute(query, params, QueryEngineProvider.embeddedSession()))
 
   @throws(classOf[SyntaxException])
   def internalProfile(query: String, params: JavaMap[String, Any]): InternalExecutionResult =
-    RewindableExecutionResult(profile(query, params.asScala.toMap))
+    RewindableExecutionResult(profile(query, params, QueryEngineProvider.embeddedSession()))
 }
