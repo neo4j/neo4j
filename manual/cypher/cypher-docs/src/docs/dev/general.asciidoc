@@ -1,5 +1,5 @@
 [[query-general]]
-= General Clauses =
+= General Clauses
 
 :leveloffset: 2
 

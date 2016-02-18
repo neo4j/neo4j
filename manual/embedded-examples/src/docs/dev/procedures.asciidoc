@@ -1,0 +1,495 @@
+[[procedures]]
+= Procedures
+
+:procedure-template-url: https://github.com/neo4j-examples/neo4j-procedure-template
+
+[abstract]
+--
+Compiled procedures are written in Java, deployed into the database, and called from Cypher.
+--
+
+A procedure is a means of extending Neo4j by writing custom code which can be invoked directly from Cypher.
+It can take arguments, perform operations on the database, and return results.
+The procedure is written in the Java programming language and compiled into a _jar_ file.
+A procedure is deployed to the database by dropping the _jar_ file into the _$NEO4J_HOME/plugins_ directory on each server in the cluster.
+The databases must be re-started to pick up the procedure.
+
+Procedures are the preferred means for extending Neo4j.
+Examples of use cases for procedures are:
+
+. To provide access to a product surface that has not yet been opened to Cypher.
+  This includes manual indexes and schema introspection.
+. To perform graph-global operations, for example counting connected components or finding dense nodes.
+. To express a procedural operation that is difficult to express declaratively with Cypher.
+
+
+== Using a procedure
+
+To call a stored procedure, use the Cypher `CALL` clause.
+A procedure named `findDenseNodes` defined in the package `org.neo4j.examples` is called using `CALL org.neo4j.examples.findDenseNodes(1000)`.
+See the Cypher documentation on <<query-call, the `CALL` clause.>>
+
+[NOTE]
+--
+A query with a `CALL` clause cannot include any other clauses.
+--
+
+The `CALL` example illustrates a reasonable use case for a procedure: to locate _dense nodes_.
+Dense nodes are nodes that have a large number of incoming or outgoing relationships.
+Finding dense nodes is a graph-global operation and a good fit for procedural code, to be called from Cypher.
+
+Continuing with the `CALL` example, a procedure to locate dense nodes might take a `threshold` argument, defining how many relationships are necessary for a node to be considered dense.
+
+.Find dense nodes procedure
+[snippet, java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/ProcedureExample.java
+tag=procedureExample
+classifier=sources
+----
+
+The procedure, if it returns anything, will return a `java.util.stream.Stream` of records.
+
+.Find dense nodes return record
+[snippet, java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/ProcedureExample.java
+tag=outputRecordExample
+classifier=sources
+----
+
+Read more about creating a procedure in <<writing-procedure, Writing a procedure>>.
+
+
+== Built-in procedures
+
+Neo4j comes with a handful of pre-packaged procedures ready to be used:
+
+[options="header", cols="m,m,d"]
+|===
+| Procedure name        | Command to invoke procedure     | What it does
+| ListProcedures        | CALL sys.db.procedures()        | List all procedures in the database.
+| ListLabels            | CALL sys.db.labels()            | List all labels in the database.
+| ListRelationshipTypes | CALL sys.db.relationshipTypes() | List all relationship types in the database.
+| ListPropertyKeys      | CALL sys.db.propertyKeys()      | List all property keys in the database.
+|===
+
+
+== Developing Compiled Procedures
+
+[TIP]
+--
+The example discussed below is available as {procedure-template-url}[a repository on Github].
+To get started quickly you can fork the repository and work with the code as you follow along in the guide below.
+--
+
+Compiled procedures are written in the Java programming language.
+While you can develop Compiled Procedures using a regular text editor it is recommended to use a dedicated Java development environment, like IntelliJ IDEA or Eclipse.
+
+To develop a new Procedure, you need to produce a _jar_ file that contains the procedure along with any non-Neo4j dependencies it has.
+This file is then deployed in the `plugin` directory of each database in your cluster.
+The procedure will become available in each instance after restart.
+
+The general process for building a new Compiled Procedure is:
+
+* Set up a new Java project in your IDE
+* Write a test for the Procedure using Neo4j Harness
+* Write a procedure that makes your test pass
+* Build a _jar_ file from your project and deploy it
+
+
+=== Setting up a new project
+
+A project can be set up in any way that allows for compiling a procedure and producing a _jar_ file.
+Below is an example configuration using the Maven build system.
+The Maven _pom.xml_ file is broken into pieces with comments for readability, the whole file is available from the {procedure-template-url}[Neo4j Procedure Template] repository.
+
+.Setting up a project with Maven
+[source, xml]
+----
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                     http://maven.apache.org/xsd/maven-4.0.0.xsd">
+ <modelVersion>4.0.0</modelVersion>
+
+ <groupId>org.neo4j.example</groupId>
+ <artifactId>procedure-template</artifactId>
+ <version>1.0.0-SNAPSHOT</version>
+
+ <packaging>jar</packaging>
+ <name>Neo4j Procedure Template</name>
+ <description>A template project for building a Neo4j Procedure</description>
+
+ <properties>
+   <neo4j.version>3.0.0-SNAPSHOT</neo4j.version>
+ </properties>
+----
+
+Next the build dependencies are defined.
+The following two sections are included in the _pom.xml_ between opening and closing `<dependencies></dependencies>` tags.
+(See the linked template repository for the complete example.)
+
+The first dependency section includes the procedure API that procedures use at runtime.
+The scope is set to `provided`, because once the procedure is deployed to a Neo4j instance, this dependency is provided by Neo4j.
+If non-Neo4j dependencies are added to the project, their scope should normally be `compile`.
+
+[source, xml]
+----
+   <dependency>
+     <groupId>org.neo4j</groupId>
+     <artifactId>neo4j</artifactId>
+     <version>${neo4j.version}</version>
+     <scope>provided</scope>
+   </dependency>
+----
+
+Next, the dependencies necessary for testing the procedure are added:
+
+* Neo4j Harness, a utility that allows for starting a light-weight Neo4j instance.
+  It is used to start Neo4j with a specific procedure deployed, which greatly simplifies testing.
+* The Neo4j Java driver, used to send cypher statements that call the procedure.
+* JUnit, a common Java test framework.
+
+[source, xml]
+----
+   <dependency>
+     <groupId>org.neo4j.test</groupId>
+     <artifactId>neo4j-harness</artifactId>
+     <version>${neo4j.version}</version>
+     <scope>test</scope>
+   </dependency>
+
+   <dependency>
+     <groupId>org.neo4j.driver</groupId>
+     <artifactId>neo4j-java-driver</artifactId>
+     <version>1.0-SNAPSHOT</version>
+     <scope>test</scope>
+   </dependency>
+
+   <dependency>
+     <groupId>junit</groupId>
+     <artifactId>junit</artifactId>
+     <version>4.12</version>
+     <scope>test</scope>
+   </dependency>
+----
+
+Along with declaring the dependencies used by the procedure it is also necessary to define the steps that Maven will go through to build the project.
+The goal is first to _compile_ the source, then to _package_ it in a _jar_ that can be deployed to a Neo4j instance.
+
+[NOTE]
+--
+Procedures require at least Java 8, so the version `1.8` should be defined as the _source_ and _target version_ in the configuration for the Maven compiler plugin.
+--
+
+The Maven shade plugin is used to _package_ the compiled procedure.
+It also includes all dependencies in the package, unless the dependency scope is set to _test_ or _provided_.
+
+Once the procedure is provided in the _plugins_ directory of each Neo4j instance and the instances have restarted, the procedure is available for use.
+
+[source, xml]
+----
+  <build>
+   <plugins>
+     <plugin>
+       <artifactId>maven-compiler-plugin</artifactId>
+       <configuration>
+         <source>1.8</source>
+         <target>1.8</target>
+       </configuration>
+     </plugin>
+     <plugin>
+       <artifactId>maven-shade-plugin</artifactId>
+       <executions>
+         <execution>
+           <phase>package</phase>
+           <goals>
+             <goal>shade</goal>
+           </goals>
+         </execution>
+       </executions>
+     </plugin>
+   </plugins>
+  </build>
+----
+
+Until the GA release of Neo4j 3.0, the dependency on Neo4j requires that a _snapshot repository_ is configured.
+This repository is where Maven will find the latest build of Neo4j to use as a dependency.
+
+[source, xml]
+----
+  <repositories>
+   <repository>
+     <id>neo4j-snapshot-repository</id>
+     <name>Maven 2 snapshot repository for Neo4j</name>
+     <url>http://m2.neo4j.org/content/repositories/snapshots</url>
+     <snapshots><enabled>true</enabled></snapshots>
+     <releases><enabled>false</enabled></releases>
+   </repository>
+ </repositories>
+</project>
+----
+
+
+=== Writing integration tests
+
+The test dependencies include Neo4j Harness and JUnit.
+These can be used to write integration tests for the procedure.
+
+First we decide what the procedure should do, then we write a test that proves that it does it right.
+Finally we write a procedure that passes the test.
+
+Below is a template for testing a procedure that accesses Neo4j's full-text indexes from Cypher.
+
+.Writing tests for procedures
+[source, java]
+----
+package example;
+
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.neo4j.harness.junit.Neo4jRule;
+
+import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
+import static org.neo4j.bolt.BoltKernelExtension.Settings.enabled;
+
+public class LegacyFullTextIndexTest
+{
+   // This rule starts a Neo4j instance for us
+   @Rule
+   public Neo4jRule neo4j = new Neo4jRule()
+
+           // This is the Procedure we want to test
+           .withProcedure( FullTextIndex.class )
+
+           // Temporary until Neo4jRule includes Bolt by default
+           .withConfig( connector( 0, enabled ), "true" );
+
+   @Test
+   public void shouldXYZ() throws Throwable
+   {
+       // Write your test code here, for instance using
+       // the Neo4j Java Driver
+   }
+}
+----
+
+
+[[writing-procedure]]
+=== Writing a procedure
+
+With the test in place, we write a procedure procedure that answers to the expectations of the test.
+The full example is available in the {procedure-template-url}[Neo4j Procedure Template] repository.
+
+Particular things to note:
+
+* All procedures are annotated `@Procedure`.
+  Procedures that write to the database are additionally annotated `@PerformsWrites`.
+* The _context_ of the procedure, which is the same as each resource that the procedure wants to use, is annotated `@Context`.
+* The _input_ and _output_.
+
+For more details, see the link:javadocs/index.html?org/neo4j/procedure/Procedure.html[API documentation for procedures].
+
+// .Todo
+// --
+// * [ ] Input types
+// * [ ] How to declare output
+// * [ ] Injectable resources
+// * [ ] Say that it's a _method_, not a _class_.
+// --
+
+
+[source, java]
+----
+package example;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.logging.Log;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Name;
+import org.neo4j.procedure.PerformsWrites;
+import org.neo4j.procedure.Procedure;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
+/**
+ * This is an example showing how you could expose Neo4j's full text indexes as
+ * two procedures - one for updating indexes, and one for querying by label and
+ * the lucene query language.
+ */
+public class FullTextIndex
+{
+    // Only static fields and @Context-annotated fields are allowed in
+    // Procedure classes. This static field is the configuration we use
+    // to create full-text indexes.
+    private static final Map<String,String> FULL_TEXT =
+            stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" );
+
+    // This field declares that we need a GraphDatabaseService
+    // as context when any procedure in this class is invoked
+    @Context
+    public GraphDatabaseService db;
+
+    // This gives us a log instance that outputs messages to the
+    // standard log, normally found under `data/log/console.log`
+    @Context
+    public Log log;
+
+    /**
+     * This declares the first of two procedures in this class - a
+     * procedure that performs queries in a legacy index.
+     *
+     * It returns a Stream of Records, where records are
+     * specified per procedure. This particular procedure returns
+     * a stream of {@link SearchHit} records.
+     *
+     * The arguments to this procedure are annotated with the
+     * {@link Name} annotation and define the position, name
+     * and type of arguments required to invoke this procedure.
+     * There is a limited set of types you can use for arguments,
+     * these are as follows:
+     *
+     * <ul>
+     *     <li>{@link String}</li>
+     *     <li>{@link Long} or {@code long}</li>
+     *     <li>{@link Double} or {@code double}</li>
+     *     <li>{@link Number}</li>
+     *     <li>{@link Boolean} or {@code boolean}</li>
+     *     <li>{@link java.util.Map} with key {@link String} and value {@link Object}</li>
+     *     <li>{@link java.util.List} of elements of any valid argument type, including {@link java.util.List}</li>
+     *     <li>{@link Object}, meaning any of the valid argument types</li>
+     * </ul>
+     *
+     * @param label the label name to query by
+     * @param query the lucene query, for instance `name:Brook*` to
+     *              search by property `name` and find any value starting
+     *              with `Brook`. Please refer to the Lucene Query Parser
+     *              documentation for full available syntax.
+     * @return the nodes found by the query
+     */
+    @Procedure
+    @PerformsWrites // TODO: This is here as a workaround, because index().forNodes() is not read-only
+    public Stream<SearchHit> search( @Name("label") String label,
+                                     @Name("query") String query )
+    {
+        String index = indexName( label );
+
+        // Avoid creating the index, if it's not there we won't be
+        // finding anything anyway!
+        if( !db.index().existsForNodes( index ))
+        {
+            // Just to show how you'd do logging
+            log.debug( "Skipping index query since index does not exist: `%s`", index );
+            return Stream.empty();
+        }
+
+        // If there is an index, do a lookup and convert the result
+        // to our output record.
+        return db.index()
+                .forNodes( index )
+                .query( query )
+                .stream()
+                .map( SearchHit::new );
+    }
+
+    /**
+     * This is the second procedure defined in this class, it is used to update the
+     * index with nodes that should be queryable. You can send the same node multiple
+     * times, if it already exists in the index the index will be updated to match
+     * the current state of the node.
+     *
+     * This procedure works largely the same as {@link #search(String, String)},
+     * with two notable differences. One, it is annotated with {@link PerformsWrites},
+     * which is <i>required</i> if you want to perform updates to the graph in your
+     * procedure.
+     *
+     * Two, it returns {@code void} rather than a stream. This is simply a short-hand
+     * for saying our procedure always returns an empty stream of empty records.
+     *
+     * @param nodeId the id of the node to index
+     * @param propKeys a list of property keys to index, only the ones the node
+     *                 actually contains will be added
+     */
+    @Procedure
+    @PerformsWrites
+    public void index( @Name("nodeId") long nodeId,
+                       @Name("properties") List<String> propKeys )
+    {
+        Node node = db.getNodeById( nodeId );
+
+        // Load all properties for the node once and in bulk,
+        // the resulting set will only contain those properties in `propKeys`
+        // that the node actually contains.
+        Set<Map.Entry<String,Object>> properties =
+                node.getProperties( propKeys.toArray( new String[0] ) ).entrySet();
+
+        // Index every label (this is just as an example, we could filter which labels to index)
+        for ( Label label : node.getLabels() )
+        {
+            Index<Node> index = db.index().forNodes( indexName( label.name() ), FULL_TEXT );
+
+            // In case the node is indexed before, remove all occurrences of it so
+            // we don't get old or duplicated data
+            index.remove( node );
+
+            // And then index all the properties
+            for ( Map.Entry<String,Object> property : properties )
+            {
+                index.add( node, property.getKey(), property.getValue() );
+            }
+        }
+    }
+
+
+    /**
+     * This is the output record for our search procedure. All procedures
+     * that return results return them as a Stream of Records, where the
+     * records are defined like this one - customized to fit what the procedure
+     * is returning.
+     *
+     * These classes can only have public non-final fields, and the fields must
+     * be one of the following types:
+     *
+     * <ul>
+     *     <li>{@link String}</li>
+     *     <li>{@link Long} or {@code long}</li>
+     *     <li>{@link Double} or {@code double}</li>
+     *     <li>{@link Number}</li>
+     *     <li>{@link Boolean} or {@code boolean}</li>
+     *     <li>{@link org.neo4j.graphdb.Node}</li>
+     *     <li>{@link org.neo4j.graphdb.Relationship}</li>
+     *     <li>{@link org.neo4j.graphdb.Path}</li>
+     *     <li>{@link java.util.Map} with key {@link String} and value {@link Object}</li>
+     *     <li>{@link java.util.List} of elements of any valid field type, including {@link java.util.List}</li>
+     *     <li>{@link Object}, meaning any of the valid field types</li>
+     * </ul>
+     */
+    public static class SearchHit
+    {
+        // This records contain a single field named 'nodeId'
+        public long nodeId;
+
+        public SearchHit( Node node )
+        {
+            this.nodeId = node.getId();
+        }
+    }
+
+    private String indexName( String label )
+    {
+        return "label-" + label;
+    }
+}
+----
