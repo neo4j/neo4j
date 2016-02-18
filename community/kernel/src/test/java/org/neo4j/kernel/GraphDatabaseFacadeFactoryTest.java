@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -143,7 +144,7 @@ public class GraphDatabaseFacadeFactoryTest
             @Override
             protected EditionModule createEdition( PlatformModule platformModule )
             {
-                return null;
+                return Mockito.mock( EditionModule.class, Mockito.RETURNS_DEEP_STUBS );
             }
 
             @Override
