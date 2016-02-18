@@ -28,8 +28,6 @@ import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
-import static java.util.Arrays.copyOf;
-
 /**
  * An in-memory representation of the IDs allocated to this core instance.
  * Instances of this class are serialized to disk by
@@ -42,68 +40,24 @@ import static java.util.Arrays.copyOf;
  * |  first unallocated               |
  * |  15x 8-byte                      |
  * +----------------------------------+
- * |  8-byte length marker            |
- * +----------------------------------+
- * |  previous id range start         |
- * |  15x 8-byte                      |
- * +----------------------------------+
- * |  8-byte length marker            |
- * +----------------------------------+
- * |  previous id range length        |
- * |  15x 8-byte                      |
- * +----------------------------------+
  */
-public class IdAllocationState
+public class IdAllocationState implements UnallocatedIds
 {
     private final long[] firstUnallocated;
-    private final long[] lastIdRangeStartForMe;
-    private final int[] lastIdRangeLengthForMe;
     private long logIndex;
 
     public IdAllocationState()
     {
-        this( new long[IdType.values().length],
-                new long[IdType.values().length],
-                new int[IdType.values().length],
-                -1L );
+        this( new long[IdType.values().length], -1L );
     }
 
     private IdAllocationState( long[] firstUnallocated,
-                               long[] lastIdRangeStartForMe,
-                               int[] lastIdRangeLengthForMe,
                                long logIndex )
     {
         this.firstUnallocated = firstUnallocated;
-        this.lastIdRangeStartForMe = lastIdRangeStartForMe;
-        this.lastIdRangeLengthForMe = lastIdRangeLengthForMe;
         this.logIndex = logIndex;
     }
 
-    public IdAllocationState( IdAllocationState other )
-    {
-        this.firstUnallocated = copyOf( other.firstUnallocated, other.firstUnallocated.length );
-        this.lastIdRangeStartForMe = copyOf( other.lastIdRangeStartForMe, other.lastIdRangeStartForMe.length );
-        this.lastIdRangeLengthForMe = copyOf( other.lastIdRangeLengthForMe, other.lastIdRangeLengthForMe.length );
-        this.logIndex = other.logIndex;
-    }
-
-    /**
-     * @param idType The type of graph object whose ID is under allocation
-     * @return the length of the last ID range allocated
-     */
-    public int lastIdRangeLength( IdType idType )
-    {
-        return lastIdRangeLengthForMe[idType.ordinal()];
-    }
-
-    /**
-     * @param idType        The type of graph object whose ID is under allocation
-     * @param idRangeLength the length of the ID range to be allocated
-     */
-    public void lastIdRangeLength( IdType idType, int idRangeLength )
-    {
-        lastIdRangeLengthForMe[idType.ordinal()] = idRangeLength;
-    }
 
     /**
      * @return The last set log index, which is the value last passed to {@link #logIndex(long)}
@@ -128,7 +82,7 @@ public class IdAllocationState
      * @param idType the type of graph object whose ID is under allocation
      * @return the first unallocated entry for idType
      */
-    public long firstUnallocated( IdType idType )
+    @Override public long firstUnallocated( IdType idType )
     {
         return firstUnallocated[idType.ordinal()];
     }
@@ -142,23 +96,6 @@ public class IdAllocationState
         firstUnallocated[idType.ordinal()] = idRangeEnd;
     }
 
-    /**
-     * @param idType The type of graph object whose ID is under allocation
-     * @return start position of allocation
-     */
-    public long lastIdRangeStart( IdType idType )
-    {
-        return lastIdRangeStartForMe[idType.ordinal()];
-    }
-
-    /**
-     * @param idType       The type of graph object whose ID is under allocation
-     * @param idRangeStart start position of allocation
-     */
-    public void lastIdRangeStart( IdType idType, long idRangeStart )
-    {
-        lastIdRangeStartForMe[idType.ordinal()] = idRangeStart;
-    }
 
     @Override
     public boolean equals( Object o )
@@ -175,17 +112,13 @@ public class IdAllocationState
         IdAllocationState that = (IdAllocationState) o;
 
         return logIndex == that.logIndex &&
-                Arrays.equals( firstUnallocated, that.firstUnallocated ) &&
-                Arrays.equals( lastIdRangeStartForMe, that.lastIdRangeStartForMe ) &&
-                Arrays.equals( lastIdRangeLengthForMe, that.lastIdRangeLengthForMe );
+                Arrays.equals( firstUnallocated, that.firstUnallocated );
     }
 
     @Override
     public int hashCode()
     {
         int result = Arrays.hashCode( firstUnallocated );
-        result = 31 * result + Arrays.hashCode( lastIdRangeStartForMe );
-        result = 31 * result + Arrays.hashCode( lastIdRangeLengthForMe );
         result = 31 * result + (int) (logIndex ^ (logIndex >>> 32));
         return result;
     }
@@ -201,17 +134,6 @@ public class IdAllocationState
                 channel.putLong( l );
             }
 
-            channel.putLong( (long) state.lastIdRangeStartForMe.length );
-            for ( long l : state.lastIdRangeStartForMe )
-            {
-                channel.putLong( l );
-            }
-
-            channel.putLong( state.lastIdRangeLengthForMe.length );
-            for ( int i : state.lastIdRangeLengthForMe )
-            {
-                channel.putLong( i );
-            }
             channel.putLong( state.logIndex );
         }
 
@@ -227,22 +149,9 @@ public class IdAllocationState
                     firstNotAllocated[i] = channel.getLong();
                 }
 
-                long[] lastIdRangeStartForMe = new long[(int) channel.getLong()];
-                for ( int i = 0; i < lastIdRangeStartForMe.length; i++ )
-                {
-                    lastIdRangeStartForMe[i] = channel.getLong();
-                }
-
-                int[] lastIdRangeLengthForMe = new int[(int) channel.getLong()];
-                for ( int i = 0; i < lastIdRangeLengthForMe.length; i++ )
-                {
-                    lastIdRangeLengthForMe[i] = (int) channel.getLong();
-                }
-
                 long logIndex = channel.getLong();
 
-                return new IdAllocationState( firstNotAllocated, lastIdRangeStartForMe,
-                        lastIdRangeLengthForMe, logIndex );
+                return new IdAllocationState( firstNotAllocated, logIndex );
             }
             catch ( ReadPastEndException ex )
             {

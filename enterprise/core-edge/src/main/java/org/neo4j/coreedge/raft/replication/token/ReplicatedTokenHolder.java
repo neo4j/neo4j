@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.raft.replication.token;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -27,104 +26,66 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.core.InMemoryTokenCache;
 import org.neo4j.kernel.impl.core.NonUniqueTokenException;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.storageengine.api.TokenFactory;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 
-import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
-
-public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends TokenRecord> extends LifecycleAdapter
-        implements TokenHolder<TOKEN>, StateMachine
+public abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder<TOKEN>
 {
     protected final Dependencies dependencies;
 
-    private final InMemoryTokenCache<TOKEN> tokenCache;
     private final Replicator replicator;
+    private final TokenRegistry<TOKEN> tokenRegistry;
     private final IdGeneratorFactory idGeneratorFactory;
     private final IdType tokenIdType;
-    private final TokenFactory<TOKEN> tokenFactory;
     private final TokenType type;
     private final long timeoutMillis;
 
-    private final TokenFutures tokenFutures = new TokenFutures();
-    private final Log log;
-    private long lastCommittedIndex = Long.MAX_VALUE;
-
     // TODO: Clean up all the resolving, which now happens every time with special selection strategies.
 
-    public ReplicatedTokenHolder( Replicator replicator, IdGeneratorFactory idGeneratorFactory, IdType tokenIdType,
-                                  Dependencies dependencies, TokenFactory<TOKEN> tokenFactory, TokenType type,
-                                  long timeoutMillis, LogProvider logProvider )
+    public ReplicatedTokenHolder( TokenRegistry<TOKEN> tokenRegistry, Replicator replicator,
+                                  IdGeneratorFactory idGeneratorFactory, IdType tokenIdType,
+                                  Dependencies dependencies, TokenType type,
+                                  long timeoutMillis )
     {
         this.replicator = replicator;
+        this.tokenRegistry = tokenRegistry;
         this.idGeneratorFactory = idGeneratorFactory;
         this.tokenIdType = tokenIdType;
-        this.dependencies = dependencies;
-        this.tokenFactory = tokenFactory;
         this.type = type;
+        this.dependencies = dependencies;
         this.timeoutMillis = timeoutMillis;
-        this.tokenCache = new InMemoryTokenCache<>(tokenType() );
-        this.log = logProvider.getLog( getClass() );
-    }
-
-    protected abstract String tokenType();
-
-    @Override
-    public void start()
-    {
-        if ( lastCommittedIndex == Long.MAX_VALUE )
-        {
-            throw new IllegalStateException( "lastCommittedIndex must be set before start." );
-        }
     }
 
     @Override
     public void setInitialTokens( List<TOKEN> tokens ) throws NonUniqueTokenException
     {
-        tokenCache.clear();
-        tokenCache.putAll( tokens );
+        tokenRegistry.setInitialTokens( tokens );
     }
 
     @Override
     public void addToken( TOKEN token ) throws NonUniqueTokenException
     {
-        tokenCache.put( token );
+        tokenRegistry.addToken( token );
     }
 
     @Override
     public int getOrCreateId( String tokenName )
     {
-        Integer tokenId = tokenCache.getId( tokenName );
+        Integer tokenId = tokenRegistry.getId( tokenName );
         if ( tokenId != null )
         {
             return tokenId;
@@ -135,7 +96,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
 
     private int requestToken( String tokenName )
     {
-        try( TokenFutures.CompletableFutureTokenId tokenFuture = tokenFutures.createFuture( tokenName ) )
+        try( TokenFutures.CompletableFutureTokenId tokenFuture = tokenRegistry.createFuture( tokenName ) )
         {
             ReplicatedTokenRequest tokenRequest = new ReplicatedTokenRequest( type, tokenName, createCommands( tokenName ) );
             try
@@ -166,7 +127,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
             throw new RuntimeException( "Unable to create token '" + tokenName + "'", e );
         }
 
-        return ReplicatedTokenRequestSerializer.createCommandBytes( commands );
+        return ReplicatedTokenRequestSerializer.commandBytes( commands );
     }
 
     protected abstract void createToken( TransactionState txState, String tokenName, int tokenId );
@@ -185,13 +146,13 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
     @Override
     public TOKEN getTokenByIdOrNull( int id )
     {
-        return tokenCache.getToken( id );
+        return tokenRegistry.getToken( id );
     }
 
     @Override
     public int getIdByName( String name )
     {
-        Integer id = tokenCache.getId( name );
+        Integer id = tokenRegistry.getId( name );
         if ( id == null )
         {
             return NO_ID;
@@ -202,94 +163,12 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
     @Override
     public Iterable<TOKEN> getAllTokens()
     {
-        return tokenCache.allTokens();
-    }
-
-    @Override
-    public void applyCommand( ReplicatedContent content, long logIndex )
-    {
-        if ( content instanceof ReplicatedTokenRequest && ((ReplicatedTokenRequest) content).type().equals( type ) )
-        {
-            if ( logIndex > lastCommittedIndex )
-            {
-                ReplicatedTokenRequest tokenRequest = (ReplicatedTokenRequest) content;
-
-                Integer tokenId = tokenCache.getId( tokenRequest.tokenName() );
-
-                if ( tokenId == null )
-                {
-                    try
-                    {
-                        Collection<StorageCommand> commands =  ReplicatedTokenRequestSerializer.extractCommands( tokenRequest.commandBytes() );
-                        tokenId = applyToStore( commands, logIndex );
-                    }
-                    catch ( NoSuchEntryException e )
-                    {
-                        throw new IllegalStateException( "Commands did not contain token command" );
-                    }
-
-                    tokenCache.put( tokenFactory.newToken( tokenRequest.tokenName(), tokenId ) );
-                }
-
-                tokenFutures.complete( tokenRequest.tokenName(), tokenId );
-            }
-            else
-            {
-                log.info( "Ignoring content at index %d, since already applied up to %d",
-                        logIndex, lastCommittedIndex );
-            }
-        }
-    }
-
-    private int applyToStore( Collection<StorageCommand> commands, long logIndex ) throws NoSuchEntryException
-    {
-        int tokenId = extractTokenId( commands );
-
-        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( commands );
-        representation.setHeader( encodeLogIndexAsTxHeader(logIndex), 0, 0, 0, 0L, 0L, 0 );
-
-        TransactionCommitProcess commitProcess = dependencies.resolveDependency(
-                TransactionRepresentationCommitProcess.class );
-
-        try ( LockGroup lockGroup = new LockGroup() )
-        {
-            commitProcess.commit( new TransactionToApply( representation ),
-                    CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
-        }
-        catch ( TransactionFailureException e )
-        {
-            throw new RuntimeException( e );
-        }
-
-        return tokenId;
-    }
-
-    private int extractTokenId( Collection<StorageCommand> commands ) throws NoSuchEntryException
-    {
-        for ( StorageCommand command : commands )
-        {
-            if( command instanceof Command.TokenCommand )
-            {
-                return ((Command.TokenCommand<? extends TokenRecord>) command).getAfter().getIntId();
-            }
-        }
-        throw new NoSuchEntryException( "Expected command not found" );
-    }
-
-    public void setLastCommittedIndex( long lastCommittedIndex )
-    {
-        this.lastCommittedIndex = lastCommittedIndex;
+        return tokenRegistry.allTokens();
     }
 
     @Override
     public int size()
     {
-        return tokenCache.size();
-    }
-
-    @Override
-    public void flush() throws IOException
-    {
-        // already implicitly flushed to the transaction log.
+        return tokenRegistry.size();
     }
 }

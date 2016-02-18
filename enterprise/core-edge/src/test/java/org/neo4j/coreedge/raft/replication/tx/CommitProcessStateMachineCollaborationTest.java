@@ -30,13 +30,14 @@ import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
+import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.raft.state.StateMachines;
-import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.core.locks.LockTokenManager;
+import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -67,19 +68,25 @@ public class CommitProcessStateMachineCollaborationTest
         CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
                 new AdvertisedSocketAddress( "raft:1" ) );
 
-        StateMachines stateMachines = new StateMachines();
-        TriggeredReplicator replicator = new TriggeredReplicator( stateMachines );
+        TriggeredReplicator replicator = new TriggeredReplicator();
         StubCommittingTransactionsRegistry txFutures = new StubCommittingTransactionsRegistry( replicator,
                 timeoutCounter );
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         LocalSessionPool sessionPool = new LocalSessionPool( coreMember );
-        LockTokenManager lockState = lockState( 0 );
+        ReplicatedLockTokenStateMachine<Object> lockState = lockState( 0 );
+
+        RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
+        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+
         final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures,
-                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance() );
-        stateMachines.add( stateMachine );
+                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance(),
+                recoverTransactionLogState);
+        StateMachines stateMachines = new StateMachines(stateMachine);
+
+        replicator.setStateMachines( stateMachines );
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
                 replicator, sessionPool, new ExponentialBackoffStrategy( 10, SECONDS ),
@@ -99,19 +106,24 @@ public class CommitProcessStateMachineCollaborationTest
         CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
                 new AdvertisedSocketAddress( "raft:1" ) );
 
-        StateMachines stateMachines = new StateMachines();
-        TriggeredReplicator replicator = new TriggeredReplicator( stateMachines );
-        CommittingTransactions txFutures = new StubCommittingTransactionsRegistry( replicator );
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         LocalSessionPool sessionPool = new LocalSessionPool( coreMember );
-        LockTokenManager lockState = lockState( 1 );
+        ReplicatedLockTokenStateMachine<Object> lockState = lockState( 1 );
+
+        RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
+        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+        TriggeredReplicator replicator = new TriggeredReplicator();
+        CommittingTransactions txFutures = new StubCommittingTransactionsRegistry( replicator );
 
         final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures,
-                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance() );
-        stateMachines.add( stateMachine );
+                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance(),
+                recoverTransactionLogState );
+
+        StateMachines stateMachines = new StateMachines(stateMachine);
+        replicator.setStateMachines(stateMachines);
 
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
                 replicator, sessionPool, new ExponentialBackoffStrategy( 10, SECONDS ),
@@ -129,9 +141,9 @@ public class CommitProcessStateMachineCollaborationTest
         }
     }
 
-    public LockTokenManager lockState( int lockSessionId )
+    public ReplicatedLockTokenStateMachine<Object> lockState( int lockSessionId )
     {
-        LockTokenManager lockState = mock( LockTokenManager.class );
+        ReplicatedLockTokenStateMachine<Object> lockState = mock( ReplicatedLockTokenStateMachine.class );
         when( lockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest<>( null, lockSessionId ) );
         return lockState;
     }
@@ -142,9 +154,8 @@ public class CommitProcessStateMachineCollaborationTest
         private int timesReplicated = 0;
         private ReplicatedContent content;
 
-        public TriggeredReplicator( StateMachine stateMachine )
+        public TriggeredReplicator()
         {
-            this.stateMachine = stateMachine;
         }
 
         @Override
@@ -162,6 +173,11 @@ public class CommitProcessStateMachineCollaborationTest
         public int timesReplicated()
         {
             return timesReplicated;
+        }
+
+        public void setStateMachines( StateMachines stateMachine )
+        {
+            this.stateMachine = stateMachine;
         }
     }
 

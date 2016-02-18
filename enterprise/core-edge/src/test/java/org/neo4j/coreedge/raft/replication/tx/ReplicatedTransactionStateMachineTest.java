@@ -30,8 +30,9 @@ import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.core.locks.LockTokenManager;
+import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -69,9 +70,13 @@ public class ReplicatedTransactionStateMachineTest
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
+        RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
+        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+
         final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, globalSession, lockState( lockSessionId ), new CommittingTransactionsRegistry(),
-                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance(),
+                recoverTransactionLogState);
 
         // when
         listener.applyCommand( tx, 0 );
@@ -91,10 +96,14 @@ public class ReplicatedTransactionStateMachineTest
         ReplicatedTransaction tx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction(
                 physicalTx( lockSessionId ), globalSession, localOperationId );
 
+        RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
+        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
         ReplicatedTransactionStateMachine<CoreMember> listener = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, globalSession, lockState( lockSessionId ), new CommittingTransactionsRegistry(),
-                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance(),
+                recoverTransactionLogState);
 
         // when
         listener.applyCommand( tx, 0 );
@@ -118,10 +127,14 @@ public class ReplicatedTransactionStateMachineTest
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
+        RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
+        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+
         CommittingTransactions committingTransactions = new CommittingTransactionsRegistry();
         final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, globalSession, lockState( currentLockSessionId ), committingTransactions,
-                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance(),
+                recoverTransactionLogState);
 
         CommittingTransaction future = committingTransactions.register( localOperationId );
 
@@ -153,10 +166,14 @@ public class ReplicatedTransactionStateMachineTest
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
+        RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
+        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+
         CommittingTransactions committingTransactions = new CommittingTransactionsRegistry();
         final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, globalSession, lockState( currentLockSessionId ), committingTransactions,
-                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance(),
+                recoverTransactionLogState);
 
         CommittingTransaction future = committingTransactions.register( localOperationId );
 
@@ -174,9 +191,9 @@ public class ReplicatedTransactionStateMachineTest
         return physicalTx;
     }
 
-    public LockTokenManager lockState( int lockSessionId )
+    public <MEMBER> ReplicatedLockTokenStateMachine<MEMBER> lockState( int lockSessionId )
     {
-        LockTokenManager lockState = mock( LockTokenManager.class );
+        ReplicatedLockTokenStateMachine<MEMBER> lockState = mock( ReplicatedLockTokenStateMachine.class );
         when( lockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest<>( null, lockSessionId ) );
         return lockState;
     }
