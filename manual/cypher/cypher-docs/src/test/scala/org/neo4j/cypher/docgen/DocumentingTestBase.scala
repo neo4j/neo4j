@@ -43,6 +43,8 @@ import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.api.index.IndexingService
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.query.QueryEngineProvider
+import org.neo4j.kernel.impl.query.QueryEngineProvider.embeddedSession
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
 import org.neo4j.test.{AsciiDocGenerator, GraphDescription, TestGraphDatabaseFactory}
 import org.neo4j.visualization.asciidoc.AsciidocHelper
@@ -307,7 +309,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
     val results = planners.flatMap {
       case s if expectedException.isEmpty =>
-        val rewindable = RewindableExecutionResult(engine.execute(s"$s $query", parameters))
+        val rewindable = RewindableExecutionResult(engine.execute(s"$s $query", parameters,embeddedSession()))
         db.inTx(assertions(rewindable))
         val dump = rewindable.dumpToString()
         if (graphvizExecutedAfter && s == planners.head) {
@@ -318,7 +320,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
         Some(dump)
 
       case s =>
-        val e = intercept[CypherException](engine.execute(s"$s $query", parameters))
+        val e = intercept[CypherException](engine.execute(s"$s $query", parameters,embeddedSession()))
         val expectedExceptionType = expectedException.get
         e match {
           case expectedExceptionType(typedE) => expectedCaught(typedE)
@@ -381,7 +383,11 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
   def executePreparationQueries(queries: List[String]) {
     preparationQueries = queries
-    preparationQueries.foreach(engine.execute)
+    executeQueries(queries)
+  }
+
+  def executeQueries(queries: List[String]) {
+    preparationQueries.foreach( q => engine.execute(q, Map.empty[String,Object], QueryEngineProvider.embeddedSession()))
   }
 
   protected def sampleAllIndicesAndWait(mode: IndexSamplingMode = IndexSamplingMode.TRIGGER_REBUILD_ALL, time: Long = 10, unit: TimeUnit = TimeUnit.SECONDS) = {
@@ -466,9 +472,9 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
         case (name, node) => name -> node.getId
       }.toMap
 
-      setupQueries.foreach(engine.execute)
+      executeQueries(setupQueries)
 
-      db.getAllNodes.asScala.foreach((n) => {
+      db.getAllNodes().asScala.foreach((n) => {
         indexProperties(n, nodeIndex)
         n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
       })
@@ -479,7 +485,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
       }
     }
 
-    setupConstraintQueries.foreach(engine.execute)
+    executeQueries(setupConstraintQueries)
   }
 
   private def asNodeMap[T: ClassTag](m: Map[String, T]): Map[Node, T] =
@@ -499,7 +505,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
                         result: Either[CypherException, String],
                         consoleData: String,
                         parameters: Map[String, Any]) {
-    if (parameters != null && !parameters.isEmpty) {
+    if (parameters != null && parameters.nonEmpty) {
       writer.append(JavaExecutionEngineDocTest.parametersToAsciidoc(mapMapValue(parameters)))
     }
     val output = new StringBuilder(2048)

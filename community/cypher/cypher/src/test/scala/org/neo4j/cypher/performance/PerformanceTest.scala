@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.graphdb.{Node, RelationshipType}
+import org.neo4j.kernel.impl.query.QueryEngineProvider
 
 import scala.util.Random
 
@@ -68,7 +69,10 @@ class PerformanceTest extends CypherFunSuite {
     val engine = new ExecutionEngine(db)
 
     val t0 = System.nanoTime : Double
-    engine.execute("start a=node({root}) match a-->b-->c, b-->d return a,count(*)", Map("root"->startPoints)).toList
+    engine.execute(
+      "start a=node({root}) match a-->b-->c, b-->d return a,count(*)",
+      Map("root"->startPoints),
+      QueryEngineProvider.embeddedSession()).toList
     val t1 = System.nanoTime : Double
     println("Elapsed time " + (t1 - t0) / 1000000.0 + " msecs")
   }
