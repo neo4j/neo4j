@@ -234,12 +234,7 @@ public class OutputMappers
     {
         return asList( userClass.getDeclaredFields() ).stream()
                 .filter( ( f ) -> !isStatic( f.getModifiers() ) &&
-                                  !isSynthetic( f.getModifiers() ) )
+                                  !f.isSynthetic( ) )
                 .collect( toList() );
-    }
-
-    private static boolean isSynthetic( int modifiers )
-    {
-        return (modifiers & 0x00001000) != 0;
     }
 }
