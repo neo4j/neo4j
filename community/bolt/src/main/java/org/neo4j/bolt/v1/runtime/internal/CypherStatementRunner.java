@@ -22,25 +22,23 @@ package org.neo4j.bolt.v1.runtime.internal;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QuerySession;
 
 public class CypherStatementRunner implements StatementRunner
 {
-    private final GraphDatabaseService db;
     private final QueryExecutionEngine queryExecutionEngine;
 
-    public CypherStatementRunner( GraphDatabaseService db, QueryExecutionEngine queryExecutionEngine )
+    public CypherStatementRunner( QueryExecutionEngine queryExecutionEngine )
     {
-        this.db = db;
         this.queryExecutionEngine = queryExecutionEngine;
     }
 
     @Override
-    public RecordStream run( final SessionState ctx, final String statement,
-            final Map<String,Object> params ) throws KernelException
+    public RecordStream run( final SessionState ctx, final String statement, final Map<String,Object> params )
+            throws KernelException
     {
         // Temporary until we move parsing to cypher, or run a parser up here
         if ( statement.equalsIgnoreCase( "begin" ) )
@@ -60,19 +58,28 @@ public class CypherStatementRunner implements StatementRunner
         }
         else if ( statement.equalsIgnoreCase( "foobar" ) )
         {
-            throw new RuntimeException("Foobar occurred");
+            throw new RuntimeException( "Foobar occurred" );
         }
         else
         {
-            if ( ctx.hasTransaction() || queryExecutionEngine.isPeriodicCommit( statement ) )
-            {
-                return new CypherAdapterStream( db.execute( statement, params ) );
-            }
-            else
+            // begin transaction if there is no open transaction,
+            // but avoid opening it for the special case of periodic commit
+            if ( !ctx.hasTransaction() && !queryExecutionEngine.isPeriodicCommit( statement ) )
             {
                 ctx.beginImplicitTransaction();
-                return new CypherAdapterStream( db.execute( statement, params ) );
             }
+
+            return new CypherAdapterStream(
+                    queryExecutionEngine.executeQuery( statement, params, new BoltQuerySession() ) );
+        }
+    }
+
+    static class BoltQuerySession extends QuerySession
+    {
+        @Override
+        public String toString()
+        {
+            return "bolt";
         }
     }
 }
