@@ -38,8 +38,8 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
@@ -179,11 +179,11 @@ class InMemoryIndex
         }
 
         @Override
-        public long sampleResult( DoubleLong.Out result )
+        public IndexSample sampleResult()
         {
             try
             {
-                return indexData.createSampler().sampleIndex( result );
+                return indexData.createSampler().sampleIndex();
             }
             catch ( IndexNotFoundKernelException e )
             {

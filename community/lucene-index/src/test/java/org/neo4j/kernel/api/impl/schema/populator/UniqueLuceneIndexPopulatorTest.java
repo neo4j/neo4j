@@ -44,9 +44,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -497,14 +496,9 @@ public class UniqueLuceneIndexPopulatorTest
     {
         populator = newPopulator();
 
-        Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
-        long indexSize = populator.sampleResult( register );
-        long uniqueElements = register.readFirst();
-        long sampleSize = register.readSecond();
+        IndexSample sample = populator.sampleResult();
 
-        assertEquals( 0, indexSize );
-        assertEquals( 0, uniqueElements );
-        assertEquals( 0, sampleSize );
+        assertEquals( new IndexSample(), sample );
     }
 
     @Test
@@ -519,14 +513,9 @@ public class UniqueLuceneIndexPopulatorTest
 
         updates.forEach( populator::includeSample );
 
-        Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
-        long indexSize = populator.sampleResult( register );
-        long uniqueElements = register.readFirst();
-        long sampleSize = register.readSecond();
+        IndexSample sample = populator.sampleResult();
 
-        assertEquals( 4, indexSize );
-        assertEquals( 4, uniqueElements );
-        assertEquals( 4, sampleSize );
+        assertEquals( new IndexSample( 4, 4, 4 ), sample );
     }
 
     @Test

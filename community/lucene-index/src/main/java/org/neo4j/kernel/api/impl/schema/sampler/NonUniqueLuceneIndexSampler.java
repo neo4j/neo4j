@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
-import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
  * Sampler for non-unique Lucene schema index.
@@ -55,7 +55,7 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
     }
 
     @Override
-    protected long performSampling( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
+    protected IndexSample performSampling() throws IndexNotFoundKernelException
     {
         NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( indexSamplingConfig.bufferSize() );
         for ( LeafReaderContext readerContext : indexSearcher.getIndexReader().leaves() )
@@ -84,7 +84,7 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
             }
         }
 
-        return sampler.result( result );
+        return sampler.result();
     }
 
     private static Set<String> getFieldNamesToSample( LeafReaderContext readerContext ) throws IOException

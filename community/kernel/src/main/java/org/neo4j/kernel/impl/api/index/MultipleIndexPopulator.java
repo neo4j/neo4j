@@ -45,9 +45,9 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.register.Register.DoubleLong.Out;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
@@ -314,7 +314,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public long sampleResult( Out result )
+    public IndexSample sampleResult()
     {
         throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
     }
@@ -531,10 +531,9 @@ public class MultipleIndexPopulator implements IndexPopulator
             flipper.flip( () -> {
                 populateFromQueueIfAvailable( Long.MAX_VALUE );
                 DoubleLongRegister result = Registers.newDoubleLongRegister();
-                long indexSize = populator.sampleResult( result );
-                long uniqueElements = result.readFirst();
-                long sampleSize = result.readSecond();
-                storeView.replaceIndexCounts( descriptor, uniqueElements, sampleSize, indexSize );
+                IndexSample sample = populator.sampleResult();
+                storeView.replaceIndexCounts( descriptor, sample.uniqueValues(), sample.sampleSize(),
+                        sample.indexSize() );
 
                 populator.close( true );
                 return null;

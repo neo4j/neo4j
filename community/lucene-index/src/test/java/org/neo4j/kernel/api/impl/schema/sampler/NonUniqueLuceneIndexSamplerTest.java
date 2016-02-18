@@ -47,8 +47,7 @@ import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -76,7 +75,7 @@ public class NonUniqueLuceneIndexSamplerTest
 
         NonUniqueLuceneIndexSampler luceneIndexSampler = createSampler();
         taskControl.cancel();
-        luceneIndexSampler.sampleIndex( Registers.newDoubleLongRegister() );
+        luceneIndexSampler.sampleIndex();
     }
 
     @Test
@@ -89,15 +88,7 @@ public class NonUniqueLuceneIndexSamplerTest
         IndexReaderStub indexReader = new IndexReaderStub( new SamplingFields( fieldTermsMap ) );
         when( indexSearcher.getIndexReader() ).thenReturn( indexReader );
 
-        NonUniqueLuceneIndexSampler luceneIndexSampler = createSampler();
-        Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
-        long sample = luceneIndexSampler.sampleIndex( register );
-
-        // unique values
-        assertEquals( 2, register.readFirst() );
-        // total values
-        assertEquals( 4, register.readSecond() );
-        assertEquals( 4, sample );
+        assertEquals( new IndexSample( 4, 2, 4 ), createSampler().sampleIndex() );
     }
 
     @Test
@@ -112,24 +103,13 @@ public class NonUniqueLuceneIndexSamplerTest
 
             indexPartition.maybeRefreshBlocking();
 
-            long indexSize;
-            long uniqueElements;
-            long sampleSize;
-
             try ( PartitionSearcher searcher = indexPartition.acquireSearcher() )
             {
                 NonUniqueLuceneIndexSampler sampler = new NonUniqueLuceneIndexSampler( searcher.getIndexSearcher(),
                         taskControl.newInstance(), new IndexSamplingConfig( new Config() ) );
 
-                Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
-                indexSize = sampler.sampleIndex( register );
-                uniqueElements = register.readFirst();
-                sampleSize = register.readSecond();
+                assertEquals( new IndexSample( 2, 2, 2 ), sampler.sampleIndex() );
             }
-
-            assertEquals( 2, indexSize );
-            assertEquals( 2, uniqueElements );
-            assertEquals( 2, sampleSize );
         }
     }
 

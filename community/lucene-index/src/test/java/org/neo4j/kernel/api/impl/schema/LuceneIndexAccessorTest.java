@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.test.ThreadingRule;
@@ -54,7 +53,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 import static org.neo4j.test.ThreadingRule.waitingWhileIn;
@@ -307,7 +305,7 @@ public class LuceneIndexAccessorTest
 
         try ( IndexReader reader = indexReader /* do not inline! */ )
         {
-            indexSampler.sampleIndex( Registers.newDoubleLongRegister() );
+            indexSampler.sampleIndex();
             fail( "expected exception" );
         }
         catch ( IndexNotFoundKernelException e )

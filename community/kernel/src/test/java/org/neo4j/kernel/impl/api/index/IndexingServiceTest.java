@@ -78,9 +78,9 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
-import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.DoubleLatch;
 
@@ -149,6 +149,7 @@ public class IndexingServiceTest
     @Before
     public void setUp()
     {
+        when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) )
                 .thenAnswer( invocation -> invocation.getArguments()[1] );
     }
@@ -248,7 +249,7 @@ public class IndexingServiceTest
         order.verify( populator ).newPopulatingUpdater( storeView );
         order.verify( updater ).close();
         order.verify( populator ).verifyDeferredConstraints( storeView );
-        order.verify( populator ).sampleResult( any( Register.DoubleLong.Out.class ) );
+        order.verify( populator ).sampleResult();
         order.verify( populator ).close( true );
         verifyNoMoreInteractions( updater );
         verifyNoMoreInteractions( populator );

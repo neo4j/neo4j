@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
-import org.neo4j.register.Register.DoubleLong;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
@@ -118,8 +118,8 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public long sampleResult( DoubleLong.Out result )
+    public IndexSample sampleResult()
     {
-        return sampler.result( result );
+        return sampler.result();
     }
 }

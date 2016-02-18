@@ -70,7 +70,7 @@ import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.register.Register.DoubleLong;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterRule;
 
@@ -477,9 +477,9 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public long sampleResult( DoubleLong.Out result )
+        public IndexSample sampleResult()
         {
-            return delegate.sampleResult( result );
+            return delegate.sampleResult();
         }
     }
 

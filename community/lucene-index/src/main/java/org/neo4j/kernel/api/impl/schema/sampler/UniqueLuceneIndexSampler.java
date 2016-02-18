@@ -24,7 +24,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
-import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
  * Sampler for unique Lucene schema index.
@@ -41,11 +41,11 @@ public class UniqueLuceneIndexSampler extends LuceneIndexSampler
     }
 
     @Override
-    protected long performSampling( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
+    protected IndexSample performSampling() throws IndexNotFoundKernelException
     {
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         sampler.increment( indexSearcher.getIndexReader().numDocs() );
         checkCancellation();
-        return sampler.result( result );
+        return sampler.result();
     }
 }

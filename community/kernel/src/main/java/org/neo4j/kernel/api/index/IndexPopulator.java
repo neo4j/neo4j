@@ -25,7 +25,7 @@ import java.util.List;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
-import org.neo4j.register.Register.DoubleLong;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
  * Used for initial population of an index.
@@ -115,7 +115,7 @@ public interface IndexPopulator
      */
     void includeSample( NodePropertyUpdate update );
 
-    long sampleResult( DoubleLong.Out result );
+    IndexSample sampleResult();
 
     class Adapter implements IndexPopulator
     {
@@ -161,10 +161,9 @@ public interface IndexPopulator
         }
 
         @Override
-        public long sampleResult( DoubleLong.Out result )
+        public IndexSample sampleResult()
         {
-            result.write( 0l, 0l );
-            return 0;
+            return new IndexSample();
         }
     }
 }

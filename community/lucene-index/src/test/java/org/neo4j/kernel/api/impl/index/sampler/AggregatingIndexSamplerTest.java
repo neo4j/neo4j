@@ -19,34 +19,28 @@
  */
 package org.neo4j.kernel.api.impl.index.sampler;
 
-
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static org.junit.Assert.assertEquals;
 
 public class AggregatingIndexSamplerTest
 {
-
     @Test
     public void samplePartitionedIndex() throws IndexNotFoundKernelException
     {
         List<IndexSampler> samplers = Arrays.asList( createSampler( 1 ), createSampler( 2 ) );
         AggregatingIndexSampler partitionedSampler = new AggregatingIndexSampler( samplers );
 
-        Register.DoubleLongRegister resultRegister = Registers.newDoubleLongRegister( 0, 0 );
-        long sampleIndex = partitionedSampler.sampleIndex( resultRegister );
+        IndexSample sample = partitionedSampler.sampleIndex();
 
-        assertEquals( 3, sampleIndex );
-        assertEquals( 3, resultRegister.readFirst() );
-        assertEquals( 6, resultRegister.readSecond() );
+        assertEquals( new IndexSample( 3, 3, 6 ), sample );
     }
 
     private IndexSampler createSampler( long value )
@@ -64,10 +58,9 @@ public class AggregatingIndexSamplerTest
         }
 
         @Override
-        public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
+        public IndexSample sampleIndex() throws IndexNotFoundKernelException
         {
-            result.write( value, value * 2 );
-            return value;
+            return new IndexSample( value, value, value * 2 );
         }
     }
 }
