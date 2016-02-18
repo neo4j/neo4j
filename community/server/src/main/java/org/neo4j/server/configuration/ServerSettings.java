@@ -208,7 +208,8 @@ public interface ServerSettings
     @Internal
     Setting<File> database_path = derivedSetting( "dbms.internal.derived.directories.database",
             data_directory, active_database,
-            ( data, current ) -> new File( new File( data, "databases" ), current ) );
+            ( data, current ) -> new File( new File( data, "databases" ), current ),
+            PATH);
 
     @Internal
     Setting<Boolean> webadmin_enabled = setting( "dbms.webadmin.enabled", BOOLEAN, TRUE );

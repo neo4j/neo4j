@@ -154,7 +154,8 @@ public class Settings
 
     public static <OUT, IN1, IN2> Setting<OUT> derivedSetting( String name,
                                                                Setting<IN1> in1, Setting<IN2> in2,
-                                                               BiFunction<IN1, IN2, OUT> derivation )
+                                                               BiFunction<IN1, IN2, OUT> derivation,
+                                                               Function<String, OUT> overrideConverter)
     {
         return new Setting<OUT>()
         {
@@ -173,9 +174,14 @@ public class Settings
             @Override
             public OUT apply( Function<String, String> config )
             {
-                if ( config.apply( name ) != null )
+                String override = config.apply( name );
+                if ( override != null )
                 {
-                    throw new IllegalArgumentException( "You may not set a value for derived setting " + name );
+                    // Derived settings are intended not to be overridden and we should throw an exception here. However
+                    // we temporarily need to allow the Desktop app to override the value of the derived setting
+                    // dbms.internal.derived.directories.database because we are not yet in a position to rework it to
+                    // conform to the standard directory structure layout.
+                    return overrideConverter.apply( override );
                 }
                 return derivation.apply( in1.apply( config ), in2.apply( config ) );
             }
