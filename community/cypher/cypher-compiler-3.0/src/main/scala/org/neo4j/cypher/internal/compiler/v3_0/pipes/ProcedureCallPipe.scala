@@ -24,21 +24,25 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{AllEffects, ProcedureCallMode}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.ScalaCompatibility.asScalaCompatible
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, JavaResultValueConverter}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.Signature
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, ProcedureName}
+import org.neo4j.cypher.internal.frontend.v3_0.spi.QualifiedProcedureName
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
-case class CallProcedurePipe(source: Pipe,
+case class ProcedureCallPipe(source: Pipe,
                              name: ProcedureName,
                              callMode: ProcedureCallMode,
                              argExprs: Seq[Expression],
-                             resultFields: Seq[FieldSignature])
+                             resultSymbols: Seq[(String, CypherType)],
+                             resultIndices: Seq[(Int, String)])
                             (val estimatedCardinality: Option[Double] = None)
                             (implicit monitor: PipeMonitor)
   extends PipeWithSource(source, monitor) with CollectionSupport with RonjaPipe {
 
-  val numResultFields = resultFields.length
-  val resultFieldNames = resultFields.map(_.name)
   val builder = Seq.newBuilder[(String, Any)]
+
+  builder.sizeHint(resultIndices.length)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
@@ -53,10 +57,8 @@ case class CallProcedurePipe(source: Pipe,
         val results = callMode.call(qtx, name, argValues)
 
         results map { resultValues =>
-          var i = 0
-          while (i < numResultFields) {
-            builder += resultFieldNames(i) -> asScalaCompatible(resultValues(i))
-            i += 1
+          resultIndices foreach { entry =>
+            builder += entry._2 -> asScalaCompatible(resultValues(entry._1))
           }
           val rowEntries = builder.result()
           val output = input.newWith(rowEntries)
@@ -66,14 +68,15 @@ case class CallProcedurePipe(source: Pipe,
     }
   }
 
-  // TODO: ProcedureName etc
-  def planDescriptionWithoutCardinality: InternalPlanDescription =
-    PlanDescriptionImpl(this.id, "CallProcedure", SingleChild(source.planDescription), Seq(), variables)
+  def planDescriptionWithoutCardinality: InternalPlanDescription = {
+    PlanDescriptionImpl(this.id, "ProcedureCall", SingleChild(source.planDescription), Seq(
+      Signature(QualifiedProcedureName(name.namespace, name.name), argExprs, resultSymbols)
+    ), variables)
+  }
 
-  def symbols =
-    resultFields.foldLeft(source.symbols) {
-      case (symbols, sig) =>
-        symbols.add(sig.name, sig.typ.legacyIteratedType)
+  def symbols = resultSymbols.foldLeft(source.symbols) {
+      case (symbols, (symbolName, symbolType)) =>
+        symbols.add(symbolName, symbolType.legacyIteratedType)
     }
 
   override def localEffects = AllEffects

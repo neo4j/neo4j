@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureName, ProcedureSignature}
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{QualifiedProcedureName, ProcedureSignature}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.frontend.v3_0.{Foldable, PropertyKeyId, SemanticTable, _}
 import org.neo4j.graphdb.Node
@@ -156,7 +156,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
 
-      override def procedureSignature(name: ProcedureName): ProcedureSignature = ???
+      override def procedureSignature(name: QualifiedProcedureName): ProcedureSignature = ???
     }
 
     def planFor(queryString: String): SemanticPlan = {

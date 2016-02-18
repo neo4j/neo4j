@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression._
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureName, ProcedureSignature}
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{QualifiedProcedureName, ProcedureSignature}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, TypeSpec, _}
 import org.neo4j.cypher.internal.frontend.v3_0._
 import SemanticCheckResult._
@@ -39,10 +39,10 @@ object Expression {
 
   implicit class SemanticCheckableOption[A <: Expression](option: Option[A]) {
     def semanticCheck(ctx: SemanticContext): SemanticCheck =
-      option.fold(SemanticCheckResult.success) { _.semanticCheck(ctx) }
+      option.fold(success) { _.semanticCheck(ctx) }
 
     def expectType(possibleTypes: => TypeSpec): SemanticCheck =
-      option.fold(SemanticCheckResult.success) { _.expectType(possibleTypes) }
+      option.fold(success) { _.expectType(possibleTypes) }
   }
 
   implicit class SemanticCheckableExpressionTraversable[A <: Expression](traversable: TraversableOnce[A]) extends SemanticChecking {
@@ -137,7 +137,7 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
         val expectedTypesString = possibleTypes.mkString(", ", " or ")
         SemanticCheckResult.error(ss, SemanticError("Type mismatch: " + messageGen(expectedTypesString, existingTypesString), position))
       case (ss, _)             =>
-        SemanticCheckResult.success(ss)
+        success(ss)
     }
   }
 
@@ -167,7 +167,7 @@ trait FunctionTyping { self: Expression =>
   def checkTypes: SemanticCheck = s => {
     val initSignatures = signatures.filter(_.argumentTypes.length == arguments.length)
 
-    val (remainingSignatures: Seq[Signature], result) = arguments.foldLeft((initSignatures, SemanticCheckResult.success(s))) {
+    val (remainingSignatures: Seq[Signature], result) = arguments.foldLeft((initSignatures, success(s))) {
       case (accumulator@(Seq(), _), _) =>
         accumulator
       case ((possibilities, r1), arg)  =>
@@ -206,53 +206,3 @@ trait InfixFunctionTyping extends FunctionTyping { self: Expression =>
   def lhs: Expression
   def rhs: Expression
 }
-
-case class ProcedureCall(namespace: List[String],
-                         literalName: LiteralProcedureName,
-                         // None <=> Called without arguments (i.e. pulls them from parameters)
-                         providedArgs: Option[Seq[Expression]],
-                         resultFields: Option[Seq[Variable]] = None
-                        )(val position: InputPosition) extends Expression {
-
-  def procedureName = ProcedureName(namespace, literalName.name)
-
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = {
-    val checkArgs = providedArgs.map(_.semanticCheck(ctx)).getOrElse(SemanticCheckResult.success)
-    val checkResults = resultFields.map(_.foldSemanticCheck(_.declare(CTAny))).getOrElse(SemanticCheckResult.success)
-
-    checkArgs chain checkResults
-  }
-
-  // TODO: Unit Test
-  def semanticCheck(ctx: SemanticContext, signature: ProcedureSignature): SemanticCheck = {
-    val checkArgs = providedArgs.map { args =>
-      val expectedNumArgs = signature.inputSignature.length
-      val actualNumArgs = args.length
-      if (expectedNumArgs == actualNumArgs) {
-        signature.inputSignature.zip(args).map { input =>
-          val (fieldSig, arg) = input
-          arg.semanticCheck(ctx) chain arg.expectType(fieldSig.typ.covariant)
-        }.foldLeft(success)(_ chain _)
-      } else {
-        error(_: SemanticState, SemanticError(s"Procedure call does not provide the required number of arguments ($expectedNumArgs) ", position))
-      }
-    }.getOrElse(success)
-
-    val checkResults =
-      resultFields.map { resultFields =>
-        val expectedResultFields = signature.outputSignature.length
-        val actualResultFields = resultFields.length
-        if (expectedResultFields == actualResultFields) {
-          signature.outputSignature.zip(resultFields).map { output =>
-            val (fieldSig, result) = output
-            result.declare(fieldSig.typ)
-          }.foldLeft(success)(_ chain _)
-        } else {
-          error(_: SemanticState, SemanticError(s"Procedure call does not declare the required number of result fields ($expectedResultFields) ", position))
-        }
-      }.getOrElse(error(_: SemanticState, SemanticError("Procedures called from within a Cypher query must explicitly name result fields", position)))
-
-      checkArgs chain checkResults
-  }
-}
-

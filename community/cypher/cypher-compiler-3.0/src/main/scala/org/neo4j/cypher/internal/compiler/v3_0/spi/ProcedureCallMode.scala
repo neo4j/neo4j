@@ -78,6 +78,11 @@ case class ProcedureSignature(name: ProcedureName,
                               outputSignature: Seq[FieldSignature],
                               mode: ProcedureCallMode = LazyReadOnlyCallMode)
 
+object ProcedureName {
+  def apply(name: frontend.QualifiedProcedureName): ProcedureName =
+    ProcedureName(name.namespace, name.name)
+}
+
 case class ProcedureName(namespace: Seq[String], name: String) {
   override def toString = s"""${namespace.mkString(".")}.$name"""
 }

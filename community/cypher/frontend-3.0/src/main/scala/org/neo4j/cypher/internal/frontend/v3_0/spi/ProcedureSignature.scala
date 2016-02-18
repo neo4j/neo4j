@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.frontend.v3_0.spi
 
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
-case class ProcedureSignature(name: ProcedureName,
+case class ProcedureSignature(name: QualifiedProcedureName,
                               inputSignature: Seq[FieldSignature],
                               outputSignature: Seq[FieldSignature],
                               accessMode: ProcedureAccessMode)
 
-case class ProcedureName(namespace: Seq[String], name: String) {
+case class QualifiedProcedureName(namespace: Seq[String], name: String) {
   override def toString = s"""${namespace.mkString(".")}.$name"""
 }
 

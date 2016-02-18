@@ -22,6 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_0.planDescription
 import org.neo4j.cypher.internal.compiler.v3_0.commands
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyLabel, LazyTypes, SeekArgs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.compiler.v3_0.spi.ProcedureName
+import org.neo4j.cypher.internal.frontend.v3_0.spi.QualifiedProcedureName
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, ast}
 
 /**
@@ -91,6 +94,17 @@ object InternalPlanDescription {
     case class KeyExpressions(expressions: Seq[commands.expressions.Expression]) extends Argument
     case class EntityByIdRhs(value: PipeEntityByIdRhs) extends Argument
     case class EstimatedRows(value: Double) extends Argument
+    object Signature {
+      def apply(procedureName: QualifiedProcedureName,
+               args: Seq[commands.expressions.Expression],
+               results: Seq[(String, CypherType)]): Signature = {
+        val argString = args.mkString(", ")
+        val resultString = results.map { case (name, typ) => s"$name :: $typ" }.mkString(", ")
+        val signatureString = s"$procedureName($argString) :: ($resultString)"
+        Signature(signatureString)
+      }
+    }
+    case class Signature(value: String) extends Argument
     case class Version(value: String) extends Argument {
       override def name = "version"
     }
