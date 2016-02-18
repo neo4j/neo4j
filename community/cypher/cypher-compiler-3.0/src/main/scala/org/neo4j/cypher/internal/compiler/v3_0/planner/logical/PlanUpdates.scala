@@ -30,31 +30,19 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{ContainerIndex, PathExpressi
 case object PlanUpdates
   extends LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] {
 
-  override def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    // Eagerness pass 1 -- does previously planned reads conflict with future writes?
-    val plan = if (firstPlannerQuery)
-      Eagerness.headReadWriteEagerize(in, query)
-    else
-      //// NOTE: tailReadWriteEagerizeRecursive is done after updates, below
-      Eagerness.tailReadWriteEagerizeNonRecursive(in, query)
-
-    val updatePlan = query.queryGraph.mutatingPatterns.foldLeft(plan) {
-      case (acc, pattern) => planUpdate(query, acc, pattern, firstPlannerQuery)
+  override def apply(query: PlannerQuery, in: LogicalPlan, isFirstPlannerQuery: Boolean)
+                    (implicit context: LogicalPlanningContext): LogicalPlan =
+    query.queryGraph.mutatingPatterns.foldLeft(in) {
+      case (acc, pattern) => planUpdate(query, acc, pattern, isFirstPlannerQuery)
     }
-
-    if (firstPlannerQuery)
-      Eagerness.headWriteReadEagerize(updatePlan, query)
-    else {
-      Eagerness.tailWriteReadEagerize(Eagerness.tailReadWriteEagerizeRecursive(updatePlan, query), query)
-    }
-  }
 
   private def planUpdate(query: PlannerQuery, source: LogicalPlan, pattern: MutatingPattern, first: Boolean)
                           (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    def planAllUpdatesRecursively(query: PlannerQuery, plan: LogicalPlan): LogicalPlan = {
+    def planAllUpdatesRecursively(query: PlannerQuery, plan: LogicalPlan)
+                                 (implicit context: LogicalPlanningContext): LogicalPlan = {
       query.allPlannerQueries.foldLeft((plan, true)) {
-        case ((accPlan, innerFirst), plannerQuery) => (this.apply(plannerQuery, accPlan, innerFirst), false)
+        case ((accPlan, innerFirst), plannerQuery) => (context.planUpdates(plannerQuery, accPlan, innerFirst), false)
       }._1
     }
 
@@ -104,7 +92,7 @@ case object PlanUpdates
       //REMOVE n:Foo:Bar
       case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(source, pattern)
       //DELETE a
-      case p: DeleteExpression =>
+      case p: DeleteExpressionPattern =>
         val delete = p.expression match {
           //DELETE user
           case Variable(n) if context.semanticTable.isNode(n) =>

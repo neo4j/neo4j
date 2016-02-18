@@ -499,7 +499,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     AntiConditionalApply(inner, outer, idNames)(solved)
   }
 
-  def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression)
+  def planDeleteNode(inner: LogicalPlan, delete: DeleteExpressionPattern)
                             (implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(delete))
@@ -508,7 +508,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     else DeleteNode(inner, delete.expression)(solved)
   }
 
-  def planDeleteRelationship(inner: LogicalPlan, delete: DeleteExpression)
+  def planDeleteRelationship(inner: LogicalPlan, delete: DeleteExpressionPattern)
                     (implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(delete))
@@ -516,7 +516,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     DeleteRelationship(inner, delete.expression)(solved)
   }
 
-  def planDeletePath(inner: LogicalPlan, delete: DeleteExpression)
+  def planDeletePath(inner: LogicalPlan, delete: DeleteExpressionPattern)
                             (implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(delete))
@@ -525,7 +525,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     else DeletePath(inner, delete.expression)(solved)
   }
 
-  def planDeleteExpression(inner: LogicalPlan, delete: DeleteExpression)
+  def planDeleteExpression(inner: LogicalPlan, delete: DeleteExpressionPattern)
                           (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(delete))
 

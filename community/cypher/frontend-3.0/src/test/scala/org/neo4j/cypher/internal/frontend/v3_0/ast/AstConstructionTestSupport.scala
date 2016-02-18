@@ -41,4 +41,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def literalInt(intValue: Int): SignedDecimalIntegerLiteral =
     SignedDecimalIntegerLiteral(intValue.toString)(pos)
+
+  def collection(exp: Expression*): Collection = Collection(exp)(pos)
 }

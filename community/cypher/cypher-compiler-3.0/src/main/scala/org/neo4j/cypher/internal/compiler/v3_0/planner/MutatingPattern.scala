@@ -62,7 +62,7 @@ case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: E
 
 case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern with NoSymbols
 
-case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern with NoSymbols
+case class DeleteExpressionPattern(expression: Expression, forced: Boolean) extends MutatingPattern with NoSymbols
 
 trait MergePattern {
   self : MutatingPattern =>

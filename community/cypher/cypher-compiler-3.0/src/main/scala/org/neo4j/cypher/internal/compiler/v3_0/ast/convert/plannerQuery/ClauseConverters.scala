@@ -193,7 +193,7 @@ object ClauseConverters {
   }
 
   private def addDeleteToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Delete): PlannerQueryBuilder = {
-    acc.amendQueryGraph(_.addMutatingPatterns(clause.expressions.map(DeleteExpression(_, clause.forced)): _*))
+    acc.amendQueryGraph(_.addMutatingPatterns(clause.expressions.map(DeleteExpressionPattern(_, clause.forced)): _*))
   }
 
   private def asReturnItems(current: QueryGraph, clause: ReturnItems): Seq[ReturnItem] =

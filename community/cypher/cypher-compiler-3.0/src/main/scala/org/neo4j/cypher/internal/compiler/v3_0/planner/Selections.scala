@@ -96,10 +96,14 @@ case class Selections(predicates: Set[Predicate] = Set.empty) extends PageDocFor
 
     predicates.foldLeft(Map.empty[IdName, Set[Property]]) {
 
-      // We rewrite set property expressions to use In (and not Equals)
+      // In most situations, we rewrite set property expressions to use In
       case (acc, Predicate(_, In(prop@Property(key: Variable, _), _))) =>
         updateMap(acc, IdName.fromVariable(key), prop)
       case (acc, Predicate(_, In(_, prop@Property(key: Variable, _)))) =>
+        updateMap(acc, IdName.fromVariable(key), prop)
+      case (acc, Predicate(_, Equals(_, prop@Property(key: Variable, _)))) =>
+        updateMap(acc, IdName.fromVariable(key), prop)
+      case (acc, Predicate(_, Equals(prop@Property(key: Variable, _), _))) =>
         updateMap(acc, IdName.fromVariable(key), prop)
       case (acc, _) => acc
     }

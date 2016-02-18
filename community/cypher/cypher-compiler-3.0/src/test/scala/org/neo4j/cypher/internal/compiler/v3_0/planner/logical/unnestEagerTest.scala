@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Eagerness.unnestEager
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.eagerness.unnestEager
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{PropertyKeyName, RelTypeName}
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint

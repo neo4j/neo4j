@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.eagerness.{unnestEager, PlanEagerness}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_0.Rewriter
 
@@ -29,8 +30,7 @@ which in most cases is then rewritten away by LogicalPlan rewriting.
 */
 case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
                         planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
-                        planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart,
-                        planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanUpdates)
+                        planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart)
   extends LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] {
 
   override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = {
@@ -40,7 +40,7 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
         val row = context.logicalPlanProducer.planArgumentRowFrom(lhs)
         val partPlan = planPart(plannerQuery, lhsContext, Some(row))
         val firstPlannerQuery = false
-        val planWithUpdates = planUpdates(plannerQuery, partPlan, firstPlannerQuery)(context)
+        val planWithUpdates = context.planUpdates(plannerQuery, partPlan, firstPlannerQuery)(context)
 
         val applyPlan = context.logicalPlanProducer.planTailApply(lhs, planWithUpdates)
 
@@ -53,7 +53,7 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
           projectedPlan.endoRewrite(expressionRewriter)
         }
 
-        val superCompletePlan = completePlan.endoRewrite(Eagerness.unnestEager)
+        val superCompletePlan = completePlan.endoRewrite(unnestEager)
 
         this.apply(superCompletePlan, plannerQuery.tail)(projectedContext)
 

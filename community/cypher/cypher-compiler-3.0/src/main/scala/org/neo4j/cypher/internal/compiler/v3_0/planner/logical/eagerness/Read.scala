@@ -17,17 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.eagerness
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, PatternRelationship}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelName, PropertyKeyName, RelTypeName}
 
-case class ForeachApply(left: LogicalPlan, right: LogicalPlan, variable: String, expression: Expression)
-                       (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
-
-  val lhs = Some(left)
-  val rhs = Some(right)
-
-  def availableSymbols = left.availableSymbols // NOTE: right.availableSymbols and variable are not available outside
+trait Read {
+  def readsNodes: Boolean
+  def readsRelationships: Boolean
+  def nodeIds: Set[IdName]
+  def relationships: Set[PatternRelationship]
+  def labelsOn(x: IdName): Set[LabelName]
+  def typesOn(x: IdName): Set[RelTypeName]
+  def propertiesOn(x: IdName): Set[PropertyKeyName]
+  def readsProperties: Set[PropertyKeyName]
+  def graphEntities: Set[IdName]
 }

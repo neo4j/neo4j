@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.eagerness.{ReadView, Read, UpdateView, Update}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_0.perty._
 
 import scala.collection.{GenTraversableOnce, mutable}
@@ -290,6 +292,46 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def addMutatingPatterns(patterns: MutatingPattern*): QueryGraph =
     copy(mutatingPatterns = mutatingPatterns ++ patterns)
+
+  def withoutPatternNode(patterns: IdName): QueryGraph =
+    copy(patternNodes = patternNodes - patterns)
+
+  def reads: Read = {
+
+    val readQG = this.mergeQueryGraph getOrElse
+      optionalMatches.foldLeft(this) {
+        case (acc, qg) => acc ++ qg
+      }
+
+    val mergeQueryGraphs: Seq[QueryGraph] = recursivelyGatherMergeQueryGraphs()
+
+    val resultingQG = mergeQueryGraphs.foldLeft(readQG) {
+      case (accQG, mergeQueryGraph) => accQG ++ mergeQueryGraph
+    }
+
+    ReadView(resultingQG)
+  }
+
+  // Recursively go down FOREACHs to fetch all MERGEs
+  private def recursivelyGatherMergeQueryGraphs(): Seq[QueryGraph] =
+    fixedPoint((patterns: Seq[MutatingPattern]) => patterns.collect {
+      case x: MergePattern => Seq(x)
+      case ForeachPattern(_, _, pq) => pq.allQueryGraphs.flatMap(_.mutatingPatterns)
+    }.flatten)(mutatingPatterns).map(_.asInstanceOf[MergePattern].matchGraph)
+
+  def updates: Update = {
+    // Recurse until we've flattened out all MERGEs and FOREACHs
+    val flattener = fixedPoint((actions: Seq[MutatingPattern]) => actions.flatMap {
+      case ForeachPattern(_, _, pq) => pq.allQueryGraphs.flatMap(_.mutatingPatterns)
+      case x: MergeNodePattern => Seq(x.createNodePattern) ++ x.onCreate ++ x.onMatch
+      case x: MergeRelationshipPattern => x.createNodePatterns ++ x.createRelPatterns ++ x.onCreate ++ x.onMatch
+      case x => Seq(x)
+    })
+
+    val flattened = flattener(mutatingPatterns)
+
+    UpdateView(flattened)
+  }
 
   // This is here to stop usage of copy from the outside
   private def copy(patternRelationships: Set[PatternRelationship] = patternRelationships,

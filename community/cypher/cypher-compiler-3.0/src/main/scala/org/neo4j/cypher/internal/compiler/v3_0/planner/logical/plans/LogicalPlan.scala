@@ -53,6 +53,8 @@ abstract class LogicalPlan
   def solved: PlannerQuery with CardinalityEstimation
   def availableSymbols: Set[IdName]
 
+  def leftMost: LogicalPlan = lhs.map(_.leftMost).getOrElse(this)
+
   def leaves: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
     case plan: LogicalPlan
       if plan.lhs.isEmpty && plan.rhs.isEmpty => acc => (acc :+ plan, Some(identity))
