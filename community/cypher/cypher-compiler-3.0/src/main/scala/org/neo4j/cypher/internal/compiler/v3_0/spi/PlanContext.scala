@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.spi
 
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{ExpanderStep, TraversalMatcher}
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureName, ProcedureSignature}
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{QualifiedProcedureName, ProcedureSignature}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -66,5 +66,5 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
 }
 
 trait ProcedureSignatureResolver {
-  def procedureSignature(name: ProcedureName): ProcedureSignature
+  def procedureSignature(name: QualifiedProcedureName): ProcedureSignature
 }

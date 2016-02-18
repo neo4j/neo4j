@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
@@ -58,7 +58,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(4)(result)("AllNodesScan")
   }
 
-  test("profile call") {
+  test("profile standalone call") {
     createLabeledNode("Person")
     createLabeledNode("Animal")
 
@@ -66,6 +66,24 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     assertDbHits(1)(result)("ProcedureCall")
     assertRows(2)(result)("ProcedureCall")
+    getPlanDescriptions(result, Seq("ProcedureCall")).foreach { plan =>
+      plan.arguments should contain(Signature("sys.db.labels() :: (label :: String)"))
+      plan.variables should equal(Set("label"))
+    }
+  }
+
+  test("profile call in query") {
+    createLabeledNode("Person")
+    createLabeledNode("Animal")
+
+    val result = legacyProfile("MATCH (n:Person) CALL sys.db.labels YIELD label RETURN *")
+
+    assertDbHits(1)(result)("ProcedureCall")
+    assertRows(2)(result)("ProcedureCall")
+    getPlanDescriptions(result, Seq("ProcedureCall")).foreach { plan =>
+      plan.arguments should contain(Signature("sys.db.labels() :: (label :: String)"))
+      plan.variables should equal(Set("n", "label"))
+    }
   }
 
   test("match (n) where (n)-[:FOO]->() return *") {

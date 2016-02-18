@@ -76,7 +76,7 @@ class RuleExecutablePlanBuilderTest
   )
 
   class FakePreparedSemanticQuery(q: AbstractQuery)
-    extends PreparedQuerySemantics(mock[Statement], "q", Map.empty, mock[SemanticTable], mock[Scope])(devNullLogger) {
+    extends PreparedQuerySemantics(mock[Statement], "q", None, Map.empty, mock[SemanticTable], mock[Scope])(devNullLogger) {
 
     override def abstractQuery: AbstractQuery = q
 

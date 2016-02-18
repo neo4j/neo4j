@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_0.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{True, _}
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{PeriodicCommit, CantHandleQueryException, logical}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantHandleQueryException, PeriodicCommit, logical}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast => compilerAst, pipes}
@@ -309,9 +309,10 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case UnwindCollection(_, variable, collection) =>
       UnwindPipe(source, toCommandExpression(collection), variable.name)()
 
-    case CallProcedure(_, signature, argExprs, resultFields) =>
+    case ProcedureCall(_, call@ResolvedCall(signature, callArguments, callResults, _, _)) =>
       val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      CallProcedurePipe(source, signature.name, callMode, argExprs.map(toCommandExpression), signature.outputSignature)()
+      val callArgumentCommands = callArguments.map(toCommandExpression)
+      ProcedureCallPipe(source, signature.name, callMode, callArgumentCommands, call.callResultTypes, call.callResultIndices)()
 
     case LoadCSVPlan(_, url, variableName, format, fieldTerminator) =>
       LoadCSVPipe(source, format, toCommandExpression(url), variableName.name, fieldTerminator)()

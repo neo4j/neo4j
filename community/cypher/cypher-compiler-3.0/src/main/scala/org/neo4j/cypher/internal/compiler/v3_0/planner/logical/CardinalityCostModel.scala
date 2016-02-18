@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{HasLabels, Property}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{HasLabels, Property}
 
 object CardinalityCostModel extends CostModel {
 
@@ -71,7 +71,7 @@ object CardinalityCostModel extends CostModel {
          _: Selection |
          _: ValueHashJoin |
          _: UnwindCollection|
-         _: CallProcedure
+         _: ProcedureCall
     => CPU_BOUND
 
     case _: FindShortestPaths |

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.{LabelAction, LabelSetOp
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{IdempotentResult, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.spi.ProcedureName
+import org.neo4j.cypher.internal.frontend.v3_0.spi.QualifiedProcedureName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -193,11 +193,11 @@ class SnitchingQueryContext extends QueryContext {
 
   override def allShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] = ???
 
-  override def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
+  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
 
   override def indexScanByContains(index: IndexDescriptor, value: String): scala.Iterator[Node] = ???
 
-  override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
+  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
 
   override def isGraphKernelResultValue(v: Any): Boolean = ???
 
