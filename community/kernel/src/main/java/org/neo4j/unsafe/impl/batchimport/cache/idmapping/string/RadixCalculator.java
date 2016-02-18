@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import org.neo4j.register.Register;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 /**
  * Calculates the radix of {@link Long} values.
@@ -52,9 +52,9 @@ public abstract class RadixCalculator
      */
     public static class Long extends RadixCalculator
     {
-        private final Register.Int.In radixShift;
+        private final MutableInt radixShift;
 
-        public Long( Register.Int.In radixShift )
+        public Long( MutableInt radixShift )
         {
             this.radixShift = radixShift;
         }
@@ -63,7 +63,7 @@ public abstract class RadixCalculator
         public int radixOf( long value )
         {
             long val1 = (value & ~LENGTH_BITS);
-            val1 = val1 >>> radixShift.read();
+            val1 = val1 >>> radixShift.intValue();
             int index = (int) val1;
             return index;
         }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,8 +55,6 @@ import org.neo4j.legacy.consistency.ConsistencyCheckService;
 import org.neo4j.legacy.consistency.ConsistencyCheckService.Result;
 import org.neo4j.legacy.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.TargetDirectory;
@@ -225,7 +224,7 @@ public class ParallelBatchImporterTest
 
         abstract Object nextNodeId( Random random );
 
-        abstract Object randomExisting( Random random, Register.Long.Out nodeIndex );
+        abstract Object randomExisting( Random random, MutableLong nodeIndex );
 
         abstract Object miss( Random random, Object id, float chance );
 
@@ -260,10 +259,10 @@ public class ParallelBatchImporterTest
         }
 
         @Override
-        Object randomExisting( Random random, Register.Long.Out nodeIndex )
+        Object randomExisting( Random random, MutableLong nodeIndex )
         {
             long index = random.nextInt( NODE_COUNT );
-            nodeIndex.write( index );
+            nodeIndex.setValue( index );
             return index;
         }
 
@@ -301,10 +300,10 @@ public class ParallelBatchImporterTest
         }
 
         @Override
-        Object randomExisting( Random random, Register.Long.Out nodeIndex )
+        Object randomExisting( Random random, MutableLong nodeIndex )
         {
             int index = random.nextInt( strings.size() );
-            nodeIndex.write( index );
+            nodeIndex.setValue( index );
             return strings.get( index );
         }
 
@@ -469,7 +468,7 @@ public class ParallelBatchImporterTest
                     private final Random random = new Random( randomSeed );
                     private final Randoms randoms = new Randoms( random, Randoms.DEFAULT );
                     private int cursor;
-                    private final Register.LongRegister nodeIndex = Registers.newLongRegister();
+                    private final MutableLong nodeIndex = new MutableLong( -1 );
 
                     @Override
                     protected InputRelationship fetchNextOrNull()
@@ -480,9 +479,9 @@ public class ParallelBatchImporterTest
                             try
                             {
                                 Object startNode = idGenerator.randomExisting( random, nodeIndex );
-                                Group startNodeGroup = groups.groupOf( nodeIndex.read() );
+                                Group startNodeGroup = groups.groupOf( nodeIndex.longValue() );
                                 Object endNode = idGenerator.randomExisting( random, nodeIndex );
-                                Group endNodeGroup = groups.groupOf( nodeIndex.read() );
+                                Group endNodeGroup = groups.groupOf( nodeIndex.longValue() );
 
                                 // miss some
                                 startNode = idGenerator.miss( random, startNode, 0.001f );
