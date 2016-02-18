@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import java.io.File;
 import java.net.URL;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -49,12 +50,16 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     private final Supplier<StoreId> storeId;
     private final CoreAPIAvailabilityGuard availability;
     private final ThrowingFunction<URL, URL, URLAccessValidationError> urlValidator;
+    private final File storeDir;
 
-    public ProcedureGDBFacadeSPI( KernelTransaction transaction, Supplier<QueryExecutionEngine> queryExecutor, DependencyResolver resolver, AutoIndexing autoIndexing,
-                                  Supplier<StoreId> storeId, CoreAPIAvailabilityGuard availability, ThrowingFunction<URL, URL, URLAccessValidationError> urlValidator )
+    public ProcedureGDBFacadeSPI( KernelTransaction transaction, Supplier<QueryExecutionEngine> queryExecutor,
+                                  File storeDir, DependencyResolver resolver, AutoIndexing autoIndexing,
+                                  Supplier<StoreId> storeId, CoreAPIAvailabilityGuard availability,
+                                  ThrowingFunction<URL, URL, URLAccessValidationError> urlValidator )
     {
         this.transaction = transaction;
         this.queryExecutor = queryExecutor;
+        this.storeDir = storeDir;
         this.resolver = resolver;
         this.autoIndexing = autoIndexing;
         this.storeId = storeId;
@@ -81,9 +86,9 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public String storeDir()
+    public File storeDir()
     {
-        throw new UnsupportedOperationException();
+        return storeDir;
     }
 
     @Override

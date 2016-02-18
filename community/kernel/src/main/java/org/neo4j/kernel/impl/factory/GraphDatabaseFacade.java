@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import java.io.File;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
@@ -123,7 +124,7 @@ public class GraphDatabaseFacade
         DependencyResolver resolver();
 
         StoreId storeId();
-        String storeDir();
+        File storeDir();
 
         /** Eg. Neo4j Enterprise HA, Neo4j Community Standalone.. */
         String name();
@@ -569,13 +570,13 @@ public class GraphDatabaseFacade
     @Override
     public String getStoreDir()
     {
-        return spi.storeDir();
+        return spi.storeDir().getAbsolutePath();
     }
 
     @Override
     public String toString()
     {
-        return spi.name() + " ["+getStoreDir()+"]";
+        return spi.name() + " [" + getStoreDir() + "]";
     }
 
     private static class PropertyValueFilteringNodeIdIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator

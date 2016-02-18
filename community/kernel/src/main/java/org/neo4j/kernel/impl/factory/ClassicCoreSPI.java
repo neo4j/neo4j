@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import java.io.File;
 import java.net.URL;
 import java.util.Map;
 
@@ -122,9 +123,9 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public String storeDir()
+    public File storeDir()
     {
-        return platform.storeDir.getAbsolutePath();
+        return platform.storeDir;
     }
 
     @Override
