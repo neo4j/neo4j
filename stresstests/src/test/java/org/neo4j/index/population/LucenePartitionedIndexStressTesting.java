@@ -53,7 +53,8 @@ public class LucenePartitionedIndexStressTesting
     private static final String UNIQUE_PROPERTY_PREFIX = "uniqueProperty";
 
     private static final int NUMBER_OF_PROPERTIES = 2;
-    private static final int BATCH_SIZE = 1000;
+    private static final int BATCH_SIZE = Integer.valueOf( getEnvVariable( "LUCENE_INDEX_POPULATION_BATCH_SIZE",
+            String.valueOf( 10000 ) ) );
 
     private static final long NUMBER_OF_NODES = Long.valueOf( getEnvVariable(
             "LUCENE_PARTITIONED_INDEX_NUMBER_OF_NODES", String.valueOf( 1000000 ) ) );
