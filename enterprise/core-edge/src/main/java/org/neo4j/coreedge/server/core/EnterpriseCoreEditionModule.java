@@ -69,6 +69,7 @@ import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionCommitProcess
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.DurableStateStorage;
+import org.neo4j.coreedge.raft.state.LastAppliedTrackingStateMachine;
 import org.neo4j.coreedge.raft.state.StateMachines;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
@@ -192,12 +193,13 @@ public class EnterpriseCoreEditionModule
                 marshal, logProvider ) ), platformModule.monitors );
 
         StateMachines stateMachines = new StateMachines();
+        LastAppliedTrackingStateMachine lastAppliedStateMachine = new LastAppliedTrackingStateMachine( stateMachines );
 
         int flushAfter = config.get( CoreEdgeClusterSettings.state_machine_flush_window_size );
 
         raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, monitoredRaftLog,
-                stateMachines, fileSystem, clusterStateDirectory, myself, logProvider, raftServer, raftTimeoutService,
-                databaseHealthSupplier, platformModule.monitors, flushAfter );
+                lastAppliedStateMachine, fileSystem, clusterStateDirectory, myself, logProvider, raftServer,
+                raftTimeoutService, databaseHealthSupplier, platformModule.monitors, flushAfter );
 
         dependencies.satisfyDependency( raft );
 
@@ -333,7 +335,7 @@ public class EnterpriseCoreEditionModule
 
         life.add( CoreServerStartupProcess.createLifeSupport(
                 platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft,
-                new RaftLogReplay( stateMachines, monitoredRaftLog, logProvider, flushAfter ), raftServer,
+                new RaftLogReplay( lastAppliedStateMachine, monitoredRaftLog, logProvider, flushAfter ), raftServer,
                 catchupServer, raftTimeoutService, membershipWaiter,
                 joinCatchupTimeout,
                 new RecoverTransactionLogState( dependencies, logProvider,
@@ -397,7 +399,7 @@ public class EnterpriseCoreEditionModule
                                                         Config config,
                                                         MessageLogger<AdvertisedSocketAddress> messageLogger,
                                                         RaftLog raftLog,
-                                                        StateMachines stateMachines,
+                                                        LastAppliedTrackingStateMachine stateMachines,
                                                         FileSystemAbstraction fileSystem,
                                                         File clusterStateDirectory,
                                                         CoreMember myself,
