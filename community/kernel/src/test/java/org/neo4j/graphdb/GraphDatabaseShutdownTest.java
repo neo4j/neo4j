@@ -25,11 +25,11 @@ import java.util.concurrent.Future;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.locking.LockCountVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -47,7 +47,7 @@ public class GraphDatabaseShutdownTest
     public void transactionShouldReleaseLocksWhenGraphDbIsBeingShutdown() throws Exception
     {
         // GIVEN
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabaseAPI db = newDb();
         final Locks locks = db.getDependencyResolver().resolveDependency( Locks.class );
         assertEquals( 0, lockCount( locks ) );
         Exception exceptionThrownByTxClose = null;
@@ -79,7 +79,7 @@ public class GraphDatabaseShutdownTest
     public void shouldBeAbleToShutdownWhenThereAreTransactionsWaitingForLocks() throws Exception
     {
         // GIVEN
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabaseService db = newDb();
 
         final Node node;
         try ( Transaction tx = db.beginTx() )
@@ -142,5 +142,13 @@ public class GraphDatabaseShutdownTest
         LockCountVisitor lockCountVisitor = new LockCountVisitor();
         locks.accept( lockCountVisitor );
         return lockCountVisitor.getLockCount();
+    }
+
+    private GraphDatabaseAPI newDb()
+    {
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "1s" )
+                .newGraphDatabase();
     }
 }

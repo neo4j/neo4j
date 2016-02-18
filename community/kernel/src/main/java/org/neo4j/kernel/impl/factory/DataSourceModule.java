@@ -173,7 +173,8 @@ public class DataSourceModule
 
         life.add( nodeManager );
 
-        life.add( new DatabaseAvailability( platformModule.availabilityGuard, platformModule.transactionMonitor ) );
+        life.add( new DatabaseAvailability( platformModule.availabilityGuard, platformModule.transactionMonitor,
+                config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ) ) );
 
         life.add( new StartupWaiter( platformModule.availabilityGuard, editionModule.transactionStartTimeout ) );
 
