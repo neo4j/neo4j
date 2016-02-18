@@ -114,32 +114,11 @@ Function Start-Neo4jImport
       return
     }
     
-    # Get the path to the graph data directory
-    $graphPath = ''
-    $setting = ($thisServer | Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'org.neo4j.server.database.location')
-    if ($setting -ne $null) { $graphPath = "$($thisServer.Home)\$($setting.Value.Replace('/','\'))" }
-
     $ShellArgs = $JavaCMD.args
-    # Add unbounded command line arguments.  Check if --into was specified
-    $intoParam = $false
+    # Add unbounded command line arguments.
     if ($OtherArgs -ne $null)
     {
       $ShellArgs += $OtherArgs
-      $OtherArgs | ForEach-Object -Process `
-      {
-        $intoParam = $intoParam -or ($_.ToUpper() -eq '--INTO')
-      }
-    }
-    # Insert the --into param if it's not already specified
-    if (-not $intoParam)
-    {
-      if ([string]$graphPath -eq '')
-      {
-        Write-Error 'Unable to determine the graph directory from the configuration settings'
-        return  
-      }
-
-      $ShellArgs += @('--into',$graphPath)
     }
 
     $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $ShellArgs -Wait:$Wait -NoNewWindow:$Wait -PassThru)
