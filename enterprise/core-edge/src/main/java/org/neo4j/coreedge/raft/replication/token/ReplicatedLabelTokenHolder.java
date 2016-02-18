@@ -24,11 +24,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.state.Loaders;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.Token;
@@ -43,20 +39,9 @@ public class ReplicatedLabelTokenHolder extends ReplicatedTokenHolder<Token,Labe
     }
 
     @Override
-    protected RecordAccess.Loader<Integer,LabelTokenRecord,Void> resolveLoader( TokenStore<LabelTokenRecord,Token> tokenStore )
-    {
-        return Loaders.labelTokenLoader( tokenStore );
-    }
-
-    @Override
     protected void createToken( TransactionState txState, String tokenName, int tokenId )
     {
         txState.labelDoCreateForName( tokenName, tokenId );
     }
 
-    @Override
-    protected Command.TokenCommand<LabelTokenRecord> createCommand( LabelTokenRecord before, LabelTokenRecord after )
-    {
-        return new Command.LabelTokenCommand( before, after );
-    }
 }

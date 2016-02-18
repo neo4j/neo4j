@@ -276,10 +276,6 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         throw new NoSuchEntryException( "Expected command not found" );
     }
 
-    protected abstract RecordAccess.Loader<Integer,RECORD,Void> resolveLoader( TokenStore<RECORD,TOKEN> tokenStore );
-
-    protected abstract Command.TokenCommand<RECORD> createCommand( RECORD before, RECORD after );
-
     public void setLastCommittedIndex( long lastCommittedIndex )
     {
         this.lastCommittedIndex = lastCommittedIndex;

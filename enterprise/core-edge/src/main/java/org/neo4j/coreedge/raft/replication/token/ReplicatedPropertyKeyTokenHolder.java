@@ -24,11 +24,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.state.Loaders;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.Token;
@@ -43,21 +39,9 @@ public class ReplicatedPropertyKeyTokenHolder extends ReplicatedTokenHolder<Toke
     }
 
     @Override
-    protected RecordAccess.Loader<Integer,PropertyKeyTokenRecord,Void> resolveLoader( TokenStore<PropertyKeyTokenRecord,Token> tokenStore )
-    {
-        return Loaders.propertyKeyTokenLoader( tokenStore );
-    }
-
-    @Override
     protected void createToken( TransactionState txState, String tokenName, int tokenId )
     {
         txState.propertyKeyDoCreateForName( tokenName, tokenId );
     }
 
-    @Override
-    protected Command.TokenCommand<PropertyKeyTokenRecord> createCommand( PropertyKeyTokenRecord before,
-            PropertyKeyTokenRecord after )
-    {
-        return new Command.PropertyKeyTokenCommand( before, after );
-    }
 }
