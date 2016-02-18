@@ -6,14 +6,14 @@ The Neo4j Server can be extended by either plugins or unmanaged extensions.
 
 [WARNING]
 ====
-When running your own code alongside Neo4j in the same JVM, there are a few things you should keep in mind:
+When running your own code and Neo4j in the same JVM, there are a few things you should keep in mind:
 
 * Don't create or retain more objects than you strictly need to.
-  Large caches are particularly good at promoting many objects to the old generation, thus increasing the need for expensive full garbage collections.
+  Large caches in particular tend to promote more objects to the old generation, thus increasing the need for expensive full garbage collections.
 * Don't use internal Neo4j APIs.
   They may change in future releases, and they might not always work as intended in the context of your code.
-* Don't use Java object serialization or reflection in your code, or in any runtime dependency you use, if you can avoid it.
-  If you can't, make sure that the `-XX:+TrustFinalNonStaticFields` JVM flag is disabled in `neo4j-wrapper.conf`.
+* If possible, avoid using Java object serialization or reflection in your code or in any runtime dependency that you use.
+  Otherwise, if you cannot avoid using Java object serialization and reflection, then ensure that the `-XX:+TrustFinalNonStaticFields` JVM flag is disabled in `neo4j-wrapper.conf`.
 ====
 
 :leveloffset: 2

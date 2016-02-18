@@ -6,12 +6,12 @@ In this chapter you will find everything needed -- from setting up the environme
 
 [WARNING]
 ====
-When running your own code alongside Neo4j in the same JVM, there are a few things you should keep in mind:
+When running your own code and Neo4j in the same JVM, there are a few things you should keep in mind:
 
 * Don't create or retain more objects than you strictly need to.
-  Large caches are particularly good at promoting many objects to the old generation, thus increasing the need for expensive full garbage collections.
+  Large caches in particular tend to promote more objects to the old generation, thus increasing the need for expensive full garbage collections.
 * Don't use internal Neo4j APIs.
-  They may change in future releases, and they might not always work as intended in the context of your code.
+  They are internal to Neo4j, they may change in future releases and break the intended behavior of your code.
 * Don't enable the `-XX:+TrustFinalNonStaticFields` JVM flag when running in embedded mode.
 ====
 
