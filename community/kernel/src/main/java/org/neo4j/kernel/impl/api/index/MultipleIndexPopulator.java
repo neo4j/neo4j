@@ -336,6 +336,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             try
             {
                 population.flip();
+                populations.remove( descriptor );
             }
             catch ( Throwable t )
             {
