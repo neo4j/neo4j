@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.v1.docs;
 
-import org.jsoup.nodes.Element;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -32,7 +30,6 @@ import java.util.regex.Pattern;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.COMMENTS;
 import static java.util.regex.Pattern.DOTALL;
-
 import static org.neo4j.bolt.v1.docs.DocPartParser.Decoration.withDetailedExceptions;
 
 /**
@@ -45,14 +42,8 @@ import static org.neo4j.bolt.v1.docs.DocPartParser.Decoration.withDetailedExcept
 public class DocStruct implements Iterable<DocStruct.Field>
 {
     public static DocPartParser<DocStruct> struct_definition =
-        withDetailedExceptions( DocStruct.class, new DocPartParser<DocStruct>()
-            {
-                @Override
-                public DocStruct parse( String fileName, String title, Element s )
-                {
-                    return new DocStruct( DocPartName.create( fileName, title ), s.text() );
-                }
-            }
+        withDetailedExceptions( DocStruct.class,
+                ( fileName, title, s ) -> new DocStruct( DocPartName.create( fileName, title ), s.text() )
         );
 
     private final String name;

@@ -28,7 +28,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -166,7 +165,7 @@ public class DocSerialization
                                 (String) meta.get( "code" ) ), (String) meta.get( "message" ) );
                         break;
                     case "INIT":
-                        writer.handleInitMessage( (String) args.get( 0 ), Collections.emptyMap() );
+                        writer.handleInitMessage( (String) args.get( 0 ), (Map<String, Object>) args.get( 1 ) );
                         break;
                     case "RESET":
                         writer.handleResetMessage();

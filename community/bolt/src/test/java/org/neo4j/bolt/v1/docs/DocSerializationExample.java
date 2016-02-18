@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.v1.docs;
 
-import org.jsoup.nodes.Element;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,14 +32,8 @@ import static org.neo4j.bolt.v1.docs.DocPartParser.Decoration.withDetailedExcept
 public class DocSerializationExample
 {
     public static DocPartParser<DocSerializationExample> serialization_example =
-        withDetailedExceptions( DocSerializationExample.class, new DocPartParser<DocSerializationExample>()
-            {
-                @Override
-                public DocSerializationExample parse( String fileName, String title, Element s )
-                {
-                    return new DocSerializationExample( s.text() );
-                }
-            }
+        withDetailedExceptions( DocSerializationExample.class, ( fileName, title, s ) ->
+                new DocSerializationExample( s.text() )
         );
 
     private final Map<String,String> attributes = new HashMap<>();
