@@ -37,7 +37,7 @@ public class DeleteNodeWithRelsIT
     public void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels() throws Exception
     {
         // Given
-        GraphDatabaseService db = this.db.getGraphDatabaseService();
+        GraphDatabaseService db = this.db.getGraphDatabaseAPI();
 
         Node node;
         try( Transaction tx = db.beginTx() )

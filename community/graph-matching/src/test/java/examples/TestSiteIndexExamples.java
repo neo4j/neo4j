@@ -181,7 +181,7 @@ public class TestSiteIndexExamples
                 return nodes;
             }
         } );
-        try ( Transaction tx = graphDb.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = graphDb.getGraphDatabaseAPI().beginTx() )
         {
             assertEquals( 3, count( findNodesWithRelationshipsTo( type, nodes ) ) );
             tx.success();
@@ -237,8 +237,8 @@ public class TestSiteIndexExamples
 
         Set<String> expected = new HashSet<>( Arrays.asList( "Andy", "Bob" ) );
         Iterable<Node> friends = findFriendsSinceSpecifiedTimeInSpecifiedPlace( root, "Stockholm", 3 );
-        
-        try ( Transaction transaction = graphDb.getGraphDatabaseService().beginTx() )
+
+        try ( Transaction transaction = graphDb.getGraphDatabaseAPI().beginTx() )
         {
             for ( Node friend : friends )
             {
@@ -267,9 +267,9 @@ public class TestSiteIndexExamples
 
     private <T> T createGraph( GraphDefinition<T> definition )
     {
-        try ( Transaction tx = graphDb.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = graphDb.getGraphDatabaseAPI().beginTx() )
         {
-            T result = definition.create( graphDb.getGraphDatabaseService() );
+            T result = definition.create( graphDb.getGraphDatabaseAPI() );
             tx.success();
             return result;
         }

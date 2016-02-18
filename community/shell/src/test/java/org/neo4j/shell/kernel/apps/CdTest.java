@@ -77,7 +77,7 @@ public class CdTest
 
     private Node createNodeWithSomeSubNodes( String... names )
     {
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             Node root = db.createNode();

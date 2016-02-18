@@ -28,9 +28,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
@@ -55,7 +55,7 @@ public class ErrorsAndWarningsTest
             }
 
             @Override
-            public GraphDatabaseService getGraphDatabaseService()
+            public GraphDatabaseAPI getGraphDatabaseAPI()
             {
                 try
                 {
@@ -65,11 +65,11 @@ public class ErrorsAndWarningsTest
                 {
                     throwable.printStackTrace();
                 }
-                return super.getGraphDatabaseService();
+                return super.getGraphDatabaseAPI();
             }
         };
 
-        db.getGraphDatabaseService();
+        db.getGraphDatabaseAPI();
     }
 
     @Test

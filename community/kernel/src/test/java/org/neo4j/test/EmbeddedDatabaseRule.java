@@ -33,7 +33,7 @@ import org.neo4j.io.fs.FileUtils;
  * JUnit @Rule for configuring, creating and managing an EmbeddedGraphDatabase instance.
  *
  * The database instance is created lazily, so configurations can be injected prior to calling
- * {@link #getGraphDatabaseService()}.
+ * {@link #getGraphDatabaseAPI()}.
  */
 public class EmbeddedDatabaseRule extends DatabaseRule
 {

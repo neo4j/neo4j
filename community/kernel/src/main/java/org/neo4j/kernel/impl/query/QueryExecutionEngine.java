@@ -27,10 +27,10 @@ public interface QueryExecutionEngine
 {
     Result executeQuery( String query, Map<String, Object> parameters, QuerySession querySession ) throws QueryExecutionKernelException;
 
+    Result profileQuery( String query, Map<String, Object> parameters, QuerySession querySession) throws QueryExecutionKernelException;
+
     boolean isPeriodicCommit( String query );
 
     String prettify( String query );
-
-    Result profileQuery( String query, Map<String, Object> parameters, QuerySession querySession) throws QueryExecutionKernelException;
 }
 

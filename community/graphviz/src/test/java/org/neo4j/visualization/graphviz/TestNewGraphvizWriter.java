@@ -46,7 +46,7 @@ public class TestNewGraphvizWriter
 	@Test
 	public void testSimpleGraph() throws Exception
 	{
-	    GraphDatabaseService neo = dbRule.getGraphDatabaseService();
+	    GraphDatabaseService neo = dbRule.getGraphDatabaseAPI();
 		try ( Transaction tx = neo.beginTx() )
 		{
 			final Node emil = neo.createNode();

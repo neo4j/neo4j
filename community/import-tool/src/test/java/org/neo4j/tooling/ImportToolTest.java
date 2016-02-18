@@ -711,7 +711,7 @@ public class ImportToolTest
         // no relationships
 
         // THEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0;
@@ -751,7 +751,7 @@ public class ImportToolTest
                                    relationshipData( false, config, rels.iterator(), TRUE, true ) );
 
         // THEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0;
@@ -858,7 +858,7 @@ public class ImportToolTest
                            nodeData2.getAbsolutePath() );
 
         // THEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             Iterator<Node> nodes = db.getAllNodes().iterator();
@@ -1066,7 +1066,7 @@ public class ImportToolTest
                         TRUE, true ).getAbsolutePath() );
 
         // THEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             Iterable<Node> allNodes = db.getAllNodes();
@@ -1192,7 +1192,7 @@ public class ImportToolTest
                 "--nodes", data.getAbsolutePath() );
 
         // THEN
-        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = graphDatabaseService.beginTx() )
         {
             ResourceIterator<Node> allNodes = graphDatabaseService.getAllNodes().iterator();
@@ -1627,7 +1627,7 @@ public class ImportToolTest
             Validator<Node> nodeAdditionalValidation,
             Validator<Relationship> relationshipAdditionalValidation )
     {
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0, relationshipCount = 0;
@@ -1651,7 +1651,7 @@ public class ImportToolTest
 
     private void verifyRelationships( List<RelationshipDataLine> relationships )
     {
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Map<String,Node> nodesById = allNodesById( db );
         try ( Transaction tx = db.beginTx() )
         {

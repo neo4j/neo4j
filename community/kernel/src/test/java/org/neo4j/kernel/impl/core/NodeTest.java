@@ -386,7 +386,7 @@ public class NodeTest
 
         tx.success();
     }
-    
+
     @Test
     public void testChangeProperty()
     {
@@ -404,7 +404,7 @@ public class NodeTest
         tx.begin();
         assertEquals( "test4", node.getProperty( "test" ) );
     }
-    
+
     @Test
     public void testChangeProperty2()
     {
@@ -424,7 +424,7 @@ public class NodeTest
         tx.begin();
         assertEquals( "test4", node.getProperty( "test" ) );
     }
-    
+
     @Test
     public void testNodeLockingProblem() throws InterruptedException
     {
@@ -439,7 +439,7 @@ public class NodeTest
         testLockProblem( node.createRelationshipTo( node2,
                 RelationshipType.withName( "lock-rel" ) ) );
     }
-    
+
     private void testLockProblem( final PropertyContainer entity ) throws InterruptedException
     {
         entity.setProperty( "key", "value" );
@@ -482,6 +482,6 @@ public class NodeTest
 
     private GraphDatabaseService getGraphDb()
     {
-        return db.getGraphDatabaseService();
+        return db.getGraphDatabaseAPI();
     }
 }

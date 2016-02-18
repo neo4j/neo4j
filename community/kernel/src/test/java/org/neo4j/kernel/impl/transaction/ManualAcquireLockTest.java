@@ -149,7 +149,7 @@ public class ManualAcquireLockTest
 
     private GraphDatabaseService getGraphDb()
     {
-        return db.getGraphDatabaseService();
+        return db.getGraphDatabaseAPI();
     }
 
     private class State

@@ -60,7 +60,7 @@ public class SchemaWithPECAcceptanceTest
     @Before
     public void init()
     {
-        db = dbRule.getGraphDatabaseService();
+        db = dbRule.getGraphDatabaseAPI();
     }
 
     @Test

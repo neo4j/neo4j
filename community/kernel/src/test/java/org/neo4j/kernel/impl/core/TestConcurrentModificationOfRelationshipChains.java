@@ -83,7 +83,7 @@ public class TestConcurrentModificationOfRelationshipChains
     @Before
     public void given()
     {
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         try ( Transaction tx = graphDb.beginTx() )
         {
             node1 = graphDb.createNode();
@@ -111,7 +111,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void relationshipChainPositionCachePoisoningFromSameThreadReReadNode()
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
 
         // when
         deleteRelationshipInSameThread( firstFromSecondBatch );
@@ -129,7 +129,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void relationshipChainPositionCachePoisoningFromDifferentThreadReReadNode() throws InterruptedException
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
 
         // when
         deleteRelationshipInDifferentThread( firstFromSecondBatch );
@@ -147,7 +147,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void relationshipChainPositionCachePoisoningFromSameThread()
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
 
         // when
         Iterator<Relationship> rels;
@@ -177,7 +177,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void relationshipChainPositionCachePoisoningFromSameThreadWithReadsInBetween()
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
 
         // when
         Iterator<Relationship> rels;
@@ -208,7 +208,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void relationshipChainPositionCachePoisoningFromDifferentThreads() throws InterruptedException
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
 
         // when
         Iterator<Relationship> rels;
@@ -232,7 +232,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void shouldNotInvalidateNodeInCacheOnRollback() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
 
         // when
         try ( Transaction tx = graphDb.beginTx() )
@@ -254,7 +254,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void shouldNotInvalidateDenseNodeInCacheOnRollback() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         Node node, other;
         try ( Transaction tx = graphDb.beginTx() )
         {

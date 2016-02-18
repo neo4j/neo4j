@@ -70,20 +70,20 @@ public class TestShortStringProperties extends TestShortString
     public void canAddMultipleShortStringsToTheSameNode() throws Exception
     {
         long recordCount = dynamicRecordsInUse();
-        Node node = graphdb.getGraphDatabaseService().createNode();
+        Node node = graphdb.getGraphDatabaseAPI().createNode();
         node.setProperty( "key", "value" );
         node.setProperty( "reverse", "esrever" );
         commit();
         assertEquals( recordCount, dynamicRecordsInUse() );
-        assertThat( node, inTx( graphdb.getGraphDatabaseService(), hasProperty( "key" ).withValue( "value" )  ) );
-        assertThat( node, inTx( graphdb.getGraphDatabaseService(), hasProperty( "reverse" ).withValue( "esrever" )  ) );
+        assertThat( node, inTx( graphdb.getGraphDatabaseAPI(), hasProperty( "key" ).withValue( "value" )  ) );
+        assertThat( node, inTx( graphdb.getGraphDatabaseAPI(), hasProperty( "reverse" ).withValue( "esrever" )  ) );
     }
 
     @Test
     public void canAddShortStringToRelationship() throws Exception
     {
         long recordCount = dynamicRecordsInUse();
-        GraphDatabaseService db = graphdb.getGraphDatabaseService();
+        GraphDatabaseService db = graphdb.getGraphDatabaseAPI();
         Relationship rel = db.createNode().createRelationshipTo( db.createNode(), withName( "REL_TYPE" ) );
         rel.setProperty( "type", "dimsedut" );
         commit();
@@ -98,7 +98,7 @@ public class TestShortStringProperties extends TestShortString
         {
             long recordCount = dynamicRecordsInUse();
             long propCount = propertyRecordsInUse();
-            Node node = graphdb.getGraphDatabaseService().createNode();
+            Node node = graphdb.getGraphDatabaseAPI().createNode();
             node.setProperty( "key", "value" );
 
             newTx();
@@ -112,7 +112,7 @@ public class TestShortStringProperties extends TestShortString
 
             assertEquals( recordCount, dynamicRecordsInUse() );
             assertEquals( propCount + 1, propertyRecordsInUse() );
-            assertThat( node, inTx( graphdb.getGraphDatabaseService(), hasProperty( "key" ).withValue( "other" )  ) );
+            assertThat( node, inTx( graphdb.getGraphDatabaseAPI(), hasProperty( "key" ).withValue( "other" )  ) );
         }
         catch ( Exception e )
         {
@@ -126,7 +126,7 @@ public class TestShortStringProperties extends TestShortString
     {
         long recordCount = dynamicRecordsInUse();
         long propCount = propertyRecordsInUse();
-        Node node = graphdb.getGraphDatabaseService().createNode();
+        Node node = graphdb.getGraphDatabaseAPI().createNode();
         node.setProperty( "key", LONG_STRING );
         newTx();
 
@@ -139,7 +139,7 @@ public class TestShortStringProperties extends TestShortString
 
         assertEquals( recordCount, dynamicRecordsInUse() );
         assertEquals( propCount + 1, propertyRecordsInUse() );
-        assertThat( node, inTx( graphdb.getGraphDatabaseService(), hasProperty( "key" ).withValue( "value" )  ) );
+        assertThat( node, inTx( graphdb.getGraphDatabaseAPI(), hasProperty( "key" ).withValue( "value" )  ) );
     }
 
     @Test
@@ -147,7 +147,7 @@ public class TestShortStringProperties extends TestShortString
     {
         long recordCount = dynamicRecordsInUse();
         long propCount = propertyRecordsInUse();
-        Node node = graphdb.getGraphDatabaseService().createNode();
+        Node node = graphdb.getGraphDatabaseAPI().createNode();
         node.setProperty( "key", "value" );
         newTx();
 
@@ -160,7 +160,7 @@ public class TestShortStringProperties extends TestShortString
 
         assertEquals( recordCount + 1, dynamicRecordsInUse() );
         assertEquals( propCount + 1, propertyRecordsInUse() );
-        assertThat( node, inTx( graphdb.getGraphDatabaseService(), hasProperty( "key" ).withValue( LONG_STRING )  ) );
+        assertThat( node, inTx( graphdb.getGraphDatabaseAPI(), hasProperty( "key" ).withValue( LONG_STRING )  ) );
     }
 
     @Test
@@ -168,7 +168,7 @@ public class TestShortStringProperties extends TestShortString
     {
         long recordCount = dynamicRecordsInUse();
         long propCount = propertyRecordsInUse();
-        GraphDatabaseService db = graphdb.getGraphDatabaseService();
+        GraphDatabaseService db = graphdb.getGraphDatabaseAPI();
         Node node = db.createNode();
         node.setProperty( "key", "value" );
         newTx();
@@ -196,7 +196,7 @@ public class TestShortStringProperties extends TestShortString
     private void encode( String string, boolean isShort )
     {
         long recordCount = dynamicRecordsInUse();
-        Node node = graphdb.getGraphDatabaseService().createNode();
+        Node node = graphdb.getGraphDatabaseAPI().createNode();
         node.setProperty( "key", string );
         newTx();
         if ( isShort )
