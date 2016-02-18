@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{ProcedureName, QueryContext}
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureDbmsAccess, ProcedureReadWriteAccess, ProcedureReadOnlyAccess, ProcedureAccessMode}
+import org.neo4j.cypher.internal.frontend.v3_0.spi._
 
 import scala.collection.mutable.ArrayBuffer
 

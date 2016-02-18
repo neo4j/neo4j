@@ -43,6 +43,7 @@ sealed trait PreparedQuery {
 
 case class PreparedQuerySyntax(statement: Statement,
                                queryText: String,
+                               offset: Option[InputPosition],
                                extractedParams: Map[String, Any])(val notificationLogger: InternalNotificationLogger,
                                                                   val plannerName: String = "",
                                                                   val conditions: Set[RewriterCondition])
@@ -54,11 +55,12 @@ case class PreparedQuerySyntax(statement: Statement,
 
   def withSemantics(semanticTable: SemanticTable,
                     scopeTree: Scope) =
-    PreparedQuerySemantics(statement, queryText, extractedParams, semanticTable, scopeTree)(notificationLogger, plannerName, conditions)
+    PreparedQuerySemantics(statement, queryText, offset, extractedParams, semanticTable, scopeTree)(notificationLogger, plannerName, conditions)
 }
 
 case class PreparedQuerySemantics(statement: Statement,
                                   queryText: String,
+                                  offset: Option[InputPosition],
                                   extractedParams: Map[String, Any],
                                   semanticTable: SemanticTable,
                                   scopeTree: Scope)(val notificationLogger: InternalNotificationLogger,

@@ -19,27 +19,28 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.parser
 
+import org.neo4j.cypher.internal.frontend.v3_0.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, ast}
 
 class ProcedureCallParserTest
-  extends ParserAstTest[ast.ProcedureCall]
+  extends ParserAstTest[ast.UnresolvedCall]
     with Expressions
     with Literals
     with Base
     with ProcedureCalls  {
 
-  implicit val parser = ProcedureCall
+  implicit val parser = Call
 
   test("CALL foo") {
-    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), None))
+    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos)))
   }
 
   test("CALL foo()") {
-    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), Some(Seq.empty)))
+    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty)))
   }
 
   test("CALL foo('Test', 1+2)") {
-    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos),
+    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos),
       Some(Vector(
         ast.StringLiteral("Test")(pos),
         ast.Add(
@@ -50,7 +51,7 @@ class ProcedureCallParserTest
   }
 
   test("CALL foo.bar.baz('Test', 1+2)") {
-    yields(ast.ProcedureCall(List("foo", "bar"), ast.LiteralProcedureName("baz")(pos),
+    yields(ast.UnresolvedCall(ast.ProcedureNamespace(List("foo", "bar"))(pos), ast.ProcedureName("baz")(pos),
       Some(Vector(
         ast.StringLiteral("Test")(pos),
         ast.Add(
@@ -60,21 +61,27 @@ class ProcedureCallParserTest
     )
   }
 
-  test("CALL foo AS bar") {
-    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), None, Some(Seq(ast.Variable("bar")(pos)))))
+  test("CALL foo YIELD bar") {
+    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos), None, Some(Seq(result("bar")))))
   }
 
-  test("CALL foo AS bar, baz") {
-    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), None, Some(Seq(ast.Variable("bar")(pos), ast.Variable("baz")(pos)))))
+  test("CALL foo YIELD bar, baz") {
+    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos), None, Some(Seq(result("bar"), result("baz")))))
   }
 
-  test("CALL foo() AS bar") {
-    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), Some(Seq.empty), Some(Seq(ast.Variable("bar")(pos)))))
+  test("CALL foo() YIELD bar") {
+    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty), Some(Seq(result("bar")))))
   }
 
-  test("CALL foo() AS bar, baz") {
-    yields(ast.ProcedureCall(List.empty, ast.LiteralProcedureName("foo")(pos), Some(Seq.empty), Some(Seq(ast.Variable("bar")(pos), ast.Variable("baz")(pos)))))
+  test("CALL foo() YIELD bar, baz") {
+    yields(ast.UnresolvedCall(ast.ProcedureNamespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty), Some(Seq(result("bar"), result("baz")))))
   }
+
+  private def result(name: String): ProcedureResultItem =
+    ast.ProcedureResultItem(ast.Variable(name)(pos))(pos)
+
+  private def result(output: String, name: String): ProcedureResultItem =
+    ast.ProcedureResultItem(ast.ProcedureOutput(output)(pos), ast.Variable(name)(pos))(pos)
 
   private val pos = DummyPosition(-1)
 

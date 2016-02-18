@@ -74,11 +74,3 @@ case class DropNodePropertyExistenceConstraint(variable: Variable, label: LabelN
 case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
 
 case class DropRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
-
-case class LiteralProcedureName(name: String)(val position: InputPosition) extends SymbolicName {
-  override def equals(x: Any): Boolean = x match {
-    case LiteralProcedureName(other) => other.toLowerCase == name.toLowerCase
-    case _ => false
-  }
-  override def hashCode = name.toLowerCase.hashCode
-}

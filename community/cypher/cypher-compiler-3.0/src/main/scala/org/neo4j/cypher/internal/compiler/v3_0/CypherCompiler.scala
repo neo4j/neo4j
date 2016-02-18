@@ -193,7 +193,7 @@ case class CypherCompiler(parser: CypherParser,
       astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
     }
 
-    PreparedQuerySyntax(rewrittenStatement, queryText, extractedParams)(notificationLogger, plannerName, postConditions)
+    PreparedQuerySyntax(rewrittenStatement, queryText, offset, extractedParams)(notificationLogger, plannerName, postConditions)
   }
 
   def prepareSemanticQuery(syntacticQuery: PreparedQuerySyntax,
@@ -209,7 +209,6 @@ case class CypherCompiler(parser: CypherParser,
     val postRewriteSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
       semanticChecker.check(syntacticQuery.queryText, rewrittenSyntacticQuery.statement, mkException)
     }
-    // TODO: Drop un-needed coercions
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
     val result = rewrittenSyntacticQuery.withSemantics(table, postRewriteSemanticState.scopeTree)
@@ -218,22 +217,21 @@ case class CypherCompiler(parser: CypherParser,
 
   private def rewriteProcedureCalls(context: PlanContext, syntacticQuery: PreparedQuerySyntax ): PreparedQuerySyntax = {
     val resolveCalls = bottomUp(Rewriter.lift {
-      case unresolved@UnresolvedCall(call) =>
-        val signature = context.procedureSignature(call.procedureName)
-        val newCall = call.copy(providedArgs = call.providedArgs.map(coerceInputs(signature)))(call.position)
-        ResolvedCall(newCall, signature)(unresolved.position)
+      case unresolved: UnresolvedCall =>
+        val resolved = unresolved.resolve(context.procedureSignature)
+        // We coerce here to ensure that the semantic check run after this rewriter assigns a type
+        // to the coercion expression
+        val coerced = resolved.coerceArguments
+        coerced
     })
 
-    val addExclusiveCallResultFields = Rewriter.lift {
-      case q@Query(None, part@SingleQuery(Seq(resolved@ResolvedCall(call, signature)))) if call.resultFields.isEmpty =>
-        val newArgs = call.providedArgs.getOrElse(signature.inputSignature.map { f => CoerceTo(Parameter(f.name)(call.position), f.typ) })
-        val newResults = signature.outputSignature.map { f => Variable(f.name)(call.position) }
-        val newCall = call.copy(providedArgs = Some(newArgs), resultFields = Some(newResults))(call.position)
-        val result = q.copy(part = part.copy(clauses = Seq(resolved.copy(call = newCall)(resolved.position)))(part.position))(q.position)
+    val fakeStandaloneCallDeclarations = Rewriter.lift {
+      case q@Query(None, part@SingleQuery(Seq(resolved@ResolvedCall(_, _, _, _, _)))) if !resolved.fullyDeclared =>
+        val result = q.copy(part = part.copy(clauses = Seq(resolved.fakeDeclarations))(part.position))(q.position)
         result
     }
 
-    syntacticQuery.rewrite(resolveCalls).rewrite(addExclusiveCallResultFields)
+    syntacticQuery.rewrite(resolveCalls).rewrite(fakeStandaloneCallDeclarations)
   }
 
   private def coerceInputs(signature: ProcedureSignature)(exprs: Seq[Expression]) = {

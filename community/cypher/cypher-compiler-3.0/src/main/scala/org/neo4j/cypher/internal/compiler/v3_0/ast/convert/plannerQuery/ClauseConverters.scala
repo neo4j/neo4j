@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{NoHeaders, HasHeaders}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
@@ -404,17 +404,10 @@ object ClauseConverters {
       ).
       withTail(PlannerQuery.empty)
 
-  private def addCallToLogicalPlanInput(builder: PlannerQueryBuilder, clause: ResolvedCall): PlannerQueryBuilder = {
-    val signature = clause.resolvedSignature
-    val call = clause.call
-    val arguments = call.providedArgs.getOrElse(signature.inputSignature.map { field => Parameter(field.name)(call.position) } )
-    val resultFields = call.resultFields.getOrElse(throw new InternalException("Procedure call is expected to have result fields by this point"))
-
-    builder.
-      withHorizon(
-        CallProcedureProjection(signature, arguments, resultFields)
-      ).
-      withTail(PlannerQuery.empty)
+  private def addCallToLogicalPlanInput(builder: PlannerQueryBuilder, call: ResolvedCall): PlannerQueryBuilder = {
+    builder
+      .withHorizon(ProcedureCallProjection(call))
+      .withTail(PlannerQuery.empty)
   }
 
   private def addForeachToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Foreach): PlannerQueryBuilder = {

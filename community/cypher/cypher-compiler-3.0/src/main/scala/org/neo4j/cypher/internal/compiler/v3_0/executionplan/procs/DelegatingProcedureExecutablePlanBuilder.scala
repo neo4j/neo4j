@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutablePlanBuilder, ExecutionPlan, PlanFingerprint, PlanFingerprintReference, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{PlanContext, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_0.{PreparedQuerySemantics, CompilationPhaseTracer, PreparedQuerySyntax}
+import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, PreparedQuerySemantics, SyntaxExceptionCreator}
+import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.spi.{FieldSignature, ProcedureSignature}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.TypeSpec
-import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InvalidArgumentException, SemanticTable}
 
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands
@@ -40,8 +40,12 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
     inputQuery.statement match {
 
       // Global call: CALL foo.bar.baz("arg1", 2)
-      case Query(None, SingleQuery(Seq(ResolvedCall(ProcedureCall(_, _, Some(args), _), resolvedSignature)))) =>
-        CallProcedureExecutionPlan(resolvedSignature, args)
+      case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) =>
+        val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
+        val mkException = new SyntaxExceptionCreator(inputQuery.queryText, inputQuery.offset)
+        errors.foreach { error => throw mkException(error.msg, error.position) }
+
+        ProcedureCallExecutionPlan(signature, args, resolved.callResultTypes, resolved.callResultIndices)
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       case CreateUniquePropertyConstraint(node, label, prop) =>

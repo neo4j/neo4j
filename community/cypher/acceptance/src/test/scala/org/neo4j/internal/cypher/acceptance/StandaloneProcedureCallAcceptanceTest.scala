@@ -25,10 +25,9 @@ import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.{BasicProcedure, Context}
 import org.neo4j.kernel.api.proc.Neo4jTypes
-import org.neo4j.kernel.api.proc.{CallableProcedure, Neo4jTypes}
 import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
 
-class CallProcedureGloballyAcceptanceTest extends ExecutionEngineFunSuite {
+class StandaloneProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should be able to find labels from built-in-procedure") {
     // Given

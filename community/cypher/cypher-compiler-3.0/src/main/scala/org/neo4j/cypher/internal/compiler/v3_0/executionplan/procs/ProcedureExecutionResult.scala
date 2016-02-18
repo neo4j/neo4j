@@ -27,10 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics, ProfileMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.ProfilerStatisticsNotReadyException
-
-import scala.collection.JavaConverters._
-import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics, ProfileMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_0.ProfilerStatisticsNotReadyException
+import org.neo4j.cypher.internal.frontend.v3_0.spi.QualifiedProcedureName
 
 /**
   * Execution result of a Procedure
@@ -40,7 +37,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ProfilerStatisticsNotReadyExcepti
   * @param name The name of the procedure.
   * @param callMode The call mode of the procedure.
   * @param args The argument to the procedure.
-  * @param columns The columns produced by this procedure (and result).
+  * @param indexResultNameMappings Describes how values at output row indices are mapped onto result columns.
   * @param executionPlanDescriptionGenerator Generator for the plan description of the result.
   * @param executionMode The execution mode.
   */
@@ -49,10 +46,12 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
                                                name: ProcedureName,
                                                callMode: ProcedureCallMode,
                                                args: Seq[Any],
-                                               override val columns: List[String],
+                                               indexResultNameMappings: Seq[(Int, String)],
                                                executionPlanDescriptionGenerator: () => InternalPlanDescription,
                                                val executionMode: ExecutionMode)
   extends StandardInternalExecutionResult(context, Some(taskCloser)) {
+
+  override def columns = indexResultNameMappings.map(_._2).toList
 
   private final val executionResults = executeCall
 
@@ -80,21 +79,13 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
 
   private def resultAsMap(rowData: Array[AnyRef]): util.Map[String, Any] = {
     val mapData = new util.HashMap[String, Any](rowData.length)
-    var i = 0
-    columns.foreach { fieldName =>
-      mapData.put(fieldName, rowData(i))
-      i = i + 1
-    }
+    indexResultNameMappings.foreach { entry => mapData.put(entry._2, rowData(entry._1)) }
     mapData
   }
 
   private def resultAsRefMap(rowData: Array[AnyRef]): util.Map[String, AnyRef] = {
     val mapData = new util.HashMap[String, AnyRef](rowData.length)
-    var i = 0
-    columns.foreach { fieldName =>
-      mapData.put(fieldName, rowData(i))
-      i = i + 1
-    }
+    indexResultNameMappings.foreach { entry => mapData.put(entry._2, rowData(entry._1)) }
     mapData
   }
 
