@@ -72,9 +72,9 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     @Override
     public void start() throws Throwable
     {
-        QueryExecutionEngine engine =
+        QueryExecutionEngine queryExecutionEngine =
                 gds.getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
-        statementRunner = new CypherStatementRunner( gds, engine );
+        statementRunner = new CypherStatementRunner( queryExecutionEngine );
         life.start();
     }
 
