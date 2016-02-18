@@ -58,8 +58,11 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
     signature.mode.call(context, signature, args.map(javaValues.asDeepJavaResultValue))
 
   override protected def createInner = new util.Iterator[util.Map[String, Any]]() {
-    override def next(): util.Map[String, Any] = resultAsMap(executionResults.next())
-    override def hasNext: Boolean = executionResults.hasNext
+    override def next(): util.Map[String, Any] =
+      try { resultAsMap( executionResults.next( ) ) }
+      catch { case e: NoSuchElementException => success(); throw e }
+
+    override def hasNext: Boolean = if (executionResults.hasNext) true else { success(); false }
   }
 
   override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {

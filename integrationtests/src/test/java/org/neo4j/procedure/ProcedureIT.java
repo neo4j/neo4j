@@ -19,13 +19,25 @@
  */
 package org.neo4j.procedure;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.neo4j.graphdb.*;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -33,22 +45,19 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
 import static java.lang.System.lineSeparator;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
@@ -260,7 +269,7 @@ public class ProcedureIT
     }
 
     @Test
-    public void readOnlyProcedureCannotWrite() throws Throwable
+    public void shouldDenyReadOnlyProcedureToPerformWrites() throws Throwable
     {
         // Expect
         exception.expect( QueryExecutionException.class );
@@ -274,13 +283,12 @@ public class ProcedureIT
     }
 
     @Test
-    public void procedureMarkedForWritingCanWrite() throws Throwable
+    public void shouldAllowWriteProcedureToPerformWrites() throws Throwable
     {
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            // TODO: #hasNext should not be needed here, result of writes should be eagerized
-            db.execute( "CALL org.neo4j.procedure.writingProcedure()" ).hasNext();
+            db.execute( "CALL org.neo4j.procedure.writingProcedure()" );
             tx.success();
         }
 
@@ -307,13 +315,12 @@ public class ProcedureIT
     }
 
     @Test
-    public void procedureMarkedForWritingCanCallOtherWritingProcedure() throws Throwable
+    public void shouldBeAbleToCallWriteProcedureThroughWriteProcedure() throws Throwable
     {
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            // TODO: #hasNext should not be needed here, result of writes should be eagerized
-            db.execute( "CALL org.neo4j.procedure.writeProcedureCallingWriteProcedure()" ).hasNext();
+            db.execute( "CALL org.neo4j.procedure.writeProcedureCallingWriteProcedure()" );
             tx.success();
         }
 
@@ -402,6 +409,42 @@ public class ProcedureIT
             db.execute( "CALL org.neo4j.procedure.delegatingSideEffect('SUTNOP')" );
 
             assertThat( db.execute( "MATCH (n:SUTNOP) RETURN count(n) AS c" ).next().get( "c" ), equalTo( 1L ) );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToPerformWritesOnNodesReturnedFromReadOnlyProcedure() throws Throwable
+    {
+        // When
+        try (Transaction tx = db.beginTx())
+        {
+            long nodeId = db.createNode().getId();
+            Node node = single( db.execute( "CALL org.neo4j.procedure.node", map( "id", nodeId ) ).columnAs( "node" ) );
+            node.setProperty( "name", "Stefan" );
+            tx.success();
+        };
+    }
+
+    @Test
+    public void shouldFailToShutdown()
+    {
+        // Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Failed to invoke procedure `org.neo4j.procedure.shutdown`: `java.lang.UnsupportedOperationException` was thrown when invoking the procedure." );
+
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.execute( "CALL org.neo4j.procedure.shutdown()" );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToWriteAfterCallingReadOnlyProcedure()
+    {
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.execute( "CALL org.neo4j.procedure.simpleArgument(12)" );
+            db.createNode();
         }
     }
 
@@ -636,6 +679,11 @@ public class ProcedureIT
         public void sideEffect( @Name( "value" ) String value )
         {
             db.createNode( Label.label( value ) );
+        }
+
+        @Procedure
+        public void shutdown() {
+            db.shutdown();
         }
 
         @Procedure
