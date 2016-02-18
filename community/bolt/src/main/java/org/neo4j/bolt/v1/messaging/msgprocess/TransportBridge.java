@@ -27,7 +27,6 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.logging.Log;
-import org.neo4j.server.security.auth.AuthManager;
 
 /** Bridges the gap between incoming deserialized messages, the user environment and back. */
 public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
@@ -37,12 +36,11 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
     private final MessageProcessingCallback<StatementMetadata> runCallback;
     private final MessageProcessingCallback<RecordStream> resultStreamCallback;
     private final MessageProcessingCallback<Void> simpleCallback;
-    private final AuthManager authManager;
 
     private Session session;
 
     public TransportBridge( Log log, Session session, MessageHandler<IOException> output,
-            Runnable onEachCompletedRequest, AuthManager authManager )
+            Runnable onEachCompletedRequest )
     {
         this.resultStreamCallback = new RecordStreamCallback( log );
         this.simpleCallback = new MessageProcessingCallback<>( log );
@@ -51,14 +49,13 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
         this.simpleCallback.reset( output, onEachCompletedRequest );
         this.resultStreamCallback.reset( output, onEachCompletedRequest );
         this.runCallback.reset( output, onEachCompletedRequest );
-        this.authManager = authManager;
     }
 
     @Override
-    public void handleInitMessage( String clientName ) throws RuntimeException
+    public void handleInitMessage( String clientName, Map<String,Object> authToken ) throws RuntimeException
     {
-        //TODO do auth here
-        session.init( clientName, null, simpleCallback );
+        session.init( clientName, authToken, null, simpleCallback );
+
     }
 
     @Override

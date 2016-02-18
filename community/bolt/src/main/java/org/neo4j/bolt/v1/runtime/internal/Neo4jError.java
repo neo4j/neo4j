@@ -47,6 +47,11 @@ public class Neo4jError
         this(status, message, null);
     }
 
+    public Neo4jError( Status status )
+    {
+        this(status, status.code().description(), null);
+    }
+
     public Status status()
     {
         return status;

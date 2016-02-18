@@ -178,7 +178,6 @@ public class CommunityEditionModule
         FileUserRepository users = life.add( new FileUserRepository( config.get( GraphDatabaseSettings.auth_store ).toPath(), logProvider ) );
 
         return life.add(new AuthManager( users, systemUTC(), config.get( GraphDatabaseSettings.auth_enabled )));
-
     }
 
     protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs )

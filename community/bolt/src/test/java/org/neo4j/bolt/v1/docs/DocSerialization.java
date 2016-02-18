@@ -28,12 +28,13 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
+import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.ImmutableRecord;
@@ -165,7 +166,7 @@ public class DocSerialization
                                 (String) meta.get( "code" ) ), (String) meta.get( "message" ) );
                         break;
                     case "INIT":
-                        writer.handleInitMessage( (String) args.get( 0 ) );
+                        writer.handleInitMessage( (String) args.get( 0 ), Collections.emptyMap() );
                         break;
                     case "RESET":
                         writer.handleResetMessage();

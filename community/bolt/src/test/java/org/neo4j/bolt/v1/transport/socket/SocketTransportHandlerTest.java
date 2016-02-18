@@ -35,7 +35,6 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.security.auth.AuthManager;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -104,8 +103,7 @@ public class SocketTransportHandlerTest
     {
         PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions = longObjectMap();
         availableVersions.put( BoltProtocolV1.VERSION,
-                ( channel, isSecure ) -> new BoltProtocolV1( NullLogService.getInstance(), session, channel, mock(
-                        AuthManager.class ) )
+                ( channel, isSecure ) -> new BoltProtocolV1( NullLogService.getInstance(), session, channel)
         );
 
         return new SocketTransportHandler.ProtocolChooser( availableVersions, true );

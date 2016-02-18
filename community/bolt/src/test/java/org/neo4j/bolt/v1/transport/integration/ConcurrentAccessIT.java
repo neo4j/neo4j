@@ -33,20 +33,22 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.function.Factory;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.bolt.v1.messaging.message.Messages;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
+import org.neo4j.function.Factory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.HostnamePort;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.Messages.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.acceptedVersions;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 /**
  * Multiple concurrent users should be able to connect simultaneously. We test this with multiple users running
@@ -56,7 +58,9 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventual
 public class ConcurrentAccessIT
 {
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket();
+    public Neo4jWithSocket server = new Neo4jWithSocket(settings ->
+            settings.put( GraphDatabaseSettings.auth_enabled, "false"  ));
+
 
     @Parameterized.Parameter(0)
     public Factory<Connection> cf;
@@ -109,7 +113,7 @@ public class ConcurrentAccessIT
     {
         return new Callable<Void>()
         {
-            private final byte[] init = chunk( Messages.init( "TestClient" ) );
+            private final byte[] init = chunk( Messages.init( "TestClient", emptyMap() ) );
             private final byte[] createAndRollback = chunk(
                     run( "BEGIN" ), pullAll(),
                     run( "CREATE (n)" ), pullAll(),
