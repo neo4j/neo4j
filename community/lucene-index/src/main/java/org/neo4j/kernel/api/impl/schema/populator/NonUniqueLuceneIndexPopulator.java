@@ -20,10 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.populator;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
@@ -33,14 +30,14 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
+/**
+ * A {@link LuceneIndexPopulator} used for non-unique Lucene schema indexes.
+ * Performs sampling using {@link NonUniqueIndexSampler}.
+ */
 public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
-    private final int queueThreshold = FeatureToggles.getInteger( NonUniqueLuceneIndexPopulator.class,
-            "queueThreshold", 10000 );
     private final NonUniqueIndexSampler sampler;
-    private final List<NodePropertyUpdate> updates = new ArrayList<>();
 
     public NonUniqueLuceneIndexPopulator( LuceneSchemaIndex luceneIndex, IndexSamplingConfig samplingConfig )
     {
@@ -57,53 +54,7 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
     {
-        return new IndexUpdater()
-        {
-            @Override
-            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
-            {
-                switch ( update.getUpdateMode() )
-                {
-                    case ADDED:
-                        // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        String encodedValue = LuceneDocumentStructure.encodedStringValue( update.getValueAfter() );
-                        sampler.include( encodedValue );
-                        break;
-                    case CHANGED:
-                        // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        String encodedValueBefore = LuceneDocumentStructure.encodedStringValue( update.getValueBefore() );
-                        sampler.exclude( encodedValueBefore );
-                        String encodedValueAfter = LuceneDocumentStructure.encodedStringValue( update.getValueAfter() );
-                        sampler.include( encodedValueAfter );
-                        break;
-                    case REMOVED:
-                        String removedValue = LuceneDocumentStructure.encodedStringValue( update.getValueBefore() );
-                        sampler.exclude( removedValue );
-                        break;
-                    default:
-                        throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );
-                }
-
-                updates.add( update );
-            }
-
-            @Override
-            public void close() throws IOException, IndexEntryConflictException
-            {
-                if ( updates.size() > queueThreshold )
-                {
-                    flush();
-                    updates.clear();
-                }
-
-            }
-
-            @Override
-            public void remove( PrimitiveLongSet nodeIds ) throws IOException
-            {
-                throw new UnsupportedOperationException( "Should not remove() from populating index." );
-            }
-        };
+        return new NonUniqueLuceneIndexPopulatingUpdater( writer, sampler );
     }
 
     @Override
@@ -116,28 +67,5 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     public IndexSample sampleResult()
     {
         return sampler.result();
-    }
-
-    @Override
-    protected void flush() throws IOException
-    {
-        for ( NodePropertyUpdate update : this.updates )
-        {
-            long nodeId = update.getNodeId();
-            switch ( update.getUpdateMode() )
-            {
-            case ADDED:
-            case CHANGED:
-                // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                                       LuceneDocumentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
-                break;
-            case REMOVED:
-                writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
-                break;
-            default:
-                throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );
-            }
-        }
     }
 }
