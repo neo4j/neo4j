@@ -58,6 +58,7 @@ public class KernelStatement implements TxStateHolder, Statement
     @Override
     public ReadOperations readOperations()
     {
+        transaction.verifyReadTransaction();
         return facade;
     }
 
@@ -71,7 +72,7 @@ public class KernelStatement implements TxStateHolder, Statement
     public DataWriteOperations dataWriteOperations()
             throws InvalidTransactionTypeKernelException
     {
-        transaction.upgradeToDataTransaction();
+        transaction.verifyDataWriteTransaction();
         return facade;
     }
 
@@ -79,7 +80,7 @@ public class KernelStatement implements TxStateHolder, Statement
     public SchemaWriteOperations schemaWriteOperations()
             throws InvalidTransactionTypeKernelException
     {
-        transaction.upgradeToSchemaTransaction();
+        transaction.verifySchemaWriteTransaction();
         return facade;
     }
 
