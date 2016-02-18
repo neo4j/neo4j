@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Supplier;
 
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
@@ -63,14 +64,16 @@ public class StoreStatement implements StorageStatement
     private final Supplier<LabelScanReader> labelScanStore;
     private LabelScanReader labelScanReader;
     private boolean closed;
+    private final Pool<StoreStatement> pool;
 
     public StoreStatement( final NeoStores neoStores, final LockService lockService,
             Supplier<IndexReaderFactory> indexReaderFactory,
-            Supplier<LabelScanReader> labelScanReaderSupplier )
+            Supplier<LabelScanReader> labelScanReaderSupplier, Pool<StoreStatement> pool )
     {
         this.neoStores = neoStores;
         this.indexReaderFactorySupplier = indexReaderFactory;
         this.labelScanStore = labelScanReaderSupplier;
+        this.pool = pool;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
 
@@ -110,6 +113,12 @@ public class StoreStatement implements StorageStatement
                         neoStores, StoreStatement.this, this, lockService );
             }
         };
+    }
+
+    public StoreStatement initialize()
+    {
+        this.closed = false;
+        return this;
     }
 
     @Override
@@ -163,8 +172,10 @@ public class StoreStatement implements StorageStatement
         if ( labelScanReader != null )
         {
             labelScanReader.close();
+            labelScanReader = null;
         }
         closed = true;
+        pool.release( this );
     }
 
     private class AllStoreIdIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator

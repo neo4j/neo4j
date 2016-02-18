@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -367,8 +368,14 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
                 any( ResourceLocker.class ),
                 anyLong() );
 
-        try ( KernelTransactionImplementation transaction = newTransaction( 5 ) )
+        try ( KernelTransactionImplementation transaction = newTransaction() )
         {
+            transaction.initialize( 5L, mock( Locks.Client.class ) );
+            try ( KernelStatement statement = transaction.acquireStatement() )
+            {
+                statement.legacyIndexTxState(); // which will pull it from the supplier and the mocking above
+                                                // will have it say that it has changes.
+            }
             // WHEN committing it at a later point
             clock.forward( 5, MILLISECONDS );
             // ...and simulating some other transaction being committed
@@ -390,7 +397,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         tx.success();
         tx.close();
 
-        verify( kernelTransactions ).transactionClosed( tx );
+        verify( txPool ).release( tx );
     }
 
     @Test
@@ -401,7 +408,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         tx.failure();
         tx.close();
 
-        verify( kernelTransactions ).transactionClosed( tx );
+        verify( txPool ).release( tx );
     }
 
     private void verifyExtraInteractionWithTheMonitor( TransactionMonitor transactionMonitor, boolean isWriteTx )

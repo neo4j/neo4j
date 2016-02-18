@@ -21,6 +21,9 @@ package org.neo4j.kernel.api;
 
 import org.junit.Before;
 
+import java.util.function.Supplier;
+
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
@@ -55,6 +58,7 @@ public class KernelTransactionTestBase
     protected final StoreReadLayer readLayer = mock( StoreReadLayer.class );
     protected final TransactionHooks hooks = new TransactionHooks();
     protected final LegacyIndexTransactionState legacyIndexState = mock( LegacyIndexTransactionState.class );
+    protected final Supplier<LegacyIndexTransactionState> legacyIndexStateSupplier = () -> legacyIndexState;
     protected final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
     protected final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
     protected final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
@@ -62,6 +66,7 @@ public class KernelTransactionTestBase
     protected final SchemaWriteGuard schemaWriteGuard = mock( SchemaWriteGuard.class );
     protected final FakeClock clock = new FakeClock();
     protected final KernelTransactions kernelTransactions = mock( KernelTransactions.class );
+    protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
 
     @Before
     public void before()
@@ -80,9 +85,9 @@ public class KernelTransactionTestBase
 
     public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted )
     {
-        return new KernelTransactionImplementation( null, schemaWriteGuard, new NoOpClient(), hooks, null, null,
-                headerInformationFactory, commitProcess, transactionMonitor, legacyIndexState, kernelTransactions,
-                clock, TransactionTracer.NULL, storageEngine, lastTransactionIdWhenStarted );
+        return new KernelTransactionImplementation( null, schemaWriteGuard, hooks, null, null, headerInformationFactory,
+                commitProcess, transactionMonitor, legacyIndexStateSupplier, txPool, clock, TransactionTracer.NULL,
+                storageEngine ).initialize( lastTransactionIdWhenStarted, new NoOpClient() );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

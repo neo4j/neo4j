@@ -57,7 +57,6 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.api.store.DiskLayer;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -103,7 +102,6 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
@@ -151,6 +149,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final NeoStoreIndexStoreView indexStoreView;
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
+    private final StoreStatements storeStatementSupplier;
 
     // Immutable state for creating/applying commands
     private final Loaders loaders;
@@ -216,10 +215,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
 
             labelScanStore = labelScanStoreProvider.getLabelScanStore();
+            storeStatementSupplier = storeStatementSupplier( neoStores, config, lockService );
             DiskLayer diskLayer = new DiskLayer(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                     schemaStorage, neoStores, indexingService,
-                    storeStatementSupplier( neoStores, config, lockService ) );
+                    storeStatementSupplier );
             storeLayer = new CacheLayer( diskLayer, schemaCache );
 
             legacyIndexApplierLookup = new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup );
@@ -247,18 +247,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
     }
 
-    private Supplier<StorageStatement> storeStatementSupplier(
+    private StoreStatements storeStatementSupplier(
             NeoStores neoStores, Config config, LockService lockService )
     {
         final LockService currentLockService =
                 config.get( use_read_locks_on_property_reads ) ? lockService : NO_LOCK_SERVICE;
-        final Supplier<IndexReaderFactory> indexReaderFactory = () -> {
-            return new IndexReaderFactory.Caching( indexingService );
-        };
+        final Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
 
-        return () -> {
-            return new StoreStatement( neoStores, currentLockService, indexReaderFactory, labelScanStore::newReader );
-        };
+        return new StoreStatements( neoStores, currentLockService, indexReaderFactory, labelScanStore::newReader );
     }
 
     @Override
@@ -432,6 +428,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void shutdown() throws Throwable
     {
+        storeStatementSupplier.close();
         labelScanStore.shutdown();
         indexingService.shutdown();
         neoStores.close();
