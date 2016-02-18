@@ -27,10 +27,6 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
-  FindBugs-jsr305
-
-GNU Lesser General Public License, Version 2.1
-  FindBugs-Annotations
 
 MIT License
   SLF4J API Module

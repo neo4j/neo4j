@@ -28,7 +28,6 @@ Apache Software License, Version 2.0
   airline
   Apache Commons Lang
   ConcurrentLinkedHashMap
-  FindBugs-jsr305
   Guava: Google Core Libraries for Java
   javax.inject
   Lucene Common Analyzers
@@ -51,7 +50,4 @@ BSD License
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
-
-GNU Lesser General Public License, Version 2.1
-  FindBugs-Annotations
 

@@ -52,6 +52,10 @@ the relevant Commercial Agreement.
   <dependencies>
     <!-- main dependencies -->
     <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>annotations</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-primitive-collections</artifactId>
       <version>${project.version}</version>

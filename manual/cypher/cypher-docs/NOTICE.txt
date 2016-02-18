@@ -27,13 +27,9 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
-  FindBugs-jsr305
   Lucene Core
   Lucene Memory
 
 BSD - Scala License
   Scala Library
-
-GNU Lesser General Public License, Version 2.1
-  FindBugs-Annotations
 
