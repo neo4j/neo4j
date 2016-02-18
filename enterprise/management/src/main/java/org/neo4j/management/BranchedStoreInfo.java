@@ -26,10 +26,10 @@ public final class BranchedStoreInfo implements Serializable
 {
     private static final long serialVersionUID = -3519343870927764106L;
 
-    private final String directory;
+    private String directory;
 
-    private final long largestTxId;
-    private final long creationTime;
+    private long largestTxId;
+    private long creationTime;
 
     @ConstructorProperties( { "directory", "largestTxId", "creationTime" } )
     public BranchedStoreInfo( String directory, long largestTxId,

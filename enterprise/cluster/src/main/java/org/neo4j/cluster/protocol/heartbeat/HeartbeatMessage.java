@@ -43,7 +43,7 @@ public enum HeartbeatMessage
     {
         private static final long serialVersionUID = 6799806932628197123L;
 
-        private final InstanceId server;
+        private InstanceId server;
 
         public IAmAliveState( InstanceId server )
         {

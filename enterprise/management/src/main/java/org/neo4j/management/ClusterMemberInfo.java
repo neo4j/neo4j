@@ -36,12 +36,12 @@ public class ClusterMemberInfo implements Serializable
 {
     private static final long serialVersionUID = -514433972115185753L;
 
-    private final String instanceId;
-    private final boolean available;
-    private final boolean alive;
-    private final String haRole;
-    private final String[] uris;
-    private final String[] roles;
+    private String instanceId;
+    private boolean available;
+    private boolean alive;
+    private String haRole;
+    private String[] uris;
+    private String[] roles;
 
     @ConstructorProperties( { "instanceId", "available", "alive", "haRole", "uris", "roles" } )
     public ClusterMemberInfo( String instanceId, boolean available, boolean alive, String haRole, String[] uris,

@@ -26,8 +26,8 @@ public class TabCompletion implements Serializable
 {
     private static final long serialVersionUID = -3960128927108659417L;
 
-    private final Collection<String> candidates;
-    private final int cursor;
+    private Collection<String> candidates;
+    private int cursor;
 
     public TabCompletion( Collection<String> candidates, int cursor )
     {

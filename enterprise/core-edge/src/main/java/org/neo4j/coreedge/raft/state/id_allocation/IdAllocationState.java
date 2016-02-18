@@ -20,9 +20,9 @@
 package org.neo4j.coreedge.raft.state.id_allocation;
 
 import java.io.IOException;
-import org.neo4j.coreedge.network.Message;
 import java.util.Arrays;
 
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.state.StateMarshal;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.storageengine.api.ReadPastEndException;

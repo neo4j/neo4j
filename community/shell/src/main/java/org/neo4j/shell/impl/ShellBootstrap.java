@@ -22,7 +22,6 @@ package org.neo4j.shell.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Base64;
 
@@ -31,10 +30,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
-public class ShellBootstrap implements Serializable
+public class ShellBootstrap
 {
-    private static final long serialVersionUID = 8363358670517974177L;
-
     private final boolean enable;
     private String host;
     private final int port;

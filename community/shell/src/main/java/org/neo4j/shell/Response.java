@@ -25,8 +25,8 @@ public class Response implements Serializable
 {
     private static final long serialVersionUID = -5359521886510594233L;
 
-    private final String prompt;
-    private final Continuation continuation;
+    private String prompt;
+    private Continuation continuation;
     
     public Response( String prompt, Continuation continuation )
     {

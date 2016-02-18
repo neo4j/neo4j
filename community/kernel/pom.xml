@@ -80,7 +80,7 @@ the relevant Commercial Agreement.
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-          <argLine>-Xmx300m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true</argLine>
+          <argLine>-Xmx300m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields</argLine>
         </configuration>
       </plugin>
       <plugin>

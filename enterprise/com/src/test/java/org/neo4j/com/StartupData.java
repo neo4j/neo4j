@@ -25,11 +25,11 @@ class StartupData implements Serializable
 {
     private static final long serialVersionUID = 3570271945897559074L;
     
-    final long creationTime;
-    final long storeId;
-    final byte applicationProtocolVersion;
-    final byte internalProtocolVersion;
-    final int chunkSize;
+    long creationTime;
+    long storeId;
+    byte applicationProtocolVersion;
+    byte internalProtocolVersion;
+    int chunkSize;
 
     public StartupData( long creationTime, long storeId, byte internalProtocolVersion, byte applicationProtocolVersion,
                         int chunkSize )

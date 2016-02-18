@@ -38,7 +38,7 @@ public class CollectingOutput extends UnicastRemoteObject implements Output, Ser
     private transient StringWriter stringWriter = new StringWriter();
     private transient PrintWriter allLinesAsOne = new PrintWriter( stringWriter );
 
-    private final List<String> lines = new ArrayList<String>();
+    private List<String> lines = new ArrayList<String>();
 
     private String ongoingLine = "";
 

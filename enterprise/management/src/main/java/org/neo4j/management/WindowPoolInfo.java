@@ -26,14 +26,14 @@ public final class WindowPoolInfo implements Serializable
 {
     private static final long serialVersionUID = 7743724554758487292L;
 
-    private final String name;
-    private final long memAvail;
-    private final long memUsed;
-    private final int windowCount;
-    private final int windowSize;
-    private final int hitCount;
-    private final int missCount;
-    private final int oomCount;
+    private String name;
+    private long memAvail;
+    private long memUsed;
+    private int windowCount;
+    private int windowSize;
+    private int hitCount;
+    private int missCount;
+    private int oomCount;
 
     @ConstructorProperties( { "windowPoolName", "availableMemory",
             "usedMemory", "numberOfWindows", "windowSize", "windowHitCount",

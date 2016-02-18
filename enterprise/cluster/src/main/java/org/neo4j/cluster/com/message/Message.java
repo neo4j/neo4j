@@ -92,9 +92,9 @@ public class Message<MESSAGETYPE extends MessageType>
     public static final String TO = "to";
     public static final String INSTANCE_ID = "instance-id";
 
-    final private MESSAGETYPE messageType;
-    final private Object payload;
-    final private Map<String, String> headers = new HashMap<String, String>();
+    private MESSAGETYPE messageType;
+    private Object payload;
+    private Map<String, String> headers = new HashMap<String, String>();
 
     protected Message( MESSAGETYPE messageType, Object payload )
     {

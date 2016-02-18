@@ -40,7 +40,7 @@ public enum LearnerMessage
     {
         private static final long serialVersionUID = 3311287172384025589L;
 
-        private final Object value;
+        private Object value;
 
         public LearnState( Object value )
         {
