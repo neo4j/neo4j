@@ -24,14 +24,14 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
-import org.neo4j.kernel.impl.api.AutoIndexing;
+import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
 
 public class RelationshipAutoIndexerFacade extends AutoIndexerFacade<Relationship> implements RelationshipAutoIndexer
 {
     private final Supplier<ReadableRelationshipIndex> idxSupplier;
 
     public RelationshipAutoIndexerFacade( Supplier<ReadableRelationshipIndex> idxSupplier,
-                                          AutoIndexing.AutoIndexOperations autoIndexing )
+                                          AutoIndexOperations autoIndexing )
     {
         super( idxSupplier::get, autoIndexing );
         this.idxSupplier = idxSupplier;

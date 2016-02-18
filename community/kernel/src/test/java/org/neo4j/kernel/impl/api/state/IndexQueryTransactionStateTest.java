@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Collections;
+
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Collections;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -34,11 +34,11 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.AutoIndexing;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
+import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -49,10 +49,12 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -102,7 +104,7 @@ public class IndexQueryTransactionStateTest
 
         StateHandlingStatementOperations stateHandlingOperations = new StateHandlingStatementOperations(
                 store,
-                new AutoIndexing( new Config(), null ),
+                new InternalAutoIndexing( new Config(), null ),
                 mock( ConstraintIndexCreator.class ),
                 mock( LegacyIndexStore.class ) );
         txContext = new ConstraintEnforcingEntityOperations(

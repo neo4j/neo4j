@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import java.net.URL;
+import java.util.Map;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Result;
@@ -28,16 +31,13 @@ import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.api.AutoIndexing;
+import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Logger;
-
-import java.net.URL;
-import java.util.Map;
 
 /**
  * This implements the backend for the "classic" Core API - meaning the surface-layer-of-the-database, thread bound API. It's a thin veneer to wire the

@@ -40,12 +40,13 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.impl.api.AutoIndexing;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -152,7 +153,7 @@ public class DataSourceModule
         DatabaseHealth databaseHealth = deps.satisfyDependency( new DatabaseHealth( databasePanicEventGenerator,
                 logging.getInternalLog( DatabaseHealth.class ) ) );
 
-        autoIndexing = new AutoIndexing( platformModule.config, editionModule.propertyKeyTokenHolder );
+        autoIndexing = new InternalAutoIndexing( platformModule.config, editionModule.propertyKeyTokenHolder );
         Procedures procedures = setupProcedures( platformModule );
 
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource( storeDir, config,

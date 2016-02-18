@@ -24,11 +24,13 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.AutoIndexing;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
+import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexOperations;
+import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.storageengine.api.NodeItem;
@@ -43,14 +45,15 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.api.properties.Property.property;
 
 public class StateOperationsAutoIndexingTest
 {
     // TODO: This level of mocking is a massive smell, we're violating law of demeter like nobody's business
-    private final AutoIndexing.AutoIndexOperations nodeOps = mock( AutoIndexing.AutoIndexOperations.class );
-    private final AutoIndexing.AutoIndexOperations relOps = mock( AutoIndexing.AutoIndexOperations.class );
-    private final AutoIndexing idx = mock( AutoIndexing.class );
+    private final InternalAutoIndexOperations nodeOps = mock( InternalAutoIndexOperations.class );
+    private final InternalAutoIndexOperations relOps = mock( InternalAutoIndexOperations.class );
+    private final AutoIndexing idx = mock( InternalAutoIndexing.class );
     private final StorageStatement storeStmt = mock( StorageStatement.class );
     private final DataWriteOperations writeOps = mock(DataWriteOperations.class);
     private final KernelStatement stmt = mock( KernelStatement.class, RETURNS_MOCKS );

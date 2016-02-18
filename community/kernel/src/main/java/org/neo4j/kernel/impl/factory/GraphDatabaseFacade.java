@@ -60,10 +60,11 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.AutoIndexing;
 import org.neo4j.kernel.impl.api.TokenAccess;
+import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -87,10 +88,9 @@ import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.storageengine.api.EntityType;
 
 import static java.lang.String.format;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.kernel.impl.api.AutoIndexing.NODE_AUTO_INDEX;
-import static org.neo4j.kernel.impl.api.AutoIndexing.RELATIONSHIP_AUTO_INDEX;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 
@@ -166,7 +166,7 @@ public class GraphDatabaseFacade
         URL validateURLAccess( URL url ) throws URLAccessValidationError;
     }
 
-    protected GraphDatabaseFacade()
+    public GraphDatabaseFacade()
     {
     }
 
@@ -185,10 +185,10 @@ public class GraphDatabaseFacade
         this.schema = new SchemaImpl( spi::currentStatement );
         this.indexManager = new IndexManagerImpl( spi::currentStatement, idxProvider,
                 new AutoIndexerFacade(
-                        () -> new ReadOnlyIndexFacade<>(idxProvider.getOrCreateNodeIndex( NODE_AUTO_INDEX, null ) ),
+                        () -> new ReadOnlyIndexFacade<>(idxProvider.getOrCreateNodeIndex( InternalAutoIndexing.NODE_AUTO_INDEX, null ) ),
                         spi.autoIndexing().nodes() ),
                 new RelationshipAutoIndexerFacade(
-                        () -> new ReadOnlyRelationshipIndexFacade( idxProvider.getOrCreateRelationshipIndex( RELATIONSHIP_AUTO_INDEX, null ) ),
+                        () -> new ReadOnlyRelationshipIndexFacade( idxProvider.getOrCreateRelationshipIndex( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX, null ) ),
                         spi.autoIndexing().relationships() ) );
     }
 

@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.ReadableIndex;
-import org.neo4j.kernel.impl.api.AutoIndexing.AutoIndexOperations;
+import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
 
 /**
  * Facade exposing auto indexing operations for nodes.
