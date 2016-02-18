@@ -4,6 +4,17 @@
 It's easy to use Neo4j embedded in Java applications.
 In this chapter you will find everything needed -- from setting up the environment to doing something useful with your data.
 
+[WARNING]
+====
+When running your own code alongside Neo4j in the same JVM, there are a few things you should keep in mind:
+
+* Don't create or retain more objects than you strictly need to.
+  Large caches are particularly good at promoting many objects to the old generation, thus increasing the need for expensive full garbage collections.
+* Don't use internal Neo4j APIs.
+  They may change in future releases, and they might not always work as intended in the context of your code.
+* Don't enable the `-XX:+TrustFinalNonStaticFields` JVM flag when running in embedded mode.
+====
+
 :leveloffset: 2
 
 include::setup.asciidoc[]
