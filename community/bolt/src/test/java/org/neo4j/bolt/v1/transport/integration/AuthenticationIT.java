@@ -23,13 +23,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
-import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
@@ -44,7 +40,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.message.Messages.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
@@ -54,24 +49,9 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 @RunWith( Parameterized.class )
 public class AuthenticationIT
 {
-    private TemporaryFolder folder = new TemporaryFolder();
-
-    private Neo4jWithSocket server = new Neo4jWithSocket( settings -> {
-        settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-        try
-        {
-            settings.put( GraphDatabaseSettings.auth_store, folder.newFile().getAbsolutePath() );
-        }
-        catch ( IOException e )
-        {
-            fail( e.getMessage() );
-        }
-    } );
-
     @Rule
-    public TestRule chain = RuleChain
-            .outerRule( folder )
-            .around( server );
+    public Neo4jWithSocket server = new Neo4jWithSocket( settings ->
+            settings.put( GraphDatabaseSettings.auth_enabled, "true" ) );
 
 
     @Parameterized.Parameter( 0 )

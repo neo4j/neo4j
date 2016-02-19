@@ -194,6 +194,10 @@ public class CommunityServerBuilder
         }
 
         properties.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
+        properties.put( GraphDatabaseSettings.auth_store.name(), new File(temporaryFolder, "auth").getAbsolutePath() );
+        properties.put( ServerSettings.tls_certificate_file.name(), new File(temporaryFolder, "cert.cert").getAbsolutePath() );
+        properties.put( ServerSettings.tls_key_file.name(), new File(temporaryFolder, "key.key").getAbsolutePath() );
+        properties.put( GraphDatabaseSettings.auth_store.name(), new File(temporaryFolder, "auth").getAbsolutePath() );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
 
         for ( Object key : arbitraryProperties.keySet() )

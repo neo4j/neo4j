@@ -304,6 +304,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         FileUtils.deleteFile( authStore);
         server = CommunityServerBuilder.server()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
+                .withProperty( GraphDatabaseSettings.auth_store.name(), authStore.getAbsolutePath() )
                 .build();
         server.start();
     }

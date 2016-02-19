@@ -155,8 +155,10 @@ public class UsersDocIT extends ExclusiveServerTestBase
     {
         File file = ServerTestUtils.getRelativeFile( GraphDatabaseSettings.auth_store );
         FileUtils.deleteFile( file );
-        server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(),
-                Boolean.toString( authEnabled ) ).build();
+        server = CommunityServerBuilder.server()
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
+                .withProperty( GraphDatabaseSettings.auth_store.name(), file.getAbsolutePath() )
+                .build();
         server.start();
     }
 
