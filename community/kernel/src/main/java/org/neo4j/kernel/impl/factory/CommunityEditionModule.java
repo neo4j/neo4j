@@ -56,12 +56,7 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.server.security.auth.AuthManager;
-import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.udc.UsageData;
-
-import static java.time.Clock.systemUTC;
 
 
 /**
@@ -173,12 +168,7 @@ public class CommunityEditionModule
         return life.add( new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI ) );
     }
 
-    private AuthManager createAuthManager(Config config, LifeSupport life, LogProvider logProvider)
-    {
-        FileUserRepository users = life.add( new FileUserRepository( config.get( GraphDatabaseSettings.auth_store ).toPath(), logProvider ) );
 
-        return life.add(new AuthManager( users, systemUTC(), config.get( GraphDatabaseSettings.auth_enabled )));
-    }
 
     protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs )
     {

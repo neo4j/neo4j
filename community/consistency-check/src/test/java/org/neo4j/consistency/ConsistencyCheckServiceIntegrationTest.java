@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -145,7 +146,7 @@ public class ConsistencyCheckServiceIntegrationTest
     @Test
     public void shouldAllowGraphCheckDisabled() throws IOException, ConsistencyCheckIncompleteException
     {
-        GraphDatabaseService gds = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.absolutePath() );
+        GraphDatabaseService gds = getGraphDatabaseService();
 
         try ( Transaction tx = gds.beginTx() )
         {
@@ -167,10 +168,21 @@ public class ConsistencyCheckServiceIntegrationTest
         assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
     }
 
+    private GraphDatabaseService getGraphDatabaseService()
+    {
+        GraphDatabaseBuilder builder =
+                new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.absolutePath() );
+        builder.setConfig( settings(  ) );
+
+        return builder.newGraphDatabase();
+
+    }
+
     protected Map<String,String> settings( String... strings )
     {
         Map<String, String> defaults = new HashMap<>();
         defaults.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        defaults.put( GraphDatabaseSettings.auth_store.name(), testDirectory.file( "auth" ).getAbsolutePath() );
         return stringMap( defaults, strings );
     }
 

@@ -85,9 +85,9 @@ import org.neo4j.coreedge.server.Expiration;
 import org.neo4j.coreedge.server.ExpiryScheduler;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.SenderService;
-import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenState;
 import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.server.core.locks.LockTokenManager;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.coreedge.server.logging.BetterMessageLogger;
 import org.neo4j.coreedge.server.logging.MessageLogger;
@@ -298,6 +298,7 @@ public class EnterpriseCoreEditionModule
 
         dependencies.satisfyDependency( createKernelData( fileSystem, platformModule.pageCache, storeDir,
                 config, graphDatabaseFacade, life ) );
+        dependencies.satisfyDependencies( createAuthManager(config, life, logging.getUserLogProvider()) );
 
         headerInformationFactory = createHeaderInformationFactory();
 
