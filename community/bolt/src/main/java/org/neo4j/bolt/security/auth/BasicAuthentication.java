@@ -72,6 +72,8 @@ public class BasicAuthentication implements Authentication
             throw new AuthenticationException( Status.Security.AuthenticationRateLimit );
         case FAILURE:
             throw new AuthenticationException( Status.Security.AuthenticationFailed );
+        default:
+            throw new AuthenticationException( Status.Security.AuthenticationFailed );
         }
     }
 

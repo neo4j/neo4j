@@ -25,17 +25,25 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
+import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
+import org.neo4j.bolt.v1.messaging.message.FailureMessage;
+import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.messaging.message.Message;
+import org.neo4j.bolt.v1.messaging.message.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
+import org.neo4j.bolt.v1.messaging.message.ResetMessage;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
+import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static java.lang.System.lineSeparator;
@@ -65,14 +73,14 @@ public class MessageFormatTest
     @Test
     public void shouldHandleCommonMessages() throws Throwable
     {
-//        assertSerializes( new RunMessage( "CREATE (n) RETURN åäö" ) );
-//        assertSerializes( new DiscardAllMessage() );
-//        assertSerializes( new PullAllMessage() );
-//        assertSerializes( new RecordMessage( record( 1L, "b", 2L ) ) );
-//        assertSerializes( new SuccessMessage( new HashMap<>() ) );
-//        assertSerializes( new FailureMessage( Status.General.UnknownFailure, "Err" ) );
-//        assertSerializes( new IgnoredMessage() );
-//        assertSerializes( new ResetMessage() );
+        assertSerializes( new RunMessage( "CREATE (n) RETURN åäö" ) );
+        assertSerializes( new DiscardAllMessage() );
+        assertSerializes( new PullAllMessage() );
+        assertSerializes( new RecordMessage( record( 1L, "b", 2L ) ) );
+        assertSerializes( new SuccessMessage( new HashMap<>() ) );
+        assertSerializes( new FailureMessage( Status.General.UnknownFailure, "Err" ) );
+        assertSerializes( new IgnoredMessage() );
+        assertSerializes( new ResetMessage() );
         assertSerializes( new InitMessage( "MyClient/1.0", map("scheme", "basic") ) );
     }
 

@@ -181,6 +181,7 @@ public class Cluster
         params.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
         params.put( HaSettings.pull_interval.name(), String.valueOf( 5 ) );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "100M" );
+        params.put( GraphDatabaseSettings.auth_store.name(), new File(parentDir, "auth").getAbsolutePath() );
         final File storeDir = coreServerStoreDirectory( parentDir, serverId );
         return new CoreGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(),
                 discoveryServiceFactory );
@@ -199,6 +200,7 @@ public class Cluster
         final Map<String, String> params = serverParams( "EDGE", serverId, initialHosts );
         params.put( HaSettings.pull_interval.name(), String.valueOf( 5 ) );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "100M" );
+        params.put( GraphDatabaseSettings.auth_store.name(), new File(parentDir, "auth").getAbsolutePath() );
         return new EdgeGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(),
                 discoveryServiceFactory );
     }
