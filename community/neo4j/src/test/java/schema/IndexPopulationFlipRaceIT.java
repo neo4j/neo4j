@@ -136,8 +136,9 @@ public class IndexPopulationFlipRaceIT
     private void verifyThatThereAreExactlyOneIndexEntryPerNodeInTheIndexes( int i, Pair<long[],long[]> data )
             throws Exception
     {
-        try ( KernelTransaction tx = db.getDependencyResolver().resolveDependency( KernelAPI.class ).newTransaction();
-                Statement statement = tx.acquireStatement() )
+        KernelAPI kernelAPI = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit );
+              Statement statement = tx.acquireStatement() )
         {
             int labelAId = statement.readOperations().labelGetForName( labelA( i ).name() );
             int keyAId = statement.readOperations().propertyKeyGetForName( keyA( i ) );

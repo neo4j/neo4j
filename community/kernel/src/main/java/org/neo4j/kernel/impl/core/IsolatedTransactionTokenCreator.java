@@ -39,7 +39,7 @@ public abstract class IsolatedTransactionTokenCreator implements TokenCreator
     private final Supplier<KernelAPI> kernelSupplier;
 
     public IsolatedTransactionTokenCreator( Supplier<KernelAPI> kernelSupplier,
-                                            IdGeneratorFactory idGeneratorFactory )
+            IdGeneratorFactory idGeneratorFactory )
     {
         this.kernelSupplier = kernelSupplier;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -49,7 +49,7 @@ public abstract class IsolatedTransactionTokenCreator implements TokenCreator
     public synchronized int getOrCreate( String name ) throws org.neo4j.kernel.api.exceptions.KernelException
     {
         KernelAPI kernel = kernelSupplier.get();
-        try ( KernelTransaction transaction = kernel.newTransaction() )
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit ) )
         {
             try ( Statement statement = transaction.acquireStatement() )
             {

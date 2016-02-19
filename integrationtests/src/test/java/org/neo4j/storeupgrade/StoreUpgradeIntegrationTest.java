@@ -21,7 +21,6 @@ package org.neo4j.storeupgrade;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -345,14 +344,7 @@ public class StoreUpgradeIntegrationTest
             File dir = store.prepareDirectory( testDir.graphDbDir() );
 
             // remove id files
-            File[] idFiles = dir.listFiles( new FilenameFilter()
-            {
-                @Override
-                public boolean accept( File dir, String name )
-                {
-                    return name.endsWith( ".id" );
-                }
-            } );
+            File[] idFiles = dir.listFiles( ( dir1, name ) -> { return name.endsWith( ".id" ); } );
 
             for ( File idFile : idFiles )
             {
@@ -429,7 +421,8 @@ public class StoreUpgradeIntegrationTest
     private static void checkIndexCounts( Store store, GraphDatabaseAPI db ) throws KernelException
     {
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        try ( KernelTransaction tx = kernel.newTransaction(); Statement statement = tx.acquireStatement() )
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit );
+              Statement statement = tx.acquireStatement() )
         {
             Iterator<IndexDescriptor> indexes = getAllIndexes( db );
             DoubleLongRegister register = Registers.newDoubleLongRegister();

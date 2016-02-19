@@ -66,9 +66,9 @@ public class GraphDbHelper
 
     public int getNumberOfNodes()
     {
-        try ( KernelTransaction tx =
-                database.getGraph().getDependencyResolver().resolveDependency( KernelAPI.class ).newTransaction();
-                Statement statement = tx.acquireStatement() )
+        KernelAPI kernelAPI = database.getGraph().getDependencyResolver().resolveDependency( KernelAPI.class );
+        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit );
+              Statement statement = tx.acquireStatement() )
         {
             return Math.toIntExact( statement.readOperations().nodesGetCount() );
         }
@@ -80,9 +80,9 @@ public class GraphDbHelper
 
     public int getNumberOfRelationships()
     {
-        try ( KernelTransaction tx =
-                database.getGraph().getDependencyResolver().resolveDependency( KernelAPI.class ).newTransaction();
-                Statement statement = tx.acquireStatement() )
+        KernelAPI kernelAPI = database.getGraph().getDependencyResolver().resolveDependency( KernelAPI.class );
+        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit );
+              Statement statement = tx.acquireStatement() )
         {
             return Math.toIntExact( statement.readOperations().relationshipsGetCount() );
         }

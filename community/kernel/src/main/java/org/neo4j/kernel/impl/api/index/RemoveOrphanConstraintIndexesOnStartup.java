@@ -47,7 +47,7 @@ public class RemoveOrphanConstraintIndexesOnStartup
 
     public void perform()
     {
-        try ( KernelTransaction transaction = kernel.newTransaction();
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
               Statement statement = transaction.acquireStatement() )
         {
             for ( Iterator<IndexDescriptor> indexes = statement.readOperations().uniqueIndexesGetAll();
