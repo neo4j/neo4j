@@ -25,12 +25,13 @@ import cypher.feature.parser.EmptyNode
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.{Iterables, IteratorUtil}
+import org.neo4j.kernel.GraphDatabaseQueryService
 
 import scala.collection.JavaConverters._
 
-object makeTxSafe extends ((GraphDatabaseService, Result) => util.List[util.Map[String, AnyRef]]) with GraphIcing {
+object makeTxSafe extends ((GraphDatabaseQueryService, Result) => util.List[util.Map[String, AnyRef]]) with GraphIcing {
 
-  override def apply(graph: GraphDatabaseService, raw: Result): util.List[util.Map[String, AnyRef]] = {
+  override def apply(graph: GraphDatabaseQueryService, raw: Result): util.List[util.Map[String, AnyRef]] = {
     val safe = graph.inTx {
       replaceNodes(IteratorUtil.asList(raw))
     }

@@ -30,6 +30,7 @@ import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
 import cypher.cucumber.prettifier.{makeTxSafe, prettifier}
 import cypher.feature.parser.parseFullTable
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.helpers.collection.IteratorUtil
@@ -103,7 +104,7 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
 
   Then(EXPECT_RESULT) { (expectedTable: DataTable) =>
     val expectedRows = parseFullTable(expectedTable)
-    val actualRows = makeTxSafe(graph, result)
+    val actualRows = makeTxSafe(new GraphDatabaseCypherService(graph), result)
 
     expectedRows should represent(actualRows)
   }
