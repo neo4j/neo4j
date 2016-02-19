@@ -31,7 +31,7 @@ Cost::
 This planner uses the statistics service in Neo4j to assign cost to alternative plans and picks the cheapest one.
 While this should lead to superior execution plans in most cases, it is still under development.
 
-By default, Neo4j 2.2 will use the cost planner for some queries, but not all.
+By default, Neo4j {neo4j-version} will use the cost planner for some queries, but not all.
 You can force it to use a specific planner by using the `query.planner.version` configuration setting (see <<config_dbms.cypher.planner>>), or by prepending your query with `CYPHER planner=cost` or `CYPHER planner=rule`.
 Neo4j might still not use the planner you selected -- not all queries are solvable by the cost planner at this point. Note that using `PLANNER COST` or `PLANNER RULE` in order to switch between planners has been deprecated and will stop working in future versions.
 
