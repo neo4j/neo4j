@@ -42,9 +42,9 @@ object parseFullTable extends (DataTable => util.List[util.Map[String, AnyRef]])
     val cells = table.cells(1).asScala
 
     val output = new util.ArrayList[util.Map[String, AnyRef]]
-    cells.zipWithIndex.foreach { case (list, index) =>
+    cells.foreach { case list =>
       val map = new util.HashMap[String, AnyRef]()
-      list.asScala.foreach { value =>
+      list.asScala.zipWithIndex.foreach { case (value, index) =>
         val parsed = scalaResultsParser(value)
         map.put(keys(index), parsed)
       }
