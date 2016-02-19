@@ -205,6 +205,12 @@ public class Cluster
 
     public void shutdown()
     {
+        shutdownCoreServers();
+        shutdownEdgeServers();
+    }
+
+    public void shutdownCoreServers()
+    {
         ExecutorService executor = Executors.newCachedThreadPool();
         List<Callable<Object>> serverShutdownSuppliers = new ArrayList<>();
         for ( final CoreGraphDatabase coreServer : coreServers )
@@ -227,12 +233,16 @@ public class Cluster
         {
             executor.shutdown();
         }
+    }
 
+    public void shutdownEdgeServers()
+    {
         for ( EdgeGraphDatabase edgeServer : edgeServers )
         {
             edgeServer.shutdown();
         }
     }
+
 
     public CoreGraphDatabase getCoreServerById( int serverId )
     {
@@ -374,14 +384,6 @@ public class Cluster
         CoreDiscoveryService coreDiscoveryService = aCoreGraphDb.getDependencyResolver()
                 .resolveDependency( CoreDiscoveryService.class );
         return coreDiscoveryService.currentTopology().getNumberOfCoreServers();
-    }
-
-    public int numberOfEdgeServers()
-    {
-        EdgeGraphDatabase edge = edgeServers.iterator().next();
-        EdgeDiscoveryService lifecycle = edge.getDependencyResolver()
-                .resolveDependency( EdgeDiscoveryService.class );
-        return lifecycle.currentTopology().getNumberOfEdgeServers();
     }
 
     public void addEdgeServerWithFileLocation( File edgeDatabaseStoreFileLocation )

@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.server.edge;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
@@ -35,6 +36,7 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
+import org.neo4j.coreedge.raft.replication.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.Expiration;
 import org.neo4j.coreedge.server.ExpiryScheduler;
@@ -48,13 +50,10 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.Version;
-import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
-import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
@@ -68,14 +67,11 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
@@ -117,13 +113,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 
-        schemaWriteGuard = new SchemaWriteGuard()
-        {
-            @Override
-            public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
-            {
-            }
-        };
+        schemaWriteGuard = () -> {};
 
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
 
@@ -136,7 +126,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
 
-        EdgeDiscoveryService discoveryService = discoveryServiceFactory.edgeDiscoveryService( config );
+        EdgeDiscoveryService discoveryService = discoveryServiceFactory.edgeDiscoveryService( config, logProvider);
         life.add(dependencies.satisfyDependency( discoveryService ));
 
         Supplier<TransactionApplier> transactionApplierSupplier =
@@ -175,36 +165,24 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                         new StoreFiles( new DefaultFileSystemAbstraction() ),
                         dependencies.provideDependency( NeoStoreDataSource.class ), platformModule.dependencies
                         .provideDependency( TransactionIdStore.class ) ),
-                txPollingClient, platformModule.dataSourceManager, new ConnectToRandomCoreServer( discoveryService ) ) );
+                txPollingClient, platformModule.dataSourceManager, new ConnectToRandomCoreServer( discoveryService ),
+                new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider ) );
     }
 
     protected void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
                                      final DependencyResolver dependencyResolver )
     {
-        life.addLifecycleListener( new LifecycleListener()
-        {
-            @Override
-            public void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to )
+        life.addLifecycleListener( ( instance, from, to ) -> {
+            if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
             {
-                if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
-                {
-                    doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
-                }
+                doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
             }
         } );
     }
 
     private CommitProcessFactory readOnly()
     {
-        return new CommitProcessFactory()
-        {
-            @Override
-            public TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine,
-                    Config config )
-            {
-                return new ReadOnlyTransactionCommitProcess();
-            }
-        };
+        return ( appender, storageEngine, config ) -> new ReadOnlyTransactionCommitProcess();
     }
 
     protected final class DefaultKernelData extends KernelData implements Lifecycle

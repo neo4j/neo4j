@@ -26,9 +26,14 @@ import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.discovery.CoreDiscoveryService;
 import org.neo4j.coreedge.discovery.HazelcastClusterTopology;
+import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.edge.AlwaysChooseFirstServer;
 import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.logging.NullLogProvider;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -55,7 +60,8 @@ public class EdgeServerStartupProcessTest
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
         TxPollingClient txPuller = mock( TxPollingClient.class );
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
-                txPuller, hazelcastTopology, dataSourceManager );
+                txPuller, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
+                new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance() );
 
         // when
         edgeServerStartupProcess.start();
@@ -84,7 +90,8 @@ public class EdgeServerStartupProcessTest
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
         TxPollingClient txPuller = mock( TxPollingClient.class );
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
-                txPuller, hazelcastTopology, dataSourceManager );
+                txPuller, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
+                new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance() );
 
         // when
         edgeServerStartupProcess.stop();

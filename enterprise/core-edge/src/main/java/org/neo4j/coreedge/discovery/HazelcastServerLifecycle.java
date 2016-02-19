@@ -175,7 +175,7 @@ public class HazelcastServerLifecycle extends LifecycleAdapter implements CoreDi
     @Override
     public HazelcastClusterTopology currentTopology()
     {
-        return new HazelcastClusterTopology( hazelcastInstance );
+        return new HazelcastClusterTopology( hazelcastInstance.getCluster().getMembers() );
     }
 
     public interface StartupListener
@@ -195,14 +195,14 @@ public class HazelcastServerLifecycle extends LifecycleAdapter implements CoreDi
         @Override
         public void memberAdded( MembershipEvent membershipEvent )
         {
-            HazelcastClusterTopology clusterTopology = new HazelcastClusterTopology( hazelcastInstance );
+            HazelcastClusterTopology clusterTopology = new HazelcastClusterTopology( hazelcastInstance.getCluster().getMembers() );
             listener.onTopologyChange( clusterTopology );
         }
 
         @Override
         public void memberRemoved( MembershipEvent membershipEvent )
         {
-            HazelcastClusterTopology clusterTopology = new HazelcastClusterTopology( hazelcastInstance );
+            HazelcastClusterTopology clusterTopology = new HazelcastClusterTopology( hazelcastInstance.getCluster().getMembers() );
             listener.onTopologyChange( clusterTopology );
         }
 

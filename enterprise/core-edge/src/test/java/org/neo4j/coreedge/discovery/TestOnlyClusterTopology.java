@@ -48,12 +48,6 @@ public class TestOnlyClusterTopology implements ClusterTopology
     }
 
     @Override
-    public int getNumberOfEdgeServers()
-    {
-        return edgeMembers.size();
-    }
-
-    @Override
     public int getNumberOfCoreServers()
     {
         return coreMembers.size();

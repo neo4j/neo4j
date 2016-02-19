@@ -19,10 +19,10 @@
  */
 package org.neo4j.coreedge.discovery;
 
-public class EdgeServerConnectionException extends Throwable
+public class EdgeServerConnectionException extends Exception
 {
-    public EdgeServerConnectionException( IllegalStateException e )
+    public EdgeServerConnectionException( String message )
     {
-        super( e );
+        super( message );
     }
 }
