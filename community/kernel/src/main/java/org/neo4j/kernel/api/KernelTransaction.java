@@ -73,6 +73,11 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
  */
 public interface KernelTransaction extends AutoCloseable
 {
+    enum Type {
+        implicit,
+        explicit
+    }
+
     interface CloseListener
     {
         void notify( boolean success );
@@ -140,4 +145,14 @@ public interface KernelTransaction extends AutoCloseable
      * @param listener {@link CloseListener} to get these notifications.
      */
     void registerCloseListener( CloseListener listener );
+
+    /**
+     * Kernel transaction type
+     *
+     * Implicit if created internally in the database
+     * Explicit if created by the end user
+     *
+     * @return the transaction type: implicit or explicit
+     */
+    Type transactionType();
 }

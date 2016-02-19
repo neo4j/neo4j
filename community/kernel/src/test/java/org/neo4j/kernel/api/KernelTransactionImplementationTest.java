@@ -22,8 +22,6 @@ package org.neo4j.kernel.api;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -40,6 +38,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.test.DoubleLatch;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -50,8 +49,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @RunWith( Parameterized.class )
 public class KernelTransactionImplementationTest extends KernelTransactionTestBase
@@ -301,21 +298,16 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         final KernelTransaction transaction = newTransaction();
         transactionConsumer.accept( transaction );
 
-        Thread thread = new Thread( new Runnable()
-        {
-            @Override
-            public void run()
+        Thread thread = new Thread( () -> {
+            try
             {
-                try
-                {
-                    latch.awaitStart();
-                    transaction.markForTermination();
-                    latch.finish();
-                }
-                catch ( Exception e )
-                {
-                    childException.exception = e;
-                }
+                latch.awaitStart();
+                transaction.markForTermination();
+                latch.finish();
+            }
+            catch ( Exception e )
+            {
+                childException.exception = e;
             }
         } );
 
@@ -353,15 +345,10 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         // GIVEN a transaction starting at one point in time
         long startingTime = clock.currentTimeMillis();
         when( legacyIndexState.hasChanges() ).thenReturn( true );
-        doAnswer( new Answer<Void>()
-        {
-            @Override
-            public Void answer( InvocationOnMock invocation ) throws Throwable
-            {
-                Collection<StorageCommand> commands = invocation.getArgumentAt( 0, Collection.class );
-                commands.add( mock( Command.class ) );
-                return null;
-            }
+        doAnswer( invocation -> {
+            Collection<StorageCommand> commands = invocation.getArgumentAt( 0, Collection.class );
+            commands.add( mock( Command.class ) );
+            return null;
         } ).when( storageEngine ).createCommands(
                 any( Collection.class ),
                 any( TransactionState.class ),
@@ -370,7 +357,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         try ( KernelTransactionImplementation transaction = newTransaction() )
         {
-            transaction.initialize( 5L, mock( Locks.Client.class ) );
+            transaction.initialize( 5L, mock( Locks.Client.class ), KernelTransaction.Type.implicit );
             try ( KernelStatement statement = transaction.acquireStatement() )
             {
                 statement.legacyIndexTxState(); // which will pull it from the supplier and the mocking above

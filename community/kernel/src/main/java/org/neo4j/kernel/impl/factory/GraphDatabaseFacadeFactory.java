@@ -48,7 +48,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
  * <p/>
  * It is abstract in order for subclasses to specify their own {@link org.neo4j.kernel.impl.factory.EditionModule}
  * implementations. Subclasses also have to set the edition name
- * in overriden version of {@link #newFacade(File, Map, GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)},
+ * in overridden version of {@link #newFacade(File, Map, GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)},
  * which is used for logging and similar.
  * <p/>
  * To create test versions of databases, override an edition factory (e.g. {@link org.neo4j.kernel.impl.factory
@@ -130,7 +130,7 @@ public abstract class GraphDatabaseFacadeFactory
         CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = edition.coreAPIAvailabilityGuard;
 
         // Start it
-        graphDatabaseFacade.init( platform.config, new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard ) );
+        graphDatabaseFacade.init( new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard ) );
 
         Throwable error = null;
         try

@@ -550,10 +550,10 @@ public class KernelIT extends KernelIntegrationTest
         assumeThat(kernel, instanceOf( Kernel.class ));
 
         // Then
-        try ( KernelTransaction tx = kernel.newTransaction() )
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit ) )
         {
             ((Kernel)kernel).stop();
-            tx.acquireStatement().readOperations().nodeExists( 0l );
+            tx.acquireStatement().readOperations().nodeExists( 0L );
             fail("Should have been terminated.");
         }
         catch(TransactionTerminatedException e)

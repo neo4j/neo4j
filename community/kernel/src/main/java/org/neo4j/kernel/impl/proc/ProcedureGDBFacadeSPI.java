@@ -49,13 +49,13 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     private final AutoIndexing autoIndexing;
     private final Supplier<StoreId> storeId;
     private final CoreAPIAvailabilityGuard availability;
-    private final ThrowingFunction<URL, URL, URLAccessValidationError> urlValidator;
+    private final ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator;
     private final File storeDir;
 
     public ProcedureGDBFacadeSPI( KernelTransaction transaction, Supplier<QueryExecutionEngine> queryExecutor,
-                                  File storeDir, DependencyResolver resolver, AutoIndexing autoIndexing,
-                                  Supplier<StoreId> storeId, CoreAPIAvailabilityGuard availability,
-                                  ThrowingFunction<URL, URL, URLAccessValidationError> urlValidator )
+            File storeDir, DependencyResolver resolver, AutoIndexing autoIndexing,
+            Supplier<StoreId> storeId, CoreAPIAvailabilityGuard availability,
+            ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator )
     {
         this.transaction = transaction;
         this.queryExecutor = queryExecutor;
@@ -117,7 +117,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public Result executeQuery( String query, Map<String, Object> parameters, QuerySession querySession )
+    public Result executeQuery( String query, Map<String,Object> parameters, QuerySession querySession )
     {
         try
         {
@@ -173,7 +173,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction()
+    public KernelTransaction beginTransaction( KernelTransaction.Type type )
     {
         throw new UnsupportedOperationException();
     }

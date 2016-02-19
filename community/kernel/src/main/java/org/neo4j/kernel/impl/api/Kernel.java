@@ -81,10 +81,10 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public KernelTransaction newTransaction() throws TransactionFailureException
+    public KernelTransaction newTransaction( KernelTransaction.Type type ) throws TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
-        KernelTransaction transaction = transactions.newInstance();
+        KernelTransaction transaction = transactions.newInstance( type );
         transactionMonitor.transactionStarted();
         return transaction;
     }

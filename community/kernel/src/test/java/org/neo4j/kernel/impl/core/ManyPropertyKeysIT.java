@@ -158,8 +158,9 @@ public class ManyPropertyKeysIT
 
     private int propertyKeyCount( GraphDatabaseAPI db ) throws TransactionFailureException
     {
-        try ( KernelTransaction tx = db.getDependencyResolver().resolveDependency( KernelAPI.class ).newTransaction();
-                Statement statement = tx.acquireStatement() )
+        KernelAPI kernelAPI = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit );
+              Statement statement = tx.acquireStatement() )
         {
             return statement.readOperations().propertyKeyCount();
         }

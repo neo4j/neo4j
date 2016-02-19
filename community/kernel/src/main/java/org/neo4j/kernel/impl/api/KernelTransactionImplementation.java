@@ -140,6 +140,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
     private TransactionEvent transactionEvent;
+    private Type type;
 
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard,
@@ -173,8 +174,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /**
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
-    public KernelTransactionImplementation initialize( long lastCommittedTx, Locks.Client locks )
+    public KernelTransactionImplementation initialize( long lastCommittedTx, Locks.Client locks, Type type )
     {
+        this.type = type;
         this.locks = locks;
         this.closing = closed = failure = success = terminated = beforeHookInvoked = false;
         this.transactionType = TransactionType.READ;
@@ -591,6 +593,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private void release()
     {
         locks.close();
+        type = null;
         transactionEvent = null;
         legacyIndexTransactionState = null;
         txState = null;
@@ -604,6 +607,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assert closeListener == null;
         closeListener = listener;
+    }
+
+    @Override
+    public Type transactionType()
+    {
+        return type;
     }
 
     @Override

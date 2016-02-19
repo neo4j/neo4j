@@ -54,7 +54,7 @@ import static java.util.Collections.newSetFromMap;
  * for enumerating all running transactions. During normal operation, acquiring new transactions and enumerating live
  * ones requires no synchronization (although the live list is not guaranteed to be exact).
  */
-public class KernelTransactions extends LifecycleAdapter implements Factory<KernelTransaction>
+public class KernelTransactions extends LifecycleAdapter
 {
     // Transaction dependencies
 
@@ -86,8 +86,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
      * As such, it provides a good mechanism for listing all transactions without requiring synchronization when
      * starting and committing transactions.
      */
-    private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap(
-            new ConcurrentHashMap<>() );
+    private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap( new ConcurrentHashMap<>() );
 
     public KernelTransactions( Locks locks,
                                ConstraintIndexCreator constraintIndexCreator,
@@ -141,11 +140,11 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         }
     };
 
-    @Override
-    public KernelTransaction newInstance()
+    public KernelTransaction newInstance( KernelTransaction.Type type )
     {
         assertDatabaseIsRunning();
-        return localTxPool.acquire().initialize( transactionIdStore.getLastCommittedTransactionId(), locks.newClient() );
+        return localTxPool.acquire()
+                .initialize( transactionIdStore.getLastCommittedTransactionId(), locks.newClient(), type );
     }
 
     /**
