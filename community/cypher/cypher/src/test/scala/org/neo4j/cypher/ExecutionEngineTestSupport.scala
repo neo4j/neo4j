@@ -23,10 +23,10 @@ import java.util.concurrent.TimeUnit
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.neo4j.cypher.internal.{ExecutionEngine, RewindableExecutionResult}
+import org.neo4j.cypher.internal.{ExtendedExecutionResult, ExecutionEngine, RewindableExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.kernel.impl.query.QueryEngineProvider
+import org.neo4j.kernel.impl.query.{QuerySession, QueryEngineProvider}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -36,7 +36,7 @@ case class ExpectedException[T <: Throwable](e: T) {
   def messageContains(s: String) = assertThat(e.getMessage, containsString(s))
 }
 
-trait ExecutionEngineTestSupport extends CypherTestSupport {
+trait ExecutionEngineTestSupport extends CypherTestSupport with TestFriendlyExecutionEngine {
   self: CypherFunSuite with GraphDatabaseTestSupport =>
 
   var eengine: ExecutionEngine = null
@@ -74,4 +74,27 @@ trait ExecutionEngineTestSupport extends CypherTestSupport {
 
     Await.result(future, Duration.apply(length, timeUnit))
   }
+}
+
+trait TestFriendlyExecutionEngine {
+
+  implicit class RighExecutionEngine(engine: ExecutionEngine) {
+
+    def execute(query: String): ExtendedExecutionResult = {
+      engine.execute(query, Map.empty[String, Any], QueryEngineProvider.embeddedSession)
+    }
+
+    def execute(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
+      engine.execute(query, params, QueryEngineProvider.embeddedSession)
+    }
+
+    def profile(query: String): ExtendedExecutionResult = {
+      engine.profile(query, Map.empty[String, Any], QueryEngineProvider.embeddedSession)
+    }
+
+    def profile(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
+      engine.profile(query, params, QueryEngineProvider.embeddedSession)
+    }
+  }
+
 }

@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
 import org.junit.{After, Before}
-import org.neo4j.cypher.CypherException
+import org.neo4j.cypher.{TestFriendlyExecutionEngine, CypherException}
 import org.neo4j.cypher.example.JavaExecutionEngineDocTest
 import org.neo4j.cypher.export.{DatabaseSubGraph, SubGraphExporter}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
@@ -55,7 +55,7 @@ import org.scalatest.junit.JUnitSuite
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
-trait DocumentationHelper extends GraphIcing {
+trait DocumentationHelper extends GraphIcing with TestFriendlyExecutionEngine {
   def generateConsole: Boolean
   def db: GraphDatabaseCypherService
 
