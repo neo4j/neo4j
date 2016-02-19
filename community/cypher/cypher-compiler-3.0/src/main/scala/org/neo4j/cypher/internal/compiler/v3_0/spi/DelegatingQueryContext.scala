@@ -221,13 +221,15 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
 }
 
-class DelegatingTransactionalContext(inner: TransactionalContext) extends TransactionalContext {
+class DelegatingTransactionalContext(val inner: TransactionalContext) extends TransactionalContext {
+
+  override type ReadOps = inner.ReadOps
+
+  override def readOperations: ReadOps = inner.readOperations
 
   override def commitAndRestartTx() { inner.commitAndRestartTx() }
 
   override def isTopLevelTx: Boolean = inner.isTopLevelTx
 
   override def close(success: Boolean) { inner.close(success) }
-
-  override def readOperations: ReadOperations = inner.readOperations
 }

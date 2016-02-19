@@ -22,12 +22,14 @@ package org.neo4j.cypher.internal.spi
 import org.neo4j.cypher.internal.compiler.v3_0.spi.TransactionalContext
 import org.neo4j.graphdb.{Lock, PropertyContainer, Transaction}
 import org.neo4j.kernel.{GraphDatabaseQueryService, GraphDatabaseAPI}
-import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
 trait ExtendedTransactionalContext extends TransactionalContext {
+
+  override type ReadOps = ReadOperations
 
   def newContext(): ExtendedTransactionalContext
 

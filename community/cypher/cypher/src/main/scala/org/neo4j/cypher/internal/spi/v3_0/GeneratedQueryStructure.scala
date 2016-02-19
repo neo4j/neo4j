@@ -851,7 +851,7 @@ private object Templates {
     param[util.Map[String, Object]]("params")).
     put(self(), typeRef[TaskCloser], "closer", load("closer")).
     put(self(), typeRef[ReadOperations], "ro",
-        invoke(invoke(load("queryContext"), method[QueryContext, TransactionalContext]("transactionalContext")), method[TransactionalContext, ReadOperations]("readOperations"))).
+        cast(classOf[ReadOperations], invoke(invoke(load("queryContext"), method[QueryContext, TransactionalContext]("transactionalContext")), method[TransactionalContext, ReadOperations]("readOperations")))).
     put(self(), typeRef[ExecutionMode], "executionMode", load("executionMode")).
     put(self(), typeRef[Provider[InternalPlanDescription]], "description", load("description")).
     put(self(), typeRef[QueryExecutionTracer], "tracer", load("tracer")).

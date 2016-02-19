@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
 import org.neo4j.graphdb.{Lock, PropertyContainer, Transaction}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -44,11 +44,11 @@ case class Neo4jTransactionContext(val graph: GraphDatabaseQueryService, initial
   private var _statement = initialStatement
   private val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
 
-  def statement = _statement
+  override def readOperations: ReadOps = statement.readOperations()
 
-  override def readOperations = statement.readOperations()
+  override def statement = _statement
 
-  def isOpen = open
+  override def isOpen = open
 
   override def close(success: Boolean): Unit = {
     try {
@@ -80,9 +80,9 @@ case class Neo4jTransactionContext(val graph: GraphDatabaseQueryService, initial
     _statement = txBridge.get()
   }
 
-  def newContext() = TransactionContextFactory.open(graph, txBridge)
+  override def newContext() = TransactionContextFactory.open(graph, txBridge)
 
-  def stateView: TxStateHolder = statement.asInstanceOf[KernelStatement]
+  override def stateView: TxStateHolder = statement.asInstanceOf[KernelStatement]
 
-  def acquireWriteLock(p: PropertyContainer): Lock = tx.acquireWriteLock(p)
+  override def acquireWriteLock(p: PropertyContainer): Lock = tx.acquireWriteLock(p)
 }

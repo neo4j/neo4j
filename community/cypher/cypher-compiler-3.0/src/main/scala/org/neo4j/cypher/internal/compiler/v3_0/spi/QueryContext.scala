@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, K
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -192,12 +191,13 @@ trait Operations[T <: PropertyContainer] {
 
 trait TransactionalContext {
 
+  type ReadOps
+
+  def readOperations: ReadOps
+
   def isTopLevelTx: Boolean
 
   def close(success: Boolean)
 
   def commitAndRestartTx()
-
-  // this should not be here, but it is needed by the code generation
-  def readOperations: ReadOperations
 }
