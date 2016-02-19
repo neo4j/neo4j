@@ -33,6 +33,9 @@ public interface Kernel
                   + "beans for this Neo4j instance." )
     ObjectName getMBeanQuery();
 
+    @Description( "The name of the mounted database" )
+    String getDatabaseName();
+
     @Description( "The location where the Neo4j store is located" )
     String getStoreDirectory();
 
