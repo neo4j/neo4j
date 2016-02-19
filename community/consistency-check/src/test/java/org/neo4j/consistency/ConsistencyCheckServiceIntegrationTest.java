@@ -175,7 +175,6 @@ public class ConsistencyCheckServiceIntegrationTest
         builder.setConfig( settings(  ) );
 
         return builder.newGraphDatabase();
-
     }
 
     protected Map<String,String> settings( String... strings )

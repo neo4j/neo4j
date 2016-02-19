@@ -19,18 +19,19 @@
  */
 package examples;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -39,6 +40,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -90,8 +92,10 @@ public class BatchInsertDocTest
 
         // try it out from a normal db
         GraphDatabaseService db =
-                new GraphDatabaseFactory().newEmbeddedDatabase(
-                    new File("target/batchinserter-example").getAbsolutePath() );
+                new GraphDatabaseFactory()
+                        .newEmbeddedDatabaseBuilder( new File("target/batchinserter-example") )
+                        .setConfig( GraphDatabaseSettings.auth_store, Files.createTempFile("auth", "").toString() )
+                        .newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );

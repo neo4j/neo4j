@@ -40,9 +40,10 @@ import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_store;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.ephemeral;
 import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
@@ -180,6 +181,10 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         if ( !result.containsKey( pagecache_memory.name() ) )
         {
             result.put( pagecache_memory.name(), "8M" );
+        }
+        if ( !result.containsKey( auth_store.name() ) )
+        {
+            result.put( auth_store.name(), new File(PATH, "auth").getAbsolutePath() );
         }
         return result;
     }

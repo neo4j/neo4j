@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.TargetDirectory;
@@ -35,7 +34,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreLockerLifecycleAdapterTest
@@ -84,7 +82,7 @@ public class StoreLockerLifecycleAdapterTest
 
     private GraphDatabaseService newDb()
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabase( storeDir() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir() );
     }
 
     private String storeDir()
