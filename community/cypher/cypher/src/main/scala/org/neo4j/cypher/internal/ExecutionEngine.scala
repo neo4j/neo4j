@@ -84,7 +84,7 @@ class ExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider
     profile(query, params.asScala.toMap, session)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, params: Map[String, Any] = Map.empty, session: QuerySession = QueryEngineProvider.embeddedSession): ExtendedExecutionResult = {
+  def profile(query: String, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
     val javaParams = javaValues.asDeepJavaResultMap(params).asInstanceOf[JavaMap[String, AnyRef]]
     executionMonitor.startQueryExecution(session, query, javaParams)
     val (preparedPlanExecution, transactionalContext) = planQuery(query)
@@ -96,7 +96,7 @@ class ExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider
     execute(query, params.asScala.toMap, session)
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: Map[String, Any] = Map.empty, session: QuerySession = QueryEngineProvider.embeddedSession): ExtendedExecutionResult = {
+  def execute(query: String, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
     val javaParams = javaValues.asDeepJavaResultMap(params).asInstanceOf[JavaMap[String, AnyRef]]
     executionMonitor.startQueryExecution(session, query, javaParams)
     val (preparedPlanExecution, transactionalContext) = planQuery(query)
