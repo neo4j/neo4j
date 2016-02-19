@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import java.net.URL
+import java.util.function.Predicate
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
@@ -29,26 +30,26 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
+import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.graphalgo.impl.path.ShortestPath
+import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
+import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.api.KernelStatement
-import org.neo4j.kernel.impl.core.{RelationshipProxy, ThreadToStatementContextBridge}
-import org.neo4j.graphdb.security.URLAccessValidationError
-import org.neo4j.kernel.{GraphDatabaseQueryService, GraphDatabaseAPI}
-import java.util.function.Predicate
-import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
-import org.neo4j.graphalgo.impl.path.ShortestPath
+import org.neo4j.kernel.impl.core.{NodeManager, ThreadToStatementContextBridge}
 
 import scala.collection.JavaConverters._
 import scala.collection.{Iterator, mutable}
@@ -64,7 +65,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseQueryService,
 
   val nodeOps = new NodeOperations
   val relationshipOps = new RelationshipOperations
-  val relationshipActions = graph.getDependencyResolver.resolveDependency(classOf[RelationshipProxy.RelationshipActions])
+  private val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
   def isOpen = open
 
@@ -140,13 +141,14 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseQueryService,
   def getOrCreateLabelId(labelName: String) =
     statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
-  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = types match {
-    case None =>
-      val relationships = statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
-      new BeansAPIRelationshipIterator(relationships, relationshipActions)
-    case Some(typeIds) =>
-      val relationships = statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds: _*)
-      new BeansAPIRelationshipIterator(relationships, relationshipActions)
+  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = {
+    val relationships = types match {
+      case None =>
+        statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
+      case Some(typeIds) =>
+        statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds: _*)
+    }
+    new BeansAPIRelationshipIterator(relationships, nodeManager)
   }
 
   def indexSeek(index: IndexDescriptor, value: Any) =
@@ -223,12 +225,12 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseQueryService,
 
       case rangeLessThan: RangeLessThan[Number] =>
         rangeLessThan.limit(BY_NUMBER).map { limit =>
-          readOps.nodesGetFromIndexRangeSeekByNumber( index, null, false, limit.endPoint, limit.isInclusive )
+          readOps.nodesGetFromIndexRangeSeekByNumber(index, null, false, limit.endPoint, limit.isInclusive)
         }
 
       case rangeGreaterThan: RangeGreaterThan[Number] =>
         rangeGreaterThan.limit(BY_NUMBER).map { limit =>
-          readOps.nodesGetFromIndexRangeSeekByNumber( index, limit.endPoint, limit.isInclusive, null, false )
+          readOps.nodesGetFromIndexRangeSeekByNumber(index, limit.endPoint, limit.isInclusive, null, false)
         }
 
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
@@ -237,7 +239,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseQueryService,
             readOps.nodesGetFromIndexRangeSeekByNumber(
               index,
               greaterThanLimit.endPoint, greaterThanLimit.isInclusive,
-              lessThanLimit.endPoint, lessThanLimit.isInclusive )
+              lessThanLimit.endPoint, lessThanLimit.isInclusive)
           }
         }
     }).getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
@@ -251,12 +253,12 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseQueryService,
 
       case rangeLessThan: RangeLessThan[String] =>
         rangeLessThan.limit(BY_STRING).map { limit =>
-          readOps.nodesGetFromIndexRangeSeekByString( index, null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive )
+          readOps.nodesGetFromIndexRangeSeekByString(index, null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive)
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case rangeGreaterThan: RangeGreaterThan[String] =>
         rangeGreaterThan.limit(BY_STRING).map { limit =>
-          readOps.nodesGetFromIndexRangeSeekByString( index, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false )
+          readOps.nodesGetFromIndexRangeSeekByString(index, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false)
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
@@ -265,7 +267,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseQueryService,
             readOps.nodesGetFromIndexRangeSeekByString(
               index,
               greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive,
-              lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive )
+              lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive)
           }
         }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
     }
@@ -325,7 +327,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseQueryService,
     }
 
     override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
-      statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value) )
+      statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value))
     }
 
     override def getById(id: Long) = try {
@@ -366,7 +368,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseQueryService,
     }
 
     override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
-      statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value) )
+      statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value))
     }
 
     override def getById(id: Long) = try {
@@ -425,9 +427,9 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseQueryService,
   } catch {
     case _: AlreadyIndexedException =>
       val indexDescriptor = statement.readOperations().indexGetForLabelAndPropertyKey(labelId, propertyKeyId)
-      if(statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
+      if (statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
         throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
-     IdempotentResult(indexDescriptor, wasCreated = false)
+      IdempotentResult(indexDescriptor, wasCreated = false)
   }
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) =
@@ -465,7 +467,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseQueryService,
   def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().constraintDrop(new RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  override def getImportURL(url: URL): Either[String,URL] = graph match {
+  override def getImportURL(url: URL): Either[String, URL] = graph match {
     case db: GraphDatabaseQueryService =>
       try {
         Right(db.validateURLAccess(url))
@@ -529,11 +531,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseQueryService,
   }
 
   private def buildPathFinder(depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
-                      filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {
+                              filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {
     val startExpander = expander match {
       case OnlyDirectionExpander(_, _, dir) =>
         PathExpanderBuilder.allTypes(toGraphDb(dir))
-      case TypeAndDirectionExpander(_,_,typDirs) =>
+      case TypeAndDirectionExpander(_, _, typDirs) =>
         typDirs.foldLeft(PathExpanderBuilder.empty()) {
           case (acc, (typ, dir)) => acc.add(DynamicRelationshipType.withName(typ), toGraphDb(dir))
         }
