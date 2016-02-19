@@ -20,7 +20,10 @@
 package org.neo4j.bolt.v1.packstream;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+
+import org.neo4j.bolt.v1.packstream.utf8.UTF8Encoder;
 
 /**
  * PackStream is a messaging serialisation format heavily inspired by MessagePack.
@@ -162,6 +165,7 @@ public class PackStream
     public static class Packer
     {
         private PackOutput out;
+        private UTF8Encoder utf8 = UTF8Encoder.fastestAvailableEncoder();
 
         public Packer( PackOutput out )
         {
@@ -171,11 +175,6 @@ public class PackStream
         public void flush() throws IOException
         {
             out.flush();
-        }
-
-        private void packRaw( byte[] data ) throws IOException
-        {
-            out.writeBytes( data, 0, data.length );
         }
 
         public void packNull() throws IOException
@@ -217,50 +216,14 @@ public class PackStream
             out.writeByte( FLOAT_64 ).writeDouble( value );
         }
 
-        public void pack( byte[] values ) throws IOException
-        {
-            if ( values == null ) { packNull(); }
-            else
-            {
-                packBytesHeader( values.length );
-                packRaw( values );
-            }
-        }
-
         public void pack( String value ) throws IOException
         {
             if ( value == null ) { packNull(); }
             else
             {
-                byte[] utf8 = value.getBytes( StandardCharsets.UTF_8 );
-                packStringHeader( utf8.length );
-                packRaw( utf8 );
-            }
-        }
-
-        public void packString( byte[] utf8 ) throws IOException
-        {
-            if ( utf8 == null ) { packNull(); }
-            else
-            {
-                packStringHeader( utf8.length );
-                packRaw( utf8 );
-            }
-        }
-
-        private void packBytesHeader( int size ) throws IOException
-        {
-            if ( size <= Byte.MAX_VALUE )
-            {
-                out.writeShort( (short) (BYTES_8 << 8 | (byte) size) );
-            }
-            else if ( size <= Short.MAX_VALUE )
-            {
-                out.writeByte( BYTES_16 ).writeShort( (short) size );
-            }
-            else
-            {
-                out.writeByte( BYTES_32 ).writeInt( size );
+                ByteBuffer encoded = utf8.encode( value );
+                packStringHeader( encoded.remaining() );
+                out.writeBytes( encoded );
             }
         }
 
@@ -499,46 +462,6 @@ public class PackStream
         public String unpackString() throws IOException
         {
             return new String( unpackUTF8(), StandardCharsets.UTF_8 );
-        }
-
-        private int unpackBytesHeader() throws IOException
-        {
-            final byte markerByte = in.readByte();
-
-            int size;
-
-            switch ( markerByte )
-            {
-                case BYTES_8:
-                    size = unpackUINT8();
-                    break;
-                case BYTES_16:
-                    size = unpackUINT16();
-                    break;
-                case BYTES_32:
-                {
-                    long longSize = unpackUINT32();
-                    if ( longSize <= Integer.MAX_VALUE )
-                    {
-                        size = (int) longSize;
-                    }
-                    else
-                    {
-                        throw new Overflow( "BYTES_32 too long for Java" );
-                    }
-                    break;
-                }
-                default:
-                    throw new Unexpected( PackType.BYTES, markerByte);
-            }
-
-            return size;
-        }
-
-        public byte[] unpackBytes() throws IOException
-        {
-            int size = unpackBytesHeader();
-            return unpackRawBytes( size );
         }
 
         public int unpackStringHeader() throws IOException

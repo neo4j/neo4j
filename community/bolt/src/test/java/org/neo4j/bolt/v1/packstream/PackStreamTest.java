@@ -284,27 +284,6 @@ public class PackStreamTest
     }
 
     @Test
-    public void testCanPackAndUnpackByteArrays() throws Throwable
-    {
-        // Given
-        Machine machine = new Machine( 17000000 );
-
-        for ( int i = 0; i < 24; i++ )
-        {
-            byte[] array = new byte[(int) Math.pow( 2, i )];
-
-            // When
-            machine.reset();
-            machine.packer().pack( array );
-            machine.packer().flush();
-
-            // Then
-            byte[] value = newUnpacker( machine.output() ).unpackBytes();
-            assertThat( value, equalTo( array ) );
-        }
-    }
-
-    @Test
     public void testCanPackAndUnpackStrings() throws Throwable
     {
         // Given
@@ -326,24 +305,6 @@ public class PackStreamTest
     }
 
     @Test
-    public void testCanPackAndUnpackBytes() throws Throwable
-    {
-        // Given
-        Machine machine = new Machine();
-        byte[] bytes = "ABCDEFGHIJ".getBytes();
-
-        // When
-        PackStream.Packer packer = machine.packer();
-        packer.pack( bytes );
-        packer.flush();
-
-        // Then
-        byte[] value = newUnpacker( machine.output() ).unpackBytes();
-        assertThat( value, equalTo( bytes ) );
-
-    }
-
-    @Test
     public void testCanPackAndUnpackString() throws Throwable
     {
         // Given
@@ -353,23 +314,6 @@ public class PackStreamTest
         // When
         PackStream.Packer packer = machine.packer();
         packer.pack( abcdefghij );
-        packer.flush();
-
-        // Then
-        String value = newUnpacker( machine.output() ).unpackString();
-        assertThat( value, equalTo( abcdefghij ) );
-    }
-
-    @Test
-    public void testCanPackAndUnpackStringFromBytes() throws Throwable
-    {
-        // Given
-        Machine machine = new Machine();
-        String abcdefghij = "ABCDEFGHIJ";
-
-        // When
-        PackStream.Packer packer = machine.packer();
-        packer.packString( abcdefghij.getBytes() );
         packer.flush();
 
         // Then
