@@ -387,7 +387,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   }
 
   def executeQueries(queries: List[String]) {
-    preparationQueries.foreach( q => engine.execute(q, Map.empty[String,Object], QueryEngineProvider.embeddedSession()))
+    queries.foreach( q => engine.execute(q, Map.empty[String,Object], QueryEngineProvider.embeddedSession()))
   }
 
   protected def sampleAllIndicesAndWait(mode: IndexSamplingMode = IndexSamplingMode.TRIGGER_REBUILD_ALL, time: Long = 10, unit: TimeUnit = TimeUnit.SECONDS) = {

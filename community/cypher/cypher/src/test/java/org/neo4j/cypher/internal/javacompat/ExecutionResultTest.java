@@ -31,6 +31,7 @@ import java.util.Map;
 import org.neo4j.cypher.ArithmeticException;
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -39,12 +40,14 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.IsNull.nullValue;
@@ -101,10 +104,18 @@ public class ExecutionResultTest
         assertThat( activeTransaction(), is( nullValue() ) );
     }
 
-    @Test( expected = ArithmeticException.class )
+    @Test
     public void shouldThrowAppropriateException() throws Exception
     {
-        engine.executeQuery( "RETURN rand()/0", NO_PARAMS, SESSION ).next();
+        try
+        {
+            engine.executeQuery( "RETURN rand()/0", NO_PARAMS, SESSION ).next();
+        }
+        catch ( QueryExecutionException ex )
+        {
+            assertThat( ex.getCause(), instanceOf( QueryExecutionKernelException.class ) );
+            assertThat( ex.getCause().getCause(), instanceOf( ArithmeticException.class ) );
+        }
     }
 
     @Test( expected = ArithmeticException.class )
@@ -163,14 +174,9 @@ public class ExecutionResultTest
         final List<Result.ResultRow> listResult = new ArrayList<>();
         try ( Result result = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
         {
-            result.accept( new Result.ResultVisitor<RuntimeException>()
-            {
-                @Override
-                public boolean visit( Result.ResultRow row ) throws RuntimeException
-                {
-                    listResult.add( row );
-                    return true;
-                }
+            result.accept( row -> {
+                listResult.add( row );
+                return true;
             } );
         }
 
