@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.udc.UsageData;
 
-import static org.neo4j.kernel.api.AccessMode.FULL;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
@@ -99,7 +98,7 @@ public class SessionStateMachine implements Session, SessionState
                     public State beginTransaction( SessionStateMachine ctx )
                     {
                         assert ctx.currentTransaction == null;
-                        ctx.currentTransaction = ctx.spi.beginTransaction( explicit, FULL );
+                        ctx.currentTransaction = ctx.spi.beginTransaction( explicit, AccessMode.Static.FULL );
                         return IN_TRANSACTION;
                     }
 
@@ -133,7 +132,7 @@ public class SessionStateMachine implements Session, SessionState
                         // NOTE: If we move away from doing implicit transactions this
                         // way, we need a different way to kill statements running in implicit
                         // transactions, because we do that by calling #terminate() on this tx.
-                        ctx.currentTransaction = ctx.spi.beginTransaction( implicit, FULL );
+                        ctx.currentTransaction = ctx.spi.beginTransaction( implicit, AccessMode.Static.FULL );
                         return IN_TRANSACTION;
                     }
 

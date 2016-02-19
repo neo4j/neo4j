@@ -34,7 +34,7 @@ public class TransactionStatementSequenceTest
     public void shouldAllowReadStatementAfterReadStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.READ );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.READ );
         tx.acquireStatement().readOperations();
 
         // when / then
@@ -45,7 +45,7 @@ public class TransactionStatementSequenceTest
     public void shouldAllowDataStatementAfterReadStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.WRITE );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.WRITE );
         tx.acquireStatement().readOperations();
 
         // when / then
@@ -56,7 +56,7 @@ public class TransactionStatementSequenceTest
     public void shouldAllowSchemaStatementAfterReadStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.FULL );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.FULL );
         tx.acquireStatement().readOperations();
 
         // when / then
@@ -67,7 +67,7 @@ public class TransactionStatementSequenceTest
     public void shouldRejectSchemaStatementAfterDataStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.FULL );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.FULL );
         tx.acquireStatement().dataWriteOperations();
 
         // when
@@ -89,7 +89,7 @@ public class TransactionStatementSequenceTest
     public void shouldRejectDataStatementAfterSchemaStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.FULL );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.FULL );
         tx.acquireStatement().schemaWriteOperations();
 
         // when
@@ -111,7 +111,7 @@ public class TransactionStatementSequenceTest
     public void shouldAllowDataStatementAfterDataStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.WRITE );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.WRITE );
         tx.acquireStatement().dataWriteOperations();
 
         // when / then
@@ -122,7 +122,7 @@ public class TransactionStatementSequenceTest
     public void shouldAllowSchemaStatementAfterSchemaStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.FULL );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.FULL );
         tx.acquireStatement().schemaWriteOperations();
 
         // when / then
@@ -133,7 +133,7 @@ public class TransactionStatementSequenceTest
     public void shouldAllowReadStatementAfterDataStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.WRITE );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.WRITE );
         tx.acquireStatement().dataWriteOperations();
 
         // when / then
@@ -144,7 +144,7 @@ public class TransactionStatementSequenceTest
     public void shouldAllowReadStatementAfterSchemaStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.FULL );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.FULL );
         tx.acquireStatement().schemaWriteOperations();
 
         // when / then

@@ -138,7 +138,7 @@ public class IndexPopulationFlipRaceIT
             throws Exception
     {
         KernelAPI kernelAPI = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AccessMode.READ );
+        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ );
               Statement statement = tx.acquireStatement() )
         {
             int labelAId = statement.readOperations().labelGetForName( labelA( i ).name() );

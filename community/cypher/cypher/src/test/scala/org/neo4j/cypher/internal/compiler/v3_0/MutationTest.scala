@@ -42,7 +42,7 @@ class MutationTest extends ExecutionEngineFunSuite {
   }
 
   test("create_node") {
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
     val start = SingleRowPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
@@ -58,7 +58,7 @@ class MutationTest extends ExecutionEngineFunSuite {
   }
 
   test("join_existing_transaction_and_rollback") {
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
     val start = SingleRowPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
@@ -71,7 +71,7 @@ class MutationTest extends ExecutionEngineFunSuite {
   }
 
   test("join_existing_transaction_and_commit") {
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
     val start = SingleRowPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
@@ -90,7 +90,7 @@ class MutationTest extends ExecutionEngineFunSuite {
   test("create_rel") {
     val a = createNode()
     val b = createNode()
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
 
     val createRel = CreateRelationship("r",
       RelationshipEndpoint(getNode("a", a), Map(), Seq.empty),
@@ -112,7 +112,7 @@ class MutationTest extends ExecutionEngineFunSuite {
   }
 
   test("throw_exception_if_wrong_stuff_to_delete") {
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
     val createRel = DeleteEntityAction(Literal("some text"), forced = false)
 
     intercept[CypherTypeException](createRel.exec(ExecutionContext.empty, createQueryState(tx)))
@@ -120,7 +120,7 @@ class MutationTest extends ExecutionEngineFunSuite {
   }
 
   test("delete_node") {
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
     val a: Node = createNode()
     val node_id: Long = a.getId
     val deleteCommand = DeleteEntityAction(getNode("a", a), forced = false)

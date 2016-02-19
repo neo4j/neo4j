@@ -44,7 +44,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
   override def beforeEach() {
     super.beforeEach()
     builder = new TraversalMatcherBuilder
-    tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ)
+    tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.READ)
   }
 
   override def afterEach() {

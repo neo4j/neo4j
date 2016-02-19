@@ -51,7 +51,7 @@ public class ConcurrentTransactionAccessTest
                 .thenReturn( mock(TransitionalTxManagementKernelTransaction.class) );
         TransactionFacade actions = new TransactionFacade( kernel, null, registry, NullLogProvider.getInstance() );
 
-        final TransactionHandle transactionHandle = actions.newTransactionHandle( new DisgustingUriScheme(), true, AccessMode.FULL );
+        final TransactionHandle transactionHandle = actions.newTransactionHandle( new DisgustingUriScheme(), true, AccessMode.Static.FULL );
 
         final DoubleLatch latch = new DoubleLatch();
 

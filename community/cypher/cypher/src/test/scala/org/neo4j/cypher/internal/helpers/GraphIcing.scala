@@ -98,7 +98,7 @@ trait GraphIcing {
     private val locker: PropertyContainerLocker = new PropertyContainerLocker
 
     private def createSession(txType: Type): (InternalTransaction, QuerySession) = {
-      val tx = graph.beginTransaction(txType, AccessMode.FULL)
+      val tx = graph.beginTransaction(txType, AccessMode.Static.FULL)
       val transactionalContext = new Neo4jTransactionalContext(graphService, tx, txBridge.get(), locker)
       val session = QueryEngineProvider.embeddedSession(transactionalContext)
       (tx, session)
@@ -124,7 +124,7 @@ trait GraphIcing {
     }
 
     def rollback[T](f: => T): T = {
-      val tx = graph.beginTransaction(Type.`implicit`, AccessMode.FULL)
+      val tx = graph.beginTransaction(Type.`implicit`, AccessMode.Static.FULL)
       try {
         val result = f
         tx.failure()

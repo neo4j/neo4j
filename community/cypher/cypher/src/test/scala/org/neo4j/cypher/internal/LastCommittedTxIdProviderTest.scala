@@ -58,7 +58,7 @@ class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAl
   }
 
   private def createNode(): Unit = {
-    val tx = db.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
+    val tx = db.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
     try {
       db.createNode()
       tx.success()

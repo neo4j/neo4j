@@ -395,7 +395,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("failure_only_fails_inner_transaction") {
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
     try {
       executeWithRulePlanner("match (a) where id(a) = {id} set a.foo = 'bar' return a","id"->"0")
     } catch {

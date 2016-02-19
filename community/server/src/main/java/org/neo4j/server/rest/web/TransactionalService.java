@@ -77,7 +77,7 @@ public class TransactionalService
         try
         {
             usage.get( features ).flag( http_tx_endpoint );
-            TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme, false, AccessMode.FULL );
+            TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme, false, AccessMode.Static.FULL );
             return createdResponse( transactionHandle, executeStatements( input, transactionHandle, uriInfo.getBaseUri(), request ) );
         }
         catch ( TransactionLifecycleException e )
@@ -134,7 +134,7 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = facade.newTransactionHandle( uriScheme, true, AccessMode.FULL );
+            transactionHandle = facade.newTransactionHandle( uriScheme, true, AccessMode.Static.FULL );
         }
         catch ( TransactionLifecycleException e )
         {

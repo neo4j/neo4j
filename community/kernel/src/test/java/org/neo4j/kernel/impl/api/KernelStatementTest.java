@@ -37,7 +37,7 @@ public class KernelStatementTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.shouldBeTerminated() ).thenReturn( true );
-        when( transaction.mode() ).thenReturn( AccessMode.FULL );
+        when( transaction.mode() ).thenReturn( AccessMode.Static.FULL );
 
         KernelStatement statement = new KernelStatement(
             transaction, null, null, mock( StorageStatement.class ), null );

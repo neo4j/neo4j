@@ -27,7 +27,7 @@ trait QueryStateTestSupport {
   self: GraphDatabaseTestSupport =>
 
   def withQueryState[T](f: QueryState => T) = {
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.FULL)
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.FULL)
     try {
       val queryState = QueryStateHelper.queryStateFrom(graph, tx)
       f(queryState)
@@ -37,7 +37,7 @@ trait QueryStateTestSupport {
   }
 
   def withCountsQueryState[T](f: QueryState => T) = {
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.FULL)
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.FULL)
     try {
       val queryState = QueryStateHelper.countStats(QueryStateHelper.queryStateFrom(graph, tx))
       f(queryState)

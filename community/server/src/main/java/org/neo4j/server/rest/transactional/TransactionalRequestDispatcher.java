@@ -51,7 +51,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
     {
         RepresentationWriteHandler representationWriteHandler = DO_NOTHING;
 
-        AccessMode mode = AccessMode.FULL;
+        AccessMode mode = AccessMode.Static.FULL;
 
         if ( o instanceof RestfulGraphDatabase )
         {

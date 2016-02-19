@@ -160,7 +160,7 @@ public class StoreMigratorFrom21IT
         // Verify that there are no two properties on the entities, that have the same key:
         // (This is important because the verification above cannot tell if we have two keys with the same value)
         KernelAPI kernel = dependencyResolver.resolveDependency( KernelAPI.class );
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.READ );
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ );
               Statement statement = tx.acquireStatement() )
         {
             Iterators.asUniqueSet( statement.readOperations().nodeGetPropertyKeys( 0 ) );

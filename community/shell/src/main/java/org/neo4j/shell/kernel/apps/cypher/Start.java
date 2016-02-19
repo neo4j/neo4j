@@ -162,7 +162,7 @@ public class Start extends TransactionProvidingApp
     private QuerySession shellSession( Session session )
     {
         GraphDatabaseQueryService graph = this.engine.queryService();
-        InternalTransaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+        InternalTransaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
         Statement statement =
                 graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get();
         Neo4jTransactionalContext context =

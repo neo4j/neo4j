@@ -424,7 +424,7 @@ public class StoreUpgradeIntegrationTest
     private static void checkIndexCounts( Store store, GraphDatabaseAPI db ) throws KernelException
     {
         KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.READ );
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ );
               Statement statement = tx.acquireStatement() )
         {
             Iterator<IndexDescriptor> indexes = getAllIndexes( db );

@@ -102,7 +102,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should resolve property keys") {
     // given
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.WRITE)
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.WRITE)
     try {
       val node = graph.createNode()
       node.setProperty("foo", 12l)
@@ -132,7 +132,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should resolve label ids") {
     // given
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.WRITE)
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.WRITE)
     try {
       val node = graph.createNode(label("Person"))
 
@@ -241,7 +241,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should set the periodic commit flag") {
     // given
-    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ)
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.READ)
     try {
       val q = PeriodicCommitQuery(
         Query.

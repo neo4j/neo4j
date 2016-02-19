@@ -60,7 +60,7 @@ public class ExecutionEngineTests
 
 
         Result result;
-        try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL ) )
+        try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL ) )
         {
             result = executionEngine.executeQuery(
                     "RETURN { key : 'Value' , collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}", NO_PARAMS,

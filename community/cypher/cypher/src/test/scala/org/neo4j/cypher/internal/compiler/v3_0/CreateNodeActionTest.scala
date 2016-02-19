@@ -31,7 +31,7 @@ class CreateNodeActionTest extends ExecutionEngineFunSuite {
     val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))), Seq.empty)
 
     val id = graph.inTx {
-      val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
+      val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
       val vec = action.exec(ExecutionContext.empty, QueryStateHelper.queryStateFrom(graph, tx)).toVector
       vec.head("id").asInstanceOf[Node].getId
     }

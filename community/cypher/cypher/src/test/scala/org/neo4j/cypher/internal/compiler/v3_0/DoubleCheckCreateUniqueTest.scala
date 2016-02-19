@@ -67,13 +67,13 @@ class DoubleCheckCreateUniqueTest extends CypherFunSuite {
   }
 
   private def withQueryState(f: QueryState => Unit) {
-    val tx = db.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
+    val tx = db.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
     f(QueryStateHelper.queryStateFrom(db, tx))
     tx.close()
   }
 
   private def createNode(): Node = {
-    val tx = db.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
+    val tx = db.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
     try {
       val n = db.createNode()
       tx.success()

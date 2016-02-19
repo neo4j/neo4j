@@ -67,7 +67,7 @@ trait CodeGenSugar extends MockitoSugar {
                       mode: ExecutionMode = NormalMode,
                       params: Map[String, AnyRef] = Map.empty,
                       taskCloser: TaskCloser = new TaskCloser): InternalExecutionResult = {
-    val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ)
+    val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.READ)
     try {
       val statement = graphDb.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
       val locker: PropertyContainerLocker = new PropertyContainerLocker

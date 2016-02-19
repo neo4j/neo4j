@@ -99,7 +99,7 @@ public class ConstraintIndexCreator
             throws TransactionFailureException, DropIndexFailureException
     {
         try ( KernelTransaction transaction =
-                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
               Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
@@ -144,7 +144,7 @@ public class ConstraintIndexCreator
     public IndexDescriptor createConstraintIndex( final int labelId, final int propertyKeyId )
     {
         try ( KernelTransaction transaction =
-                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
               Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema

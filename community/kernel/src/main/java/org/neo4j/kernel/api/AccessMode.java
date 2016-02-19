@@ -20,119 +20,123 @@
 package org.neo4j.kernel.api;
 
 /** Controls the capabilities of a {@link KernelTransaction}. */
-public enum AccessMode
+public interface AccessMode
 {
-    /** No reading or writing allowed. */
-    NONE
-            {
-                @Override
-                public boolean allowsReads()
+    enum Static implements AccessMode
+    {
+        /** No reading or writing allowed. */
+        NONE
                 {
-                    return false;
-                }
+                    @Override
+                    public boolean allowsReads()
+                    {
+                        return false;
+                    }
 
-                @Override
-                public boolean allowsWrites()
+                    @Override
+                    public boolean allowsWrites()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean allowsSchemaWrites()
+                    {
+                        return false;
+                    }
+                },
+
+        /** Allows reading data and schema, but not writing. */
+        READ
                 {
-                    return false;
-                }
+                    @Override
+                    public boolean allowsReads()
+                    {
+                        return true;
+                    }
 
-                @Override
-                public boolean allowsSchemaWrites()
+                    @Override
+                    public boolean allowsWrites()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean allowsSchemaWrites()
+                    {
+                        return false;
+                    }
+                },
+
+        /** Allows writing data */
+        WRITE_ONLY
                 {
-                    return false;
-                }
-            },
+                    @Override
+                    public boolean allowsReads()
+                    {
+                        return false;
+                    }
 
-    /** Allows reading data and schema, but not writing. */
-    READ
-            {
-                @Override
-                public boolean allowsReads()
+                    @Override
+                    public boolean allowsWrites()
+                    {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean allowsSchemaWrites()
+                    {
+                        return false;
+                    }
+                },
+
+        /** Allows reading and writing data, but not schema. */
+        WRITE
                 {
-                    return true;
-                }
+                    @Override
+                    public boolean allowsReads()
+                    {
+                        return true;
+                    }
 
-                @Override
-                public boolean allowsWrites()
+                    @Override
+                    public boolean allowsWrites()
+                    {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean allowsSchemaWrites()
+                    {
+                        return false;
+                    }
+                },
+
+        /** Allows all operations. */
+        FULL
                 {
-                    return false;
-                }
+                    @Override
+                    public boolean allowsReads()
+                    {
+                        return true;
+                    }
 
-                @Override
-                public boolean allowsSchemaWrites()
-                {
-                    return false;
-                }
-            },
+                    @Override
+                    public boolean allowsWrites()
+                    {
+                        return true;
+                    }
 
-    /** Allows writing data */
-    WRITE_ONLY
-            {
-                @Override
-                public boolean allowsReads()
-                {
-                    return false;
+                    @Override
+                    public boolean allowsSchemaWrites()
+                    {
+                        return true;
+                    }
                 }
+    }
 
-                @Override
-                public boolean allowsWrites()
-                {
-                    return true;
-                }
-
-                @Override
-                public boolean allowsSchemaWrites()
-                {
-                    return false;
-                }
-            },
-
-    /** Allows reading and writing data, but not schema. */
-    WRITE
-            {
-                @Override
-                public boolean allowsReads()
-                {
-                    return true;
-                }
-
-                @Override
-                public boolean allowsWrites()
-                {
-                    return true;
-                }
-
-                @Override
-                public boolean allowsSchemaWrites()
-                {
-                    return false;
-                }
-            },
-
-    /** Allows all operations. */
-    FULL
-            {
-                @Override
-                public boolean allowsReads()
-                {
-                    return true;
-                }
-
-                @Override
-                public boolean allowsWrites()
-                {
-                    return true;
-                }
-
-                @Override
-                public boolean allowsSchemaWrites()
-                {
-                    return true;
-                }
-            };
-
-    public abstract boolean allowsReads();
-    public abstract boolean allowsWrites();
-    public abstract boolean allowsSchemaWrites();
+    boolean allowsReads();
+    boolean allowsWrites();
+    boolean allowsSchemaWrites();
+    String name();
 }

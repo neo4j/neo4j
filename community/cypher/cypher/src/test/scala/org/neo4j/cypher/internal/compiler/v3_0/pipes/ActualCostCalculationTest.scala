@@ -306,7 +306,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     val gds = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def withTx[T](f: InternalTransaction => T): T = {
-      val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.FULL)
+      val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.FULL)
       try {
         val result = f(tx)
         tx.success()

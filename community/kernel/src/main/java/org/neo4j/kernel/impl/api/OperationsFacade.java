@@ -516,7 +516,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallRead( ProcedureName name, Object[] input ) throws ProcedureException
     {
-        return callProcedure( name, input, AccessMode.READ );
+        return callProcedure( name, input, AccessMode.Static.READ );
     }
 
     @Override
@@ -1029,8 +1029,8 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallWrite( ProcedureName name, Object[] input ) throws ProcedureException
     {
-        // FIXME: should this be AccessMode.WRITE instead?
-        return callProcedure( name, input, AccessMode.FULL );
+        // FIXME: should this be AccessMode.Static.WRITE instead?
+        return callProcedure( name, input, AccessMode.Static.FULL );
     }
     // </DataWrite>
 

@@ -185,7 +185,7 @@ public class LegacyIndexStore
 
                 // We were the first one here, let's create this config
                 try ( KernelTransaction transaction =
-                              kernel.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+                              kernel.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
                       Statement statement = transaction.acquireStatement() )
                 {
                     switch ( entityType )

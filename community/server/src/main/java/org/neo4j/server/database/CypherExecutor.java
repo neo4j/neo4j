@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -73,7 +73,7 @@ public class CypherExecutor extends LifecycleAdapter
 
     public QuerySession createSession( HttpServletRequest request )
     {
-        InternalTransaction transaction = service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+        InternalTransaction transaction = service.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
         TransactionalContext context = new Neo4jTransactionalContext( service, transaction, txBridge.get(), locker );
         return new ServerQuerySession( request, context );
     }

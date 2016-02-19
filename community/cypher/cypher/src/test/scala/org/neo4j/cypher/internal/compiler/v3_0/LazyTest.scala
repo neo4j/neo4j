@@ -90,7 +90,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("traversal matcher is lazy") {
     //Given:
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.READ )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.READ )
     val limiter = Counter().values.limit(2) { _ => fail("Limit reached!") }
     val monitoredNode = new MonitoredNode(aNode, limiter.tick)
 
@@ -241,7 +241,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val service = new GraphDatabaseCypherService(fakeGraph)
     val engine = new ExecutionEngine(service)
 
-    val tx = fakeGraph.beginTransaction(KernelTransaction.Type.`implicit`, AccessMode.FULL)
+    val tx = fakeGraph.beginTransaction(KernelTransaction.Type.`implicit`, AccessMode.Static.FULL)
     val context = new Neo4jTransactionalContext(service, tx, fakeStatement, new PropertyContainerLocker)
     val session = QueryEngineProvider.embeddedSession(context)
 
@@ -255,7 +255,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("traversalmatcherpipe is lazy") {
     //Given:
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.FULL )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL )
     val limiter = Counter().values.limit(2) { _ => fail("Limit reached") }
     val traversalMatchPipe = createTraversalMatcherPipe(limiter)
 

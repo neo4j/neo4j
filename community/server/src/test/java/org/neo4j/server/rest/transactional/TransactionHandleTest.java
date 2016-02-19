@@ -65,7 +65,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.AccessMode.FULL;
+import static org.neo4j.kernel.api.AccessMode.Static.FULL;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.statements;
 

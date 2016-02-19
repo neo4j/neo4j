@@ -40,7 +40,7 @@ class CreateRelationshipTest extends GraphDatabaseFunSuite {
     val bEndNode = RelationshipEndpoint(Variable("b"), Map(), Seq.empty)
     val relCreator = new CreateRelationship("r", aEndNode, bEndNode, "RELTYPE", Map("*" -> ParameterExpression("props")))
 
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
     try {
       val state = QueryStateHelper.queryStateFrom(graph, tx, props)
       val ctx = ExecutionContext.from("a" -> a, "b" -> b)

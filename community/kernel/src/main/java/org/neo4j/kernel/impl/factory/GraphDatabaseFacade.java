@@ -327,7 +327,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Transaction beginTx()
     {
-        return beginTransaction( KernelTransaction.Type.explicit, AccessMode.FULL );
+        return beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL );
     }
 
     public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
@@ -351,7 +351,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
     {
         // ensure we have a tx and create a context (the tx is gonna get closed by the Cypher result)
-        InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+        InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
         TransactionalContext transactionalContext =
                 new Neo4jTransactionalContext( spi.queryService(), transaction, spi.currentStatement(), locker );
         return spi.executeQuery( query, parameters, QueryEngineProvider.embeddedSession( transactionalContext ) );
