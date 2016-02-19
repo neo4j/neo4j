@@ -1,0 +1,14 @@
+[[file-locations]]
+= File Locations
+
+This table shows where important files can be found in various Neo4j distribution packages.
+
+[options="header"]
+|===
+|Package               |Configuration
+|Linux or OS X tarball |_<neo4j-root>/conf/neo4j.conf_
+|Windows zip           |_<neo4j-root>\conf\neo4j.conf_
+|Debian/Ubuntu .deb    |_/etc/neo4j/neo4j.conf_
+|Windows desktop       |_%APPDATA%\Neo4j Community Edition\neo4j.conf_
+|OS X desktop          |_$\{HOME\}/Documents/Neo4j/neo4j.conf_
+|===

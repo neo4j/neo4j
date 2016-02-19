@@ -3,14 +3,14 @@
 
 .Quick info
 ***********
-* Neo4j's configuration is found in _conf/neo4j.conf_.
+* Neo4j's configuration is found in _neo4j.conf_.
 * Configuration of the daemonizing wrapper is found in _conf/neo4j-wrapper.properties_.
 * HTTP logging configuration is found in _conf/neo4j-http-logging.xml_.
 ***********
 
 == Important server configuration parameters ==
 
-The main configuration file for Neo4j is _conf/neo4j.conf_.
+The main configuration file for Neo4j is <<file-locations, _neo4j.conf_>>.
 This file contains several important settings, and although the defaults are sensible
 administrators might choose to make changes (especially to the port settings).
 
@@ -88,7 +88,7 @@ meaning that most Web server tooling can automtically consume such logs. In gene
 select an output directory, and if necessary alter the rollover and retention policies.
 ====
 
-To enable HTTP logging, edit the _conf/neo4j.conf_ file to resemble the following:
+To enable HTTP logging, edit _neo4j.conf_ to resemble the following:
 
 [source,properties]
 ----
@@ -156,7 +156,7 @@ You will find the logging statements in _data/log/ne4j-gc.log_ or whatever direc
 
 The Browser can `:play` guides from remote locations. You can specify a whitelist of hosts from where the Browser will be allowed to fetch content from.
 
-In the _conf/neo4j.conf_ file:
+In _neo4j.conf_:
 
 [source,properties]
 ----
@@ -171,7 +171,7 @@ dbms.browser.remote_content_hostname_whitelist="*"
 
 The Browser can load services and data from remote locations and with this configuration this can be restricted.
 
-In the _conf/neo4j.conf_ file:
+In _neo4j.conf_:
 
 [source,properties]
 ----
@@ -183,7 +183,7 @@ dbms.security.allow_outgoing_browser_connections=true
 You may, for security reasons, want to disable the the Neo4j Shell in Webadmin.
 Shells allow arbitrary code execution, and so they could constitute a security risk if you do not trust all users of your Neo4j Server.
 
-In the _conf/neo4j.conf_ file:
+In _neo4j.conf_:
 
 [source,properties]
 ----
