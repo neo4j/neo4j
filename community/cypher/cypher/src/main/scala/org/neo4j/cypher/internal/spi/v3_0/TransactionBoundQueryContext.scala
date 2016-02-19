@@ -25,19 +25,19 @@ import java.util.function.Predicate
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
-import org.neo4j.cypher.{InternalException, internal}
 import org.neo4j.cypher.internal.compiler.v3_0.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaConversionSupport._
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.cypher.{InternalException, internal}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType._
@@ -129,13 +129,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getOrCreateLabelId(labelName: String) =
     transactionalContext.statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
-  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = types match {
-    case None =>
-      val relationships = transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
-      new BeansAPIRelationshipIterator(relationships, entityAccessor)
-    case Some(typeIds) =>
-      val relationships = transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds: _*)
-      new BeansAPIRelationshipIterator(relationships, entityAccessor)
+  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = {
+    val relationships = types match {
+      case None =>
+        transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
+      case Some(typeIds) =>
+        transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds: _*)
+    }
+    new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }
 
   override def indexSeek(index: IndexDescriptor, value: Any) = {
