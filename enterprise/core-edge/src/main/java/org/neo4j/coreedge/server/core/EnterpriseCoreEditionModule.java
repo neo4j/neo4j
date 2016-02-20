@@ -91,6 +91,7 @@ import org.neo4j.coreedge.server.core.locks.LockTokenManager;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.coreedge.server.logging.BetterMessageLogger;
 import org.neo4j.coreedge.server.logging.MessageLogger;
+import org.neo4j.coreedge.server.logging.NullMessageLogger;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -176,8 +177,15 @@ public class EnterpriseCoreEditionModule
                 config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
                 config.get( CoreEdgeClusterSettings.raft_advertised_address ) );
 
-        final MessageLogger<AdvertisedSocketAddress> messageLogger =
-                new BetterMessageLogger<>( myself.getRaftAddress(), raftMessagesLog( storeDir ) );
+        final MessageLogger<AdvertisedSocketAddress> messageLogger;
+        if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
+        {
+            messageLogger = new BetterMessageLogger<>( myself.getRaftAddress(), raftMessagesLog( storeDir ) );
+        }
+        else
+        {
+            messageLogger = new NullMessageLogger<>();
+        }
 
         LoggingOutbound<AdvertisedSocketAddress> loggingOutbound = new LoggingOutbound<>(
                 senderService, myself.getRaftAddress(), messageLogger );
