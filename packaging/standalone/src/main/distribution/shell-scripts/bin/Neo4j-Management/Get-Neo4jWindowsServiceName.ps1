@@ -19,32 +19,28 @@
 
 <#
 .SYNOPSIS
-Confirms a Powershell Object is a valid Neo4j Server object
+Retrieves the name of the Windows Service from the configuration information
 
 .DESCRIPTION
-Confirms a Powershell Object is a valid Neo4j Server object
+Retrieves the name of the Windows Service from the configuration information
 
 .PARAMETER Neo4jServer
-The object to confirm
+An object representing a valid Neo4j Server object
 
 .EXAMPLE
-$serverObject | Confirm-Neo4jServerObject 
+Get-Neo4jWindowsServiceName -Neo4jServer $ServerObject
 
-Confirm that $serverObject is a valid Neo4j Server object
-
-.EXAMPLE
-Confirm-Neo4jServerObject -Neo4jServer $serverObject
-
-Confirm that $serverObject is a valid Neo4j Server object
+Retrieves the name of the Windows Service for the Neo4j Database at $ServerObject
 
 .OUTPUTS
-System.Boolean
+System.String
+The name of the Windows Service or $null if it could not be determined
 
 .NOTES
 This function is private to the powershell module
 
 #>
-Function Confirm-Neo4jServerObject
+Function Get-Neo4jWindowsServiceName
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
   param (
@@ -55,19 +51,22 @@ Function Confirm-Neo4jServerObject
   Begin
   {
   }
+  
+  Process {
+    $ServiceName = ''
+    $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'dbms.windows_service_name' -Neo4jServer $Neo4jServer)
+    if ($setting -ne $null) { $ServiceName = $setting.Value }
 
-  Process
-  {
-    if ($Neo4jServer -eq $null) { return $false }
-    
-    if ([string]$Neo4jServer.ServerVersion -eq '') { return $false }
-    if ([string]$Neo4jServer.Home -eq '') { return $false }
-    if ([string]$Neo4jServer.ServerType -eq '') { return $false }
-    
-    if ( ($Neo4jServer.ServerType -ne 'Community') -and ($Neo4jServer.ServerType -ne 'Enterprise') -and ($Neo4jServer.ServerType -ne 'Advanced') ) { return $false }    
-    if (-not (Test-Path -Path ($Neo4jServer.Home))) { return $false }
-    
-    return $true
+    if ($ServiceName -eq '')
+    {
+      Throw 'Could not find the Windows Service Name for Neo4j (dbms.windows_service_name in neo4j-wrapper.conf)'
+      return $null
+    }
+    else 
+    {
+      Write-Verbose "Neo4j Windows Service Name is $ServiceName"
+      Write-Output $ServiceName.Trim()
+    }  
   }
   
   End

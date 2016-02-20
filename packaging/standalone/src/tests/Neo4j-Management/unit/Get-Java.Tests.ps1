@@ -194,7 +194,7 @@ InModuleScope Neo4j-Management {
     }
     
     # ForServer tests
-    Context "Server Invoke - Community v2.3" {
+    Context "Server Invoke - Community v3.0" {
       Mock Test-Path { $false }
       [Environment]::SetEnvironmentVariable('JAVA_HOME','TestPath:\JavaHome', "Process")
       Mock Get-ItemProperty { return $null }      
@@ -204,8 +204,9 @@ InModuleScope Neo4j-Management {
       
       $serverObject = (New-Object -TypeName PSCustomObject -Property @{
         'Home' = 'TestDrive:\Path';
-        'ServerVersion' = '2.3';
-        'ServerType' = 'Community'
+        'ServerVersion' = '3.0';
+        'ServerType' = 'Community';
+        'DatabaseMode' = '';
       })
 
       $result = Get-Java -ForServer -Neo4jServer $serverObject
@@ -224,7 +225,7 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Server Invoke - Enterprise v2.3" {
+    Context "Server Invoke - Enterprise v3.0" {
       Mock Test-Path { $false }
       [Environment]::SetEnvironmentVariable('JAVA_HOME','TestPath:\JavaHome', "Process")
       Mock Get-ItemProperty { return $null }      
@@ -234,8 +235,9 @@ InModuleScope Neo4j-Management {
       
       $serverObject = (New-Object -TypeName PSCustomObject -Property @{
         'Home' = 'TestDrive:\Path';
-        'ServerVersion' = '2.3';
-        'ServerType' = 'Enterprise'
+        'ServerVersion' = '3.0';
+        'ServerType' = 'Enterprise';
+        'DatabaseMode' = '';
       })
 
       $result = Get-Java -ForServer -Neo4jServer $serverObject
@@ -254,95 +256,6 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Server Invoke - Community v2.2" {
-      Mock Test-Path { $false }
-      [Environment]::SetEnvironmentVariable('JAVA_HOME','TestPath:\JavaHome', "Process")
-      Mock Get-ItemProperty { return $null }      
-      Mock Test-Path { $true }  -ParameterFilter {
-        ($Path -eq 'TestPath:\JavaHome\bin\java.exe')
-      }
-      
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' = 'TestDrive:\Path';
-        'ServerVersion' = '2.2';
-        'ServerType' = 'Community'
-      })
-
-      $result = Get-Java -ForServer -Neo4jServer $serverObject
-      $resultArgs = ($result.args -join ' ')
-
-      It "should have main class of org.neo4j.server.Bootstrapper" {
-        $resultArgs | Should Match ([regex]::Escape('-DserverMainClass=org.neo4j.server.Bootstrapper'))
-      }
-    }
-
-    Context "Server Invoke - Community v2.1" {
-      Mock Test-Path { $false }
-      [Environment]::SetEnvironmentVariable('JAVA_HOME','TestPath:\JavaHome', "Process")
-      Mock Get-ItemProperty { return $null }      
-      Mock Test-Path { $true }  -ParameterFilter {
-        ($Path -eq 'TestPath:\JavaHome\bin\java.exe')
-      }
-      
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' = 'TestDrive:\Path';
-        'ServerVersion' = '2.1';
-        'ServerType' = 'Community'
-      })
-
-      $result = Get-Java -ForServer -Neo4jServer $serverObject
-      $resultArgs = ($result.args -join ' ')
-
-      It "should have main class of org.neo4j.server.Bootstrapper" {
-        $resultArgs | Should Match ([regex]::Escape('-DserverMainClass=org.neo4j.server.Bootstrapper'))
-      }
-    }
-
-    Context "Server Invoke - Community v2.0" {
-      Mock Test-Path { $false }
-      [Environment]::SetEnvironmentVariable('JAVA_HOME','TestPath:\JavaHome', "Process")
-      Mock Get-ItemProperty { return $null }      
-      Mock Test-Path { $true }  -ParameterFilter {
-        ($Path -eq 'TestPath:\JavaHome\bin\java.exe')
-      }
-      
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' = 'TestDrive:\Path';
-        'ServerVersion' = '2.0';
-        'ServerType' = 'Community'
-      })
-
-      $result = Get-Java -ForServer -Neo4jServer $serverObject
-      $resultArgs = ($result.args -join ' ')
-
-      It "should have main class of org.neo4j.server.Bootstrapper" {
-        $resultArgs | Should Match ([regex]::Escape('-DserverMainClass=org.neo4j.server.Bootstrapper'))
-      }
-    }
-
-
-    Context "Server Invoke - Community v1.9" {
-      Mock Test-Path { $false }
-      [Environment]::SetEnvironmentVariable('JAVA_HOME','TestPath:\JavaHome', "Process")
-      Mock Get-ItemProperty { return $null }      
-      Mock Test-Path { $true }  -ParameterFilter {
-        ($Path -eq 'TestPath:\JavaHome\bin\java.exe')
-      }
-      
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' = 'TestDrive:\Path';
-        'ServerVersion' = '1.9';
-        'ServerType' = 'Community'
-      })
-
-      $result = Get-Java -ForServer -Neo4jServer $serverObject
-      $resultArgs = ($result.args -join ' ')
-
-      It "should have main class of org.neo4j.server.Bootstrapper" {
-        $resultArgs | Should Match ([regex]::Escape('-DserverMainClass=org.neo4j.server.Bootstrapper'))
-      }
-    }
-    
     # Utility Invoke
     Context "Utility Invoke" {
       Mock Test-Path { $false }
@@ -352,6 +265,7 @@ InModuleScope Neo4j-Management {
         ($Path -eq 'TestPath:\JavaHome\bin\java.exe') -or
         ($Path -eq 'TestDrive:\FakeExtraClass')
       }
+      Mock Get-ChildItem -ParameterFilter { $Path -eq 'TestDrive:\Path\bin' }
       Mock Get-ChildItem { @(
         @{ 'Extension'='.jar'; 'Fullname'='TestDrive:\fake1.jar'}
       )} -ParameterFilter { $Path -eq 'TestDrive:\Path\lib' }
@@ -363,7 +277,7 @@ InModuleScope Neo4j-Management {
         'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'
       })
 
-      $result = Get-Java -ForUtility -AppName 'someapp' -StartingClass 'someclass' -Neo4jServer $serverObject -ErrorAction Stop
+      $result = Get-Java -ForUtility -StartingClass 'someclass' -Neo4jServer $serverObject -ErrorAction Stop
       $resultArgs = ($result.args -join ' ')
 
       It "should have correct ClassPath" {
@@ -382,16 +296,12 @@ InModuleScope Neo4j-Management {
       Mock Test-Path { $true }  -ParameterFilter {
         ($Path -eq 'TestPath:\JavaHome\bin\java.exe')
       }
-      Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.mode'; 'Value'='ARBITER' })
-      } -ParameterFilter {
-        $Name -eq 'dbms.mode'
-      }
 
       $serverObject = (New-Object -TypeName PSCustomObject -Property @{
         'Home' = 'TestDrive:\Path';
-        'ServerVersion' = '2.3';
+        'ServerVersion' = '3.0';
         'ServerType' = 'Enterprise'
+        'DatabaseMode' = 'ARBITER'
       })
 
       $result = Get-Java -ForServer -Neo4jServer $serverObject

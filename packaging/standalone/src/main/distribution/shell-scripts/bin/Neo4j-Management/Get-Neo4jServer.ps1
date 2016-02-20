@@ -25,7 +25,7 @@ Retrieves properties about a Neo4j installation
 Retrieves properties about a Neo4j installation and outputs a Neo4j Server object.
 
 .PARAMETER Neo4jHome
-The full path to the Neo4j installation.  If an empty string is passed, the Neo4j Home is determied via Get-Neo4jHome
+The full path to the Neo4j installation.
 
 .EXAMPLE
 Get-Neo4jServer -Neo4jHome 'C:\Neo4j'
@@ -49,6 +49,9 @@ This is a Neo4j Server Object
 .LINK
 Get-Neo4jHome  
 
+.NOTES
+This function is private to the powershell module
+
 #>
 Function Get-Neo4jServer
 {
@@ -67,16 +70,15 @@ Function Get-Neo4jServer
   Process
   {
     # Get and check the Neo4j Home directory
-    if ($Neo4jHome -eq '') { $Neo4jHome = Get-Neo4jHome }
     if ( ($Neo4jHome -eq '') -or ($Neo4jHome -eq $null) )
     {
       Write-Error "Could not detect the Neo4j Home directory"
       return
     }
        
-    if (-not (Confirm-Neo4jHome -Neo4jHome $Neo4jHome))
+    if (-not (Test-Path -Path $Neo4jHome))
     {
-      Write-Error "$Neo4jHome is not a Neo4j Home directory"
+      Write-Error "$Neo4jHome does not exist"
       return
     }
 
@@ -89,7 +91,18 @@ Function Get-Neo4jServer
       'Home' = $Neo4jHome;
       'ServerVersion' = '';
       'ServerType' = 'Community';
+      'DatabaseMode' = '';
     }
+    
+    # Check if the lib dir exists
+    $libPath = (Join-Path -Path $Neo4jHome -ChildPath 'lib')
+    if (-not (Test-Path -Path $libPath))
+    {
+      Write-Error "$Neo4jHome is not a valid Neo4j installation.  Missing $libPath"
+      return
+    }
+    
+    # Scan the lib dir...
     Get-ChildItem (Join-Path -Path $Neo4jHome -ChildPath 'lib') | Where-Object { $_.Name -like 'neo4j-server-*.jar' } | ForEach-Object -Process `
     {
       # if neo4j-server-enterprise-<version>.jar exists then this is the enterprise version
@@ -99,14 +112,18 @@ Function Get-Neo4jServer
       if ($matches -ne $null) { $matches.Clear() }
       if ($_.Name -match '^neo4j-server-(\d.+)\.jar$') { $serverProperties.ServerVersion = $matches[1] }
     }
-
     $serverObject = New-Object -TypeName PSCustomObject -Property $serverProperties
-    if (-not (Confirm-Neo4jServerObject -Neo4jServer $serverObject))
-    {
-      Write-Error "$Neo4jHome does not contain a valid Neo4j installation"
+
+    # Validate the object
+    if ([string]$serverObject.ServerVersion -eq '') {
+      Write-Error "Unable to determine the version of the installation at $Neo4jHome"
       return
     }
-
+    
+    # Get additional settings...
+    $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'dbms.mode' -Neo4jServer $serverObject)
+    if ($setting -ne $null) { $serverObject.DatabaseMode = $setting.Value }
+    
     Write-Output $serverObject
   }
   

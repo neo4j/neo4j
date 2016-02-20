@@ -50,7 +50,7 @@
         <include>**/*.bat</include>
       </includes>
       <excludes>
-        <exclude>**/Neo4jBackup*</exclude>
+        <exclude>**/neo4j-backup*</exclude>
       </excludes>
       <filtered>true</filtered>
     </fileSet>

@@ -8,62 +8,40 @@ Import-Module "$src\Neo4j-Management.psm1"
 InModuleScope Neo4j-Management {
   Describe "Uninstall-Neo4jServer" {
 
-    Context "Invalid or missing default neo4j installation" {
-      Mock Get-Neo4jServer { return }
-      $result = Uninstall-Neo4jServer
-      
-      It "return null if missing default" {
-        $result | Should BeNullOrEmpty      
-      }
-      It "calls Get-Neo4Server" {
-        Assert-MockCalled Get-Neo4jServer -Times 1
-      }
-    }
-
-    Context "Invalid or missing specified neo4j installation" {
-      Mock Get-Neo4jServer { return }
-      $result = Uninstall-Neo4jServer -Neo4jServer 'TestDrive:\some-dir-that-doesnt-exist'
-  
-      It "return null if invalid directory" {
-        $result | Should BeNullOrEmpty      
-      }
-      It "calls Get-Neo4Server" {
-        Assert-MockCalled Get-Neo4jServer -Times 1
-      }
-    }
-
-    Context "Invalid or missing server object" {
-      Mock Confirm-Neo4jServerObject { return $false }
-      
-      It "throws error for an invalid server object" {
-        { Uninstall-Neo4jServer -Neo4jServer (New-Object -TypeName PSCustomObject) -ErrorAction Stop } | Should Throw
-      }
-  
-      It "calls Confirm-Neo4jServerObject" {
-        Assert-MockCalled Confirm-Neo4jServerObject -Times 1
-      }
-    }
-
     Context "Missing service name in configuration files" {
-      Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }    
-      Mock Get-Neo4jSetting { return $null }
+      Mock Get-Neo4jWindowsServiceName { throw "Invalid service name" }
+      Mock Get-WmiObject { }
+
+      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
+        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
+        'ServerVersion' = '3.0';
+        'ServerType' = 'Enterprise';
+        'DatabaseMode' = '';
+      })      
 
       It "throws error for missing service name in configuration file" {
-        { Uninstall-Neo4jServer -ErrorAction Stop } | Should Throw
+        { Uninstall-Neo4jServer -Neo4jServer $serverObject -ErrorAction Stop } | Should Throw
       }
       
       It "calls Get-Neo4jSetting" {
-        Assert-MockCalled Get-Neo4jSetting -Times 1
+        Assert-MockCalled Get-Neo4jWindowsServiceName -Times 1
       }
     }
 
     Context "Windows service does not exist" {
-      Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
+      Mock Get-Neo4jWindowsServiceName -Verifiable { 'SomeServiceName' }
       Mock Get-WmiObject -Verifiable { return $null }
 
-      It "throws error for missing service name in configuration file" {
-        { Uninstall-Neo4jServer -ErrorAction Stop } | Should Throw
+      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
+        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
+        'ServerVersion' = '3.0';
+        'ServerType' = 'Enterprise';
+        'DatabaseMode' = '';
+      })      
+      $result = Uninstall-Neo4jServer -Neo4jServer $serverObject
+
+      It "result is 0" {
+        $result | Should Be 0
       }
       
       It "calls verified mocks" {
@@ -71,67 +49,69 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Windows service does not exist but no error" {
-      Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
-      Mock Get-WmiObject -Verifiable { return $null }
-
-      $result = Uninstall-Neo4jServer -SucceedIfNotExist
-
-      It "result is Neo4j Server object" {
-        $result.GetType().ToString() | Should Be 'System.Management.Automation.PSCustomObject'
-      }
+    Context "Uninstall windows service successfully" {
+      Mock Get-Neo4jWindowsServiceName -Verifiable { 'SomeServiceName' }
+      Mock Stop-Service { throw "Did not call Stop-Service correctly" }
+      Mock Get-WMIObject { throw "Did not call WMI Object correctly" }
       
-      It "calls verified mocks" {
-        Assert-VerifiableMocks
-      }
-    }
-
-    Context "Uninstall windows service by name in configuration files" {
-      Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
-      Mock Stop-Service { return 1 } -ParameterFilter { $Name -eq 'SomeServiceName'}
+      Mock Stop-Service -Verifiable { return 1 } -ParameterFilter { $Name -eq 'SomeServiceName'}
       Mock Get-WmiObject -Verifiable {
         # Mock a Win32_Service WMI object
         $mock = New-Object -TypeName PSCustomObject
         $mock | Add-Member -MemberType ScriptMethod -Name 'delete' -Value { return 2 } | Out-Null
-        
+        $mock | Add-Member -MemberType NoteProperty -Name 'State' -Value 'Running'
         return $mock
       } -ParameterFilter { $Filter -eq "Name='SomeServiceName'" }
 
-      $result = Uninstall-Neo4jServer
+      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
+        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
+        'ServerVersion' = '3.0';
+        'ServerType' = 'Enterprise';
+        'DatabaseMode' = '';
+      })      
+      $result = Uninstall-Neo4jServer -Neo4jServer $serverObject
 
-      It "result is Neo4j Server object" {
-        $result.GetType().ToString() | Should Be 'System.Management.Automation.PSCustomObject'
+      It "result is 0" {
+        $result | Should Be 0
       }
       
       It "calls verified mocks" {
         Assert-VerifiableMocks
       }
     }
-
-    Context "Uninstall windows service by named parameter" {
-      Mock Get-Neo4jServer { return $serverObject = New-Object -TypeName PSCustomObject -Property @{ 'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community';} }    
-      Mock Get-Neo4jSetting { return @{'Value' = 'SomeServiceName'} }
-      Mock Stop-Service { return 1 } -ParameterFilter { $Name -eq 'SomeOtherServiceName'}
+    
+    Context "During uninstall, does not stop service if already stopped" {
+      Mock Get-Neo4jWindowsServiceName -Verifiable { 'SomeServiceName' }
+      Mock Get-WMIObject { throw "Did not call WMI Object correctly" }
+      
+      Mock Stop-Service  { } 
       Mock Get-WmiObject -Verifiable {
         # Mock a Win32_Service WMI object
         $mock = New-Object -TypeName PSCustomObject
         $mock | Add-Member -MemberType ScriptMethod -Name 'delete' -Value { return 2 } | Out-Null
-        
+        $mock | Add-Member -MemberType NoteProperty -Name 'State' -Value 'Stopped'
         return $mock
-      } -ParameterFilter { $Filter -eq "Name='SomeOtherServiceName'" }
+      } -ParameterFilter { $Filter -eq "Name='SomeServiceName'" }
 
-      $result = Uninstall-Neo4jServer -ServiceName 'SomeOtherServiceName'
+      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
+        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
+        'ServerVersion' = '3.0';
+        'ServerType' = 'Enterprise';
+        'DatabaseMode' = '';
+      })      
+      $result = Uninstall-Neo4jServer -Neo4jServer $serverObject
 
-      It "result is Neo4j Server object" {
-        $result.GetType().ToString() | Should Be 'System.Management.Automation.PSCustomObject'
+      It "result is 0" {
+        $result | Should Be 0
+      }
+      
+      It "does not call Stop-Service" {
+        Assert-MockCalled Stop-Service -Times 0
       }
       
       It "calls verified mocks" {
         Assert-VerifiableMocks
       }
     }
-
   }
 }
