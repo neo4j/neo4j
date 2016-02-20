@@ -21,9 +21,9 @@ test_expect_success "should report that it's running" "
   neo4j-home/bin/neo4j status
 "
 
-test_expect_success "should redirect output to console.log" "
-  grep 'stdout from java' neo4j-home/data/log/console.log &&
-  grep 'stderr from java' neo4j-home/data/log/console.log
+test_expect_success "should redirect output to neo4j.log" "
+  grep 'stdout from java' neo4j-home/logs/neo4j.log &&
+  grep 'stderr from java' neo4j-home/logs/neo4j.log
 "
 
 test_expect_success "should exit 0 if already running" "

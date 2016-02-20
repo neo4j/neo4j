@@ -31,7 +31,7 @@ It is recommended to either choose or create a user who will own and manage the 
 This user should own the entire Neo4j directory, so make sure to untar/unzip it as this user and not with `sudo` (UNIX/Linux/OSx) etc.
 
 If _data/databases/graph.db_ is not writable by the user Neo4j won't be able to write anything either to the store or its log files.
-As a result any logs would be appended to _console.log_.
+As a result any logs would be appended to _neo4j.log_.
 The following error message would indicate a possible permissions issue: `Write transactions to database disabled`.
 
 [[windows-install]]
