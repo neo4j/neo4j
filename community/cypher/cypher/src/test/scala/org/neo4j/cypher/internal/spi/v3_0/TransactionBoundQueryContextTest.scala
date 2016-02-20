@@ -54,7 +54,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     outerTx = mock[InternalTransaction]
     val kernelTransaction = mock[KernelTransactionImplementation]
     when(kernelTransaction.mode()).thenReturn(AccessMode.FULL)
-    statement = new KernelStatement(kernelTransaction, null, null, null, null, new Procedures())
+    statement = new KernelStatement(kernelTransaction, null, null, null, new Procedures())
   }
 
   override def afterEach() {

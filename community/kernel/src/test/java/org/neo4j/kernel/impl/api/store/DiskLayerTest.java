@@ -68,7 +68,7 @@ public abstract class DiskLayerTest
         db = (GraphDatabaseAPI) createGraphDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         this.disk = resolver.resolveDependency( StorageEngine.class ).storeReadLayer();
-        this.state = new KernelStatement( null, null,
+        this.state = new KernelStatement( null,
                 null, null, disk.acquireStatement(), new Procedures() );
     }
 

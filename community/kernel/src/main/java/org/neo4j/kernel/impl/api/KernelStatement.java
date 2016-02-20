@@ -35,22 +35,39 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.StorageStatement;
 
+/**
+ * A resource efficient implementation of {@link Statement}. Designed to be reused within a
+ * {@link KernelTransactionImplementation} instance, even across transactions since this instances itself
+ * doesn't hold essential state. Usage:
+ *
+ * <ol>
+ * <li>Construct {@link KernelStatement} when {@link KernelTransactionImplementation} is constructed</li>
+ * <li>For every transaction...</li>
+ * <li>Call {@link #initialize(org.neo4j.kernel.impl.locking.Locks.Client)} which makes this instance
+ * full available and ready to use. Call when the {@link KernelTransactionImplementation} is initialized.</li>
+ * <li>Alternate {@link #acquire()} / {@link #close()} when acquiring / closing a statement for the transaction...
+ * Temporarily asymmetric number of calls to {@link #acquire()} / {@link #close()} is supported, although in
+ * the end an equal number of calls must have been issued.</li>
+ * <li>To be safe call {@link #forceClose()} at the end of a transaction to force a close of the statement,
+ * even if there are more than one current call to {@link #acquire()}. This instance is now again ready
+ * to be {@link #initialize(org.neo4j.kernel.impl.locking.Locks.Client) initialized} and used for the transaction
+ * instance again, when it's initialized.</li>
+ * </ol>
+ */
 public class KernelStatement implements TxStateHolder, Statement
 {
-    protected final Locks.Client locks;
-    protected final TxStateHolder txStateHolder;
+    private final TxStateHolder txStateHolder;
     private final StorageStatement storeStatement;
     private final KernelTransactionImplementation transaction;
     private final OperationsFacade facade;
+    private Locks.Client locks;
     private int referenceCount;
-    private boolean closed;
 
     public KernelStatement( KernelTransactionImplementation transaction,
-            TxStateHolder txStateHolder, Locks.Client locks,
+            TxStateHolder txStateHolder,
             StatementOperationParts operations, StorageStatement storeStatement, Procedures procedures )
     {
         this.transaction = transaction;
-        this.locks = locks;
         this.txStateHolder = txStateHolder;
         this.storeStatement = storeStatement;
         this.facade = new OperationsFacade( transaction, this, operations, procedures );
@@ -120,16 +137,15 @@ public class KernelStatement implements TxStateHolder, Statement
     @Override
     public void close()
     {
-        if ( !closed && release() )
+        if ( referenceCount > 0 && release() )
         {
-            closed = true;
             cleanupResources();
         }
     }
 
     void assertOpen()
     {
-        if ( closed )
+        if ( referenceCount == 0 )
         {
             throw new NotInTransactionException( "The statement has been closed." );
         }
@@ -139,6 +155,11 @@ public class KernelStatement implements TxStateHolder, Statement
         }
     }
 
+    void initialize( Locks.Client locks )
+    {
+        this.locks = locks;
+    }
+
     public Locks.Client locks()
     {
         return locks;
@@ -146,23 +167,22 @@ public class KernelStatement implements TxStateHolder, Statement
 
     final void acquire()
     {
-        referenceCount++;
+        if ( referenceCount++ == 0 )
+        {
+            storeStatement.acquire();
+        }
     }
 
     private boolean release()
     {
-        referenceCount--;
-
-        return (referenceCount == 0);
+        return (--referenceCount == 0);
     }
 
     final void forceClose()
     {
-        if ( !closed )
+        if ( referenceCount > 0 )
         {
-            closed = true;
             referenceCount = 0;
-
             cleanupResources();
         }
     }
@@ -170,7 +190,6 @@ public class KernelStatement implements TxStateHolder, Statement
     private void cleanupResources()
     {
         storeStatement.close();
-        transaction.releaseStatement( this );
     }
 
     public StorageStatement getStoreStatement()

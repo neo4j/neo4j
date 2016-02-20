@@ -28,7 +28,6 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -111,7 +110,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StatementOperationParts operations;
     private final StorageEngine storageEngine;
-    private final Procedures procedures;
     private final TransactionTracer tracer;
     private final Pool<KernelTransactionImplementation> pool;
     private final Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier;
@@ -129,7 +127,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType; // Tracks current state of transaction, which will upgrade to WRITE or SCHEMA mode when necessary
     private TransactionHooks.TransactionHooksState hooksState;
-    private KernelStatement currentStatement;
+    private final KernelStatement currentStatement;
     private CloseListener closeListener;
     private AccessMode accessMode; // Defines whether a transaction/statement is allowed to perform read, write or schema commands
     private Locks.Client locks;
@@ -159,7 +157,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
-        this.procedures = procedures;
         this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
@@ -169,6 +166,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.pool = pool;
         this.clock = clock;
         this.tracer = tracer;
+        this.currentStatement = new KernelStatement( this, this, operations,
+                storeLayer.acquireStatement(), procedures );
     }
 
     /**
@@ -186,6 +185,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionEvent = tracer.beginTransaction();
         assert transactionEvent != null : "transactionEvent was null!";
         this.accessMode = accessMode;
+        this.currentStatement.initialize( locks );
         return this;
     }
 
@@ -237,19 +237,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelStatement acquireStatement()
     {
         assertTransactionOpen();
-        if ( currentStatement == null )
-        {
-            currentStatement = new KernelStatement( this, this, locks, operations,
-                    storeLayer.acquireStatement(), procedures );
-        }
         currentStatement.acquire();
         return currentStatement;
-    }
-
-    public void releaseStatement( Statement statement )
-    {
-        assert currentStatement == statement;
-        currentStatement = null;
     }
 
     public void upgradeToDataTransaction() throws InvalidTransactionTypeKernelException
@@ -325,11 +314,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private void closeCurrentStatementIfAny()
     {
-        if ( currentStatement != null )
-        {
-            currentStatement.forceClose();
-            currentStatement = null;
-        }
+        currentStatement.forceClose();
     }
 
     private void assertTransactionNotClosing()

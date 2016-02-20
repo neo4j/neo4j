@@ -95,6 +95,8 @@ public interface StorageStatement extends AutoCloseable
      */
     Cursor<RelationshipItem> relationshipsGetAllCursor();
 
+    void acquire();
+
     /**
      * Closes this statement and releases any allocated resources.
      */

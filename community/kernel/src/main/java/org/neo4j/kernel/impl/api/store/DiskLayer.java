@@ -109,11 +109,11 @@ public class DiskLayer implements StoreReadLayer
     private final SchemaStorage schemaStorage;
     private final CountsTracker counts;
     private final PropertyLoader propertyLoader;
-    private final Supplier<StorageStatement> statementProvider;
+    private final Supplier<StoreStatement> statementProvider;
 
     public DiskLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
-            IndexingService indexService, Supplier<StorageStatement> statementProvider )
+            IndexingService indexService, Supplier<StoreStatement> storeStatementSupplier )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
@@ -121,7 +121,7 @@ public class DiskLayer implements StoreReadLayer
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
         this.neoStores = neoStores;
-        this.statementProvider = statementProvider;
+        this.statementProvider = storeStatementSupplier;
         this.nodeStore = this.neoStores.getNodeStore();
         this.relationshipStore = this.neoStores.getRelationshipStore();
         this.counts = neoStores.getCounts();

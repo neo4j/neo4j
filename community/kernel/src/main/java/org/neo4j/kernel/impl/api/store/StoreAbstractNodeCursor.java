@@ -32,9 +32,9 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -49,7 +49,6 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -142,13 +141,13 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
     @Override
     public Cursor<LabelItem> labels()
     {
-        return labelCursor.get().init( parseLabelsField( nodeRecord ).get( nodeStore ) );
+        return labelCursor.get().init( NodeLabelsField.get( nodeRecord, nodeStore ) );
     }
 
     @Override
     public Cursor<LabelItem> label( int labelId )
     {
-        return singleLabelCursor.get().init( parseLabelsField( nodeRecord ).get( nodeStore ), labelId );
+        return singleLabelCursor.get().init( NodeLabelsField.get( nodeRecord, nodeStore ), labelId );
     }
 
     private Lock shortLivedReadLock()

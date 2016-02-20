@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.storageengine.api.StorageStatement;
 
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.inOrder;
@@ -61,7 +62,8 @@ public class LockingStatementOperationsTest
     private final Locks.Client locks = mock( Locks.Client.class );
     private final InOrder order;
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-    private final KernelStatement state = new KernelStatement( transaction, null, locks, null, null, new Procedures() );
+    private final KernelStatement state = new KernelStatement( transaction, null, null,
+            mock( StorageStatement.class ), new Procedures() );
     private final SchemaStateOperations schemaStateOps;
 
     public LockingStatementOperationsTest()
@@ -75,6 +77,8 @@ public class LockingStatementOperationsTest
         lockingOps = new LockingStatementOperations(
                 entityReadOps, entityWriteOps, schemaReadOps, schemaWriteOps, schemaStateOps
         );
+        state.initialize( locks );
+        state.acquire();
 
         when( transaction.shouldBeTerminated() ).thenReturn( false );
     }

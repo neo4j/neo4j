@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.api.store.DiskLayer;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -149,7 +150,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final NeoStoreIndexStoreView indexStoreView;
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
-    private final StoreStatements storeStatementSupplier;
+    private final Supplier<StoreStatement> storeStatementSupplier;
 
     // Immutable state for creating/applying commands
     private final Loaders loaders;
@@ -247,14 +248,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
     }
 
-    private StoreStatements storeStatementSupplier(
+    private Supplier<StoreStatement> storeStatementSupplier(
             NeoStores neoStores, Config config, LockService lockService )
     {
         final LockService currentLockService =
                 config.get( use_read_locks_on_property_reads ) ? lockService : NO_LOCK_SERVICE;
         final Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
 
-        return new StoreStatements( neoStores, currentLockService, indexReaderFactory, labelScanStore::newReader );
+        return () -> new StoreStatement( neoStores, currentLockService, indexReaderFactory, labelScanStore::newReader );
     }
 
     @Override
@@ -428,7 +429,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void shutdown() throws Throwable
     {
-        storeStatementSupplier.close();
         labelScanStore.shutdown();
         indexingService.shutdown();
         neoStores.close();
