@@ -35,7 +35,7 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
-import org.neo4j.kernel.impl.api.AutoIndexing;
+import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 
 public class IndexManagerImpl implements IndexManager
 {
@@ -81,7 +81,7 @@ public class IndexManagerImpl implements IndexManager
         Index<Node> toReturn = provider.getOrCreateNodeIndex( indexName, customConfiguration );
 
         // TODO move this into kernel layer
-        if ( AutoIndexing.NODE_AUTO_INDEX.equals( indexName ) )
+        if ( InternalAutoIndexing.NODE_AUTO_INDEX.equals( indexName ) )
         {
             return new ReadOnlyIndexFacade<>( toReturn );
         }
@@ -124,7 +124,7 @@ public class IndexManagerImpl implements IndexManager
         RelationshipIndex toReturn = provider.getOrCreateRelationshipIndex( indexName, customConfiguration );
 
         // TODO move this into kernel layer
-        if ( AutoIndexing.RELATIONSHIP_AUTO_INDEX.equals( indexName ) )
+        if ( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX.equals( indexName ) )
         {
             return new RelationshipReadOnlyIndexFacade( toReturn );
         }

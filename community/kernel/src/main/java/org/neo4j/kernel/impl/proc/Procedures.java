@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.proc;
 
 import java.io.File;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -95,7 +95,7 @@ public class Procedures extends LifecycleAdapter
      * @param cls the type of component to be registered (this is what users 'ask' for in their field declaration)
      * @param supplier a function that supplies the actual component, given the context of a procedure invocation
      */
-    public <T> void registerComponent( Class<T> cls, Function<CallableProcedure.Context, T> supplier )
+    public <T> void registerComponent( Class<T> cls, ThrowingFunction<CallableProcedure.Context, ?,ProcedureException> supplier )
     {
         components.register( cls, supplier );
     }

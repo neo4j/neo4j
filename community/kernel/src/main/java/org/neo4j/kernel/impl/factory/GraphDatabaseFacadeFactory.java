@@ -29,6 +29,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -126,9 +127,10 @@ public abstract class GraphDatabaseFacadeFactory
         EditionModule edition = createEdition( platform );
         final DataSourceModule dataSource = createDataSource( dependencies, platform, edition );
         Logger msgLog = platform.logging.getInternalLog( getClass() ).infoLogger();
+        CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = edition.coreAPIAvailabilityGuard;
 
         // Start it
-        graphDatabaseFacade.init( platform.config, new ClassicCoreSPI( platform, dataSource, msgLog, edition ) );
+        graphDatabaseFacade.init( platform.config, new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard ) );
 
         Throwable error = null;
         try

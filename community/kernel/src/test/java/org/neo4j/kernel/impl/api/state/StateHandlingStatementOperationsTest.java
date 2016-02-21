@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import java.util.Collections;
-import java.util.Set;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -37,10 +37,10 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.api.AutoIndexing;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
+import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
@@ -64,6 +64,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.properties.Property.intProperty;
@@ -425,7 +426,7 @@ public class StateHandlingStatementOperationsTest
     private StateHandlingStatementOperations newTxStateOps( StoreReadLayer delegate )
     {
         return new StateHandlingStatementOperations( delegate,
-                mock( AutoIndexing.class ), mock( ConstraintIndexCreator.class ),
+                mock( InternalAutoIndexing.class ), mock( ConstraintIndexCreator.class ),
                 mock( LegacyIndexStore.class ) );
     }
 

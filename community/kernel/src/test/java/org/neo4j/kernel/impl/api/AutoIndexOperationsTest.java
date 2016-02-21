@@ -23,7 +23,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.impl.api.AutoIndexing.AutoIndexOperations;
+import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
+import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexOperations;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.coreapi.IndexProvider;
@@ -33,6 +34,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.api.properties.Property.property;
 
 public class AutoIndexOperationsTest
@@ -40,7 +42,7 @@ public class AutoIndexOperationsTest
     private final IndexProvider indexProvider = mock( IndexProvider.class, RETURNS_MOCKS );
     private final DataWriteOperations ops = mock(DataWriteOperations.class);
     private final PropertyKeyTokenHolder tokens = mock( PropertyKeyTokenHolder.class );
-    private final AutoIndexOperations index = new AutoIndexOperations( tokens, AutoIndexOperations.EntityType.NODE );
+    private final AutoIndexOperations index = new InternalAutoIndexOperations( tokens, InternalAutoIndexOperations.EntityType.NODE );
 
     private final int nonIndexedProperty = 1337;
     private final String nonIndexedPropertyName = "foo";

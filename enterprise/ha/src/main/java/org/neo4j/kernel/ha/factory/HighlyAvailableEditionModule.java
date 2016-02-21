@@ -126,6 +126,7 @@ import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -491,6 +492,8 @@ public class HighlyAvailableEditionModule
         config.augment( MapUtil.stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.FALSE ) );
 
         constraintSemantics = new EnterpriseConstraintSemantics();
+
+        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
         registerRecovery( platformModule.databaseInfo, dependencies, logging );
 

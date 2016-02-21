@@ -561,9 +561,6 @@ public interface ReadOperations
     //== PROCEDURE OPERATIONS ===================
     //===========================================
 
-    /** For managed procedures, this gives access to the current statement. */
-    CallableProcedure.Key<Statement> statement = CallableProcedure.Key.key("statement", Statement.class );
-
     /** Fetch a procedure given its signature. */
     ProcedureSignature procedureGet( ProcedureSignature.ProcedureName name ) throws ProcedureException;
 

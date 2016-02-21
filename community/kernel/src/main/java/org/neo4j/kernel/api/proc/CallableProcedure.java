@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -39,6 +40,8 @@ public interface CallableProcedure
      */
     interface Context
     {
+        Key<KernelTransaction> KERNEL_TRANSACTION = Key.key( "KernelTransaction", KernelTransaction.class );
+
         <T> T get( Key<T> key ) throws ProcedureException;
     }
 

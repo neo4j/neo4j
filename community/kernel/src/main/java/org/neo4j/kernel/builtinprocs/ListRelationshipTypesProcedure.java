@@ -29,7 +29,6 @@ import org.neo4j.kernel.impl.api.TokenAccess;
 
 import static org.neo4j.helpers.collection.Iterables.asRawIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.api.ReadOperations.statement;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ListRelationshipTypesProcedure extends CallableProcedure.BasicProcedure
@@ -43,7 +42,7 @@ public class ListRelationshipTypesProcedure extends CallableProcedure.BasicProce
     public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
         RawIterator<RelationshipType,ProcedureException> types =
-                asRawIterator( TokenAccess.RELATIONSHIP_TYPES.inUse( ctx.get( statement ) ) );
+                asRawIterator( TokenAccess.RELATIONSHIP_TYPES.inUse( ctx.get( Context.KERNEL_TRANSACTION ).acquireStatement() ) );
         return map( ( l) -> new Object[]{l.name()}, types );
     }
 }

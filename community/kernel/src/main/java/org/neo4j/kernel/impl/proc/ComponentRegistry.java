@@ -21,8 +21,9 @@ package org.neo4j.kernel.impl.proc;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
+import org.neo4j.function.ThrowingFunction;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 
 /**
@@ -30,24 +31,24 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
  */
 public class ComponentRegistry
 {
-    private final Map<Class<?>, Function<CallableProcedure.Context, ?>> suppliers;
+    private final Map<Class<?>, ThrowingFunction<CallableProcedure.Context, ?,ProcedureException>> suppliers;
 
     public ComponentRegistry()
     {
         this( new HashMap<>() );
     }
 
-    public ComponentRegistry( Map<Class<?>,Function<CallableProcedure.Context,?>> suppliers )
+    public ComponentRegistry( Map<Class<?>,ThrowingFunction<CallableProcedure.Context, ?,ProcedureException>> suppliers )
     {
         this.suppliers = suppliers;
     }
 
-    public Function<CallableProcedure.Context,?> supplierFor( Class<?> type )
+    public ThrowingFunction<CallableProcedure.Context, ?,ProcedureException> supplierFor( Class<?> type )
     {
         return suppliers.get( type );
     }
 
-    public <T> void register( Class<T> cls, Function<CallableProcedure.Context,T> supplier )
+    public <T> void register( Class<T> cls, ThrowingFunction<CallableProcedure.Context, ?,ProcedureException> supplier )
     {
         suppliers.put( cls, supplier );
     }

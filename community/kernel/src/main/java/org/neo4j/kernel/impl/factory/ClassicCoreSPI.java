@@ -19,21 +19,21 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import java.io.File;
 import java.net.URL;
 import java.util.Map;
 
-import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.api.AutoIndexing;
+import org.neo4j.kernel.api.legacyindex.AutoIndexing;
+import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -50,14 +50,14 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     private final PlatformModule platform;
     private final DataSourceModule dataSource;
     private final Logger msgLog;
-    private final EditionModule edition;
+    private final CoreAPIAvailabilityGuard availability;
 
-    public ClassicCoreSPI( PlatformModule platform, DataSourceModule dataSource, Logger msgLog, EditionModule edition )
+    public ClassicCoreSPI(PlatformModule platform, DataSourceModule dataSource, Logger msgLog, CoreAPIAvailabilityGuard availability )
     {
         this.platform = platform;
         this.dataSource = dataSource;
         this.msgLog = msgLog;
-        this.edition = edition;
+        this.availability = availability;
     }
 
     @Override
@@ -71,7 +71,7 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     {
         try
         {
-            assertDatabaseAvailable();
+            availability.assertDatabaseAvailable();
             return dataSource.queryExecutor.get().executeQuery( query, parameters, querySession );
         }
         catch ( QueryExecutionKernelException e )
@@ -123,9 +123,9 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public String storeDir()
+    public File storeDir()
     {
-        return platform.storeDir.getAbsolutePath();
+        return platform.storeDir;
     }
 
     @Override
@@ -161,7 +161,7 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     {
         try
         {
-            assertDatabaseAvailable();
+            availability.assertDatabaseAvailable();
             KernelTransaction kernelTx = dataSource.kernelAPI.get().newTransaction();
             kernelTx.registerCloseListener( (s) -> dataSource.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
             dataSource.threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );
@@ -176,7 +176,7 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public KernelTransaction currentTransaction()
     {
-        assertDatabaseAvailable();
+        availability.assertDatabaseAvailable();
         KernelTransaction tx = dataSource.threadToTransactionBridge.getKernelTransactionBoundToThisThread( false );
         if( tx == null )
         {
@@ -195,21 +195,5 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     public Statement currentStatement()
     {
         return dataSource.threadToTransactionBridge.get();
-    }
-
-    private void assertDatabaseAvailable()
-    {
-        try
-        {
-            platform.availabilityGuard.await( edition.transactionStartTimeout );
-        }
-        catch ( AvailabilityGuard.UnavailableException e )
-        {
-            if( platform.availabilityGuard.isShutdown())
-            {
-                throw new DatabaseShutdownException();
-            }
-            throw new org.neo4j.graphdb.TransactionFailureException( e.getMessage() );
-        }
     }
 }

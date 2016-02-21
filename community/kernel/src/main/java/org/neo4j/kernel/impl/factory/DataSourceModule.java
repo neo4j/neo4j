@@ -40,12 +40,13 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.impl.api.AutoIndexing;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -55,7 +56,9 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
@@ -152,8 +155,12 @@ public class DataSourceModule
         DatabaseHealth databaseHealth = deps.satisfyDependency( new DatabaseHealth( databasePanicEventGenerator,
                 logging.getInternalLog( DatabaseHealth.class ) ) );
 
-        autoIndexing = new AutoIndexing( platformModule.config, editionModule.propertyKeyTokenHolder );
-        Procedures procedures = setupProcedures( platformModule );
+        autoIndexing = new InternalAutoIndexing( platformModule.config, editionModule.propertyKeyTokenHolder );
+
+
+        AtomicReference<QueryExecutionEngine> queryExecutor = new AtomicReference<>( QueryEngineProvider.noEngine() );
+        this.queryExecutor = queryExecutor::get;
+        Procedures procedures = setupProcedures( platformModule, editionModule.coreAPIAvailabilityGuard );
 
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource( storeDir, config,
                 editionModule.idGeneratorFactory, logging, platformModule.jobScheduler,
@@ -180,9 +187,6 @@ public class DataSourceModule
 
         // Kernel event handlers should be the very last, i.e. very first to receive shutdown events
         life.add( kernelEventHandlers );
-
-        final AtomicReference<QueryExecutionEngine> queryExecutor = new AtomicReference<>( QueryEngineProvider
-                .noEngine() );
 
         dataSourceManager.addListener( new DataSourceManager.Listener()
         {
@@ -211,7 +215,6 @@ public class DataSourceModule
 
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
-        this.queryExecutor = queryExecutor::get;
     }
 
     protected RelationshipProxy.RelationshipActions createRelationshipActions(
@@ -307,7 +310,7 @@ public class DataSourceModule
         };
     }
 
-    private Procedures setupProcedures( PlatformModule platform )
+    private Procedures setupProcedures( PlatformModule platform, CoreAPIAvailabilityGuard coreAPIAvailabilityGuard )
     {
         File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
         Log internalLog = platform.logging.getInternalLog( Procedures.class );
@@ -320,14 +323,14 @@ public class DataSourceModule
         procedures.registerType( Relationship.class, new SimpleConverter( NTRelationship, Relationship.class ) );
         procedures.registerType( Path.class, new SimpleConverter( NTPath, Path.class ) );
 
-        // Register injectables
-        procedures.registerComponent( GraphDatabaseService.class,
-                (ctx) -> platform.dependencies.resolveDependency( GraphDatabaseService.class ) );
-
+        // Register injected public API components
         Log proceduresLog = platform.logging.getUserLog( Procedures.class  );
         procedures.registerComponent( Log.class, (ctx) -> proceduresLog );
 
-        // Not public API, but useful to have available in procedures to access the kernel etc.
+        // Register injected private API components: useful to have available in procedures to access the kernel etc.
+        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platform.config, platform.storeDir, platform.dependencies, storeId, this.queryExecutor, coreAPIAvailabilityGuard, platform.urlAccessRule );
+        procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply );
+
         procedures.registerComponent( DependencyResolver.class, (ctx) -> platform.dependencies );
 
         return procedures;
