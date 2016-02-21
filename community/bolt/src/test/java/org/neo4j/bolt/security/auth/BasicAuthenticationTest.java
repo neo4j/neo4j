@@ -27,12 +27,15 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.AuthenticationResult;
 
 import static java.util.Collections.singletonList;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -46,21 +49,24 @@ public class BasicAuthenticationTest
     {
         // Given
         AuthManager manager = mock( AuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         //Expect nothing
 
         // When
-        authentication.authenticate( map("scheme", "basic", "principal", "bob", "credentials", "secret") );
+        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret" ) );
     }
 
     @Test
-    public void shouldThrowOnFailure() throws AuthenticationException
+    public void shouldThrowAndLogOnFailure() throws AuthenticationException
     {
         // Given
         AuthManager manager = mock( AuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
+        Log log = mock( Log.class );
+        LogProvider logProvider = mock( LogProvider.class );
+        when( logProvider.getLog( BasicAuthentication.class ) ).thenReturn( log );
+        BasicAuthentication authentication = new BasicAuthentication( manager, logProvider );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.FAILURE );
 
         // Expect
@@ -69,7 +75,10 @@ public class BasicAuthenticationTest
         exception.expectMessage( "The client provided an incorrect username and/or password." );
 
         // When
-        authentication.authenticate( map("scheme", "basic", "principal", "bob", "credentials", "secret") );
+        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret" ) );
+
+        //Then
+        verify( log ).warn( "Failed authentication attempt for 'bob')" );
     }
 
     @Test
@@ -77,8 +86,9 @@ public class BasicAuthenticationTest
     {
         // Given
         AuthManager manager = mock( AuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
-        when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
+        when( manager.authenticate( anyString(), anyString() ) )
+                .thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
         // Expect
         exception.expect( AuthenticationException.class );
@@ -86,7 +96,7 @@ public class BasicAuthenticationTest
         exception.expectMessage( "The credentials have expired and needs to be updated." );
 
         // When
-        authentication.authenticate( map("scheme", "basic", "principal", "bob", "credentials", "secret") );
+        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret" ) );
     }
 
     @Test
@@ -94,7 +104,7 @@ public class BasicAuthenticationTest
     {
         // Given
         AuthManager manager = mock( AuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
         // Expect
@@ -103,7 +113,7 @@ public class BasicAuthenticationTest
         exception.expectMessage( "The client has provided incorrect authentication details too many times in a row." );
 
         // When
-        authentication.authenticate( map("scheme", "basic", "principal", "bob", "credentials", "secret") );
+        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret" ) );
     }
 
     @Test
@@ -111,14 +121,14 @@ public class BasicAuthenticationTest
     {
         // Given
         AuthManager manager = mock( AuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         //Expect nothing
 
         // When
-        authentication.authenticate( map("scheme", "basic", "principal", "bob", "credentials", "secret",
-                "new-credentials", "secret2") );
+        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret",
+                "new-credentials", "secret2" ) );
     }
 
     @Test
@@ -126,14 +136,15 @@ public class BasicAuthenticationTest
     {
         // Given
         AuthManager manager = mock( AuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
-        when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
+        when( manager.authenticate( anyString(), anyString() ) )
+                .thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
         //Expect nothing
 
         // When
-        authentication.authenticate( map("scheme", "basic", "principal", "bob", "credentials", "secret",
-                "new-credentials", "secret2") );
+        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret",
+                "new-credentials", "secret2" ) );
     }
 
     @Test
@@ -141,7 +152,7 @@ public class BasicAuthenticationTest
     {
         // Given
         AuthManager manager = mock( AuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.FAILURE );
 
         // Expect
@@ -151,8 +162,8 @@ public class BasicAuthenticationTest
 
         // When
         // When
-        authentication.authenticate( map("scheme", "basic", "principal", "bob", "credentials", "secret",
-                "new-credentials", "secret2") );
+        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret",
+                "new-credentials", "secret2" ) );
     }
 
     @Test
@@ -160,7 +171,7 @@ public class BasicAuthenticationTest
     {
         // Given
         AuthManager manager = mock( AuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         // Expect
@@ -169,7 +180,7 @@ public class BasicAuthenticationTest
         exception.expectMessage( "Authorization token must contain: 'scheme : basic'" );
 
         // When
-        authentication.authenticate( map("scheme", "UNKNOWN", "principal", "bob", "credentials", "secret") );
+        authentication.authenticate( map( "scheme", "UNKNOWN", "principal", "bob", "credentials", "secret" ) );
     }
 
     @Test
@@ -177,19 +188,21 @@ public class BasicAuthenticationTest
     {
         // Given
         AuthManager manager = mock( AuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.AuthenticationFailed ) );
-        exception.expectMessage( "The value associated with the key `principal` must be a String but was: SingletonList" );
+        exception.expectMessage(
+                "The value associated with the key `principal` must be a String but was: SingletonList" );
 
         // When
-        authentication.authenticate( map("scheme", "basic", "principal", singletonList( "bob" ), "credentials", "secret") );
+        authentication
+                .authenticate( map( "scheme", "basic", "principal", singletonList( "bob" ), "credentials", "secret" ) );
     }
 
-    private HasStatus hasStatus(Status status)
+    private HasStatus hasStatus( Status status )
     {
         return new HasStatus( status );
     }
@@ -198,25 +211,29 @@ public class BasicAuthenticationTest
     {
         private Status status;
 
-        public HasStatus(Status status) {
+        public HasStatus( Status status )
+        {
             this.status = status;
         }
 
         @Override
-        protected boolean matchesSafely(Status.HasStatus item) {
+        protected boolean matchesSafely( Status.HasStatus item )
+        {
             return item.status() == status;
         }
 
         @Override
-        public void describeTo(Description description) {
-            description.appendText("expects status ")
-                    .appendValue(status);
+        public void describeTo( Description description )
+        {
+            description.appendText( "expects status " )
+                    .appendValue( status );
         }
 
         @Override
-        protected void describeMismatchSafely(Status.HasStatus item, Description mismatchDescription) {
-            mismatchDescription.appendText("was ")
-                    .appendValue(item.status());
+        protected void describeMismatchSafely( Status.HasStatus item, Description mismatchDescription )
+        {
+            mismatchDescription.appendText( "was " )
+                    .appendValue( item.status() );
         }
     }
 

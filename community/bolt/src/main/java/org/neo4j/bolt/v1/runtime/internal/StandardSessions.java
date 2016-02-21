@@ -99,7 +99,7 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
 
         if ( config.get( GraphDatabaseSettings.auth_enabled ) )
         {
-            return new BasicAuthentication( dependencyResolver.resolveDependency( AuthManager.class ) );
+            return new BasicAuthentication( dependencyResolver.resolveDependency( AuthManager.class ), logging.getUserLogProvider() );
         }
         else
         {

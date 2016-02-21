@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthManager;
 
 /**
@@ -32,11 +34,13 @@ public class BasicAuthentication implements Authentication
 {
     private final AuthManager authManager;
     private final static String SCHEME = "basic";
+    private final Log log;
 
 
-    public BasicAuthentication( AuthManager authManager )
+    public BasicAuthentication( AuthManager authManager, LogProvider logProvider )
     {
         this.authManager = authManager;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -70,9 +74,8 @@ public class BasicAuthentication implements Authentication
             throw new AuthenticationException( Status.Security.CredentialsExpired );
         case TOO_MANY_ATTEMPTS:
             throw new AuthenticationException( Status.Security.AuthenticationRateLimit );
-        case FAILURE:
-            throw new AuthenticationException( Status.Security.AuthenticationFailed );
         default:
+            log.warn( "Failed authentication attempt for '%s'", user);
             throw new AuthenticationException( Status.Security.AuthenticationFailed );
         }
     }
