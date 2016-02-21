@@ -32,7 +32,7 @@ import org.neo4j.storageengine.api.CommandReader;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 
-public class RelationshipGroupCommandTest
+public class RelationshipGroupCommandV2_2Test
 {
     @Test
     public void shouldSerializeAndDeserializeUnusedRecords() throws Exception

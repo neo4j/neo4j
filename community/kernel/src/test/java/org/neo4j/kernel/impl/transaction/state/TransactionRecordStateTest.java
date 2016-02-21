@@ -1174,7 +1174,7 @@ public class TransactionRecordStateTest
         transaction.accept( extractor );
 
         OnlineIndexUpdates lazyIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(),
-                neoStores.getPropertyStore(), new PropertyLoader( neoStores ),
+                new PropertyLoader( neoStores ),
                 new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() ) );
         lazyIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.nodeCommandsById() );
         return lazyIndexUpdates;

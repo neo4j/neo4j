@@ -45,16 +45,19 @@ public enum Record
     NO_LABELS_FIELD( (byte)0, 0 );
 
     public static final byte CREATED_IN_TX = 2;
+    public static final byte REQUIRE_SECONDARY_UNIT = 4;
+    public static final byte HAS_SECONDARY_UNIT = 8;
+
 
     private byte byteValue;
     private int intValue;
 
-    private Record( Record from )
+    Record( Record from )
     {
         this( from.byteValue, from.intValue );
     }
 
-    private Record( byte byteValue, int intValue )
+    Record( byte byteValue, int intValue )
     {
         this.byteValue = byteValue;
         this.intValue = intValue;

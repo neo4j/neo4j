@@ -28,7 +28,8 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 /**
  * Wraps several {@link TransactionApplier}s. In this case, each individual visit-call will delegate to {@link
- * #visit(Command)} instead, which will call each wrapped {@link TransactionApplier} in turn. In {@link #close()},
+ * #visit(StorageCommand)} instead, which will call each wrapped {@link TransactionApplier} in turn. In
+ * {@link #close()},
  * the appliers are closed in reversed order.
  */
 public class TransactionApplierFacade extends TransactionApplier.Adapter

@@ -931,7 +931,7 @@ public class NeoStoreTransactionApplierTest
     private BatchTransactionApplier newIndexApplier()
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
-                indexUpdatesSync, nodeStore, propertyStore, new PropertyLoader( neoStores ),
+                indexUpdatesSync, nodeStore, new PropertyLoader( neoStores ),
                 new PropertyPhysicalToLogicalConverter( propertyStore ), INTERNAL );
     }
 }

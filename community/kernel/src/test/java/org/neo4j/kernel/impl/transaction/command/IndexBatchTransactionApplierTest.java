@@ -61,8 +61,8 @@ public class IndexBatchTransactionApplierTest
         TransactionToApply tx = mock( TransactionToApply.class );
         PropertyStore propertyStore = mock( PropertyStore.class );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexing, labelScanSync,
-                indexUpdatesSync, mock( NodeStore.class ), propertyStore,
-                mock( PropertyLoader.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
+                indexUpdatesSync, mock( NodeStore.class ), mock( PropertyLoader.class ),
+                new PropertyPhysicalToLogicalConverter( propertyStore ),
                 TransactionApplicationMode.INTERNAL ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( tx ) )
