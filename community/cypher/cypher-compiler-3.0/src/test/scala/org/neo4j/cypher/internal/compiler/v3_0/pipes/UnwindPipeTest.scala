@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
-import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Variable
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class UnwindPipeTest extends CypherFunSuite {
 

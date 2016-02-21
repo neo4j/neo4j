@@ -162,4 +162,11 @@ class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSu
     result.toList should equal(List(Map("p.name" -> "name1", "p.login" -> "login1"),
                                     Map("p.name" -> "name2", "p.login" -> "login2")))
   }
+
+  test("should unwind a long range without going OOM") {
+    val expectedResult = 20000000
+    val result = executeScalarWithAllPlanners[Long](s"unwind range(1,$expectedResult) as i return count(*) as c")
+    result should equal(expectedResult)
+  }
+
 }
