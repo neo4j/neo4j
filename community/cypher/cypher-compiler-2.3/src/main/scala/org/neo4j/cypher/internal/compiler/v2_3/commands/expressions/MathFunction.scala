@@ -242,15 +242,29 @@ case class RandFunction() extends Expression {
 
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    val startVal = asLong(start(ctx))
-    val inclusiveEndVal = asLong(end(ctx))
     val stepVal = asLong(step(ctx))
-
     if (stepVal == 0L)
       throw new InvalidArgumentException("step argument to range() cannot be zero")
 
-    val exclusiveEndVal = inclusiveEndVal + stepVal.signum
-    (startVal until exclusiveEndVal by stepVal).toIterable
+    val startVal = asLong(start(ctx))
+    val inclusiveEndVal = asLong(end(ctx))
+    val check: (Long, Long) => Boolean = if (stepVal.signum > 0) _ <= _ else _ >= _
+
+    // due to the limitations of the scala collection library we need to implement iterator on long ranges manually:
+    // the scala one cannot be longer than MaxInt in length since it is an IndexedSeq which is indexed by Ints... :(
+    new Iterable[Long] {
+      override def iterator: Iterator[Long] = new Iterator[Long] {
+        private var current = startVal
+
+        override def hasNext: Boolean = check(current, inclusiveEndVal)
+
+        override def next(): Long = {
+          val c = current
+          current = current + stepVal
+          c
+        }
+      }
+    }
   }
 
   def arguments = Seq(start, end, step)

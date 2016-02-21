@@ -24,18 +24,15 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 
+import scala.annotation.tailrec
+
 case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)
                      (val estimatedCardinality: Option[Double] = None)(implicit monitor: PipeMonitor)
   extends PipeWithSource(source, monitor) with CollectionSupport with RonjaPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
-
-    input.flatMap {
-      context =>
-        val seq = makeTraversable(collection(context)(state))
-        seq.map(x => context.newWith1(identifier, x))
-    }
+    if (input.hasNext) new UnwindIterator(input, state) else Iterator.empty
   }
 
   def planDescriptionWithoutCardinality: InternalPlanDescription =
@@ -51,4 +48,36 @@ case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)
   }
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+
+  private class UnwindIterator(input: Iterator[ExecutionContext], state: QueryState) extends Iterator[ExecutionContext] {
+    private var context: ExecutionContext = null
+    private var unwindIterator: Iterator[Any] = null
+    private var nextItem: ExecutionContext = null
+
+    prefetch()
+
+    override def hasNext: Boolean = nextItem != null
+
+    override def next(): ExecutionContext = {
+      if (hasNext) {
+        val ret = nextItem
+        prefetch()
+        ret
+      } else Iterator.empty.next()
+    }
+
+    @tailrec
+    private def prefetch() {
+      nextItem = null
+      if (unwindIterator != null && unwindIterator.hasNext) {
+        nextItem = context.newWith1(identifier, unwindIterator.next())
+      } else {
+        if (input.hasNext) {
+          context = input.next()
+          unwindIterator = makeTraversable(collection(context)(state)).iterator
+          prefetch()
+        }
+      }
+    }
+  }
 }
