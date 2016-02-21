@@ -41,6 +41,10 @@ class RangeFunctionTest extends CypherFunSuite {
     range(2147483647L, 2147483648L, 1L).toSeq should be(Seq(2147483647L, 2147483648L))
   }
 
+  test("should work on ranges having length bigger than Int.MaxValue") {
+    range(1L, Int.MaxValue + 1000L, 1L).iterator // should not blow up...
+  }
+
   private def range(start: Long, end: Long, step: Long): Iterable[Long] = {
     val expr = RangeFunction(Literal(start), Literal(end), Literal(step))
     expr(ExecutionContext.empty)(QueryStateHelper.empty).asInstanceOf[Iterable[Long]]
