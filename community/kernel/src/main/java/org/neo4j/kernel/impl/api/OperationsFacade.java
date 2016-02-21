@@ -68,6 +68,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -82,7 +83,6 @@ import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -266,10 +266,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public boolean nodeExists( long nodeId )
     {
         statement.assertOpen();
-        try ( Cursor<NodeItem> cursor = nodeCursor( nodeId ) )
-        {
-            return cursor.next();
-        }
+        return dataRead().nodeExists( statement, nodeId );
     }
 
     @Override

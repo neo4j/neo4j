@@ -378,4 +378,6 @@ public interface StoreReadLayer
     DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target );
 
     DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target );
+
+    boolean nodeExists( long id );
 }

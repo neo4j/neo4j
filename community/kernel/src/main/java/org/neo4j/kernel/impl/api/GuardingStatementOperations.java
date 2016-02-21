@@ -416,4 +416,11 @@ public class GuardingStatementOperations implements
         guard.check();
         return entityReadDelegate.relationshipsGetCount( statement );
     }
+
+    @Override
+    public boolean nodeExists( KernelStatement statement, long id )
+    {
+        guard.check();
+        return entityReadDelegate.nodeExists( statement, id );
+    }
 }

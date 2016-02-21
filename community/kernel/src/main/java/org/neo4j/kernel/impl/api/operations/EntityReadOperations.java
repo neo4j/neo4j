@@ -188,4 +188,6 @@ public interface EntityReadOperations
     long nodesGetCount( KernelStatement statement );
 
     long relationshipsGetCount( KernelStatement statement );
+
+    boolean nodeExists( KernelStatement statement, long id );
 }

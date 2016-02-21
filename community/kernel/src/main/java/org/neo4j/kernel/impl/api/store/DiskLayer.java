@@ -614,4 +614,10 @@ public class DiskLayer implements StoreReadLayer
     {
         return counts.indexSample( index.getLabelId(), index.getPropertyKeyId(), target );
     }
+
+    @Override
+    public boolean nodeExists( long id )
+    {
+        return nodeStore.isInUse( id );
+    }
 }

@@ -436,4 +436,10 @@ public class CacheLayer implements StoreReadLayer
     {
         return diskLayer.indexSample( index, target );
     }
+
+    @Override
+    public boolean nodeExists( long id )
+    {
+        return diskLayer.nodeExists( id );
+    }
 }

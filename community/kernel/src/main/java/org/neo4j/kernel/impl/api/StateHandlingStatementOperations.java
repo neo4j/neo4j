@@ -1706,4 +1706,22 @@ public class StateHandlingStatementOperations implements
         }
         return labelIds;
     }
+
+    @Override
+    public boolean nodeExists( KernelStatement statement, long id )
+    {
+        if ( statement.hasTxStateWithChanges() )
+        {
+            TransactionState txState = statement.txState();
+            if ( txState.nodeIsDeletedInThisTx( id ) )
+            {
+                return false;
+            }
+            else if ( txState.nodeIsAddedInThisTx( id ) )
+            {
+                return true;
+            }
+        }
+        return storeLayer.nodeExists( id );
+    }
 }
