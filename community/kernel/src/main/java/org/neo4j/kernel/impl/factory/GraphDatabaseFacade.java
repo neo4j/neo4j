@@ -283,13 +283,16 @@ public class GraphDatabaseFacade
         }
         try ( Statement statement = spi.currentStatement() )
         {
-            if ( !statement.readOperations().relationshipExists( id ) )
+            try
             {
-                throw new NotFoundException( format( "Relationship %d not found", id ),
-                        new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
+                RelationshipProxy relationship = new RelationshipProxy( relActions, id );
+                statement.readOperations().relationshipVisit( id, relationship );
+                return relationship;
             }
-
-            return new RelationshipProxy( relActions, id );
+            catch ( EntityNotFoundException e )
+            {
+                throw new NotFoundException( format( "Relationship %d not found", id ), e );
+            }
         }
     }
 
