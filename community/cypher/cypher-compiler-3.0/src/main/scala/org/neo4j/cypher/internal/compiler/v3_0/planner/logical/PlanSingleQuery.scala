@@ -33,13 +33,18 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
                            planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanUpdates) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
 
   override def apply(in: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val partPlan = countStorePlanner(in).getOrElse(planPart(in, context, None))
-    val firstPlannerQuery = true
-    val planWithUpdates = planUpdates(in, partPlan, firstPlannerQuery)(context)
-    val projectedPlan = planEventHorizon(in, planWithUpdates)
-    val projectedContext = context.recurse(projectedPlan)
+    val (completePlan, ctx) = countStorePlanner(in) match {
+      case Some(plan) =>
+        (plan, context.recurse(plan))
+      case None =>
+        val partPlan = planPart(in, context, None)
+        val planWithUpdates = planUpdates(in, partPlan, true /*first QG*/)(context)
+        val projectedPlan = planEventHorizon(in, planWithUpdates)
+        val projectedContext = context.recurse(projectedPlan)
+        (projectedPlan, projectedContext)
+    }
 
-    val finalPlan = planWithTail(projectedPlan, in.tail)(projectedContext)
+    val finalPlan = planWithTail(completePlan, in.tail)(ctx)
     verifyBestPlan(finalPlan, in)
   }
 }
