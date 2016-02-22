@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext
 
@@ -40,10 +41,10 @@ object QueryStateHelper {
               params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator) =
     new QueryState(query = query, resources = resources, params = params, decorator = decorator, triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
 
-  def queryStateFrom(db: GraphDatabaseQueryService, tx: Transaction, params: Map[String, Any] = Map.empty): QueryState = {
+  def queryStateFrom(db: GraphDatabaseQueryService, tx: InternalTransaction, params: Map[String, Any] = Map.empty): QueryState = {
     val statement: Statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val searchMonitor = new KernelMonitors().newMonitor(classOf[IndexSearchMonitor])
-    val transactionalContext = new Neo4jTransactionContext(db, tx, true, statement)
+    val transactionalContext = new Neo4jTransactionContext(db, tx, statement)
     val queryContext = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
     newWith(db = db, query = queryContext, params = params)
   }

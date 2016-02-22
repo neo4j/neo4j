@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
@@ -34,11 +33,10 @@ import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureExce
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
 
-public class TopLevelTransaction implements Transaction
+public class TopLevelTransaction implements InternalTransaction
 {
     private final static PropertyContainerLocker locker = new PropertyContainerLocker();
     private boolean successCalled;
-    private boolean failureCalled;
     private final Supplier<Statement> stmt;
     private final KernelTransaction transaction;
 
@@ -51,7 +49,6 @@ public class TopLevelTransaction implements Transaction
     @Override
     public void failure()
     {
-        failureCalled = true;
         transaction.failure();
     }
 
@@ -127,8 +124,9 @@ public class TopLevelTransaction implements Transaction
         return transaction;
     }
 
-    boolean failureCalled()
+    @Override
+    public KernelTransaction.Type transactionType()
     {
-        return failureCalled;
+        return transaction.transactionType();
     }
 }

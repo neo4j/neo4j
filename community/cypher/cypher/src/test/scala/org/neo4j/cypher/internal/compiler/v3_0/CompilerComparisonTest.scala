@@ -40,6 +40,7 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QuerySt
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.xml.Elem
@@ -540,14 +541,14 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
   private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseQueryService): (List[Map[String, Any]], InternalExecutionResult) = {
     val (plan: ExecutionPlan, parameters) = db.withTx {
       tx =>
-        val transactionalContext = new Neo4jTransactionContext(db, tx, true, db.statement)
+        val transactionalContext = new Neo4jTransactionContext(db, tx, db.statement)
         val planContext = new TransactionBoundPlanContext(transactionalContext)
         compiler.planQuery(query, planContext, devNullLogger)
     }
 
     db.withTx {
       tx =>
-        val transactionalContext = new Neo4jTransactionContext(db, tx, true, db.statement)
+        val transactionalContext = new Neo4jTransactionContext(db, tx, db.statement)
         val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
         val result = plan.run(queryContext, ProfileMode, parameters)
         (result.toList, result)

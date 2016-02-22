@@ -35,7 +35,9 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -224,8 +226,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def runSimulation(graph: GraphDatabaseQueryService, pipes: Seq[Pipe]) = {
     val results = new ListBuffer[DataPoint]
     graph.withTx { tx =>
-
-      val transactionalContext = new Neo4jTransactionContext(graph, tx, true, graph.statement)
+      val transactionalContext = new Neo4jTransactionContext(graph, tx, graph.statement)
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val state = QueryStateHelper.emptyWith(queryContext)
       for (x <- 0 to 25) {
@@ -286,7 +287,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def indexSeek(graph: GraphDatabaseQueryService) = {
     graph.withTx { tx =>
-      val transactionalContext = new Neo4jTransactionContext(graph, tx, true, graph.statement)
+      val transactionalContext = new Neo4jTransactionContext(graph, tx, graph.statement)
       val ctx = new TransactionBoundPlanContext(transactionalContext)
       val literal = Literal(42)
 
@@ -303,8 +304,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
     def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val gds = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
-    def withTx[T](f: Transaction => T): T = {
-      val tx = graph.beginTx()
+    def withTx[T](f: InternalTransaction => T): T = {
+      val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
       try {
         val result = f(tx)
         tx.success()

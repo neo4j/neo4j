@@ -33,7 +33,6 @@ import org.neo4j.bolt.v1.runtime.integration.SessionMatchers;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.cypher.SyntaxException;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -57,7 +56,7 @@ public class StateMachineErrorTest
     private GraphDatabaseFacade db = mock( GraphDatabaseFacade.class );
     private ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
     private StatementRunner runner = mock( StatementRunner.class );
-    private Transaction tx = mock( TopLevelTransaction.class );
+    private TopLevelTransaction tx = mock( TopLevelTransaction.class );
 
     @Before
     public void setup()

@@ -22,22 +22,22 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
 import org.neo4j.graphdb.{Lock, PropertyContainer, Transaction}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.api.{KernelTransaction, ReadOperations, Statement}
 import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
 object TransactionContextFactory {
-  def open(graphDatabaseAPI: GraphDatabaseQueryService, txBridge: ThreadToStatementContextBridge): Neo4jTransactionContext = {
-    val isTopLevelTx = !txBridge.hasTransaction
-    val tx = graphDatabaseAPI.beginTx()
+  def open(graph: GraphDatabaseQueryService, txBridge: ThreadToStatementContextBridge): Neo4jTransactionContext = {
+    val tx = graph.beginTransaction(KernelTransaction.Type.`implicit`)
     val statement = txBridge.get()
-    Neo4jTransactionContext(graphDatabaseAPI, tx, isTopLevelTx, statement)
+    Neo4jTransactionContext(graph, tx, statement)
   }
 }
 
 // please construct this class through TransactionContextFactory, this is public only for tests
-case class Neo4jTransactionContext(val graph: GraphDatabaseQueryService, initialTx: Transaction, val isTopLevelTx: Boolean,
+case class Neo4jTransactionContext(val graph: GraphDatabaseQueryService, initialTx: InternalTransaction,
                                    initialStatement: Statement) extends ExtendedTransactionalContext {
   private var tx = initialTx
   private var open = true
@@ -69,7 +69,7 @@ case class Neo4jTransactionContext(val graph: GraphDatabaseQueryService, initial
     tx.success()
     tx.close()
 
-    tx = graph.beginTx()
+    tx = graph.beginTransaction(KernelTransaction.Type.`implicit`)
     _statement = txBridge.get()
   }
 
@@ -85,4 +85,6 @@ case class Neo4jTransactionContext(val graph: GraphDatabaseQueryService, initial
   override def stateView: TxStateHolder = statement.asInstanceOf[KernelStatement]
 
   override def acquireWriteLock(p: PropertyContainer): Lock = tx.acquireWriteLock(p)
+
+  override def isTopLevelTx: Boolean = tx.transactionType() == KernelTransaction.Type.`implicit`
 }

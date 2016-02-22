@@ -71,6 +71,7 @@ import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.coreapi.AutoIndexerFacade;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
 import org.neo4j.kernel.impl.coreapi.IndexProviderImpl;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
 import org.neo4j.kernel.impl.coreapi.ReadOnlyIndexFacade;
 import org.neo4j.kernel.impl.coreapi.ReadOnlyRelationshipIndexFacade;
@@ -322,7 +323,7 @@ public class GraphDatabaseFacade
         return beginTransaction( KernelTransaction.Type.explicit );
     }
 
-    public Transaction beginTransaction( KernelTransaction.Type type )
+    public InternalTransaction beginTransaction( KernelTransaction.Type type )
     {
         if ( spi.isInOpenTransaction() )
         {
