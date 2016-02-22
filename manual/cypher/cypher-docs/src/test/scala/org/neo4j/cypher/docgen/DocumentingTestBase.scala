@@ -482,7 +482,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     setupConstraintQueries.foreach(engine.execute)
   }
 
-  private def asNodeMap[T: Manifest](m: Map[String, T]): Map[Node, T] =
+  private def asNodeMap[T: ClassTag](m: Map[String, T]): Map[Node, T] =
     m map { case (k: String, v: T) => (node(k), v) }
 
   private def mapMapValue(v: Any): Any = v match {

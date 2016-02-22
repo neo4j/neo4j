@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSu
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.helpers.TxCounts
 
+import scala.reflect.ClassTag
+
 class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport with NewPlannerTestSupport {
 
   test("profile simple query") {
@@ -630,7 +632,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   def legacyProfile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(innerExecute(_,_:_*), q, params:_*)
 
-  private def getArgument[A <: Argument](plan: v3_0.planDescription.InternalPlanDescription)(implicit manifest: Manifest[A]): A = plan.arguments.collectFirst {
+  private def getArgument[A <: Argument](plan: v3_0.planDescription.InternalPlanDescription)(implicit manifest: ClassTag[A]): A = plan.arguments.collectFirst {
     case x: A => x
   }.getOrElse(fail(s"Failed to find plan description argument where expected. Wanted ${manifest.toString()} but only found ${plan.arguments}"))
 

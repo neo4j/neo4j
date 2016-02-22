@@ -87,7 +87,7 @@ object Foldable {
     def exists(f: PartialFunction[Any, Boolean]) =
       existsAcc(mutable.ArrayStack(that), f.lift)
 
-    def findByClass[A : Manifest]: A =
+    def findByClass[A : ClassTag]: A =
       findAcc[A](mutable.ArrayStack(that))
 
     def findByAllClass[A: ClassTag]: Seq[A] = {

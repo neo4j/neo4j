@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Exists
 import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, ast, topDown}
 
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 /*
 Prepares expressions containing pattern expressions by solving them in a sub-query through RollUpApply and replacing
@@ -145,7 +146,7 @@ case class CollectionSubQueryExpressionSolver[T <: Expression](namer: T => (T, M
                                                                createPlannerContext: (LogicalPlanningContext, Map[PatternElement, Variable]) => LogicalPlanningContext,
                                                                projectionCreator: T => Expression,
                                                                lastDitch: Rewriter,
-                                                               pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)(implicit m: Manifest[T]) {
+                                                               pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)(implicit m: ClassTag[T]) {
   def solveUsingRollUpApply(source: LogicalPlan, expr: T, maybeKey: Option[String])
                            (implicit context: LogicalPlanningContext): (LogicalPlan, Expression) = {
 
