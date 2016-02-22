@@ -38,8 +38,10 @@ import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
+import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
+import org.neo4j.coreedge.raft.log.PhysicalRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
@@ -118,6 +120,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -144,6 +147,25 @@ public class EnterpriseCoreEditionModule
     public RaftInstance<CoreMember> raft()
     {
         return raft;
+    }
+
+    public enum RaftLogImplementation
+    {
+        NAIVE,
+        IN_MEMORY,
+        PHYSICAL;
+
+        public static RaftLogImplementation fromString( String value )
+        {
+            try
+            {
+                return RaftLogImplementation.valueOf( value );
+            }
+            catch ( IllegalArgumentException ex )
+            {
+                return NAIVE;
+            }
+        }
     }
 
     public EnterpriseCoreEditionModule( final PlatformModule platformModule,
@@ -189,9 +211,11 @@ public class EnterpriseCoreEditionModule
         final DelayedRenewableTimeoutService raftTimeoutService =
                 new DelayedRenewableTimeoutService( SYSTEM_CLOCK, logProvider );
 
-        MonitoredRaftLog monitoredRaftLog = new MonitoredRaftLog( life.add( new NaiveDurableRaftLog( fileSystem,
-                new File( clusterStateDirectory, NaiveDurableRaftLog.DIRECTORY_NAME ),
-                marshal, logProvider ) ), platformModule.monitors );
+
+        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider,
+                databaseHealthSupplier );
+
+        MonitoredRaftLog monitoredRaftLog = new MonitoredRaftLog( underlyingLog , platformModule.monitors );
 
         StateMachines stateMachines = new StateMachines();
         LastAppliedTrackingStateMachine lastAppliedStateMachine = new LastAppliedTrackingStateMachine( stateMachines );
@@ -346,6 +370,34 @@ public class EnterpriseCoreEditionModule
                         relationshipTypeTokenHolder, propertyKeyTokenHolder, labelTokenHolder ),
                 tokenLife
         ) );
+    }
+
+    private RaftLog createRaftLog(
+            Config config, LifeSupport life, FileSystemAbstraction fileSystem, File clusterStateDirectory,
+            CoreReplicatedContentMarshal marshal, LogProvider logProvider,
+            Supplier<DatabaseHealth> databaseHealthSupplier )
+    {
+        RaftLogImplementation raftLogImplementation = RaftLogImplementation.fromString(
+                config.get( CoreEdgeClusterSettings.raft_log_implementation ) );
+        switch ( raftLogImplementation )
+        {
+            case IN_MEMORY:
+                return new InMemoryRaftLog();
+            case PHYSICAL:
+                long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
+                int entryCacheSize = config.get( CoreEdgeClusterSettings.raft_log_meta_data_cache_size );
+                return life.add( new PhysicalRaftLog(
+                        fileSystem,
+                        new File( clusterStateDirectory, PhysicalRaftLog.DIRECTORY_NAME ),
+                        rotateAtSize, entryCacheSize, new PhysicalLogFile.Monitor.Adapter(),
+                        marshal, databaseHealthSupplier, logProvider ) );
+            case NAIVE:
+            default:
+                return life.add( new NaiveDurableRaftLog(
+                        fileSystem,
+                        new File( clusterStateDirectory, NaiveDurableRaftLog.DIRECTORY_NAME ),
+                        marshal, logProvider ) );
+        }
     }
 
     public boolean isLeader()
