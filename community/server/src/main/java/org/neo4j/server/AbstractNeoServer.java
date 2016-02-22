@@ -75,7 +75,7 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.server.security.auth.AuthManager;
+import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
@@ -126,7 +126,7 @@ public abstract class AbstractNeoServer implements NeoServer
     protected CypherExecutor cypherExecutor;
     protected WebServer webServer;
 
-    protected Supplier<AuthManager> authManagerSupplier;
+    protected Supplier<BasicAuthManager> authManagerSupplier;
     protected KeyStoreInformation keyStoreInfo;
 
     private DatabaseActions databaseActions;
@@ -160,7 +160,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( config, dependencies)) );
 
-        this.authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
+        this.authManagerSupplier = dependencyResolver.provideDependency( BasicAuthManager.class );
         this.webServer = createWebServer();
 
         this.keyStoreInfo = createKeyStore();
@@ -541,17 +541,17 @@ public abstract class AbstractNeoServer implements NeoServer
         return singletons;
     }
 
-    private static class AuthManagerProvider extends InjectableProvider<AuthManager>
+    private static class AuthManagerProvider extends InjectableProvider<BasicAuthManager>
     {
-        private final Supplier<AuthManager> authManagerSupplier;
-        private AuthManagerProvider( Supplier<AuthManager> authManagerSupplier )
+        private final Supplier<BasicAuthManager> authManagerSupplier;
+        private AuthManagerProvider( Supplier<BasicAuthManager> authManagerSupplier )
         {
-            super(AuthManager.class);
+            super(BasicAuthManager.class);
             this.authManagerSupplier = authManagerSupplier;
         }
 
         @Override
-        public AuthManager getValue( HttpContext httpContext )
+        public BasicAuthManager getValue( HttpContext httpContext )
         {
             return authManagerSupplier.get();
         }

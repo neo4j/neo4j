@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.server.security.auth.AuthManager;
+import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.udc.UsageData;
 
 /**
@@ -102,7 +102,7 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
 
         if ( config.get( GraphDatabaseSettings.auth_enabled ) )
         {
-            return new BasicAuthentication( dependencyResolver.resolveDependency( AuthManager.class ), logging.getUserLogProvider() );
+            return new BasicAuthentication( dependencyResolver.resolveDependency( BasicAuthManager.class ), logging.getUserLogProvider() );
         }
         else
         {
