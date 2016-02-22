@@ -33,7 +33,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.shell.ShellSettings;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class BaseServerConfigLoader
@@ -96,6 +95,11 @@ public class BaseServerConfigLoader
         if( !params.containsKey( BoltKernelExtension.Settings.enabled.name() ))
         {
             params.put( BoltKernelExtension.Settings.enabled.name(), "true" );
+        }
+
+        if( !params.containsKey( GraphDatabaseSettings.auth_enabled.name() ))
+        {
+            params.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
         }
 
         config.applyChanges( params );

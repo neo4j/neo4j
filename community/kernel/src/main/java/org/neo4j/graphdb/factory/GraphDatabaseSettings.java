@@ -428,7 +428,7 @@ public abstract class GraphDatabaseSettings
             "10000" );
 
     @Description("Enable auth requirement to access Neo4j.")
-    public static final Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, "true" );
+    public static final Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, "false" );
 
     @Internal
     public static final Setting<File> auth_store = setting("dbms.security.auth_store.location", PATH, "data/dbms/auth");

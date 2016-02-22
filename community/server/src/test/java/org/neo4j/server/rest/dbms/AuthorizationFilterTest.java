@@ -35,8 +35,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.AuthenticationResult;
+import org.neo4j.server.security.auth.BasicAuthManager;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 import static org.hamcrest.Matchers.containsString;
@@ -52,7 +52,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class AuthorizationFilterTest
 {
-    private final AuthManager authManager = mock( AuthManager.class );
+    private final BasicAuthManager authManager = mock( BasicAuthManager.class );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     private final HttpServletRequest servletRequest = mock( HttpServletRequest.class );

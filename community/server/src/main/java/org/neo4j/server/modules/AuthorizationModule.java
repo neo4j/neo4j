@@ -26,18 +26,18 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.dbms.AuthorizationFilter;
-import org.neo4j.server.security.auth.AuthManager;
+import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.web.WebServer;
 
 public class AuthorizationModule implements ServerModule
 {
     private final WebServer webServer;
     private final Config config;
-    private final Supplier<AuthManager> authManagerSupplier;
+    private final Supplier<BasicAuthManager> authManagerSupplier;
     private final LogProvider logProvider;
     private final Pattern[] uriWhitelist;
 
-    public AuthorizationModule( WebServer webServer, Supplier<AuthManager> authManager, LogProvider logProvider, Config config, Pattern[] uriWhitelist )
+    public AuthorizationModule( WebServer webServer, Supplier<BasicAuthManager> authManager, LogProvider logProvider, Config config, Pattern[] uriWhitelist )
     {
         this.webServer = webServer;
         this.config = config;
