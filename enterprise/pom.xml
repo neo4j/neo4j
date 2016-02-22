@@ -39,7 +39,6 @@
     <module>metrics</module>
     <module>neo4j-enterprise</module>
     <module>server-enterprise</module>
-    <module>enterprise-performance-tests</module>
     <module>neo4j-harness-enterprise</module>
     <module>management</module>
   </modules>

@@ -47,7 +47,6 @@
     <windows-wrapper.filename>windows-service-wrapper-${windows-wrapper.version}.jar</windows-wrapper.filename>
 
     <!-- conf/neo4j.conf filter properties -->
-    <org.neo4j.database.location>data/databases/graph.db</org.neo4j.database.location>
     <org.neo4j.server.webserver.http.enabled>true</org.neo4j.server.webserver.http.enabled>
     <org.neo4j.webserver.port>7474</org.neo4j.webserver.port>
 

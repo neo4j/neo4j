@@ -62,7 +62,7 @@ public class LegacyIndexIT extends ExclusiveServerTestBase
                 .withProperty( "remote_shell_enabled", "false" )
                 .withProperty( "dbms.security.auth_enabled", "false" )
                 .withProperty( ServerSettings.maximum_response_header_size.name(), "5000" )
-                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
     }
 

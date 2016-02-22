@@ -74,7 +74,7 @@ public class CommunityVersionAndEditionServiceDocIT extends ExclusiveServerTestB
     {
         clock = new FakeClock();
         server = CommunityServerBuilder.server()
-                .usingDatabaseDir( staticFolder.getRoot().getAbsolutePath() )
+                .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
                 .withClock( clock )
                 .build();
 

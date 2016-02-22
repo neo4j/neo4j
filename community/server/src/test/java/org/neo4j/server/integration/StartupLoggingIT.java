@@ -53,7 +53,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
     @Before
     public void setUp() throws IOException
     {
-        FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( ServerSettings.legacy_db_location ) );
+        FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( ServerSettings.data_directory ) );
     }
 
     @Test

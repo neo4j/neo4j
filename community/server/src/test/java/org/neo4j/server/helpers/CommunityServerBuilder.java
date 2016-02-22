@@ -61,15 +61,15 @@ public class CommunityServerBuilder
     protected final LogProvider logProvider;
     private String portNo = "7474";
     private String maxThreads = null;
-    protected String dbDir = null;
+    protected String dataDir = null;
     private String webAdminUri = "/db/manage/";
     private String webAdminDataUri = "/db/data/";
     protected PreFlightTasks preflightTasks;
     private final HashMap<String, String> thirdPartyPackages = new HashMap<>();
     private final Properties arbitraryProperties = new Properties();
 
-    public static LifecycleManagingDatabase.GraphFactory IN_MEMORY_DB = ( config, dependencies ) -> {
-        File storeDir = config.get( ServerSettings.legacy_db_location );
+    public static LifecycleManagingDatabase.GraphFactory  IN_MEMORY_DB = ( config, dependencies ) -> {
+        File storeDir = config.get( ServerSettings.database_path );
         Map<String, String> params = config.getParams();
         params.put( CommunityFacadeFactory.Configuration.ephemeral.name(), "true" );
         return new ImpermanentGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(dependencies) );
@@ -95,7 +95,7 @@ public class CommunityServerBuilder
 
     public CommunityNeoServer build() throws IOException
     {
-        if ( dbDir == null && persistent )
+        if ( dataDir == null && persistent )
         {
             throw new IllegalStateException( "Must specify path" );
         }
@@ -138,9 +138,9 @@ public class CommunityServerBuilder
 
         ServerTestUtils.addDefaultRelativeProperties( properties, temporaryFolder );
 
-        if ( dbDir != null )
+        if ( dataDir != null )
         {
-            properties.put( ServerSettings.legacy_db_location.name(), dbDir );
+            properties.put( ServerSettings.data_directory.name(), dataDir );
         }
 
         if ( portNo != null )
@@ -230,9 +230,9 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder usingDatabaseDir( String dbDir )
+    public CommunityServerBuilder usingDataDir( String dataDir )
     {
-        this.dbDir = dbDir;
+        this.dataDir = dataDir;
         return this;
     }
 

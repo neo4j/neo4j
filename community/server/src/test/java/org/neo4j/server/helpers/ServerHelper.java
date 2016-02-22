@@ -36,7 +36,6 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.NeoServer;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 public class ServerHelper
 {
@@ -114,7 +113,7 @@ public class ServerHelper
             builder = builder.persistent();
         }
         NeoServer server = builder
-                .usingDatabaseDir( path != null ? path.getAbsolutePath() : null )
+                .usingDataDir( path != null ? path.getAbsolutePath() : null )
                 .build();
 
         checkServerCanStart( server.baseUri().getHost(), server.baseUri().getPort() );

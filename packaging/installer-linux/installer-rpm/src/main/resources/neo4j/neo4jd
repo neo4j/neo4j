@@ -22,7 +22,6 @@ while getopts “hp:” OPTION; do
 done
 
 [ -n "$PID_FILE" ] || die "$USAGE"
-mkdir -p $NEO4J_HOME/data/databases/graph.db
 
 cd $NEO4J_HOME
 

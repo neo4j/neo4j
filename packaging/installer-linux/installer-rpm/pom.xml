@@ -174,13 +174,6 @@
                             </mapping>
 
                             <mapping>
-                                <directory>/usr/share/neo4j/data</directory>
-                                <filemode>0755</filemode>
-                                <username>neo4j</username>
-                                <groupname>neo4j</groupname>
-                            </mapping>
-
-                            <mapping>
                                 <directory>/etc/sysconfig</directory>
                                 <sources>
                                     <source>

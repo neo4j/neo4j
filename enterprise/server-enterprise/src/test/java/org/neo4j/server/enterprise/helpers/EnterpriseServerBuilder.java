@@ -55,9 +55,9 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     }
 
     @Override
-    public EnterpriseServerBuilder usingDatabaseDir( String dbDir )
+    public EnterpriseServerBuilder usingDataDir( String dataDir )
     {
-        super.usingDatabaseDir( dbDir );
+        super.usingDataDir( dataDir );
         return this;
     }
 

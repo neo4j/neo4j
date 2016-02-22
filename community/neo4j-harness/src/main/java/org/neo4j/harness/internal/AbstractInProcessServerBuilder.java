@@ -19,8 +19,6 @@
  */
 package org.neo4j.harness.internal;
 
-import org.apache.commons.io.FileUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
+
+import org.apache.commons.io.FileUtils;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -67,8 +67,8 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
     public AbstractInProcessServerBuilder( File workingDir )
     {
-        File storeDir = new File( workingDir, randomFolderName() ).getAbsoluteFile();
-        init( storeDir );
+        File dataDir = new File( workingDir, randomFolderName() ).getAbsoluteFile();
+        init( dataDir );
     }
 
     private void init( File workingDir )
@@ -195,7 +195,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     private TestServerBuilder setDirectory( File dir )
     {
         this.serverFolder = dir;
-        config.put( ServerSettings.legacy_db_location.name(), serverFolder.getAbsolutePath() );
+        config.put( ServerSettings.data_directory.name(), serverFolder.getAbsolutePath() );
         return this;
     }
 

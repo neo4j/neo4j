@@ -54,9 +54,6 @@ Use 0.0.0.0 to use any network interface
 Disable the Neo4j authentication.  By default authentication is enabled
 This is only applicable to Neo4j 2.2 and above.
 
-.PARAMETER ClearExistingDatabase
-Delete the existing graph data files
-
 .PARAMETER DisableOnlineBackup
 Disable the online backup service
 This only applicable to Enterprise Neo4j Servers and will raise an error on Community servers
@@ -129,9 +126,6 @@ Function Initialize-Neo4jServer
     [switch]$DisableAuthentication
     
     ,[Parameter(Mandatory=$false)]
-    [switch]$ClearExistingDatabase
-    
-    ,[Parameter(Mandatory=$false)]
     [switch]$DisableOnlineBackup
 
     ,[Parameter(Mandatory=$false)]
@@ -185,13 +179,6 @@ Function Initialize-Neo4jServer
 "@ | ConvertFrom-CSV | `
       ForEach-Object -Process { $_.Neo4jHome = $thisServer.Home; if ($_.Value -ne '') { Write-Output $_} } | `
       Set-Neo4jSetting
-
-    if ($ClearExistingDatabase)
-    {
-      $dbSetting = ($thisServer | Get-Neo4jSetting | ? { (($_.ConfigurationFile -eq 'neo4j.conf') -and ($_.Name -eq 'org.neo4j.server.database.location')) })
-      $dbPath = Join-Path -Path $thisServer.Home -ChildPath $dbSetting.Value
-      if (Test-Path -Path $dbPath) { Remove-Item -Path $dbPath -Recurse -Force }
-    }
 
     if ($PassThru) { Write-Output $thisServer } else { Write-Output $settings }
   }

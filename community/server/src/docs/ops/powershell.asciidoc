@@ -192,7 +192,6 @@ Start-Neo4jServer -Console
 Initialize-Neo4jServer `
  -ListenOnIPAddress 127.0.0.1 `
  -HTTPPort 7475 `
- -ClearExistingDatabase `
  -OnlineBackupServer '127.0.0.1:6363' `
  -PassThru |
 Initialize-Neo4jHACluster `
@@ -208,7 +207,6 @@ Start-Neo4jServer -Console
 Initialize-Neo4jServer `
  -ListenOnIPAddress 127.0.0.1 `
  -HTTPPort 7476 `
- -ClearExistingDatabase `
  -OnlineBackupServer '127.0.0.1:6364' `
  -PassThru |
 Initialize-Neo4jHACluster `

@@ -19,11 +19,6 @@
  */
 package org.neo4j.harness;
 
-import org.apache.commons.io.FileUtils;
-import org.codehaus.jackson.JsonNode;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -41,6 +36,11 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.apache.commons.io.FileUtils;
+import org.codehaus.jackson.JsonNode;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -51,6 +51,7 @@ import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -66,7 +67,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class InProcessBuilderTest
 {
@@ -172,12 +175,12 @@ public class InProcessBuilderTest
     {
         // When
         // create graph db with one node upfront
-        Path dir = Files.createTempDirectory( getClass().getSimpleName() +
-                "_shouldRunBuilderOnExistingStorageDir" );
+        Path dir = Files.createTempDirectory( getClass().getSimpleName() + "_shouldRunBuilderOnExistingStorageDir" );
+        File storeDir = new Config( stringMap( ServerSettings.data_directory.name(), dir.toString() ) )
+                .get( ServerSettings.database_path );
         try
         {
-
-            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.toString() );
+            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
             try
             {
                 db.execute( "create ()" );
@@ -204,7 +207,7 @@ public class InProcessBuilderTest
             }
 
             // Then: we still only have one node since the server is supposed to work on a copy
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.toString() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
             try
             {
                 try ( Transaction tx = db.beginTx() )

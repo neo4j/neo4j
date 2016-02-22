@@ -61,7 +61,7 @@ public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIDocIT extends Exc
     public static void allocateServer() throws IOException
     {
         server = CommunityServerBuilder.server()
-                .usingDatabaseDir( staticFolder.getRoot().getAbsolutePath() )
+                .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
                 .withAutoIndexingEnabledForNodes( "foo", "bar" )
                 .build();
         server.start();

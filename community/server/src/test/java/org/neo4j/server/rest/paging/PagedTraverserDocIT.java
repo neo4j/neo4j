@@ -88,7 +88,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     {
         clock = new FakeClock();
         server = CommunityServerBuilder.server()
-                .usingDatabaseDir( staticFolder.getRoot().getAbsolutePath() )
+                .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
                 .withClock( clock )
                 .build();
 

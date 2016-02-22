@@ -30,9 +30,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.function.Functions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
@@ -149,24 +149,55 @@ public class Settings
             defaultLookup = inheritedDefault( defaultLookup, inheritedSetting );
         }
 
-        return new DefaultSetting<T>( name, parser, valueLookup, defaultLookup, valueConverters );
+        return new DefaultSetting<>( name, parser, valueLookup, defaultLookup, valueConverters );
+    }
+
+    public static <OUT, IN1, IN2> Setting<OUT> derivedSetting( String name,
+                                                               Setting<IN1> in1, Setting<IN2> in2,
+                                                               BiFunction<IN1, IN2, OUT> derivation,
+                                                               Function<String, OUT> overrideConverter)
+    {
+        return new Setting<OUT>()
+        {
+            @Override
+            public String name()
+            {
+                return name;
+            }
+
+            @Override
+            public String getDefaultValue()
+            {
+                return NO_DEFAULT;
+            }
+
+            @Override
+            public OUT apply( Function<String, String> config )
+            {
+                String override = config.apply( name );
+                if ( override != null )
+                {
+                    // Derived settings are intended not to be overridden and we should throw an exception here. However
+                    // we temporarily need to allow the Desktop app to override the value of the derived setting
+                    // dbms.internal.derived.directories.database because we are not yet in a position to rework it to
+                    // conform to the standard directory structure layout.
+                    return overrideConverter.apply( override );
+                }
+                return derivation.apply( in1.apply( config ), in2.apply( config ) );
+            }
+        };
     }
 
     private static <T> Function<Function<String, String>, String> inheritedValue( final Function<Function<String,
             String>, String> lookup, final Setting<T> inheritedSetting )
     {
-        return new Function<Function<String, String>, String>()
-        {
-            @Override
-            public String apply( Function<String, String> settings )
+        return settings -> {
+            String value = lookup.apply( settings );
+            if ( value == null )
             {
-                String value = lookup.apply( settings );
-                if ( value == null )
-                {
-                    value = ((SettingHelper<T>) inheritedSetting).lookup( settings );
-                }
-                return value;
+                value = ((SettingHelper<T>) inheritedSetting).lookup( settings );
             }
+            return value;
         };
     }
 
@@ -318,7 +349,7 @@ public class Settings
         public List<String> apply( String value )
         {
             String[] list = value.split( SEPARATOR );
-            List<String> result = new ArrayList();
+            List<String> result = new ArrayList<>();
             for( String item : list)
             {
                 item = item.trim();
@@ -500,7 +531,7 @@ public class Settings
 
     public static <T> Function<String, T> options( T... optionValues )
     {
-        return Settings.<T>options( Iterables.<T,T>iterable( optionValues ) );
+        return Settings.options( Iterables.iterable( optionValues ) );
     }
 
     public static <T> Function<String, T> options( final Iterable<T> optionValues )
@@ -544,7 +575,7 @@ public class Settings
             @Override
             public List<T> apply( String value )
             {
-                List<T> list = new ArrayList<T>();
+                List<T> list = new ArrayList<>();
                 if ( value.length() > 0 )
                 {
                     String[] parts = value.split( separator );

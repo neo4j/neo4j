@@ -60,7 +60,7 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
     public void startServer() throws NoSuchAlgorithmException, KeyManagementException, IOException
     {
         server = server().withHttpsEnabled()
-                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         httpsUri = server.httpsUri().toASCIIString();
 

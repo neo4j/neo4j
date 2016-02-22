@@ -58,39 +58,8 @@ InModuleScope Neo4j-Management {
       }
     }
     
-    Context "Uses default values" {
-      Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
-      Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
-      } -ParameterFilter {
-        $Name -eq 'org.neo4j.server.database.location'
-      }
-
-      Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
-      Mock Start-Process { }
-
-      Mock Start-Process -Verifiable { return @{ 'ExitCode' = 1} } -ParameterFilter { 
-        ($ArgumentList -join ' ').Contains('--into TestDrive:\FakeDir\graph\db')
-      }
-      $result = Start-Neo4jImport
-
-      It "uses default values if nothing specified" {
-        Assert-VerifiableMocks
-      }
-
-      It "returns the process exit code" {
-        $result | Should Be 1
-      }
-    }
-
     Context "Uses specified graph directory" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
-      Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
-      } -ParameterFilter {
-        $Name -eq 'org.neo4j.server.database.location'
-      }
-      
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }
 
@@ -99,26 +68,20 @@ InModuleScope Neo4j-Management {
       }
       Start-Neo4jImport --into 'TestDrive:\FakeDir\graph\db'
 
-      It "uses --into if specified" {
+      It "uses --into as specified" {
         Assert-VerifiableMocks
       }
     }
     
     Context "Appends other commands" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
-      Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='org.neo4j.server.database.location'; 'Value'='fakedir\throwerror' })
-      } -ParameterFilter {
-        $Name -eq 'org.neo4j.server.database.location'
-      }
-      
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }
 
       Mock Start-Process -Verifiable { 1 } -ParameterFilter { 
         ($ArgumentList -join ' ').Contains('-someparameter somevalue')
       }
-      Start-Neo4jImport -someparameter somevalue
+      Start-Neo4jImport --into 'TestDrive:\FakeDir\graph\db' -someparameter somevalue
 
       It "appends additional commands" {
         Assert-VerifiableMocks
@@ -127,17 +90,12 @@ InModuleScope Neo4j-Management {
 
     Context "Starts a new process by default" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
-      Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
-      } -ParameterFilter {
-        $Name -eq 'org.neo4j.server.database.location'
-      }
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }
 
       Mock Start-Process -Verifiable -ParameterFilter { (-not $Wait) -and (-not $NoNewWindow) }
       
-      Start-Neo4jImport
+      Start-Neo4jImport --into 'TestDrive:\FakeDir\graph\db'
 
       It "starts a new process by default" {
         Assert-VerifiableMocks
@@ -146,16 +104,11 @@ InModuleScope Neo4j-Management {
 
     Context "Starts shell in same process if specified" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
-      Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
-      } -ParameterFilter {
-        $Name -eq 'org.neo4j.server.database.location'
-      }
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }
 
       Mock Start-Process -Verifiable -ParameterFilter { $Wait -and $NoNewWindow }
-      Start-Neo4jImport -Wait
+      Start-Neo4jImport -Wait --into 'TestDrive:\FakeDir\graph\db'
 
       It "starts shell in same process if specified" {
         Assert-VerifiableMocks
@@ -164,15 +117,10 @@ InModuleScope Neo4j-Management {
 
     Context "Returns the Neo4jServer Object if -PassThru" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
-      Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='org.neo4j.server.database.location'; 'Value'='graph\db' })
-      } -ParameterFilter {
-        $Name -eq 'org.neo4j.server.database.location'
-      }
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }
       
-      $result = Start-Neo4jImport -PassThru
+      $result = Start-Neo4jImport -PassThru --into 'TestDrive:\FakeDir\graph\db'
 
       It "returns the Neo4jServer Object if -PassThru" {
         $result.GetType().ToString() | Should Be 'System.Management.Automation.PSCustomObject'

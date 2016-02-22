@@ -56,7 +56,7 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 public class CommunityNeoServer extends AbstractNeoServer
 {
     public static final GraphFactory COMMUNITY_FACTORY = ( config, dependencies ) -> {
-        File storeDir = config.get( ServerSettings.legacy_db_location );
+        File storeDir = config.get( ServerSettings.database_path );
         return new CommunityFacadeFactory().newFacade( storeDir, config.getParams(), dependencies );
     };
 

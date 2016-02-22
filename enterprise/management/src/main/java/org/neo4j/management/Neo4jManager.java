@@ -86,7 +86,7 @@ public final class Neo4jManager extends KernelProxy implements Kernel
     private static MBeanServerConnection connect( JMXServiceURL url, String username,
                                                   String password )
     {
-        Map<String, Object> environment = new HashMap<String, Object>();
+        Map<String, Object> environment = new HashMap<>();
         if ( username != null && password != null )
         {
             environment.put( JMXConnector.CREDENTIALS, new String[]{username, password} );
@@ -312,7 +312,7 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         {
             throw new IllegalStateException( "Could not access the configuration bean", e );
         }
-        Map<String, Object> configuration = new HashMap<String, Object>();
+        Map<String, Object> configuration = new HashMap<>();
         for ( int i = 0; i < keys.length; i++ )
         {
             configuration.put( keys[i], attributes.get( i ) );
@@ -362,6 +362,12 @@ public final class Neo4jManager extends KernelProxy implements Kernel
     public Date getStoreCreationDate()
     {
         return proxy.getStoreCreationDate();
+    }
+
+    @Override
+    public String getDatabaseName()
+    {
+        return proxy.getDatabaseName();
     }
 
     @Override

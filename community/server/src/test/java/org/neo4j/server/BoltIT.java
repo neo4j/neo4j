@@ -54,7 +54,7 @@ public class BoltIT extends ExclusiveServerTestBase
         server = server()
                 .withProperty( connector( 0, ServerSettings.bolt_enabled ).name(), "true" )
                 .withProperty( connector( 0, ServerSettings.bolt_tls_level ).name(), "REQUIRED" )
-                .usingDatabaseDir( tmpDir.getRoot().getAbsolutePath() )
+                .usingDataDir( tmpDir.getRoot().getAbsolutePath() )
                 .build();
         server.start();
 
@@ -70,7 +70,7 @@ public class BoltIT extends ExclusiveServerTestBase
                 .withProperty( connector( 0, ServerSettings.bolt_enabled ).name(), "true" )
                 .withProperty( connector( 0, ServerSettings.bolt_tls_level ).name(), "REQUIRED" )
                 .withProperty( connector( 0, ServerSettings.bolt_socket_address ).name(), "localhost:8776" )
-                .usingDatabaseDir( tmpDir.getRoot().getAbsolutePath() )
+                .usingDataDir( tmpDir.getRoot().getAbsolutePath() )
                 .build();
         server.start();
 

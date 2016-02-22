@@ -62,7 +62,7 @@ public class DesktopConfigurator
                 pair( tls_certificate_file.name(), new File( dbDir, "./dbms/ssl/snakeoil.cert" ).getAbsolutePath() ),
                 pair( tls_key_file.name(), new File( dbDir, "./dbms/ssl/snakeoil.key" ).getAbsolutePath() ),
 
-                pair( ServerSettings.legacy_db_location.name(), dbDir.getAbsolutePath() ) );
+                pair( ServerSettings.database_path.name(), dbDir.getAbsolutePath() ) );
     }
 
     public Config configuration()

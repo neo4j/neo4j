@@ -58,7 +58,7 @@ public class ConfigFileBuilder
     {
         File file = new File( directory, "config" );
         Map<String, String> config = MapUtil.stringMap(
-                ServerSettings.legacy_db_location.name(), directory.getAbsolutePath(),
+                ServerSettings.data_directory.name(), directory.getAbsolutePath()+"/data",
                 ServerSettings.management_api_path.name(), "http://localhost:7474/db/manage/",
                 ServerSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
         config.put( ServerSettings.webserver_port.name(), "7474" );
