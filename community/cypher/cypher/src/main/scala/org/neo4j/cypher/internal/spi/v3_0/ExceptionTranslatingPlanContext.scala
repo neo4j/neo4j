@@ -61,6 +61,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] =
     translateException(inner.getUniquenessConstraint(labelName, propertyKey))
 
+  override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean =
+    translateException(inner.hasPropertyExistenceConstraint(labelName, propertyKey))
+
   override def checkRelIndex(idxName: String): Unit =
     translateException(inner.checkRelIndex(idxName))
 

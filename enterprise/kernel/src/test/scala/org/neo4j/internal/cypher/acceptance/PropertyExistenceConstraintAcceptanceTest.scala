@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 import org.neo4j.kernel.api.exceptions.Status
 
 class PropertyExistenceConstraintAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
-with CollectionSupport with EnterpriseGraphDatabaseTestSupport{
+  with CollectionSupport with EnterpriseGraphDatabaseTestSupport {
 
   test("node: should enforce constraints on creation") {
     // GIVEN
@@ -191,6 +191,20 @@ with CollectionSupport with EnterpriseGraphDatabaseTestSupport{
 
     // THEN
     numberOfRelationships shouldBe 1
+  }
+
+  test("should not use countStore short cut when no constraint exist") {
+    val plan = execute("MATCH (n:X) RETURN count(n.foo)")
+
+    plan shouldNot use("NodeCountFromCountStore")
+  }
+
+  test("should use countStore short cut when constraint exist") {
+    execute("CREATE CONSTRAINT ON (n:X) ASSERT EXISTS(n.foo)")
+
+    val result = execute("MATCH (n:X) RETURN count(n.foo)")
+
+    result should use("NodeCountFromCountStore")
   }
 
   private def numberOfNodes = executeScalar[Long]("match (n) return count(n)")

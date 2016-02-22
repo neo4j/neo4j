@@ -39,6 +39,19 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
     })
   }
 
+  test("counts nodes using count store with count(*)") {
+    // Given
+    withModel(
+
+      // When
+      query = "MATCH (n) RETURN count(*)", f = { result =>
+
+        // Then
+        result.columnAs("count(*)").toSet[Int] should equal(Set(2))
+
+    })
+  }
+
   test("counts labeled nodes using count store") {
     // Given
     withModel(label1 = "Admin",
@@ -91,6 +104,19 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       })
   }
 
+  test("counts relationships with unspecified type using count store with count(*)") {
+    // Given
+    withRelationshipsModel(
+
+      // When
+      query = "MATCH ()-->() RETURN count(*)", f = { result =>
+
+        // Then
+        result.columnAs("count(*)").toSet[Int] should equal(Set(1))
+
+      })
+  }
+
   test("counts relationships with type using count store") {
     // Given
     withRelationshipsModel(
@@ -100,6 +126,19 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
 
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
+
+      })
+  }
+
+  test("counts relationships with type using count store with count(*)") {
+    // Given
+    withRelationshipsModel(
+
+      // When
+      query = "MATCH ()-[r:KNOWS]->() RETURN count(*)", f = { result =>
+
+        // Then
+        result.columnAs("count(*)").toSet[Int] should equal(Set(1))
 
       })
   }

@@ -244,7 +244,6 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     )
   }
 
-
   private def assertNodeConstraintDoesNotExist(labelName: String, propName: String) {
     assert(getNodeConstraintIterator(labelName, propName).isEmpty, "Expected constraint iterator to be empty")
   }
