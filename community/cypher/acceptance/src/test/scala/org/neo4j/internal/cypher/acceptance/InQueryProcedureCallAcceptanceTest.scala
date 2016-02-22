@@ -94,21 +94,16 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
     result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
   }
 
-  ignore("should be able to shadow already bound identifiers from a built-in-procedure") {
+  test("should fail to shadow already bound identifier from a built-in-procedure") {
     // Given
     createLabeledNode("A")
     createLabeledNode("B")
     createLabeledNode("C")
 
     //When
-    val result = execute("CALL sys.db.labels YIELD label RETURN *")
-
-    // Then
-    result.toList should equal(
-      List(
-        Map("label" -> "A"),
-        Map("label" -> "B"),
-        Map("label" -> "C")))
+    a [SyntaxException] shouldBe thrownBy(
+      execute("WITH 'Hi' AS label CALL db.labels YIELD label RETURN *")
+    )
   }
 
   test("should fail if input type is wrong") {
@@ -136,20 +131,20 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
     execute("CALL my.first.proc(NULL) YIELD out0 AS x RETURN *").toList should equal(List(Map("x" -> null)))
   }
 
-  test("should fail a procedure declares an integer but gets a float ") {
+  test("should not fail if a procedure declares a float but gets an integer") {
     // Given
-    register(Neo4jTypes.NTInteger)
+    register(Neo4jTypes.NTFloat)
 
     // Then
-    a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc(42.0) YIELD x RETURN *"))
+    a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc(42) YIELD out0 RETURN *")))
   }
 
-  test("should fail if explicit argument is missing") {
+  test("should not fail if a procedure declares a float but gets called with an integer") {
     // Given
-    register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    register(Neo4jTypes.NTFloat)
 
     // Then
-    an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten') YIELD x, y RETURN *"))
+    a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc({param}) YIELD out0 RETURN *", "param" -> 42)))
   }
 
   test("should fail if too many arguments") {

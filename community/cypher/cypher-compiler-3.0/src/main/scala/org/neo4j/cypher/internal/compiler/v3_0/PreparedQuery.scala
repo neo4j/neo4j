@@ -46,7 +46,7 @@ case class PreparedQuerySyntax(statement: Statement,
                                offset: Option[InputPosition],
                                extractedParams: Map[String, Any])(val notificationLogger: InternalNotificationLogger,
                                                                   val plannerName: String = "",
-                                                                  val conditions: Set[RewriterCondition])
+                                                                  val conditions: Set[RewriterCondition] = Set.empty)
 
   extends PreparedQuery {
 

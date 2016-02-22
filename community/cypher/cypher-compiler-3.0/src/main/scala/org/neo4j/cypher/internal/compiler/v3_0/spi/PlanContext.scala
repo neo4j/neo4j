@@ -21,12 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_0.spi
 
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{ExpanderStep, TraversalMatcher}
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{QualifiedProcedureName, ProcedureSignature}
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureSignature, QualifiedProcedureName}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
-
-import scala.util.Try
 
 /**
  * PlanContext is an internal access layer to the graph that is solely used during plan building
@@ -35,7 +33,7 @@ import scala.util.Try
  * want to control what operations can be executed at runtime.  For example, we do not give access
  * to index rule lookup in QueryContext as that should happen at query compile time.
  */
-trait PlanContext extends TokenContext with ProcedureSignatureResolver {
+trait PlanContext extends TokenContext {
 
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
 
@@ -63,8 +61,6 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   def bidirectionalTraversalMatcher(steps: ExpanderStep,
                                     start: EntityProducer[Node],
                                     end: EntityProducer[Node]): TraversalMatcher
-}
 
-trait ProcedureSignatureResolver {
   def procedureSignature(name: QualifiedProcedureName): ProcedureSignature
 }

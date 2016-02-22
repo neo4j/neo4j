@@ -357,7 +357,8 @@ case class ResolvedCall(signature: ProcedureSignature,
     val argumentCheck = {
       if (expectedNumArgs == actualNumArgs) {
         signature.inputSignature.zip(callArguments).map {
-          case (field, arg) => arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
+          case (field, arg) =>
+            arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
         }.foldLeft(success)(_ chain _)
       } else {
         error(_: SemanticState, SemanticError(s"Procedure call does not provide the required number of arguments ($expectedNumArgs) ", position))

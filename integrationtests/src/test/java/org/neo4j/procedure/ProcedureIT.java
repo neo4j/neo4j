@@ -46,7 +46,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.lang.System.lineSeparator;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -94,7 +93,8 @@ public class ProcedureIT
         // When
         try ( Transaction ignore = db.beginTx() )
         {
-                db.execute( "CALL org.neo4j.procedure.simpleArgument('42')");
+            //Make sure argument here is not auto parameterized away as that will drop all type information on the floor
+            db.execute( "CALL org.neo4j.procedure.simpleArgument(toString({x}))");
         }
     }
 

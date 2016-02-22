@@ -35,7 +35,14 @@ object literalReplacement {
   }
 
   private val literalMatcher: PartialFunction[Any, LiteralReplacements => (LiteralReplacements, Option[LiteralReplacements => LiteralReplacements])] = {
-    case _: ast.Match | _: ast.Create | _: ast.CreateUnique | _: ast.Merge | _: ast.SetClause | _: ast.Return | _: ast.With =>
+    case _: ast.Match |
+         _: ast.Create |
+         _: ast.CreateUnique |
+         _: ast.Merge |
+         _: ast.SetClause |
+         _: ast.Return |
+         _: ast.With |
+         _: ast.CallClause =>
       acc => (acc, Some(identity))
     case _: ast.Clause | _: ast.PeriodicCommitHint | _: ast.Limit =>
       acc => (acc, None)
