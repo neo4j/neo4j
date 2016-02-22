@@ -940,66 +940,33 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     public RECORD getRecord( long id, RECORD record, RecordLoad mode )
     {
         long pageId = pageIdForRecord( id );
+        int offset = offsetForId( id );
         try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
-            return getRecord( id, record, mode, cursor, pageId );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    protected RECORD getRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor, long pageId )
-    {
-        int offset = offsetForId( id );
-        try
-        {
+            // Mark the record with this id regardless of whether or not we load the contents of it.
+            // This is done in this method since there are multiple call sites and they all want the id
+            // on that record, so it's to ensure it isn't forgotten.
+            record.setId( id );
             if ( cursor.next( pageId ) )
             {
                 // There is a page in the store that covers this record, go read it
-                readRecordWithRetry( cursor, id, record, mode, offset );
+                do
+                {
+                    prepareForReading( cursor, offset, record );
+                    readRecord( cursor, record, mode );
+                }
+                while ( cursor.shouldRetry() );
+                verifyAfterReading( record, mode );
             }
             else
             {
-                // There was no page in the store covering this record. We mark the record with
-                // the correct id because often the caller depends on the id to be correct regardless
-                // of whether the record is in use or not. Clear the rest of the data.
-                record.setId( id );
-                record.clear();
-                mode.verify( record );
+                verifyAfterNotRead( record, mode );;
             }
             return record;
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-    }
-
-    protected void readRecordWithRetry( PageCursor cursor, long id, RECORD record, RecordLoad mode, int offset )
-            throws IOException
-    {
-        // Mark the record with this id regardless of whether or not we load the contents of it.
-        // This is done in this method since there are multiple call sites and they all want the id
-        // on that record, so it's to ensure it isn't forgotten.
-        record.setId( id );
-
-        do
-        {
-            // Mark this record as unused. This to simplify implementations of readRecord.
-            // readRecord can behave differently depending on RecordLoad argument and so it may be that
-            // contents of a record may be loaded even if that record is unused, where the contents
-            // can still be initialized data. Know that for many record stores, deleting a record means
-            // just setting one byte or bit in that record.
-            record.setInUse( false );
-            cursor.setOffset( offset );
-            readRecord( cursor, record, mode );
-        }
-        while ( cursor.shouldRetry() );
-        if ( !mode.verify( record ) )
-        {
-            record.clear();
         }
     }
 
@@ -1055,29 +1022,16 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
      */
     public void scanAllRecords( Visitor<RECORD,IOException> visitor ) throws IOException
     {
-        long startPageId = pageIdForRecord( 0 );
-        long currentPageId = startPageId;
-        long endPageId = pageIdForRecord( getHighestPossibleIdInUse() );
-        long currentRecordId = 0;
-        RECORD record = newRecord();
-        int recordsPerPage = storeFile.pageSize() / getRecordSize();
-
-        try ( PageCursor cursor = storeFile.io( startPageId, PF_SHARED_READ_LOCK | PF_READ_AHEAD ) )
+        try ( RecordCursor<RECORD> cursor = newRecordCursor( newRecord() ) )
         {
-            while ( currentPageId <= endPageId && cursor.next() )
+            long highId = getHighId();
+            placeRecordCursor( getNumberOfReservedLowIds(), cursor, CHECK );
+            for ( long id = getNumberOfReservedLowIds(); id < highId; id++ )
             {
-                for ( int i = 0; i < recordsPerPage; i++ )
+                if ( cursor.next( id ) )
                 {
-                    if ( getRecord( currentRecordId, record, CHECK, cursor, currentPageId ).inUse() )
-                    {
-                        if ( visitor.visit( record ) )
-                        {
-                            return;
-                        }
-                    }
-                    currentRecordId++;
+                    visitor.visit( cursor.get() );
                 }
-                currentPageId++;
             }
         }
     }
@@ -1087,26 +1041,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     {
         // TODO we should instead be passed in a consumer of records, so we don't have to spend memory building up
         // this list
-        List<RECORD> recordList = new LinkedList<>();
-        long currentId = firstId;
-        try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_READ_LOCK ) )
+        try ( RecordCursor<RECORD> cursor = newRecordCursor( newRecord() ) )
         {
-            while ( !NULL_REFERENCE.is( currentId ) && cursor.next( pageIdForRecord( currentId ) ) )
+            List<RECORD> recordList = new LinkedList<>();
+            placeRecordCursor( firstId, cursor, mode );
+            while ( cursor.next() )
             {
-                RECORD record = newRecord();
-                readRecordWithRetry( cursor, currentId, record, mode, offsetForId( currentId ) );
-                if ( !record.inUse() )
-                {
-                    break;
-                }
-                recordList.add( record );
-                currentId = getNextRecordReference( record );
+                recordList.add( (RECORD) cursor.get().clone() );
             }
             return recordList;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
         }
     }
 
@@ -1130,11 +1073,36 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
 
                 try
                 {
-                    return getRecord( currentId, record, mode, pageCursor, pageIdForRecord( currentId ) ).inUse();
+                    try
+                    {
+                        record.setId( currentId );
+                        long pageId = pageIdForRecord( currentId );
+                        if ( pageId == pageCursor.getCurrentPageId() ||
+                                pageCursor.next( pageIdForRecord( currentId ) ) )
+                        {
+                            int offset = offsetForId( currentId );
+                            do
+                            {
+                                prepareForReading( pageCursor, offset, record );
+                                readRecord( pageCursor, record, mode );
+                            }
+                            while ( pageCursor.shouldRetry() );
+                            verifyAfterReading( record, mode );
+                        }
+                        else
+                        {
+                            verifyAfterNotRead( record, mode );
+                        }
+                        return record.inUse();
+                    }
+                    finally
+                    {
+                        currentId = record.inUse() ? getNextRecordReference( record ) : NULL_REFERENCE.intValue();
+                    }
                 }
-                finally
+                catch ( IOException e )
                 {
-                    currentId = record.inUse() ? getNextRecordReference( record ) : NULL_REFERENCE.intValue();
+                    throw new UnderlyingStorageException( e );
                 }
             }
 
@@ -1169,6 +1137,32 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
                 return this;
             }
         };
+    }
+
+    protected void verifyAfterNotRead( RECORD record, RecordLoad mode )
+    {
+        record.clear();
+        mode.verify( record );
+
+    }
+
+    protected void verifyAfterReading( RECORD record, RecordLoad mode )
+    {
+        if ( !mode.verify( record ) )
+        {
+            record.clear();
+        }
+    }
+
+    protected void prepareForReading( PageCursor cursor, int offset, RECORD record )
+    {
+        // Mark this record as unused. This to simplify implementations of readRecord.
+        // readRecord can behave differently depending on RecordLoad argument and so it may be that
+        // contents of a record may be loaded even if that record is unused, where the contents
+        // can still be initialized data. Know that for many record stores, deleting a record means
+        // just setting one byte or bit in that record.
+        record.setInUse( false );
+        cursor.setOffset( offset );
     }
 
     @Override
