@@ -67,7 +67,7 @@ find_java_cmd() {
   else
     if [ "${DIST_OS}" != "macosx" ] ; then
       # Don't use default java on Darwin because it displays a misleading dialog box
-      JAVA_CMD="$(which java)"
+      JAVA_CMD="$(which java || true)"
     fi
   fi
 
