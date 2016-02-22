@@ -62,9 +62,7 @@ public class CypherStatementRunner implements StatementRunner
         }
         else
         {
-            // begin transaction if there is no open transaction,
-            // but avoid opening it for the special case of periodic commit
-            if ( !ctx.hasTransaction() && !queryExecutionEngine.isPeriodicCommit( statement ) )
+            if ( !ctx.hasTransaction() )
             {
                 ctx.beginImplicitTransaction();
             }
