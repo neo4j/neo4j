@@ -96,6 +96,10 @@ class LiteralReplacementTest extends CypherFunSuite  {
     )
   }
 
+  test("should extract from procedure calls") {
+    assertRewrite("CALL foo(12)", "CALL foo({`  AUTOINT0`})", Map("  AUTOINT0" -> 12))
+  }
+
   private def assertDoesNotRewrite(query: String): Unit = {
     assertRewrite(query, query, Map.empty)
   }

@@ -94,17 +94,16 @@ object InternalPlanDescription {
     case class KeyExpressions(expressions: Seq[commands.expressions.Expression]) extends Argument
     case class EntityByIdRhs(value: PipeEntityByIdRhs) extends Argument
     case class EstimatedRows(value: Double) extends Argument
-    object Signature {
-      def apply(procedureName: QualifiedProcedureName,
-               args: Seq[commands.expressions.Expression],
-               results: Seq[(String, CypherType)]): Signature = {
+    case class Signature(procedureName: QualifiedProcedureName,
+                         args: Seq[commands.expressions.Expression],
+                         results: Seq[(String, CypherType)]) extends Argument {
+      def signatureAsText = {
         val argString = args.mkString(", ")
         val resultString = results.map { case (name, typ) => s"$name :: $typ" }.mkString(", ")
         val signatureString = s"$procedureName($argString) :: ($resultString)"
-        Signature(signatureString)
+        signatureString
       }
     }
-    case class Signature(value: String) extends Argument
     case class Version(value: String) extends Argument {
       override def name = "version"
     }

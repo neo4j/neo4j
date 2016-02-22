@@ -67,7 +67,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(1)(result)("ProcedureCall")
     assertRows(2)(result)("ProcedureCall")
     getPlanDescriptions(result, Seq("ProcedureCall")).foreach { plan =>
-      plan.arguments should contain(Signature("sys.db.labels() :: (label :: String)"))
+      formatArguments(plan.arguments) should contain("db.labels() :: (label :: String)")
       plan.variables should equal(Set("label"))
     }
   }
@@ -76,12 +76,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createLabeledNode("Person")
     createLabeledNode("Animal")
 
-    val result = legacyProfile("MATCH (n:Person) CALL sys.db.labels YIELD label RETURN *")
+    val result = legacyProfile("MATCH (n:Person) CALL db.labels YIELD label RETURN *")
 
     assertDbHits(1)(result)("ProcedureCall")
     assertRows(2)(result)("ProcedureCall")
     getPlanDescriptions(result, Seq("ProcedureCall")).foreach { plan =>
-      plan.arguments should contain(Signature("sys.db.labels() :: (label :: String)"))
+      formatArguments(plan.arguments) should contain("db.labels() :: (label :: String)")
       plan.variables should equal(Set("n", "label"))
     }
   }
@@ -672,5 +672,10 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
           descriptions
       }
     }
+  }
+
+  private def formatArguments(args: Seq[Argument]) = args.map {
+    case s: Signature => s.signatureAsText
+    case x            => x.toString
   }
 }

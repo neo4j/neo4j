@@ -204,7 +204,7 @@ class StandaloneProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
     register(Neo4jTypes.NTNumber)
 
     // Then
-    a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
+    a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
   }
 
   test("if signature declares number all number types are valid") {
@@ -222,14 +222,6 @@ class StandaloneProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
     // Then
     execute("CALL my.first.proc(NULL)").toList should equal(List(Map("out0" -> null)))
-  }
-
-  test("should fail a procedure declares an integer but gets a float ") {
-    // Given
-    register(Neo4jTypes.NTInteger)
-
-    // Then
-    a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc(42.0)"))
   }
 
   test("should not fail if a procedure declares a float but gets an integer") {

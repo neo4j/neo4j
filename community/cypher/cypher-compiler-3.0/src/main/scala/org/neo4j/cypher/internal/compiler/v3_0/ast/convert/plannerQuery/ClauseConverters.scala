@@ -46,6 +46,7 @@ object ClauseConverters {
     case c: LoadCSV => addLoadCSVToLogicalPlanInput(acc, c)
     case c: Foreach => addForeachToLogicalPlanInput(acc, c)
 
+    case x: UnresolvedCall => throw new IllegalArgumentException(s"$x is not expected here")
     case x => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
   }
 
