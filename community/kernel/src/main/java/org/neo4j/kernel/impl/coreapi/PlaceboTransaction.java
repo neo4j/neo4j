@@ -23,11 +23,10 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 
-public class PlaceboTransaction implements Transaction
+public class PlaceboTransaction implements InternalTransaction
 {
     private final static PropertyContainerLocker locker = new PropertyContainerLocker();
     private final Supplier<Statement> stmt;
@@ -84,4 +83,10 @@ public class PlaceboTransaction implements Transaction
 	{
 		return locker.sharedLock( stmt, entity );
 	}
+
+    @Override
+    public KernelTransaction.Type transactionType()
+    {
+        return currentTransaction.get().transactionType();
+    }
 }

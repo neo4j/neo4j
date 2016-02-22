@@ -25,8 +25,9 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 /*
  * This is a trimmed down version of GraphDatabaseService and GraphDatabaseAPI, limited to a subset of functions needed
@@ -39,6 +40,6 @@ public interface GraphDatabaseQueryService
     Node createNode( Label... labels );
     Node getNodeById(long id);
     Relationship getRelationshipById(long id);
-    Transaction beginTx();
+    InternalTransaction beginTransaction( KernelTransaction.Type type );
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
 }

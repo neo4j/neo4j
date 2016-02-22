@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.Label.label
 import org.neo4j.helpers.Clock
+import org.neo4j.kernel.api.KernelTransaction
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.Seq
@@ -100,7 +101,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should resolve property keys") {
     // given
-    val tx = graph.beginTx()
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
     try {
       val node = graph.createNode()
       node.setProperty("foo", 12l)
@@ -113,7 +114,7 @@ class RuleExecutablePlanBuilderTest
 
       val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), config, RewriterStepSequencer.newValidating)
 
-      val transactionalContext = new Neo4jTransactionContext(graph, tx, true, statement)
+      val transactionalContext = new Neo4jTransactionContext(graph, tx, statement)
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val pkId = queryContext.getPropertyKeyId("foo")
       val parsedQ = new FakePreparedQuery(q)
@@ -130,7 +131,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should resolve label ids") {
     // given
-    val tx = graph.beginTx()
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
     try {
       val node = graph.createNode(label("Person"))
 
@@ -140,7 +141,7 @@ class RuleExecutablePlanBuilderTest
         .returns(ReturnItem(Variable("x"), "x"))
 
       val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), config, RewriterStepSequencer.newValidating)
-      val transactionalContext = new Neo4jTransactionContext(graph, tx, true, statement)
+      val transactionalContext = new Neo4jTransactionContext(graph, tx, statement)
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val labelId = queryContext.getLabelId("Person")
       val parsedQ = new FakePreparedQuery(q)
@@ -239,7 +240,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should set the periodic commit flag") {
     // given
-    val tx = graph.beginTx()
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
     try {
       val q = PeriodicCommitQuery(
         Query.

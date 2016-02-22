@@ -28,12 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.event.{KernelEventHandler, TransactionEventHandler}
-import org.neo4j.graphdb.index.IndexManager
-import org.neo4j.graphdb.schema.Schema
-import org.neo4j.graphdb.traversal.{BidirectionalTraversalDescription, TraversalDescription}
-import org.neo4j.kernel.impl.store.StoreId
-import org.neo4j.kernel.internal.GraphDatabaseAPI
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
@@ -72,13 +67,13 @@ class DoubleCheckCreateUniqueTest extends CypherFunSuite {
   }
 
   private def withQueryState(f: QueryState => Unit) {
-    val tx = db.beginTx()
+    val tx = db.beginTransaction( KernelTransaction.Type.explicit )
     f(QueryStateHelper.queryStateFrom(db, tx))
     tx.close()
   }
 
   private def createNode(): Node = {
-    val tx = db.beginTx()
+    val tx = db.beginTransaction( KernelTransaction.Type.explicit )
     try {
       val n = db.createNode()
       tx.success()

@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.logging.NullLogProvider;
@@ -82,7 +83,7 @@ public class CypherUpdateMapTest
 
     private Node getNodeByIdInTx( int nodeId )
     {
-        try ( Transaction ignored = gdb.beginTx() )
+        try ( Transaction ignored = gdb.beginTransaction( KernelTransaction.Type.explicit ) )
         {
             return gdb.getNodeById( nodeId );
         }

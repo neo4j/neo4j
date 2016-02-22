@@ -64,7 +64,7 @@ public class ExecutionResultTest
     @Before
     public void initializeExecutionEngine() throws Exception
     {
-        engine = new ExecutionEngine( new GraphDatabaseCypherService( db ), NullLogProvider.getInstance() );
+        engine = new ExecutionEngine( new GraphDatabaseCypherService( db.getGraphDatabaseAPI() ), NullLogProvider.getInstance() );
     }
 
     //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created

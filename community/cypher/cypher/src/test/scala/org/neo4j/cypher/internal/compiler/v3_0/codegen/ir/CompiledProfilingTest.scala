@@ -95,7 +95,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
   test("should profile hash join") {
     //given
     val graphDb = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
-    val tx = graphDb.beginTx()
+    val tx = graphDb.beginTransaction( KernelTransaction.Type.explicit )
     graphDb.createNode()
     graphDb.createNode()
     tx.success()

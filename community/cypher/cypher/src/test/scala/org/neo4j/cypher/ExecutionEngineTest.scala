@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import java.io.{File, PrintWriter}
 import java.util.concurrent.TimeUnit
 
+import jdk.nashorn.internal.runtime.ScriptRuntime
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
@@ -32,6 +33,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils
+import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.{NeoStoreDataSource}
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.kernel.NeoStoreDataSource
@@ -645,7 +647,7 @@ order by a.COL1""")
 
     // Until we have a clean cut way where statement context is injected into cypher,
     // I don't know a non-hairy way to tell if this was done correctly, so here goes:
-    val tx  = graph.beginTx()
+    val tx  = graph.beginTransaction( Type.explicit )
     val isTopLevelTx = tx.getClass === classOf[TopLevelTransaction]
     tx.close()
 

@@ -147,14 +147,6 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     }
   }
 
-  def execStatement[T](f: (DataWriteOperations => T)): T = {
-    val tx = graph.beginTx
-    val result = f(statement.dataWriteOperations())
-    tx.success()
-    tx.close()
-    result
-  }
-
   def nodeIds = nodes.map(_.getId).toArray
 
   val REL = RelationshipType.withName("REL")
