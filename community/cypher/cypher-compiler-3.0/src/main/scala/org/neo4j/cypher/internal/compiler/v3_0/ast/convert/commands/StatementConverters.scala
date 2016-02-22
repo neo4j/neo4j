@@ -102,21 +102,23 @@ object StatementConverters {
           val b = tail.foldLeft(commands.QueryBuilder())((b, t) => b.tail(t))
 
           val builder = group.foldLeft(b)((b, clause) => clause match {
-            case c: ast.LoadCSV      => c.addToQueryBuilder(b)
-            case c: ast.Start        => c.addToQueryBuilder(b)
-            case c: ast.Match        => c.addToQueryBuilder(b, notifications, plannerName)
-            case c: ast.Unwind       => c.addToQueryBuilder(b)
-            case c: ast.Merge        => c.addToQueryBuilder(b)
-            case c: ast.Create       => c.addToQueryBuilder(b)
-            case c: ast.CreateUnique => c.addToQueryBuilder(b)
-            case c: ast.SetClause    => c.addToQueryBuilder(b)
-            case c: ast.Delete       => c.addToQueryBuilder(b)
-            case c: ast.Remove       => c.addToQueryBuilder(b)
-            case c: ast.Foreach      => c.addToQueryBuilder(b)
-            case _: ast.With         => b
-            case _: ast.Return       => b
-            case c: ast.ResolvedCall => c.addToQueryBuilder(b)
-            case _                   => throw new IllegalArgumentException("Unknown clause while grouping")
+            case c: ast.LoadCSV        => c.addToQueryBuilder(b)
+            case c: ast.Start          => c.addToQueryBuilder(b)
+            case c: ast.Match          => c.addToQueryBuilder(b, notifications, plannerName)
+            case c: ast.Unwind         => c.addToQueryBuilder(b)
+            case c: ast.Merge          => c.addToQueryBuilder(b)
+            case c: ast.Create         => c.addToQueryBuilder(b)
+            case c: ast.CreateUnique   => c.addToQueryBuilder(b)
+            case c: ast.SetClause      => c.addToQueryBuilder(b)
+            case c: ast.Delete         => c.addToQueryBuilder(b)
+            case c: ast.Remove         => c.addToQueryBuilder(b)
+            case c: ast.Foreach        => c.addToQueryBuilder(b)
+            case _: ast.With           => b
+            case _: ast.Return         => b
+            case c: ast.UnresolvedCall =>
+              throw new IllegalArgumentException("Unsupported clause while grouping: unresolved call")
+            case c: ast.ResolvedCall   => c.addToQueryBuilder(b)
+            case _                     => throw new IllegalArgumentException("Unknown clause while grouping")
           })
 
           val result = Some(group.takeRight(2) match {

@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
+import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureSignature, QualifiedProcedureName}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.helpers.Clock
 
@@ -183,19 +184,21 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     nonIndexedLabelWarningThreshold = 10000
   )
 
-  def buildPlannerQuery(query: String) = {
-    val queries: Seq[PlannerQuery] = buildPlannerUnionQuery(query).queries
+  def buildPlannerQuery(query: String, lookup: Option[QualifiedProcedureName => ProcedureSignature] = None) = {
+    val queries: Seq[PlannerQuery] = buildPlannerUnionQuery(query, lookup).queries
     queries.head
   }
 
-  def buildPlannerUnionQuery(query: String) = {
+  def buildPlannerUnionQuery(query: String, lookup: Option[QualifiedProcedureName => ProcedureSignature] = None) = {
     val parsedStatement = parser.parse(query.replace("\r\n", "\n"))
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val semanticState = semanticChecker.check(query, cleanedStatement, mkException)
-    val statement = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
+    val astRewriterResultStatement = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
+    val resolvedStatement = lookup.map(l => astRewriterResultStatement.endoRewrite(rewriteProcedureCalls(l))).getOrElse(astRewriterResultStatement)
     val semanticTable: SemanticTable = SemanticTable(types = semanticState.typeTable)
-    val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(statement, semanticState.scopeTree, semanticTable, RewriterStepSequencer.newValidating, semanticChecker, Set.empty, mock[AstRewritingMonitor])
+    val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(resolvedStatement, semanticState.scopeTree,
+      semanticTable, RewriterStepSequencer.newValidating, semanticChecker, Set.empty, mock[AstRewritingMonitor])
 
     // This fakes pattern expression naming for testing purposes
     // In the actual code path, this renaming happens as part of planning

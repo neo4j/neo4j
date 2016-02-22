@@ -30,11 +30,10 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{ResolvedCall, Statement, UnresolvedCall, _}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
-import org.neo4j.cypher.internal.frontend.v3_0.spi.ProcedureSignature
-import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticTable, inSequence, _}
+import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticTable, inSequence}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 
@@ -203,7 +202,7 @@ case class CypherCompiler(parser: CypherParser,
 
     val queryText = syntacticQuery.queryText
 
-    val rewrittenSyntacticQuery = rewriteProcedureCalls(context, syntacticQuery)
+    val rewrittenSyntacticQuery = syntacticQuery.rewrite(rewriteProcedureCalls(context.procedureSignature))
 
     val mkException = new SyntaxExceptionCreator(queryText, offset)
     val postRewriteSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
@@ -213,33 +212,6 @@ case class CypherCompiler(parser: CypherParser,
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
     val result = rewrittenSyntacticQuery.withSemantics(table, postRewriteSemanticState.scopeTree)
     result
-  }
-
-  private def rewriteProcedureCalls(context: PlanContext, syntacticQuery: PreparedQuerySyntax ): PreparedQuerySyntax = {
-    val resolveCalls = bottomUp(Rewriter.lift {
-      case unresolved: UnresolvedCall =>
-        val resolved = unresolved.resolve(context.procedureSignature)
-        // We coerce here to ensure that the semantic check run after this rewriter assigns a type
-        // to the coercion expression
-        val coerced = resolved.coerceArguments
-        coerced
-    })
-
-    val fakeStandaloneCallDeclarations = Rewriter.lift {
-      case q@Query(None, part@SingleQuery(Seq(resolved@ResolvedCall(_, _, _, _, _)))) if !resolved.fullyDeclared =>
-        val result = q.copy(part = part.copy(clauses = Seq(resolved.fakeDeclarations))(part.position))(q.position)
-        result
-    }
-
-    syntacticQuery.rewrite(resolveCalls).rewrite(fakeStandaloneCallDeclarations)
-  }
-
-  private def coerceInputs(signature: ProcedureSignature)(exprs: Seq[Expression]) = {
-    val types = signature.inputSignature.map(f => Some(f.typ)).toStream ++ Stream.continually(None)
-    exprs.zip(types).map {
-      case (expr, Some(typ)) => CoerceTo(expr, typ)
-      case (expr, _) => expr
-    }
   }
 
   private def syntaxDeprecationNotifications( statement: Statement) =
@@ -255,3 +227,6 @@ case class CypherCompiler(parser: CypherParser,
       new QueryCache(cacheAccessor, lRUCache)
     })
 }
+
+
+
