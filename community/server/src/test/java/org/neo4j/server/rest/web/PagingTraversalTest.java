@@ -19,20 +19,20 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import javax.ws.rs.core.Response;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -54,19 +54,18 @@ public class PagingTraversalTest
     private static final String BASE_URI = "http://neo4j.org:7474/";
     private RestfulGraphDatabase service;
     private Database database;
-    private EntityOutputFormat output;
     private GraphDbHelper helper;
     private LeaseManager leaseManager;
     private static final int SIXTY_SECONDS = 60;
-    private GraphDatabaseAPI graph;
+    private GraphDatabaseFacade graph;
 
     @Before
     public void startDatabase() throws IOException
     {
-        graph = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        database = new WrappedDatabase(graph);
+        graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        database = new WrappedDatabase( graph );
         helper = new GraphDbHelper( database );
-        output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
+        EntityOutputFormat output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );
         service = new RestfulGraphDatabase( new JsonFormat(),
                 output,

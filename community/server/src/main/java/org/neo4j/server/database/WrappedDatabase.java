@@ -19,28 +19,14 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class WrappedDatabase extends LifecycleAdapter implements Database
 {
-    private final GraphDatabaseAPI graph;
+    private final GraphDatabaseFacade graph;
 
-    public static Database.Factory wrappedDatabase( final GraphDatabaseAPI db )
-    {
-        return new Factory()
-        {
-            @Override
-            public Database newDatabase( Config config, CommunityFacadeFactory.Dependencies dependencies)
-            {
-                return new WrappedDatabase( db );
-            }
-        };
-    }
-
-    public WrappedDatabase( GraphDatabaseAPI graph )
+    public WrappedDatabase( GraphDatabaseFacade graph )
     {
         this.graph = graph;
         try
@@ -60,7 +46,7 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
     }
 
     @Override
-    public GraphDatabaseAPI getGraph()
+    public GraphDatabaseFacade getGraph()
     {
         return graph;
     }

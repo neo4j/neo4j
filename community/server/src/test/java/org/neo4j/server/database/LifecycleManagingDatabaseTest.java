@@ -22,9 +22,9 @@ package org.neo4j.server.database;
 import org.junit.Test;
 
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.NullLogProvider;
 
@@ -38,19 +38,11 @@ public class LifecycleManagingDatabaseTest
     public void mustIgnoreExceptionsFromPreLoadingCypherQuery() throws Throwable
     {
         // Given a lifecycled database that'll try to warm up Cypher when it starts
-        final GraphDatabaseAPI mockDb = mock( GraphDatabaseAPI.class );
+        final GraphDatabaseFacade mockDb = mock( GraphDatabaseFacade.class );
         Config config = new Config();
         GraphDatabaseFacadeFactory.Dependencies deps =
                 GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() );
-        LifecycleManagingDatabase.GraphFactory factory = new LifecycleManagingDatabase.GraphFactory()
-        {
-            @Override
-            public GraphDatabaseAPI newGraphDatabase( Config config,
-                                                      GraphDatabaseFacadeFactory.Dependencies dependencies )
-            {
-                return mockDb;
-            }
-        };
+        LifecycleManagingDatabase.GraphFactory factory = ( conf, dependencies ) -> mockDb;
         LifecycleManagingDatabase db = new LifecycleManagingDatabase( config, factory, deps )
         {
             @Override

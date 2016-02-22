@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-
+import java.util.Collections;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -31,7 +31,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -45,8 +44,6 @@ import org.neo4j.server.rest.transactional.TransactionHandle;
 import org.neo4j.server.rest.transactional.TransactionTerminationHandle;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
-
-import static java.util.Arrays.asList;
 
 
 /**
@@ -73,7 +70,7 @@ public class TransactionalService
     {
         try
         {
-            TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme );
+            TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme, false );
             return createdResponse( transactionHandle, executeStatements( input, transactionHandle, uriInfo.getBaseUri(), request ) );
         }
         catch ( TransactionLifecycleException e )
@@ -117,7 +114,7 @@ public class TransactionalService
         {
             return invalidTransaction( e, uriInfo.getBaseUri() );
         }
-        return okResponse( executeStatementsAndCommit( input, transactionHandle, uriInfo.getBaseUri(), false, request ) );
+        return okResponse( executeStatementsAndCommit( input, transactionHandle, uriInfo.getBaseUri(), request ) );
     }
 
     @POST
@@ -130,16 +127,14 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = facade.newTransactionHandle( uriScheme );
+            transactionHandle = facade.newTransactionHandle( uriScheme, true );
         }
         catch ( TransactionLifecycleException e )
         {
             return invalidTransaction( e, uriInfo.getBaseUri() );
         }
-        final StreamingOutput streamingResults = executeStatementsAndCommit( input,
-                transactionHandle,
-                uriInfo.getBaseUri(),
-                true, request );
+        final StreamingOutput streamingResults =
+                executeStatementsAndCommit( input, transactionHandle, uriInfo.getBaseUri(), request );
         return okResponse( streamingResults );
     }
 
@@ -184,62 +179,40 @@ public class TransactionalService
     private StreamingOutput executeStatements( final InputStream input, final TransactionHandle transactionHandle,
                                                final URI baseUri, final HttpServletRequest request )
     {
-        return new StreamingOutput()
-        {
-            @Override
-            public void write( OutputStream output ) throws IOException, WebApplicationException
-            {
-                transactionHandle.execute( facade.deserializer( input ), facade.serializer( output, baseUri ),
-                        request );
-            }
-        };
+        return output -> transactionHandle.execute(
+                facade.deserializer( input ), facade.serializer( output, baseUri ), request );
     }
 
     private StreamingOutput executeStatementsAndCommit( final InputStream input,
                                                         final TransactionHandle transactionHandle,
                                                         final URI baseUri,
-                                                        final boolean pristine,
                                                         final HttpServletRequest request )
     {
-        return new StreamingOutput()
-        {
-            @Override
-            public void write( OutputStream output ) throws IOException, WebApplicationException
-            {
-                OutputStream wrappedOutput = pristine ? new InterruptingOutputStream( output,
-                        transactionHandle ) : output;
-                transactionHandle.commit( facade.deserializer( input ), facade.serializer( wrappedOutput,
-                        baseUri ), pristine, request );
-            }
+        return output -> {
+            OutputStream wrappedOutput = transactionHandle.isPristine()
+                                         ? new InterruptingOutputStream( output, transactionHandle )
+                                         : output;
+            transactionHandle.commit(
+                    facade.deserializer( input ), facade.serializer( wrappedOutput, baseUri ), request );
         };
     }
 
     private StreamingOutput rollback( final TransactionHandle transactionHandle, final URI baseUri )
     {
-        return new StreamingOutput()
-        {
-            @Override
-            public void write( OutputStream output ) throws IOException, WebApplicationException
+        return output -> {
+            if ( transactionHandle != null )
             {
-                if ( transactionHandle != null )
-                {
-                    transactionHandle.rollback( facade.serializer( output, baseUri ) );
-                }
+                transactionHandle.rollback( facade.serializer( output, baseUri ) );
             }
         };
     }
 
     private StreamingOutput serializeError( final Neo4jError neo4jError, final URI baseUri )
     {
-        return new StreamingOutput()
-        {
-            @Override
-            public void write( OutputStream output ) throws IOException, WebApplicationException
-            {
-                ExecutionResultSerializer serializer = facade.serializer( output, baseUri );
-                serializer.errors( asList( neo4jError ) );
-                serializer.finish();
-            }
+        return output -> {
+            ExecutionResultSerializer serializer = facade.serializer( output, baseUri );
+            serializer.errors( Collections.singletonList( neo4jError ) );
+            serializer.finish();
         };
     }
 
