@@ -22,8 +22,8 @@ package org.neo4j.bolt.v1.runtime.internal;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 
@@ -57,10 +57,6 @@ public class CypherStatementRunner implements StatementRunner
         {
             ctx.rollbackTransaction();
             return RecordStream.EMPTY;
-        }
-        else if ( statement.equalsIgnoreCase( "foobar" ) )
-        {
-            throw new RuntimeException("Foobar occurred");
         }
         else
         {
