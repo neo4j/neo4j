@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
@@ -32,6 +33,9 @@ import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
+/**
+ * An {@link IndexPopulator} used to create, populate and mark as online a Lucene schema index.
+ */
 public abstract class LuceneIndexPopulator implements IndexPopulator
 {
     protected LuceneSchemaIndex luceneIndex;
@@ -75,13 +79,12 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         {
             if ( populationCompletedSuccessfully )
             {
-                flush();
                 luceneIndex.markAsOnline();
             }
         }
         finally
         {
-            luceneIndex.close();
+            IOUtils.closeAllSilently( luceneIndex );
         }
     }
 
@@ -90,8 +93,6 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     {
         luceneIndex.markAsFailed( failure );
     }
-
-    protected abstract void flush() throws IOException;
 
     private static Document updateAsDocument( NodePropertyUpdate update )
     {

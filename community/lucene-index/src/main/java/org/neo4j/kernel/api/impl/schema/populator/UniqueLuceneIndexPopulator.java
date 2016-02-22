@@ -20,12 +20,8 @@
 package org.neo4j.kernel.api.impl.schema.populator;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndex;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -34,81 +30,34 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
+/**
+ * A {@link LuceneIndexPopulator} used for unique Lucene schema indexes.
+ * Performs sampling using {@link UniqueIndexSampler}.
+ * Verifies uniqueness of added and changed values using
+ * {@link LuceneSchemaIndex#verifyUniqueness(PropertyAccessor, int)} method.
+ */
 public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
-    private final IndexDescriptor descriptor;
+    private final int propertyKeyId;
     private final UniqueIndexSampler sampler;
 
-    public UniqueLuceneIndexPopulator(LuceneSchemaIndex index, IndexDescriptor descriptor )
+    public UniqueLuceneIndexPopulator( LuceneSchemaIndex index, IndexDescriptor descriptor )
     {
         super( index );
-        this.descriptor = descriptor;
+        this.propertyKeyId = descriptor.getPropertyKeyId();
         this.sampler = new UniqueIndexSampler();
-    }
-
-    @Override
-    protected void flush() throws IOException
-    {
-        // no need to do anything yet.
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
-        luceneIndex.verifyUniqueness( accessor, descriptor.getPropertyKeyId() );
+        luceneIndex.verifyUniqueness( accessor, propertyKeyId );
     }
 
     @Override
     public IndexUpdater newPopulatingUpdater( final PropertyAccessor accessor ) throws IOException
     {
-        return new IndexUpdater()
-        {
-            List<Object> updatedPropertyValues = new ArrayList<>();
-
-            @Override
-            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
-            {
-                long nodeId = update.getNodeId();
-                switch ( update.getUpdateMode() )
-                {
-                    case ADDED:
-                        sampler.increment( 1 ); // add new value
-
-                        // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                                LuceneDocumentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
-                        updatedPropertyValues.add( update.getValueAfter() );
-                        break;
-                    case CHANGED:
-                        // sampler.increment( -1 ); // remove old vale
-                        // sampler.increment( 1 ); // add new value
-
-                        // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                                LuceneDocumentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
-                        updatedPropertyValues.add( update.getValueAfter() );
-                        break;
-                    case REMOVED:
-                        sampler.increment( -1 ); // remove old value
-                        writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
-                        break;
-                    default:
-                        throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );
-                }
-            }
-
-            @Override
-            public void close() throws IOException, IndexEntryConflictException
-            {
-                luceneIndex.verifyUniqueness( accessor, descriptor.getPropertyKeyId(), updatedPropertyValues );
-            }
-
-            @Override
-            public void remove( PrimitiveLongSet nodeIds )
-            {
-                throw new UnsupportedOperationException( "should not remove() from populating index" );
-            }
-        };
+        return new UniqueLuceneIndexPopulatingUpdater( writer, propertyKeyId, luceneIndex, accessor, sampler );
     }
 
     @Override

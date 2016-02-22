@@ -42,6 +42,8 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
@@ -189,6 +191,22 @@ public class MultipleIndexPopulatorTest
 
         verify( flipper1 ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
         verify( flipper2 ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
+    }
+
+    @Test
+    public void populationsRemovedDuringFlip() throws Exception
+    {
+        IndexPopulator indexPopulator1 = createIndexPopulator();
+        IndexPopulator indexPopulator2 = createIndexPopulator();
+
+        FlippableIndexProxy flipper1 = addPopulator( indexPopulator1, 1 );
+        FlippableIndexProxy flipper2 = addPopulator( indexPopulator2, 2 );
+
+        assertTrue( multipleIndexPopulator.hasPopulators() );
+
+        multipleIndexPopulator.flipAfterPopulation();
+
+        assertFalse( multipleIndexPopulator.hasPopulators() );
     }
 
     @Test
