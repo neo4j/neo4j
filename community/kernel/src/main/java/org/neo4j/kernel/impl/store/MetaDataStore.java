@@ -745,7 +745,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         {   // Trigger some logging here, max logged every 30 secs or so
             transactionCloseWaitLogger.info( format(
                     "Waiting for all transactions to close...%n committed:  %s%n  committing: %s%n  closed:     %s",
-                    highestCommittedTransaction.get(), lastCommittingTxField, lastClosedTx ), null );
+                    highestCommittedTransaction.get(), lastCommittingTxField, lastClosedTx ) );
         }
         return onPar;
     }
