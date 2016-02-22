@@ -27,26 +27,25 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Stack;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 
 class CypherValuesCreator extends FeatureResultsBaseListener
 {
-    private Stack<Object> workload;
-    private Stack<Integer> listCounters;
-    private Stack<Integer> mapCounters;
-    private Stack<String> names;
+    private Deque<Object> workload;
+    private Deque<Integer> listCounters;
+    private Deque<Integer> mapCounters;
+    private Deque<String> names;
 
     private static final String INFINITY = "Inf";
 
     CypherValuesCreator()
     {
-        this.workload = new Stack<>();
-        this.listCounters = new Stack<>();
-        this.mapCounters = new Stack<>();
-        this.names = new Stack<>();
+        this.workload = new LinkedList<>();
+        this.listCounters = new LinkedList<>();
+        this.mapCounters = new LinkedList<>();
+        this.names = new LinkedList<>();
     }
 
     Object parsed()
@@ -111,6 +110,7 @@ class CypherValuesCreator extends FeatureResultsBaseListener
     @Override
     public void exitList( FeatureResultsParser.ListContext ctx )
     {
+        // Using a Deque here in order to be able to prepend
         Deque<Object> temp = new LinkedList<>();
         int counter = listCounters.pop();
         for ( int i = 0; i < counter; ++i )
@@ -163,7 +163,7 @@ class CypherValuesCreator extends FeatureResultsBaseListener
     {
         final Map<String,Object> properties = getMapOrEmpty();
         final ArrayList<Label> nodeLabels = new ArrayList<>();
-        while ( !names.empty() )
+        while ( !names.isEmpty() )
         {
             nodeLabels.add( Label.label( names.pop() ) );
         }
@@ -185,7 +185,7 @@ class CypherValuesCreator extends FeatureResultsBaseListener
 
     private Map<String,Object> getMapOrEmpty()
     {
-        if ( workload.empty() )
+        if ( workload.isEmpty() )
         {
             return new HashMap<>();
         }
