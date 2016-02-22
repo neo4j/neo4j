@@ -34,13 +34,12 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.DoubleLatch;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
@@ -76,10 +75,9 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
             }
 
             @Override
-            public long sampleResult( Register.DoubleLong.Out result )
+            public IndexSample sampleResult()
             {
-                result.write( 0l, 0l );
-                return 0;
+                return new IndexSample();
             }
         };
         return populationCompletionLatch;

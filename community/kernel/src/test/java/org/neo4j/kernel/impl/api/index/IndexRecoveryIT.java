@@ -23,8 +23,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -64,10 +62,12 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.register.Register.DoubleLong;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -77,10 +77,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
 import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
@@ -180,16 +176,7 @@ public class IndexRecoveryIT
                 .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                         any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
-        when( populator.sampleResult( any( DoubleLong.Out.class ) ) ).thenAnswer( new Answer<Long>()
-        {
-            @Override
-            public Long answer( InvocationOnMock invocation ) throws Throwable
-            {
-                DoubleLong.Out result = (DoubleLong.Out) invocation.getArguments()[0];
-                result.write( 0l, 0l );
-                return 0l;
-            }
-        } );
+        when( populator.sampleResult() ).thenReturn( new IndexSample() );
         IndexAccessor mockedAccessor = mock( IndexAccessor.class );
         when( mockedAccessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( SwallowingIndexUpdater.INSTANCE );
         when( mockedIndexProvider.getOnlineAccessor(

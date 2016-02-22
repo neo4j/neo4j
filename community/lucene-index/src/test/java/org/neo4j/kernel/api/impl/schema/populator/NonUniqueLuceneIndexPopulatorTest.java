@@ -39,9 +39,8 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -84,14 +83,9 @@ public class NonUniqueLuceneIndexPopulatorTest
     {
         populator = newPopulator();
 
-        Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
-        long indexSize = populator.sampleResult( register );
-        long uniqueElements = register.readFirst();
-        long sampleSize = register.readSecond();
+        IndexSample sample = populator.sampleResult();
 
-        assertEquals( 0, indexSize );
-        assertEquals( 0, uniqueElements );
-        assertEquals( 0, sampleSize );
+        assertEquals( new IndexSample(), sample );
     }
 
     @Test
@@ -106,14 +100,9 @@ public class NonUniqueLuceneIndexPopulatorTest
 
         updates.forEach( populator::includeSample );
 
-        Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
-        long indexSize = populator.sampleResult( register );
-        long uniqueElements = register.readFirst();
-        long sampleSize = register.readSecond();
+        IndexSample sample = populator.sampleResult();
 
-        assertEquals( 3, indexSize );
-        assertEquals( 3, uniqueElements );
-        assertEquals( 3, sampleSize );
+        assertEquals( new IndexSample( 3, 3, 3 ), sample );
     }
 
     @Test
@@ -128,14 +117,10 @@ public class NonUniqueLuceneIndexPopulatorTest
 
         updates.forEach( populator::includeSample );
 
-        Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
-        long indexSize = populator.sampleResult( register );
-        long uniqueElements = register.readFirst();
-        long sampleSize = register.readSecond();
 
-        assertEquals( 3, indexSize );
-        assertEquals( 2, uniqueElements );
-        assertEquals( 3, sampleSize );
+        IndexSample sample = populator.sampleResult();
+
+        assertEquals( new IndexSample( 3, 2, 3 ), sample );
     }
 
     @Test

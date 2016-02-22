@@ -67,7 +67,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -123,7 +122,7 @@ public class IndexPopulationJobTest
         verify( populator ).includeSample( update );
         verify( populator ).add( singletonList( update ) );
         verify( populator ).verifyDeferredConstraints( indexStoreView );
-        verify( populator ).sampleResult( any( DoubleLong.Out.class ) );
+        verify( populator ).sampleResult();
         verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );
@@ -172,7 +171,7 @@ public class IndexPopulationJobTest
         verify( populator ).includeSample( update2 );
         verify( populator ).add( Collections.singletonList( update2 ) );
         verify( populator ).verifyDeferredConstraints( indexStoreView );
-        verify( populator ).sampleResult( any( DoubleLong.Out.class ) );
+        verify( populator ).sampleResult();
         verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );

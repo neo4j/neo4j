@@ -20,24 +20,19 @@
 package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.register.Register;
 
 /**
  * Component able to sample schema index.
  */
 public interface IndexSampler
 {
-    IndexSampler EMPTY = result -> {
-        result.write( 0, 0 );
-        return 0;
-    };
+    IndexSampler EMPTY = IndexSample::new;
 
     /**
      * Sample this index (on the current thread)
      *
-     * @param result contains the unique values and the sampled size
-     * @return the index size
+     * @return the index sampling result
      * @throws IndexNotFoundKernelException if the index is dropped while sampling
      */
-    long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException;
+    IndexSample sampleIndex() throws IndexNotFoundKernelException;
 }

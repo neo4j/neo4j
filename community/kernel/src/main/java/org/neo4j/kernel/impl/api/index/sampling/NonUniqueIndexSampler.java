@@ -20,8 +20,7 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.neo4j.helpers.collection.MultiSet;
-
-import static org.neo4j.register.Register.DoubleLong;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 public class NonUniqueIndexSampler
 {
@@ -77,7 +76,7 @@ public class NonUniqueIndexSampler
         }
     }
 
-    public long result( DoubleLong.Out register )
+    public IndexSample result()
     {
         if ( !values.isEmpty() )
         {
@@ -86,9 +85,8 @@ public class NonUniqueIndexSampler
 
         long uniqueValues = sampledSteps != 0 ? accumulatedUniqueValues / sampledSteps : 0;
         long sampledSize = sampledSteps != 0 ? accumulatedSampledSize / sampledSteps : 0;
-        register.write( uniqueValues, sampledSize );
 
-        return accumulatedSampledSize;
+        return new IndexSample( accumulatedSampledSize, uniqueValues, sampledSize );
     }
 
     private void nextStep()

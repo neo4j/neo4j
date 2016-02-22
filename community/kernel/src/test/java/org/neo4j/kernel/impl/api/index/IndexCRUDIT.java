@@ -55,7 +55,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -271,16 +271,14 @@ public class IndexCRUDIT
         }
 
         @Override
-        public long sampleResult( Register.DoubleLong.Out result )
+        public IndexSample sampleResult()
         {
             long indexSize = 0;
             for ( Set<Long> nodeIds : indexSamples.values() )
             {
                 indexSize += nodeIds.size();
             }
-
-            result.write( indexSamples.size(), indexSize );
-            return indexSize;
+            return new IndexSample( indexSize, indexSamples.size(), indexSize );
         }
 
         private void addValueToSample( long nodeId, Object propertyValue )

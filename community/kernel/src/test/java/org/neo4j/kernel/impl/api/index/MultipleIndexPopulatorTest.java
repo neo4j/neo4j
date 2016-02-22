@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -221,8 +221,7 @@ public class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 1, flipper, failedIndexProxyFactory );
         addPopulator( indexPopulator2, 2, flipper, failedIndexProxyFactory );
 
-        when( indexPopulator1.sampleResult( any( Register.DoubleLong.Out.class ) ) )
-                .thenThrow( getSampleError() );
+        when( indexPopulator1.sampleResult() ).thenThrow( getSampleError() );
 
         multipleIndexPopulator.flipAfterPopulation();
 
@@ -230,7 +229,7 @@ public class MultipleIndexPopulatorTest
         verify( failedIndexProxyFactory, times( 1 ) ).create( any( RuntimeException.class ) );
 
         verify( indexPopulator2 ).close( true );
-        verify( indexPopulator2 ).sampleResult( any( Register.DoubleLongRegister.class ) );
+        verify( indexPopulator2 ).sampleResult();
         verify( indexStoreView ).replaceIndexCounts( any(IndexDescriptor.class), anyLong(), anyLong(), anyLong() );
     }
 
@@ -339,7 +338,9 @@ public class MultipleIndexPopulatorTest
 
     private IndexPopulator createIndexPopulator()
     {
-        return mock( IndexPopulator.class );
+        IndexPopulator populator = mock( IndexPopulator.class );
+        when( populator.sampleResult() ).thenReturn( new IndexSample() );
+        return populator;
     }
 
     private void checkPopulatorFailure( IndexPopulator populator )

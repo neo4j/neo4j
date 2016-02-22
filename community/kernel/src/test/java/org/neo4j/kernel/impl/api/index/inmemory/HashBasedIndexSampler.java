@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 public class HashBasedIndexSampler implements IndexSampler
@@ -36,30 +36,25 @@ public class HashBasedIndexSampler implements IndexSampler
     }
 
     @Override
-    public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
+    public IndexSample sampleIndex() throws IndexNotFoundKernelException
     {
         if ( data == null )
         {
             throw new IndexNotFoundKernelException( "Index dropped while sampling." );
         }
-        long[] uniqueAndSize = {0, 0};
-        try
+
+        long uniqueValues = 0;
+        long indexSize = 0;
+        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
         {
-            data.forEach( ( value, nodeIds ) -> {
-                int ids = nodeIds.size();
-                if ( ids > 0 )
-                {
-                    uniqueAndSize[0] += 1;
-                    uniqueAndSize[1] += ids;
-                }
-            } );
-        }
-        catch ( Exception ex )
-        {
-            throw new RuntimeException( ex );
+            Set<Long> nodeIds = entry.getValue();
+            if ( !nodeIds.isEmpty() )
+            {
+                uniqueValues++;
+                indexSize += nodeIds.size();
+            }
         }
 
-        result.write( uniqueAndSize[0], uniqueAndSize[1] );
-        return uniqueAndSize[1];
+        return new IndexSample( indexSize, uniqueValues, indexSize );
     }
 }

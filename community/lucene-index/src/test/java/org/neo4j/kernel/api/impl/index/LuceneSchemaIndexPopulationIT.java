@@ -38,9 +38,8 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.test.TargetDirectory;
 
@@ -107,10 +106,10 @@ public class LuceneSchemaIndexPopulationIT
                     assertEquals( affectedNodes, nodes.length );
 
                     IndexSampler indexSampler = indexReader.createSampler();
-                    Register.DoubleLongRegister sampleRegister = Registers.newDoubleLongRegister( 0, 0 );
-                    assertEquals( affectedNodes, indexSampler.sampleIndex( sampleRegister ) );
-                    assertEquals( affectedNodes, sampleRegister.readFirst() );
-                    assertEquals( affectedNodes, sampleRegister.readSecond() );
+                    IndexSample sample = indexSampler.sampleIndex();
+                    assertEquals( affectedNodes, sample.indexSize() );
+                    assertEquals( affectedNodes, sample.uniqueValues() );
+                    assertEquals( affectedNodes, sample.sampleSize() );
                 }
             }
         }

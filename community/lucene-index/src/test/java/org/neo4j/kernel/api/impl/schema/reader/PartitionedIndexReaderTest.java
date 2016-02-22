@@ -35,8 +35,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static org.junit.Assert.assertEquals;
@@ -163,7 +162,7 @@ public class PartitionedIndexReaderTest
         when( indexReader3.createSampler() ).thenReturn( new SimpleSampler( 3 ) );
 
         IndexSampler sampler = indexReader.createSampler();
-        assertEquals( 6, sampler.sampleIndex( Registers.newDoubleLongRegister() ) );
+        assertEquals( new IndexSample( 6, 6, 6 ), sampler.sampleIndex() );
     }
 
     private void verifyResult( PrimitiveLongSet results )
@@ -197,7 +196,6 @@ public class PartitionedIndexReaderTest
 
     private class SimpleSampler implements IndexSampler
     {
-
         private long sampleValue;
 
         SimpleSampler( long sampleValue )
@@ -206,10 +204,9 @@ public class PartitionedIndexReaderTest
         }
 
         @Override
-        public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
+        public IndexSample sampleIndex() throws IndexNotFoundKernelException
         {
-            return sampleValue;
+            return new IndexSample( sampleValue, sampleValue, sampleValue );
         }
     }
-
 }

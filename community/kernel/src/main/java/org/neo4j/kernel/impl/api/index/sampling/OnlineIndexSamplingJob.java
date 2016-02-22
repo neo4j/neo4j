@@ -26,9 +26,8 @@ import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.util.DurationLogger;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static java.lang.String.format;
@@ -69,21 +68,20 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
             {
                 try ( IndexReader reader = indexProxy.newReader() )
                 {
-                    Register.DoubleLongRegister sample = Registers.newDoubleLongRegister( 0, 0 );
                     IndexSampler sampler = reader.createSampler();
-                    long indexSize = sampler.sampleIndex( sample );
+                    IndexSample sample = sampler.sampleIndex();
 
                     // check again if the index is online before saving the counts in the store
                     if ( indexProxy.getState() == ONLINE )
                     {
-                        long unique = sample.readFirst();
-                        long sampleSize = sample.readSecond();
-                        storeView.replaceIndexCounts( indexDescriptor, unique, sampleSize, indexSize );
+                        storeView.replaceIndexCounts( indexDescriptor, sample.uniqueValues(), sample.sampleSize(),
+                                sample.indexSize() );
                         durationLogger.markAsFinished();
                         log.info(
                                 format( "Sampled index %s with %d unique values in sample of avg size %d taken from " +
                                         "index containing %d entries",
-                                        indexUserDescription, unique, sampleSize, indexSize ) );
+                                        indexUserDescription, sample.uniqueValues(), sample.sampleSize(),
+                                        sample.indexSize() ) );
                     }
                     else
                     {

@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -41,16 +41,16 @@ public class UniqueLuceneIndexSamplerTest
     public ExpectedException expectedException = ExpectedException.none();
 
     private final IndexSearcher indexSearcher = mock( IndexSearcher.class, Mockito.RETURNS_DEEP_STUBS );
-    private final TaskCoordinator taskControl = new TaskCoordinator(0, TimeUnit.MILLISECONDS);
+    private final TaskCoordinator taskControl = new TaskCoordinator( 0, TimeUnit.MILLISECONDS );
 
     @Test
     public void uniqueSamplingUseDocumentsNumber() throws IndexNotFoundKernelException
     {
         when( indexSearcher.getIndexReader().numDocs() ).thenReturn( 17 );
 
-        UniqueLuceneIndexSampler luceneIndexSampler = new UniqueLuceneIndexSampler( indexSearcher, taskControl.newInstance() );
-        long sample = luceneIndexSampler.sampleIndex( Registers.newDoubleLongRegister() );
-        assertEquals(17, sample);
+        UniqueLuceneIndexSampler sampler = new UniqueLuceneIndexSampler( indexSearcher, taskControl.newInstance() );
+        IndexSample sample = sampler.sampleIndex();
+        assertEquals( 17, sample.indexSize() );
     }
 
     @Test
@@ -64,8 +64,8 @@ public class UniqueLuceneIndexSamplerTest
         expectedException.expect( IndexNotFoundKernelException.class );
         expectedException.expectMessage( "Index dropped while sampling." );
 
-        UniqueLuceneIndexSampler luceneIndexSampler = new UniqueLuceneIndexSampler( indexSearcher, taskControl.newInstance() );
-        luceneIndexSampler.sampleIndex( Registers.newDoubleLongRegister() );
+        UniqueLuceneIndexSampler sampler = new UniqueLuceneIndexSampler( indexSearcher, taskControl.newInstance() );
+        sampler.sampleIndex();
     }
 
 }

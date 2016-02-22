@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.schema.sampler;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 /**
@@ -41,18 +41,17 @@ abstract class LuceneIndexSampler implements IndexSampler
     /**
      * Perform actual sampling.
      *
-     * @param result contains the unique values and the sampled size.
-     * @return the index size.
+     * @return the index sampling result.
      * @throws IndexNotFoundKernelException if the index is dropped while sampling.
      */
-    protected abstract long performSampling( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException;
+    protected abstract IndexSample performSampling() throws IndexNotFoundKernelException;
 
     @Override
-    public final long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
+    public final IndexSample sampleIndex() throws IndexNotFoundKernelException
     {
         try
         {
-            return performSampling( result );
+            return performSampling();
         }
         finally
         {

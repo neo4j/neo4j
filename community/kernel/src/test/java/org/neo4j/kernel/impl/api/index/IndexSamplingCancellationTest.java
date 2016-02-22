@@ -34,8 +34,8 @@ import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
@@ -177,11 +177,11 @@ public class IndexSamplingCancellationTest
         }
 
         @Override
-        public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
+        public IndexSample sampleIndex() throws IndexNotFoundKernelException
         {
             try
             {
-                return delegate.sampleIndex( result );
+                return delegate.sampleIndex();
             }
             catch ( Throwable e )
             {

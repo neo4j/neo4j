@@ -22,8 +22,7 @@ package org.neo4j.kernel.api.impl.index.sampler;
 import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
 /**
@@ -40,22 +39,19 @@ public class AggregatingIndexSampler implements IndexSampler
     }
 
     @Override
-    public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
+    public IndexSample sampleIndex() throws IndexNotFoundKernelException
     {
-        SampleResult sampleResult = indexSamplers.parallelStream()
-                                    .map( this::sampleIndex )
-                                    .reduce( SampleResult::combine ).get();
-        sampleResult.getRegister().copyTo( result );
-        return sampleResult.sample;
+        return indexSamplers.parallelStream()
+                .map( this::sampleIndex )
+                .reduce( this::combine )
+                .get();
     }
 
-    private SampleResult sampleIndex( IndexSampler sampler)
+    private IndexSample sampleIndex( IndexSampler sampler )
     {
         try
         {
-            Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
-            long sample = sampler.sampleIndex( register );
-            return new SampleResult( register, sample );
+            return sampler.sampleIndex();
         }
         catch ( IndexNotFoundKernelException e )
         {
@@ -63,47 +59,11 @@ public class AggregatingIndexSampler implements IndexSampler
         }
     }
 
-    private static class SampleResult
+    public IndexSample combine( IndexSample sample1, IndexSample sample2 )
     {
-        private Register.DoubleLongRegister register;
-        private long sample;
-
-        /**
-         * Combine two sample results into one by sum their corresponding values.
-         * @param sampleResult1 first sample to combine
-         * @param sampleResult2 second sample to combine
-         * @return new result sample that will represent sum of first and second sample
-         */
-        public static SampleResult combine(SampleResult sampleResult1, SampleResult sampleResult2)
-        {
-            Register.DoubleLongRegister register1 = sampleResult1.getRegister();
-            Register.DoubleLongRegister register2 = sampleResult2.getRegister();
-            Register.DoubleLongRegister register = Registers.newDoubleLongRegister(
-                    add( register1.readFirst(), register2.readFirst() ),
-                    add( register1.readSecond(), register2.readSecond() ) );
-            long sample = add( sampleResult1.getSample(), sampleResult2.getSample() );
-            return new SampleResult( register, sample );
-        }
-
-        private static long add( long sample, long sample2 )
-        {
-            return Math.addExact( sample, sample2 );
-        }
-
-        SampleResult( Register.DoubleLongRegister register, long sample )
-        {
-            this.register = register;
-            this.sample = sample;
-        }
-
-        public Register.DoubleLongRegister getRegister()
-        {
-            return register;
-        }
-
-        public long getSample()
-        {
-            return sample;
-        }
+        long indexSize = Math.addExact( sample1.indexSize(), sample2.indexSize() );
+        long uniqueValues = Math.addExact( sample1.uniqueValues(), sample2.uniqueValues() );
+        long sampleSize = Math.addExact( sample1.sampleSize(), sample2.sampleSize() );
+        return new IndexSample( indexSize, uniqueValues, sampleSize );
     }
 }
