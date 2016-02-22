@@ -69,19 +69,21 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
     private final TransactionUriScheme uriScheme;
+    private final boolean implicitTransaction;
     private final Log log;
     private final long id;
     private final QuerySessionProvider sessionFactory;
     private TransitionalTxManagementKernelTransaction context;
 
     public TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine,
-                              TransactionRegistry registry, TransactionUriScheme uriScheme, LogProvider logProvider,
-                              QuerySessionProvider sessionFactory )
+            TransactionRegistry registry, TransactionUriScheme uriScheme, boolean implicitTransaction,
+            LogProvider logProvider, QuerySessionProvider sessionFactory )
     {
         this.txManagerFacade = txManagerFacade;
         this.engine = engine;
         this.registry = registry;
         this.uriScheme = uriScheme;
+        this.implicitTransaction = implicitTransaction;
         this.log = logProvider.getLog( getClass() );
         this.id = registry.begin( this );
         this.sessionFactory = sessionFactory;
@@ -90,6 +92,11 @@ public class TransactionHandle implements TransactionTerminationHandle
     public URI uri()
     {
         return uriScheme.txUri( id );
+    }
+
+    public boolean isPristine()
+    {
+        return implicitTransaction;
     }
 
     public void execute( StatementDeserializer statements, ExecutionResultSerializer output, HttpServletRequest request )
@@ -122,14 +129,14 @@ public class TransactionHandle implements TransactionTerminationHandle
         return true;
     }
 
-    public void commit( StatementDeserializer statements, ExecutionResultSerializer output, boolean pristine, HttpServletRequest request )
+    public void commit( StatementDeserializer statements, ExecutionResultSerializer output, HttpServletRequest request )
     {
         List<Neo4jError> errors = new LinkedList<>();
         try
         {
             try
             {
-                StatementExecutionStrategy executionStrategy = selectExecutionStrategy( statements, pristine, errors );
+                StatementExecutionStrategy executionStrategy = selectExecutionStrategy( statements, errors );
 
                 switch ( executionStrategy ) {
                     case EXECUTE_STATEMENT_USING_PERIODIC_COMMIT:
@@ -167,43 +174,21 @@ public class TransactionHandle implements TransactionTerminationHandle
         }
     }
 
-    private StatementExecutionStrategy selectExecutionStrategy( StatementDeserializer statements, boolean pristine, List<Neo4jError> errors )
+    private StatementExecutionStrategy selectExecutionStrategy( StatementDeserializer statements, List<Neo4jError> errors )
     {
-        // PERIODIC COMMIT queries may only be used when directly committing a pristine (newly created)
-        // transaction and when the first statement is an PERIODIC COMMIT statement.
-        //
-        // In that case we refrain from opening a transaction and leave management of
-        // transactions to Cypher. If there are any further statements they will all be
-        // executed in a separate transaction (Once you PERIODIC COMMIT all bets are off).
-        //
-        try
+        if ( implicitTransaction )
         {
-            if ( pristine )
+            Statement peek = statements.peek();
+            if ( peek == null ) /* JSON parse error */
             {
-                Statement peek = statements.peek();
-                if ( peek == null ) /* JSON parse error */
-                {
-                    return SKIP_EXECUTE_STATEMENT;
-                }
-                else if ( engine.isPeriodicCommit( peek.statement() ) )
-                {
-                    return EXECUTE_STATEMENT_USING_PERIODIC_COMMIT;
-                }
-                else
-                {
-                    return EXECUTE_STATEMENT;
-                }
+                return SKIP_EXECUTE_STATEMENT;
             }
-            else
+            else if ( engine.isPeriodicCommit( peek.statement() ) )
             {
-                return EXECUTE_STATEMENT;
+                return EXECUTE_STATEMENT_USING_PERIODIC_COMMIT;
             }
         }
-        catch ( CypherException e )
-        {
-            errors.add( new Neo4jError( e.status(), e ) );
-            throw e;
-        }
+        return EXECUTE_STATEMENT;
     }
 
     public void rollback( ExecutionResultSerializer output )
@@ -237,7 +222,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         {
             try
             {
-                context = txManagerFacade.newTransaction();
+                context = txManagerFacade.newTransaction( implicitTransaction );
             }
             catch ( RuntimeException e )
             {

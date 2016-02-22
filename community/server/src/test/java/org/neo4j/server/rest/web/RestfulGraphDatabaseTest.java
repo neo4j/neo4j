@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
@@ -32,11 +37,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -45,11 +45,11 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.Status.Request;
 import org.neo4j.kernel.api.exceptions.Status.Schema;
 import org.neo4j.kernel.api.exceptions.Status.Statement;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.configuration.ConfigWrappingConfiguration;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
@@ -69,7 +69,6 @@ import org.neo4j.test.server.EntityOutputFormat;
 
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -82,7 +81,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
 
 public class RestfulGraphDatabaseTest
@@ -95,17 +93,16 @@ public class RestfulGraphDatabaseTest
     private static Database database;
     private static GraphDbHelper helper;
     private static EntityOutputFormat output;
-    private static LeaseManager leaseManager;
-    private static GraphDatabaseAPI graph;
+    private static GraphDatabaseFacade graph;
 
     @BeforeClass
     public static void doBefore() throws IOException
     {
-        graph = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        database = new WrappedDatabase(graph);
+        graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        database = new WrappedDatabase( graph );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
-        leaseManager = new LeaseManager( new FakeClock() );
+        LeaseManager leaseManager = new LeaseManager( new FakeClock() );
 
         Config config = new Config();
         config.registerSettingsClasses( asList( ServerSettings.class, GraphDatabaseSettings.class ));

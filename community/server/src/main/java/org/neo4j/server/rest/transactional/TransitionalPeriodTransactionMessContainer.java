@@ -20,28 +20,27 @@
 package org.neo4j.server.rest.transactional;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 public class TransitionalPeriodTransactionMessContainer
 {
-    private final GraphDatabaseAPI db;
+    private final GraphDatabaseFacade db;
     private final ThreadToStatementContextBridge txBridge;
 
-    public TransitionalPeriodTransactionMessContainer( GraphDatabaseAPI db )
+    public TransitionalPeriodTransactionMessContainer( GraphDatabaseFacade db )
     {
         this.db = db;
         this.txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    public TransitionalTxManagementKernelTransaction newTransaction()
+    public TransitionalTxManagementKernelTransaction newTransaction( boolean implicitTransaction )
     {
-        Transaction tx = db.beginTx();
-        TransactionTerminator txInterruptor = new TransactionTerminator( tx );
-
-        // Get and use the TransactionContext created in db.beginTx(). The role of creating
-        // TransactionContexts will be reversed soonish.
-        return new TransitionalTxManagementKernelTransaction( txInterruptor, txBridge );
+        Transaction tx = db.beginTransaction( implicitTransaction
+                                              ? KernelTransaction.Type.implicit
+                                              : KernelTransaction.Type.explicit );
+        return new TransitionalTxManagementKernelTransaction( new TransactionTerminator( tx ), txBridge );
     }
 
     public ThreadToStatementContextBridge getBridge()

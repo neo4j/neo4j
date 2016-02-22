@@ -50,7 +50,7 @@ import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.helpers.ServerHelper;
@@ -92,7 +92,7 @@ public class DatabaseActionsTest
     private static final Label LABEL = label( "Label" );
     private static GraphDbHelper graphdbHelper;
     private static Database database;
-    private static GraphDatabaseAPI graph;
+    private static GraphDatabaseFacade graph;
     private static DatabaseActions actions;
 
     @Rule
@@ -101,7 +101,7 @@ public class DatabaseActionsTest
     @BeforeClass
     public static void createDb() throws IOException
     {
-        graph = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase( graph );
         graphdbHelper = new GraphDbHelper( database );
         actions = new TransactionWrappedDatabaseActions( new LeaseManager( new FakeClock() ), database.getGraph() );
