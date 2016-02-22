@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -30,7 +31,7 @@ import static java.lang.String.format;
 
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.NO_DATA;
 
-public class DynamicRecordFormat extends BaseRecordFormat<DynamicRecord>
+public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
 {
     // (in_use+next high)(1 byte)+nr_of_bytes(3 bytes)+next_block(int)
     public static final int RECORD_HEADER_SIZE = 1 + 3 + 4; // = 8

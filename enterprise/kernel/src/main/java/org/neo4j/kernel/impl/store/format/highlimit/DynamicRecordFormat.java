@@ -24,9 +24,23 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat.readData;
 
+/**
+ * LEGEND:
+ * V: variable between 3B-8B
+ * D: data size
+ *
+ * Record format:
+ * 1B   header
+ * 3B   number of bytes data in this block
+ * 8B   next block
+ * DB   data (record size - (the above) header size)
+ *
+ * => 12B + data size
+ */
 class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
 {
     private static final int RECORD_HEADER_SIZE = 1/*header byte*/ + 3/*# of bytes*/ + 8/*max size of next reference*/;
@@ -45,28 +59,39 @@ class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
     }
 
     @Override
-    protected void doRead( DynamicRecord record, PageCursor cursor, int recordSize, PagedFile storeFile,
-            long headerByte, boolean inUse ) throws IOException
+    public void read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+            throws IOException
     {
-        int length = cursor.getShort() | cursor.getByte() << 16;
-        long next = cursor.getLong();
-        boolean isStartRecord = (headerByte & START_RECORD_BIT) != 0;
-        record.initialize( inUse, isStartRecord, next, -1, length );
-        readData( record, cursor );
+        byte headerByte = cursor.getByte();
+        boolean inUse = isInUse( headerByte );
+        if ( mode.shouldLoad( inUse ) )
+        {
+            int length = cursor.getShort() | cursor.getByte() << 16;
+            long next = cursor.getLong();
+            boolean isStartRecord = (headerByte & START_RECORD_BIT) != 0;
+            record.initialize( inUse, isStartRecord, next, -1, length );
+            readData( record, cursor );
+        }
     }
 
     @Override
-    protected void doWrite( DynamicRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
-            throws IOException
+    public void write( DynamicRecord record, PageCursor cursor, int recordSize, PagedFile storeFile ) throws IOException
     {
-        assert record.getLength() < (1 << 24) - 1;
-        byte headerByte = (byte) ((record.inUse() ? IN_USE_BIT : 0) |
-                (record.isStartRecord() ? START_RECORD_BIT : 0));
-        cursor.putByte( headerByte );
-        cursor.putShort( (short) record.getLength() );
-        cursor.putByte( (byte) (record.getLength() >>> 16 ) );
-        cursor.putLong( record.getNextBlock() );
-        cursor.putBytes( record.getData() );
+        if ( record.inUse() )
+        {
+            assert record.getLength() < (1 << 24) - 1;
+            byte headerByte = (byte) ((record.inUse() ? IN_USE_BIT : 0) |
+                    (record.isStartRecord() ? START_RECORD_BIT : 0));
+            cursor.putByte( headerByte );
+            cursor.putShort( (short) record.getLength() );
+            cursor.putByte( (byte) (record.getLength() >>> 16 ) );
+            cursor.putLong( record.getNextBlock() );
+            cursor.putBytes( record.getData() );
+        }
+        else
+        {
+            markFirstByteAsUnused( cursor );
+        }
     }
 
     @Override

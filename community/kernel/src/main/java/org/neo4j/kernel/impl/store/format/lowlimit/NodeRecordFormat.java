@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
+import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
 {
@@ -43,51 +46,64 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
     }
 
     @Override
-    public void doRead( NodeRecord record, PageCursor cursor, int recordSize, PagedFile storeFile, long headerByte, boolean inUse )
+    public void read( NodeRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+            throws IOException
     {
-        long nextRel = cursor.getUnsignedInt();
-        long nextProp = cursor.getUnsignedInt();
+        byte headerByte = cursor.getByte();
+        boolean inUse = isInUse( headerByte );
+        if ( mode.shouldLoad( inUse ) )
+        {
+            long nextRel = cursor.getUnsignedInt();
+            long nextProp = cursor.getUnsignedInt();
 
-        long relModifier = (headerByte & 0xEL) << 31;
-        long propModifier = (headerByte & 0xF0L) << 28;
+            long relModifier = (headerByte & 0xEL) << 31;
+            long propModifier = (headerByte & 0xF0L) << 28;
 
-        long lsbLabels = cursor.getUnsignedInt();
-        long hsbLabels = cursor.getByte() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
-        long labels = lsbLabels | (hsbLabels << 32);
-        byte extra = cursor.getByte();
-        boolean dense = (extra & 0x1) > 0;
+            long lsbLabels = cursor.getUnsignedInt();
+            long hsbLabels = cursor.getByte() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
+            long labels = lsbLabels | (hsbLabels << 32);
+            byte extra = cursor.getByte();
+            boolean dense = (extra & 0x1) > 0;
 
-        record.initialize( inUse,
-                BaseRecordFormat.longFromIntAndMod( nextProp, propModifier ), dense,
-                BaseRecordFormat.longFromIntAndMod( nextRel, relModifier ), labels );
+            record.initialize( inUse,
+                    BaseRecordFormat.longFromIntAndMod( nextProp, propModifier ), dense,
+                    BaseRecordFormat.longFromIntAndMod( nextRel, relModifier ), labels );
+        }
     }
 
     @Override
-    public void doWrite( NodeRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
+    public void write( NodeRecord record, PageCursor cursor, int recordSize, PagedFile storeFile ) throws IOException
     {
-        long nextRel = record.getNextRel();
-        long nextProp = record.getNextProp();
+        if ( record.inUse() )
+        {
+            long nextRel = record.getNextRel();
+            long nextProp = record.getNextProp();
 
-        short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel & 0x700000000L) >> 31);
-        short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short)((nextProp & 0xF00000000L) >> 28);
+            short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel & 0x700000000L) >> 31);
+            short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short)((nextProp & 0xF00000000L) >> 28);
 
-        // [    ,   x] in use bit
-        // [    ,xxx ] higher bits for rel id
-        // [xxxx,    ] higher bits for prop id
-        short inUseUnsignedByte = ( record.inUse() ? Record.IN_USE : Record.NOT_IN_USE ).byteValue();
-        inUseUnsignedByte = (short) ( inUseUnsignedByte | relModifier | propModifier );
+            // [    ,   x] in use bit
+            // [    ,xxx ] higher bits for rel id
+            // [xxxx,    ] higher bits for prop id
+            short inUseUnsignedByte = ( record.inUse() ? Record.IN_USE : Record.NOT_IN_USE ).byteValue();
+            inUseUnsignedByte = (short) ( inUseUnsignedByte | relModifier | propModifier );
 
-        cursor.putByte( (byte) inUseUnsignedByte );
-        cursor.putInt( (int) nextRel );
-        cursor.putInt( (int) nextProp );
+            cursor.putByte( (byte) inUseUnsignedByte );
+            cursor.putInt( (int) nextRel );
+            cursor.putInt( (int) nextProp );
 
-        // lsb of labels
-        long labelField = record.getLabelField();
-        cursor.putInt( (int) labelField );
-        // msb of labels
-        cursor.putByte( (byte) ((labelField & 0xFF00000000L) >> 32) );
+            // lsb of labels
+            long labelField = record.getLabelField();
+            cursor.putInt( (int) labelField );
+            // msb of labels
+            cursor.putByte( (byte) ((labelField & 0xFF00000000L) >> 32) );
 
-        byte extra = record.isDense() ? (byte)1 : (byte)0;
-        cursor.putByte( extra );
+            byte extra = record.isDense() ? (byte)1 : (byte)0;
+            cursor.putByte( extra );
+        }
+        else
+        {
+            markFirstByteAsUnused( cursor );
+        }
     }
 }

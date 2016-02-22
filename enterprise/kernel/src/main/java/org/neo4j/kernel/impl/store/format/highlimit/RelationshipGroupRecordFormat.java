@@ -24,6 +24,21 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
+/**
+ * LEGEND:
+ * V: variable between 3B-8B
+ *
+ * Record format:
+ * 1B   header
+ * 2B   relationship type
+ * VB   first outgoing relationships
+ * VB   first incoming relationships
+ * VB   first loop relationships
+ * VB   owning node
+ * VB   next relationship group record
+ *
+ * => 18B-43B
+ */
 class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<RelationshipGroupRecord>
 {
     private static final int RECORD_SIZE = 32;

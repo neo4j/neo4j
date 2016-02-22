@@ -26,6 +26,18 @@ import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
+/**
+ * LEGEND:
+ * V: variable between 3B-8B
+ *
+ * Record format:
+ * 1B   header
+ * VB   first relationship
+ * VB   first property
+ * 5B   labels
+ *
+ * => 12B-22B
+ */
 class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
 {
     private static final long NULL_LABELS = Record.NO_LABELS_FIELD.intValue();

@@ -41,7 +41,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
 
     public PropertyRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, 0 );
+        super( fixedRecordSize( RECORD_SIZE ), 0 );
     }
 
     @Override

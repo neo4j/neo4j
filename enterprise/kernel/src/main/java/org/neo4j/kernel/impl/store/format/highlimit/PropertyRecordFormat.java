@@ -25,6 +25,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR_ADAPTER;
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toAbsolute;
@@ -32,10 +33,20 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
 
 
 /**
- * {@link PropertyRecord} format which currently has some wasted space in the end due to hard coded
- * limit of 4 blocks per record, whereas the record size is 64.
- */
-class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
+ * LEGEND:
+ * V: variable between 3B-8B
+ *
+ * Record format:
+ * 1B   header
+ * VB   previous property
+ * VB   next property
+ * 8B   property block
+ * 8B   property block
+ * 8B   property block
+ * 8B   property block
+ *
+ * => 39B-49B
+ */class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 {
     private static final int RECORD_SIZE = 48;
 
@@ -51,34 +62,46 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
     }
 
     @Override
-    protected void doRead( PropertyRecord record, PageCursor cursor, int recordSize, PagedFile storeFile,
-            long headerByte, boolean inUse ) throws IOException
+    public void read( PropertyRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+            throws IOException
     {
-        int blockCount = (int) (headerByte >>> 4);
-        long recordId = record.getId();
-        record.initialize( inUse,
-                toAbsolute( Reference.decode( cursor, PAGE_CURSOR_ADAPTER ), recordId ),
-                toAbsolute( Reference.decode( cursor, PAGE_CURSOR_ADAPTER ), recordId ) );
-        while ( blockCount-- > 0 )
+        byte headerByte = cursor.getByte();
+        boolean inUse = isInUse( headerByte );
+        if ( mode.shouldLoad( inUse ) )
         {
-            record.addLoadedBlock( cursor.getLong() );
+            int blockCount = headerByte >>> 4;
+            long recordId = record.getId();
+            record.initialize( inUse,
+                    toAbsolute( Reference.decode( cursor, PAGE_CURSOR_ADAPTER ), recordId ),
+                    toAbsolute( Reference.decode( cursor, PAGE_CURSOR_ADAPTER ), recordId ) );
+            while ( blockCount-- > 0 )
+            {
+                record.addLoadedBlock( cursor.getLong() );
+            }
         }
     }
 
     @Override
-    protected void doWrite( PropertyRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
+    public void write( PropertyRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
             throws IOException
     {
-        cursor.putByte( (byte) ((record.inUse() ? IN_USE_BIT : 0) | numberOfBlocks( record ) << 4) );
-        long recordId = record.getId();
-        Reference.encode( toRelative( record.getPrevProp(), recordId), cursor, PAGE_CURSOR_ADAPTER );
-        Reference.encode( toRelative( record.getNextProp(), recordId), cursor, PAGE_CURSOR_ADAPTER );
-        for ( PropertyBlock block : record )
+        if ( record.inUse() )
         {
-            for ( long propertyBlock : block.getValueBlocks() )
+            cursor.putByte( (byte) ((record.inUse() ? IN_USE_BIT : 0) | numberOfBlocks( record ) << 4) );
+            long recordId = record.getId();
+            Reference.encode( toRelative( record.getPrevProp(), recordId), cursor, PAGE_CURSOR_ADAPTER );
+            Reference.encode( toRelative( record.getNextProp(), recordId), cursor, PAGE_CURSOR_ADAPTER );
+            for ( PropertyBlock block : record )
             {
-                cursor.putLong( propertyBlock );
+                for ( long propertyBlock : block.getValueBlocks() )
+                {
+                    cursor.putLong( propertyBlock );
+                }
             }
+        }
+        else
+        {
+            markFirstByteAsUnused( cursor );
         }
     }
 

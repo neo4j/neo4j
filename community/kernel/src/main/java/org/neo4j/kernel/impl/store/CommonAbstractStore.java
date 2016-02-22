@@ -1077,10 +1077,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
                     {
                         record.setId( currentId );
                         long pageId = pageIdForRecord( currentId );
+                        int offset = offsetForId( currentId );
                         if ( pageId == pageCursor.getCurrentPageId() ||
-                                pageCursor.next( pageIdForRecord( currentId ) ) )
+                                pageCursor.next( pageId ) )
                         {
-                            int offset = offsetForId( currentId );
                             do
                             {
                                 prepareForReading( pageCursor, offset, record );
