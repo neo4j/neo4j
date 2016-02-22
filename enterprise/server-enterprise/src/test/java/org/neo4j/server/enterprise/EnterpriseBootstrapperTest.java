@@ -19,16 +19,24 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.server.BaseBootstrapperTest;
 import org.neo4j.server.Bootstrapper;
+import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_store;
 import static org.neo4j.server.CommunityBootstrapper.start;
+import static org.neo4j.server.ServerTestUtils.getRelativePath;
+import static org.neo4j.server.configuration.ServerSettings.data_directory;
+import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
+import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
 
 public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
 {
@@ -38,12 +46,19 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         return new EnterpriseBootstrapper();
     }
 
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
+
     @Test
     public void shouldBeAbleToStartInSingleMode() throws Exception
     {
         // When
         int resultCode = start( bootstrapper, commandLineConfig(
-                "-c", configOption( EnterpriseServerSettings.mode.name(), "SINGLE" )
+                "-c", configOption( EnterpriseServerSettings.mode.name(), "SINGLE" ),
+                "-c", configOption( data_directory.name(), getRelativePath( folder.getRoot(), data_directory ) ),
+                "-c", configOption( auth_store.name(), getRelativePath( folder.getRoot(), auth_store ) ),
+                "-c", configOption( tls_key_file.name(), getRelativePath( folder.getRoot(), tls_key_file ) ),
+                "-c", configOption( tls_certificate_file.name(), getRelativePath( folder.getRoot(), tls_certificate_file ) )
         ));
 
         // Then
@@ -58,7 +73,11 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         int resultCode = start( bootstrapper, commandLineConfig(
                 "-c", configOption( EnterpriseServerSettings.mode.name(), "HA" ),
                 "-c", configOption( ClusterSettings.server_id.name(), "1" ),
-                "-c", configOption( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" )
+                "-c", configOption( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ),
+                "-c", configOption( data_directory.name(), getRelativePath( folder.getRoot(), data_directory ) ),
+                "-c", configOption( auth_store.name(), getRelativePath( folder.getRoot(), auth_store ) ),
+                "-c", configOption( tls_key_file.name(), getRelativePath( folder.getRoot(), tls_key_file ) ),
+                "-c", configOption( tls_certificate_file.name(), getRelativePath( folder.getRoot(), tls_certificate_file ) )
         ));
 
         // Then
@@ -74,7 +93,11 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
                 "-c", configOption( EnterpriseServerSettings.mode.name(), "HA" ),
                 "-c", configOption( ClusterSettings.server_id.name(), "1" ),
                 "-c", configOption( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ),
-                "-c", configOption( HaSettings.tx_push_strategy.name(), "fixed" )
+                "-c", configOption( HaSettings.tx_push_strategy.name(), "fixed" ),
+                "-c", configOption( data_directory.name(), getRelativePath( folder.getRoot(), data_directory ) ),
+                "-c", configOption( auth_store.name(), getRelativePath( folder.getRoot(), auth_store ) ),
+                "-c", configOption( tls_key_file.name(), getRelativePath( folder.getRoot(), tls_key_file ) ),
+                "-c", configOption( tls_certificate_file.name(), getRelativePath( folder.getRoot(), tls_certificate_file ) )
         ));
 
         // Then
