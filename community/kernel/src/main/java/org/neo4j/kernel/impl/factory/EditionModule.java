@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.factory;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.KernelDiagnostics;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -95,6 +94,7 @@ public abstract class EditionModule
 
     protected AuthManager createAuthManager(Config config, LifeSupport life, LogProvider logProvider)
     {
+
         FileUserRepository users = life.add( new FileUserRepository( config.get( GraphDatabaseSettings.auth_store ).toPath(), logProvider ) );
 
         return life.add(new AuthManager( users, systemUTC(), config.get( GraphDatabaseSettings.auth_enabled )));

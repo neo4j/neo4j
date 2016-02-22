@@ -27,6 +27,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
@@ -219,11 +220,13 @@ public class FixturesTest
 
     private TestServerBuilder getServerBuilder( File targetFolder ) throws IOException
     {
-        TestServerBuilder serverBuilder = newInProcessBuilder( targetFolder );
-        serverBuilder.withConfig( ServerSettings.tls_key_file.name(),
-                ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_key_file ) );
-        serverBuilder.withConfig( ServerSettings.tls_certificate_file.name(),
-                ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) );
+        TestServerBuilder serverBuilder = newInProcessBuilder( targetFolder )
+                .withConfig( ServerSettings.tls_key_file.name(),
+                        ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_key_file ) )
+                .withConfig( ServerSettings.tls_certificate_file.name(),
+                        ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) )
+                .withConfig( GraphDatabaseSettings.auth_store.name(),
+                        ServerTestUtils.getRelativePath( testDir.directory(), GraphDatabaseSettings.auth_store ) );
         return serverBuilder;
     }
 

@@ -21,56 +21,61 @@ package org.neo4j.index.impl.lucene.legacy;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 
 public class Inserter
 {
-	public static void main( String[] args ) throws IOException
-	{
-		String path = args[0];
-		final GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(path );
-		final Index<Node> index = getIndex( db );
-		final String[] keys = new String[] { "apoc", "zion", "morpheus" };
-		final String[] values = new String[] { "hej", "yo", "something", "just a value", "anything" };
-		
-		for ( int i = 0; i < 5; i++ )
-		{
-			new Thread()
-			{
-				@Override
-				public void run()
-				{
-					while ( true )
-					{
-						try ( Transaction tx = db.beginTx() )
-						{
-							for ( int i = 0; i < 100; i++ )
-							{
-                                String key = keys[i%keys.length];
-                                String value = values[i%values.length]+i;
-                                
-								Node node = db.createNode();
+    public static void main( String[] args ) throws IOException
+    {
+        String path = args[0];
+        final GraphDatabaseService db = new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( path )
+                .setConfig( GraphDatabaseSettings.auth_store, Files.createTempFile("auth", "").toString() )
+                .newGraphDatabase();
+        final Index<Node> index = getIndex( db );
+        final String[] keys = new String[]{"apoc", "zion", "morpheus"};
+        final String[] values = new String[]{"hej", "yo", "something", "just a value", "anything"};
+
+        for ( int i = 0; i < 5; i++ )
+        {
+            new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    while ( true )
+                    {
+                        try ( Transaction tx = db.beginTx() )
+                        {
+                            for ( int i = 0; i < 100; i++ )
+                            {
+                                String key = keys[i % keys.length];
+                                String value = values[i % values.length] + i;
+
+                                Node node = db.createNode();
                                 node.setProperty( key, value );
-								index.add( node, key, value );
-							}
-							tx.success();
-						}
-					}
-				}
-			}.start();
-		}
-		new File( path, "started" ).createNewFile();
-	}
+                                index.add( node, key, value );
+                            }
+                            tx.success();
+                        }
+                    }
+                }
+            }.start();
+        }
+        new File( path, "started" ).createNewFile();
+    }
 
     private static Index<Node> getIndex( GraphDatabaseService db )
     {
-		try ( Transaction transaction = db.beginTx() )
-		{
+        try ( Transaction transaction = db.beginTx() )
+        {
             Index<Node> index = db.index().forNodes( "myIndex" );
             transaction.success();
             return index;
