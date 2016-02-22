@@ -44,17 +44,12 @@ import scala.collection.Iterator
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
 trait QueryContext extends TokenContext {
-  type Graph
-
-  type KernelStatement
 
   type EntityAccessor
 
-  type StateView
-
   def entityAccessor: EntityAccessor
 
-  def transactionalContext: TransactionalContext[Graph,KernelStatement,StateView]
+  def transactionalContext: TransactionalContext
 
   def nodeOps: Operations[Node]
 
@@ -194,21 +189,15 @@ trait Operations[T <: PropertyContainer] {
   def releaseExclusiveLock(obj: Long): Unit
 }
 
-trait TransactionalContext[Graph,KernelStatement,StateView] {
+trait TransactionalContext {
 
-  def newContext(): TransactionalContext[Graph,KernelStatement,StateView]
+  type ReadOps
 
-  def statement: KernelStatement
-
-  def isOpen: Boolean
+  def readOperations: ReadOps
 
   def isTopLevelTx: Boolean
 
   def close(success: Boolean)
 
   def commitAndRestartTx()
-
-  def graph: Graph
-
-  def stateView: StateView
 }

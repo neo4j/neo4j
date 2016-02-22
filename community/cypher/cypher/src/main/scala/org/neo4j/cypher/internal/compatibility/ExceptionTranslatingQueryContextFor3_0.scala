@@ -195,7 +195,7 @@ class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends Delega
       translateException(super.isDeletedInThisTx(obj))
   }
 
-  class ExceptionTranslatingTransactionalContext(inner: TransactionalContext[Graph, KernelStatement, StateView]) extends DelegatingTransactionalContext(inner) {
+  class ExceptionTranslatingTransactionalContext(inner: TransactionalContext) extends DelegatingTransactionalContext(inner) {
     override def close(success: Boolean) { translateException(super.close(success)) }
   }
 }

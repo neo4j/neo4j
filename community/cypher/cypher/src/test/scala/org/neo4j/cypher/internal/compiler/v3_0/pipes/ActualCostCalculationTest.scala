@@ -24,12 +24,12 @@ import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 
 import org.apache.commons.math3.stat.regression.{OLSMultipleLinearRegression, SimpleRegression}
+import org.neo4j.cypher.internal.Neo4jTransactionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Literal
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{LabelId, PropertyKeyId, SemanticDirection, ast}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
@@ -225,7 +225,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     val results = new ListBuffer[DataPoint]
     graph.withTx { tx =>
 
-      val transactionalContext = new TransactionBoundTransactionalContext(graph, tx, true, graph.statement)
+      val transactionalContext = new Neo4jTransactionContext(graph, tx, true, graph.statement)
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val state = QueryStateHelper.emptyWith(queryContext)
       for (x <- 0 to 25) {
@@ -285,8 +285,9 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def eager(pipe: Pipe) = new EagerPipe(pipe)()
 
   private def indexSeek(graph: GraphDatabaseQueryService) = {
-    graph.withTx { _ =>
-      val ctx = new TransactionBoundPlanContext(graph.statement, graph)
+    graph.withTx { tx =>
+      val transactionalContext = new Neo4jTransactionContext(graph, tx, true, graph.statement)
+      val ctx = new TransactionBoundPlanContext(transactionalContext)
       val literal = Literal(42)
 
       val labelId = ctx.getOptLabelId(LABEL.name()).get

@@ -19,15 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
+import org.neo4j.cypher.internal.Neo4jTransactionContext
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalCSVResource, NullPipeDecorator, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, UpdateCountingQueryContext}
+import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
-import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext
 
 import scala.collection.mutable
 
@@ -41,7 +43,7 @@ object QueryStateHelper {
   def queryStateFrom(db: GraphDatabaseQueryService, tx: Transaction, params: Map[String, Any] = Map.empty): QueryState = {
     val statement: Statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val searchMonitor = new KernelMonitors().newMonitor(classOf[IndexSearchMonitor])
-    val transactionalContext = new TransactionBoundTransactionalContext(db, tx, true, statement)
+    val transactionalContext = new Neo4jTransactionContext(db, tx, true, statement)
     val queryContext = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
     newWith(db = db, query = queryContext, params = params)
   }

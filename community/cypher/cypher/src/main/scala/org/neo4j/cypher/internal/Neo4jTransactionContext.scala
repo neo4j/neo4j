@@ -17,23 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_0
+package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compiler.v3_0.spi.TransactionalContext
-import org.neo4j.graphdb.Transaction
+import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
+import org.neo4j.graphdb.{Lock, PropertyContainer, Transaction}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
-case class TransactionBoundTransactionalContext(graph: GraphDatabaseQueryService, initialTx: Transaction,
-                                                val isTopLevelTx: Boolean, initialStatement: Statement)
-  extends TransactionalContext[GraphDatabaseQueryService, Statement, TxStateHolder] {
+object TransactionContextFactory {
+  def open(graphDatabaseAPI: GraphDatabaseQueryService, txBridge: ThreadToStatementContextBridge): Neo4jTransactionContext = {
+    val isTopLevelTx = !txBridge.hasTransaction
+    val tx = graphDatabaseAPI.beginTx()
+    val statement = txBridge.get()
+    Neo4jTransactionContext(graphDatabaseAPI, tx, isTopLevelTx, statement)
+  }
+}
+
+// please construct this class through TransactionContextFactory, this is public only for tests
+case class Neo4jTransactionContext(val graph: GraphDatabaseQueryService, initialTx: Transaction, val isTopLevelTx: Boolean,
+                                   initialStatement: Statement) extends ExtendedTransactionalContext {
   private var tx = initialTx
   private var open = true
   private var _statement = initialStatement
   private val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+
+  override def readOperations: ReadOps = statement.readOperations()
 
   override def statement = _statement
 
@@ -62,12 +73,16 @@ case class TransactionBoundTransactionalContext(graph: GraphDatabaseQueryService
     _statement = txBridge.get()
   }
 
-  override def newContext() = {
-    val isTopLevelTx = !txBridge.hasTransaction
-    val tx = graph.beginTx()
-    val statement = txBridge.get()
-    new TransactionBoundTransactionalContext(graph, tx, isTopLevelTx, statement)
+  def cleanForReuse() {
+    // close the old statement reference after the statement has been "upgraded"
+    // to either a schema data or a schema statement, so that the locks are "handed over".
+    statement.close()
+    _statement = txBridge.get()
   }
 
+  override def newContext() = TransactionContextFactory.open(graph, txBridge)
+
   override def stateView: TxStateHolder = statement.asInstanceOf[KernelStatement]
+
+  override def acquireWriteLock(p: PropertyContainer): Lock = tx.acquireWriteLock(p)
 }

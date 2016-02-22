@@ -69,7 +69,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       // fields
       val fields = Fields(
         closer = clazz.field(typeRef[TaskCloser], "closer"),
-        statement = clazz.field(typeRef[Statement], "statement"),
         ro = clazz.field(typeRef[ReadOperations], "ro"),
         entityAccessor = clazz.field(typeRef[NodeManager], "nodeManager"),
         executionMode = clazz.field(typeRef[ExecutionMode], "executionMode"),
@@ -178,7 +177,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 }
 
 private case class Fields(closer: FieldReference,
-                          statement: FieldReference,
                           ro: FieldReference,
                           entityAccessor: FieldReference,
                           executionMode: FieldReference,
@@ -852,10 +850,8 @@ private object Templates {
 
     param[util.Map[String, Object]]("params")).
     put(self(), typeRef[TaskCloser], "closer", load("closer")).
-    put(self(), typeRef[Statement], "statement",
-      cast(typeRef[Statement],
-        invoke(invoke(load("queryContext"), method[QueryContext, TransactionalContext[_,_,_]]("transactionalContext")), method[TransactionalContext[_,_,_], Statement]("statement")))).
-    put(self(), typeRef[ReadOperations], "ro", invoke(get(self(), typeRef[Statement], "statement"), method[Statement, ReadOperations]("readOperations"))).
+    put(self(), typeRef[ReadOperations], "ro",
+        cast(classOf[ReadOperations], invoke(invoke(load("queryContext"), method[QueryContext, TransactionalContext]("transactionalContext")), method[TransactionalContext, ReadOperations]("readOperations")))).
     put(self(), typeRef[ExecutionMode], "executionMode", load("executionMode")).
     put(self(), typeRef[Provider[InternalPlanDescription]], "description", load("description")).
     put(self(), typeRef[QueryExecutionTracer], "tracer", load("tracer")).

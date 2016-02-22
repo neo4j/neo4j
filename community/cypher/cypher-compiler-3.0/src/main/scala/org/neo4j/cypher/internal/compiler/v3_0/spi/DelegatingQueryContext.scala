@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, K
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 import scala.collection.Iterator
@@ -34,15 +35,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
 
-  type Graph = inner.Graph
-
-  type KernelStatement = inner.KernelStatement
-
   type EntityAccessor = inner.EntityAccessor
 
-  type StateView = inner.StateView
-
-  override def transactionalContext: TransactionalContext[Graph,KernelStatement,StateView] = inner.transactionalContext
+  override def transactionalContext: TransactionalContext = inner.transactionalContext
 
   override def entityAccessor: EntityAccessor = inner.entityAccessor
 
@@ -226,21 +221,15 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
 }
 
-class DelegatingTransactionalContext[Graph,KernelStatement,StateView](val inner: TransactionalContext[Graph,KernelStatement,StateView]) extends TransactionalContext[Graph,KernelStatement,StateView] {
+class DelegatingTransactionalContext(val inner: TransactionalContext) extends TransactionalContext {
+
+  override type ReadOps = inner.ReadOps
+
+  override def readOperations: ReadOps = inner.readOperations
 
   override def commitAndRestartTx() { inner.commitAndRestartTx() }
 
   override def isTopLevelTx: Boolean = inner.isTopLevelTx
 
-  override def statement: KernelStatement = inner.statement
-
-  override def isOpen: Boolean = inner.isOpen
-
   override def close(success: Boolean) { inner.close(success) }
-
-  override def graph: Graph = inner.graph
-
-  override def newContext(): TransactionalContext[Graph,KernelStatement,StateView] = inner.newContext()
-
-  override def stateView: StateView = inner.stateView
 }

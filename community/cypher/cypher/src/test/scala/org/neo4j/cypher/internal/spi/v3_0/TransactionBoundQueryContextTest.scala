@@ -22,9 +22,11 @@ package org.neo4j.cypher.internal.spi.v3_0
 import java.net.URL
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.Neo4jTransactionContext
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.DynamicIterable
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
@@ -59,7 +61,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test ("should_mark_transaction_successful_if_successful") {
     // GIVEN
     when (outerTx.failure () ).thenThrow (new AssertionError ("Shouldn't be called") )
-    val transactionalContext = new TransactionBoundTransactionalContext(graph, outerTx, isTopLevelTx = true, statement)
+    val transactionalContext = new Neo4jTransactionContext(graph, outerTx, isTopLevelTx = true, statement)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // WHEN
@@ -74,7 +76,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test ("should_mark_transaction_failed_if_not_successful") {
     // GIVEN
     when (outerTx.success () ).thenThrow (new AssertionError ("Shouldn't be called") )
-    val transactionalContext = new TransactionBoundTransactionalContext(graph, outerTx, isTopLevelTx = true, statement)
+    val transactionalContext = new Neo4jTransactionContext(graph, outerTx, isTopLevelTx = true, statement)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
     context.transactionalContext.close(success = false)
@@ -92,7 +94,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     val tx = graph.beginTx()
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val transactionalContext = new TransactionBoundTransactionalContext(graph, outerTx, isTopLevelTx = true, stmt)
+    val transactionalContext = new Neo4jTransactionContext(graph, outerTx, isTopLevelTx = true, stmt)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // WHEN
@@ -113,7 +115,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     val tx = graph.beginTx()
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val transactionalContext = new TransactionBoundTransactionalContext(graph, outerTx, isTopLevelTx = true, stmt)
+    val transactionalContext = new Neo4jTransactionContext(graph, outerTx, isTopLevelTx = true, stmt)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // THEN
@@ -132,7 +134,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
     val tx = graph.beginTx()
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val transactionalContext = new TransactionBoundTransactionalContext(graph, outerTx, isTopLevelTx = true, stmt)
+    val transactionalContext = new Neo4jTransactionContext(graph, outerTx, isTopLevelTx = true, stmt)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // THEN

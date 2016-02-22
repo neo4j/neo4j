@@ -24,6 +24,7 @@ import java.util.concurrent._
 import org.junit.Assert._
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseTestSupport
+import org.neo4j.cypher.internal.Neo4jTransactionContext
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_0
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.HasLabel
@@ -42,7 +43,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, Rewriter, Scope, SemanticTable}
-import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundTransactionalContext, GeneratedQueryStructure, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
+import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.Label.label
 import org.neo4j.helpers.Clock
 import org.scalatest.mock.MockitoSugar
@@ -111,7 +113,7 @@ class RuleExecutablePlanBuilderTest
 
       val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), config, RewriterStepSequencer.newValidating)
 
-      val transactionalContext = new TransactionBoundTransactionalContext(graph, tx, true, statement)
+      val transactionalContext = new Neo4jTransactionContext(graph, tx, true, statement)
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val pkId = queryContext.getPropertyKeyId("foo")
       val parsedQ = new FakePreparedQuery(q)
@@ -138,7 +140,7 @@ class RuleExecutablePlanBuilderTest
         .returns(ReturnItem(Variable("x"), "x"))
 
       val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), config, RewriterStepSequencer.newValidating)
-      val transactionalContext = new TransactionBoundTransactionalContext(graph, tx, true, statement)
+      val transactionalContext = new Neo4jTransactionContext(graph, tx, true, statement)
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val labelId = queryContext.getLabelId("Person")
       val parsedQ = new FakePreparedQuery(q)

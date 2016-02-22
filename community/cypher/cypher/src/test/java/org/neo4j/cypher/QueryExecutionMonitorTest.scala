@@ -224,5 +224,4 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
     super.afterEach()
     if (graph != null) graph.shutdown()
   }
-
 }

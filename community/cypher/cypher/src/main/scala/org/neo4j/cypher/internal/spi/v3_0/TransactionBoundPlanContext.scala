@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.spi.v3_0
 
-import org.neo4j.cypher.{CypherExecutionException, MissingIndexException}
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
+import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
+import org.neo4j.cypher.{CypherExecutionException, MissingIndexException}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
@@ -38,51 +38,49 @@ import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProced
 
 import scala.collection.JavaConverters._
 
-class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseQueryService)
-  extends TransactionBoundTokenContext(statement) with PlanContext {
+class TransactionBoundPlanContext(tc: ExtendedTransactionalContext)
+  extends TransactionBoundTokenContext(tc.statement) with PlanContext {
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId = statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
+    val labelId = tc.statement.readOperations().labelGetForName(labelName)
+    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    getOnlineIndex(statement.readOperations().indexGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    getOnlineIndex(tc.statement.readOperations().indexGetForLabelAndPropertyKey(labelId, propertyKeyId))
   }
 
   def hasIndexRule(labelName: String): Boolean = {
-    val labelId = statement.readOperations().labelGetForName(labelName)
+    val labelId = tc.statement.readOperations().labelGetForName(labelName)
 
-    val indexDescriptors = statement.readOperations().indexesGetForLabel(labelId).asScala
+    val indexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
     val onlineIndexDescriptors = indexDescriptors.flatMap(getOnlineIndex)
 
     onlineIndexDescriptors.nonEmpty
   }
 
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId = statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
+    val labelId = tc.statement.readOperations().labelGetForName(labelName)
+    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
     // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
-    Some(statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    Some(tc.statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(labelId, propertyKeyId))
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
     try { f } catch { case _: SchemaKernelException => None }
 
   private def getOnlineIndex(descriptor: IndexDescriptor): Option[IndexDescriptor] =
-    statement.readOperations().indexGetState(descriptor) match {
+    tc.statement.readOperations().indexGetState(descriptor) match {
       case InternalIndexState.ONLINE => Some(descriptor)
       case _                         => None
     }
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
-    val labelId = statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
-
-    val matchingConstraints = statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
+    val labelId = tc.statement.readOperations().labelGetForName(labelName)
+    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
 
     import scala.collection.JavaConverters._
-    statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {
+    tc.statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {
       case unique: UniquenessConstraint => unique
     }
   } catch {
@@ -90,13 +88,13 @@ class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseQu
   }
 
   def checkNodeIndex(idxName: String) {
-    if (!statement.readOperations().nodeLegacyIndexesGetAll().contains(idxName)) {
+    if (!tc.statement.readOperations().nodeLegacyIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
   def checkRelIndex(idxName: String)  {
-    if (!statement.readOperations().relationshipLegacyIndexesGetAll().contains(idxName)) {
+    if (!tc.statement.readOperations().relationshipLegacyIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
@@ -105,7 +103,7 @@ class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseQu
     val javaCreator = new java.util.function.Function[Any, T]() {
       def apply(key: Any) = f
     }
-    statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
+    tc.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
 
@@ -119,13 +117,13 @@ class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseQu
     new BidirectionalTraversalMatcher(steps, start, end)
 
   val statistics: GraphStatistics =
-    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(statement), MutableGraphStatisticsSnapshot())
+    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations), MutableGraphStatisticsSnapshot())
 
-  val txIdProvider = LastCommittedTxIdProvider(gdb)
+  val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
   override def procedureSignature(name: ProcedureName) = {
     val kn = new KernelProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
-    val ks = statement.readOperations().procedureGet(kn)
+    val ks = tc.statement.readOperations().procedureGet(kn)
     val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
     val output = ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
     val mode = asCypherProcMode(ks.mode())

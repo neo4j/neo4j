@@ -34,15 +34,16 @@ import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotificatio
 import org.neo4j.cypher.internal.frontend.v2_3.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v2_3.{CypherException => InternalCypherException, InputPosition => InternalInputPosition}
 import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
+import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
 import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
-import org.neo4j.cypher.internal.{CypherExecutionMode, ExtendedExecutionResult, ExtendedPlanDescription, LastCommittedTxIdProvider, ParsedQuery, PreParsedQuery, QueryStatistics, TransactionInfo}
+import org.neo4j.cypher.internal.{CypherExecutionMode, ExtendedExecutionResult, ExtendedPlanDescription, LastCommittedTxIdProvider, ParsedQuery, PreParsedQuery, QueryStatistics}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.{KernelAPI, Statement}
+import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -169,8 +170,8 @@ trait CompatibilityFor2_3 {
     new ParsedQuery {
       def isPeriodicCommit = preparedQueryForV_2_3.map(_.isPeriodicCommit).getOrElse(false)
 
-      def plan(statement: Statement, tracer: v3_0.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_3.runSafely {
-        val planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
+      def plan(transactionalContext: ExtendedTransactionalContext, tracer: v3_0.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_3.runSafely {
+        val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext)
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
 
         // Log notifications/warnings from planning
@@ -185,12 +186,10 @@ trait CompatibilityFor2_3 {
 
   class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3) extends org.neo4j.cypher.internal.ExecutionPlan {
 
-    private def queryContext(graph: GraphDatabaseQueryService, txInfo: TransactionInfo): QueryContext = {
-      val ctx = new TransactionBoundQueryContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
-      new ExceptionTranslatingQueryContextFor2_3(ctx)
-    }
+    private def queryContext(transactionalContext: ExtendedTransactionalContext): QueryContext =
+      new ExceptionTranslatingQueryContextFor2_3(new TransactionBoundQueryContext(transactionalContext))
 
-    def run(graph: GraphDatabaseQueryService, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+    def run(transactionalContext: ExtendedTransactionalContext, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
       implicit val s = session
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev2_3
@@ -198,14 +197,15 @@ trait CompatibilityFor2_3 {
         case CypherExecutionMode.normal => NormalModev2_3
       }
       exceptionHandlerFor2_3.runSafely {
-        ExecutionResultWrapperFor2_3(inner.run(queryContext(graph, txInfo), txInfo.statement, innerExecutionMode, params), inner.plannerUsed, inner.runtimeUsed)
+        ExecutionResultWrapperFor2_3(inner.run(queryContext(transactionalContext), transactionalContext.statement, innerExecutionMode, params), inner.plannerUsed, inner.runtimeUsed)
       }
     }
 
     def isPeriodicCommit = inner.isPeriodicCommit
 
-    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, statement: Statement): Boolean =
-      inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(statement))
+
+    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: ExtendedTransactionalContext): Boolean =
+      inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
   }
 }
 
