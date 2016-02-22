@@ -695,6 +695,13 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
+    public synchronized void closeAndDelete() throws IOException
+    {
+        close();
+        fs.deleteFile( file );
+    }
+
+    @Override
     public void force() throws IOException
     {
         try
