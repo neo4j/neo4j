@@ -1465,6 +1465,19 @@ object LdbcQueries {
       Map("weight" -> 3.0, "pathNodeIds" -> List(0, 1, 2, 4, 6, 5)))
   }
 
-  val LDBC_QUERIES = Seq(Query1, Query2, Query3, Query4, Query5, Query6, Query7, Query8,
-    Query9, Query10, Query11, Query12, Query13, Query14)
+  val LDBC_QUERIES = Seq(
+    Query1,
+    Query2,
+    Query3,
+    Query4,
+    Query5,
+    Query6,
+    Query7,
+    Query8,
+    Query9,
+    Query10,
+    Query11,
+    Query12,
+    Query13,
+    Query14)
 }

@@ -29,8 +29,4 @@ case class UnwindCollection(left: LogicalPlan, variable: IdName, expression: Exp
   def rhs = None
 
   def availableSymbols: Set[IdName] = left.availableSymbols + variable
-
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(expression = f(left.availableSymbols, expression))(solved)
 }
-

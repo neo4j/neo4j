@@ -24,19 +24,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, P
 
 case class SelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression)
                             (val solved: PlannerQuery with CardinalityEstimation)
-  extends AbstractSelectOrSemiApply(left, right, expr, solved) {
-
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(expr = f(left.availableSymbols, expr))(solved)
-}
+  extends AbstractSelectOrSemiApply(left, right, expr, solved)
 
 case class SelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression)
                                 (val solved: PlannerQuery with CardinalityEstimation)
-  extends AbstractSelectOrSemiApply(left, right, expr, solved) {
-
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(expr = f(left.availableSymbols, expr))(solved)
-}
+  extends AbstractSelectOrSemiApply(left, right, expr, solved)
 
 abstract class AbstractSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression,
                                          solved: PlannerQuery with CardinalityEstimation)

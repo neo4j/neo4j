@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 
+import scala.reflect.ClassTag
+
 
 trait EffectfulAstNode[T] extends AstNode[T] {
   def localEffects(symbols: SymbolTable): Effects
@@ -43,7 +45,7 @@ trait AstNode[T] {
 
   def rewrite(f: Expression => Expression): T
 
-  def typedRewrite[R <: T](f: Expression => Expression)(implicit mf: Manifest[R]): R = rewrite(f) match {
+  def typedRewrite[R <: T](f: Expression => Expression)(implicit mf: ClassTag[R]): R = rewrite(f) match {
     case (value: R) => value
     case _          => throw new CypherTypeException("Invalid rewrite")
   }

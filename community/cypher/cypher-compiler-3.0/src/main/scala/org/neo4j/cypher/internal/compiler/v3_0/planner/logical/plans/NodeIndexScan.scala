@@ -27,7 +27,7 @@ case class NodeIndexScan(idName: IdName,
                          propertyKey: PropertyKeyToken,
                          argumentIds: Set[IdName])
                         (val solved: PlannerQuery with CardinalityEstimation)
-  extends NodeLogicalLeafPlan with LogicalPlanWithoutExpressions {
+  extends NodeLogicalLeafPlan {
 
   def availableSymbols = argumentIds + idName
 }

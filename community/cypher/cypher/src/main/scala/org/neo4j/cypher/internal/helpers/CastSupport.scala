@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.helpers
 
 import org.neo4j.cypher.CypherTypeException
 
+import scala.reflect.ClassTag
+
 // TODO: This is only here for accomodating cypher-compiler-1.9. Do not touch, do not import, purge it with fire post 2.3
 object CastSupport {
 
@@ -29,14 +31,14 @@ object CastSupport {
   /**
    * Filter sequence by type
    */
-  def sift[A : Manifest](seq: Seq[Any]): Seq[A] = seq.collect(erasureCast)
+  def sift[A : ClassTag](seq: Seq[Any]): Seq[A] = seq.collect(erasureCast)
 
   /**
    * Casts input to A if possible according to type erasure, discards input otherwise
    */
-  def erasureCast[A : Manifest]: PartialFunction[Any, A] = { case value: A => value }
+  def erasureCast[A : ClassTag]: PartialFunction[Any, A] = { case value: A => value }
 
-  def castOrFail[A](value: Any)(implicit ev: Manifest[A]): A = value match {
+  def castOrFail[A](value: Any)(implicit ev: ClassTag[A]): A = value match {
     case v: A => v
     case _    => throw new CypherTypeException(
       s"Expected $value to be a ${ev.runtimeClass.getName}, but it was a ${value.getClass.getName}")

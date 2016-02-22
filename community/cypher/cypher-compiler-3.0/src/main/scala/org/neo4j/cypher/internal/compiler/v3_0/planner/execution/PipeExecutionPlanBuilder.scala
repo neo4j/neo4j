@@ -451,9 +451,11 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case ForeachApply(_, _, variable, expression) =>
       ForeachPipe(lhs, rhs, variable, toCommandExpression(expression))()
 
+    case RollUpApply(_, _, collectionName, identifierToCollection, nullables) =>
+      RollUpApplyPipe(lhs, rhs, collectionName.name, identifierToCollection.name, nullables.map(_.name))()
+
     case x =>
       throw new CantHandleQueryException(x.toString)
-
   }
 
   private val resolver = new KeyTokenResolver
@@ -477,7 +479,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
   }
 
   private def buildExpression(expr: ast.Expression)(implicit planContext: PlanContext): CommandExpression = {
-    val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)
+    val rewrittenExpr = expr.endoRewrite(buildPipeExpressions) // TODO
 
     toCommandExpression(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext))
   }

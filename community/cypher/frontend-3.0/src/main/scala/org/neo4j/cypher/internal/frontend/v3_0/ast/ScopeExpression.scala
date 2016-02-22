@@ -25,21 +25,21 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
 // Scope expressions bundle together variables of a new scope
 // together with any child expressions that get evaluated in a context where
 // these variables are bound
-//
 trait ScopeExpression extends Expression {
   def variables: Set[Variable]
-
-  override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
 }
 
 case class FilterScope(variable: Variable, innerPredicate: Option[Expression])(val position: InputPosition) extends ScopeExpression {
+  override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
   val variables = Set(variable)
 }
 
 case class ExtractScope(variable: Variable, innerPredicate: Option[Expression], extractExpression: Option[Expression])(val position: InputPosition) extends ScopeExpression {
+  override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
   val variables = Set(variable)
 }
 
 case class ReduceScope(accumulator: Variable, variable: Variable, expression: Expression)(val position: InputPosition) extends ScopeExpression {
+  override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
   val variables = Set(accumulator, variable)
 }

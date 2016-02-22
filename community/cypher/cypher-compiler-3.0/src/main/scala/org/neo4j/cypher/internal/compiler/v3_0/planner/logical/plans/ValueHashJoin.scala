@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Equals
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
 /*
 Represents a common hash join on values and not node ids. The definition of a value join is an equality predicate
@@ -33,9 +32,4 @@ case class ValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals)
   override val rhs = Some(right)
 
   override def availableSymbols = left.availableSymbols ++ right.availableSymbols
-
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression) = {
-    val symbols: Set[IdName] = availableSymbols
-    copy(join = f(symbols, join).asInstanceOf[Equals])(solved)
-  }
 }

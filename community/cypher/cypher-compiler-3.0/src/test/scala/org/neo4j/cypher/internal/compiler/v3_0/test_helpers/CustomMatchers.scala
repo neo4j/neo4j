@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_0.test_helpers
 
 import org.scalatest.matchers.{MatchResult, Matcher}
 
+import scala.reflect.ClassTag
+
 trait CustomMatchers {
   class IsTypeOf(clazz: Class[_]) extends Matcher[Any] {
 
@@ -30,6 +32,6 @@ trait CustomMatchers {
       s"$left has type $clazz")
   }
 
-  def haveType[T](implicit manifest: Manifest[T]) = new IsTypeOf(manifest.runtimeClass)
+  def haveType[T](implicit manifest: ClassTag[T]) = new IsTypeOf(manifest.runtimeClass)
 
 }

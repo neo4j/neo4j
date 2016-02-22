@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, RelTypeName}
 case class CreateRelationship(source: LogicalPlan, idName: IdName, startNode: IdName, typ: RelTypeName, endNode: IdName,
                               properties: Option[Expression])
                            (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

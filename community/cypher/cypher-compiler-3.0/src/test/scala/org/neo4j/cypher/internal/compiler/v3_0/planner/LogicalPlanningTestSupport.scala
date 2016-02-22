@@ -215,7 +215,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 }
 
 case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
+  extends LogicalPlan with LazyLogicalPlan {
   def rhs = None
   def lhs = None
 }

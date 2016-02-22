@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 case class MergeCreateRelationship(source: LogicalPlan, idName: IdName, startNode: IdName, typ: LazyType, endNode: IdName,
                                    properties: Option[Expression])
                                   (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

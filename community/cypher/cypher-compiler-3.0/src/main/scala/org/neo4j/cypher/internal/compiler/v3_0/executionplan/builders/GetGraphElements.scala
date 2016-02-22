@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 import org.neo4j.graphdb.PropertyContainer
 
 import scala.collection.JavaConverters._
+import scala.reflect.ClassTag
 
 object GetGraphElements {
-  def getOptionalElements[T: Manifest](data: Any, name: String, getElement: Long => Option[T]): Iterator[T] =
+  def getOptionalElements[T: ClassTag](data: Any, name: String, getElement: Long => Option[T]): Iterator[T] =
     getElements(data, name, getElement).flatten
 
-  def getElements[T: Manifest](data: Any, name: String, getElement: Long => T): Iterator[T] = {
+  def getElements[T: ClassTag](data: Any, name: String, getElement: Long => T): Iterator[T] = {
     def castElement(x: Any): T = x match {
       case i: Int     => getElement(i)
       case i: Long    => getElement(i)

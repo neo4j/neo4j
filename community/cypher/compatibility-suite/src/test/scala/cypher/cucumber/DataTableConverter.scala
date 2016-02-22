@@ -25,15 +25,16 @@ import cucumber.api.DataTable
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 object DataTableConverter {
 
   implicit class RighDataTable(dataTable: DataTable) {
 
-    def asScala[T](implicit manifest: Manifest[T]): List[mutable.Map[String, T]] =
+    def asScala[T](implicit manifest: ClassTag[T]): List[mutable.Map[String, T]] =
       toList[T].map(_.asScala)
 
-    def toList[T](implicit manifest: Manifest[T]): List[util.Map[String, T]] =
+    def toList[T](implicit manifest: ClassTag[T]): List[util.Map[String, T]] =
       dataTable.asMaps(classOf[String], manifest.runtimeClass.asInstanceOf[Class[T]]).asScala.toList
   }
 
