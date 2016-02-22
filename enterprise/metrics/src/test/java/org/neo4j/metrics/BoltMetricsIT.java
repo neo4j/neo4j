@@ -27,6 +27,7 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.bolt.v1.messaging.message.Messages;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
@@ -63,6 +64,10 @@ public class BoltMetricsIT
                 .newImpermanentDatabaseBuilder()
                 .setConfig( connector( 0, enabled ), "true" )
                 .setConfig( GraphDatabaseSettings.auth_enabled, "false" )
+                .setConfig( BoltKernelExtension.Settings.tls_certificate_file,
+                        tmpDir.getRoot().toPath().resolve( BoltKernelExtension.Settings.tls_certificate_file.getDefaultValue() ).toString())
+                .setConfig( BoltKernelExtension.Settings.tls_key_file,
+                        tmpDir.getRoot().toPath().resolve( BoltKernelExtension.Settings.tls_key_file.getDefaultValue() ).toString())
                 .setConfig( MetricsSettings.boltMessagesEnabled, "true" )
                 .setConfig( MetricsSettings.csvEnabled, "true" )
                 .setConfig( MetricsSettings.csvPath, metricsFolder.getAbsolutePath() )
