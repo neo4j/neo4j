@@ -28,7 +28,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -37,8 +45,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileUtils;
 
@@ -53,6 +59,10 @@ public class LucenePartitionedIndexStressTesting
     private static final String UNIQUE_PROPERTY_PREFIX = "uniqueProperty";
 
     private static final int NUMBER_OF_PROPERTIES = 2;
+
+    private static final int NUMBER_OF_POPULATORS =
+            Integer.valueOf( getEnvVariable( "LUCENE_INDEX_NUMBER_OF_POPULATORS",
+                    String.valueOf( Runtime.getRuntime().availableProcessors() - 1 ) ) );
     private static final int BATCH_SIZE = Integer.valueOf( getEnvVariable( "LUCENE_INDEX_POPULATION_BATCH_SIZE",
             String.valueOf( 10000 ) ) );
 
@@ -62,6 +72,8 @@ public class LucenePartitionedIndexStressTesting
             getEnvVariable( "LUCENE_PARTITIONED_INDEX_WORKING_DIRECTORY", JAVA_IO_TMPDIR );
     private static final int WAIT_DURATION_MINUTES = Integer.valueOf( getEnvVariable(
             "LUCENE_PARTITIONED_INDEX_WAIT_TILL_ONLINE", String.valueOf( 30 ) ) );
+
+    private ExecutorService populators;
     private GraphDatabaseService db;
     private Path storeDir;
 
@@ -72,6 +84,7 @@ public class LucenePartitionedIndexStressTesting
         FileUtils.deletePathRecursively( storeDir );
         System.out.println( String.format( "Starting database at: %s", storeDir ) );
 
+        populators = Executors.newFixedThreadPool( NUMBER_OF_POPULATORS );
         db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.toFile() )
                 .newGraphDatabase();
     }
@@ -80,33 +93,20 @@ public class LucenePartitionedIndexStressTesting
     public void tearDown() throws IOException
     {
         db.shutdown();
+        populators.shutdown();
         FileUtils.deletePathRecursively( storeDir );
     }
 
     @Test
-    public void indexPopulationAndCreationStressTest() throws IOException
+    public void indexCreationStressTest() throws Exception
     {
-        createIndexes();
-        createUniqueIndexes();
-        long totalNodeCount = populateDatabase();
-        findLastNodesByLabelAndProperties( db, totalNodeCount );
+        PopulationResult populationResult = populateDatabase();
 
-        dropAllIndexes();
         createUniqueIndexes();
         createIndexes();
-        findLastNodesByLabelAndProperties( db, totalNodeCount );
+        findLastTrackedNodesByLabelAndProperties( db, populationResult );
     }
 
-    private void dropAllIndexes()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Schema schema = db.schema();
-            schema.getConstraints().forEach( ConstraintDefinition::drop );
-            schema.getIndexes().forEach( IndexDefinition::drop );
-            transaction.success();
-        }
-    }
 
     private void createIndexes()
     {
@@ -128,34 +128,34 @@ public class LucenePartitionedIndexStressTesting
                                                                                creationStart ) + " ms." );
     }
 
-    private long populateDatabase()
+    private PopulationResult populateDatabase() throws ExecutionException, InterruptedException
     {
         System.out.println( "Starting database population." );
         long populationStart = System.nanoTime();
-        long insertedNodes = populateDb( db );
+        PopulationResult populationResult = populateDb( db );
 
-        System.out.println( "Database population completed. Inserted " + insertedNodes + " nodes." );
+        System.out.println( "Database population completed. Inserted " + populationResult.numberOfNodes + " nodes." );
         System.out.println( "Population took: " + TimeUnit.NANOSECONDS.toMillis( System.nanoTime() -
                                                                                  populationStart ) + " ms." );
-        return insertedNodes;
+        return populationResult;
     }
 
-    private void findLastNodesByLabelAndProperties( GraphDatabaseService db, long totalNodes )
+    private void findLastTrackedNodesByLabelAndProperties( GraphDatabaseService db, PopulationResult populationResult )
     {
         try ( Transaction ignored = db.beginTx() )
         {
             Node nodeByUniqueStringProperty = db.findNode( Label.label( LABEL ), getUniqueStringProperty(),
-                    getLastNodePropertyValue( totalNodes ) + "" );
+                    populationResult.maxPropertyId + "" );
             Node nodeByStringProperty = db.findNode( Label.label( LABEL ), getStringProperty(),
-                    (getLastNodePropertyValue( totalNodes ) - 1) + "" );
+                    populationResult.maxPropertyId + "" );
             assertNotNull( "Should find last inserted node", nodeByStringProperty );
             assertEquals( "Both nodes should be the same last inserted node", nodeByStringProperty,
                     nodeByUniqueStringProperty );
 
             Node nodeByUniqueLongProperty = db.findNode( Label.label( LABEL ), getUniqueLongProperty(),
-                    getLastNodePropertyValue( totalNodes ) );
+                    populationResult.maxPropertyId );
             Node nodeByLongProperty = db.findNode( Label.label( LABEL ), getLongProperty(),
-                    (getLastNodePropertyValue( totalNodes ) - 1) );
+                    populationResult.maxPropertyId );
             assertNotNull( "Should find last inserted node", nodeByLongProperty );
             assertEquals( "Both nodes should be the same last inserted node", nodeByLongProperty,
                     nodeByUniqueLongProperty );
@@ -163,32 +163,29 @@ public class LucenePartitionedIndexStressTesting
         }
     }
 
-    private long getLastNodePropertyValue( long insertedNodes )
-    {
-        return 2 * insertedNodes - 1;
-    }
 
     private Path getStorePath() throws IOException
     {
         return Files.createTempDirectory( Paths.get( WORK_DIRECTORY ), "storeDir" );
     }
 
-    private long populateDb( GraphDatabaseService db )
+    private PopulationResult populateDb( GraphDatabaseService db ) throws ExecutionException, InterruptedException
     {
-        long insertedNodes = 0;
+        AtomicLong nodesCounter = new AtomicLong();
 
-        SequentialLongSupplier longSupplier = new SequentialLongSupplier();
-        SequentialStringSupplier stringSupplier = new SequentialStringSupplier();
 
-        while ( insertedNodes < NUMBER_OF_NODES )
+        List<Future<Long>> futures = new ArrayList<>( NUMBER_OF_POPULATORS );
+        for ( int i = 0; i < NUMBER_OF_POPULATORS; i++ )
         {
-            insertedNodes += insertBatchNodes( db, stringSupplier, longSupplier );
-            if ( insertedNodes % 1_000_000 == 0 )
-            {
-                System.out.println( "Inserted " + insertedNodes + " nodes." );
-            }
+            futures.add( populators.submit( new Populator( i, NUMBER_OF_POPULATORS, db, nodesCounter ) ) );
         }
-        return insertedNodes;
+
+        long maxPropertyId = 0;
+        for ( Future<Long> future : futures )
+        {
+            maxPropertyId = Math.max( maxPropertyId, future.get() );
+        }
+        return new PopulationResult( maxPropertyId, nodesCounter.get() );
     }
 
     private void createAndWaitForIndexes( boolean unique )
@@ -231,26 +228,6 @@ public class LucenePartitionedIndexStressTesting
         }
     }
 
-    private int insertBatchNodes( GraphDatabaseService db, Supplier<String> stringValueSupplier,
-            LongSupplier longSupplier )
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            for ( int i = 0; i < BATCH_SIZE; i++ )
-            {
-                Node node = db.createNode( Label.label( LABEL ) );
-
-                node.setProperty( getStringProperty(), stringValueSupplier.get() );
-                node.setProperty( getLongProperty(), longSupplier.getAsLong() );
-
-                node.setProperty( getUniqueStringProperty(), stringValueSupplier.get() );
-                node.setProperty( getUniqueLongProperty(), longSupplier.getAsLong() );
-            }
-            transaction.success();
-        }
-        return BATCH_SIZE;
-    }
-
     private static String getLongProperty()
     {
         return PROPERTY_PREFIX + 1;
@@ -271,7 +248,6 @@ public class LucenePartitionedIndexStressTesting
         return UNIQUE_PROPERTY_PREFIX + 0;
     }
 
-
     private static String getEnvVariable( String propertyName, String defaultValue )
     {
         String value = System.getenv( propertyName );
@@ -280,25 +256,107 @@ public class LucenePartitionedIndexStressTesting
 
     private static class SequentialStringSupplier implements Supplier<String>
     {
+        private final int step;
         long value = 0;
+
+        SequentialStringSupplier( int populatorNumber, int step )
+        {
+            this.value = populatorNumber;
+            this.step = step;
+        }
 
         @Override
         public String get()
         {
-            return value++ + "";
+            value += step;
+            return value + "";
         }
     }
 
     private static class SequentialLongSupplier implements LongSupplier
     {
-
         long value = 0;
+        private int step;
+
+        SequentialLongSupplier( int populatorNumber, int step )
+        {
+            value = populatorNumber;
+            this.step = step;
+        }
 
         @Override
         public long getAsLong()
         {
-            return value++;
+            value += step;
+            return value;
         }
     }
 
+    private static class Populator implements Callable<Long>
+    {
+        private final int populatorNumber;
+        private final int step;
+        private GraphDatabaseService db;
+        private AtomicLong nodesCounter;
+
+        public Populator( int populatorNumber, int step, GraphDatabaseService db, AtomicLong nodesCounter )
+        {
+            this.populatorNumber = populatorNumber;
+            this.step = step;
+            this.db = db;
+            this.nodesCounter = nodesCounter;
+        }
+
+        @Override
+        public Long call() throws Exception
+        {
+            SequentialLongSupplier longSupplier = new SequentialLongSupplier( populatorNumber, step );
+            SequentialStringSupplier stringSupplier = new SequentialStringSupplier( populatorNumber, step );
+
+            while ( nodesCounter.get() < NUMBER_OF_NODES )
+            {
+                long nodesInTotal = nodesCounter.addAndGet( insertBatchNodes( db, stringSupplier, longSupplier ) );
+                if ( nodesInTotal % 1_000_000 == 0 )
+                {
+                    System.out.println( "Inserted " + nodesInTotal + " nodes." );
+                }
+            }
+            return longSupplier.value;
+        }
+
+        private int insertBatchNodes( GraphDatabaseService db, Supplier<String> stringValueSupplier,
+                LongSupplier longSupplier )
+        {
+            try ( Transaction transaction = db.beginTx() )
+            {
+                for ( int i = 0; i < BATCH_SIZE; i++ )
+                {
+                    Node node = db.createNode( Label.label( LABEL ) );
+
+                    String stringValue = stringValueSupplier.get();
+                    long longValue = longSupplier.getAsLong();
+
+                    node.setProperty( getStringProperty(), stringValue );
+                    node.setProperty( getLongProperty(), longValue );
+
+                    node.setProperty( getUniqueStringProperty(), stringValue );
+                    node.setProperty( getUniqueLongProperty(), longValue );
+                }
+                transaction.success();
+            }
+            return BATCH_SIZE;
+        }
+    }
+
+    private class PopulationResult
+    {
+        private long maxPropertyId;
+        private long numberOfNodes;
+
+        PopulationResult( long maxPropertyId, long numberOfNodes )
+        {
+            this.maxPropertyId = maxPropertyId;
+            this.numberOfNodes = numberOfNodes;
+        }
+    }
 }
