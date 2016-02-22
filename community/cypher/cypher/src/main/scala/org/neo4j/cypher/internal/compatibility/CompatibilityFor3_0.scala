@@ -323,8 +323,8 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
   def notifications = inner.notifications.map(asKernelNotification)
 
   private def asKernelNotification(notification: InternalNotification) = notification match {
-    case CartesianProductNotification(pos, variables) =>
-      NotificationCode.CARTESIAN_PRODUCT.notification(pos.asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
+    case CartesianProductNotification(variables) =>
+      NotificationCode.CARTESIAN_PRODUCT.notification(InputPosition.empty, NotificationDetail.Factory.cartesianProduct(variables.asJava))
     case LengthOnNonPathNotification(pos) =>
       NotificationCode.LENGTH_ON_NON_PATH.notification(pos.asInputPosition)
     case PlannerUnsupportedNotification =>

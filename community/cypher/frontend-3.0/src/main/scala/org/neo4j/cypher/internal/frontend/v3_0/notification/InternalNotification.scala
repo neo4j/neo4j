@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
  */
 sealed trait InternalNotification
 
-case class CartesianProductNotification(position: InputPosition, isolatedVariables: Set[String]) extends InternalNotification
+case class CartesianProductNotification(isolatedVariables: Set[String]) extends InternalNotification
 
 case class LengthOnNonPathNotification(position: InputPosition) extends InternalNotification
 

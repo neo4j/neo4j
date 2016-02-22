@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.conditions.containsNamedPathO
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.closing
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{UnNamedNameGenerator, closing}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
@@ -33,7 +33,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStep, RewriterStepSequencer}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, Scope, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
+import org.neo4j.cypher.internal.frontend.v3_0.{Foldable, InternalException, Scope, SemanticTable}
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class CostBasedExecutablePlanBuilder(monitors: Monitors,
@@ -49,7 +50,8 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           config: CypherCompilerConfiguration)
   extends ExecutablePlanBuilder {
 
-  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer, createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference) = {
+  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer,
+                           createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference) = {
     val statement =
       CostBasedExecutablePlanBuilder.rewriteStatement(
         statement = inputQuery.statement,
@@ -77,8 +79,8 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
   }
 
 
-  def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)
-                        (planContext: PlanContext,  notificationLogger: InternalNotificationLogger):
+  private def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)
+                                (planContext: PlanContext, notificationLogger: InternalNotificationLogger):
   (Option[PeriodicCommit], LogicalPlan, PipeExecutionBuilderContext) = {
 
     tokenResolver.resolve(ast)(semanticTable, planContext)
@@ -93,12 +95,32 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
 
     val (periodicCommit, plan) = queryPlanner.plan(unionQuery)(context)
 
+    warnAboutCartesianProducts(plan, notificationLogger)
+
     val pipeBuildContext = PipeExecutionBuilderContext(metrics.cardinality, semanticTable, plannerName)
 
     //Check for unresolved tokens for read-only queries
     if (plan.solved.all(_.queryGraph.readOnly)) checkForUnresolvedTokens(ast, semanticTable).foreach(notificationLogger += _)
 
     (periodicCommit, plan, pipeBuildContext)
+  }
+
+  private def warnAboutCartesianProducts(plan: LogicalPlan, notificationLogger: InternalNotificationLogger) = {
+    import Foldable._
+
+    def namedSymbols(plan: LogicalPlan) = plan.availableSymbols.
+      map(_.name).
+      filter(UnNamedNameGenerator.isNamed)
+
+    plan.findByAllClass[CartesianProduct].foreach {
+      case CartesianProduct(lhs, rhs) =>
+        val rhsSymbols = namedSymbols(rhs)
+        val lhsSymbols = namedSymbols(lhs)
+
+        val symbols = if (lhsSymbols.size < rhsSymbols.size) lhsSymbols else rhsSymbols
+
+        notificationLogger += CartesianProductNotification(symbols)
+    }
   }
 }
 

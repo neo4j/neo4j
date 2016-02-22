@@ -27,20 +27,20 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("Warn for cartesian product") {
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("explain match (a)-->(b), (c)-->(d) return *")
 
-    result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))))
+    result.notifications.toList should equal(List(CartesianProductNotification(Set("c", "d"))))
   }
 
   test("Warn for cartesian product with runtime=compiled") {
     val result = innerExecute("explain cypher runtime=compiled match (a)-->(b), (c)-->(d) return count(*)")
 
-    result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d")),
+    result.notifications.toList should equal(List(CartesianProductNotification(Set("c", "d")),
                                                   RuntimeUnsupportedNotification))
   }
 
   test("Warn for cartesian product with runtime=interpreted") {
     val result = executeWithAllPlannersAndCompatibilityMode("explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *")
 
-    result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))))
+    result.notifications.toList should equal(List(CartesianProductNotification(Set("c", "d"))))
   }
 
   test("Don't warn for cartesian product when not using explain") {
@@ -147,7 +147,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("should not warn when join hint is used with COST planner with EXPLAIN") {
     val result = innerExecute( """CYPHER planner=cost EXPLAIN MATCH (a)-->(x)<--(b) USING JOIN ON x RETURN a, b""")
 
-    result.notifications should not contain(JoinHintUnsupportedNotification(Seq("x")))
+    result.notifications should not contain JoinHintUnsupportedNotification(Seq("x"))
   }
 
   test("should not warn when join hint is used with RULE planner without EXPLAIN") {
@@ -161,7 +161,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val resultWithExplain = executeWithAllPlannersAndRuntimesAndCompatibilityMode("explain match (a)-->(b), (c)-->(d) return *")
 
     resultWithoutExplain shouldBe empty
-    resultWithExplain.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))))
+    resultWithExplain.notifications.toList should equal(List(CartesianProductNotification(Set("c", "d"))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with a single label") {
