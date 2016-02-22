@@ -838,7 +838,17 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
     @Override
     protected void readRecord( PageCursor cursor, NeoStoreActualRecord record, RecordLoad mode )
     {
-        throw new UnsupportedOperationException();
+        int id = record.getIntId();
+        Position[] values = Position.values();
+        if ( id >= values.length )
+        {
+            record.initialize( false, FIELD_NOT_PRESENT );
+            return;
+        }
+
+        long value = getRecordValue( cursor, values[id] );
+        boolean inUse = value != FIELD_NOT_INITIALIZED && value != FIELD_NOT_PRESENT;
+        record.initialize( inUse, value );
     }
 
     @Override

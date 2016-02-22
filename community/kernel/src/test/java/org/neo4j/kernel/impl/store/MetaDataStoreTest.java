@@ -20,12 +20,14 @@
 package org.neo4j.kernel.impl.store;
 
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -35,6 +37,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -63,10 +66,26 @@ public class MetaDataStoreTest
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule( false );
 
+    private EphemeralFileSystemAbstraction fs;
+    private PageCache pageCache;
+
     @AfterClass
     public static void shutDownExecutor()
     {
         executor.shutdown();
+    }
+
+    @Before
+    public void setUp()
+    {
+        fs = fsRule.get();
+        pageCache = pageCacheRule.getPageCache( fs );
+    }
+
+    private MetaDataStore newMetaDataStore() throws IOException
+    {
+        StoreFactory storeFactory = new StoreFactory( fs, STORE_DIR, pageCache, NullLogProvider.getInstance() );
+        return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
 
     @Test
@@ -291,14 +310,6 @@ public class MetaDataStoreTest
         {
             assertThat( e, instanceOf( IllegalStateException.class ) );
         }
-    }
-
-    private MetaDataStore newMetaDataStore() throws IOException
-    {
-        EphemeralFileSystemAbstraction fs = fsRule.get();
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory storeFactory = new StoreFactory( fs, STORE_DIR, pageCache, NullLogProvider.getInstance() );
-        return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
 
     @Test
@@ -559,5 +570,32 @@ public class MetaDataStoreTest
                     "logVersion (" + logVersion + ") and byteOffset (" + byteOffset + ") from " + source +
                     " should be identical" );
         }
+    }
+
+    @Test
+    public void mustSupportScanningAllRecords() throws Exception
+    {
+        File file = new File( STORE_DIR, MetaDataStore.DEFAULT_NAME );
+        fs.mkdir( STORE_DIR );
+        fs.create( file ).close();
+        MetaDataStore.Position[] positions = MetaDataStore.Position.values();
+        for ( MetaDataStore.Position position : positions )
+        {
+            MetaDataStore.setRecord( pageCache, file, position, position.ordinal() + 1 );
+        }
+
+        List<Long> actualValues = new ArrayList<>();
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            store.scanAllRecords( record -> {
+                actualValues.add( record.getValue() );
+                return false;
+            } );
+        }
+
+        List<Long> expectedValues = Arrays.stream( positions ).map(
+                p -> p.ordinal() + 1L ).collect( Collectors.toList() );
+
+        assertThat( actualValues, is( expectedValues ) );
     }
 }
