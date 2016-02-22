@@ -74,7 +74,6 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
       uniqueHints chain
       where.semanticCheck chain
       checkHints chain
-      checkForCartesianProducts chain
       noteCurrentScope
 
   private def uniqueHints: SemanticCheck = {
@@ -84,18 +83,6 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     }.toVector
 
     (state: SemanticState) => SemanticCheckResult(state, errors)
-  }
-
-  private def checkForCartesianProducts: SemanticCheck = (state: SemanticState) => {
-    import connectedComponents._
-    val cc = connectedComponents(pattern.patternParts)
-    //if we have multiple connected components we will have
-    //a cartesian product
-    val newState = cc.drop(1).foldLeft(state) { (innerState, component) =>
-      innerState.addNotification(CartesianProductNotification(position, component.variables.map(_.name)))
-    }
-
-    SemanticCheckResult(newState, Seq.empty)
   }
 
   private def checkHints: SemanticCheck = {

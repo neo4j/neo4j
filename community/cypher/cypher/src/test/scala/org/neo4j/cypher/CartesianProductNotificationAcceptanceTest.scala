@@ -24,7 +24,6 @@ import org.mockito.Mockito.{verify, _}
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
@@ -44,7 +43,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     }
 
     //then
-    verify(logger, times(1)) += CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))
+    verify(logger) += CartesianProductNotification(Set("c", "d"))
   }
 
   test("should not warn when connected patterns") {
@@ -70,10 +69,10 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     }
 
     //then
-    verify(logger, times(1)) += CartesianProductNotification(InputPosition(0, 1, 1), Set("x", "y"))
+    verify(logger) += CartesianProductNotification(Set("x", "y"))
   }
 
-  test("should not warn when disconnected patterns in multiple match clauses") {
+  test("should warn when disconnected patterns in multiple match clauses") {
     //given
     val logger = mock[InternalNotificationLogger]
     val compiler = createCompiler()
@@ -82,7 +81,20 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     graph.inTx(compiler.planQuery("MATCH (a)-->(b) MATCH (c)-->(d) RETURN *", planContext, logger))
 
     //then
-    verify(logger, never) += any()
+    verify(logger) += CartesianProductNotification(Set("c", "d"))
+  }
+
+  test("should not warn when solved with hash join") {
+    //given
+    (0 to 1000) foreach { i => createNode("id" -> i) } // Need some nodes to not pick stupid plans
+    val logger = mock[InternalNotificationLogger]
+    val compiler = createCompiler()
+
+    //when
+    graph.inTx(compiler.planQuery("MATCH (a), (b) WHERE a.id = b.id RETURN *", planContext, logger))
+
+    //then
+    verify(logger, never()) += any()
   }
 
   test("this query does not contain a cartesian product") {
