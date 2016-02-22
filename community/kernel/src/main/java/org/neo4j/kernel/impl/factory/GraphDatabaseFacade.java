@@ -322,7 +322,7 @@ public class GraphDatabaseFacade
         return beginTransaction( KernelTransaction.Type.explicit );
     }
 
-    private Transaction beginTransaction( KernelTransaction.Type type )
+    public Transaction beginTransaction( KernelTransaction.Type type )
     {
         if ( spi.isInOpenTransaction() )
         {

@@ -34,12 +34,13 @@ import org.neo4j.bolt.v1.runtime.integration.SessionMatchers;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.cypher.SyntaxException;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.udc.UsageData;
 
@@ -54,7 +55,7 @@ public class StateMachineErrorTest
 {
     private static final Map<String, Object> EMPTY_PARAMS = Collections.emptyMap();
 
-    private GraphDatabaseService db = mock( GraphDatabaseService.class );
+    private GraphDatabaseFacade db = mock( GraphDatabaseFacade.class );
     private ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
     private StatementRunner runner = mock( StatementRunner.class );
     private Transaction tx = mock( TopLevelTransaction.class );
@@ -62,7 +63,7 @@ public class StateMachineErrorTest
     @Before
     public void setup()
     {
-        Mockito.when( db.beginTx() ).thenReturn( tx );
+        Mockito.when( db.beginTransaction( any( KernelTransaction.Type.class ) ) ).thenReturn( tx );
     }
 
     @Test
