@@ -371,12 +371,6 @@ public final class Neo4jManager extends KernelProxy implements Kernel
     }
 
     @Override
-    public String getStoreDirectory()
-    {
-        return proxy.getStoreDirectory();
-    }
-
-    @Override
     public String getStoreId()
     {
         return proxy.getStoreId();

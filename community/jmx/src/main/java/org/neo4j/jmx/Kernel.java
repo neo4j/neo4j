@@ -36,9 +36,6 @@ public interface Kernel
     @Description( "The name of the mounted database" )
     String getDatabaseName();
 
-    @Description( "The location where the Neo4j store is located" )
-    String getStoreDirectory();
-
     @Description( "The version of Neo4j" )
     String getKernelVersion();
 

@@ -112,12 +112,6 @@ public class KernelBean extends Neo4jMBean implements Kernel
         return databaseName;
     }
 
-    @Override
-    public String getStoreDirectory()
-    {
-        return storePath;
-    }
-
     private class DataSourceInfo
             implements DataSourceManager.Listener
     {
