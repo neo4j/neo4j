@@ -26,16 +26,15 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.StubPageCursor;
-import org.neo4j.kernel.impl.store.format.aligned.Reference;
 import org.neo4j.test.RandomRule;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.kernel.impl.store.format.aligned.Reference.PAGE_CURSOR_ADAPTER;
 
 public class ReferenceTest
 {
-    public final @Rule RandomRule random = new RandomRule();
+    @Rule
+    public final RandomRule random = new RandomRule();
     private final ByteBuffer buffer = ByteBuffer.allocateDirect( 100 );
     private final StubPageCursor cursor = new StubPageCursor( 0, buffer );
 
@@ -49,6 +48,19 @@ public class ReferenceTest
             long reference = limit( random.nextLong(), mask );
             assertDecodedMatchesEncoded( reference );
         }
+    }
+
+    @Test
+    public void relativeReferenceConvertion()
+    {
+        long basis = 0xBABE;
+        long absoluteReference = 0xCAFEBABE;
+
+        long relative = Reference.toRelative( absoluteReference, basis );
+        assertEquals( "Should be equal to difference of reference and base reference", 0xCAFE0000, relative );
+
+        long absoluteCandidate = Reference.toAbsolute( relative, basis );
+        assertEquals( "Converted reference should be equal to initial value", absoluteReference, absoluteCandidate );
     }
 
     private long numberOfBits( int count )
