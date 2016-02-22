@@ -94,6 +94,7 @@ public abstract class EditionModule
 
     protected AuthManager createAuthManager(Config config, LifeSupport life, LogProvider logProvider)
     {
+
         FileUserRepository users = life.add( new FileUserRepository( config.get( GraphDatabaseSettings.auth_store ).toPath(), logProvider ) );
 
         return life.add(new AuthManager( users, systemUTC(), config.get( GraphDatabaseSettings.auth_enabled )));

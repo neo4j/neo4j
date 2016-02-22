@@ -33,6 +33,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
@@ -111,7 +112,8 @@ public class NonUniqueIndexTests
                     }
                 };
             }
-        }.newFacade( directory.graphDbDir(), stringMap(),
+        }.newFacade( directory.graphDbDir(), stringMap( GraphDatabaseSettings.auth_store.name(),
+                directory.file( "auth" ).getAbsolutePath()),
                 graphDatabaseFactoryState.databaseDependencies() );
     }
 

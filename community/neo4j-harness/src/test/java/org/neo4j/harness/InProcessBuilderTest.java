@@ -96,11 +96,12 @@ public class InProcessBuilderTest
 
     private TestServerBuilder getTestServerBuilder( File workDir )
     {
-        TestServerBuilder serverBuilder = newInProcessBuilder( workDir );
-        serverBuilder.withConfig( ServerSettings.tls_key_file.name(),
-                ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_key_file ) );
-        serverBuilder.withConfig( ServerSettings.tls_certificate_file.name(),
-                ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) );
+        TestServerBuilder serverBuilder = newInProcessBuilder( workDir )
+                .withConfig( ServerSettings.tls_key_file.name(),
+                    ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_key_file ) )
+                .withConfig( ServerSettings.tls_certificate_file.name(),
+                    ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) )
+                .withConfig( GraphDatabaseSettings.auth_store.name(), new File(workDir, "auth").getAbsolutePath() );
         return serverBuilder;
     }
 
