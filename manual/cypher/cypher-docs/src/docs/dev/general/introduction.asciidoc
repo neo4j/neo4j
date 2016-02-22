@@ -39,7 +39,7 @@ Here are a few clauses used to read from the graph:
 * +MATCH+: The graph pattern to match.
   This is the most common way to get data from the graph.
 
-* +WHERE+: Not a clause in it’s own right, but rather part of +MATCH+, +OPTIONAL MATCH+ and +WITH+.
+* +WHERE+: Not a clause in its own right, but rather part of +MATCH+, +OPTIONAL MATCH+ and +WITH+.
   Adds constraints to a pattern, or filters the intermediate result passing through +WITH+.
 
 * +RETURN+: What to return.
