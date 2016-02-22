@@ -87,6 +87,13 @@ class TransactionBoundPlanContext(tc: ExtendedTransactionalContext)
     case _: KernelException => None
   }
 
+  override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
+    val labelId = tc.statement.readOperations().labelGetForName(labelName)
+    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
+
+    tc.statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).hasNext
+  }
+
   def checkNodeIndex(idxName: String) {
     if (!tc.statement.readOperations().nodeLegacyIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)

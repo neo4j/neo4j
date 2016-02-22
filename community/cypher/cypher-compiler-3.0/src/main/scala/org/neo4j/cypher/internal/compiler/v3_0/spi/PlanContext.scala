@@ -42,6 +42,8 @@ trait PlanContext extends TokenContext {
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint]
 
+  def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean
+
   def checkNodeIndex(idxName: String)
 
   def checkRelIndex(idxName: String)
