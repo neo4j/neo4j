@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 
-public class LowLimitRecordFormatTest extends RecordFormatTest
+import org.neo4j.kernel.impl.store.format.aligned.Aligned;
+
+public class AlignedRecordFormatTest extends RecordFormatTest
 {
-    private static final RecordGenerators LOW_LIMITS = new LimitedRecordGenerators( random, 35, 36, 40, 16, NULL );
+    private static final RecordGenerators COMMUNITY_LIMITS =
+            new LimitedRecordGenerators( random, 30, 30, 30, 16, NULL );
 
-    public LowLimitRecordFormatTest()
+    public AlignedRecordFormatTest()
     {
-        super( LowLimit.RECORD_FORMATS, LOW_LIMITS );
+        super( Aligned.RECORD_FORMATS, COMMUNITY_LIMITS );
     }
 }

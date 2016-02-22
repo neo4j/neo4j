@@ -44,7 +44,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
 
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.CREATE;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -53,10 +52,8 @@ public abstract class RecordFormatTest
 {
     private static final int PAGE_SIZE = 1_024;
 
-    // Whoever is hit first
-    private static final long TEST_ITERATIONS = 20_000;
-    private static final long TEST_TIME = 500;
-    private static final long PRINT_RESULTS_THRESHOLD = SECONDS.toMillis( 1 );
+    private static final long TEST_ITERATIONS = 100_000;
+    private static final boolean PRINT_STATISTICS = false;
     private static final int DATA_SIZE = 100;
     protected static final long NULL = Record.NULL_REFERENCE.intValue();
 
@@ -153,9 +150,8 @@ public abstract class RecordFormatTest
 
             // WHEN
             long time = currentTimeMillis();
-            long endTime = time + TEST_TIME;
             long i = 0;
-            for ( ; i < TEST_ITERATIONS && currentTimeMillis() < endTime; i++ )
+            for ( ; i < TEST_ITERATIONS; i++ )
             {
                 R written = generator.get( recordSize, format );
                 try
@@ -230,9 +226,9 @@ public abstract class RecordFormatTest
                     throw t;
                 }
             }
-            time = currentTimeMillis() - time;
-            if ( time >= PRINT_RESULTS_THRESHOLD )
+            if ( PRINT_STATISTICS )
             {
+                time = currentTimeMillis() - time;
                 System.out.printf( "%s%n  %.2f write-read ops/ms%n  %.2f%% required secondary unit%n" +
                         "  %.2f%% wasted primary record space%n" +
                         "  %.2f%% wasted secondary record space%n" +
