@@ -76,7 +76,7 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val result = executeWithAllPlannersAndCompatibilityMode("match (n) return case when id(n) >= 0 then (n)-->() else 42 end as p")
 
     result.toList.head("p").asInstanceOf[Seq[_]] should have size 2
-    result should use("Expand(All)")
+    result shouldNot use("Expand(All)")
   }
 
   test("match (n) return case when id(n) < 0 then (n)-->() otherwise 42 as p") {
@@ -87,7 +87,7 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val result = executeWithAllPlannersAndCompatibilityMode("match (n) return case when id(n) < 0 then (n)-->() else 42 end as p")
 
     result.toList.head("p").asInstanceOf[Long] should equal(42)
-    result should use("Expand(All)")
+    result shouldNot use("Expand(All)")
   }
 
   test("match (n) return extract(x IN (n)-->() | head(nodes(x)) )  as p") {
@@ -247,7 +247,7 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val result = executeWithAllPlanners("match (n) where (case when id(n) < 0 then length((n)-->(:X)) else 42 end) > 0 return n")
 
     result should have size 3
-    result should use("RollUpApply")
+    result shouldNot use("RollUpApply")
   }
 
   test("match (n) where n IN extract(x IN (n)-->() | head(nodes(x)) ) return n") {
@@ -279,7 +279,7 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
         Map("n" -> start),
         Map("n" -> start3)
       ))
-      result should use("RollUpApply")
+      result shouldNot use("RollUpApply")
     }
   }
 
@@ -475,6 +475,26 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     result.toList should equal(List(
       Map("n" -> n1, "coll" -> Seq(1, 2)),
       Map("n" -> n2, "coll" -> Seq(0, 1))))
+  }
+
+  test("case expressions and pattern expressions") {
+    val n1 = createLabeledNode(Map("prop" -> 42), "A")
+
+    relate(n1, createNode())
+    relate(n1, createNode())
+    relate(n1, createNode())
+
+    val result = executeWithAllPlanners(
+      """match (a:A)
+        |return case
+        |         WHEN a.prop = 42 THEN []
+        |         ELSE (a)-->()
+        |       END as X
+        |         """.stripMargin)
+
+    result shouldNot use("RollUpApply")
+
+    result.toList should equal(List(Map("X" -> Seq())))
   }
 
   private def setup(): (Node, Node) = {

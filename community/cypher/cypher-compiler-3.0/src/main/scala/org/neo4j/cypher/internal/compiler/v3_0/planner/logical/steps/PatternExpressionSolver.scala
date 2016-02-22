@@ -168,12 +168,10 @@ case class CollectionSubQueryExpressionSolver[T <: Expression](namer: T => (T, M
         val rewriter = rewriteButStopAtInnerScopes(patternExpression, introducedVariable)
         val rewrittenExpression = expressionAcc.endoRewrite(rewriter)
 
-        val result = if (rewrittenExpression == expressionAcc)
-          expressionAcc.endoRewrite(lastDitch)
+        if (rewrittenExpression == expressionAcc)
+          (planAcc, expressionAcc.endoRewrite(lastDitch))
         else
-          rewrittenExpression
-
-        (newPlan, result)
+          (newPlan, rewrittenExpression)
     }
   }
 
@@ -197,6 +195,11 @@ case class CollectionSubQueryExpressionSolver[T <: Expression](namer: T => (T, M
     PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner, nullableIdentifiers = qg.argumentIds)
   }
 
+  /*
+  It's important to not go use RollUpApply if the expression we are working with is inside a loop, or inside a
+  conditional expression. If that is not honored, RollUpApply can either produce the wrong results by not having the
+  correct scope (when inside a loop), or it can be executed even when not strictly needed (in a conditional)
+   */
   private def rewriteButStopAtInnerScopes(oldExp: Expression, newExp: Expression) = {
     val inner = Rewriter.lift {
       case exp if exp == oldExp =>
