@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft.replication.id;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.state.StateStorage;
-import org.neo4j.coreedge.raft.state.StubStateStorage;
+import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
@@ -49,7 +49,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new StubStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
 
         // when
         IdRange myHighestIdRange = idAllocationStateMachine.getHighestIdRange( me, someType );
@@ -65,7 +65,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new StubStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
         ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest( me, someType, 0, 1024 );
 
         // when
@@ -81,7 +81,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new StubStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
         ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest( me, someType, 0, 1024 );
 
         // when
@@ -98,7 +98,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new StubStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
         long index = 0;
 
         // when
@@ -115,7 +115,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new StubStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
 
         // when
         idAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
@@ -131,7 +131,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new StubStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
 
         // when
         idAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
@@ -147,7 +147,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new StubStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
 
         // when
         idAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( someoneElse, someType, 0, 1024 ), 0 );
@@ -167,14 +167,14 @@ public class ReplicatedIdAllocationStateMachineTest
         IdAllocationState idAllocationState = new IdAllocationState();
 
         ReplicatedIdAllocationStateMachine firstIdAllocationStateMachine =
-                new ReplicatedIdAllocationStateMachine( me, new StubStateStorage<>( idAllocationState ), NullLogProvider.getInstance() );
+                new ReplicatedIdAllocationStateMachine( me, new InMemoryStateStorage<>( idAllocationState ), NullLogProvider.getInstance() );
 
         firstIdAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
         firstIdAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 1024, 1024 ), 1 );
 
         // when
         ReplicatedIdAllocationStateMachine secondIdAllocationStateMachine =
-                new ReplicatedIdAllocationStateMachine( me, new StubStateStorage<>( idAllocationState ), NullLogProvider.getInstance() );
+                new ReplicatedIdAllocationStateMachine( me, new InMemoryStateStorage<>( idAllocationState ), NullLogProvider.getInstance() );
 
         // then
         assertEquals( firstIdAllocationStateMachine.getHighestIdRange( me, someType ),
@@ -202,7 +202,7 @@ public class ReplicatedIdAllocationStateMachineTest
         // given
         // a state machine
         final long AN_INDEX = 24;
-        StateStorage<IdAllocationState> stateStorage = new StubStateStorage<>( new IdAllocationState() );
+        StateStorage<IdAllocationState> stateStorage = new InMemoryStateStorage<>( new IdAllocationState() );
         ReplicatedIdAllocationStateMachine stateMachine =
                 new ReplicatedIdAllocationStateMachine( me, stateStorage, NullLogProvider.getInstance() );
 
@@ -238,7 +238,7 @@ public class ReplicatedIdAllocationStateMachineTest
         // given
         // a state machine
         final long AN_INDEX = 24;
-        StateStorage<IdAllocationState> stateStorage = new StubStateStorage<>( new IdAllocationState() );
+        StateStorage<IdAllocationState> stateStorage = new InMemoryStateStorage<>( new IdAllocationState() );
         ReplicatedIdAllocationStateMachine stateMachine =
                 new ReplicatedIdAllocationStateMachine( me, stateStorage, NullLogProvider.getInstance() );
 

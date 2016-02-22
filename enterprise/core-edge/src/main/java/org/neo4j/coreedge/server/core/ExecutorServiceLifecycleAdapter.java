@@ -17,41 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state;
+package org.neo4j.coreedge.server.core;
 
-import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static java.lang.Math.max;
-
-public class LastAppliedTrackingStateMachine implements StateMachine
+public class ExecutorServiceLifecycleAdapter extends LifecycleAdapter
 {
-    public static final long NOTHING_APPLIED = -1;
+    private final ExecutorService executorService;
 
-    private final StateMachine stateMachine;
-    private long lastApplied = NOTHING_APPLIED;
-
-    public LastAppliedTrackingStateMachine( StateMachine stateMachine )
+    public ExecutorServiceLifecycleAdapter( ExecutorService executorService )
     {
-        this.stateMachine = stateMachine;
+        this.executorService = executorService;
     }
 
     @Override
-    public void applyCommand( ReplicatedContent content, long logIndex )
+    public void shutdown() throws Throwable
     {
-        stateMachine.applyCommand( content, logIndex );
-        lastApplied = max( logIndex, lastApplied );
-    }
-
-    @Override
-    public void flush() throws IOException
-    {
-        stateMachine.flush();
-    }
-
-    public long lastApplied()
-    {
-        return lastApplied;
+        executorService.shutdown();
     }
 }

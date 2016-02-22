@@ -41,13 +41,10 @@ import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.raft.state.LastAppliedTrackingStateMachine;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
@@ -85,7 +82,6 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.MessageHandler, CoreMetaData
 {
     private final LeaderNotFoundMonitor leaderNotFoundMonitor;
-    private int flushAfter;
 
     public enum Timeouts implements RenewableTimeoutService.TimeoutName
     {
@@ -101,7 +97,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     private RenewableTimeoutService.RenewableTimeout electionTimer;
     private RaftMembershipManager<MEMBER> membershipManager;
 
-    private final LastAppliedTrackingStateMachine stateMachine;
+    private final ConsensusListener consensusListener;
     private final long electionTimeout;
     private final long leaderWaitTimeout;
 
@@ -116,18 +112,18 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     private RaftLogShippingManager<MEMBER> logShipping;
 
     public RaftInstance( MEMBER myself, StateStorage<TermState> termStorage,
-                         StateStorage<VoteState<MEMBER>> voteStorage, RaftLog entryLog,
-                         LastAppliedTrackingStateMachine stateMachine, long electionTimeout, long heartbeatInterval,
-                         RenewableTimeoutService renewableTimeoutService,
-                         final Inbound inbound, final Outbound<MEMBER> outbound, long leaderWaitTimeout,
-                         LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
-                         RaftLogShippingManager<MEMBER> logShipping,
-                         Supplier<DatabaseHealth> databaseHealthSupplier,
-                         Monitors monitors, int flushAfter )
+            StateStorage<VoteState<MEMBER>> voteStorage, RaftLog entryLog,
+            ConsensusListener consensusListener, long electionTimeout, long heartbeatInterval,
+            RenewableTimeoutService renewableTimeoutService,
+            final Inbound inbound, final Outbound<MEMBER> outbound, long leaderWaitTimeout,
+            LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
+            RaftLogShippingManager<MEMBER> logShipping,
+            Supplier<DatabaseHealth> databaseHealthSupplier,
+            Monitors monitors )
     {
         this.myself = myself;
         this.entryLog = entryLog;
-        this.stateMachine = stateMachine;
+        this.consensusListener = consensusListener;
         this.electionTimeout = electionTimeout;
         this.heartbeatInterval = heartbeatInterval;
 
@@ -137,7 +133,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         this.outbound = outbound;
         this.logShipping = logShipping;
         this.databaseHealthSupplier = databaseHealthSupplier;
-        this.flushAfter = flushAfter;
         this.log = logProvider.getLog( getClass() );
 
         this.membershipManager = membershipManager;
@@ -262,16 +257,8 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
         raftState.update( outcome );
         membershipManager.processLog( outcome.getLogCommands() );
+        consensusListener.notifyCommitted();
 
-        for ( long index = stateMachine.lastApplied() + 1; index <= raftState.entryLog().commitIndex(); index++ )
-        {
-            ReplicatedContent content = raftState.entryLog().readEntryContent( index );
-            stateMachine.applyCommand( content, index );
-            if ( index % this.flushAfter == 0 )
-            {
-                stateMachine.flush();
-            }
-        }
         volatileLeader.set( outcome.getLeader() );
     }
 

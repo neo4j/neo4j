@@ -29,11 +29,8 @@ import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.replication.LeaderOnlyReplicator;
 import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
-import org.neo4j.coreedge.raft.state.LastAppliedTrackingStateMachine;
-import org.neo4j.coreedge.raft.state.StateMachine;
-import org.neo4j.coreedge.raft.state.StateMachines;
 import org.neo4j.coreedge.raft.state.StateStorage;
-import org.neo4j.coreedge.raft.state.StubStateStorage;
+import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
@@ -50,16 +47,14 @@ public class RaftInstanceBuilder<MEMBER>
     private int expectedClusterSize;
     private RaftGroup.Builder<MEMBER> memberSetBuilder;
 
-    private StateStorage<TermState> termState = new StubStateStorage<>( new TermState() );
-    private StateStorage<VoteState<MEMBER>> voteState = new StubStateStorage<>( new VoteState<>() );
+    private StateStorage<TermState> termState = new InMemoryStateStorage<>( new TermState() );
+    private StateStorage<VoteState<MEMBER>> voteState = new InMemoryStateStorage<>( new VoteState<>() );
     private RaftLog raftLog = new InMemoryRaftLog();
     private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK,
             NullLogProvider.getInstance() );
 
-    private Inbound inbound = handler -> {
-    };
-    private Outbound<MEMBER> outbound = ( advertisedSocketAddress, messages ) -> {
-    };
+    private Inbound inbound = handler -> {};
+    private Outbound<MEMBER> outbound = ( advertisedSocketAddress, messages ) -> {};
 
     private LogProvider logProvider = NullLogProvider.getInstance();
     private Clock clock = Clock.SYSTEM_CLOCK;
@@ -73,10 +68,9 @@ public class RaftInstanceBuilder<MEMBER>
     private int maxAllowedShippingLag = 256;
     private Supplier<DatabaseHealth> databaseHealthSupplier;
     private StateStorage<RaftMembershipState<MEMBER>> raftMembership =
-            new StubStateStorage<>( new RaftMembershipState<>() );
+            new InMemoryStateStorage<>( new RaftMembershipState<>() );
     private Monitors monitors = new Monitors();
-    private LastAppliedTrackingStateMachine stateMachine = new LastAppliedTrackingStateMachine( new StateMachines() );
-    private int flushAfter = 1;
+    private ConsensusListener consensusListener = () -> {};
 
     public RaftInstanceBuilder( MEMBER member, int expectedClusterSize, RaftGroup.Builder<MEMBER> memberSetBuilder )
     {
@@ -95,10 +89,9 @@ public class RaftInstanceBuilder<MEMBER>
         RaftLogShippingManager<MEMBER> logShipping = new RaftLogShippingManager<>( outbound, logProvider, raftLog,
                 clock, member, membershipManager, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
 
-        return new RaftInstance<>( member, termState, voteState, raftLog, stateMachine, electionTimeout,
-                heartbeatInterval,
-                renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider, membershipManager,
-                logShipping, databaseHealthSupplier, monitors, flushAfter );
+        return new RaftInstance<>( member, termState, voteState, raftLog, consensusListener, electionTimeout,
+                heartbeatInterval, renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider,
+                membershipManager, logShipping, databaseHealthSupplier, monitors );
     }
 
     public RaftInstanceBuilder<MEMBER> leaderWaitTimeout( long leaderWaitTimeout )
@@ -143,9 +136,9 @@ public class RaftInstanceBuilder<MEMBER>
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> stateMachine( LastAppliedTrackingStateMachine stateMachine )
+    public RaftInstanceBuilder<MEMBER> consensusListener( ConsensusListener consensusListener )
     {
-        this.stateMachine = stateMachine;
+        this.consensusListener = consensusListener;
         return this;
     }
 
@@ -158,12 +151,6 @@ public class RaftInstanceBuilder<MEMBER>
     public RaftInstanceBuilder<MEMBER> monitors( Monitors monitors )
     {
         this.monitors = monitors;
-        return this;
-    }
-
-    public RaftInstanceBuilder<MEMBER> flushAfter( int flushAfter )
-    {
-        this.flushAfter = flushAfter;
         return this;
     }
 }

@@ -40,7 +40,7 @@ import org.junit.Test;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
-import org.neo4j.coreedge.raft.state.StubStateStorage;
+import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.core.locks.LockTokenManager;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -163,7 +163,7 @@ public class ReplicatedTransactionStateMachinePersistenceTest
                 new GlobalSession<>( UUID.randomUUID(), RaftTestMember.member( 1 ) ),
                 mock( LockTokenManager.class, RETURNS_MOCKS ),
                 new CommittingTransactionsRegistry(),
-                new StubStateStorage<>( sessionTrackerState ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( sessionTrackerState ), NullLogProvider.getInstance() );
     }
 
     private ReplicatedTransaction<RaftTestMember> replicatedTx() throws java.io.IOException

@@ -142,12 +142,16 @@ public class CoreEdgeClusterSettings
             setting( "core_edge.disable_middleware_logging", BOOLEAN, TRUE );
 
     @Description("The maximum file size before the id allocation file is rotated (in unit of entries)")
-    public static final Setting<Integer> id_alloc_state_size = setting( "core_edge.id_alloc_state_size", INTEGER,
-            "1000" );
+    public static final Setting<Integer> last_applied_state_size =
+            setting( "core_edge.last_applied_state_size", INTEGER, "1000" );
+
+    @Description("The maximum file size before the id allocation file is rotated (in unit of entries)")
+    public static final Setting<Integer> id_alloc_state_size =
+            setting( "core_edge.id_alloc_state_size", INTEGER, "1000" );
 
     @Description("The maximum file size before the membership state file is rotated (in unit of entries)")
-    public static final Setting<Integer> raft_membership_state_size = setting( "core_edge.raft_membership_state_size",
-            INTEGER, "1000" );
+    public static final Setting<Integer> raft_membership_state_size =
+            setting( "core_edge.raft_membership_state_size", INTEGER, "1000" );
 
     @Description("The maximum file size before the vote state file is rotated (in unit of entries)")
     public static final Setting<Integer> vote_state_size = setting( "core_edge.raft_vote_state_size", INTEGER, "1000" );
