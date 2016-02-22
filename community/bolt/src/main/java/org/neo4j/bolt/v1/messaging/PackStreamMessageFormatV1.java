@@ -175,10 +175,11 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleInitMessage( String clientName ) throws IOException
+        public void handleInitMessage( String clientName, Map<String,Object> credentials ) throws IOException
         {
             packer.packStructHeader( 1, MessageTypes.MSG_INIT );
             packer.pack( clientName );
+            packer.packRawMap( credentials );
             onMessageComplete.onMessageComplete();
         }
 
@@ -337,7 +338,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private <E extends Exception> void unpackInitMessage( MessageHandler<E> output ) throws IOException, E
         {
             String clientName = unpacker.unpackString();
-            output.handleInitMessage( clientName );
+            Map<String,Object> credentials = unpacker.unpackMap();
+            output.handleInitMessage( clientName, credentials );
         }
 
         private <E extends Exception> void unpackResetMessage( MessageHandler<E> output ) throws IOException, E

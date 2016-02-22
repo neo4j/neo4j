@@ -77,10 +77,10 @@ public class MonitoredSessions implements Sessions
         }
 
         @Override
-        public <A> void init( String clientName, A attachment, Callback<Void,A> callback )
+        public <A> void init( String clientName, Map<String,Object> authToken, A attachment, Callback<Void,A> callback )
         {
             monitor.messageReceived();
-            delegate.init( clientName, attachment, withMonitor( callback ) );
+            delegate.init( clientName, authToken, attachment, withMonitor( callback ) );
         }
 
         @Override

@@ -36,6 +36,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -149,7 +150,9 @@ public class RecoveryIT
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File storeDir = directory.graphDbDir();
         GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fs, adversary )
-                .newEmbeddedDatabase( storeDir );
+                .newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseSettings.auth_store, directory.file( "auth" ).getAbsolutePath() )
+                .newGraphDatabase();
         try
         {
             try ( Transaction tx = db.beginTx() )

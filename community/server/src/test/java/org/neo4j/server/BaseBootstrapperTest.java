@@ -28,9 +28,11 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
@@ -54,10 +56,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     {
         ArrayList<String> config = new ArrayList<>();
 
-        for ( String param : params )
-        {
-            config.add( param );
-        }
+        Collections.addAll( config, params );
 
         return config.toArray( new String[config.size()] );
     }
@@ -83,8 +82,12 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws IOException
     {
         // When
-        int resultCode = start( bootstrapper, commandLineConfig( "-c",
-                configOption( ServerSettings.legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
+        int resultCode = start( bootstrapper, commandLineConfig(
+                "-c", configOption( ServerSettings.legacy_db_location.name(), tempDir.getRoot().getAbsolutePath()),
+                "-c", configOption( GraphDatabaseSettings.auth_store.name(), tempDir.newFile().getAbsolutePath()),
+                "-c", configOption( ServerSettings.tls_certificate_file.name(), new File(tempDir.getRoot(), "cert.cert").getAbsolutePath()),
+                "-c", configOption( ServerSettings.tls_key_file.name(), new File(tempDir.getRoot(), "key.key").getAbsolutePath())
+        ) );
 
         // Then
         assertEquals( Bootstrapper.OK, resultCode );

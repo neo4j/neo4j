@@ -19,6 +19,9 @@
  */
 package cypher
 
+import java.io.File
+import java.nio.file.{Files, Path}
+
 import _root_.cucumber.api.DataTable
 import _root_.cucumber.api.scala.{EN, ScalaDsl}
 import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
@@ -95,7 +98,11 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
   }
 
   private def loadConfig(builder: GraphDatabaseBuilder): GraphDatabaseBuilder = {
+    val directory: Path = Files.createTempDirectory("tls")
     builder.setConfig(GraphDatabaseSettings.pagecache_memory, "8M")
+    builder.setConfig(GraphDatabaseSettings.auth_store, new File(directory.toFile, "auth").getAbsolutePath)
+    builder.setConfig("dbms.security.tls_key_file", new File(directory.toFile, "key.key").getAbsolutePath)
+    builder.setConfig("dbms.security.tls_certificate_file", new File(directory.toFile, "cert.cert").getAbsolutePath)
     cypherConfig().map { case (s, v) => builder.setConfig(s, v) }
     builder
   }

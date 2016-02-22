@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -199,7 +200,9 @@ public class CountsRotationTest
         adversary.disable();
 
         GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fs, adversary )
-                .newEmbeddedDatabase( dir );
+                .newEmbeddedDatabaseBuilder( dir )
+                .setConfig( GraphDatabaseSettings.auth_store, new File( dir, "auth" ).getAbsolutePath() )
+                .newGraphDatabase();
 
         CountDownLatch txStartLatch = new CountDownLatch( 1 );
         CountDownLatch txCommitLatch = new CountDownLatch( 1 );

@@ -103,7 +103,7 @@ public class SocketTransportHandlerTest
     {
         PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions = longObjectMap();
         availableVersions.put( BoltProtocolV1.VERSION,
-                ( channel, isSecure ) -> new BoltProtocolV1( NullLogService.getInstance(), session, channel )
+                ( channel, isSecure ) -> new BoltProtocolV1( NullLogService.getInstance(), session, channel)
         );
 
         return new SocketTransportHandler.ProtocolChooser( availableVersions, true );

@@ -19,15 +19,19 @@
  */
 package org.neo4j.bolt.v1.messaging.message;
 
+import java.util.Map;
+
 import org.neo4j.bolt.v1.messaging.MessageHandler;
 
 public class InitMessage implements Message
 {
     private final String clientName;
+    private final Map<String, Object> credentials;
 
-    public InitMessage( String clientName )
+    public InitMessage( String clientName, Map<String,Object> credentials )
     {
         this.clientName = clientName;
+        this.credentials = credentials;
     }
 
     public String clientName()
@@ -38,7 +42,7 @@ public class InitMessage implements Message
     @Override
     public <E extends Exception> void dispatch( MessageHandler<E> consumer ) throws E
     {
-        consumer.handleInitMessage( clientName );
+        consumer.handleInitMessage( clientName, credentials );
     }
 
     @Override
