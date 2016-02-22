@@ -36,9 +36,6 @@ For information regarding Windows, see http://neo4j.com/docs/stable/powershell.h
 *status*::
   Current running state of the server.
 
-*info*::
-  Displays configuration information, such as the current NEO4J_HOME and CLASSPATH.
-
 [[neo4j-manpage-files]]
 == FILES
 

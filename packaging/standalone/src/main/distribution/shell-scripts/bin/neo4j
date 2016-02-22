@@ -116,18 +116,13 @@ setup_arbiter_options() {
       echo "Started in ARBITER mode."
       echo "This instance is now joining the cluster."
     }
-
-    print_extra_info() {
-      :
-    }
   else
     SHUTDOWN_TIMEOUT=120
     MIN_ALLOWED_OPEN_FILES=40000
     MAIN_CLASS="#{neo4j.mainClass}"
 
-    port="${org_neo4j_server_webserver_port:-7474}"
-
     print_start_message() {
+      port="${org_neo4j_server_webserver_port:-7474}"
       NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:-localhost}"
 
       echo "Started at http://${NEO4J_SERVER_ADDRESS}:${port} (pid ${NEO4J_PID})."
@@ -137,10 +132,6 @@ setup_arbiter_options() {
       else
         echo "There may be a short delay until the server is ready."
       fi
-    }
-
-    print_extra_info() {
-      echo "NEO4J_SERVER_PORT: ${port}"
     }
   fi
 }
@@ -333,16 +324,6 @@ do_status() {
   fi
 }
 
-do_info() {
-  do_status
-  build_classpath
-  echo "NEO4J_HOME:        ${NEO4J_HOME}"
-  echo "JAVA_HOME:         ${JAVA_HOME:-}"
-  echo "JAVA_OPTS:         ${JAVA_OPTS}"
-  echo "CLASSPATH:         ${CLASSPATH}"
-  print_extra_info
-}
-
 main() {
   setup_neo4jhome_and_script
   cd "${NEO4J_HOME}"
@@ -374,12 +355,8 @@ main() {
       do_status
       ;;
 
-    info)
-      do_info
-      ;;
-
     *)
-      echo "Usage: ${SCRIPT} { console | start | stop | restart | status | info }"
+      echo "Usage: ${SCRIPT} { console | start | stop | restart | status }"
       ;;
   esac
 }
