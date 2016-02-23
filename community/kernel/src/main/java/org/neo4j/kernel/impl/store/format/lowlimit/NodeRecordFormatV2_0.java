@@ -24,6 +24,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 class NodeRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<NodeRecord>
 {
@@ -39,32 +40,36 @@ class NodeRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<NodeRecord>
     }
 
     @Override
-    protected void doRead( NodeRecord record, PageCursor cursor, int recordSize, PagedFile storeFile, long headerByte,
-            boolean inUse ) throws IOException
+    public void read( NodeRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+            throws IOException
     {
-        // [    ,   x] in use bit
-        // [    ,xxx ] higher bits for rel id
-        // [xxxx,    ] higher bits for prop id
-        long nextRel = cursor.getUnsignedInt();
-        long nextProp = cursor.getUnsignedInt();
+        long headerByte = cursor.getByte();
+        boolean inUse = isInUse( (byte) headerByte );
+        if ( mode.shouldLoad( inUse ) )
+        {
+            // [    ,   x] in use bit
+            // [    ,xxx ] higher bits for rel id
+            // [xxxx,    ] higher bits for prop id
+            long nextRel = cursor.getUnsignedInt();
+            long nextProp = cursor.getUnsignedInt();
 
-        long relModifier = (headerByte & 0xEL) << 31;
-        long propModifier = (headerByte & 0xF0L) << 28;
+            long relModifier = (headerByte & 0xEL) << 31;
+            long propModifier = (headerByte & 0xF0L) << 28;
 
-        long lsbLabels = cursor.getUnsignedInt();
-        long hsbLabels = cursor.getByte() & 0xFF; // so that a negative bye won't fill the "extended" bits with ones.
-        long labels = lsbLabels | (hsbLabels << 32);
+            long lsbLabels = cursor.getUnsignedInt();
+            long hsbLabels = cursor.getByte() & 0xFF; // so that a negative bye won't fill the "extended" bits with ones.
+            long labels = lsbLabels | (hsbLabels << 32);
 
-        record.initialize( inUse,
-                longFromIntAndMod( nextProp, propModifier ),
-                false,
-                longFromIntAndMod( nextRel, relModifier ),
-                labels );
+            record.initialize( inUse,
+                    longFromIntAndMod( nextProp, propModifier ),
+                    false,
+                    longFromIntAndMod( nextRel, relModifier ),
+                    labels );
+        }
     }
 
     @Override
-    protected void doWrite( NodeRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
-            throws IOException
+    public void write( NodeRecord record, PageCursor cursor, int recordSize, PagedFile storeFile ) throws IOException
     {
         throw new UnsupportedOperationException();
     }

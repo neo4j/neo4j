@@ -38,7 +38,6 @@ public class ComposableRecordStore<RECORD extends AbstractBaseRecord, HEADER ext
     protected final RecordFormat<RECORD> recordFormat;
     protected final StoreHeaderFormat<HEADER> storeHeaderFormat;
     protected HEADER storeHeader;
-    private int recordSize;
 
     public ComposableRecordStore( File fileName, Config configuration, IdType idType,
             IdGeneratorFactory idGeneratorFactory, PageCache pageCache, LogProvider logProvider, String typeDescriptor,
@@ -58,9 +57,9 @@ public class ComposableRecordStore<RECORD extends AbstractBaseRecord, HEADER ext
     }
 
     @Override
-    public int getRecordSize()
+    protected int determineRecordSize()
     {
-        return recordSize;
+        return recordFormat.getRecordSize( storeHeader );
     }
 
     @Override
@@ -97,9 +96,12 @@ public class ComposableRecordStore<RECORD extends AbstractBaseRecord, HEADER ext
     }
 
     @Override
-    protected void createHeaderRecord( PageCursor cursor )
+    protected void createHeaderRecord( PageCursor cursor ) throws IOException
     {
+        int offset = cursor.getOffset();
         storeHeaderFormat.writeHeader( cursor );
+        cursor.setOffset( offset );
+        readHeaderAndInitializeRecordFormat( cursor );
     }
 
     @Override
@@ -112,7 +114,6 @@ public class ComposableRecordStore<RECORD extends AbstractBaseRecord, HEADER ext
     protected void readHeaderAndInitializeRecordFormat( PageCursor cursor ) throws IOException
     {
         storeHeader = storeHeaderFormat.readHeader( cursor );
-        recordSize = recordFormat.getRecordSize( storeHeader );
     }
 
     @Override

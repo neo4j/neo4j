@@ -75,6 +75,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
     private final String typeDescriptor;
+    protected int recordSize;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -204,11 +205,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
             }
         }
 
+        // Determine record size right after writing the header since some stores
+        // use it when initializing their stores to write some records.
+        recordSize = determineRecordSize();
+
         File idFileName = new File( storageFileName.getPath() + ".id" );
         idGeneratorFactory.create( idFileName, getNumberOfReservedLowIds(), true );
     }
 
-    protected void createHeaderRecord( PageCursor cursor )
+    protected void createHeaderRecord( PageCursor cursor ) throws IOException
     {
         assert getNumberOfReservedLowIds() == 0;
     }
@@ -231,7 +236,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         }
         catch ( IOException e )
         {
-            // TODO: Just throw IOException, add proper handling further up
+            // Just throw IOException, add proper handling further up
             throw new UnderlyingStorageException( e );
         }
         loadIdGenerator();
@@ -261,34 +266,35 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         {
             readHeaderAndInitializeRecordFormat( null );
         }
+        recordSize = determineRecordSize();
     }
 
     protected long pageIdForRecord( long id )
     {
-        return RecordPageLocationCalculator.pageIdForRecord( id, storeFile.pageSize(), getRecordSize() );
+        return RecordPageLocationCalculator.pageIdForRecord( id, storeFile.pageSize(), recordSize );
     }
 
     protected int offsetForId( long id )
     {
-        return RecordPageLocationCalculator.offsetForId( id, storeFile.pageSize(), getRecordSize() );
+        return RecordPageLocationCalculator.offsetForId( id, storeFile.pageSize(), recordSize );
     }
 
     @Override
     public int getRecordsPerPage()
     {
-        return storeFile.pageSize() / getRecordSize();
+        return storeFile.pageSize() / recordSize;
     }
 
     public byte[] getRawRecordData( long id ) throws IOException
     {
-        byte[] data = new byte[getRecordSize()];
+        byte[] data = new byte[recordSize];
         try ( PageCursor pageCursor = storeFile.io( id / getRecordsPerPage(), PagedFile.PF_SHARED_READ_LOCK ) )
         {
             if ( pageCursor.next() )
             {
                 do
                 {
-                    pageCursor.setOffset( (int) (id % getRecordsPerPage() * getRecordSize()) );
+                    pageCursor.setOffset( (int) (id % getRecordsPerPage() * recordSize) );
                     pageCursor.getBytes( data );
                 }
                 while ( pageCursor.shouldRetry() );
@@ -726,8 +732,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         }
     }
 
+    protected abstract int determineRecordSize();
+
     @Override
-    public abstract int getRecordSize();
+    public final int getRecordSize()
+    {
+        return recordSize;
+    }
 
     @Override
     public int getRecordDataSize()
