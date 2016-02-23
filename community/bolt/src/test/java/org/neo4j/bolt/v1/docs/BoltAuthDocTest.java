@@ -35,12 +35,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 
 @RunWith( Parameterized.class )
-public class BoltFullExchangesDocTest extends BoltFullDocTest
+public class BoltAuthDocTest extends BoltFullDocTest
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( settings -> {
         settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-        settings.put( GraphDatabaseSettings.auth_store, this.getClass().getResource( "/authorization/auth" ).getPath() );
     } );
 
     @Parameterized.Parameter( 0 )
@@ -62,20 +61,10 @@ public class BoltFullExchangesDocTest extends BoltFullDocTest
 
         // Load the documented mappings
         HostnamePort address = new HostnamePort( "localhost:7687" );
-        for ( DocExchangeExample ex : DocsRepository.docs().read(
-                "dev/transport.asciidoc",
-                "code[data-lang=\"bolt_exchange\"]",
-                DocExchangeExample.exchange_example ) )
-        {
-            mappings.add( new Object[]{"Socket    - " + ex.name(), ex,
-                    (Supplier<Connection>) SecureSocketConnection::new, address});
-            mappings.add( new Object[]{"WebSocket - " + ex.name(), ex,
-                    (Supplier<Connection>) SecureWebSocketConnection::new , address} );
-        }
 
         for ( DocExchangeExample ex : DocsRepository.docs().read(
                 "dev/examples.asciidoc",
-                "code[data-lang=\"bolt_exchange\"]",
+                "code[data-lang=\"bolt_auth\"]",
                 DocExchangeExample.exchange_example ) )
         {
             mappings.add( new Object[]{"Socket    - " + ex.name(), ex,
@@ -83,7 +72,6 @@ public class BoltFullExchangesDocTest extends BoltFullDocTest
             mappings.add( new Object[]{"WebSocket - " + ex.name(), ex,
                     (Supplier<Connection>) SecureWebSocketConnection::new , address} );
         }
-
         return mappings;
     }
 

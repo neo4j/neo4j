@@ -82,7 +82,7 @@ public class WebSocketConnection implements Connection, WebSocketListener
         client = clientSupplier.get();
         client.start();
 
-        Session session = null;
+        Session session;
         try
         {
             session = client.connect( this, target ).get( 10, SECONDS );
@@ -156,7 +156,10 @@ public class WebSocketConnection implements Connection, WebSocketListener
     @Override
     public void disconnect() throws Exception
     {
-        client.stop();
+        if (client != null)
+        {
+            client.stop();
+        }
     }
 
 
