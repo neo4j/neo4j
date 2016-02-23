@@ -81,7 +81,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 
     private final AtomicLong activeTasks = new AtomicLong();
     private final ExecutorService executor;
-    private final Map<IndexDescriptor,List<NodePropertyUpdate>> batchedUpdates = new HashMap<>();
+    private final Map<IndexPopulation,List<NodePropertyUpdate>> batchedUpdates = new HashMap<>();
 
     /**
      * Creates a new multi-threaded populator for the given store view.
@@ -179,30 +179,30 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 
     /**
      * Add given {@link NodePropertyUpdate update} to the list of updates already present for the given
-     * {@link IndexDescriptor descriptor}. Flushes all updates if {@link #BATCH_SIZE} is reached.
+     * {@link IndexPopulation population}. Flushes all updates if {@link #BATCH_SIZE} is reached.
      *
-     * @param descriptor the index descriptor.
+     * @param population the index population.
      * @param update the update to add to the batch.
      */
-    private void batchUpdate( IndexDescriptor descriptor, NodePropertyUpdate update )
+    private void batchUpdate( IndexPopulation population, NodePropertyUpdate update )
     {
-        List<NodePropertyUpdate> batch = batchedUpdates.computeIfAbsent( descriptor, key -> newBatch() );
+        List<NodePropertyUpdate> batch = batchedUpdates.computeIfAbsent( population, key -> newBatch() );
         batch.add( update );
-        flushIfNeeded( descriptor, batch );
+        flushIfNeeded( population, batch );
     }
 
     /**
      * Insert given list of updates to the index if {@link #BATCH_SIZE} is reached.
      *
-     * @param descriptor the index descriptor.
+     * @param population the index population.
      * @param batch the list of updates for the index.
      */
-    private void flushIfNeeded( IndexDescriptor descriptor, List<NodePropertyUpdate> batch )
+    private void flushIfNeeded( IndexPopulation population, List<NodePropertyUpdate> batch )
     {
         if ( batch.size() >= BATCH_SIZE )
         {
-            batchedUpdates.remove( descriptor );
-            flush( descriptor, batch );
+            batchedUpdates.remove( population );
+            flush( population, batch );
         }
     }
 
@@ -211,16 +211,16 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      */
     private void flushAll()
     {
-        Iterator<Map.Entry<IndexDescriptor,List<NodePropertyUpdate>>> entries = batchedUpdates.entrySet().iterator();
+        Iterator<Map.Entry<IndexPopulation,List<NodePropertyUpdate>>> entries = batchedUpdates.entrySet().iterator();
         while ( entries.hasNext() )
         {
-            Map.Entry<IndexDescriptor,List<NodePropertyUpdate>> entry = entries.next();
-            IndexDescriptor indexDescriptor = entry.getKey();
+            Map.Entry<IndexPopulation,List<NodePropertyUpdate>> entry = entries.next();
+            IndexPopulation population = entry.getKey();
             List<NodePropertyUpdate> updates = entry.getValue();
             entries.remove();
             if ( updates != null && !updates.isEmpty() )
             {
-                flush( indexDescriptor, updates );
+                flush( population, updates );
             }
         }
     }
@@ -228,22 +228,21 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     /**
      * Insert the given batch of updates into the index defined by the given {@link IndexDescriptor}.
      *
-     * @param descriptor the index descriptor.
+     * @param population the index population.
      * @param batch the list of updates to insert.
      */
-    private void flush( IndexDescriptor descriptor, List<NodePropertyUpdate> batch )
+    private void flush( IndexPopulation population, List<NodePropertyUpdate> batch )
     {
         activeTasks.incrementAndGet();
 
         executor.execute( () -> {
             try
             {
-                IndexPopulation population = populations.get( descriptor );
                 population.populator.add( batch );
             }
-            catch ( Throwable t )
+            catch ( Throwable failure )
             {
-                fail( descriptor, t );
+                fail( population, failure );
             }
             finally
             {
@@ -345,7 +344,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         @Override
         protected void addApplicable( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
         {
-            batchUpdate( descriptor, update );
+            batchUpdate( this, update );
         }
     }
 
