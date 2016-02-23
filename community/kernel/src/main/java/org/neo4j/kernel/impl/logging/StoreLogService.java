@@ -41,7 +41,7 @@ import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 public class StoreLogService extends AbstractLogService implements Lifecycle
 {
-    public static final String INTERNAL_LOG_NAME = "messages.log";
+    public static final String INTERNAL_LOG_NAME = "debug.log";
 
     public static class Builder
     {

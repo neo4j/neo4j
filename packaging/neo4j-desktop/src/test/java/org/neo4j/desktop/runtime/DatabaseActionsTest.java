@@ -57,7 +57,7 @@ public class DatabaseActionsTest
             databaseActions.start();
 
             // Then
-            File logFile = new File( storeDir, "messages.log" );
+            File logFile = new File( storeDir, "debug.log" );
             assertTrue( logFile.exists() );
         }
         finally

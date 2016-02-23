@@ -85,7 +85,7 @@ cmd_import() {
   case "${mode}" in
     database)
       cp -r "${source}" "${NEO4J_ROOT}/data/databases/${database}"
-      rm -f "${NEO4J_ROOT}/data/databases/${database}/messages.log"
+      rm -f "${NEO4J_ROOT}/data/databases/${database}/debug.log"
       ;;
     *)
       bad_usage "unrecognised mode '${mode}'"
