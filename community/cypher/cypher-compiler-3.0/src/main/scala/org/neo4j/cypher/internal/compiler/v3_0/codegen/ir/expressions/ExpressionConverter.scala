@@ -116,7 +116,7 @@ object ExpressionConverter {
         val token = propKey.id(context.semanticTable).map(_.id)
         RelProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
-      case ast.Parameter(name) => expressions.Parameter(name, context.namer.newVarName())
+      case ast.Parameter(name, _) => expressions.Parameter(name, context.namer.newVarName())
 
       case lit: ast.IntegerLiteral => Literal(lit.value)
 

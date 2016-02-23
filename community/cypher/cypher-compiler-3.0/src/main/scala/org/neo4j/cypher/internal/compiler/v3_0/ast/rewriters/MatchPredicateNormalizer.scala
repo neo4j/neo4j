@@ -51,8 +51,8 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
   }
 
   private def isParameter(expr: Expression) = expr match {
-    case Parameter(_) => true
-    case _            => false
+    case Parameter(_, _) => true
+    case _               => false
   }
 
   private def propertyPredicates(id: Variable, props: Expression): Vector[Expression] = props match {

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{IdentityMap, Rewriter, ast, bottomUp}
 
 object literalReplacement {
@@ -53,13 +54,13 @@ object literalReplacement {
     case ast.ContainerIndex(_, _: ast.StringLiteral) =>
       acc => (acc, None)
     case l: ast.StringLiteral =>
-      acc => (acc + (l -> ast.Parameter(s"  AUTOSTRING${acc.size}")(l.position)), None)
+      acc => (acc + (l -> ast.Parameter(s"  AUTOSTRING${acc.size}", CTString)(l.position)), None)
     case l: ast.IntegerLiteral =>
-      acc => (acc + (l -> ast.Parameter(s"  AUTOINT${acc.size}")(l.position)), None)
+      acc => (acc + (l -> ast.Parameter(s"  AUTOINT${acc.size}", CTInteger)(l.position)), None)
     case l: ast.DoubleLiteral =>
-      acc => (acc + (l -> ast.Parameter(s"  AUTODOUBLE${acc.size}")(l.position)), None)
+      acc => (acc + (l -> ast.Parameter(s"  AUTODOUBLE${acc.size}", CTFloat)(l.position)), None)
     case l: ast.BooleanLiteral =>
-      acc => (acc + (l -> ast.Parameter(s"  AUTOBOOL${acc.size}")(l.position)), None)
+      acc => (acc + (l -> ast.Parameter(s"  AUTOBOOL${acc.size}", CTBoolean)(l.position)), None)
   }
 
   def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
