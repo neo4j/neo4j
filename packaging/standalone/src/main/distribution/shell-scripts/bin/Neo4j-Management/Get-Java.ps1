@@ -195,11 +195,10 @@ Function Get-Java
     # Shell arguments for the utility classes e.g. Import, Shell
     if ($PsCmdlet.ParameterSetName -eq 'UtilityInvoke')
     {
-      # Get the commandline args
-      $RepoPath = Join-Path  -Path $Neo4jServer.Home -ChildPath 'lib'
-      #  Get the default classpath jars
-      $ClassPath = ''    
-      Get-ChildItem -Path $RepoPath | Where-Object { $_.Extension -eq '.jar'} | % {
+      # Get the default classpath jars
+      $ClassPath = ''
+      $LibPath = Join-Path  -Path $Neo4jServer.Home -ChildPath 'lib'
+      Get-ChildItem -Path $LibPath | Where-Object { $_.Extension -eq '.jar'} | % {
         $ClassPath += "`"$($_.FullName)`";"
       }
       if ($ClassPath.Length -gt 0) { $ClassPath = $ClassPath.SubString(0, $ClassPath.Length-1) } # Strip the trailing semicolon if needed
@@ -207,10 +206,8 @@ Function Get-Java
       $ShellArgs = @()
       if ($Env:JAVA_OPTS -ne $null) { $ShellArgs += $Env:JAVA_OPTS }
       if ($Env:EXTRA_JVM_ARGUMENTS -ne $null) { $ShellArgs += $Env:EXTRA_JVM_ARGUMENTS }
-      $ShellArgs += @("-classpath $($Env:CLASSPATH_PREFIX);$ClassPath","-Dapp.repo=`"$($RepoPath)`"","-Dbasedir=`"$($Neo4jServer.Home)`"")
-      
-      # Add the appname and starting class
-      $ShellArgs += @("-Dapp.name=$($AppName)",$StartingClass)
+      $ShellArgs += "-classpath $($Env:CLASSPATH_PREFIX);$ClassPath"
+      $ShellArgs += $StartingClass
     }
 
     Write-Output @{'java' = $javaCMD; 'args' = $ShellArgs}

@@ -101,11 +101,5 @@ cd "$RUN_FROM"
 exec "$JAVACMD" $JAVA_OPTS \
   $EXTRA_JVM_ARGUMENTS \
   -classpath "$CLASSPATH" \
-  -Dapp.name="neo4j-backup" \
-  -Dapp.pid="$$" \
-  -Dapp.repo="$REPO" \
-  -Dbasedir="$BASEDIR" \
-  -Dlog4j.configuration=. \
-  -Dlog4j.configuratorClass=org.neo4j.kernel.ha.backup.BackupLoggerConfigurator \
   org.neo4j.backup.BackupTool \
   "$@"

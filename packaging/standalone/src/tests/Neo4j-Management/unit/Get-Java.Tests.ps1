@@ -369,15 +369,6 @@ InModuleScope Neo4j-Management {
       It "should have correct ClassPath" {
         $resultArgs | Should Match ([regex]::Escape('-classpath ;"TestDrive:\fake1.jar"'))
       }
-      It "should have correct Repo" {
-        $resultArgs | Should Match ([regex]::Escape('-Dapp.repo="TestDrive:\Path\lib"'))
-      }
-      It "should have correct BaseDir" {
-        $resultArgs | Should Match ([regex]::Escape('-Dbasedir="TestDrive:\Path'))
-      }
-      It "should have correct App" {
-        $resultArgs | Should Match ([regex]::Escape('-Dapp.name=someapp'))
-      }
       It "should have correct Starting Class" {
         $resultArgs | Should Match ([regex]::Escape(' someclass'))
       }
