@@ -88,8 +88,8 @@ public class ServerSettingsTest
     public void shouldPutDatabaseDirectoriesIntoDataDatabases()
     {
         Config config = new Config( stringMap( ServerSettings.data_directory.name(), "the-data-directory" ) );
-        assertThat( config.get( ServerSettings.database_path ).toString(),
-                equalTo( "the-data-directory/databases/graph.db" ) );
+        assertThat( config.get( ServerSettings.database_path ),
+                equalTo( new File( "the-data-directory/databases/graph.db" ) ) );
     }
 
     private File createHttpLogConfig( File logFile ) throws IOException
