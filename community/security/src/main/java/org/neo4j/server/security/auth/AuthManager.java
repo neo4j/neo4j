@@ -20,137 +20,99 @@
 package org.neo4j.server.security.auth;
 
 import java.io.IOException;
-import java.time.Clock;
 
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 
 /**
- * Manages server authentication and authorization.
- * <p>
- * Through the AuthManager you can create, update and delete users, and authenticate using credentials.
+ * An AuthManager is used to do basic authentication and user management.
  */
-public class AuthManager extends LifecycleAdapter
+public interface AuthManager
 {
-    private final AuthenticationStrategy authStrategy;
-    private final UserRepository users;
-    private final boolean authEnabled;
 
-    public AuthManager( UserRepository users, AuthenticationStrategy authStrategy, boolean authEnabled )
-    {
-        this.users = users;
-        this.authStrategy = authStrategy;
-        this.authEnabled = authEnabled;
-    }
+    /**
+     * Authenticate a username and password
+     * @param username The name of the user
+     * @param password The password of the user
+     */
+    AuthenticationResult authenticate( String username, String password );
 
-    public AuthManager( UserRepository users, AuthenticationStrategy authStrategy )
-    {
-        this( users, authStrategy, true );
-    }
+    /**
+     * Create a new user with the provided credentials.
+     * @param username The name of the user.
+     * @param initialPassword The initial password.
+     * @param requirePasswordChange Does the user need to change the initial password.
+     * @return A new user with the provided credentials.
+     * @throws IOException If user can't be serialized to disk.
+     * @throws IllegalUsernameException If the username is invalid.
+     */
+    User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException,
+            IllegalUsernameException;
 
-    public AuthManager( UserRepository users, Clock clock, boolean authEnabled )
-    {
-        this( users, new RateLimitedAuthenticationStrategy( clock, 3 ), authEnabled );
-    }
+    /**
+     * Delete the given user
+     * @param username the name of the user to delete.
+     * @return <tt>true</tt> is user was deleted otherwise <tt>false</tt>
+     * @throws IOException
+     */
+    boolean deleteUser( String username ) throws IOException;
 
-    @Override
-    public void start() throws Throwable
+    /**
+     * Retrieves the user with the provided user name.
+     * @param username The name of the user to retrieve.
+     * @return The stored user with the given user name.
+     */
+    User getUser( String username );
+
+    /**
+     * Set the password of the provided user.
+     * @param username The name of the user whose password should be set.
+     * @param password The new password for the user.
+     * @return User with updated credentials
+     * @throws IOException
+     */
+    User setPassword( String username, String password ) throws IOException;
+
+    /**
+     * Implementation that does no authentication.
+     */
+    AuthManager NO_AUTH = new AuthManager()
     {
-        if ( authEnabled && users.numberOfUsers() == 0 )
+        @Override
+        public AuthenticationResult authenticate( String username, String password )
         {
-            newUser( "neo4j", "neo4j", true );
-        }
-    }
-
-    public AuthenticationResult authenticate( String username, String password )
-    {
-        assertAuthEnabled();
-        User user = users.findByName( username );
-        if ( user == null )
-        {
-            return AuthenticationResult.FAILURE;
-        }
-        AuthenticationResult result = authStrategy.authenticate( user, password );
-        if ( result != AuthenticationResult.SUCCESS )
-        {
-            return result;
-        }
-        if ( user.passwordChangeRequired() )
-        {
-            return AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
-        }
-        return AuthenticationResult.SUCCESS;
-    }
-
-    public User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException, IllegalUsernameException
-    {
-        assertAuthEnabled();
-        assertValidName( username );
-        User user = new User.Builder()
-                .withName( username )
-                .withCredentials( Credential.forPassword( initialPassword ) )
-                .withRequiredPasswordChange( requirePasswordChange )
-                .build();
-        users.create( user );
-        return user;
-    }
-
-    public boolean deleteUser( String username ) throws IOException
-    {
-        assertAuthEnabled();
-        User user = users.findByName( username );
-        return user != null && users.delete( user );
-    }
-
-    public User getUser( String username )
-    {
-        assertAuthEnabled();
-        return users.findByName( username );
-    }
-
-    public User setPassword( String username, String password ) throws IOException
-    {
-        assertAuthEnabled();
-        User existingUser = users.findByName( username );
-        if ( existingUser == null )
-        {
-            return null;
+            return AuthenticationResult.SUCCESS;
         }
 
-        if ( existingUser.credentials().matchesPassword( password ) )
+        @Override
+        public User newUser( String username, String initialPassword, boolean requirePasswordChange )
+                throws IOException, IllegalUsernameException
         {
-            return existingUser;
-        }
-
-        try
-        {
-            User updatedUser = existingUser.augment()
-                    .withCredentials( Credential.forPassword( password ) )
-                    .withRequiredPasswordChange( false )
+            return new User.Builder(  )
+                    .withName( username )
+                    .withCredentials( Credential.forPassword( initialPassword ) )
+                    .withRequiredPasswordChange( requirePasswordChange )
                     .build();
-            users.update( existingUser, updatedUser );
-            return updatedUser;
-        } catch ( ConcurrentModificationException e )
-        {
-            // try again
-            return setPassword( username, password );
         }
-    }
 
-    private void assertAuthEnabled()
-    {
-        if ( !authEnabled )
+        @Override
+        public boolean deleteUser( String username ) throws IOException
         {
-            throw new IllegalStateException( "Auth not enabled" );
+            return true;
         }
-    }
 
-    private void assertValidName( String name )
-    {
-        if ( !users.isValidName( name ) )
+        @Override
+        public User getUser( String username )
         {
-            throw new IllegalArgumentException( "User name contains illegal characters. Please use simple ascii characters and numbers." );
+            return new User.Builder().withName( username ).build();
         }
-    }
+
+        @Override
+        public User setPassword( String username, String password ) throws IOException
+        {
+            return new User.Builder(  )
+                    .withName( username )
+                    .withCredentials( Credential.forPassword( password ) )
+                    .build();
+        }
+    };
 }

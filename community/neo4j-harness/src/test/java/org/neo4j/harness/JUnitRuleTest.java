@@ -30,9 +30,11 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
@@ -112,7 +114,11 @@ public class JUnitRuleTest
     {
         // given
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.absolutePath() );
+        GraphDatabaseService db = new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( testDirectory.directory() )
+                .setConfig( GraphDatabaseSettings.auth_store, ServerTestUtils
+                        .getRelativePath( testDirectory.directory(), GraphDatabaseSettings.auth_store ) )
+                .newGraphDatabase();
         try {
             db.execute( "create ()" );
         }

@@ -25,19 +25,19 @@ import java.util.Map;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.security.auth.AuthManager;
+import org.neo4j.server.security.auth.BasicAuthManager;
 
 /**
  * Performs basic authentication with user name and password.
  */
 public class BasicAuthentication implements Authentication
 {
-    private final AuthManager authManager;
+    private final BasicAuthManager authManager;
     private final static String SCHEME = "basic";
     private final Log log;
 
 
-    public BasicAuthentication( AuthManager authManager, LogProvider logProvider )
+    public BasicAuthentication( BasicAuthManager authManager, LogProvider logProvider )
     {
         this.authManager = authManager;
         this.log = logProvider.getLog( getClass() );

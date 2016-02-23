@@ -30,6 +30,7 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -75,7 +76,7 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.server.security.auth.AuthManager;
+import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
@@ -126,8 +127,8 @@ public abstract class AbstractNeoServer implements NeoServer
     protected CypherExecutor cypherExecutor;
     protected WebServer webServer;
 
-    protected Supplier<AuthManager> authManagerSupplier;
-    protected KeyStoreInformation keyStoreInfo;
+    protected Supplier<BasicAuthManager> authManagerSupplier;
+    protected Optional<KeyStoreInformation> keyStoreInfo;
 
     private DatabaseActions databaseActions;
 
@@ -160,7 +161,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( config, dependencies)) );
 
-        this.authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
+        this.authManagerSupplier = dependencyResolver.provideDependency( BasicAuthManager.class );
         this.webServer = createWebServer();
 
         this.keyStoreInfo = createKeyStore();
@@ -308,10 +309,10 @@ public abstract class AbstractNeoServer implements NeoServer
         webServer.setWadlEnabled( config.get( ServerSettings.wadl_enabled ) );
         webServer.setDefaultInjectables( createDefaultInjectables() );
 
-        if ( sslEnabled )
+        if ( keyStoreInfo.isPresent() )
         {
             log.info( "Enabling HTTPS on port %s", sslPort );
-            webServer.setHttpsCertificateInformation( keyStoreInfo );
+            webServer.setHttpsCertificateInformation( keyStoreInfo.get() );
         }
     }
 
@@ -406,43 +407,59 @@ public abstract class AbstractNeoServer implements NeoServer
         return DEFAULT_URI_WHITELIST;
     }
 
-    protected KeyStoreInformation createKeyStore()
+    protected Optional<KeyStoreInformation> createKeyStore()
     {
-        File privateKeyPath = config.get( ServerSettings.tls_key_file ).getAbsoluteFile();
-        File certificatePath = config.get( ServerSettings.tls_certificate_file ).getAbsoluteFile();
+        boolean httpsEnabled = getHttpsEnabled();
 
-        try
+        if (httpsEnabled)
         {
-            // If neither file is specified
-            if ( (!certificatePath.exists() && !privateKeyPath.exists()) )
-            {
-                //noinspection deprecation
-                log.info( "No SSL certificate found, generating a self-signed certificate.." );
-                Certificates certFactory = new Certificates();
-                certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, getWebServerAddress() );
-            }
+            File privateKeyPath = config.get( ServerSettings.tls_key_file ).getAbsoluteFile();
+            File certificatePath = config.get( ServerSettings.tls_certificate_file ).getAbsoluteFile();
 
-            // Make sure both files were there, or were generated
-            if( !certificatePath.exists() )
+            try
+            {
+                // If neither file is specified
+                if ( (!certificatePath.exists() && !privateKeyPath.exists()) )
+                {
+                    //noinspection deprecation
+                    log.info( "No SSL certificate found, generating a self-signed certificate.." );
+                    Certificates certFactory = new Certificates();
+                    certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, getWebServerAddress() );
+                }
+
+                // Make sure both files were there, or were generated
+                if ( !certificatePath.exists() )
+                {
+                    throw new ServerStartupException(
+                            String.format(
+                                    "TLS private key found, but missing certificate at '%s'. Cannot start server without certificate.",
+
+                                    certificatePath ) );
+                }
+                if ( !privateKeyPath.exists() )
+                {
+                    throw new ServerStartupException(
+                            String.format(
+                                    "TLS certificate found, but missing key at '%s'. Cannot start server without key.",
+                                    privateKeyPath ) );
+                }
+
+                return Optional.of( new KeyStoreFactory().createKeyStore( privateKeyPath, certificatePath ) );
+            }
+            catch ( GeneralSecurityException e )
             {
                 throw new ServerStartupException(
-                        String.format("TLS private key found, but missing certificate at '%s'. Cannot start server without certificate.", certificatePath ) );
+                        "TLS certificate error occurred, unable to start server: " + e.getMessage(), e );
             }
-            if( !privateKeyPath.exists() )
+            catch ( IOException | OperatorCreationException e )
             {
                 throw new ServerStartupException(
-                        String.format("TLS certificate found, but missing key at '%s'. Cannot start server without key.", privateKeyPath ) );
+                        "IO problem while loading or creating TLS certificates: " + e.getMessage(), e );
             }
-
-            return new KeyStoreFactory().createKeyStore( privateKeyPath, certificatePath );
         }
-        catch( GeneralSecurityException e )
+        else
         {
-            throw new ServerStartupException( "TLS certificate error occurred, unable to start server: " + e.getMessage(), e );
-        }
-        catch( IOException | OperatorCreationException e )
-        {
-            throw new ServerStartupException( "IO problem while loading or creating TLS certificates: " + e.getMessage(), e );
+            return Optional.empty();
         }
     }
 
@@ -541,17 +558,17 @@ public abstract class AbstractNeoServer implements NeoServer
         return singletons;
     }
 
-    private static class AuthManagerProvider extends InjectableProvider<AuthManager>
+    private static class AuthManagerProvider extends InjectableProvider<BasicAuthManager>
     {
-        private final Supplier<AuthManager> authManagerSupplier;
-        private AuthManagerProvider( Supplier<AuthManager> authManagerSupplier )
+        private final Supplier<BasicAuthManager> authManagerSupplier;
+        private AuthManagerProvider( Supplier<BasicAuthManager> authManagerSupplier )
         {
-            super(AuthManager.class);
+            super(BasicAuthManager.class);
             this.authManagerSupplier = authManagerSupplier;
         }
 
         @Override
-        public AuthManager getValue( HttpContext httpContext )
+        public BasicAuthManager getValue( HttpContext httpContext )
         {
             return authManagerSupplier.get();
         }

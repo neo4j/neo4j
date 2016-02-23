@@ -39,6 +39,7 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthManager;
+import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
@@ -94,8 +95,17 @@ public abstract class EditionModule
 
     protected AuthManager createAuthManager(Config config, LifeSupport life, LogProvider logProvider)
     {
-        FileUserRepository users = life.add( new FileUserRepository( config.get( GraphDatabaseSettings.auth_store ).toPath(), logProvider ) );
 
-        return life.add(new AuthManager( users, systemUTC(), config.get( GraphDatabaseSettings.auth_enabled )));
+        boolean authEnabled = config.get( GraphDatabaseSettings.auth_enabled );
+        if ( authEnabled)
+        {
+            FileUserRepository users = life.add( new FileUserRepository( config.get( GraphDatabaseSettings.auth_store ).toPath(), logProvider ) );
+            return life.add(new BasicAuthManager( users, systemUTC(), true ));
+        }
+        else
+        {
+            return AuthManager.NO_AUTH;
+        }
+
     }
 }

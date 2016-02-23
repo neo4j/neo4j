@@ -17,8 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
@@ -56,7 +57,10 @@ public class ConcurrentChangesOnEntitiesTest
     @Before
     public void setup()
     {
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+        db = new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
+                .setConfig( GraphDatabaseSettings.auth_store, testDirectory.file( "auth" ).getAbsolutePath() )
+                .newGraphDatabase();
     }
 
     @Test

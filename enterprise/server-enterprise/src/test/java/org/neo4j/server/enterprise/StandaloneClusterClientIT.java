@@ -19,22 +19,24 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.AccessibleObject;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.AccessibleObject;
+import java.net.URI;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -43,6 +45,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.cluster.ClusterListener.Adapter;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -59,12 +62,10 @@ import static java.lang.String.format;
 import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
-
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
 import static org.neo4j.cluster.ClusterSettings.server_id;
@@ -228,7 +229,9 @@ public class StandaloneClusterClientIT
     private void startAndAssertJoined( Integer expectedAssignedPort, Map<String, String> configInConfigFile,
                                        Map<String, String> config ) throws Exception
     {
-        File configFile = configFile( configInConfigFile );
+        Map<String,String> localCopy = new HashMap<>( configInConfigFile );
+        localCopy.put( GraphDatabaseSettings.auth_store.name(), Files.createTempFile("auth", "").toString() );
+        File configFile = configFile( localCopy );
         CountDownLatch latch = new CountDownLatch( 1 );
         AtomicInteger port = new AtomicInteger();
         clients[0].addClusterListener( joinAwaitingListener( latch, port ) );
