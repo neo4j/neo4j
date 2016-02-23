@@ -94,7 +94,7 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             //Make sure argument here is not auto parameterized away as that will drop all type information on the floor
-            db.execute( "CALL org.neo4j.procedure.simpleArgument(toString({x}))");
+            db.execute( "CALL org.neo4j.procedure.simpleArgument('42')" );
         }
     }
 
