@@ -182,7 +182,7 @@ neo4j-03$ ./bin/neo4j start
 When running in HA mode, the startup script returns immediately instead of waiting for the server to become available.
 This is because the instance does not accept any requests until a cluster has been formed.
 In the example above this happens when you start the second instance.
-To keep track of the startup state you can follow the messages in _console.log_ -- the path is printed before the startup script returns.
+To keep track of the startup state you can follow the messages in _neo4j.log_ -- the path is printed before the startup script returns.
 ====
 
 Now, you should be able to access the three servers and check their HA status.

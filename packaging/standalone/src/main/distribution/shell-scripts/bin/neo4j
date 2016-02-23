@@ -207,7 +207,7 @@ setup_paths() {
   [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
   [[ "${NEO4J_LOG:-}" ]] || NEO4J_LOG="${NEO4J_HOME}/data/log"
   [[ "${NEO4J_PIDFILE:-}" ]] || NEO4J_PIDFILE="${NEO4J_HOME}/data/neo4j-service.pid"
-  CONSOLE_LOG="${NEO4J_LOG}/console.log"
+  CONSOLE_LOG="${NEO4J_LOG}/neo4j.log"
 }
 
 setup_java_opts() {
