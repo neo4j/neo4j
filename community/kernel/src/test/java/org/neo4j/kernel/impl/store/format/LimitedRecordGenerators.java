@@ -34,7 +34,7 @@ import org.neo4j.test.RandomRule;
 
 import static java.lang.Math.abs;
 
-class LimitedRecordGenerators implements RecordGenerators
+public class LimitedRecordGenerators implements RecordGenerators
 {
     static final long NULL = -1;
 

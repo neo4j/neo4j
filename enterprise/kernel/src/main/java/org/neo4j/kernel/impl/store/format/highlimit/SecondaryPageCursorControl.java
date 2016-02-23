@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.aligned;
+package org.neo4j.kernel.impl.store.format.highlimit;
 
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.store.format.aligned.Aligned;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 
 /**
- * Used in {@link Aligned} record format where records may required multiple units, which mean writing and
+ * Used in {@link HighLimit} record format where records may required multiple units, which mean writing and
  * reading may require, from one byte to the next, move to another place or cursor to read from or write to.
  * Encapsulates logic for checking for consistent reads and repositioning for next retry.
  */

@@ -5,19 +5,19 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.aligned;
+package org.neo4j.kernel.impl.store.format.highlimit;
 
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -36,35 +36,35 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 /**
  * Record format with very high limits, 50-bit per ID, while at the same time keeping store size small.
  *
- * @see BaseAlignedRecordFormat
+ * @see BaseHighLimitRecordFormat
  */
-public class Aligned implements RecordFormats
+public class HighLimit implements RecordFormats
 {
-    public static final RecordFormats RECORD_FORMATS = new Aligned();
+    public static final RecordFormats RECORD_FORMATS = new HighLimit();
 
     @Override
     public String storeVersion()
     {
-        // Community.Aligned.Zero
-        return "vC.A.0";
+        // Enterprise.HighLimit.Zero
+        return "vE.H.0";
     }
 
     @Override
     public RecordFormat<NodeRecord> node()
     {
-        return new NodeRecordFormat( new CommunityRecordIO<>() );
+        return new NodeRecordFormat();
     }
 
     @Override
     public RecordFormat<RelationshipRecord> relationship()
     {
-        return new RelationshipRecordFormat( new CommunityRecordIO<>() );
+        return new RelationshipRecordFormat();
     }
 
     @Override
     public RecordFormat<RelationshipGroupRecord> relationshipGroup()
     {
-        return new RelationshipGroupRecordFormat( new CommunityRecordIO<>() );
+        return new RelationshipGroupRecordFormat();
     }
 
     @Override

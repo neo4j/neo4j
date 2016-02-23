@@ -5,19 +5,19 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.aligned;
+package org.neo4j.kernel.impl.store.format.highlimit;
 
 import java.io.IOException;
 import java.util.function.Function;
@@ -26,12 +26,14 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
-import org.neo4j.kernel.impl.store.format.aligned.Reference.DataAdapter;
+import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
-import static org.neo4j.kernel.impl.store.format.aligned.Reference.PAGE_CURSOR_ADAPTER;
+import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.offsetForId;
+import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdForRecord;
+import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR_ADAPTER;
 
 /**
  * Base class for record format which utilizes dynamically sized references to other record IDs and with ability
@@ -73,20 +75,16 @@ import static org.neo4j.kernel.impl.store.format.aligned.Reference.PAGE_CURSOR_A
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-abstract class BaseAlignedRecordFormat<RECORD extends AbstractBaseRecord>
+abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         extends BaseOneByteHeaderRecordFormat<RECORD>
 {
     static final long NULL = Record.NULL_REFERENCE.intValue();
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
     static final int HEADER_BIT_FIRST_RECORD_UNIT = 0b0000_0100;
-    // Default to community record format
-    private final RecordIO<RECORD> recordIO;
 
-    protected BaseAlignedRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize,
-            RecordIO<RECORD> recordIO )
+    protected BaseHighLimitRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
     {
         super( recordSize, recordHeaderSize, IN_USE_BIT );
-        this.recordIO = recordIO;
     }
 
     @Override
@@ -105,16 +103,39 @@ abstract class BaseAlignedRecordFormat<RECORD extends AbstractBaseRecord>
                 // Return and try again
                 return;
             }
-            else
+
+            int primaryEndOffset = calculatePrimaryCursorEndOffset( primaryCursor, recordSize );
+
+            // This is a record that is split into multiple record units. We need a bit more clever
+            // data structures here. For the time being this means instantiating one object,
+            // but the trade-off is a great reduction in complexity.
+            long secondaryId = Reference.decode( primaryCursor, PAGE_CURSOR_ADAPTER );
+            long pageId = pageIdForRecord( secondaryId, storeFile.pageSize(), recordSize );
+            int offset = offsetForId( secondaryId, storeFile.pageSize(), recordSize );
+            try ( SecondaryPageCursorReadDataAdapter readAdapter =
+                    new SecondaryPageCursorReadDataAdapter( primaryCursor, storeFile,
+                            pageId, offset, primaryEndOffset, PagedFile.PF_SHARED_READ_LOCK ) )
             {
-                recordIO.read( record, primaryCursor, recordSize, storeFile, ( readAdapter ) -> doReadInternal( record,
-                        primaryCursor, recordSize, headerByte, inUse, readAdapter ) );
+                do
+                {
+                    // (re)sets offsets for both cursors
+                    readAdapter.reposition();
+                    doReadInternal( record, primaryCursor, recordSize, headerByte, inUse, readAdapter );
+                }
+                while ( readAdapter.shouldRetry() );
+
+                record.setSecondaryUnitId( secondaryId );
             }
         }
         else
         {
             doReadInternal( record, primaryCursor, recordSize, headerByte, inUse, PAGE_CURSOR_ADAPTER );
         }
+    }
+
+    private int calculatePrimaryCursorEndOffset( PageCursor primaryCursor, int recordSize )
+    {
+        return primaryCursor.getOffset() + recordSize - 1 /*the header byte*/;
     }
 
     protected abstract void doReadInternal( RECORD record, PageCursor cursor, int recordSize,
@@ -135,8 +156,19 @@ abstract class BaseAlignedRecordFormat<RECORD extends AbstractBaseRecord>
 
         if ( record.requiresSecondaryUnit() )
         {
-            doWriteInternal( record, primaryCursor,
-                    recordIO.getWriteAdapter( record, primaryCursor, recordSize, storeFile ) );
+            int primaryEndOffset = calculatePrimaryCursorEndOffset( primaryCursor, recordSize );
+
+            // Write using the normal adapter since the first reference we write cannot really overflow
+            // into the secondary record
+            long secondaryUnitId = record.getSecondaryUnitId();
+            Reference.encode( secondaryUnitId, primaryCursor, PAGE_CURSOR_ADAPTER );
+
+            long pageId = pageIdForRecord( secondaryUnitId, storeFile.pageSize(), recordSize );
+            int offset = offsetForId( secondaryUnitId, storeFile.pageSize(), recordSize );
+            SecondaryPageCursorWriteDataAdapter dataAdapter = new SecondaryPageCursorWriteDataAdapter(
+                    pageId, offset, primaryEndOffset );
+
+            doWriteInternal( record, primaryCursor, dataAdapter );
         }
         else
         {

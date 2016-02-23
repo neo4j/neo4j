@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-interface RecordGenerators
+public interface RecordGenerators
 {
     interface Generator<RECORD extends AbstractBaseRecord>
     {

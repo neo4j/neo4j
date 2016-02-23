@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.aligned;
+package org.neo4j.kernel.impl.store.format.highlimit;
 
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.format.aligned.Reference.DataAdapter;
+import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 
 import static org.neo4j.kernel.impl.store.format.BaseRecordFormat.IN_USE_BIT;
-import static org.neo4j.kernel.impl.store.format.aligned.BaseAlignedRecordFormat.HEADER_BIT_RECORD_UNIT;
+import static org.neo4j.kernel.impl.store.format.highlimit.BaseHighLimitRecordFormat.HEADER_BIT_RECORD_UNIT;
 
 /**
  * {@link DataAdapter} able to move the {@link PageCursor} to another record, potentially on another page,
