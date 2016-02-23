@@ -26,6 +26,7 @@ import java.lang.reflect.Proxy;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientDatabaseFailureException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.LazySingleReference;
 
 /**
@@ -89,7 +90,13 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
     {
         if ( delegate == null )
         {
-            throw new TransactionFailureException( "Instance state changed after this transaction started." );
+            throw new StateChangedTransactionFailureException(
+                    "This transaction made assumptions about the instance it is executing " +
+                    "on that no longer hold true. This normally happens when a transaction " +
+                    "expects the instance it is executing on to be in some specific cluster role" +
+                    "(such as 'core', 'edge', 'master' or 'slave') and the instance " +
+                    "changing state while the transaction is executing. Simply retry your " +
+                    "transaction and you should see a successful outcome." );
         }
         return proxyInvoke( delegate, method, args );
     }
@@ -148,6 +155,25 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
         public String toString()
         {
             return "Concrete[" + delegate + "]";
+        }
+    }
+
+    /**
+     * Because we don't want the public API to implement `HasStatus`, and because
+     * we don't want to change the API from throwing `TransactionFailureException` for
+     * backwards compat reasons, we throw this sub-class that adds a status code.
+     */
+    public static class StateChangedTransactionFailureException extends TransactionFailureException implements Status.HasStatus
+    {
+        public StateChangedTransactionFailureException( String msg )
+        {
+            super( msg );
+        }
+
+        @Override
+        public Status status()
+        {
+            return Status.Transaction.InstanceStateChanged;
         }
     }
 }
