@@ -17,28 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.configuration;
-
-import org.junit.Test;
+package org.neo4j.server.plugins;
 
 import java.net.URI;
 import java.util.HashMap;
 
+import org.junit.Test;
+
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class ConfigWrappingConfigurationTest
+public class ConfigAdapterTest
 {
-
     @Test
     public void shouldGetDefaultPropertyByKey() throws Exception
     {
         // GIVEN
-        Config config = new Config( new HashMap<String,String>(), BaseServerConfigLoader.getDefaultSettingsClasses() );
-        ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
+        Config config = new Config( new HashMap<>(), ServerSettings.class );
+        ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
         // WHEN
         final Object propertyValue = wrappingConfiguration.getProperty( ServerSettings.rest_api_path.name() );
@@ -51,8 +52,8 @@ public class ConfigWrappingConfigurationTest
     public void shouldGetPropertyInRightFormat() throws Exception
     {
         // GIVEN
-        Config config = new Config( new HashMap<String,String>(), BaseServerConfigLoader.getDefaultSettingsClasses() );
-        ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
+        Config config = new Config( new HashMap<>(), ServerSettings.class );
+        ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
         // WHEN
         wrappingConfiguration
@@ -68,8 +69,8 @@ public class ConfigWrappingConfigurationTest
     {
         // GIVEN
 
-        Config config = new Config( new HashMap<String,String>(), BaseServerConfigLoader.getDefaultSettingsClasses() );
-        ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
+        Config config = new Config( new HashMap<>(), ServerSettings.class );
+        ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
         // THEN
         assertTrue( wrappingConfiguration.getKeys().hasNext() );
@@ -78,8 +79,8 @@ public class ConfigWrappingConfigurationTest
     @Test
     public void shouldAbleToAccessRegisteredPropertyByName()
     {
-        Config config = new Config( new HashMap<String,String>(), BaseServerConfigLoader.getDefaultSettingsClasses() );
-        ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
+        Config config = new Config( new HashMap<>(), ServerSettings.class );
+        ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
         assertEquals( 60000L, wrappingConfiguration.getProperty( ServerSettings.transaction_timeout.name() ) );
     }
@@ -88,7 +89,7 @@ public class ConfigWrappingConfigurationTest
     public void shouldAbleToAccessNonRegisteredPropertyByName()
     {
         Config config = new Config( stringMap( ServerSettings.transaction_timeout.name(), "600" ) );
-        ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
+        ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
         assertEquals( "600", wrappingConfiguration.getProperty( ServerSettings.transaction_timeout.name() ) );
     }

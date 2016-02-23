@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.configuration;
+package org.neo4j.server.plugins;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -34,11 +34,11 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.AnnotatedFieldHarvester;
 import org.neo4j.kernel.configuration.Config;
 
-public class ConfigWrappingConfiguration extends AbstractConfiguration
+public class ConfigAdapter extends AbstractConfiguration
 {
     private final Config config;
 
-    public ConfigWrappingConfiguration( Config config )
+    public ConfigAdapter( Config config )
     {
         this.config = config;
     }

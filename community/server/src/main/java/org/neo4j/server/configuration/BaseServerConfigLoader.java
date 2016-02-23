@@ -58,7 +58,7 @@ public class BaseServerConfigLoader
         overrideEmbeddedDefaults( config );
         applyUserOverrides( config, configOverrides );
 
-        config.registerSettingsClasses( getDefaultSettingsClasses() );
+        config.registerSettingsClasses( asList( ServerSettings.class, GraphDatabaseSettings.class ) );
 
         return config;
     }
@@ -103,11 +103,6 @@ public class BaseServerConfigLoader
         }
 
         config.applyChanges( params );
-    }
-
-    protected static Iterable<Class<?>> getDefaultSettingsClasses()
-    {
-        return asList( ServerSettings.class, GraphDatabaseSettings.class );
     }
 
     private static Map<String,String> loadFromFile( Log log, File file )

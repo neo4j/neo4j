@@ -53,7 +53,7 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.configuration.ConfigWrappingConfiguration;
+import org.neo4j.server.plugins.ConfigAdapter;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.CypherExecutorProvider;
@@ -532,7 +532,7 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new DatabaseActions.Provider( databaseActions ) );
         singletons.add( new GraphDatabaseServiceProvider( database ) );
         singletons.add( new NeoServerProvider( this ) );
-        singletons.add( providerForSingleton( new ConfigWrappingConfiguration( getConfig() ), Configuration.class ) );
+        singletons.add( providerForSingleton( new ConfigAdapter( getConfig() ), Configuration.class ) );
         singletons.add( providerForSingleton( getConfig(), Config.class ) );
 
         singletons.add( new WebServerProvider( getWebServer() ) );
