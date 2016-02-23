@@ -214,7 +214,6 @@ public class TransactionHandleTest
         handle.commit( statements( statement ), output, mock( HttpServletRequest.class ) );
 
         // then
-        verify( executionEngine ).isPeriodicCommit( queryText );
         verify( executionEngine ).executeQuery( queryText, map(), querySession );
 
         InOrder outputOrder = inOrder( output );
