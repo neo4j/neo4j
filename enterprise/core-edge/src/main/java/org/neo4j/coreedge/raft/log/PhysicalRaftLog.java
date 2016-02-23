@@ -226,8 +226,22 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
     @Override
     public long readEntryTerm( long logIndex ) throws RaftStorageException
     {
-        RaftLogEntry raftLogEntry = readLogEntry( logIndex );
-        return raftLogEntry == null ? -1 : raftLogEntry.term();
+        long resultTerm = -1;
+        RaftLogMetadataCache.RaftLogEntryMetadata metadata = metadataCache.getMetadata( logIndex );
+        if ( metadata != null )
+        {
+            resultTerm = metadata.getEntryTerm();
+        }
+        else
+        {
+            RaftLogEntry raftLogEntry = readLogEntry( logIndex );
+            if ( raftLogEntry != null )
+            {
+                resultTerm = raftLogEntry.term();
+            }
+
+        }
+        return resultTerm;
     }
 
     @Override
