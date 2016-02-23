@@ -31,7 +31,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Internal;
-import org.neo4j.kernel.configuration.Obsoleted;
 import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -93,12 +92,6 @@ public interface ServerSettings
     @Description("If execution time limiting is enabled in the database, this configures the maximum request execution time.")
     Setting<Long> webserver_limit_execution_time =
             setting( "org.neo4j.server.webserver.limit.executiontime", DURATION, NO_DEFAULT );
-
-    @SuppressWarnings("unused") // unused but needs documenting as deprecated until 4.0
-    @Deprecated
-    @Obsoleted( "RRDB was removed in 3.0" )
-    @Description( "Path to the statistics database file. RRDB has been deprecate, please use the Metrics plugin instead." )
-    Setting<File> rrdb_location = setting( "org.neo4j.server.webadmin.rrdb.location", PATH, NO_DEFAULT );
 
     @Description("Console engines for the legacy webadmin administration")
     Setting<List<String>> management_console_engines = setting(
@@ -179,12 +172,6 @@ public interface ServerSettings
 
     @Description("Host and port for Bolt protocol")
     Setting<HostnamePort> bolt_socket_address = BoltKernelExtension.Settings.socket_address;
-
-    @SuppressWarnings("unused") // unused but needs documenting as deprecated until 4.0
-    @Internal
-    @Deprecated
-    @Obsoleted("There is now only one configuration file")
-    Setting<File> legacy_db_config = setting( "org.neo4j.server.db.tuning.properties", PATH, "" );
 
     @Internal
     Setting<URI> rest_api_path = setting( "org.neo4j.server.webadmin.data.uri",

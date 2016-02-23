@@ -42,6 +42,7 @@ import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
 @Description( "High Availability configuration settings" )
 public class HaSettings
 {
+    @SuppressWarnings("unused") // accessed by reflection
     @Migrator
     public static final ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
 
@@ -100,10 +101,6 @@ public class HaSettings
     {
         @Description("Round robin")
         round_robin,
-
-        @Deprecated
-        @Description("Deprecated, please use `fixed_ascending` or `fixed_descending` instead.")
-        fixed,
 
         @Description("Fixed, prioritized by server id in descending order. This strategy will push to the same set of instances, as long as they remain " +
                      "available, and will prioritize available instances with the highest instance ids.")

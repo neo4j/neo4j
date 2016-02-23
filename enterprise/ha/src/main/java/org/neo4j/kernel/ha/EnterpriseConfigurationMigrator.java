@@ -21,18 +21,6 @@ package org.neo4j.kernel.ha;
 
 import org.neo4j.kernel.configuration.BaseConfigurationMigrator;
 
-import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
-import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_descending;
-
 public class EnterpriseConfigurationMigrator extends BaseConfigurationMigrator
 {
-    {
-        add( valueChanged(
-                "ha.tx_push_strategy",
-                "fixed",
-                fixed_descending.name(),
-                "The `fixed` push strategy has been renamed to `" + fixed_descending.name() + "`. Please update your configuration, and consider its sibling " +
-                "configuration option, `" + fixed_ascending.name() + "`, which is likely a better option to choose."
-        ) );
-    }
 }
