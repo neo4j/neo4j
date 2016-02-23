@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticCheckResult.error
-import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0._
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 object ProcedureResultItem {
   def apply(output: ProcedureOutput, variable: Variable)(position: InputPosition): ProcedureResultItem =
@@ -37,7 +37,9 @@ case class ProcedureResultItem(output: Option[ProcedureOutput], variable: Variab
   val outputName = output.map(_.name).getOrElse(variable.name)
 
   def semanticCheck: SemanticCheck =
-    variable.declare(CTAny)
+    // This is needed to prevent the initial round of semantic checking from failing with type errors
+    // when procedure signatures have not yet been resolved
+    variable.declare(TypeSpec.all)
 
   def semanticCheck(types: Map[String, CypherType]): SemanticCheck =
     types

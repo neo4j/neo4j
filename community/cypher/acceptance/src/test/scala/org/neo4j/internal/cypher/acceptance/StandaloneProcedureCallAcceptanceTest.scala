@@ -204,7 +204,7 @@ class StandaloneProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
     register(Neo4jTypes.NTNumber)
 
     // Then
-    a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
+    a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
   }
 
   test("if signature declares number all number types are valid") {
