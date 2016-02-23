@@ -28,11 +28,12 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.bolt.v1.messaging.message.Message;
+import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
-import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
-import org.neo4j.bolt.v1.messaging.message.Message;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
@@ -46,7 +47,10 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.recvOneM
 public class BoltFullExchangesDocTest
 {
     @Rule
-    public Neo4jWithSocket neo4j = new Neo4jWithSocket();
+    public Neo4jWithSocket server = new Neo4jWithSocket( settings -> {
+        settings.put( GraphDatabaseSettings.auth_enabled, "true" );
+        settings.put( GraphDatabaseSettings.auth_store, this.getClass().getResource( "/authorization/auth" ).getPath() );
+    } );
 
     @Parameterized.Parameter( 0 )
     public String testName;

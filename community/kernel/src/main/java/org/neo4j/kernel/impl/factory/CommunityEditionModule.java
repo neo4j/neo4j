@@ -32,6 +32,7 @@ import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
@@ -56,7 +57,6 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.udc.UsageData;
 
@@ -96,6 +96,7 @@ public class CommunityEditionModule
         dependencies.satisfyDependency(
                 createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
 
+        dependencies.satisfyDependencies( createAuthManager(config, life, logging.getUserLogProvider()) );
         commitProcessFactory = new CommunityCommitProcessFactory();
 
         headerInformationFactory = createHeaderInformationFactory();
@@ -120,12 +121,7 @@ public class CommunityEditionModule
 
     protected SchemaWriteGuard createSchemaWriteGuard()
     {
-        return new SchemaWriteGuard()
-        {
-            @Override
-            public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
-            {
-            }
+        return () -> {
         };
     }
 
@@ -174,6 +170,8 @@ public class CommunityEditionModule
         return life.add( new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI ) );
     }
 
+
+
     protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs )
     {
         return new DefaultIdGeneratorFactory( fs );
@@ -219,15 +217,10 @@ public class CommunityEditionModule
     protected void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
                                      final DependencyResolver dependencyResolver )
     {
-        life.addLifecycleListener( new LifecycleListener()
-        {
-            @Override
-            public void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to )
+        life.addLifecycleListener( ( instance, from, to ) -> {
+            if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
             {
-                if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
-                {
-                    doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
-                }
+                doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
             }
         } );
     }

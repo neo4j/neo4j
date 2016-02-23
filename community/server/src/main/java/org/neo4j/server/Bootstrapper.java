@@ -87,7 +87,6 @@ public abstract class Bootstrapper
             config = createConfig( log, configFile, configOverrides );
             serverPort = String.valueOf( config.get( ServerSettings.webserver_port ) );
             dependencies = dependencies.userLogProvider( userLogProvider );
-
             life.start();
 
             checkCompatibility();

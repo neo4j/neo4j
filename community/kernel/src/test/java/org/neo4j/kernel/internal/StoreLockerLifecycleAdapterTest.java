@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Settings;
@@ -84,7 +83,7 @@ public class StoreLockerLifecycleAdapterTest
 
     private GraphDatabaseService newDb()
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabase( storeDir() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir() );
     }
 
     private String storeDir()

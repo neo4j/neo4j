@@ -257,7 +257,7 @@ public abstract class GraphDatabaseSettings
     @Description("Size of buffer used by index sampling")
     public static final Setting<Long> index_sampling_buffer_size =
             setting("index_sampling_buffer_size", BYTES, "64m",
-                    min( /* 1m */ 1048576l ), max( (long) Integer.MAX_VALUE ) );
+                    min( /* 1m */ 1048576L ), max( (long) Integer.MAX_VALUE ) );
 
     @Description("Percentage of index updates of total index size required before sampling of a given index is triggered")
     public static final Setting<Integer> index_sampling_update_percentage =
@@ -426,4 +426,11 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<Integer> batch_inserter_batch_size = setting( "batch_inserter_batch_size", INTEGER,
             "10000" );
+
+    @Description("Enable auth requirement to access Neo4j.")
+    public static final Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, "true" );
+
+    @Internal
+    public static final Setting<File> auth_store = setting("dbms.security.auth_store.location", PATH, "data/dbms/auth");
+
 }
