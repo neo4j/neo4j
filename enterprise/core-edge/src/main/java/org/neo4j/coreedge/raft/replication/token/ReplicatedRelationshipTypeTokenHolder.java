@@ -39,6 +39,12 @@ public class ReplicatedRelationshipTypeTokenHolder extends ReplicatedTokenHolder
     }
 
     @Override
+    protected String tokenType()
+    {
+        return "RelationshipType";
+    }
+
+    @Override
     protected void createToken( TransactionState txState, String tokenName, int tokenId )
     {
         txState.relationshipTypeDoCreateForName( tokenName, tokenId );

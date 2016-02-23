@@ -30,11 +30,11 @@ public class InMemoryTokenCache<TOKEN extends Token>
 {
     private final Map<String, Integer> nameToId = new CopyOnWriteHashMap<>();
     private final Map<Integer, TOKEN> idToToken = new CopyOnWriteHashMap<>();
-    private final Class<? extends TokenHolder> owningClass;
+    private final String tokenType;
 
-    public InMemoryTokenCache( Class<? extends TokenHolder> owningClass )
+    public InMemoryTokenCache( String tokenType )
     {
-        this.owningClass = owningClass;
+        this.tokenType = tokenType;
     }
 
     public void clear()
@@ -43,12 +43,12 @@ public class InMemoryTokenCache<TOKEN extends Token>
         idToToken.clear();
     }
 
-    private static void putAndEnsureUnique( Map<String,Integer> nameToId, Token token, Class<? extends TokenHolder> owningClass )
+    private static void putAndEnsureUnique( Map<String,Integer> nameToId, Token token, String tokenType )
     {
         Integer previous;
         if ( (previous = nameToId.put( token.name(), token.id() )) != null && previous != token.id() )
         {
-            throw new NonUniqueTokenException( owningClass, token.name(), token.id(), previous );
+            throw new NonUniqueTokenException( tokenType, token.name(), token.id(), previous );
         }
     }
 
@@ -59,7 +59,7 @@ public class InMemoryTokenCache<TOKEN extends Token>
 
         for ( TOKEN token : tokens )
         {
-            putAndEnsureUnique( newNameToId, token, owningClass );
+            putAndEnsureUnique( newNameToId, token, tokenType );
             newIdToToken.put( token.id(), token );
         }
 
@@ -69,7 +69,7 @@ public class InMemoryTokenCache<TOKEN extends Token>
 
     public void put( TOKEN token ) throws NonUniqueTokenException
     {
-        putAndEnsureUnique( nameToId, token, owningClass );
+        putAndEnsureUnique( nameToId, token, tokenType );
         idToToken.put( token.id(), token );
     }
 

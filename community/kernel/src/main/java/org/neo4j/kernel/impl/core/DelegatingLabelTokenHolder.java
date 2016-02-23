@@ -27,4 +27,10 @@ public class DelegatingLabelTokenHolder extends DelegatingTokenHolder<Token> imp
     {
         super( tokenCreator, new Token.Factory() );
     }
+
+    @Override
+    protected String tokenType()
+    {
+        return "Label";
+    }
 }
