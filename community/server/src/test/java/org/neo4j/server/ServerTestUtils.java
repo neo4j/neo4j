@@ -34,7 +34,6 @@ import java.util.Properties;
 import java.util.Random;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.configuration.ServerSettings;
 
 public class ServerTestUtils
@@ -86,7 +85,7 @@ public class ServerTestUtils
     public static void addDefaultRelativeProperties( Map<String,String> properties, File temporaryFolder )
     {
         addRelativeProperty( temporaryFolder, properties, ServerSettings.data_directory );
-        addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.auth_store );
+        addRelativeProperty( temporaryFolder, properties, ServerSettings.auth_store );
         addRelativeProperty( temporaryFolder, properties, ServerSettings.tls_certificate_file );
         addRelativeProperty( temporaryFolder, properties, ServerSettings.tls_key_file );
     }
@@ -113,7 +112,7 @@ public class ServerTestUtils
         for ( Map.Entry<String, String> property : properties.entrySet() )
         {
             builder.append( ( builder.length() > 0 ? "," : "" ) );
-            builder.append( property.getKey() ).append( "=" ).append( property.getValue() );
+            builder.append( property.getKey() + "=" + property.getValue() );
         }
         return builder.toString();
     }

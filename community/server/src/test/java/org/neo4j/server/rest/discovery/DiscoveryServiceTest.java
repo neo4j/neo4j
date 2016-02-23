@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.net.URI;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
@@ -49,7 +48,7 @@ public class DiscoveryServiceTest
         when( mockConfig.get( ServerSettings.management_api_path ) ).thenReturn( managementUri );
         URI dataUri = new URI( "/data" );
         when( mockConfig.get( ServerSettings.rest_api_path ) ).thenReturn( dataUri );
-        when(mockConfig.get( GraphDatabaseSettings.auth_enabled )).thenReturn( false );
+        when(mockConfig.get( ServerSettings.auth_enabled )).thenReturn( false );
 
         String baseUri = "http://www.example.com";
         DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(

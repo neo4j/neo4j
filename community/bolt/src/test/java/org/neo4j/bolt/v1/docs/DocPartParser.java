@@ -27,7 +27,7 @@ public interface DocPartParser<RESULT>
 {
     RESULT parse( String fileName, String title, Element el );
 
-    class Decoration
+    public static class Decoration
     {
         private Decoration()
         {
@@ -36,16 +36,21 @@ public interface DocPartParser<RESULT>
 
         public static <RESULT> DocPartParser<RESULT> withDetailedExceptions( Class<RESULT> clazz, DocPartParser<RESULT> delegate )
         {
-            return ( fileName, title, el ) -> {
-                try
+            return new DocPartParser<RESULT>()
+            {
+                @Override
+                public RESULT parse( String fileName, String title, Element el )
                 {
-                    return delegate.parse( fileName, title, el );
-                }
-                catch ( RuntimeException e )
-                {
-                    throw new IllegalArgumentException(
-                            format( "%s[%s]: Couldn't parse %s element", fileName, title, clazz.getSimpleName() )
-                    );
+                    try
+                    {
+                        return delegate.parse( fileName, title, el );
+                    }
+                    catch ( RuntimeException e )
+                    {
+                        throw new IllegalArgumentException(
+                                format( "%s[%s]: Couldn't parse %s element", fileName, title, clazz.getSimpleName() )
+                        );
+                    }
                 }
             };
         }

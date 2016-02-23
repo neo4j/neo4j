@@ -33,7 +33,6 @@ import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.BoltKernelExtension.EncryptionLevel.REQUIRED;
 import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
@@ -80,7 +79,7 @@ public class BoltConfigIT
     {
         client.connect( address )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( init( "TestClient/1.1", emptyMap() ) ) );
+                .send( TransportTestUtil.chunk( init( "TestClient/1.1" ) ) );
 
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves(
@@ -92,7 +91,7 @@ public class BoltConfigIT
     {
         client.connect( address )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( init( "TestClient/1.1", emptyMap() ) ) );
+                .send( TransportTestUtil.chunk( init( "TestClient/1.1" ) ) );
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
     }
 }

@@ -88,7 +88,7 @@ public class AuthorizationFilterTest
     public void shouldAllowOptionsRequests() throws Exception
     {
         // Given
-        final AuthorizationFilter filter = new AuthorizationFilter( () -> authManager, logProvider );
+        final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider );
         when( servletRequest.getMethod() ).thenReturn( "OPTIONS" );
 
         // When
@@ -102,7 +102,7 @@ public class AuthorizationFilterTest
     public void shouldWhitelistMatchingUris() throws Exception
     {
         // Given
-        final AuthorizationFilter filter = new AuthorizationFilter( () -> authManager, logProvider,
+        final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider,
                 Pattern.compile( "/" ), Pattern.compile( "/webadmin.*" ), Pattern.compile( "/browser.*" ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/", "/webadmin/index.html", "/browser/index.html" );
@@ -120,7 +120,7 @@ public class AuthorizationFilterTest
     public void shouldRequireAuthorizationForNonWhitelistedUris() throws Exception
     {
         // Given
-        final AuthorizationFilter filter = new AuthorizationFilter( () -> authManager, logProvider, Pattern.compile( "/" ), Pattern.compile( "/browser.*" ) );
+        final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider, Pattern.compile( "/" ), Pattern.compile( "/browser.*" ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
 
@@ -140,7 +140,7 @@ public class AuthorizationFilterTest
     public void shouldRequireValidAuthorizationHeader() throws Exception
     {
         // Given
-        final AuthorizationFilter filter = new AuthorizationFilter( () -> authManager, logProvider );
+        final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "NOT A VALID VALUE" );
@@ -160,7 +160,7 @@ public class AuthorizationFilterTest
     public void shouldNotAuthorizeInvalidCredentials() throws Exception
     {
         // Given
-        final AuthorizationFilter filter = new AuthorizationFilter( () -> authManager, logProvider );
+        final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
@@ -186,7 +186,7 @@ public class AuthorizationFilterTest
     public void shouldAuthorizeWhenPasswordChangeRequiredForWhitelistedPath() throws Exception
     {
         // Given
-        final AuthorizationFilter filter = new AuthorizationFilter( () -> authManager, logProvider );
+        final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/user/foo" );
@@ -204,7 +204,7 @@ public class AuthorizationFilterTest
     public void shouldNotAuthorizeWhenPasswordChangeRequired() throws Exception
     {
         // Given
-        final AuthorizationFilter filter = new AuthorizationFilter( () -> authManager, logProvider );
+        final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
@@ -229,7 +229,7 @@ public class AuthorizationFilterTest
     public void shouldNotAuthorizeWhenTooManyAttemptsMade() throws Exception
     {
         // Given
-        final AuthorizationFilter filter = new AuthorizationFilter( () -> authManager, logProvider );
+        final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
@@ -251,7 +251,7 @@ public class AuthorizationFilterTest
     public void shouldAuthorizeWhenValidCredentialsSupplied() throws Exception
     {
         // Given
-        final AuthorizationFilter filter = new AuthorizationFilter( () -> authManager, logProvider );
+        final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider );
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( StandardCharsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
@@ -269,7 +269,7 @@ public class AuthorizationFilterTest
     public void shouldIncludeCrippledAuthHeaderIfBrowserIsTheOneCalling() throws Throwable
     {
         // Given
-        final AuthorizationFilter filter = new AuthorizationFilter( () -> authManager, logProvider, Pattern.compile( "/" ), Pattern.compile( "/browser.*" ) );
+        final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider, Pattern.compile( "/" ), Pattern.compile( "/browser.*" ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( "X-Ajax-Browser-Auth" )).thenReturn( "true" );

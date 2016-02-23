@@ -34,11 +34,9 @@ import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.message.Messages.init;
@@ -55,8 +53,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class TransportSessionIT
 {
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket(settings ->
-            settings.put( GraphDatabaseSettings.auth_enabled, "false"  ));
+    public Neo4jWithSocket server = new Neo4jWithSocket();
 
     @Parameterized.Parameter(0)
     public Factory<Connection> cf;
@@ -117,7 +114,7 @@ public class TransportSessionIT
         client.connect( address )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", emptyMap() ),
+                        init( "TestClient/1.1" ),
                         run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
                         pullAll() ) );
 
@@ -126,9 +123,9 @@ public class TransportSessionIT
         assertThat( client, eventuallyRecieves(
                 msgSuccess(),
                 msgSuccess( map( "fields", asList( "a", "a_squared" ) ) ),
-                msgRecord( eqRecord( equalTo( 1L ), equalTo( 1L ) ) ),
-                msgRecord( eqRecord( equalTo( 2L ), equalTo( 4L ) ) ),
-                msgRecord( eqRecord( equalTo( 3L ), equalTo( 9L ) ) ),
+                msgRecord( eqRecord( equalTo( 1l ), equalTo( 1l ) ) ),
+                msgRecord( eqRecord( equalTo( 2l ), equalTo( 4l ) ) ),
+                msgRecord( eqRecord( equalTo( 3l ), equalTo( 9l ) ) ),
                 msgSuccess() ) );
     }
 
@@ -139,7 +136,7 @@ public class TransportSessionIT
         client.connect( address )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", emptyMap() ),
+                        init( "TestClient/1.1" ),
                         run( "RETURN 1 AS n" ),
                         reset(),
                         run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
@@ -165,7 +162,7 @@ public class TransportSessionIT
         client.connect( address )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", emptyMap() ),
+                        init( "TestClient/1.1" ),
                         run( "CREATE (n)" ),
                         pullAll() ) );
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );

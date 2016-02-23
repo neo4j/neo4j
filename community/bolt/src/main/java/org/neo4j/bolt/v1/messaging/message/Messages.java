@@ -45,9 +45,9 @@ public class Messages
         return new RunMessage( statement, parameters );
     }
 
-    public static Message init( String clientName, Map<String, Object> credentials )
+    public static Message init( String clientName )
     {
-        return new InitMessage( clientName, credentials );
+        return new InitMessage( clientName );
     }
 
     public static Message pullAll()

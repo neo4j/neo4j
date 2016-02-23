@@ -76,8 +76,7 @@ public class PartialTransactionFailureIT
         adversary.disable();
 
         File storeDir = dir.graphDbDir();
-        final Map<String,String> params = stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
-                GraphDatabaseSettings.auth_store.name(), new File(storeDir, "auth").getAbsolutePath() );
+        final Map<String,String> params = stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, params )
         {
             @Override

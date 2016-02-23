@@ -26,7 +26,6 @@ import org.mockito.Matchers;
 
 import java.util.Collections;
 
-import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
@@ -59,7 +58,7 @@ public class SessionStateMachineTest
     private final UsageData usageData = new UsageData();
     private final StatementRunner runner = mock( StatementRunner.class );
     private final SessionStateMachine machine = new SessionStateMachine(
-            usageData, db, txBridge, runner, NullLogService.getInstance(), Authentication.NONE );
+            usageData, db, txBridge, runner, NullLogService.getInstance() );
 
     @Test
     public void initialStateShouldBeUninitalized()
@@ -77,7 +76,7 @@ public class SessionStateMachineTest
         when( runner.run( any( SessionState.class ), anyString(), Matchers.anyMap() ) )
                 .thenThrow( new RollbackInducingKernelException() );
 
-        machine.init( "FunClient/1.2", Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.beginTransaction();
 
         // When
@@ -104,7 +103,7 @@ public class SessionStateMachineTest
         when( runner.run( any( SessionState.class ), anyString(), Matchers.anyMap() ) )
                 .thenThrow( new NoTransactionEffectException() );
 
-        machine.init( "FunClient/1.2", Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.beginTransaction();
 
         // When
@@ -126,7 +125,7 @@ public class SessionStateMachineTest
     public void shouldStopRunningTxOnHalt() throws Throwable
     {
         // When
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.beginTransaction();
         machine.close();
 
@@ -140,7 +139,7 @@ public class SessionStateMachineTest
     public void shouldPublishClientName() throws Throwable
     {
         // When
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
 
         // Then
         assertTrue( usageData.get( UsageDataKeys.clientNames ).recentItems().contains(
@@ -151,7 +150,7 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnIdle() throws Throwable
     {
         // Given
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
 
         // When
         TestCallback callback = new TestCallback();
@@ -166,7 +165,7 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnInTransaction() throws Throwable
     {
         // Given
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.beginTransaction();
 
         // When
@@ -184,7 +183,7 @@ public class SessionStateMachineTest
         // Given
         when( runner.run( any( SessionState.class ), anyString(), anyMap() ) )
                 .thenReturn( mock( RecordStream.class ) );
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.beginTransaction();
         machine.run( "RETURN 1", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
 
@@ -203,7 +202,7 @@ public class SessionStateMachineTest
         // Given
         when( runner.run( any( SessionState.class ), anyString(), anyMap() ) )
                 .thenReturn( mock( RecordStream.class ) );
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.run( "RETURN 1", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
 
         // When
@@ -222,7 +221,7 @@ public class SessionStateMachineTest
         TestCallback callback = new TestCallback();
 
         // When
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, callback );
+        machine.init( "FunClient/1.2", null, callback );
 
         // Then
         assertThat( callback.startedCount, equalTo( 1 ) );
@@ -236,7 +235,7 @@ public class SessionStateMachineTest
         when( db.beginTx() ).thenReturn( tx );
         when( runner.run( any( SessionState.class ), anyString(), Matchers.anyMap() ) )
                 .thenThrow( new NoTransactionEffectException() );
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.run( "RETURN 1", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
 
         // When
@@ -256,7 +255,7 @@ public class SessionStateMachineTest
         when( db.beginTx() ).thenReturn( tx );
         when( runner.run( any( SessionState.class ), anyString(), Matchers.anyMap() ) )
                 .thenThrow( new NoTransactionEffectException() );
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
 
         // When
         machine.run( "ROLLBACK", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );

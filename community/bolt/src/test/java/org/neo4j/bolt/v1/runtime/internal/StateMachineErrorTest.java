@@ -26,7 +26,6 @@ import org.mockito.Mockito;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.integration.RecordingCallback;
@@ -37,9 +36,9 @@ import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.udc.UsageData;
 
@@ -87,8 +86,8 @@ public class StateMachineErrorTest
     private SessionStateMachine newIdleMachine()
     {
         SessionStateMachine machine = new SessionStateMachine( new UsageData(), db, txBridge, runner, NullLogService
-                .getInstance(), Authentication.NONE );
-        machine.init( "FunClient", Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+                .getInstance() );
+        machine.init( "FunClient", null, Session.Callback.NO_OP );
         return machine;
     }
 
@@ -177,7 +176,7 @@ public class StateMachineErrorTest
         assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
         assertThat( pulling.next(), SessionMatchers.ignored() );
 
-        machine.init( "", Collections.emptyMap(), null, initializing );
+        machine.init( "", null, initializing );
         assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
         assertThat( initializing.next(), SessionMatchers.ignored() );
 
@@ -217,7 +216,7 @@ public class StateMachineErrorTest
         // Given
         RecordingCallback messages = new RecordingCallback();
         SessionStateMachine machine = new SessionStateMachine( new UsageData(), db, txBridge, runner, NullLogService
-                .getInstance(), Authentication.NONE  );
+                .getInstance() );
 
         // When
         machine.run( "RETURN 1", null, null, messages );

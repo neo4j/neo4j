@@ -111,7 +111,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         life.add( dependencies.satisfyDependency(
                 new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
-        dependencies.satisfyDependencies( createAuthManager(config, life, logging.getUserLogProvider()) );
+
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 
         schemaWriteGuard = () -> {};

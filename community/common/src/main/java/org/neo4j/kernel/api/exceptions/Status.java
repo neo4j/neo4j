@@ -294,7 +294,6 @@ public interface Status
     {
         // client
         AuthenticationFailed( ClientError, "The client provided an incorrect username and/or password." ),
-        CredentialsExpired( ClientError, "The credentials have expired and needs to be updated." ),
         AuthorizationFailed( ClientError, "The client does not have privileges to perform the operation requested." ),
         AuthenticationRateLimit( ClientError, "The client has provided incorrect authentication details too many times in a row." ),
         ModifiedConcurrently( TransientError, "The user was modified concurrently to this request." ),

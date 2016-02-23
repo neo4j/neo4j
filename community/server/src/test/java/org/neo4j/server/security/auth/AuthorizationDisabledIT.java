@@ -21,15 +21,14 @@ package org.neo4j.server.security.auth;
 
 import org.junit.After;
 import org.junit.Test;
-
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class AuthorizationDisabledIT extends ExclusiveServerTestBase
@@ -41,7 +40,7 @@ public class AuthorizationDisabledIT extends ExclusiveServerTestBase
     public void shouldAllowDisablingAuthorization() throws Exception
     {
         // Given
-        server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" ).build();
+        server = CommunityServerBuilder.server().withProperty( ServerSettings.auth_enabled.name(), "false" ).build();
 
         // When
         server.start();

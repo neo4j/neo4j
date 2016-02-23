@@ -83,9 +83,9 @@ public class RecordingMessageHandler implements MessageHandler<RuntimeException>
     }
 
     @Override
-    public void handleInitMessage( String clientName, Map<String,Object> credentials ) throws RuntimeException
+    public void handleInitMessage( String clientName ) throws RuntimeException
     {
-        messages.add( new InitMessage( clientName, credentials ) );
+        messages.add( new InitMessage( clientName ) );
     }
 
     @Override

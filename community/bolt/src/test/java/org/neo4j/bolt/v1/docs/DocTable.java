@@ -32,7 +32,14 @@ import static org.neo4j.bolt.v1.docs.DocPartParser.Decoration.withDetailedExcept
 public class DocTable implements Iterable<DocTable.Row>
 {
     public static DocPartParser<DocTable> table =
-        withDetailedExceptions( DocTable.class, ( fileName, title, s ) -> new DocTable( s )
+        withDetailedExceptions( DocTable.class, new DocPartParser<DocTable>()
+            {
+                @Override
+                public DocTable parse( String fileName, String title, Element s )
+                {
+                    return new DocTable( s );
+                }
+            }
         );
 
     private final List<Row> rows;
