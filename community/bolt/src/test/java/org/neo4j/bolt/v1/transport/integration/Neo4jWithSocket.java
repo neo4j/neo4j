@@ -23,9 +23,6 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -63,8 +60,6 @@ public class Neo4jWithSocket implements TestRule
                 Map<Setting<?>, String> settings = new HashMap<>();
                 settings.put( connector( 0, BoltKernelExtension.Settings.enabled ), "true" );
                 settings.put( connector( 0, BoltKernelExtension.Settings.tls_level ), OPTIONAL.name() );
-                settings.put( BoltKernelExtension.Settings.tls_key_file, tempPath( "key", ".key" ) );
-                settings.put( BoltKernelExtension.Settings.tls_certificate_file, tempPath( "cert", ".cert" ) );
                 configure.accept( settings );
                 final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase(settings);
                 try
@@ -77,14 +72,5 @@ public class Neo4jWithSocket implements TestRule
                 }
             }
         };
-    }
-
-    private String tempPath(String prefix, String suffix ) throws IOException
-    {
-        Path path = Files.createTempFile( prefix, suffix );
-        // We don't want an existing file just the path to a temporary file
-        // a little silly to do it this way
-        Files.delete( path );
-        return path.toString();
     }
 }

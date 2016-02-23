@@ -19,12 +19,11 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.nio.file.Files
 import java.util
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.{PlanDescription, ExecutionEngine}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.IDPSolverMonitor
-import org.neo4j.cypher.internal.{ExecutionEngine, PlanDescription}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -42,7 +41,6 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
   override def databaseConfig() = super.databaseConfig() ++ Map(
     GraphDatabaseSettings.cypher_min_replan_interval -> "0",
     GraphDatabaseSettings.cypher_compiler_tracing -> "true",
-    GraphDatabaseSettings.auth_store -> Files.createTempFile("auth", "").toString,
     GraphDatabaseSettings.pagecache_memory -> "8M"
   )
 

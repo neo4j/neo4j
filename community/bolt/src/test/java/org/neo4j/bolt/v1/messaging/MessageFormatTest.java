@@ -81,14 +81,14 @@ public class MessageFormatTest
         assertSerializes( new FailureMessage( Status.General.UnknownFailure, "Err" ) );
         assertSerializes( new IgnoredMessage() );
         assertSerializes( new ResetMessage() );
-        assertSerializes( new InitMessage( "MyClient/1.0", map("scheme", "basic") ) );
+        assertSerializes( new InitMessage( "MyClient/1.0" ) );
     }
 
     @Test
     public void shouldHandleParameterizedStatements() throws Throwable
     {
         // Given
-        Map<String,Object> expected = map( "n", 12L );
+        Map<String,Object> expected = map( "n", 12l );
 
         // When
         RunMessage msg = serializeAndDeserialize( new RunMessage( "asd", expected ) );

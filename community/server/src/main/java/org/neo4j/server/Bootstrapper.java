@@ -39,7 +39,6 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.server.logging.Netty4LogBridge;
-
 import static java.lang.String.format;
 import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE;
 import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE_KEY;
@@ -89,6 +88,7 @@ public abstract class Bootstrapper
             config = createConfig( log, configFile, configOverrides );
             serverPort = String.valueOf( config.get( ServerSettings.webserver_port ) );
             dependencies = dependencies.userLogProvider( userLogProvider );
+
             life.start();
 
             checkCompatibility();

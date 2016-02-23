@@ -125,7 +125,7 @@ public interface Session extends AutoCloseable
     /**
      * Initialize the session.
      */
-    <A> void init( String clientName, Map<String,Object> authToken, A attachment, Callback<Void,A> callback );
+    <A> void init( String clientName, A attachment, Callback<Void,A> callback );
 
     /**
      * Run a statement, yielding a result stream which can be retrieved through pulling it in a subsequent call.

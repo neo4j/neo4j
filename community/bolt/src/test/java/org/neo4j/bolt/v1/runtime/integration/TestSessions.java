@@ -27,21 +27,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.Session;
-import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.bolt.v1.runtime.internal.StandardSessions;
-import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.bolt.v1.runtime.Sessions;
+import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageData;
 
@@ -60,9 +56,7 @@ public class TestSessions implements TestRule, Sessions
             @Override
             public void evaluate() throws Throwable
             {
-                Map<Setting<?>,String> config = new HashMap<>();
-                config.put( GraphDatabaseSettings.auth_enabled, "false" );
-                gdb = new TestGraphDatabaseFactory().newImpermanentDatabase( config );
+                gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
                 Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
                 StandardSessions sessions = life.add(
                         new StandardSessions( (GraphDatabaseAPI) gdb, new UsageData(), NullLogService.getInstance() ) );

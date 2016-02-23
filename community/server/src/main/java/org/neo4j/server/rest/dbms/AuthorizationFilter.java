@@ -22,7 +22,6 @@ package org.neo4j.server.rest.dbms;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -54,13 +53,13 @@ public class AuthorizationFilter implements Filter
 {
     private static final Pattern PASSWORD_CHANGE_WHITELIST = Pattern.compile( "/user/.*" );
 
-    private final Supplier<AuthManager> authManagerSupplier;
+    private final AuthManager authManager;
     private final Log log;
     private final Pattern[] uriWhitelist;
 
-    public AuthorizationFilter( Supplier<AuthManager> authManager, LogProvider logProvider, Pattern... uriWhitelist )
+    public AuthorizationFilter( AuthManager authManager, LogProvider logProvider, Pattern... uriWhitelist )
     {
-        this.authManagerSupplier = authManager;
+        this.authManager = authManager;
         this.log = logProvider.getLog( getClass() );
         this.uriWhitelist = uriWhitelist;
     }
@@ -104,7 +103,6 @@ public class AuthorizationFilter implements Filter
         final String username = usernameAndPassword[0];
         final String password = usernameAndPassword[1];
 
-        AuthManager authManager = authManagerSupplier.get();
         switch ( authManager.authenticate( username, password ) )
         {
             case PASSWORD_CHANGE_REQUIRED:
@@ -123,6 +121,7 @@ public class AuthorizationFilter implements Filter
             default:
                 log.warn( "Failed authentication attempt for '%s' from %s", username, request.getRemoteAddr() );
                 requestAuthentication( request, invalidCredential ).accept( response );
+                return;
         }
     }
 

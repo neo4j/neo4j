@@ -52,10 +52,9 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
     }
 
     @Override
-    public void handleInitMessage( String clientName, Map<String,Object> authToken ) throws RuntimeException
+    public void handleInitMessage( String clientName ) throws RuntimeException
     {
-        session.init( clientName, authToken, null, simpleCallback );
-
+        session.init( clientName, null, simpleCallback );
     }
 
     @Override

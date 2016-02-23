@@ -74,7 +74,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     private void init( File workingDir )
     {
         setDirectory( workingDir );
-        withConfig( GraphDatabaseSettings.auth_enabled, "false" );
+        withConfig( ServerSettings.auth_enabled, "false" );
         withConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         withConfig( ServerSettings.webserver_port.name(), Integer.toString( freePort(7474, 10000) ) );
 

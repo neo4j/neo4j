@@ -134,7 +134,7 @@ public class MonitoredSessionsTest
         }
 
         @Override
-        public <A> void init( String clientName, Map<String,Object> authToken, A attachment, Callback<Void,A> callback )
+        public <A> void init( String clientName, A attachment, Callback<Void,A> callback )
         {
             this.callback = callback;
         }

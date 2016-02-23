@@ -40,7 +40,7 @@ public interface MessageHandler<E extends Exception>
 
     void handleIgnoredMessage() throws E;
 
-    void handleInitMessage( String clientName, Map<String,Object> credentials ) throws E;
+    void handleInitMessage( String clientName ) throws E;
 
     void handleResetMessage() throws E;
 
@@ -89,7 +89,7 @@ public interface MessageHandler<E extends Exception>
         }
 
         @Override
-        public void handleInitMessage( String clientName, Map<String,Object> credentials ) throws E
+        public void handleInitMessage( String clientName ) throws E
         {
 
         }

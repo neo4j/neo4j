@@ -28,7 +28,7 @@ import org.neo4j.server.configuration.BaseServerConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.neo4j.helpers.collection.Pair.pair;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_store;
+import static org.neo4j.server.configuration.ServerSettings.auth_store;
 import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
 import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
 

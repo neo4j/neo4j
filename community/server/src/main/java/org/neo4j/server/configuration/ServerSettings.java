@@ -213,4 +213,10 @@ public interface ServerSettings
 
     @Internal
     Setting<Boolean> webadmin_enabled = setting( "dbms.webadmin.enabled", BOOLEAN, TRUE );
+
+    @Description("Enable auth requirement to access Neo4j.")
+    Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, TRUE );
+
+    @Internal
+    Setting<File> auth_store = setting("dbms.security.auth_store.location", PATH, "data/dbms/auth");
 }

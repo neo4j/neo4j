@@ -19,7 +19,6 @@
  */
 package org.neo4j.server;
 
-import com.sun.jersey.api.core.HttpContext;
 import org.apache.commons.configuration.Configuration;
 import org.bouncycastle.operator.OperatorCreationException;
 
@@ -76,12 +75,14 @@ import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.security.auth.AuthManager;
+import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
 
 import static java.lang.Math.round;
 import static java.lang.String.format;
+import static java.time.Clock.systemUTC;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -126,7 +127,7 @@ public abstract class AbstractNeoServer implements NeoServer
     protected CypherExecutor cypherExecutor;
     protected WebServer webServer;
 
-    protected Supplier<AuthManager> authManagerSupplier;
+    protected AuthManager authManager;
     protected KeyStoreInformation keyStoreInfo;
 
     private DatabaseActions databaseActions;
@@ -160,7 +161,16 @@ public abstract class AbstractNeoServer implements NeoServer
 
         this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( config, dependencies)) );
 
-        this.authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
+        FileUserRepository users = life.add( new FileUserRepository( config.get( ServerSettings.auth_store ).toPath(), logProvider ) );
+
+        // Since we are not (yet) using the AuthManager anywhere but here, we still
+        // instantiate it here. As we refactor, this should probably become an interface,
+        // with appropriate implementations created in CommunityModule and EnterpriseModule,
+        // respectively. To get a hold of AuthManager here, we're likely best of using
+        // DependencyResolver or similar, until the unfortunate problem of both this class
+        // and GraphDatabaseFacadeFactory implementing two different schemes of application
+        // assembly has been resolved.
+        this.authManager = life.add(new AuthManager( users, systemUTC(), config.get( ServerSettings.auth_enabled )));
         this.webServer = createWebServer();
 
         this.keyStoreInfo = createKeyStore();
@@ -533,28 +543,12 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new CypherExecutorProvider( cypherExecutor ) );
 
         singletons.add( providerForSingleton( transactionFacade, TransactionFacade.class ) );
-        singletons.add( new AuthManagerProvider(authManagerSupplier ) );
+        singletons.add( providerForSingleton( authManager, AuthManager.class ) );
         singletons.add( new TransactionFilter( database ) );
         singletons.add( new LoggingProvider( logProvider ) );
         singletons.add( providerForSingleton( logProvider.getLog( NeoServer.class ), Log.class ) );
 
         return singletons;
-    }
-
-    private static class AuthManagerProvider extends InjectableProvider<AuthManager>
-    {
-        private final Supplier<AuthManager> authManagerSupplier;
-        private AuthManagerProvider( Supplier<AuthManager> authManagerSupplier )
-        {
-            super(AuthManager.class);
-            this.authManagerSupplier = authManagerSupplier;
-        }
-
-        @Override
-        public AuthManager getValue( HttpContext httpContext )
-        {
-            return authManagerSupplier.get();
-        }
     }
 
     private boolean hasModule( Class<? extends ServerModule> clazz )

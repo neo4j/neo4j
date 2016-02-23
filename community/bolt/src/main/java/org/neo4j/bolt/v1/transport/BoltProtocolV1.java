@@ -58,7 +58,7 @@ public class BoltProtocolV1 implements BoltProtocol
     private final Log log;
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
 
-    public BoltProtocolV1( final LogService logging, Session session, Channel channel)
+    public BoltProtocolV1( final LogService logging, Session session, Channel channel )
     {
         this.log = logging.getInternalLog( getClass() );
         this.session = session;
@@ -66,7 +66,7 @@ public class BoltProtocolV1 implements BoltProtocol
         this.packer = new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( output ), output );
 
         this.dechunker = new BoltV1Dechunker(
-                new TransportBridge( log, session, packer, this::onMessageDone),
+                new TransportBridge( log, session, packer, this::onMessageDone ),
                 this::onMessageStarted );
     }
 

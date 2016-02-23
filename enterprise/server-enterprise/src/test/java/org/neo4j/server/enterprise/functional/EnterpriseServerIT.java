@@ -26,7 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.NeoServer;
@@ -88,7 +87,7 @@ public class EnterpriseServerIT
     {
         // Given
         NeoServer server = EnterpriseServerBuilder.server()
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" )
+                .withProperty( ServerSettings.auth_enabled.name(), "true" )
                 .usingDataDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
                 .withProperty( server_id.name(), "1" )
@@ -119,7 +118,7 @@ public class EnterpriseServerIT
     {
         // Given
         NeoServer server = EnterpriseServerBuilder.server()
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" )
+                .withProperty( ServerSettings.auth_enabled.name(), "true" )
                 .withProperty( HaSettings.ha_status_auth_enabled.name(), "false" )
                 .usingDataDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )

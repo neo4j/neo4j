@@ -81,7 +81,7 @@ public class BoltMessageDescriber implements MessageHandler<RuntimeException>
     }
 
     @Override
-    public void handleInitMessage( String clientName, Map<String,Object> credentials ) throws RuntimeException
+    public void handleInitMessage( String clientName ) throws RuntimeException
     {
         messages.add( "INIT" );
     }
