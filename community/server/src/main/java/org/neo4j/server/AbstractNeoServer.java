@@ -19,10 +19,6 @@
  */
 package org.neo4j.server;
 
-import com.sun.jersey.api.core.HttpContext;
-import org.apache.commons.configuration.Configuration;
-import org.bouncycastle.operator.OperatorCreationException;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -35,6 +31,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.servlet.Filter;
+
+import com.sun.jersey.api.core.HttpContext;
+import org.apache.commons.configuration.Configuration;
+import org.bouncycastle.operator.OperatorCreationException;
 
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
@@ -84,6 +84,7 @@ import org.neo4j.server.web.WebServerProvider;
 import static java.lang.Math.round;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTimeout;
@@ -92,11 +93,6 @@ import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
 
-/**
- * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
- * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
- */
-@Deprecated
 public abstract class AbstractNeoServer implements NeoServer
 {
     private static final long MINIMUM_TIMEOUT = 1000L;
