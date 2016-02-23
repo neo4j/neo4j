@@ -47,7 +47,6 @@ public class ClusterConfiguration
     private final List<URI> candidateMembers;
     private Map<InstanceId, URI> members;
     private Map<String, InstanceId> roles = new HashMap<String, InstanceId>();
-    private int allowedFailures = 1;
 
     public ClusterConfiguration( String name, LogProvider logProvider, String... members )
     {
@@ -177,7 +176,8 @@ public class ClusterConfiguration
 
     public int getAllowedFailures()
     {
-        return allowedFailures;
+        assert members.size() > 0;
+        return (members.size() - 1) / 2;
     }
 
     public void left()
@@ -259,10 +259,6 @@ public class ClusterConfiguration
 
         ClusterConfiguration that = (ClusterConfiguration) o;
 
-        if ( allowedFailures != that.allowedFailures )
-        {
-            return false;
-        }
         if ( !candidateMembers.equals( that.candidateMembers ) )
         {
             return false;
@@ -290,7 +286,6 @@ public class ClusterConfiguration
         result = 31 * result + candidateMembers.hashCode();
         result = 31 * result + members.hashCode();
         result = 31 * result + roles.hashCode();
-        result = 31 * result + allowedFailures;
         return result;
     }
 }
