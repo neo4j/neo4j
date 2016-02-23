@@ -140,19 +140,19 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     public synchronized PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
-        Set<Long> nodeIds = new HashSet<>();
-        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
-        {
-            Object key = entry.getKey();
-            if ( key instanceof String )
-            {
-                if ( key.toString().startsWith( prefix ) )
-                {
-                    nodeIds.addAll( entry.getValue() );
-                }
-            }
-        }
-        return toPrimitiveIterator( nodeIds.iterator() );
+        return stringSearch( ( String entry ) -> entry.startsWith( prefix ) );
+    }
+
+    @Override
+    public synchronized PrimitiveLongIterator containsString( String exactTerm )
+    {
+        return stringSearch( ( String entry ) -> entry.contains( exactTerm ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator endsWith( String suffix )
+    {
+        return stringSearch( ( String entry ) -> entry.endsWith( suffix ) );
     }
 
     @Override
@@ -160,24 +160,6 @@ class HashBasedIndex extends InMemoryIndexImplementation
     {
         Iterable<Long> all = Iterables.flattenIterable( data.values() );
         return toPrimitiveIterator( all.iterator() );
-    }
-
-    @Override
-    public synchronized PrimitiveLongIterator containsString( String exactTerm )
-    {
-        Set<Long> nodeIds = new HashSet<>();
-        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
-        {
-            Object key = entry.getKey();
-            if ( key instanceof String )
-            {
-                if ( key.toString().contains( exactTerm ) )
-                {
-                    nodeIds.addAll( entry.getValue() );
-                }
-            }
-        }
-        return toPrimitiveIterator( nodeIds.iterator() );
     }
 
     @Override
@@ -266,4 +248,27 @@ class HashBasedIndex extends InMemoryIndexImplementation
     {
         return new HashBasedIndexSampler( data );
     }
+
+    private interface StringFilter
+    {
+        boolean test( String s );
+    }
+
+    private PrimitiveLongIterator stringSearch( StringFilter filter )
+    {
+        Set<Long> nodeIds = new HashSet<>();
+        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        {
+            Object key = entry.getKey();
+            if ( key instanceof String )
+            {
+                if ( filter.test( (String) key ) )
+                {
+                    nodeIds.addAll( entry.getValue() );
+                }
+            }
+        }
+        return toPrimitiveIterator( nodeIds.iterator() );
+    }
+
 }

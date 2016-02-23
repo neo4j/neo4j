@@ -140,80 +140,45 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 
     protected List<Long> getAllNodesWithProperty( String propertyValue ) throws IOException
     {
-        try ( IndexReader reader = accessor.newReader() )
-        {
-            List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.seek( propertyValue ); iterator.hasNext(); )
-            {
-                list.add( iterator.next() );
-            }
-            Collections.sort( list );
-            return list;
-        }
+        return metaGet( reader -> reader.seek( propertyValue ));
     }
 
     protected List<Long> getAllNodesFromInclusiveIndexSeekByNumber( Number lower, Number upper ) throws IOException
     {
-        try ( IndexReader reader = accessor.newReader() )
-        {
-            List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.rangeSeekByNumberInclusive( lower, upper ); iterator.hasNext(); )
-            {
-                list.add( iterator.next() );
-            }
-            Collections.sort( list );
-            return list;
-        }
+        return metaGet( reader -> reader.rangeSeekByNumberInclusive( lower, upper ));
     }
 
     protected List<Long> getAllNodesFromIndexSeekByString( String lower, boolean includeLower, String upper, boolean includeUpper ) throws IOException
     {
-        try ( IndexReader reader = accessor.newReader() )
-        {
-            List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.rangeSeekByString( lower, includeLower, upper, includeUpper ); iterator.hasNext(); )
-            {
-                list.add( iterator.next() );
-            }
-            Collections.sort( list );
-            return list;
-        }
+        return metaGet( reader -> reader.rangeSeekByString( lower, includeLower, upper, includeUpper ));
     }
 
     protected List<Long> getAllNodesFromIndexSeekByPrefix( String prefix ) throws IOException
     {
-        try ( IndexReader reader = accessor.newReader() )
-        {
-            List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.rangeSeekByPrefix( prefix ); iterator.hasNext(); )
-            {
-                list.add( iterator.next() );
-            }
-            Collections.sort( list );
-            return list;
-        }
+        return metaGet( reader -> reader.rangeSeekByPrefix( prefix));
     }
 
-    protected List<Long> getAllNodesFromIndexSeekByContains( String term ) throws IOException
+    protected List<Long> getAllNodesFromIndexScanByContains( String term ) throws IOException
     {
-        try ( IndexReader reader = accessor.newReader() )
-        {
-            List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.containsString( term ); iterator.hasNext(); )
-            {
-                list.add( iterator.next() );
-            }
-            Collections.sort( list );
-            return list;
-        }
+        return metaGet( reader -> reader.containsString( term ) );
+    }
+
+    protected List<Long> getAllNodesFromIndexScanEndsWith( String term ) throws IOException
+    {
+        return metaGet( reader -> reader.endsWith( term ) );
     }
 
     protected List<Long> getAllNodes() throws IOException
     {
+        return metaGet( IndexReader::scan );
+    }
+
+    private List<Long> metaGet( ReaderInteraction interaction )
+    {
         try ( IndexReader reader = accessor.newReader() )
         {
             List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.scan(); iterator.hasNext(); )
+            for ( PrimitiveLongIterator iterator = interaction.results( reader ); iterator.hasNext(); )
             {
                 list.add( iterator.next() );
             }
@@ -221,6 +186,12 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
             return list;
         }
     }
+
+    private interface ReaderInteraction
+    {
+        PrimitiveLongIterator results( IndexReader reader );
+    }
+
 
     protected void updateAndCommit( List<NodePropertyUpdate> updates )
             throws IOException, IndexEntryConflictException

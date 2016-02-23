@@ -159,7 +159,7 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
     result should (use("NodeIndexContainsScan") and evaluateTo(List.empty))
   }
 
-  test("throws appropiate type error") {
+  test("throws appropriate type error") {
     createLabeledNode(Map("name" -> "London"), "Location")
     createLabeledNode(Map("name" -> "LONDON"), "Location")
     graph.inTx {
