@@ -142,7 +142,7 @@ public class TransactionStatementSharingTest
         statement.close();
 
         // when
-        verify( instances.storageStatement ).close();
+        verify( instances.storageStatement ).release();
         reset( instances.storageStatement );
         ReadOperations ops2 = tx.acquireStatement().readOperations();
 

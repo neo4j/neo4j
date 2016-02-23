@@ -1172,8 +1172,32 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             @Override
             public boolean next()
             {
+                try
+                {
+                    return next( currentId, record, mode );
+                }
+                finally
+                {
+                    // This will get the next reference:
+                    // inUse ==> actual next reference
+                    // !inUse && mode == CHECK ==> NULL
+                    // !inUse && mode == NORMAL ==> NULL (+InvalidRecordException thrown in try)
+                    // !inUse && mode == FORCE ==> actual next reference
+                    currentId = getNextRecordReference( record );
+                }
+            }
+
+            @Override
+            public boolean next( long id )
+            {
+                return next( id, record, mode );
+            }
+
+            @Override
+            public boolean next( long id, RECORD record, RecordLoad mode )
+            {
                 assert pageCursor != null : "Not initialized";
-                if ( NULL_REFERENCE.is( currentId ) )
+                if ( NULL_REFERENCE.is( id ) )
                 {
                     record.clear();
                     record.setId( NULL_REFERENCE.intValue() );
@@ -1182,28 +1206,23 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
                 try
                 {
-                    try
-                    {
-                        record.setId( currentId );
-                        long pageId = pageIdForRecord( currentId );
-                        int offset = offsetForId( currentId );
-                        readIntoRecord( currentId, record, mode, pageId, offset, pageCursor );
-                        return record.inUse();
-                    }
-                    finally
-                    {
-                        // This will get the next reference:
-                        // inUse ==> actual next reference
-                        // !inUse && mode == CHECK ==> NULL
-                        // !inUse && mode == NORMAL ==> NULL (+InvalidRecordException thrown in try)
-                        // !inUse && mode == FORCE ==> actual next reference
-                        currentId = getNextRecordReference( record );
-                    }
+                    record.setId( id );
+                    long pageId = pageIdForRecord( id );
+                    int offset = offsetForId( id );
+                    readIntoRecord( currentId, record, mode, pageId, offset, pageCursor );
+                    return record.inUse();
                 }
                 catch ( IOException e )
                 {
                     throw new UnderlyingStorageException( e );
                 }
+            }
+
+            @Override
+            public void placeAt( long id, RecordLoad mode )
+            {
+                this.currentId = id;
+                this.mode = mode;
             }
 
             @Override
@@ -1218,13 +1237,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             public RECORD get()
             {
                 return record;
-            }
-
-            @Override
-            public boolean next( long id )
-            {
-                currentId = id;
-                return next();
             }
 
             @Override

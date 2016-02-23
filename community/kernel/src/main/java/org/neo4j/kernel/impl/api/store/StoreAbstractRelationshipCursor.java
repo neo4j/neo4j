@@ -24,6 +24,8 @@ import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -45,6 +47,7 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
     protected final RelationshipRecord relationshipRecord;
     protected final RelationshipStore relationshipStore;
     protected final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
+    protected final RecordCursor<RelationshipRecord> relationshipRecordCursor;
     private final LockService lockService;
     protected StoreStatement storeStatement;
 
@@ -52,9 +55,10 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
     private InstanceCache<StorePropertyCursor> allPropertyCursor;
 
     public StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, final NeoStores neoStores,
-            StoreStatement storeStatement, LockService lockService )
+            StoreStatement storeStatement, LockService lockService, RecordCursors cursors )
     {
         this.lockService = lockService;
+        this.relationshipRecordCursor = cursors.relationship();
         this.relationshipStore = neoStores.getRelationshipStore();
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.relationshipRecord = relationshipRecord;
@@ -66,7 +70,8 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
             @Override
             protected StoreSinglePropertyCursor create()
             {
-                return new StoreSinglePropertyCursor( neoStores.getPropertyStore(), this );
+                return new StoreSinglePropertyCursor( cursors.property(),
+                        cursors.propertyString(), cursors.propertyArray(), this );
             }
         };
         allPropertyCursor = new InstanceCache<StorePropertyCursor>()
@@ -74,7 +79,8 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
             @Override
             protected StorePropertyCursor create()
             {
-                return new StorePropertyCursor( neoStores.getPropertyStore(), this );
+                return new StorePropertyCursor( cursors.property(),
+                        cursors.propertyString(), cursors.propertyArray(), this );
             }
         };
     }
@@ -131,7 +137,7 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
             try
             {
                 // It's safer to re-read the relationship record here, specifically nextProp, after acquiring the lock
-                if ( !relationshipStore.getRecord( relationshipRecord.getId(), relationshipRecord, CHECK ).inUse() )
+                if ( !relationshipRecordCursor.next( relationshipRecord.getId(), relationshipRecord, CHECK ) )
                 {
                     // So it looks like the node has been deleted. The current behavior of RelationshipStore#fillRecord
                     // w/ FORCE is to only set the inUse field on loading an unused record. This should (and will)

@@ -23,7 +23,9 @@ import java.util.function.Consumer;
 
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
 /**
  * Cursor for a specific property on a node or relationship.
@@ -32,10 +34,14 @@ public class StoreSinglePropertyCursor extends StorePropertyCursor
 {
     private int propertyKeyId;
 
-    public StoreSinglePropertyCursor( PropertyStore propertyStore, Consumer<StoreSinglePropertyCursor> instanceCache )
+    public StoreSinglePropertyCursor(
+            RecordCursor<PropertyRecord> propertyRecordCursor,
+            RecordCursor<DynamicRecord> propertyStringRecordCursor,
+            RecordCursor<DynamicRecord> propertyArrayRecordCursor,
+            Consumer<StoreSinglePropertyCursor> instanceCache )
     {
         //noinspection unchecked
-        super( propertyStore, (Consumer) instanceCache );
+        super( propertyRecordCursor, propertyStringRecordCursor, propertyArrayRecordCursor, (Consumer) instanceCache );
     }
 
     public StoreSinglePropertyCursor init( long firstPropertyId, int propertyKeyId, Lock lock )

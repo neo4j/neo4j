@@ -22,9 +22,11 @@ package org.neo4j.kernel.impl.api.store;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
+
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Cursor for a single relationship.
@@ -36,9 +38,9 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
 
     public StoreSingleRelationshipCursor( RelationshipRecord relationshipRecord, NeoStores neoStores,
             StoreStatement storeStatement, InstanceCache<StoreSingleRelationshipCursor> instanceCache,
-            LockService lockService )
+            LockService lockService, RecordCursors cursors )
     {
-        super( relationshipRecord, neoStores, storeStatement, lockService );
+        super( relationshipRecord, neoStores, storeStatement, lockService, cursors );
         this.instanceCache = instanceCache;
     }
 
@@ -55,8 +57,7 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
         {
             try
             {
-                relationshipRecord.setId( relationshipId );
-                return relationshipStore.getRecord( relationshipId, relationshipRecord, RecordLoad.CHECK ).inUse();
+                return relationshipRecordCursor.next( relationshipId, relationshipRecord, CHECK );
             }
             finally
             {

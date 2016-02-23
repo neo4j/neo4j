@@ -24,8 +24,8 @@ import java.util.function.Consumer;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
@@ -40,9 +40,10 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
             NeoStores neoStores,
             StoreStatement storeStatement,
             Consumer<StoreSingleNodeCursor> instanceCache,
-            LockService lockService )
+            LockService lockService,
+            RecordCursors cursors )
     {
-        super( nodeRecord, neoStores, storeStatement, lockService );
+        super( nodeRecord, neoStores, storeStatement, lockService, cursors );
         this.instanceCache = instanceCache;
     }
 
@@ -59,7 +60,7 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
         {
             try
             {
-                return nodeStore.getRecord( nodeId, nodeRecord, CHECK ).inUse();
+                return cursors.node().next( nodeId, nodeRecord, CHECK );
             }
             finally
             {

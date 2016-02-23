@@ -44,6 +44,8 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
      */
     RecordCursor<R> acquire( long id, RecordLoad mode );
 
+    void placeAt( long id, RecordLoad mode );
+
     /**
      * Moves to the next record and reads it. If this is the first call since {@link #acquire(long, RecordLoad)}
      * the record specified in acquire will be read, otherwise the next record in the chain,
@@ -64,6 +66,20 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
      * @return whether or not that record is in use.
      */
     boolean next( long id );
+
+     /**
+      * An additional way of placing this cursor at an arbitrary record id.
+      * Calling this method will not advance the "current id" as to change which {@link #next()} will load next.
+      * This method is useful when there's an opportunity to load a record from an already acquired
+      * {@link PageCursor} and potentially even an already pinned page.
+      *
+      * @param id record id to place cursor at.
+      * @param record record to load the record data into.
+      * @param mode {@link RecordLoad} mode temporarily overriding the default provided in
+      * {@link #acquire(long, RecordLoad)}.
+      * @return whether or not that record is in use.
+      */
+    boolean next( long id, R record, RecordLoad mode );
 
     class Delegator<R extends AbstractBaseRecord> implements RecordCursor<R>
     {
@@ -87,6 +103,12 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
         }
 
         @Override
+        public void placeAt( long id, RecordLoad mode )
+        {
+            actual.placeAt( id, mode );
+        }
+
+        @Override
         public void close()
         {
             actual.close();
@@ -103,6 +125,12 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
         public boolean next( long id )
         {
             return actual.next( id );
+        }
+
+        @Override
+        public boolean next( long id, R record, RecordLoad mode )
+        {
+            return actual.next( id, record, mode );
         }
     }
 }

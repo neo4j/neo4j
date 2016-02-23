@@ -47,7 +47,7 @@ public class KernelStatementTest
     }
 
     @Test
-    public void shouldCloseStorageStatementWhenForceClosed() throws Exception
+    public void shouldReleaseStorageStatementWhenForceClosed() throws Exception
     {
         // given
         StorageStatement storeStatement = mock( StorageStatement.class );
@@ -59,6 +59,6 @@ public class KernelStatementTest
         statement.forceClose();
 
         // then
-        verify( storeStatement ).close();
+        verify( storeStatement ).release();
     }
 }

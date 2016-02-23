@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -345,6 +346,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         try ( NeoStores legacyStore = instantiateLegacyStore( oldFormat, storeDir );
+                RecordCursors cursors = new RecordCursors( legacyStore );
                 OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) ) )
         {
             Configuration importConfig = new Configuration.Overridden( config );
@@ -356,9 +358,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor,
                             importConfig ), importConfig ), additionalInitialIds, config );
-            InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore, requiresPropertyMigration );
+            InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore, requiresPropertyMigration, cursors );
             InputIterable<InputRelationship> relationships =
-                    legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration );
+                    legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, cursors );
             importer.doImport(
                     Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(),
                             Collectors.badCollector( badOutput, 0 ) ) );
@@ -487,11 +489,11 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private InputIterable<InputRelationship> legacyRelationshipsAsInput( NeoStores legacyStore,
-            boolean requiresPropertyMigration )
+            boolean requiresPropertyMigration, RecordCursors cursors )
     {
         RelationshipStore store = legacyStore.getRelationshipStore();
         final BiConsumer<InputRelationship,RelationshipRecord> propertyDecorator =
-                propertyDecorator( requiresPropertyMigration, legacyStore );
+                propertyDecorator( requiresPropertyMigration, cursors );
         return new StoreScanAsInputIterable<InputRelationship,RelationshipRecord>( store )
         {
             @Override
@@ -508,11 +510,11 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private InputIterable<InputNode> legacyNodesAsInput( NeoStores legacyStore,
-            boolean requiresPropertyMigration )
+            boolean requiresPropertyMigration, RecordCursors cursors )
     {
         NodeStore store = legacyStore.getNodeStore();
         final BiConsumer<InputNode,NodeRecord> propertyDecorator =
-                propertyDecorator( requiresPropertyMigration, legacyStore );
+                propertyDecorator( requiresPropertyMigration, cursors );
 
         return new StoreScanAsInputIterable<InputNode,NodeRecord>( store )
         {
@@ -530,14 +532,15 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private <ENTITY extends InputEntity,RECORD extends PrimitiveRecord> BiConsumer<ENTITY,RECORD> propertyDecorator(
-            boolean requiresPropertyMigration, NeoStores stores )
+            boolean requiresPropertyMigration, RecordCursors cursors )
     {
         if ( !requiresPropertyMigration )
         {
             return (a, b) -> {};
         }
 
-        final StorePropertyCursor cursor = new StorePropertyCursor( stores.getPropertyStore(), (ignored) -> {} );
+        final StorePropertyCursor cursor = new StorePropertyCursor( cursors.property(),
+                cursors.propertyString(), cursors.propertyArray(), (ignored) -> {} );
         final List<Object> scratch = new ArrayList<>();
         return (ENTITY entity, RECORD record) -> {
             cursor.init( record.getNextProp(), LockService.NO_LOCK );

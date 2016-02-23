@@ -31,9 +31,9 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -59,10 +59,11 @@ public class StoreStatement implements StorageStatement
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
+    private final RecordCursors recordCursors;
     private IndexReaderFactory indexReaderFactory;
     private final Supplier<LabelScanReader> labelScanStore;
     private LabelScanReader labelScanReader;
-    private boolean closed;
+    private boolean acquired, closed;
 
     public StoreStatement( final NeoStores neoStores, final LockService lockService,
             Supplier<IndexReaderFactory> indexReaderFactory,
@@ -73,6 +74,7 @@ public class StoreStatement implements StorageStatement
         this.labelScanStore = labelScanReaderSupplier;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
+        this.recordCursors = new RecordCursors( neoStores );
 
         singleNodeCursor = new InstanceCache<StoreSingleNodeCursor>()
         {
@@ -80,7 +82,7 @@ public class StoreStatement implements StorageStatement
             protected StoreSingleNodeCursor create()
             {
                 return new StoreSingleNodeCursor( new NodeRecord( -1 ), neoStores, StoreStatement.this, this,
-                        lockService );
+                        lockService, recordCursors );
             }
         };
         iteratorNodeCursor = new InstanceCache<StoreIteratorNodeCursor>()
@@ -88,8 +90,8 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreIteratorNodeCursor create()
             {
-                return new StoreIteratorNodeCursor( new NodeRecord( -1 ), neoStores, StoreStatement.this, this,
-                        lockService );
+                return new StoreIteratorNodeCursor( nodeStore.newRecord(), neoStores, StoreStatement.this, this,
+                        lockService, recordCursors );
             }
         };
         singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
@@ -97,8 +99,8 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreSingleRelationshipCursor create()
             {
-                return new StoreSingleRelationshipCursor( new RelationshipRecord( -1 ),
-                        neoStores, StoreStatement.this, this, lockService );
+                return new StoreSingleRelationshipCursor( relationshipStore.newRecord(),
+                        neoStores, StoreStatement.this, this, lockService, recordCursors );
             }
         };
         iteratorRelationshipCursor = new InstanceCache<StoreIteratorRelationshipCursor>()
@@ -106,8 +108,8 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreIteratorRelationshipCursor create()
             {
-                return new StoreIteratorRelationshipCursor( new RelationshipRecord( -1 ),
-                        neoStores, StoreStatement.this, this, lockService );
+                return new StoreIteratorRelationshipCursor( relationshipStore.newRecord(),
+                        neoStores, StoreStatement.this, this, lockService, recordCursors );
             }
         };
     }
@@ -115,7 +117,8 @@ public class StoreStatement implements StorageStatement
     @Override
     public void acquire()
     {
-        this.closed = false;
+        assert !acquired;
+        this.acquired = true;
     }
 
     @Override
@@ -159,18 +162,33 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
-    public void close()
+    public void release()
     {
-        assert !closed;
+        assert acquired;
+        doRelease();
+        acquired = false;
+    }
+
+    private void doRelease()
+    {
         if ( indexReaderFactory != null )
         {
             indexReaderFactory.close();
+            // we can actually keep this object around
         }
         if ( labelScanReader != null )
         {
             labelScanReader.close();
             labelScanReader = null;
         }
+    }
+
+    @Override
+    public void close()
+    {
+        doRelease();
+        assert !closed;
+        recordCursors.close();
         closed = true;
     }
 

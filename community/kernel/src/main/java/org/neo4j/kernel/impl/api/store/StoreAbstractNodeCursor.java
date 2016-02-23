@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -58,24 +59,28 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements Cursor<NodeItem>, NodeItem
 {
     protected final NodeRecord nodeRecord;
-    protected NodeStore nodeStore;
-    protected RecordStore<RelationshipGroupRecord> relationshipGroupStore;
-    protected RelationshipStore relationshipStore;
-    protected final LockService lockService;
-    protected StoreStatement storeStatement;
+    protected final NodeStore nodeStore;
+    protected final RelationshipStore relationshipStore;
+    protected final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
 
-    private InstanceCache<StoreLabelCursor> labelCursor;
-    private InstanceCache<StoreSingleLabelCursor> singleLabelCursor;
-    private InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipCursor;
-    private InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
-    private InstanceCache<StorePropertyCursor> allPropertyCursor;
+    protected final LockService lockService;
+    protected final StoreStatement storeStatement;
+
+    private final InstanceCache<StoreLabelCursor> labelCursor;
+    private final InstanceCache<StoreSingleLabelCursor> singleLabelCursor;
+    private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipCursor;
+    private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
+    private final InstanceCache<StorePropertyCursor> allPropertyCursor;
+    protected final RecordCursors cursors;
 
     public StoreAbstractNodeCursor( NodeRecord nodeRecord,
             final NeoStores neoStores,
             final StoreStatement storeStatement,
-            final LockService lockService )
+            final LockService lockService,
+            final RecordCursors cursors )
     {
         this.nodeRecord = nodeRecord;
+        this.cursors = cursors;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
@@ -103,9 +108,9 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             @Override
             protected StoreNodeRelationshipCursor create()
             {
-                return new StoreNodeRelationshipCursor( new RelationshipRecord( -1 ),
-                        neoStores,
-                        new RelationshipGroupRecord( -1 ), storeStatement, this, lockService );
+                return new StoreNodeRelationshipCursor( relationshipStore.newRecord(), neoStores,
+                        relationshipGroupStore.newRecord(), storeStatement, this, lockService,
+                        cursors );
             }
         };
         singlePropertyCursor = new InstanceCache<StoreSinglePropertyCursor>()
@@ -113,7 +118,8 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             @Override
             protected StoreSinglePropertyCursor create()
             {
-                return new StoreSinglePropertyCursor( neoStores.getPropertyStore(), this );
+                return new StoreSinglePropertyCursor( cursors.property(),
+                        cursors.propertyString(), cursors.propertyArray(), this );
             }
         };
         allPropertyCursor = new InstanceCache<StorePropertyCursor>()
@@ -121,7 +127,8 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             @Override
             protected StorePropertyCursor create()
             {
-                return new StorePropertyCursor( neoStores.getPropertyStore(), this );
+                return new StorePropertyCursor( cursors.property(),
+                        cursors.propertyString(), cursors.propertyArray(), allPropertyCursor );
             }
         };
     }
@@ -165,7 +172,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             try
             {
                 // It's safer to re-read the node record here, specifically nextProp, after acquiring the lock
-                if ( !nodeStore.getRecord( nodeRecord.getId(), nodeRecord, CHECK ).inUse() )
+                if ( !cursors.node().next( nodeRecord.getId(), nodeRecord, CHECK ) )
                 {
                     // So it looks like the node has been deleted. The current behavior of NodeStore#loadRecord
                     // is to only set the inUse field on loading an unused record. This should (and will)
@@ -234,7 +241,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
                         return false;
                     }
 
-                    relationshipGroupStore.getRecord( groupId, group, NORMAL );
+                    cursors.relationshipGroup().next( groupId, group, NORMAL );
                     try
                     {
                         value.setValue( group.getType() );
@@ -304,10 +311,11 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             long groupId = nodeRecord.getNextRel();
             long count = 0;
             RelationshipGroupRecord group = relationshipGroupStore.newRecord();
+            RelationshipRecord relationship = relationshipStore.newRecord();
             while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                relationshipGroupStore.getRecord( groupId, group, NORMAL );
-                count += nodeDegreeByDirection( group, direction );
+                cursors.relationshipGroup().next( groupId, group, NORMAL );
+                count += nodeDegreeByDirection( group, direction, relationship );
                 groupId = group.getNext();
             }
             return (int) count;
@@ -333,12 +341,13 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         {
             long groupId = nodeRecord.getNextRel();
             RelationshipGroupRecord group = relationshipGroupStore.newRecord();
+            RelationshipRecord relationship = relationshipStore.newRecord();
             while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                relationshipGroupStore.getRecord( groupId, group, NORMAL );
+                cursors.relationshipGroup().next( groupId, group, NORMAL );
                 if ( group.getType() == relType )
                 {
-                    return (int) nodeDegreeByDirection( group, direction );
+                    return (int) nodeDegreeByDirection( group, direction, relationship );
                 }
                 groupId = group.getNext();
             }
@@ -397,31 +406,31 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         return nodeRecord.isDense();
     }
 
-    private long nodeDegreeByDirection( RelationshipGroupRecord group, Direction direction )
+    private long nodeDegreeByDirection( RelationshipGroupRecord group, Direction direction,
+            RelationshipRecord relationship )
     {
-        long loopCount = countByFirstPrevPointer( group.getFirstLoop() );
+        long loopCount = countByFirstPrevPointer( group.getFirstLoop(), relationship );
         switch ( direction )
         {
             case OUTGOING:
-                return countByFirstPrevPointer( group.getFirstOut() ) + loopCount;
+                return countByFirstPrevPointer( group.getFirstOut(), relationship ) + loopCount;
             case INCOMING:
-                return countByFirstPrevPointer( group.getFirstIn() ) + loopCount;
+                return countByFirstPrevPointer( group.getFirstIn(), relationship ) + loopCount;
             case BOTH:
-                return countByFirstPrevPointer( group.getFirstOut() ) +
-                        countByFirstPrevPointer( group.getFirstIn() ) + loopCount;
+                return countByFirstPrevPointer( group.getFirstOut(), relationship ) +
+                        countByFirstPrevPointer( group.getFirstIn(), relationship ) + loopCount;
             default:
                 throw new IllegalArgumentException( direction.name() );
         }
     }
 
-    private long countByFirstPrevPointer( long relationshipId )
+    private long countByFirstPrevPointer( long relationshipId, RelationshipRecord record )
     {
         if ( relationshipId == Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             return 0;
         }
-        RelationshipRecord record = relationshipStore.getRecord( relationshipId,
-                relationshipStore.newRecord(), NORMAL );
+        cursors.relationship().next( relationshipId, record, NORMAL );
         if ( record.getFirstNode() == nodeRecord.getId() )
         {
             return record.getFirstPrevRel();
@@ -522,6 +531,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         private long outgoing;
         private long incoming;
         private final RelationshipGroupRecord group = relationshipGroupStore.newRecord();
+        private final RelationshipRecord relationship = relationshipStore.newRecord();
 
         public DegreeItemDenseCursor( long groupId )
         {
@@ -533,11 +543,11 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         {
             if ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                relationshipGroupStore.getRecord( groupId, group, NORMAL );
+                cursors.relationshipGroup().next( groupId, group, NORMAL );
                 this.type = group.getType();
-                long loop = countByFirstPrevPointer( group.getFirstLoop() );
-                outgoing = countByFirstPrevPointer( group.getFirstOut() ) + loop;
-                incoming = countByFirstPrevPointer( group.getFirstIn() ) + loop;
+                long loop = countByFirstPrevPointer( group.getFirstLoop(), relationship );
+                outgoing = countByFirstPrevPointer( group.getFirstOut(), relationship ) + loop;
+                incoming = countByFirstPrevPointer( group.getFirstIn(), relationship ) + loop;
                 groupId = group.getNext();
 
                 return true;

@@ -33,20 +33,28 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
  * are valuable to reuse over a reasonably large window to reduce garbage churn in general.
  *
  * A {@link StorageStatement} must be {@link #acquire() acquired} before use. After use the statement
- * should be {@link #close() closed}. After closed the statement can be acquired again.
+ * should be {@link #release() released}. After released the statement can be acquired again.
+ * Creating and closing {@link StorageStatement} and there's also benefits keeping these statements opened
+ * during a longer perioud of time, with the assumption that it's still one thread at a time using each.
+ * With that in mind these statements should not be opened and closed for each operation, perhaps not even
+ * for each transaction.
  */
 public interface StorageStatement extends AutoCloseable
 {
     /**
-     * Acquires this statement so that it can be used, should later be {@link #close() closed}.
-     * Since a {@link StorageStatement} can be reused after {@link #close() closed}, this call should
+     * Acquires this statement so that it can be used, should later be {@link #release() released}.
+     * Since a {@link StorageStatement} can be reused after {@link #release() released}, this call should
      * do initialization/clearing of state whereas data structures can be kept between uses.
      */
     void acquire();
 
     /**
-     * Closes this statement and releases any allocated resources. After closed this statement can
-     * be {@link #acquire() acquired} and be used again.
+     * Releases this statement so that it can later be {@link #acquire() acquired} again.
+     */
+    void release();
+
+    /**
+     * Closes this statement so that it can no longer be used nor {@link #acquire() acquired}.
      */
     @Override
     void close();
