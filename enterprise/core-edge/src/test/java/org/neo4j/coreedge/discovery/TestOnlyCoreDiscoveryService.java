@@ -45,7 +45,8 @@ public class TestOnlyCoreDiscoveryService extends LifecycleAdapter implements Co
                 cluster.bootstrappable = me;
             }
 
-            notifyListeners( cluster.membershipListeners, listener -> listener.onTopologyChange( currentTopology() ) );
+            notifyListeners( cluster.membershipListeners, listener -> listener.onTopologyChange( currentTopology
+                        () ) );
         }
     }
 

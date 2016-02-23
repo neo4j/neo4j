@@ -26,6 +26,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogProvider;
 
 public class TestOnlyDiscoveryServiceFactory implements DiscoveryServiceFactory
 {
@@ -71,7 +72,7 @@ public class TestOnlyDiscoveryServiceFactory implements DiscoveryServiceFactory
     }
 
     @Override
-    public EdgeDiscoveryService edgeDiscoveryService( Config config )
+    public EdgeDiscoveryService edgeDiscoveryService( Config config, LogProvider logProvider )
     {
         return new TestOnlyEdgeDiscoveryService( config, this );
     }

@@ -22,42 +22,41 @@ package org.neo4j.coreedge.discovery;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
-import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.TRANSACTION_SERVER;
 import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.RAFT_SERVER;
+import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.TRANSACTION_SERVER;
 
 public class HazelcastClusterTopology implements ClusterTopology
 {
     public static final String EDGE_SERVERS = "edge-servers";
-    private HazelcastInstance hazelcast;
+    private final Set<Member> hazelcastMembers;
 
-    public HazelcastClusterTopology( HazelcastInstance hazelcast )
+    public HazelcastClusterTopology( Set<Member> hazelcastMembers )
     {
-        this.hazelcast = hazelcast;
+        this.hazelcastMembers = hazelcastMembers;
     }
 
     @Override
     public boolean bootstrappable()
     {
-        Member firstMember = hazelcast.getCluster().getMembers().iterator().next();
+        Member firstMember = hazelcastMembers.iterator().next();
         return firstMember.localMember();
     }
 
     @Override
     public int getNumberOfCoreServers()
     {
-        return hazelcast.getCluster().getMembers().size();
+        return hazelcastMembers.size();
     }
 
     @Override
     public Set<CoreMember> getMembers()
     {
-        return toCoreMembers( hazelcast.getCluster().getMembers() );
+        return toCoreMembers( hazelcastMembers );
     }
 
     private Set<CoreMember> toCoreMembers( Set<Member> members )
@@ -76,15 +75,9 @@ public class HazelcastClusterTopology implements ClusterTopology
     }
 
     @Override
-    public int getNumberOfEdgeServers()
-    {
-        return hazelcast.getMap( EDGE_SERVERS ).size();
-    }
-
-    @Override
     public AdvertisedSocketAddress firstTransactionServer()
     {
-        Member member = hazelcast.getCluster().getMembers().iterator().next();
+        Member member = hazelcastMembers.iterator().next();
         return new AdvertisedSocketAddress( member.getStringAttribute( TRANSACTION_SERVER ) );
     }
 }

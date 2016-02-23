@@ -24,6 +24,7 @@ import java.util.Random;
 
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
+import org.neo4j.coreedge.discovery.EdgeServerConnectionException;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
@@ -39,9 +40,15 @@ public class ConnectToRandomCoreServer implements EdgeToCoreConnectionStrategy
 
 
     @Override
-    public AdvertisedSocketAddress coreServer()
+    public AdvertisedSocketAddress coreServer() throws EdgeServerConnectionException
     {
         final ClusterTopology clusterTopology = discoveryService.currentTopology();
+
+        if ( clusterTopology.getMembers().size() == 0 )
+        {
+            throw new EdgeServerConnectionException( "Unable to connect to any core server" );
+        }
+
         int skippedServers = random.nextInt( clusterTopology.getMembers().size() );
 
         final Iterator<CoreMember> iterator = clusterTopology.getMembers().iterator();
@@ -51,7 +58,7 @@ public class ConnectToRandomCoreServer implements EdgeToCoreConnectionStrategy
         {
             member = iterator.next();
         }
-        while ( skippedServers --> 0 );
+        while ( skippedServers-- > 0 );
 
         return member.getCoreAddress();
     }

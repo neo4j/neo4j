@@ -24,80 +24,32 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.core.HazelcastInstance;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class HazelcastClientLifecycle extends LifecycleAdapter implements EdgeDiscoveryService
+public class HazelcastClientConnector implements HazelcastConnector
 {
-    private Config config;
-    private HazelcastInstance hazelcastInstance;
+    private final Config config;
 
-    public HazelcastClientLifecycle( Config config )
+    public HazelcastClientConnector( Config config )
     {
         this.config = config;
     }
 
     @Override
-    public void start() throws Throwable
-    {
-        ClientConfig clientConfig = clientConfig();
-
-        try
-        {
-            hazelcastInstance = HazelcastClient.newHazelcastClient( clientConfig );
-        }
-        catch ( IllegalStateException e )
-        {
-            // assume that IllegalStateExceptions only occur on connection failure
-            throw new EdgeServerConnectionException( e );
-        }
-
-        addToClusterMap();
-    }
-
-    private void addToClusterMap()
-    {
-        hazelcastInstance
-                .getMap( HazelcastClusterTopology.EDGE_SERVERS )
-                .put( config.get( ClusterSettings.server_id ), 1 );
-    }
-
-    private ClientConfig clientConfig()
+    public HazelcastInstance connectToHazelcast()
     {
         ClientConfig clientConfig = new ClientConfig();
 
         clientConfig.getGroupConfig().setName( config.get( ClusterSettings.cluster_name ) );
 
-
         for ( AdvertisedSocketAddress address : config.get( CoreEdgeClusterSettings.initial_core_cluster_members ) )
         {
             clientConfig.getNetworkConfig().addAddress( address.toString() );
         }
-        return clientConfig;
-    }
-
-    @Override
-    public void stop()
-    {
-        try
-        {
-            hazelcastInstance
-                    .getMap( HazelcastClusterTopology.EDGE_SERVERS )
-                    .remove( config.get( ClusterSettings.server_id ) );
-            hazelcastInstance.shutdown();
-        }
-        catch ( RuntimeException ignored )
-        {
-            // this can happen if the edge server is trying to shutdown but
-            // the core is gone
-        }
-    }
-
-    @Override
-    public ClusterTopology currentTopology()
-    {
-        return new HazelcastClusterTopology( hazelcastInstance );
+        return HazelcastClient.newHazelcastClient( clientConfig );
     }
 }

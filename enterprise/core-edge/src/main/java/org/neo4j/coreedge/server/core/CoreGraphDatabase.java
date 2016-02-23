@@ -36,8 +36,8 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
     private RaftInstance<CoreMember> raft;
 
     public CoreGraphDatabase( File storeDir, Map<String, String> params,
-                              GraphDatabaseFacadeFactory.Dependencies dependencies, DiscoveryServiceFactory
-                                      discoveryServiceFactory )
+                              GraphDatabaseFacadeFactory.Dependencies dependencies,
+                              DiscoveryServiceFactory discoveryServiceFactory )
     {
         new EnterpriseCoreFacadeFactory( discoveryServiceFactory ).newFacade( storeDir, params, dependencies, this );
 

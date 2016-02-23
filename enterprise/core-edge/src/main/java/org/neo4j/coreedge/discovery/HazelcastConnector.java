@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.edge;
+package org.neo4j.coreedge.discovery;
 
-import org.neo4j.coreedge.discovery.EdgeServerConnectionException;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import com.hazelcast.core.HazelcastInstance;
 
-public interface EdgeToCoreConnectionStrategy
+public interface HazelcastConnector
 {
-    AdvertisedSocketAddress coreServer() throws EdgeServerConnectionException;
+    HazelcastInstance connectToHazelcast();
 }

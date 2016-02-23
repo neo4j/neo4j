@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.discovery;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogProvider;
 
 public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
 {
@@ -30,8 +31,8 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
     }
 
     @Override
-    public EdgeDiscoveryService edgeDiscoveryService( Config config )
+    public EdgeDiscoveryService edgeDiscoveryService( Config config, LogProvider logProvider )
     {
-        return new HazelcastClientLifecycle( config );
+        return new HazelcastClient( new HazelcastClientConnector( config ), logProvider );
     }
 }

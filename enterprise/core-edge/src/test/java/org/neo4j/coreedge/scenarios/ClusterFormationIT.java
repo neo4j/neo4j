@@ -55,27 +55,6 @@ public class ClusterFormationIT
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveEdgeServers() throws Exception
-    {
-        // given
-        cluster = Cluster.start( dir.directory(), 3, 3 );
-
-        // when
-        cluster.removeEdgeServerWithServerId( 0 );
-        cluster.addEdgeServerWithFileLocation( 0 );
-
-        // then
-        assertEquals( 3, cluster.numberOfEdgeServers() );
-
-        // when
-        cluster.removeEdgeServerWithServerId( 0 );
-        cluster.addEdgeServerWithFileLocation( 3 );
-
-        // then
-        assertEquals( 3, cluster.numberOfEdgeServers() );
-    }
-
-    @Test
     public void shouldBeAbleToAddAndRemoveCoreServers() throws Exception
     {
         // given
@@ -162,22 +141,5 @@ public class ClusterFormationIT
         cluster = Cluster.start( dir.directory(), 3, 0 );
 
         assertEquals( 3, cluster.numberOfCoreServers() );
-    }
-
-    @Test
-    public void shouldThrowFriendlyExceptionIfEdgeServerCannotConnectToACoreCluster() throws Exception
-    {
-        // given
-        cluster = Cluster.start( dir.directory(), 0, 0 ); // deliberately using Hazelcast for simplicity
-
-        // when
-        try
-        {
-            cluster.startEdgeServer( 99, asList( new AdvertisedSocketAddress( "localhost:5001" ) ) );
-        }
-        catch ( RuntimeException e )
-        {
-            assertTrue( e.getCause().getCause() instanceof EdgeServerConnectionException );
-        }
     }
 }

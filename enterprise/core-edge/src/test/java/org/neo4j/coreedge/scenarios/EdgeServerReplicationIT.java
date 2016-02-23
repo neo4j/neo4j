@@ -116,7 +116,7 @@ public class EdgeServerReplicationIT
         int nodesBeforeEdgeServerStarts = 1;
 
         // when
-        GraphDatabaseService coreDB = executeOnLeaderWithRetry( db -> {
+        executeOnLeaderWithRetry( db -> {
             for ( int i = 0; i < nodesBeforeEdgeServerStarts; i++ )
             {
                 Node node = db.createNode();
@@ -126,23 +126,29 @@ public class EdgeServerReplicationIT
 
         cluster.addEdgeServerWithFileLocation( 0 );
 
+        Set<EdgeGraphDatabase> edgeGraphDatabases = cluster.edgeServers();
+
+        cluster.shutdownCoreServers();
+        cluster = Cluster.start( dir.directory(), 3, 0 );
+
+        System.out.println("restarted cluster...");
+
         // when
-        try ( Transaction tx = coreDB.beginTx() )
-        {
-            Node node = coreDB.createNode();
+        executeOnLeaderWithRetry( db -> {
+            Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
-            tx.success();
-        }
+        } );
 
         // then
-        Set<EdgeGraphDatabase> edgeGraphDatabases = cluster.edgeServers();
+        assertEquals(1, edgeGraphDatabases.size());
+
         for ( final GraphDatabaseService edgeDB : edgeGraphDatabases )
         {
             try ( Transaction tx = edgeDB.beginTx() )
             {
                 ThrowingSupplier<Long, Exception> nodeCount = () -> Iterables.count( edgeDB.getAllNodes() );
                 assertEventually( "node to appear on edge server", nodeCount, is( nodesBeforeEdgeServerStarts + 1l ),
-                        2, MINUTES );
+                        1, MINUTES );
 
                 for ( Node node : GlobalGraphOperations.at( edgeDB ).getAllNodes() )
                 {

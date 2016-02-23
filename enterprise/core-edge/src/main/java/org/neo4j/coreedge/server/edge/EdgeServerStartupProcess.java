@@ -23,9 +23,13 @@ import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
+import org.neo4j.coreedge.discovery.EdgeServerConnectionException;
+import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class EdgeServerStartupProcess implements Lifecycle
 {
@@ -34,25 +38,23 @@ public class EdgeServerStartupProcess implements Lifecycle
     private final TxPollingClient txPuller;
     private final DataSourceManager dataSourceManager;
     private final EdgeToCoreConnectionStrategy connectionStrategy;
-
-    public EdgeServerStartupProcess( StoreFetcher storeFetcher, LocalDatabase localDatabase,
-                                     TxPollingClient txPuller, EdgeDiscoveryService discoveryService,
-                                     DataSourceManager dataSourceManager )
-    {
-        this( storeFetcher, localDatabase, txPuller, dataSourceManager,
-                new AlwaysChooseFirstServer( discoveryService ) );
-    }
+    private final Log log;
+    private final RetryStrategy.Timeout timeout;
 
     public EdgeServerStartupProcess( StoreFetcher storeFetcher, LocalDatabase localDatabase,
                                      TxPollingClient txPuller,
                                      DataSourceManager dataSourceManager,
-                                     EdgeToCoreConnectionStrategy connectionStrategy )
+                                     EdgeToCoreConnectionStrategy connectionStrategy,
+                                     RetryStrategy retryStrategy,
+                                     LogProvider logProvider )
     {
         this.storeFetcher = storeFetcher;
         this.localDatabase = localDatabase;
         this.txPuller = txPuller;
         this.dataSourceManager = dataSourceManager;
         this.connectionStrategy = connectionStrategy;
+        this.timeout = retryStrategy.newTimeout();
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -64,8 +66,24 @@ public class EdgeServerStartupProcess implements Lifecycle
     @Override
     public void start() throws Throwable
     {
-        AdvertisedSocketAddress transactionServer = connectionStrategy.coreServer();
-        localDatabase.copyStoreFrom( transactionServer, storeFetcher );
+        boolean copiedStore = false;
+        do
+        {
+            try
+            {
+                AdvertisedSocketAddress transactionServer = connectionStrategy.coreServer();
+                localDatabase.copyStoreFrom( transactionServer, storeFetcher );
+                copiedStore = true;
+            }
+            catch ( EdgeServerConnectionException ex )
+            {
+                log.info( "Failed to connect to core server. Retrying in %d ms.", timeout.getMillis() );
+                timeout.increment();
+                Thread.sleep( timeout.getMillis() );
+            }
+
+        } while ( !copiedStore );
+
 
         dataSourceManager.start();
         txPuller.startPolling();

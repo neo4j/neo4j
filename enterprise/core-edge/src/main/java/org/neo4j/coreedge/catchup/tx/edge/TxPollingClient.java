@@ -22,6 +22,7 @@ package org.neo4j.coreedge.catchup.tx.edge;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
+import org.neo4j.coreedge.discovery.EdgeServerConnectionException;
 import org.neo4j.coreedge.server.edge.EdgeToCoreConnectionStrategy;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -58,11 +59,19 @@ public class TxPollingClient extends LifecycleAdapter
     public void startPolling()
     {
         coreClient.addTxPullResponseListener( txPullResponseListener );
-        final TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
+        final TransactionIdStore txIdStore = transactionIdStoreSupplier.get();
         jobScheduler.scheduleRecurring( pullUpdates,
-                () -> coreClient.pollForTransactions(
-                        connectionStrategy.coreServer(),
-                        transactionIdStore.getLastCommittedTransactionId() ), pollingInterval, MILLISECONDS );
+                () -> {
+                    try
+                    {
+                        coreClient.pollForTransactions( connectionStrategy.coreServer(),
+                                txIdStore.getLastCommittedTransactionId() );
+                    }
+                    catch ( EdgeServerConnectionException e )
+                    {
+                        // Do nothing, we'll poll again shortly.
+                    }
+                }, pollingInterval, MILLISECONDS );
     }
 
     @Override
