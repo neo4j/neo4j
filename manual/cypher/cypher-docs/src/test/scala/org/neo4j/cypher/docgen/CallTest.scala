@@ -50,6 +50,32 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
       assertions = (p) => assert(p.hasNext) )
   }
 
+  @Test def call_a_procedure_within_a_complex_query() {
+    testQuery(
+      title = "Call a procedure within a complex query",
+      text = "This invokes the built-in procedure 'sys.db.labels' to count all in-use labels in the database",
+      planners = Seq(""),
+      queryText = "CALL db.labels() YIELD label RETURN count(label) AS numLabels",
+      optionalResultExplanation =
+        "Since the procedure call is part of a larger query, all outputs must be named explicitly",
+      assertions = (p) => assert(p.hasNext) )
+  }
+
+  @Test def call_a_procedure_within_a_complex_query_and_rename_outputs() {
+    testQuery(
+      title = "Call a procedure within a complex query and rename its outputs",
+      text =
+        "This invokes the built-in procedure 'sys.db.propertyKeys' as part of counting " +
+        "the number of nodes per property key in-use in the database",
+      planners = Seq(""),
+      queryText = "CALL db.propertyKeys() YIELD propertyKey AS prop " +
+                  "MATCH (n) WHERE n[prop] IS NOT NULL " +
+                  "RETURN prop, count(n) AS numNodes",
+      optionalResultExplanation =
+        "Since the procedure call is part of a larger query, all outputs must be named explicitly",
+      assertions = (p) => assert(p.hasNext) )
+  }
+
   @Test def call_a_procedure_with_literal_arguments() {
     testQuery(
       title = "Call a procedure with literal arguments",
