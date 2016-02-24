@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.ShellSettings;
@@ -74,7 +75,7 @@ public class Neo4jShell
     {
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         createExampleGraph();
-        ShellServer shellServer = new GraphDatabaseShellServer( (org.neo4j.kernel.GraphDatabaseAPI) graphDb );
+        ShellServer shellServer = new GraphDatabaseShellServer( (GraphDatabaseAPI) graphDb );
         ShellLobby.newClient( shellServer ).grabPrompt();
         shellServer.shutdown();
     }

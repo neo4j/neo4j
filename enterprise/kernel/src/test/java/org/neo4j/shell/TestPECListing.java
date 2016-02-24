@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.neo4j.graphdb.Label.label;

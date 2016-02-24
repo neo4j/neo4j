@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
@@ -51,7 +51,7 @@ public class LabelScanStoreIT
         Node node3 = createLabeledNode( Labels.Third );
         Node node4 = createLabeledNode( Labels.First, Labels.Second, Labels.Third );
         Node node5 = createLabeledNode( Labels.First, Labels.Third );
-        
+
         // THEN
         assertEquals(
                 asSet( node1, node4, node5 ),
@@ -63,7 +63,7 @@ public class LabelScanStoreIT
                 asSet( node3, node4, node5 ),
                 asSet( getAllNodesWithLabel( Labels.Third ) ) );
     }
-    
+
     @Test
     public void shouldGetNodesWithAddedLabel() throws Exception
     {
@@ -73,11 +73,11 @@ public class LabelScanStoreIT
         Node node3 = createLabeledNode( Labels.Third );
         Node node4 = createLabeledNode( Labels.First );
         Node node5 = createLabeledNode( Labels.First );
-        
+
         // WHEN
         addLabels( node4, Labels.Second, Labels.Third );
         addLabels( node5, Labels.Third );
-        
+
         // THEN
         assertEquals(
                 asSet( node1, node4, node5 ),
@@ -89,17 +89,17 @@ public class LabelScanStoreIT
                 asSet( node3, node4, node5 ),
                 asSet( getAllNodesWithLabel( Labels.Third ) ) );
     }
-    
+
     @Test
     public void shouldGetNodesAfterDeletedNodes() throws Exception
     {
         // GIVEN
         Node node1 = createLabeledNode( Labels.First, Labels.Second );
         Node node2 = createLabeledNode( Labels.First, Labels.Third );
-        
+
         // WHEN
         deleteNode( node1 );
-        
+
         // THEN
         assertEquals(
                 asSet( node2 ),
@@ -111,18 +111,18 @@ public class LabelScanStoreIT
                 asSet( node2 ),
                 getAllNodesWithLabel( Labels.Third ) );
     }
-    
+
     @Test
     public void shouldGetNodesAfterRemovedLabels() throws Exception
     {
         // GIVEN
         Node node1 = createLabeledNode( Labels.First, Labels.Second );
         Node node2 = createLabeledNode( Labels.First, Labels.Third );
-        
+
         // WHEN
         removeLabels( node1, Labels.First );
         removeLabels( node2, Labels.Third );
-        
+
         // THEN
         assertEquals(
                 asSet( node2 ),
@@ -176,7 +176,7 @@ public class LabelScanStoreIT
             }
         }
     }
-    
+
     private void removeLabels( Node node, Label... labels )
     {
         try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
@@ -215,7 +215,7 @@ public class LabelScanStoreIT
             return node;
         }
     }
-    
+
     private void addLabels( Node node, Label... labels )
     {
         try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )

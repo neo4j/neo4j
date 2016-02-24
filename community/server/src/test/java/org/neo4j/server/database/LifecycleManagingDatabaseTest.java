@@ -22,7 +22,7 @@ package org.neo4j.server.database;
 import org.junit.Test;
 
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;

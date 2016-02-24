@@ -25,7 +25,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -46,20 +46,20 @@ public class ServerClientInteractionTest
     {
         // GIVEN
         client.setSessionVariable( PROMPT_KEY, "MyPrompt \\d \\t$ " );
-        
+
         // WHEN
         Response response = server.interpretLine( client.getId(), "", out );
-        
+
         // THEN
         String regexPattern = "MyPrompt .{1,3} .{1,3} \\d{1,2} \\d{2}:\\d{2}:\\d{2}\\$";
         assertTrue( "Prompt from server '" + response.getPrompt() + "' didn't match pattern '" + regexPattern + "'",
                 compile( regexPattern ).matcher( response.getPrompt() ).find() );
     }
-    
+
     private SimpleAppServer server;
     private ShellClient client;
     private SilentLocalOutput out;
-    
+
     @Before
     public void before() throws Exception
     {

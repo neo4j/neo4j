@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ConfigWrappingConfiguration;

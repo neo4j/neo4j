@@ -22,7 +22,7 @@ package org.neo4j.server.database;
 import java.io.File;
 
 import org.neo4j.graphdb.Result;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.Log;

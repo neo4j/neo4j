@@ -24,7 +24,7 @@ import java.io.File;
 import org.neo4j.backup.BackupService.BackupOutcome;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
