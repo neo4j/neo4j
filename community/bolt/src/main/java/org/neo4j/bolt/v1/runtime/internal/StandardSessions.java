@@ -42,18 +42,15 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
 
     private CypherStatementRunner statementRunner;
     private ThreadToStatementContextBridge txBridge;
-    private final QueryExecutionEngine engine;
 
     public StandardSessions( GraphDatabaseAPI gds,
             UsageData usageData, LogService logging,
-            ThreadToStatementContextBridge txBridge,
-            QueryExecutionEngine engine )
+            ThreadToStatementContextBridge txBridge)
     {
         this.gds = gds;
         this.usageData = usageData;
         this.logging = logging;
         this.txBridge = txBridge;
-        this.engine = engine;
     }
 
     @Override
@@ -65,6 +62,8 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     @Override
     public void start() throws Throwable
     {
+        QueryExecutionEngine engine =
+                gds.getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
         statementRunner = new CypherStatementRunner( gds, engine );
         life.start();
     }

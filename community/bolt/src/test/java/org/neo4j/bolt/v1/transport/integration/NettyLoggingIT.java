@@ -35,12 +35,13 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.udc.UsageData;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
 import static org.neo4j.bolt.BoltKernelExtension.Settings.enabled;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -105,7 +106,11 @@ public class NettyLoggingIT
             @Override
             public GraphDatabaseService db()
             {
-                return mock( GraphDatabaseAPI.class );
+                GraphDatabaseAPI api = mock(GraphDatabaseAPI.class, RETURNS_DEEP_STUBS);
+                when(api.getDependencyResolver()
+                        .resolveDependency( QueryExecutionEngine.class ))
+                        .thenReturn( mock(QueryExecutionEngine.class) );
+                return api;
             }
 
             @Override
@@ -127,21 +132,9 @@ public class NettyLoggingIT
             }
 
             @Override
-            public AuthManager authManager()
-            {
-                return mock(AuthManager.class);
-            }
-
-            @Override
             public ThreadToStatementContextBridge txBridge()
             {
                 return mock(ThreadToStatementContextBridge.class);
-            }
-
-            @Override
-            public QueryExecutionEngine queryEngine()
-            {
-                return mock( QueryExecutionEngine.class );
             }
         };
     }

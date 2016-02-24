@@ -59,14 +59,12 @@ import org.neo4j.kernel.configuration.ConfigValues;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
-import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.bolt.BoltKernelExtension.EncryptionLevel.OPTIONAL;
@@ -175,11 +173,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         Monitors monitors();
 
-        AuthManager authManager();
-
         ThreadToStatementContextBridge txBridge();
-
-        QueryExecutionEngine queryEngine();
     }
 
     public BoltKernelExtension()
@@ -206,8 +200,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 new MonitoredSessions( dependencies.monitors(),
                         new ThreadedSessions(
                                 life.add( new StandardSessions( api, dependencies.usageData(), logging,
-                                        dependencies.txBridge(),
-                                        dependencies.queryEngine() ) ),
+                                        dependencies.txBridge() ) ),
                                 scheduler, logging ), Clock.systemUTC() );
 
         List<NettyServer.ProtocolInitializer> connectors = new ArrayList<>();

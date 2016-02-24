@@ -37,7 +37,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -63,8 +62,7 @@ public class TestSessions implements TestRule, Sessions
                 DependencyResolver resolver = gdb.getDependencyResolver();
                 StandardSessions sessions = life.add(
                         new StandardSessions( gdb, new UsageData(), NullLogService.getInstance(),
-                                resolver.resolveDependency( ThreadToStatementContextBridge.class ),
-                                resolver.resolveDependency( QueryExecutionEngine.class ))
+                                resolver.resolveDependency( ThreadToStatementContextBridge.class ))
                 );
                 actual = new ThreadedSessions(
                         sessions,
@@ -79,10 +77,7 @@ public class TestSessions implements TestRule, Sessions
                 {
                     try
                     {
-                        for ( Session session : startedSessions )
-                        {
-                            session.close();
-                        }
+                        startedSessions.forEach( Session::close );
                     }
                     catch ( Throwable e ) { e.printStackTrace(); }
 
