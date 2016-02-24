@@ -73,6 +73,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
@@ -154,7 +155,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         TxPollingClient txPollingClient = life.add(
                 new TxPollingClient( platformModule.jobScheduler, config.get( HaSettings.pull_interval ),
                         platformModule.dependencies.provideDependency( TransactionIdStore.class ), edgeToCoreClient,
-                        applyPulledTransactions, new ConnectToRandomCoreServer( discoveryService ) ) );
+                        applyPulledTransactions, new ConnectToRandomCoreServer( discoveryService ), NullLogProvider
+                        .getInstance() ) );
 
         StoreFetcher storeFetcher = new StoreFetcher( platformModule.logging.getInternalLogProvider(),
                 new DefaultFileSystemAbstraction(), platformModule.pageCache,

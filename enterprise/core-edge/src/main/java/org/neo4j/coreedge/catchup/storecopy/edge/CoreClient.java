@@ -40,8 +40,9 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
-public abstract class CoreClient extends LifecycleAdapter implements StoreFileReceiver, StoreFileStreamingCompleteListener,
-                                                                     TxStreamCompleteListener, TxPullResponseListener
+public abstract class CoreClient extends LifecycleAdapter implements StoreFileReceiver,
+        StoreFileStreamingCompleteListener,
+        TxStreamCompleteListener, TxPullResponseListener
 {
     private final PullRequestMonitor pullRequestMonitor;
     private StoreFileStreams storeFileStreams = null;
@@ -149,7 +150,6 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
                     }
                 } );
     }
-
 
 
     public void addTxStreamCompleteListener( TxStreamCompleteListener listener )

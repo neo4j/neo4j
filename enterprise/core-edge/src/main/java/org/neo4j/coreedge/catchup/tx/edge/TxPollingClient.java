@@ -23,13 +23,16 @@ import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
 import org.neo4j.coreedge.discovery.EdgeServerConnectionException;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.edge.EdgeToCoreConnectionStrategy;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
+
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.pullUpdates;
 
 public class TxPollingClient extends LifecycleAdapter
@@ -40,11 +43,12 @@ public class TxPollingClient extends LifecycleAdapter
     private final long pollingInterval;
     private final CoreClient coreClient;
     private final TxPullResponseListener txPullResponseListener;
+    private final Log log;
 
     public TxPollingClient( JobScheduler jobScheduler, long pollingInterval,
-            Supplier<TransactionIdStore> transactionIdStoreSupplier,
-            CoreClient coreClient, TxPullResponseListener txPullResponseListener,
-            EdgeToCoreConnectionStrategy connectionStrategy )
+                            Supplier<TransactionIdStore> transactionIdStoreSupplier,
+                            CoreClient coreClient, TxPullResponseListener txPullResponseListener,
+                            EdgeToCoreConnectionStrategy connectionStrategy, LogProvider logProvider )
     {
         this.coreClient = coreClient;
         this.txPullResponseListener = txPullResponseListener;
@@ -54,6 +58,8 @@ public class TxPollingClient extends LifecycleAdapter
 
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.connectionStrategy = connectionStrategy;
+
+        this.log = logProvider.getLog( getClass() );
     }
 
     public void startPolling()
@@ -62,14 +68,23 @@ public class TxPollingClient extends LifecycleAdapter
         final TransactionIdStore txIdStore = transactionIdStoreSupplier.get();
         jobScheduler.scheduleRecurring( pullUpdates,
                 () -> {
+                    AdvertisedSocketAddress transactionServer = null;
                     try
                     {
-                        coreClient.pollForTransactions( connectionStrategy.coreServer(),
-                                txIdStore.getLastCommittedTransactionId() );
+                        transactionServer = connectionStrategy.coreServer();
+                        coreClient.pollForTransactions( transactionServer, txIdStore.getLastCommittedTransactionId() );
                     }
                     catch ( EdgeServerConnectionException e )
                     {
-                        // Do nothing, we'll poll again shortly.
+                        if ( transactionServer != null )
+                        {
+                            log.info( "Failed polling for transactions from %s, reason: ", transactionServer.toString(),
+                                    e.getMessage() );
+                        }
+                        else
+                        {
+                            // Do nothing, we'll poll again shortly.
+                        }
                     }
                 }, pollingInterval, MILLISECONDS );
     }

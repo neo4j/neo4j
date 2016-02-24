@@ -22,7 +22,6 @@ package org.neo4j.coreedge.server.edge;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
-import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
 import org.neo4j.coreedge.discovery.EdgeServerConnectionException;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
@@ -72,14 +71,15 @@ public class EdgeServerStartupProcess implements Lifecycle
             try
             {
                 AdvertisedSocketAddress transactionServer = connectionStrategy.coreServer();
+                log.info( "Server starting, connecting to core server at %s", transactionServer.toString() );
                 localDatabase.copyStoreFrom( transactionServer, storeFetcher );
                 copiedStore = true;
             }
             catch ( EdgeServerConnectionException ex )
             {
                 log.info( "Failed to connect to core server. Retrying in %d ms.", timeout.getMillis() );
-                timeout.increment();
                 Thread.sleep( timeout.getMillis() );
+                timeout.increment();
             }
 
         } while ( !copiedStore );

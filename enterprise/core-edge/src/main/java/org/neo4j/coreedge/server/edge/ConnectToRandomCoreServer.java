@@ -38,7 +38,6 @@ public class ConnectToRandomCoreServer implements EdgeToCoreConnectionStrategy
         this.discoveryService = discoveryService;
     }
 
-
     @Override
     public AdvertisedSocketAddress coreServer() throws EdgeServerConnectionException
     {
