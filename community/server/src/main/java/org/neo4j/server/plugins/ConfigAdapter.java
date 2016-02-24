@@ -29,10 +29,11 @@ import java.util.Set;
 import org.apache.commons.configuration.AbstractConfiguration;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.AnnotatedFieldHarvester;
 import org.neo4j.kernel.configuration.Config;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConfigAdapter extends AbstractConfiguration
 {
@@ -81,7 +82,7 @@ public class ConfigAdapter extends AbstractConfiguration
     @Override
     protected void addPropertyDirect( String key, Object value )
     {
-        config.applyChanges( MapUtil.stringMap( config.getParams(), key, value.toString() ) );
+        config.augment( stringMap( key, value.toString() ) );
     }
 
     private Setting<?> getSettingForKey( String key )
