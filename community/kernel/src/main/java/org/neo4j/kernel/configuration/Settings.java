@@ -38,6 +38,8 @@ import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileUtils;
 
+import static java.lang.Character.isDigit;
+
 /**
  * Create settings for configurations in Neo4j. See {@link org.neo4j.graphdb.factory.GraphDatabaseSettings} for example.
  *
@@ -522,7 +524,7 @@ public class Settings
      *   <li>10k<br>    ==&gt; 10 * 1024</li>
      * </ul>
      */
-    public static final Function<String, Long> LONG_WITH_OPTIONAL_UNIT = Config::parseLongWithUnit;
+    public static final Function<String, Long> LONG_WITH_OPTIONAL_UNIT = Settings::parseLongWithUnit;
 
     public static <T extends Enum> Function<String, T> options( final Class<T> enumClass )
     {
@@ -774,6 +776,55 @@ public class Settings
 
                 return path;
             };
+
+    public static long parseLongWithUnit( String numberWithPotentialUnit )
+    {
+        int firstNonDigitIndex = findFirstNonDigit( numberWithPotentialUnit );
+        String number = numberWithPotentialUnit.substring( 0, firstNonDigitIndex );
+
+        long multiplier = 1;
+        if ( firstNonDigitIndex < numberWithPotentialUnit.length() )
+        {
+            String unit = numberWithPotentialUnit.substring( firstNonDigitIndex );
+            if ( unit.equalsIgnoreCase( "k" ) )
+            {
+                multiplier = 1024;
+            }
+            else if ( unit.equalsIgnoreCase( "m" ) )
+            {
+                multiplier = 1024 * 1024;
+            }
+            else if ( unit.equalsIgnoreCase( "g" ) )
+            {
+                multiplier = 1024 * 1024 * 1024;
+            }
+            else
+            {
+                throw new IllegalArgumentException(
+                        "Illegal unit '" + unit + "' for number '" + numberWithPotentialUnit + "'" );
+            }
+        }
+
+        return Long.parseLong( number ) * multiplier;
+    }
+
+    /**
+     * @return index of first non-digit character in {@code numberWithPotentialUnit}. If all digits then
+     * {@code numberWithPotentialUnit.length()} is returned.
+     */
+    private static int findFirstNonDigit( String numberWithPotentialUnit )
+    {
+        int firstNonDigitIndex = numberWithPotentialUnit.length();
+        for ( int i = 0; i < numberWithPotentialUnit.length(); i++ )
+        {
+            if ( !isDigit( numberWithPotentialUnit.charAt( i ) ) )
+            {
+                firstNonDigitIndex = i;
+                break;
+            }
+        }
+        return firstNonDigitIndex;
+    }
 
     // Setting helpers
     private static Function<Function<String, String>, String> named( final String name )

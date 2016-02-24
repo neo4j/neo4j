@@ -39,7 +39,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
-import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
+import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.tooling.CsvDataGenerator.bareboneNodeHeader;
 import static org.neo4j.tooling.CsvDataGenerator.bareboneRelationshipHeader;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
