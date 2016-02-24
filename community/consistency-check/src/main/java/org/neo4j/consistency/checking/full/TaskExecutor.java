@@ -21,17 +21,16 @@ package org.neo4j.consistency.checking.full;
 
 import java.util.List;
 
-import org.neo4j.helpers.progress.Completion;
-
 public class TaskExecutor
 {
-    public static void execute( List<ConsistencyCheckerTask> tasks, Completion completion )
+    public static void execute( List<ConsistencyCheckerTask> tasks, Runnable callBefore )
             throws ConsistencyCheckIncompleteException
     {
         try
         {
             for ( Runnable task : tasks )
             {
+                callBefore.run();
                 task.run();
             }
         }

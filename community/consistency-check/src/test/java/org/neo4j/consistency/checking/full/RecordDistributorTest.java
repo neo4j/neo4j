@@ -21,69 +21,21 @@ package org.neo4j.consistency.checking.full;
 
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.consistency.checking.full.QueueDistribution.QueueDistributor;
 import org.neo4j.consistency.checking.full.QueueDistribution.RelationshipNodesQueueDistributor;
-import org.neo4j.consistency.checking.full.QueueDistribution.RoundRobinQueueDistributor;
 import org.neo4j.consistency.checking.full.RecordDistributor.RecordConsumer;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import static java.util.Arrays.asList;
-
-import static org.neo4j.helpers.progress.ProgressListener.NONE;
-
 public class RecordDistributorTest
 {
-    /**
-     * This test will not deterministically trigger the race which the fix inside {@link RecordDistributor}
-     * fixes, but very often. On the other hand the test is fast and will not report false failures either.
-     * Over time, as many builds are running this test, correctness will be asserted.
-     */
-    @Test
-    public void shouldProcessFirstAndLastRecordFirstAndLast() throws Exception
-    {
-        // GIVEN
-        final Collection<Integer> records = asList( 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 );
-        final int count = records.size();
-        final AtomicInteger calls = new AtomicInteger();
-        RecordProcessor<Integer> processor = new RecordProcessor<Integer>()
-        {
-            @Override
-            public void process( Integer record )
-            {
-                int call = calls.getAndIncrement();
-                if ( record == 0 || record == count - 1 )
-                {
-                    assertEquals( record.intValue(), call );
-                }
-            }
-
-            @Override
-            public void close()
-            {
-            }
-        };
-
-        // WHEN
-        RecordDistributor.distributeRecords( count, getClass().getSimpleName(), 100, records, NONE, processor,
-                new RoundRobinQueueDistributor<Integer>( count ) );
-
-        // THEN
-        assertEquals( count, calls.get() );
-    }
-
     @Test
     public void shouldDistributeRelationshipRecordsByNodeId() throws Exception
     {
         // GIVEN
-        int numberOfThreads = 5;
         QueueDistributor<RelationshipRecord> distributor = new RelationshipNodesQueueDistributor( 5 );
         RecordConsumer<RelationshipRecord> consumer = mock( RecordConsumer.class );
 

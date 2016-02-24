@@ -217,6 +217,11 @@ public class ExecutionOrderIntegrationTest
             this.log = log;
         }
 
+        @Override
+        public void prepare()
+        {
+        }
+
         <REC extends AbstractBaseRecord, REP extends ConsistencyReport> OwningRecordCheck<REC, REP> logging(
                 RecordCheck<REC, REP> checker )
         {

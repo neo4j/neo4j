@@ -76,8 +76,14 @@ public interface QueueDistribution
         @Override
         public void distribute( RECORD record, RecordConsumer<RECORD> consumer ) throws InterruptedException
         {
-            nextQIndex = (nextQIndex + 1) % numberOfThreads;
-            consumer.accept( record, nextQIndex );
+            try
+            {
+                consumer.accept( record, nextQIndex );
+            }
+            finally
+            {
+                nextQIndex = (nextQIndex + 1) % numberOfThreads;
+            }
         }
     }
 

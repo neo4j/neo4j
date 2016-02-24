@@ -32,6 +32,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 public interface CheckDecorator
 {
+    /**
+     * Called before each pass over the store(s) to check.
+     */
+    void prepare();
+
     OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> decorateNeoStoreChecker(
             OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> checker );
 
@@ -63,6 +68,11 @@ public interface CheckDecorator
 
     static class Adapter implements CheckDecorator
     {
+        @Override
+        public void prepare()
+        {
+        }
+
         @Override
         public OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> decorateNeoStoreChecker(
                 OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> checker )
@@ -134,6 +144,15 @@ public interface CheckDecorator
         public ChainCheckDecorator( CheckDecorator...decorators )
         {
             this.decorators = decorators;
+        }
+
+        @Override
+        public void prepare()
+        {
+            for ( CheckDecorator decorator : decorators )
+            {
+                decorator.prepare();
+            }
         }
 
         @Override

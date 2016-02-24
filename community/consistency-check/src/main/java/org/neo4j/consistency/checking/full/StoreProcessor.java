@@ -211,17 +211,20 @@ public class StoreProcessor extends AbstractStoreProcessor
             throws Exception
     {
         cacheAccess.prepareForProcessingOfSingleStore( recordsPerCpu );
-        RecordProcessor<R> processor = new RecordProcessor<R>()
+        RecordProcessor<R> processor = new RecordProcessor.Adapter<R>()
         {
+            @Override
+            public void init( int id )
+            {
+                // Thread id assignment happens here, so do this before processing. Calles to this init
+                // method is ordered externally.
+                cacheAccess.client();
+            }
+
             @Override
             public void process( R record )
             {
                 store.accept( StoreProcessor.this, record );
-            }
-
-            @Override
-            public void close()
-            {
             }
         };
         distributeRecords( numberOfThreads, getClass().getSimpleName(), qSize,

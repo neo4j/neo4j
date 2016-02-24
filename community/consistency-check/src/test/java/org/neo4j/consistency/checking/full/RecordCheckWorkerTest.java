@@ -34,34 +34,33 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class RecordCheckWorkerTest
 {
     @Test
-    public void shouldDoInitialProcessingInOrder() throws Throwable
+    public void shouldDoProcessingInitializationInOrder() throws Throwable
     {
         // GIVEN
         final Race race = new Race();
         final AtomicInteger coordination = new AtomicInteger( -1 );
         final AtomicInteger expected = new AtomicInteger();
         final int threads = 30;
+        @SuppressWarnings( "unchecked" )
         final RecordCheckWorker<Integer>[] workers = new RecordCheckWorker[threads];
-        for ( int i = 0; i < threads; i++ )
+        final RecordProcessor<Integer> processor = new RecordProcessor.Adapter<Integer>()
         {
-            final int id = i;
-            ArrayBlockingQueue<Integer> queue = new ArrayBlockingQueue<>( 10 );
-            queue.offer( i );
-            race.addContestant( workers[i] = new RecordCheckWorker<Integer>( i, coordination, queue )
+            @Override
+            public void process( Integer record )
             {
-                private boolean initialized;
+                // We're testing init() here, not really process()
+            }
 
-                @Override
-                protected void process( Integer record )
-                {
-                    if ( !initialized )
-                    {
-                        // THEN
-                        assertEquals( id, expected.getAndAdd( 1 ) );
-                        initialized = true;
-                    }
-                }
-            } );
+            @Override
+            public void init( int id )
+            {
+                assertEquals( id, expected.getAndAdd( 1 ) );
+            }
+        };
+        for ( int id = 0; id < threads; id++ )
+        {
+            ArrayBlockingQueue<Integer> queue = new ArrayBlockingQueue<>( 10 );
+            race.addContestant( workers[id] = new RecordCheckWorker<>( id, coordination, queue, processor ) );
         }
         race.addContestant( new Runnable()
         {

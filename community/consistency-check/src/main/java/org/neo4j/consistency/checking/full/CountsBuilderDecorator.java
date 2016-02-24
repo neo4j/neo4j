@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -61,10 +60,9 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
     private static final int WILDCARD = -1;
     private final MultiSet<CountsKey> nodeCounts = new MultiSet<>();
     private final MultiSet<CountsKey> relationshipCounts = new MultiSet<>();
-    private final Predicate<NodeRecord> nodeCountBuildCondition;
-    private final Predicate<RelationshipRecord> relationshipCountBuildCondition;
+    private final MultiPassAvoidanceCondition<NodeRecord> nodeCountBuildCondition;
+    private final MultiPassAvoidanceCondition<RelationshipRecord> relationshipCountBuildCondition;
     private final NodeStore nodeStore;
-    private final RelationshipStore relationshipStore;
     private final StoreAccess storeAccess;
     private final CountsEntry.CheckAdapter CHECK_NODE_COUNT = new CountsEntry.CheckAdapter()
     {
@@ -127,9 +125,15 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
     {
         this.storeAccess = storeAccess;
         this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();
-        this.relationshipStore = storeAccess.getRawNeoStores().getRelationshipStore();
-        this.nodeCountBuildCondition = new MultiPassAvoidanceCondition<>( nodeStore.getHighestPossibleIdInUse() );
-        this.relationshipCountBuildCondition = new MultiPassAvoidanceCondition<>( relationshipStore.getHighestPossibleIdInUse() );
+        this.nodeCountBuildCondition = new MultiPassAvoidanceCondition<>();
+        this.relationshipCountBuildCondition = new MultiPassAvoidanceCondition<>();
+    }
+
+    @Override
+    public void prepare()
+    {
+        this.nodeCountBuildCondition.prepare();
+        this.relationshipCountBuildCondition.prepare();
     }
 
     @Override
@@ -326,39 +330,28 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
 
     private static class MultiPassAvoidanceCondition<T extends AbstractBaseRecord> implements Predicate<T>
     {
-        private boolean started = false, done = false;
-        private final long terminationId;
+        private boolean used;
+        private boolean done;
 
-        public MultiPassAvoidanceCondition( long terminationId )
+        public void prepare()
         {
-            this.terminationId = terminationId;
+            if ( used )
+            {
+                done = true;
+            }
         }
 
         @Override
         public boolean test( T record )
         {
-            if ( done )
+            try
             {
-                return false;
+                return !done;
             }
-            if ( record.getLongId() == terminationId )
+            finally
             {
-                done = true;
-                return true;
+                used = true;
             }
-            if ( record.getLongId() == 0 )
-            {
-                if ( started )
-                {
-                    done = true;
-                    return false;
-                }
-                else
-                {
-                    started = true;
-                }
-            }
-            return true;
         }
     }
 
