@@ -22,7 +22,9 @@ package org.neo4j.server.security.auth;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.server.security.auth.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthenticationResult;
 
 public class BasicAuthSubject implements AuthSubject
 {

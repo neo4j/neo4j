@@ -23,10 +23,10 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.dbms.AuthorizationFilter;
-import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.web.WebServer;
 
 public class AuthorizationModule implements ServerModule

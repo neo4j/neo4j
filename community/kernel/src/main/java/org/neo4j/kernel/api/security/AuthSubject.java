@@ -17,12 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth;
+package org.neo4j.kernel.api.security;
 
-public enum AuthenticationResult
+import java.io.IOException;
+
+import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+
+public interface AuthSubject extends AccessMode
 {
-    SUCCESS,
-    FAILURE,
-    TOO_MANY_ATTEMPTS,
-    PASSWORD_CHANGE_REQUIRED
+    void logout();
+
+    AuthenticationResult getAuthenticationResult();
+
+    /**
+     * Set the password for the AuthSubject
+     * @param password The new password
+     * @throws IOException If the new credentials cannot be serialized to disk.
+     * @throws IllegalCredentialsException If the new password is invalid.
+     */
+    void setPassword( String password ) throws IOException, IllegalCredentialsException;
 }

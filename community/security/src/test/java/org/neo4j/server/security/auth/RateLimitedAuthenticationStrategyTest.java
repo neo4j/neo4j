@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.equalTo;

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.factory;
 import java.io.File;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -40,15 +39,9 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.KernelDiagnostics;
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.server.security.auth.AuthManager;
-import org.neo4j.server.security.auth.BasicAuthManager;
-import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
-import static java.time.Clock.systemUTC;
 import static java.util.Collections.singletonMap;
 
 /**
@@ -103,28 +96,6 @@ public abstract class EditionModule
         sysInfo.set( UsageDataKeys.edition, databaseInfo.edition );
         sysInfo.set( UsageDataKeys.operationalMode, databaseInfo.operationalMode );
         config.augment( singletonMap( Configuration.editionName.name(), databaseInfo.edition.toString() ) );
-    }
-
-    protected AuthManager createAuthManager( Config config, LifeSupport life, LogProvider logProvider )
-    {
-        boolean authEnabled = config.get( GraphDatabaseSettings.auth_enabled );
-        if ( authEnabled )
-        {
-            File storePath = config.get( GraphDatabaseSettings.auth_store );
-            if ( storePath == null )
-            {
-                logProvider.getLog( EditionModule.class ).warn( "Authentication not enabled because %s is not set.",
-                        GraphDatabaseSettings.auth_store.name() );
-                return AuthManager.NO_AUTH;
-            }
-            FileUserRepository users = life.add( new FileUserRepository( storePath.toPath(), logProvider ) );
-            return life.add( new BasicAuthManager( users, systemUTC(), true ) );
-        }
-        else
-        {
-            return AuthManager.NO_AUTH;
-        }
-
     }
 
     protected EditionModule.SPI spi()

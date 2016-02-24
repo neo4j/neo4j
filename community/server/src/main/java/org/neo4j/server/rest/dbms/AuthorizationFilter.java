@@ -37,11 +37,11 @@ import javax.ws.rs.core.UriBuilder;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.web.XForwardUtil;
 
 import static java.lang.String.format;

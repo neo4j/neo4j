@@ -17,17 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth;
+package org.neo4j.kernel.api.security;
+
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.LogProvider;
 
 import java.io.IOException;
-
-import org.neo4j.server.security.auth.exception.IllegalCredentialsException;
 
 /**
  * An AuthManager is used to do basic authentication and user management.
  */
-public interface AuthManager
+public interface AuthManager extends Lifecycle
 {
+    abstract class Factory extends Service
+    {
+        public Factory( String key, String... altKeys )
+        {
+            super( key, altKeys );
+        }
+
+        public abstract AuthManager newInstance( Config config, LogProvider logProvider );
+    }
 
     /**
      * Authenticate a username and password
@@ -45,46 +58,30 @@ public interface AuthManager
     AuthSubject login( String username, String password );
 
     /**
-     * Create a new user with the provided credentials.
-     * @param username The name of the user.
-     * @param initialPassword The initial password.
-     * @param requirePasswordChange Does the user need to change the initial password.
-     * @return A new user with the provided credentials.
-     * @throws IOException If user can't be serialized to disk.
-     * @throws IllegalCredentialsException If the username is invalid.
-     */
-    User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException,
-            IllegalCredentialsException;
-
-    /**
-     * Delete the given user
-     * @param username the name of the user to delete.
-     * @return <tt>true</tt> is user was deleted otherwise <tt>false</tt>
-     * @throws IOException
-     */
-    boolean deleteUser( String username ) throws IOException;
-
-    /**
-     * Retrieves the user with the provided user name.
-     * @param username The name of the user to retrieve.
-     * @return The stored user with the given user name.
-     */
-    User getUser( String username );
-
-    /**
-     * Set the password of the provided user.
-     * @param username The name of the user whose password should be set.
-     * @param password The new password for the user.
-     * @return User with updated credentials
-     * @throws IOException
-     */
-    User setPassword( String username, String password ) throws IOException;
-
-    /**
      * Implementation that does no authentication.
      */
     AuthManager NO_AUTH = new AuthManager()
     {
+        @Override
+        public void init() throws Throwable
+        {
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+        }
+
+        @Override
+        public void shutdown() throws Throwable
+        {
+        }
+
         @Override
         public AuthenticationResult authenticate( String username, String password )
         {
@@ -136,38 +133,6 @@ public interface AuthManager
                     return "";
                 }
             };
-        }
-
-        @Override
-        public User newUser( String username, String initialPassword, boolean requirePasswordChange )
-                throws IOException, IllegalCredentialsException
-        {
-            return new User.Builder(  )
-                    .withName( username )
-                    .withCredentials( Credential.forPassword( initialPassword ) )
-                    .withRequiredPasswordChange( requirePasswordChange )
-                    .build();
-        }
-
-        @Override
-        public boolean deleteUser( String username ) throws IOException
-        {
-            return true;
-        }
-
-        @Override
-        public User getUser( String username )
-        {
-            return new User.Builder().withName( username ).build();
-        }
-
-        @Override
-        public User setPassword( String username, String password ) throws IOException
-        {
-            return new User.Builder(  )
-                    .withName( username )
-                    .withCredentials( Credential.forPassword( password ) )
-                    .build();
         }
     };
 }
