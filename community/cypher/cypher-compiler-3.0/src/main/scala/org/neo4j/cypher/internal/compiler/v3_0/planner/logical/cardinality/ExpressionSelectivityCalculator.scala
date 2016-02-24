@@ -70,6 +70,14 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case Contains(Property(Variable(name), propertyKey), expr) =>
       calculateSelectivityForSubstringSargable(name, selections, propertyKey, None)
 
+    // WHERE x.prop ENDS WITH 'substring'
+    case EndsWith(Property(Variable(name), propertyKey), StringLiteral(substring)) =>
+      calculateSelectivityForSubstringSargable(name, selections, propertyKey, Some(substring))
+
+    // WHERE x.prop ENDS WITH expression
+    case EndsWith(Property(Variable(name), propertyKey), expr) =>
+      calculateSelectivityForSubstringSargable(name, selections, propertyKey, None)
+
     // WHERE x.prop <, <=, >=, > that could benefit from an index
     case AsValueRangeSeekable(seekable@InequalityRangeSeekable(_, _, _)) =>
       calculateSelectivityForValueRangeSeekable(seekable, selections)
