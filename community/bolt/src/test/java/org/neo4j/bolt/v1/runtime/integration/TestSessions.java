@@ -30,20 +30,22 @@ import java.net.URL;
 import java.util.LinkedList;
 
 import org.neo4j.bolt.v1.runtime.Session;
+import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.bolt.v1.runtime.internal.StandardSessions;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.bolt.v1.runtime.Sessions;
-import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageData;
 
 public class TestSessions implements TestRule, Sessions
 {
-    private GraphDatabaseService gdb;
+    private GraphDatabaseAPI gdb;
     private Sessions actual;
     private LinkedList<Session> startedSessions = new LinkedList<>();
     private final LifeSupport life = new LifeSupport();
@@ -56,10 +58,14 @@ public class TestSessions implements TestRule, Sessions
             @Override
             public void evaluate() throws Throwable
             {
-                gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+                gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
                 Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
+                DependencyResolver resolver = gdb.getDependencyResolver();
                 StandardSessions sessions = life.add(
-                        new StandardSessions( (GraphDatabaseAPI) gdb, new UsageData(), NullLogService.getInstance() ) );
+                        new StandardSessions( gdb, new UsageData(), NullLogService.getInstance(),
+                                resolver.resolveDependency( ThreadToStatementContextBridge.class ),
+                                resolver.resolveDependency( QueryExecutionEngine.class ))
+                );
                 actual = new ThreadedSessions(
                         sessions,
                         scheduler, NullLogService.getInstance() );

@@ -37,6 +37,7 @@ import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
 import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.bolt.transport.BoltProtocol;
+import org.neo4j.bolt.transport.Netty4LogBridge;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.v1.runtime.MonitoredSessions;
@@ -56,13 +57,16 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigValues;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.bolt.BoltKernelExtension.EncryptionLevel.OPTIONAL;
@@ -170,6 +174,12 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         UsageData usageData();
 
         Monitors monitors();
+
+        AuthManager authManager();
+
+        ThreadToStatementContextBridge txBridge();
+
+        QueryExecutionEngine queryEngine();
     }
 
     public BoltKernelExtension()
@@ -190,11 +200,15 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         final JobScheduler scheduler = dependencies.scheduler();
 
+        Netty4LogBridge.setLogProvider( logging.getInternalLogProvider() );
+
         Sessions sessions =
                 new MonitoredSessions( dependencies.monitors(),
-                    new ThreadedSessions(
-                        life.add( new StandardSessions( api, dependencies.usageData(), logging ) ),
-                        scheduler, logging ), Clock.systemUTC() );
+                        new ThreadedSessions(
+                                life.add( new StandardSessions( api, dependencies.usageData(), logging,
+                                        dependencies.txBridge(),
+                                        dependencies.queryEngine() ) ),
+                                scheduler, logging ), Clock.systemUTC() );
 
         List<NettyServer.ProtocolInitializer> connectors = new ArrayList<>();
 
