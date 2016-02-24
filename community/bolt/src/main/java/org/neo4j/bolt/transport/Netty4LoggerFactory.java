@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.logging;
+package org.neo4j.bolt.transport;
 
 import io.netty.util.internal.logging.AbstractInternalLogger;
 import io.netty.util.internal.logging.InternalLogger;
@@ -53,13 +53,15 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
             @Override
             public boolean isDebugEnabled()
             {
-                return false;
+                return log.isDebugEnabled();
             }
 
             @Override
             public boolean isInfoEnabled()
             {
-                return false;
+                // No way to tell log level with better granularity yet, and INFO
+                // logging for Netty component is most likely DEBUG anyway
+                return log.isDebugEnabled();
             }
 
             @Override
@@ -83,19 +85,19 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
             @Override
             public void debug( String s, Object o )
             {
-                log.debug( s, o );
+                log.debug( asNeoTemplate(s), o );
             }
 
             @Override
             public void debug( String s, Object o, Object o1 )
             {
-                log.debug( s, o, o1 );
+                log.debug( asNeoTemplate(s), o, o1 );
             }
 
             @Override
             public void debug( String s, Object... objects )
             {
-                log.debug( s, objects );
+                log.debug( asNeoTemplate(s), objects );
             }
 
             @Override
@@ -113,19 +115,19 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
             @Override
             public void info( String s, Object o )
             {
-                log.info( s, o );
+                log.info( asNeoTemplate(s), o );
             }
 
             @Override
             public void info( String s, Object o, Object o1 )
             {
-                log.info( s, o, o1 );
+                log.info( asNeoTemplate(s), o, o1 );
             }
 
             @Override
             public void info( String s, Object... objects )
             {
-                log.info( s, objects );
+                log.info( asNeoTemplate(s), objects );
             }
 
             @Override
@@ -143,19 +145,19 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
             @Override
             public void warn( String s, Object o )
             {
-                log.warn( s, o );
+                log.warn( asNeoTemplate(s), o );
             }
 
             @Override
             public void warn( String s, Object... objects )
             {
-                log.warn( s, objects );
+                log.warn( asNeoTemplate(s), objects );
             }
 
             @Override
             public void warn( String s, Object o, Object o1 )
             {
-                log.warn( s, o, o1 );
+                log.warn( asNeoTemplate(s), o, o1 );
             }
 
             @Override
@@ -173,19 +175,19 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
             @Override
             public void error( String s, Object o )
             {
-                log.error( s, o );
+                log.error( asNeoTemplate(s), o );
             }
 
             @Override
             public void error( String s, Object o, Object o1 )
             {
-                log.error( s, o, o1 );
+                log.error( asNeoTemplate(s), o, o1 );
             }
 
             @Override
             public void error( String s, Object... objects )
             {
-                log.error( s, objects );
+                log.error( asNeoTemplate(s), objects );
             }
 
             @Override
@@ -222,6 +224,14 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
             public void trace( String s, Throwable throwable )
             {
 
+            }
+
+            private String asNeoTemplate( String nettyLogTemplate )
+            {
+                // Netty uses MessageFormat as placeholders, we use String.format()
+                // Sidenote: MessageFormat is the right tool for this job, it handles
+                // pluralization, i18n etc., we should change at some point.
+                return nettyLogTemplate.replaceAll( "\\{\\}", "%s" );
             }
 
         };

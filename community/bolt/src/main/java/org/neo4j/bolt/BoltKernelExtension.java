@@ -37,6 +37,7 @@ import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
 import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.bolt.transport.BoltProtocol;
+import org.neo4j.bolt.transport.Netty4LogBridge;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.v1.runtime.MonitoredSessions;
@@ -56,6 +57,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigValues;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -170,6 +172,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         UsageData usageData();
 
         Monitors monitors();
+
+        ThreadToStatementContextBridge txBridge();
     }
 
     public BoltKernelExtension()
@@ -190,11 +194,14 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         final JobScheduler scheduler = dependencies.scheduler();
 
+        Netty4LogBridge.setLogProvider( logging.getInternalLogProvider() );
+
         Sessions sessions =
                 new MonitoredSessions( dependencies.monitors(),
-                    new ThreadedSessions(
-                        life.add( new StandardSessions( api, dependencies.usageData(), logging ) ),
-                        scheduler, logging ), Clock.systemUTC() );
+                        new ThreadedSessions(
+                                life.add( new StandardSessions( api, dependencies.usageData(), logging,
+                                        dependencies.txBridge() ) ),
+                                scheduler, logging ), Clock.systemUTC() );
 
         List<NettyServer.ProtocolInitializer> connectors = new ArrayList<>();
 
