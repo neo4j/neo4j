@@ -76,7 +76,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createLabeledNode("Person")
     createLabeledNode("Animal")
 
-    val result = legacyProfile("MATCH (n:Person) CALL db.labels YIELD label RETURN *")
+    val result = legacyProfile("MATCH (n:Person) CALL db.labels() YIELD label RETURN *")
 
     assertDbHits(1)(result)("ProcedureCall")
     assertRows(2)(result)("ProcedureCall")

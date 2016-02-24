@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import org.neo4j.cypher.internal.frontend.v3_0._
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext.Simple
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, _}
 
-sealed trait Command extends Statement
+sealed trait Command extends Statement {
+  def returnColumns = List.empty
+}
 
 case class CreateIndex(label: LabelName, property: PropertyKeyName)(val position: InputPosition) extends Command {
   def semanticCheck = Seq()

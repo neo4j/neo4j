@@ -313,7 +313,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
     val results = planners.flatMap {
       case planner if expectedException.isEmpty =>
-        val rewindable = RewindableExecutionResult(engine.execute(s"$planner $query", parameters))
+        val rewindable = RewindableExecutionResult(engine.execute(s"$planner $query", parameters, db.session()))
         db.inTx(assertions(rewindable))
         val dump = rewindable.dumpToString()
         if (graphvizExecutedAfter && planner == planners.head) {
