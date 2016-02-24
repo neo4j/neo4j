@@ -55,7 +55,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // when
         IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.create();
         populator.add( Arrays.asList( NodePropertyUpdate.add( 1, 0, "value1", new long[]{0} ),
@@ -77,7 +77,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // GIVEN
         IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         String failure = "The contrived failure";
         populator.create();
@@ -94,7 +94,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // GIVEN
         IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         String failure = "The contrived failure";
         populator.create();
@@ -111,7 +111,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // GIVEN
         IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.close( false );
 
@@ -126,7 +126,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         // GIVEN
         IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.create();
         long nodeId = 1;

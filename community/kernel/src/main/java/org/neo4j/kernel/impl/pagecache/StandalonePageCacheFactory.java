@@ -43,7 +43,7 @@ public final class StandalonePageCacheFactory
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem )
     {
-        return createPageCache( fileSystem, new Config() );
+        return createPageCache( fileSystem, Config.defaults() );
     }
 
     public static PageCache createPageCache(

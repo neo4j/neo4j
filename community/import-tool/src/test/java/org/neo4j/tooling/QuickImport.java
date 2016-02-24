@@ -86,7 +86,7 @@ public class QuickImport
                 COMMAS, nodeCount, relationshipCount, new Groups(), idType, labelCount, relationshipTypeCount,
                 silentBadCollector( 0 ));
         BatchImporter importer = new ParallelBatchImporter( dir, DEFAULT,
-                new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible(), new Config() );
+                new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible(), Config.defaults() );
         importer.doImport( input );
     }
 

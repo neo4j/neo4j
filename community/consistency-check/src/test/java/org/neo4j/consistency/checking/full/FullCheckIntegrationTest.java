@@ -475,7 +475,7 @@ public class FullCheckIntegrationTest
             IndexRule rule = rules.next();
             IndexDescriptor descriptor = new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
             IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
-            IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
+            IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
             IndexPopulator populator =
                 storeAccess.indexes().getPopulator( rule.getId(), descriptor, indexConfig, samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
@@ -582,7 +582,7 @@ public class FullCheckIntegrationTest
     public void shouldReportNodesThatAreNotIndexed() throws Exception
     {
         // given
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
         for ( IndexRule indexRule : loadAllIndexRules( fixture.directStoreAccess().nativeStores().getSchemaStore() ) )
         {
             IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor(
@@ -606,7 +606,7 @@ public class FullCheckIntegrationTest
     {
         // given
         IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
         for ( IndexRule indexRule : loadAllIndexRules( fixture.directStoreAccess().nativeStores().getSchemaStore() ) )
         {
             IndexAccessor accessor = fixture.directStoreAccess()

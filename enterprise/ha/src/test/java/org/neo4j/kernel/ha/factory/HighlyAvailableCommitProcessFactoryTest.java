@@ -61,7 +61,7 @@ public class HighlyAvailableCommitProcessFactoryTest
                 new DelegateInvocationHandler<>( TransactionCommitProcess.class ) );
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
-                mock( StorageEngine.class ), new Config() );
+                mock( StorageEngine.class ), Config.empty() );
 
         assertThat( commitProcess, not( instanceOf( ReadOnlyTransactionCommitProcess.class ) ) );
         assertThat( Proxy.getInvocationHandler( commitProcess ), instanceOf( DelegateInvocationHandler.class ) );

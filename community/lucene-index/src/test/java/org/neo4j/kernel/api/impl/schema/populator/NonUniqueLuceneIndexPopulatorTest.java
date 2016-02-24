@@ -144,7 +144,7 @@ public class NonUniqueLuceneIndexPopulatorTest
 
     private NonUniqueLuceneIndexPopulator newPopulator() throws IOException
     {
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
         NonUniqueLuceneIndexPopulator populator = new NonUniqueLuceneIndexPopulator( index, samplingConfig );
         populator.create();
         return populator;

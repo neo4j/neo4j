@@ -146,7 +146,7 @@ public class RollingUpgradeIT
         ConsistencyCheckService service = new ConsistencyCheckService();
         for ( String storeDir : storeDirs )
         {
-            service.runFullConsistencyCheck( storeDir, new Config(),
+            service.runFullConsistencyCheck( storeDir, Config.defaults(),
                     ProgressMonitorFactory.textual(System.out), StringLogger.SYSTEM );
         }
 */

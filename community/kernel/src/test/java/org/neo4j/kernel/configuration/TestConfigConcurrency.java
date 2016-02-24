@@ -80,7 +80,7 @@ public class TestConfigConcurrency
     public void shouldHandleConcurrentLoad() throws Throwable
     {
         // Given
-        Config config = new Config();
+        Config config = Config.empty();
 
         List<Thread> threads = new ArrayList<>(  );
         List<ConfigHammer> hammers = new ArrayList<>(  );

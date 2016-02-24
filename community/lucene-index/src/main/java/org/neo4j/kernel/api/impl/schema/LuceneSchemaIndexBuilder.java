@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
  */
 public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneSchemaIndexBuilder>
 {
-    private IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
+    private IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
     private IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
     private Factory<IndexWriterConfig> writerConfigFactory = IndexWriterConfigs::standard;
 

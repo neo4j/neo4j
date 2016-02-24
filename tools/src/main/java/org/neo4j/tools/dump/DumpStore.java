@@ -70,7 +70,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         try ( PageCache pageCache = createPageCache( fs ) )
         {
             Function<File,StoreFactory> createStoreFactory =
-                    file -> new StoreFactory( file.getParentFile(), new Config(), idGeneratorFactory, pageCache, fs,
+                    file -> new StoreFactory( file.getParentFile(), Config.defaults(), idGeneratorFactory, pageCache, fs,
                             logProvider() );
 
             for ( String arg : args )

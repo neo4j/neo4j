@@ -149,7 +149,7 @@ public class RestartIT
         for ( CoreGraphDatabase core : cluster.coreServers() )
         {
             ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                    new File( core.getStoreDir() ), new Config(), ProgressMonitorFactory.NONE,
+                    new File( core.getStoreDir() ), Config.defaults(), ProgressMonitorFactory.NONE,
                     FormattedLogProvider.toOutputStream( System.out ), new DefaultFileSystemAbstraction() );
 
             assertTrue( "Inconsistent: " + core, result.isSuccessful() );
@@ -158,7 +158,7 @@ public class RestartIT
         for ( EdgeGraphDatabase edge : cluster.edgeServers() )
         {
             ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                    new File( edge.getStoreDir() ), new Config(), ProgressMonitorFactory.NONE,
+                    new File( edge.getStoreDir() ), Config.defaults(), ProgressMonitorFactory.NONE,
                     FormattedLogProvider.toOutputStream( System.out ), new DefaultFileSystemAbstraction() );
 
             assertTrue( "Inconsistent: " + edge, result.isSuccessful() );

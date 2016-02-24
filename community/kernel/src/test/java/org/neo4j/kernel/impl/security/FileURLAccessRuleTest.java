@@ -41,7 +41,7 @@ public class FileURLAccessRuleTest
     {
         try
         {
-            URLAccessRules.fileAccess().validate( new Config(), new URL( "file://foo/bar/baz" ) );
+            URLAccessRules.fileAccess().validate( Config.empty(), new URL( "file://foo/bar/baz" ) );
             fail( "expected exception not thrown " );
         }
         catch ( URLAccessValidationError error )
@@ -56,7 +56,7 @@ public class FileURLAccessRuleTest
     {
         try
         {
-            URLAccessRules.fileAccess().validate( new Config(), new URL( "file:///bar/baz?q=foo" ) );
+            URLAccessRules.fileAccess().validate( Config.empty(), new URL( "file:///bar/baz?q=foo" ) );
             fail( "expected exception not thrown " );
         }
         catch ( URLAccessValidationError error )

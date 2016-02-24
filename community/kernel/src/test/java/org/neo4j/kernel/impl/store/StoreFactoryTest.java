@@ -62,7 +62,7 @@ public class StoreFactoryTest
 
         storeDir = testDirectory.graphDbDir();
         fs.mkdirs( storeDir );
-        storeFactory = new StoreFactory( storeDir, new Config(), idGeneratorFactory, pageCache,
+        storeFactory = new StoreFactory( storeDir, Config.empty(), idGeneratorFactory, pageCache,
                 fs, NullLogProvider.getInstance() );
     }
 

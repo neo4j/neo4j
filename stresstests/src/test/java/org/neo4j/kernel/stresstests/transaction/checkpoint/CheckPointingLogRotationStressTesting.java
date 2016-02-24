@@ -73,7 +73,7 @@ public class CheckPointingLogRotationStressTesting
 
         System.out.println( "1/6\tBuilding initial store..." );
         new ParallelBatchImporter( storeDir, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.defaultVisible(),
-                new Config() ).doImport( new NodeCountInputs( nodeCount ) );
+                Config.defaults() ).doImport( new NodeCountInputs( nodeCount ) );
 
         System.out.println( "2/6\tStarting database..." );
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )

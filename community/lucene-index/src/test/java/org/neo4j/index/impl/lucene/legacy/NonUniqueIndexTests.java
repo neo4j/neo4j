@@ -148,7 +148,7 @@ public class NonUniqueIndexTests
 
     private List<Long> nodeIdsInIndex( int indexId, String value ) throws IOException
     {
-        Config config = new Config();
+        Config config = Config.empty();
         SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
                 DirectoryFactory.PERSISTENT, directory.graphDbDir() );
         IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;

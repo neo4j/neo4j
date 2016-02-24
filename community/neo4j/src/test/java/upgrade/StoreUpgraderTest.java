@@ -371,7 +371,7 @@ public class StoreUpgraderTest
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ) );
         NullLogService instance = NullLogService.getInstance();
-        StoreMigrator migrator = spy( new StoreMigrator(fileSystem, pageCache, new Config(), instance, schemaIndexProvider ) );
+        StoreMigrator migrator = spy( new StoreMigrator(fileSystem, pageCache, Config.empty(), instance, schemaIndexProvider ) );
         StoreUpgrader storeUpgrader = newUpgrader( upgradableDatabase, pageCache );
         storeUpgrader.migrateIfNeeded( dbDirectory );
 
@@ -408,7 +408,7 @@ public class StoreUpgraderTest
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
 
         NullLogService instance = NullLogService.getInstance();
-        StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, new Config(), instance,
+        StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, Config.empty(), instance,
                 schemaIndexProvider );
         SchemaIndexMigrator indexMigrator =
                 new SchemaIndexMigrator( fileSystem, schemaIndexProvider, labelScanStoreProvider );

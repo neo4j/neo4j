@@ -345,7 +345,7 @@ public class UpgradeStoreIT
     private void createManyRelationshipTypes( File path, int numberOfTypes )
     {
         File fileName = new File( path, "neostore.relationshiptypestore.db" );
-        Config config = new Config();
+        Config config = Config.empty();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names" ), config,
@@ -379,7 +379,7 @@ public class UpgradeStoreIT
                 FileSystemAbstraction fs,
                 PageCache pageCache )
         {
-            super( fileName, new Config(), new NoLimitIdGeneratorFactory( fs ), pageCache,
+            super( fileName, Config.empty(), new NoLimitIdGeneratorFactory( fs ), pageCache,
                     NullLogProvider.getInstance(), stringStore, select().relationshipTypeToken(),
                     select().storeVersion() );
         }
