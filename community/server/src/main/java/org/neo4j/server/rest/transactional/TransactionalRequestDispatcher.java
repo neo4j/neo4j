@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import static org.neo4j.server.rest.repr.RepresentationWriteHandler.DO_NOTHING;
-
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.dispatch.RequestDispatcher;
+
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.repr.RepresentationWriteHandler;
 import org.neo4j.server.rest.web.BatchOperationService;
@@ -31,6 +31,8 @@ import org.neo4j.server.rest.web.CypherService;
 import org.neo4j.server.rest.web.DatabaseMetadataService;
 import org.neo4j.server.rest.web.ExtensionService;
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
+
+import static org.neo4j.server.rest.repr.RepresentationWriteHandler.DO_NOTHING;
 
 public class TransactionalRequestDispatcher implements RequestDispatcher
 {
@@ -52,7 +54,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
         {
             RestfulGraphDatabase restfulGraphDatabase = (RestfulGraphDatabase) o;
 
-            final Transaction transaction = database.getGraph().beginTx();
+            final Transaction transaction = database.getGraph().beginTransaction( KernelTransaction.Type.implicit );
 
             restfulGraphDatabase.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler = new
                     CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ));
@@ -61,7 +63,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
         {
             BatchOperationService batchOperationService = (BatchOperationService) o;
 
-            final Transaction transaction = database.getGraph().beginTx();
+            final Transaction transaction = database.getGraph().beginTransaction( KernelTransaction.Type.explicit );
 
             batchOperationService.setRepresentationWriteHandler( representationWriteHandler = new
                     CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
@@ -70,7 +72,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
         {
             CypherService cypherService = (CypherService) o;
 
-            final Transaction transaction = database.getGraph().beginTx();
+            final Transaction transaction = database.getGraph().beginTransaction( KernelTransaction.Type.implicit );
 
             cypherService.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler = new
                     CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
@@ -79,7 +81,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
         {
             DatabaseMetadataService databaseMetadataService = (DatabaseMetadataService) o;
 
-            final Transaction transaction = database.getGraph().beginTx();
+            final Transaction transaction = database.getGraph().beginTransaction( KernelTransaction.Type.implicit );
 
             databaseMetadataService.setRepresentationWriteHandler( representationWriteHandler = new
                     RepresentationWriteHandler()
@@ -114,7 +116,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
                 @Override
                 public void onRepresentationStartWriting()
                 {
-                    transaction = database.getGraph().beginTx();
+                    transaction = database.getGraph().beginTransaction( KernelTransaction.Type.implicit );
                 }
 
                 @Override
