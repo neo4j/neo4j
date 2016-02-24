@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, K
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 import scala.collection.Iterator
@@ -99,8 +98,11 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def indexScan(index: IndexDescriptor): Iterator[Node] = manyDbHits(inner.indexScan(index))
 
-  override def indexSeekByContains(index: IndexDescriptor, value: String): scala.Iterator[Node] =
-    manyDbHits(inner.indexSeekByContains(index, value))
+  override def indexScanByContains(index: IndexDescriptor, value: String): scala.Iterator[Node] =
+    manyDbHits(inner.indexScanByContains(index, value))
+
+  override def indexScanByEndsWith(index: IndexDescriptor, value: String): scala.Iterator[Node] =
+    manyDbHits(inner.indexScanByEndsWith(index, value))
 
   override def getNodesByLabel(id: Int): Iterator[Node] = manyDbHits(inner.getNodesByLabel(id))
 

@@ -261,8 +261,11 @@ final class TransactionBoundQueryContext(val transactionalContext: ExtendedTrans
   override def indexScan(index: IndexDescriptor) =
     mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
-  override def indexSeekByContains(index: IndexDescriptor, value: String) =
+  override def indexScanByContains(index: IndexDescriptor, value: String) =
     mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexContainsScan(index, value))(nodeOps.getById)
+
+  override def indexScanByEndsWith(index: IndexDescriptor, value: String) =
+    mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetFromIndexEndsWithScan(index, value))(nodeOps.getById)
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)
