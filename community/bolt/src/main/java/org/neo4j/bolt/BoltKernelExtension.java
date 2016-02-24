@@ -54,6 +54,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConfigGroups;
 import org.neo4j.kernel.configuration.ConfigValues;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -85,7 +86,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 {
     public static class Settings
     {
-        public static final Function<ConfigValues,List<Configuration>> connector_group = Config.groups( "dbms.connector" );
+        public static final Function<ConfigValues,List<Configuration>> connector_group = ConfigGroups.groups( "dbms" +
+                ".connector" );
 
         @Description( "Enable Neo4j Bolt" )
         public static final Setting<Boolean> enabled =

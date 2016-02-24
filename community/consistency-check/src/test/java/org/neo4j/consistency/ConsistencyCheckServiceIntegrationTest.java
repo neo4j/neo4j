@@ -19,14 +19,14 @@
  */
 package org.neo4j.consistency;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -38,7 +38,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
@@ -51,6 +50,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.consistency.ConsistencyCheckService.defaultLogFileName;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
@@ -156,9 +156,9 @@ public class ConsistencyCheckServiceIntegrationTest
         gds.shutdown();
 
         ConsistencyCheckService service = new ConsistencyCheckService();
-        Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
-        configuration.applyChanges( MapUtil.stringMap( ConsistencyCheckSettings.consistency_check_graph.name(),
-                Settings.FALSE ) );
+        Config configuration = new Config(
+                stringMap( ConsistencyCheckSettings.consistency_check_graph.name(), Settings.FALSE ),
+                GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
         Result result = runFullConsistencyCheck( service, configuration );

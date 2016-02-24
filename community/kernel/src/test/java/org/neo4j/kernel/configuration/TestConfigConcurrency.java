@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
+
+import org.junit.Test;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestConfigConcurrency
 {
@@ -56,10 +57,7 @@ public class TestConfigConcurrency
                     config.addConfigurationChangeListener( this );
 
                     // Edit config a bit
-                    Map<String,String> params = config.getParams();
-                    params.put( "asd" + rand.nextInt( 10 ),"dsa" + rand.nextInt( 100000 ) );
-
-                    config.applyChanges( params );
+                    config.augment( stringMap( "asd" + rand.nextInt( 10 ), "dsa" + rand.nextInt( 100000 ) ) );
 
                     // Unregister listener
                     config.removeConfigurationChangeListener( this );

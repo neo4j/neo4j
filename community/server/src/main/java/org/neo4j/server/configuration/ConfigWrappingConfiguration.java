@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.configuration;
 
-import org.apache.commons.configuration.AbstractConfiguration;
-
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,11 +26,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.configuration.AbstractConfiguration;
+
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.AnnotatedFieldHarvester;
 import org.neo4j.kernel.configuration.Config;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * This exists solely for backwards compatibility, and will be removed in the next major version of Neo4j. Please use
@@ -86,7 +87,7 @@ public class ConfigWrappingConfiguration extends AbstractConfiguration
     @Override
     protected void addPropertyDirect( String key, Object value )
     {
-        config.applyChanges( MapUtil.stringMap( config.getParams(), key, value.toString() ) );
+        config.augment( stringMap( key, value.toString() ) );
     }
 
     private Setting<?> getSettingForKey( String key )
