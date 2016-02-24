@@ -33,7 +33,7 @@ import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 import org.neo4j.desktop.runtime.DesktopConfigurator;
 import org.neo4j.desktop.ui.DesktopModelListener;
-import org.neo4j.kernel.Version;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.lang.String.format;

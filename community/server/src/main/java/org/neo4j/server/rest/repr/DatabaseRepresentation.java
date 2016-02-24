@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.neo4j.kernel.Version;
+import org.neo4j.kernel.internal.Version;
 
 import static org.neo4j.server.rest.web.Surface.PATH_BATCH;
 import static org.neo4j.server.rest.web.Surface.PATH_CYPHER;

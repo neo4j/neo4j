@@ -101,7 +101,7 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.Version;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;

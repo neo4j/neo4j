@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.Version;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.impl.SimpleAppServer;

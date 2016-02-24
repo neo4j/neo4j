@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Logger;
 
 /**

@@ -34,6 +34,7 @@ import java.util.Map;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
