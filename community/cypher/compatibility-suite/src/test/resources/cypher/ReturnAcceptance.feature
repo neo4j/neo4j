@@ -39,19 +39,19 @@ Feature: ReturnAcceptanceTest
       And having executed: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
     When executing query: MATCH (n) RETURN n LIMIT 2;
     Then the result should be:
-      | n            |
-      | ({name:'A'}) |
-      | ({name:'B'}) |
+      | n             |
+      | ({name: 'A'}) |
+      | ({name: 'B'}) |
 
   Scenario: should start the result from second row
     Given an empty graph
       And having executed: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
     When executing query: MATCH (n) RETURN n ORDER BY n.name ASC SKIP 2;
     Then the result should be:
-      | n            |
-      | ({name:'C'}) |
-      | ({name:'D'}) |
-      | ({name:'E'}) |
+      | n             |
+      | ({name: 'C'}) |
+      | ({name: 'D'}) |
+      | ({name: 'E'}) |
 
   Scenario: should start the result from second row by param
     Given an empty graph
@@ -60,10 +60,10 @@ Feature: ReturnAcceptanceTest
       | skipAmount |
       | 2          |
     Then the result should be:
-      | n            |
-      | ({name:'C'}) |
-      | ({name:'D'}) |
-      | ({name:'E'}) |
+      | n             |
+      | ({name: 'C'}) |
+      | ({name: 'D'}) |
+      | ({name: 'E'}) |
 
   Scenario: should get stuff in the middle
     Given an empty graph
@@ -71,8 +71,8 @@ Feature: ReturnAcceptanceTest
     When executing query: MATCH (n) WHERE id(n) IN [0,1,2,3,4] RETURN n ORDER BY n.name ASC SKIP 2 LIMIT 2;
     Then the result should be:
       | n             |
-      | ({name:'C'}) |
-      | ({name:'D'}) |
+      | ({name: 'C'}) |
+      | ({name: 'D'}) |
 
   Scenario: should get stuff in the middle by param
     Given an empty graph
@@ -81,9 +81,9 @@ Feature: ReturnAcceptanceTest
       | s | l |
       | 2 | 2 |
     Then the result should be:
-      | n            |
-      | ({name:'C'}) |
-      | ({name:'D'}) |
+      | n             |
+      | ({name: 'C'}) |
+      | ({name: 'D'}) |
 
   Scenario: should sort on aggregated function
     Given an empty graph
@@ -108,9 +108,9 @@ Feature: ReturnAcceptanceTest
     When executing query: MATCH (a) WHERE id(a) IN [0,1,2,0] RETURN DISTINCT a ORDER BY a.name;
     Then the result should be:
       | a             |
-      | ({name:'A'}) |
-      | ({name:'B'}) |
-      | ({name:'C'}) |
+      | ({name: 'A'}) |
+      | ({name: 'B'}) |
+      | ({name: 'C'}) |
 
   Scenario: should support column renaming
     Given an empty graph
@@ -205,7 +205,7 @@ Feature: ReturnAcceptanceTest
       And having executed: CREATE (a { foo: 1 })-[:T]->({ foo: 1 }), (a)-[:T]->({ foo: 2 }), (a)-[:T]->({ foo: 3 });
     When executing query: MATCH (a { foo: 1 }) MATCH p=(a)-->() RETURN filter(x IN nodes(p) WHERE x.foo > 2) AS n;
     Then the result should be:
-      | n           |
-      | [({foo:3})] |
-      | []          |
-      | []          |
+      | n            |
+      | [({foo: 3})] |
+      | []           |
+      | []           |

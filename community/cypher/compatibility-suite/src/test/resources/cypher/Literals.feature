@@ -87,5 +87,5 @@ Feature: Literals
   Scenario: Returning a nonempty map
     When executing query: RETURN {k1: 0, k2: "string"} AS literal
     Then the result should be:
-      | literal             |
-      | {k1:0, k2:'string'} |
+      | literal               |
+      | {k1: 0, k2: 'string'} |

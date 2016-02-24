@@ -99,6 +99,10 @@ class expectedResultsParserTest extends FunSuite with Matchers {
       asMap(Map("k0" -> Long.valueOf(0), "k1" -> lang.Double.valueOf(1e-10), "k2" -> null, "k3" -> TRUE)))
   }
 
+  test("should allow whitespace between key and value") {
+    parse("{key:'value'}") should equal(parse("{key: 'value'}"))
+  }
+
   test("should parse nodes with labels") {
     parse("()") should equal(parsedNode())
     parse("(:T)") should equal(parsedNode(Seq("T")))
