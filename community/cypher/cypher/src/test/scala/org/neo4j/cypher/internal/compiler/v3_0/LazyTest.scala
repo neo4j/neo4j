@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.spi.v3_0.MonoDirectionalTraversalMatcher
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.api.{KernelTransaction, ReadOperations, Statement}
+import org.neo4j.kernel.api.{AccessMode, KernelTransaction, ReadOperations, Statement}
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.api.OperationsFacade
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, ThreadToStatementContextBridge}
@@ -92,7 +92,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("traversal matcher is lazy") {
     //Given:
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.READ )
     val limiter = Counter().values.limit(2) { _ => fail("Limit reached!") }
     val monitoredNode = new MonitoredNode(aNode, limiter.tick)
 
@@ -218,7 +218,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     when(dependencies.resolveDependency(classOf[TransactionIdStore])).thenReturn(idStore)
     when(dependencies.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])).thenReturn(monitors)
     when(dependencies.resolveDependency(classOf[Config])).thenReturn(config)
-    when(fakeGraph.beginTransaction(any(classOf[KernelTransaction.Type]))).thenReturn(tx)
+    when(fakeGraph.beginTransaction(any(classOf[KernelTransaction.Type]), any(classOf[AccessMode]) )).thenReturn(tx)
     val n0 = mock[Node]
     val n1 = mock[Node]
     val n2 = mock[Node]
@@ -253,7 +253,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("traversalmatcherpipe is lazy") {
     //Given:
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.FULL )
     val limiter = Counter().values.limit(2) { _ => fail("Limit reached") }
     val traversalMatchPipe = createTraversalMatcherPipe(limiter)
 

@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
  * and write operations are supported as well as creating transactions.
  *
  * Changes to the graph (i.e. write operations) are performed via a
- * {@link #newTransaction(KernelTransaction.Type) transaction context} where changes done
+ * {@link #newTransaction(KernelTransaction.Type, AccessMode) transaction context} where changes done
  * inside the transaction are visible in read operations for {@link Statement statements}
  * executed within that transaction context.
  */
@@ -39,8 +39,9 @@ public interface KernelAPI
      * underlying graph.
      *
      * @param type the type of the new transaction: implicit (internally created) or explicit (created by the user)
+     * @param accessMode
      */
-    KernelTransaction newTransaction( KernelTransaction.Type type ) throws TransactionFailureException;
+    KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode ) throws TransactionFailureException;
 
     /**
      * Registers a {@link TransactionHook} that will receive notifications about committing transactions

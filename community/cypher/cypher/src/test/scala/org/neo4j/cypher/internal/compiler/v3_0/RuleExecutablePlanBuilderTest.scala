@@ -47,7 +47,7 @@ import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.Label.label
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.Seq
@@ -101,7 +101,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should resolve property keys") {
     // given
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.WRITE)
     try {
       val node = graph.createNode()
       node.setProperty("foo", 12l)
@@ -131,7 +131,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should resolve label ids") {
     // given
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.WRITE)
     try {
       val node = graph.createNode(label("Person"))
 
@@ -240,7 +240,7 @@ class RuleExecutablePlanBuilderTest
 
   test("should set the periodic commit flag") {
     // given
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ)
     try {
       val q = PeriodicCommitQuery(
         Query.

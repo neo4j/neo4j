@@ -93,7 +93,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val relTypeName = "LINK"
     val node = createMiniGraph(relTypeName)
 
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ)
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val transactionalContext = new Neo4jTransactionContext(graph, outerTx, stmt)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
@@ -114,7 +114,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test ("should deny non-whitelisted URL protocols for loading") {
     // GIVEN
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ)
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val transactionalContext = new Neo4jTransactionContext(graph, outerTx, stmt)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
@@ -133,7 +133,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     graph.getGraphDatabaseService.shutdown()
     val config = Map[Setting[_], String](GraphDatabaseSettings.allow_file_urls -> "false")
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ)
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val transactionalContext = new Neo4jTransactionContext(graph, outerTx, stmt)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
@@ -148,7 +148,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   private def createMiniGraph(relTypeName: String): Node = {
     val relType = RelationshipType.withName(relTypeName)
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.WRITE)
     try {
       val node = graph.createNode()
       val other1 = graph.createNode()

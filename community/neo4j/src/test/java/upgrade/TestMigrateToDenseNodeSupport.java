@@ -37,6 +37,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -222,9 +223,9 @@ public class TestMigrateToDenseNodeSupport
 
     private void verifyDenseRepresentation( GraphDatabaseService db, Node node, boolean dense )
     {
-        try ( KernelTransaction tx = ((GraphDatabaseAPI)db).getDependencyResolver()
-                .resolveDependency( KernelAPI.class ).newTransaction( KernelTransaction.Type.implicit );
-                Statement statement = tx.acquireStatement() )
+        KernelAPI kernelAPI = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( KernelAPI.class );
+        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AccessMode.READ );
+              Statement statement = tx.acquireStatement() )
         {
             Cursor<NodeItem> nodeCursor = statement.readOperations().nodeCursor( node.getId() );
             assertTrue( nodeCursor.next() );

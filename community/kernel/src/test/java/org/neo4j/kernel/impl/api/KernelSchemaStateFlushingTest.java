@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -135,7 +136,7 @@ public class KernelSchemaStateFlushingTest
     private UniquenessConstraint createConstraint() throws KernelException
     {
 
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
               Statement statement = transaction.acquireStatement() )
         {
             UniquenessConstraint descriptor = statement.schemaWriteOperations().uniquePropertyConstraintCreate( 1, 1 );
@@ -146,8 +147,8 @@ public class KernelSchemaStateFlushingTest
 
     private void dropConstraint( UniquenessConstraint descriptor ) throws KernelException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
-             Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+              Statement statement = transaction.acquireStatement() )
         {
             statement.schemaWriteOperations().constraintDrop( descriptor );
             transaction.success();
@@ -156,8 +157,8 @@ public class KernelSchemaStateFlushingTest
 
     private IndexDescriptor createIndex() throws KernelException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
-             Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+              Statement statement = transaction.acquireStatement() )
         {
             IndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate( 1, 1 );
             transaction.success();
@@ -167,8 +168,8 @@ public class KernelSchemaStateFlushingTest
 
     private void dropIndex( IndexDescriptor descriptor ) throws KernelException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
-             Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+              Statement statement = transaction.acquireStatement() )
         {
             statement.schemaWriteOperations().indexDrop( descriptor );
             transaction.success();
@@ -178,8 +179,8 @@ public class KernelSchemaStateFlushingTest
     private void awaitIndexOnline( IndexDescriptor descriptor, String keyForProbing )
             throws IndexNotFoundKernelException, TransactionFailureException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
-             Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+              Statement statement = transaction.acquireStatement() )
         {
             SchemaIndexTestHelper.awaitIndexOnline( statement.readOperations(), descriptor );
             transaction.success();
@@ -189,8 +190,8 @@ public class KernelSchemaStateFlushingTest
 
     private void awaitSchemaStateCleared( String keyForProbing ) throws TransactionFailureException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
-                Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+              Statement statement = transaction.acquireStatement() )
         {
             while ( statement.readOperations().schemaStateGetOrCreate( keyForProbing, (ignored) -> null ) != null )
             {
@@ -202,7 +203,7 @@ public class KernelSchemaStateFlushingTest
 
     private String commitToSchemaState( String key, String value ) throws TransactionFailureException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit ) )
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL ) )
         {
             String result = getOrCreateFromState( transaction, key, value );
             transaction.success();

@@ -26,7 +26,7 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Label._
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.{KernelTransaction, Statement}
+import org.neo4j.kernel.api.{AccessMode, KernelTransaction, Statement}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.transaction.TransactionStats
@@ -95,7 +95,7 @@ trait GraphIcing {
 
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
     def withTx[T](f: InternalTransaction => T): T = {
-      val tx = graph.beginTransaction(KernelTransaction.Type.explicit)
+      val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.FULL)
       try {
         val result = f(tx)
         tx.success()
@@ -106,7 +106,7 @@ trait GraphIcing {
     }
 
     def rollback[T](f: => T): T = {
-      val tx = graph.beginTransaction(KernelTransaction.Type.explicit)
+      val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.FULL)
       try {
         val result = f
         tx.failure()

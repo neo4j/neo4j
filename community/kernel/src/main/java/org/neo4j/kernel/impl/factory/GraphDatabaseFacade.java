@@ -50,6 +50,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -142,7 +143,7 @@ public class GraphDatabaseFacade
          *
          * @throws org.neo4j.graphdb.TransactionFailureException if unable to begin, or a transaction already exists.
          */
-        KernelTransaction beginTransaction( KernelTransaction.Type type );
+        KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode );
 
         /**
          * Retrieve the transaction associated with the current context. For the classic implementation of the Core API,
@@ -320,17 +321,17 @@ public class GraphDatabaseFacade
     @Override
     public Transaction beginTx()
     {
-        return beginTransaction( KernelTransaction.Type.explicit );
+        return beginTransaction( KernelTransaction.Type.explicit, AccessMode.FULL );
     }
 
-    public InternalTransaction beginTransaction( KernelTransaction.Type type )
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
     {
         if ( spi.isInOpenTransaction() )
         {
             return new PlaceboTransaction( spi::currentTransaction, spi::currentStatement );
         }
 
-        KernelTransaction kernelTx = spi.beginTransaction( type );
+        KernelTransaction kernelTx = spi.beginTransaction( type, accessMode );
         return new TopLevelTransaction( kernelTx, spi::currentStatement );
     }
 

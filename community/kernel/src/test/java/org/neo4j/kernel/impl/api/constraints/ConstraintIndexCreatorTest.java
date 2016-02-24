@@ -160,7 +160,7 @@ public class ConstraintIndexCreatorTest
         private final List<KernelStatement> statements = new ArrayList<>();
 
         @Override
-        public KernelTransaction newTransaction( KernelTransaction.Type type )
+        public KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode )
         {
             return new KernelTransaction()
             {
@@ -204,12 +204,6 @@ public class ConstraintIndexCreatorTest
                 }
 
                 @Override
-                public void setMode( AccessMode mode )
-                {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
                 public boolean shouldBeTerminated()
                 {
                     return false;
@@ -227,6 +221,12 @@ public class ConstraintIndexCreatorTest
 
                 @Override
                 public Type transactionType()
+                {
+                    return null;
+                }
+
+                @Override
+                public Revertable restrict( AccessMode read )
                 {
                     return null;
                 }

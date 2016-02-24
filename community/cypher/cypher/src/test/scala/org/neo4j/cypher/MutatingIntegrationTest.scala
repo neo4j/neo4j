@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import java.util
 
 import org.neo4j.graphdb._
-import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.query.QueryEngineProvider
 import org.scalatest.Assertions
@@ -396,7 +396,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("failure_only_fails_inner_transaction") {
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
     try {
       executeWithRulePlanner("match (a) where id(a) = {id} set a.foo = 'bar' return a","id"->"0")
     } catch {

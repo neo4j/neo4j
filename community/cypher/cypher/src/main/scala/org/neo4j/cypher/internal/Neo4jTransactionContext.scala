@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
 import org.neo4j.graphdb.{Lock, PropertyContainer, Transaction}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.{KernelTransaction, ReadOperations, Statement}
+import org.neo4j.kernel.api.{AccessMode, KernelTransaction, ReadOperations, Statement}
 import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -30,7 +30,8 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
 object TransactionContextFactory {
   def open(graph: GraphDatabaseQueryService, txBridge: ThreadToStatementContextBridge): Neo4jTransactionContext = {
-    val tx = graph.beginTransaction(KernelTransaction.Type.`implicit`)
+    // FIXME this should not be FULL
+    val tx = graph.beginTransaction(KernelTransaction.Type.`implicit`, AccessMode.FULL)
     val statement = txBridge.get()
     Neo4jTransactionContext(graph, tx, statement)
   }
@@ -66,10 +67,11 @@ case class Neo4jTransactionContext(val graph: GraphDatabaseQueryService, initial
   }
 
   override def commitAndRestartTx() {
+    val mode = tx.mode()
     tx.success()
     tx.close()
 
-    tx = graph.beginTransaction(KernelTransaction.Type.`implicit`)
+    tx = graph.beginTransaction(KernelTransaction.Type.`implicit`, mode)
     _statement = txBridge.get()
   }
 

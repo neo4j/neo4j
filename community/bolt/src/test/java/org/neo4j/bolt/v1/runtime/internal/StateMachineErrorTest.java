@@ -34,6 +34,7 @@ import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -47,6 +48,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.failedWith;
 
 public class StateMachineErrorTest
@@ -61,7 +63,7 @@ public class StateMachineErrorTest
     @Before
     public void setup()
     {
-        Mockito.when( db.beginTransaction( any( KernelTransaction.Type.class ) ) ).thenReturn( tx );
+        when( db.beginTransaction( any( KernelTransaction.Type.class ), any( AccessMode.class )) ).thenReturn( tx );
     }
 
     @Test
@@ -103,7 +105,7 @@ public class StateMachineErrorTest
                 throw new RuntimeException( "Well, that didn't work out very well." );
             }
         };
-        Mockito.when( runner.run( any( SessionState.class ), any( String.class ), any( Map.class ) ) )
+        when( runner.run( any( SessionState.class ), any( String.class ), any( Map.class ) ) )
                 .thenReturn( mock( RecordStream.class ) );
 
         SessionStateMachine machine = newIdleMachine();

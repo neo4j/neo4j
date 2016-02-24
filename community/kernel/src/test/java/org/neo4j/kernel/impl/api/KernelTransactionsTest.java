@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.Collection;
 
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -69,9 +70,9 @@ public class KernelTransactionsTest
         KernelTransactions registry = newKernelTransactions();
 
         // When
-        KernelTransaction first = registry.newInstance( KernelTransaction.Type.implicit );
-        KernelTransaction second = registry.newInstance( KernelTransaction.Type.implicit );
-        KernelTransaction third = registry.newInstance( KernelTransaction.Type.implicit );
+        KernelTransaction first = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction second = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction third = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
 
         first.close();
 
@@ -87,9 +88,9 @@ public class KernelTransactionsTest
 
         registry.disposeAll();
 
-        KernelTransaction first = registry.newInstance( KernelTransaction.Type.implicit );
-        KernelTransaction second = registry.newInstance( KernelTransaction.Type.implicit );
-        KernelTransaction leftOpen = registry.newInstance( KernelTransaction.Type.implicit );
+        KernelTransaction first = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction second = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction leftOpen = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
         first.close();
         second.close();
 
@@ -97,7 +98,7 @@ public class KernelTransactionsTest
         registry.disposeAll();
 
         // Then
-        KernelTransaction postDispose = registry.newInstance( KernelTransaction.Type.implicit );
+        KernelTransaction postDispose = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
         assertThat( postDispose, not( equalTo( first ) ) );
         assertThat( postDispose, not( equalTo( second ) ) );
 
@@ -113,7 +114,7 @@ public class KernelTransactionsTest
         KernelTransactions registry = newKernelTransactions( newRememberingCommitProcess( transactionRepresentation ) );
 
         // When
-        try ( KernelTransaction transaction = registry.newInstance( KernelTransaction.Type.implicit ) )
+        try ( KernelTransaction transaction = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE ) )
         {
             // Just pick anything that can flag that changes have been made to this transaction
             ((KernelTransactionImplementation) transaction).txState().nodeDoCreate( 0 );
@@ -131,9 +132,9 @@ public class KernelTransactionsTest
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
 
-        KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit );
-        KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit );
-        KernelTransaction tx3 = kernelTransactions.newInstance( KernelTransaction.Type.implicit );
+        KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit,AccessMode.NONE );
+        KernelTransaction tx3 = kernelTransactions.newInstance( KernelTransaction.Type.implicit,AccessMode.NONE );
 
         tx1.close();
         tx3.close();
@@ -146,9 +147,9 @@ public class KernelTransactionsTest
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
 
-        KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit );
-        KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit );
-        KernelTransaction tx3 = kernelTransactions.newInstance( KernelTransaction.Type.implicit );
+        KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction tx3 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
 
         tx2.close();
 
@@ -160,9 +161,9 @@ public class KernelTransactionsTest
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
 
-        KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit );
-        KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit );
-        KernelTransaction tx3 = kernelTransactions.newInstance( KernelTransaction.Type.implicit );
+        KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode .NONE );
+        KernelTransaction tx3 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
 
         kernelTransactions.disposeAll();
 

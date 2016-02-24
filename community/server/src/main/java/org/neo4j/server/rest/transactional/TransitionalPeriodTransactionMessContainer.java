@@ -20,7 +20,8 @@
 package org.neo4j.server.rest.transactional;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
@@ -35,11 +36,10 @@ public class TransitionalPeriodTransactionMessContainer
         this.txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    public TransitionalTxManagementKernelTransaction newTransaction( boolean implicitTransaction )
+    public TransitionalTxManagementKernelTransaction newTransaction( boolean implicitTransaction, AccessMode mode )
     {
-        Transaction tx = db.beginTransaction( implicitTransaction
-                                              ? KernelTransaction.Type.implicit
-                                              : KernelTransaction.Type.explicit );
+        Type type = implicitTransaction ? Type.implicit : Type.explicit;
+        Transaction tx = db.beginTransaction( type, mode );
         return new TransitionalTxManagementKernelTransaction( new TransactionTerminator( tx ), txBridge );
     }
 

@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -53,28 +54,28 @@ public abstract class KernelIntegrationTest
 
     protected TokenWriteOperations tokenWriteOperationsInNewTransaction() throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.WRITE );
         statement = transaction.acquireStatement();
         return statement.tokenWriteOperations();
     }
 
     protected DataWriteOperations dataWriteOperationsInNewTransaction() throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.WRITE );
         statement = transaction.acquireStatement();
         return statement.dataWriteOperations();
     }
 
     protected SchemaWriteOperations schemaWriteOperationsInNewTransaction() throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.WRITE );
         statement = transaction.acquireStatement();
         return statement.schemaWriteOperations();
     }
 
     protected ReadOperations readOperationsInNewTransaction() throws TransactionFailureException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.WRITE );
         statement = transaction.acquireStatement();
         return statement.readOperations();
     }

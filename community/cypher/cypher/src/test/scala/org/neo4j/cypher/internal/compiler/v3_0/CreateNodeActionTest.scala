@@ -23,7 +23,7 @@ import commands.expressions.Literal
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.CreateNode
 import org.neo4j.graphdb.{Transaction, Node}
-import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
 
 class CreateNodeActionTest extends ExecutionEngineFunSuite {
 
@@ -31,7 +31,7 @@ class CreateNodeActionTest extends ExecutionEngineFunSuite {
     val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))), Seq.empty)
 
     val id = graph.inTx {
-      val tx = graph.beginTransaction( KernelTransaction.Type.explicit )
+      val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
       val vec = action.exec(ExecutionContext.empty, QueryStateHelper.queryStateFrom(graph, tx)).toVector
       vec.head("id").asInstanceOf[Node].getId
     }
