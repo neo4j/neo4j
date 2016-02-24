@@ -31,9 +31,14 @@ sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
   def name: String
 
   def noteCurrentScope: SemanticCheck = s => SemanticCheckResult.success(s.noteCurrentScope(this))
+
+  def returnColumns: List[String] =
+    throw new InternalException("This clause is not allowed as a last clause and hence does not declare return columns")
 }
 
-sealed trait UpdateClause extends Clause
+sealed trait UpdateClause extends Clause {
+  override def returnColumns = List.empty
+}
 
 case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variable, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
   override def name = "LOAD CSV"
@@ -294,6 +299,8 @@ abstract class CallClause extends Clause {
   override def name = "CALL"
 
   def qualifiedName: QualifiedProcedureName
+
+  def returnColumns: List[String]
 }
 
 case class UnresolvedCall(procedureNamespace: ProcedureNamespace,
@@ -312,6 +319,9 @@ case class UnresolvedCall(procedureNamespace: ProcedureNamespace,
     val callResults = declaredResults.getOrElse(signature.outputSignature.map { field => ProcedureResultItem(Variable(field.name)(position))(position) })
     ResolvedCall(signature, callArguments, callResults, declaredArguments.nonEmpty, declaredResults.nonEmpty)(position)
   }
+
+  override def returnColumns =
+    declaredResults.map(_.map(_.variable.name).toList).getOrElse(List.empty)
 
   override def semanticCheck: SemanticCheck = {
     val argumentCheck = declaredArguments.map(_.semanticCheck(SemanticContext.Results)).getOrElse(success)
@@ -350,22 +360,34 @@ case class ResolvedCall(signature: ProcedureSignature,
     copy(callArguments = coercedArguments)(position)
   }
 
+  override def returnColumns =
+    callResults.map(_.variable.name).toList
+
   override def semanticCheck: SemanticCheck = {
     val expectedNumArgs = signature.inputSignature.length
     val actualNumArgs = callArguments.length
 
     val argumentCheck = {
-      if (expectedNumArgs == actualNumArgs) {
-        signature.inputSignature.zip(callArguments).map {
-          case (field, arg) =>
-            arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
-        }.foldLeft(success)(_ chain _)
+      if (declaredArguments) {
+        if (expectedNumArgs == actualNumArgs) {
+          signature.inputSignature.zip(callArguments).map {
+            case (field, arg) =>
+              arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
+          }.foldLeft(success)(_ chain _)
+        } else {
+          error(_: SemanticState, SemanticError(s"Procedure call does not provide the required number of arguments ($expectedNumArgs)", position))
+        }
       } else {
-        error(_: SemanticState, SemanticError(s"Procedure call does not provide the required number of arguments ($expectedNumArgs) ", position))
+        error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support passing arguments implicitly (pass explicitly after procedure name instead)", position))
       }
     }
 
-    val resultCheck = callResults.foldSemanticCheck(_.semanticCheck(callOutputTypes))
+    val resultCheck =
+      if (declaredResults) {
+        callResults.foldSemanticCheck(_.semanticCheck(callOutputTypes))
+      } else {
+        error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support naming results implicitly (name explicitly using `YIELD` instead)", position))
+      }
 
     argumentCheck chain resultCheck
   }
@@ -482,6 +504,8 @@ case class Return(
                    limit: Option[Limit])(val position: InputPosition) extends ProjectionClause {
 
   override def name = "RETURN"
+
+  override def returnColumns = returnItems.items.map(_.name).toList
 
   override def semanticCheck = super.semanticCheck chain checkVariableScope
 

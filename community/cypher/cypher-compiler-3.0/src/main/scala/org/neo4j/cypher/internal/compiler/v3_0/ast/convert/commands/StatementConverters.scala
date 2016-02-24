@@ -174,7 +174,8 @@ object StatementConverters {
   }
 
   implicit class ResolvedCallConverter(inner: ast.ResolvedCall) {
-    def addToQueryBuilder(builder: commands.QueryBuilder) = /* Important :) */ builder
+    def addToQueryBuilder(builder: commands.QueryBuilder) =
+      throw new InternalException("RULE planner does not support calling procedures")
   }
 
   implicit class StartConverter(val clause: ast.Start) extends AnyVal {

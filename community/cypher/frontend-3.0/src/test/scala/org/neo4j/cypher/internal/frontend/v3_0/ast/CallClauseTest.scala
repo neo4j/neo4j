@@ -179,8 +179,8 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(callResults))(pos)
     val resolved = unresolved.resolve(_ => signature).coerceArguments
 
-    errorTexts(resolved.semanticCheck(SemanticState.clean)) should equal(Seq(
-      "Procedure call does not provide the required number of arguments (1)  (line 1, column 0 (offset: 0))"
+    errorTexts(resolved.semanticCheck(SemanticState.clean)).toList should equal(List(
+      "Procedure call does not provide the required number of arguments (1) (line 1, column 0 (offset: 0))"
     ))
   }
 

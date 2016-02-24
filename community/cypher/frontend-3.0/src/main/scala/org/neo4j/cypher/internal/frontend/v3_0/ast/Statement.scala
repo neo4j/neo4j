@@ -23,5 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.SemanticCheck
 
 trait Statement extends ASTNode with ASTPhrase {
   def semanticCheck: SemanticCheck
+
+  def returnColumns: List[String]
 }
 
