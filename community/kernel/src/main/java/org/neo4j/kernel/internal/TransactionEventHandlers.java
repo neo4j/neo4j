@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.internal;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -33,9 +33,8 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.NodeProxy.NodeActions;
+import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
 import org.neo4j.kernel.impl.coreapi.TxStateTransactionDataSnapshot;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -43,25 +42,19 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
  * Handle the collection of transaction event handlers, and fire events as needed.
- *
- * @deprecated This will be moved to internal packages in the next major release.
  */
-@Deprecated
 public class TransactionEventHandlers
         implements Lifecycle, TransactionHook<TransactionEventHandlers.TransactionHandlerState>
 {
     protected final Collection<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<>();
 
-    private final NodeProxy.NodeActions nodeActions;
-    private final RelationshipProxy.RelationshipActions relationshipActions;
-    private final ThreadToStatementContextBridge bridge;
+    private final NodeActions nodeActions;
+    private final RelationshipActions relationshipActions;
 
-    public TransactionEventHandlers( NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions
-            relationshipActions, ThreadToStatementContextBridge bridge )
+    public TransactionEventHandlers( NodeActions nodeActions, RelationshipActions relationshipActions )
     {
         this.nodeActions = nodeActions;
         this.relationshipActions = relationshipActions;
-        this.bridge = bridge;
     }
 
     @Override

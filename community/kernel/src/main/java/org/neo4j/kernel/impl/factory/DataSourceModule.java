@@ -37,7 +37,7 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.TransactionEventHandlers;
+import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
@@ -129,8 +129,7 @@ public class DataSourceModule
                 createRelationshipActions( graphDatabaseFacade, threadToTransactionBridge, nodeManager,
                         relationshipTypeTokenHolder ) );
 
-        transactionEventHandlers = new TransactionEventHandlers( nodeActions, relationshipActions,
-                threadToTransactionBridge );
+        transactionEventHandlers = new TransactionEventHandlers( nodeActions, relationshipActions );
 
         diagnosticsManager.prependProvider( config );
 
