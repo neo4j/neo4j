@@ -51,13 +51,11 @@ object QueryPlannerConfiguration {
       indexSeekLeafPlanner,
 
       // MATCH (n) WHERE has(n.prop) RETURN n
+      // MATCH (n:Person) WHERE n.prop CONTAINS ...
       indexScanLeafPlanner,
 
       // MATCH (n:Person) RETURN n
       labelScanLeafPlanner,
-
-      // MATCH (n:Person) WHERE n.prop CONTAINS ...
-      indexContainsScanLeafPlanner,
 
       // MATCH (n) RETURN n
       allNodesLeafPlanner,
