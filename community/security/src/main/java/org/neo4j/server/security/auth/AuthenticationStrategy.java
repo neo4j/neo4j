@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
+import org.neo4j.kernel.api.security.AuthenticationResult;
+
 /**
  * Strategy for determining if the credentials presented by a user are valid
  */

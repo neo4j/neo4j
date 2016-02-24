@@ -21,6 +21,8 @@ package org.neo4j.server.security.auth;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.api.security.AuthenticationResult;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -192,7 +194,7 @@ public class BasicAuthManagerTest
         manager.start();
 
         // When
-        User user = manager.setPassword( "jake", "hello, world!" );
+        User user = manager.setUserPassword( "jake", "hello, world!" );
 
         // Then
         assertTrue( user.credentials().matchesPassword( "hello, world!" ) );
@@ -208,7 +210,7 @@ public class BasicAuthManagerTest
         manager.start();
 
         // When
-        User user = manager.setPassword( "unknown", "hello, world!" );
+        User user = manager.setUserPassword( "unknown", "hello, world!" );
 
         // Then
         assertNull( user );
@@ -259,7 +261,7 @@ public class BasicAuthManagerTest
 
         try
         {
-            manager.setPassword( "foo", "bar" );
+            manager.setUserPassword( "foo", "bar" );
             fail( "exception expected" );
         } catch ( IllegalStateException e )
         {

@@ -29,9 +29,9 @@ import org.junit.rules.ExpectedException;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.security.auth.AuthenticationResult;
 import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.security.auth.BasicAuthSubject;
 

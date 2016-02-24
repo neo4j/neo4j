@@ -21,11 +21,12 @@ package org.neo4j.server.security.auth;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 
 /** A user repository implementation that just stores users in memory */
-public class InMemoryUserRepository implements UserRepository
+public class InMemoryUserRepository extends LifecycleAdapter implements UserRepository
 {
     private final ConcurrentHashMap<String, User> users = new ConcurrentHashMap<>();
 

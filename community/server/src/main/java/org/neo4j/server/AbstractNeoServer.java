@@ -43,6 +43,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.RunCarefully;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -76,7 +77,6 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
@@ -541,7 +541,7 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new CypherExecutorProvider( cypherExecutor ) );
 
         singletons.add( providerForSingleton( transactionFacade, TransactionFacade.class ) );
-        singletons.add( new AuthManagerProvider(authManagerSupplier ) );
+        singletons.add( new AuthManagerProvider( authManagerSupplier ) );
         singletons.add( new TransactionFilter( database ) );
         singletons.add( new LoggingProvider( logProvider ) );
         singletons.add( providerForSingleton( logProvider.getLog( NeoServer.class ), Log.class ) );

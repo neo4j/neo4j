@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
@@ -94,7 +95,8 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency(
                 createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
 
-        dependencies.satisfyDependencies( createAuthManager(config, life, logging.getUserLogProvider()) );
+        life.add( dependencies.satisfyDependency( createAuthManager( config, logging ) ) );
+
         commitProcessFactory = new CommunityCommitProcessFactory();
 
         headerInformationFactory = createHeaderInformationFactory();
@@ -203,6 +205,40 @@ public class CommunityEditionModule extends EditionModule
             logging.getInternalLog( CommunityFacadeFactory.class )
                     .info( "No locking implementation specified, defaulting to 'community'" );
             return new CommunityLockManger();
+        }
+
+        throw new IllegalArgumentException( "No lock manager found with the name '" + key + "'." );
+    }
+
+    public static AuthManager createAuthManager( Config config, LogService logging )
+    {
+        boolean authEnabled = config.get( GraphDatabaseSettings.auth_enabled );
+        if ( !authEnabled )
+        {
+            return AuthManager.NO_AUTH;
+        }
+
+        String key = config.get( GraphDatabaseFacadeFactory.Configuration.auth_manager );
+        for ( AuthManager.Factory candidate : Service.load( AuthManager.Factory.class ) )
+        {
+            String candidateId = candidate.getKeys().iterator().next();
+            if ( candidateId.equals( key ) )
+            {
+                return candidate.newInstance( config, logging.getUserLogProvider() );
+            }
+            else if ( key.equals( "" ) )
+            {
+                logging.getInternalLog( CommunityFacadeFactory.class )
+                        .info( "No auth manager implementation specified, defaulting to '" + candidateId + "'" );
+                return candidate.newInstance( config, logging.getUserLogProvider() );
+            }
+        }
+
+        if ( key.equals( "" ) )
+        {
+            logging.getInternalLog( CommunityFacadeFactory.class )
+                    .info( "No auth manager implementation specified, defaulting to no authentication" );
+            return AuthManager.NO_AUTH;
         }
 
         throw new IllegalArgumentException( "No lock manager found with the name '" + key + "'." );

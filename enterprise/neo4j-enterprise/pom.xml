@@ -72,6 +72,11 @@
       <artifactId>neo4j-management</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-security-enterprise</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- For the tests specified by this package -->
     <dependency>

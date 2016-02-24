@@ -29,6 +29,7 @@ import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -37,7 +38,6 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.udc.UsageData;
 
 /**
@@ -110,7 +110,7 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
                 StoreId storeId = dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getStoreId();
                 return AuthUtils.uniqueIdentifier( storeId );
             };
-            return new BasicAuthentication( dependencyResolver.resolveDependency( BasicAuthManager.class ), logging.getUserLogProvider(), identifier );
+            return new BasicAuthentication( dependencyResolver.resolveDependency( AuthManager.class ), logging.getUserLogProvider(), identifier );
         }
         else
         {
