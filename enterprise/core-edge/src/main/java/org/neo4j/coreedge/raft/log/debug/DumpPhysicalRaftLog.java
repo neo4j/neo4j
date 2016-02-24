@@ -34,12 +34,10 @@ import java.util.Comparator;
 import java.util.TreeSet;
 
 import org.neo4j.coreedge.raft.log.PhysicalRaftLogEntryCursor;
-import org.neo4j.coreedge.raft.log.RaftLogRecord;
 import org.neo4j.coreedge.raft.log.RaftRecordCursor;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;

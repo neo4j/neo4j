@@ -28,6 +28,7 @@ import io.netty.buffer.Unpooled;
 import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.ByteBufMarshal;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -145,7 +146,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public long append( RaftLogEntry logEntry ) throws RaftStorageException
+    public long append( RaftLogEntry logEntry ) throws IOException
     {
         if ( logEntry.term() >= term )
         {
@@ -153,7 +154,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         }
         else
         {
-            throw new RaftStorageException( String.format( "Non-monotonic term %d for in entry %s in term %d",
+            throw new IllegalStateException( String.format( "Non-monotonic term %d for in entry %s in term %d",
                     logEntry.term(), logEntry.toString(), term ) );
         }
 
@@ -167,41 +168,34 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         }
         catch ( MarshallingException | IOException e )
         {
-            throw new RaftStorageException( "Failed to append log entry", e );
+            throw new IOException( "Failed to append log entry", e );
         }
     }
 
     @Override
-    public void truncate( long fromIndex ) throws RaftStorageException
+    public void truncate( long fromIndex ) throws IOException
     {
-        try
+        if ( fromIndex <= commitIndex )
         {
-            if ( fromIndex <= commitIndex )
-            {
-                throw new IllegalArgumentException( "cannot truncate before the commit index" );
-            }
-
-            if ( appendIndex >= fromIndex )
-            {
-                Entry entry = readEntry( fromIndex );
-                contentChannel.truncate( entry.contentPointer );
-                contentOffset = entry.contentPointer;
-
-                entriesChannel.truncate( ENTRY_RECORD_LENGTH * fromIndex );
-                entriesChannel.force( false );
-
-                appendIndex = fromIndex - 1;
-            }
-            term = readEntryTerm( appendIndex );
+            throw new IllegalArgumentException( "cannot truncate before the commit index" );
         }
-        catch ( IOException e )
+
+        if ( appendIndex >= fromIndex )
         {
-            throw new RaftStorageException( "Failed to truncate", e );
+            Entry entry = readEntry( fromIndex );
+            contentChannel.truncate( entry.contentPointer );
+            contentOffset = entry.contentPointer;
+
+            entriesChannel.truncate( ENTRY_RECORD_LENGTH * fromIndex );
+            entriesChannel.force( false );
+
+            appendIndex = fromIndex - 1;
         }
+        term = readEntryTerm( appendIndex );
     }
 
     @Override
-    public void commit( final long newCommitIndex ) throws RaftStorageException
+    public void commit( final long newCommitIndex ) throws IOException
     {
         if ( commitIndex == appendIndex )
         {
@@ -213,14 +207,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             actualNewCommitIndex = appendIndex;
         }
         // INVARIANT: If newCommitIndex was greater than appendIndex, commitIndex is equal to appendIndex
-        try
-        {
-            storeCommitIndex( actualNewCommitIndex );
-        }
-        catch ( IOException e )
-        {
-            throw new RaftStorageException( "Failed to commit", e );
-        }
+        storeCommitIndex( actualNewCommitIndex );
         commitIndex = actualNewCommitIndex;
 
 //        while ( commitIndex < actualNewCommitIndex )
@@ -247,38 +234,33 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public RaftLogEntry readLogEntry( long logIndex ) throws RaftStorageException
+    public RaftLogEntry readLogEntry( long logIndex ) throws IOException
     {
+        Entry entry = readEntry( logIndex );
+        ReplicatedContent content = null;
         try
         {
-            Entry entry = readEntry( logIndex );
-            ReplicatedContent content = readContentFrom( entry.contentPointer );
-
-            return new RaftLogEntry( entry.term, content );
+            content = readContentFrom( entry.contentPointer );
         }
-        catch ( IOException | MarshallingException e )
+        catch ( MarshallingException e )
         {
-            throw new RaftStorageException( "Failed to read log entry", e );
+            throw new IOException( e );
         }
+
+        return new RaftLogEntry( entry.term, content );
+
     }
 
     @Override
-    public ReplicatedContent readEntryContent( long logIndex ) throws RaftStorageException
+    public ReplicatedContent readEntryContent( long logIndex ) throws IOException
     {
         return readLogEntry( logIndex ).content();
     }
 
     @Override
-    public long readEntryTerm( long logIndex ) throws RaftStorageException
+    public long readEntryTerm( long logIndex ) throws IOException
     {
-        try
-        {
-            return readEntry( logIndex ).term;
-        }
-        catch ( IOException e )
-        {
-            throw new RaftStorageException( "Failed to read term", e );
-        }
+        return readEntry( logIndex ).term;
     }
 
     @Override
@@ -306,6 +288,44 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
                     ", contentPointer=" + contentPointer +
                     '}';
         }
+    }
+
+    @Override
+    public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
+    {
+        return new IOCursor<RaftLogEntry>()
+        {
+            private long currentIndex = fromIndex - 1; // the cursor starts "before" the first entry
+            private RaftLogEntry currentEntry;
+
+            @Override
+            public boolean next() throws IOException
+            {
+                currentIndex++;
+
+                boolean hasNext = currentIndex <= appendIndex;
+                if ( hasNext )
+                {
+                    currentEntry = readLogEntry( currentIndex );
+                }
+                else
+                {
+                    currentEntry = null;
+                }
+                return hasNext;
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+            }
+
+            @Override
+            public RaftLogEntry get()
+            {
+                return currentEntry;
+            }
+        };
     }
 
     private void writeEntry( Entry entry ) throws IOException

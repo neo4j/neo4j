@@ -32,7 +32,6 @@ import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
 import org.neo4j.coreedge.raft.net.Inbound;
@@ -187,7 +186,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
             }
             membershipManager.processLog( logCommands );
         }
-        catch ( RaftStorageException e )
+        catch ( IOException e )
         {
             databaseHealthSupplier.get().panic( e );
             throw new BootstrapException( e );
@@ -250,7 +249,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         return raftState;
     }
 
-    private void handleOutcome( Outcome<MEMBER> outcome ) throws RaftStorageException, IOException
+    private void handleOutcome( Outcome<MEMBER> outcome ) throws IOException
     {
         adjustLogShipping( outcome );
         notifyLeaderChanges( outcome );
@@ -273,7 +272,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         }
     }
 
-    private void adjustLogShipping( Outcome<MEMBER> outcome ) throws RaftStorageException
+    private void adjustLogShipping( Outcome<MEMBER> outcome ) throws IOException
     {
         MEMBER oldLeader = raftState.leader();
 
@@ -342,7 +341,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
                 membershipManager.onFollowerStateChange( raftState.followerStates() );
             }
         }
-        catch ( RaftStorageException | IOException e )
+        catch ( IOException e )
         {
             log.error( "Failed to process RAFT message " + incomingMessage, e );
             databaseHealthSupplier.get().panic( e );

@@ -19,11 +19,13 @@
  */
 package org.neo4j.coreedge.raft.log;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.cursor.IOCursor;
 
 public class InMemoryRaftLog implements RaftLog
 {
@@ -34,7 +36,7 @@ public class InMemoryRaftLog implements RaftLog
     private long term = -1;
 
     @Override
-    public long append( RaftLogEntry logEntry ) throws RaftStorageException
+    public long append( RaftLogEntry logEntry ) throws IOException
     {
         Objects.requireNonNull( logEntry );
         if ( logEntry.term() >= term )
@@ -43,7 +45,7 @@ public class InMemoryRaftLog implements RaftLog
         }
         else
         {
-            throw new RaftStorageException( String.format( "Non-monotonic term %d for in entry %s in term %d",
+            throw new IllegalStateException( String.format( "Non-monotonic term %d for in entry %s in term %d",
                     logEntry.term(), logEntry.toString(), term ) );
         }
 
@@ -130,6 +132,33 @@ public class InMemoryRaftLog implements RaftLog
     public boolean entryExists( long logIndex )
     {
         return raftLog.containsKey( logIndex );
+    }
+
+    @Override
+    public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
+    {
+        return new IOCursor<RaftLogEntry>()
+        {
+            private long currentIndex = fromIndex - 1; // the cursor starts "before" the first entry
+
+            @Override
+            public boolean next() throws IOException
+            {
+                currentIndex++;
+                return currentIndex <= appendIndex;
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+            }
+
+            @Override
+            public RaftLogEntry get()
+            {
+                return readLogEntry( currentIndex );
+            }
+        };
     }
 
     @Override

@@ -21,15 +21,16 @@ package org.neo4j.coreedge.raft.outcome;
 
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.replication.shipping.RaftLogShipper;
 
 import static java.lang.String.format;
 
+import java.io.IOException;
+
 public abstract class ShipCommand
 {
     public abstract <MEMBER> void applyTo( RaftLogShipper<MEMBER> raftLogShipper, LeaderContext leaderContext )
-            throws RaftStorageException;
+            throws IOException;
 
     public static class Mismatch extends ShipCommand
     {
@@ -43,7 +44,7 @@ public abstract class ShipCommand
         }
 
         @Override
-        public void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext ) throws RaftStorageException
+        public void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext ) throws IOException
         {
             if ( raftLogShipper.identity().equals( target ) )
             {
@@ -100,7 +101,7 @@ public abstract class ShipCommand
         }
 
         public <MEMBER> void applyTo( RaftLogShipper<MEMBER> raftLogShipper, LeaderContext leaderContext ) throws
-                RaftStorageException
+                IOException
         {
             if ( raftLogShipper.identity().equals( target ) )
             {
@@ -159,7 +160,7 @@ public abstract class ShipCommand
         }
 
         @Override
-        public <MEMBER> void applyTo( RaftLogShipper<MEMBER> raftLogShipper, LeaderContext leaderContext ) throws RaftStorageException
+        public <MEMBER> void applyTo( RaftLogShipper<MEMBER> raftLogShipper, LeaderContext leaderContext ) throws IOException
         {
             raftLogShipper.onNewEntry( prevLogIndex, prevLogTerm, newLogEntry, leaderContext );
         }
@@ -210,7 +211,7 @@ public abstract class ShipCommand
     public static class CommitUpdate extends ShipCommand
     {
         @Override
-        public <MEMBER> void applyTo( RaftLogShipper<MEMBER> raftLogShipper, LeaderContext leaderContext ) throws RaftStorageException
+        public <MEMBER> void applyTo( RaftLogShipper<MEMBER> raftLogShipper, LeaderContext leaderContext ) throws IOException
         {
             raftLogShipper.onCommitUpdate( leaderContext );
         }

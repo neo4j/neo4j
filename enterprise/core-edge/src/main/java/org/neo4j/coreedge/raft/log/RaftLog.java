@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.raft.log;
 
+import java.io.IOException;
+
 /**
  * Persists entries that are coordinated through RAFT, i.e. this is the log
  * of user data.
@@ -39,7 +41,7 @@ public interface RaftLog extends ReadableRaftLog
      * @return Returns the index at which the entry was appended, or -1
      * if the entry was not accepted.
      */
-    long append( RaftLogEntry entry ) throws RaftStorageException;
+    long append( RaftLogEntry entry ) throws IOException;
 
     /**
      * Truncates the log starting from the supplied index. Committed
@@ -47,7 +49,7 @@ public interface RaftLog extends ReadableRaftLog
      *
      * @param fromIndex The start index (inclusive).
      */
-    void truncate( long fromIndex ) throws RaftStorageException;
+    void truncate( long fromIndex ) throws IOException;
 
     /**
      * Signals the safe replication of any entries previously appended up to and
@@ -58,6 +60,6 @@ public interface RaftLog extends ReadableRaftLog
      *
      * @param commitIndex The end index (inclusive).
      */
-    void commit( long commitIndex ) throws RaftStorageException;
+    void commit( long commitIndex ) throws IOException;
 
 }

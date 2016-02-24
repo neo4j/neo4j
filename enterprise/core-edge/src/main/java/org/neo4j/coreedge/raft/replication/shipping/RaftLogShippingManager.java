@@ -19,12 +19,12 @@
  */
 package org.neo4j.coreedge.raft.replication.shipping;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
 import org.neo4j.coreedge.raft.LeaderContext;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.net.Outbound;
@@ -116,20 +116,13 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
         return logShipper;
     }
 
-    public synchronized void handleCommands( Iterable<ShipCommand> shipCommands, LeaderContext leaderContext )
+    public synchronized void handleCommands( Iterable<ShipCommand> shipCommands, LeaderContext leaderContext ) throws IOException
     {
         for ( ShipCommand shipCommand : shipCommands )
         {
             for ( RaftLogShipper logShipper : logShippers.values() )
             {
-                try
-                {
-                    shipCommand.applyTo( logShipper, leaderContext );
-                }
-                catch ( RaftStorageException e )
-                {
-                    // TODO: handle
-                }
+                shipCommand.applyTo( logShipper, leaderContext );
             }
         }
 

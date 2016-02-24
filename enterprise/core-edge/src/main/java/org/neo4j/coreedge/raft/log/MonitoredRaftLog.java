@@ -19,9 +19,12 @@
  */
 package org.neo4j.coreedge.raft.log;
 
+import java.io.IOException;
+
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogAppendIndexMonitor;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public class MonitoredRaftLog implements RaftLog
@@ -40,8 +43,13 @@ public class MonitoredRaftLog implements RaftLog
         this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass(), COMMIT_INDEX_TAG );
     }
 
+    public RaftLog delegate()
+    {
+        return delegate;
+    }
+
     @Override
-    public long append( RaftLogEntry entry ) throws RaftStorageException
+    public long append( RaftLogEntry entry ) throws IOException
     {
         long appendIndex = delegate.append( entry );
         appendIndexMonitor.appendIndex( appendIndex );
@@ -49,14 +57,14 @@ public class MonitoredRaftLog implements RaftLog
     }
 
     @Override
-    public void truncate( long fromIndex ) throws RaftStorageException
+    public void truncate( long fromIndex ) throws IOException
     {
         delegate.truncate( fromIndex );
         appendIndexMonitor.appendIndex( delegate.appendIndex() );
     }
 
     @Override
-    public void commit( long commitIndex ) throws RaftStorageException
+    public void commit( long commitIndex ) throws IOException
     {
         delegate.commit( commitIndex );
         commitIndexMonitor.commitIndex( delegate.commitIndex() );
@@ -75,26 +83,32 @@ public class MonitoredRaftLog implements RaftLog
     }
 
     @Override
-    public RaftLogEntry readLogEntry( long logIndex ) throws RaftStorageException
+    public RaftLogEntry readLogEntry( long logIndex ) throws IOException
     {
         return delegate.readLogEntry( logIndex );
     }
 
     @Override
-    public ReplicatedContent readEntryContent( long logIndex ) throws RaftStorageException
+    public ReplicatedContent readEntryContent( long logIndex ) throws IOException
     {
         return delegate.readEntryContent( logIndex );
     }
 
     @Override
-    public long readEntryTerm( long logIndex ) throws RaftStorageException
+    public long readEntryTerm( long logIndex ) throws IOException
     {
         return delegate.readEntryTerm( logIndex );
     }
 
     @Override
-    public boolean entryExists( long logIndex ) throws RaftStorageException
+    public boolean entryExists( long logIndex ) throws IOException
     {
         return delegate.entryExists( logIndex );
+    }
+
+    @Override
+    public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
+    {
+        return delegate.getEntryCursor( fromIndex );
     }
 }

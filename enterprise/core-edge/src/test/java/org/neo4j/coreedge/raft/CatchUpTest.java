@@ -19,12 +19,12 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.io.IOException;
 import java.util.LinkedList;
 
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.RaftMessages.NewEntry.Request;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -110,7 +110,7 @@ public class CatchUpTest
         assertLogEntries( fixture.members().withId( sleepyId ).raftLog(), 10, 20, 30, 40 );
     }
 
-    private void assertLogEntries( ReadableRaftLog log, int... expectedValues ) throws RaftStorageException
+    private void assertLogEntries( ReadableRaftLog log, int... expectedValues ) throws IOException
     {
         LinkedList<Integer> expected = new LinkedList<>();
         for ( int value : expectedValues )

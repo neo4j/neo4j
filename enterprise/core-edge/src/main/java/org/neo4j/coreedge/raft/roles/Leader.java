@@ -23,7 +23,6 @@ import org.neo4j.coreedge.raft.Followers;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.Heartbeat;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
@@ -38,6 +37,8 @@ import static java.lang.Math.max;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
+import java.io.IOException;
+
 public class Leader implements RaftMessageHandler
 {
     public static <MEMBER> Iterable<MEMBER> replicationTargets( final ReadableRaftState<MEMBER> ctx )
@@ -45,7 +46,7 @@ public class Leader implements RaftMessageHandler
         return new FilteringIterable<>( ctx.replicationMembers(), member -> !member.equals( ctx.myself() ) );
     }
 
-    static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome ) throws RaftStorageException
+    static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome ) throws IOException
     {
         for ( MEMBER to : replicationTargets( ctx ) )
         {
@@ -58,7 +59,7 @@ public class Leader implements RaftMessageHandler
 
     @Override
     public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message,
-                                            ReadableRaftState<MEMBER> ctx, Log log ) throws RaftStorageException
+                                            ReadableRaftState<MEMBER> ctx, Log log ) throws IOException
     {
         Outcome<MEMBER> outcome = new Outcome<>( LEADER, ctx );
 

@@ -19,15 +19,16 @@
  */
 package org.neo4j.coreedge.raft.membership;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.FakeClock;
 
 import static org.junit.Assert.assertFalse;
@@ -173,17 +174,17 @@ public class CatchupGoalTrackerTest
             return 0;
         }
 
-        @Override public RaftLogEntry readLogEntry( long logIndex ) throws RaftStorageException
+        @Override public RaftLogEntry readLogEntry( long logIndex ) throws IOException
         {
             return null;
         }
 
-        @Override public ReplicatedContent readEntryContent( long logIndex ) throws RaftStorageException
+        @Override public ReplicatedContent readEntryContent( long logIndex ) throws IOException
         {
             return null;
         }
 
-        @Override public long readEntryTerm( long logIndex ) throws RaftStorageException
+        @Override public long readEntryTerm( long logIndex ) throws IOException
         {
             return 0;
         }
@@ -191,6 +192,12 @@ public class CatchupGoalTrackerTest
         @Override public boolean entryExists( long logIndex )
         {
             return false;
+        }
+
+        @Override
+        public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
+        {
+            return IOCursor.getEmpty();
         }
     }
 }

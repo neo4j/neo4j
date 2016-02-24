@@ -24,7 +24,6 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 public class NaiveDurableRaftLogContractTest extends RaftLogContractTest

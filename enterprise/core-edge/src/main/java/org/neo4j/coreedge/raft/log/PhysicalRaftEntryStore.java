@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderVisitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.logging.LogProvider;
 
 public class PhysicalRaftEntryStore implements RaftEntryStore
 {
@@ -44,36 +45,30 @@ public class PhysicalRaftEntryStore implements RaftEntryStore
     }
 
     @Override
-    public IOCursor<RaftLogAppendRecord> getEntriesFrom( final long indexToStartFrom ) throws RaftStorageException
+    public IOCursor<RaftLogAppendRecord> getEntriesFrom( final long indexToStartFrom ) throws IOException
+
     {
         // look up in position cache
-        try
+        RaftLogMetadataCache.RaftLogEntryMetadata metadata = metadataCache.getMetadata( indexToStartFrom );
+        LogPosition startPosition = null;
+        if ( metadata != null )
         {
-            RaftLogMetadataCache.RaftLogEntryMetadata metadata = metadataCache.getMetadata( indexToStartFrom );
-            LogPosition startPosition = null;
-            if ( metadata != null )
-            {
-                startPosition = metadata.getStartPosition();
-            }
-            else
-            {
-                // ask LogFile about the version it may be in
-                LogVersionLocator headerVisitor = new LogVersionLocator( indexToStartFrom );
-                logFile.accept( headerVisitor );
-                startPosition = headerVisitor.getLogPosition();
-            }
-            if ( startPosition == null )
-            {
-                return IOCursor.getEmpty();
-            }
-            ReadableLogChannel reader = logFile.getReader( startPosition );
+            startPosition = metadata.getStartPosition();
+        }
+        else
+        {
+            // ask LogFile about the version it may be in
+            LogVersionLocator headerVisitor = new LogVersionLocator( indexToStartFrom );
+            logFile.accept( headerVisitor );
+            startPosition = headerVisitor.getLogPosition();
+        }
+        if ( startPosition == null )
+        {
+            return IOCursor.getEmpty();
+        }
+        ReadableLogChannel reader = logFile.getReader( startPosition );
 
-            return new PhysicalRaftLogEntryCursor( new RaftRecordCursor<>( reader, marshal ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RaftStorageException( e );
-        }
+        return new PhysicalRaftLogEntryCursor( new RaftRecordCursor<>( reader, marshal ) );
     }
 
     public static final class LogVersionLocator implements LogHeaderVisitor
@@ -97,7 +92,7 @@ public class PhysicalRaftEntryStore implements RaftEntryStore
             return !foundIt; // continue as long we don't find it
         }
 
-        public LogPosition getLogPosition() throws RaftStorageException
+        public LogPosition getLogPosition()
         {
             return foundPosition;
         }

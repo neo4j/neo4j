@@ -19,12 +19,12 @@
  */
 package org.neo4j.coreedge.raft.outcome;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 
 import static java.lang.String.format;
 
@@ -42,7 +42,7 @@ public class BatchAppendLogEntries implements LogCommand
     }
 
     @Override
-    public void applyTo( RaftLog raftLog ) throws RaftStorageException
+    public void applyTo( RaftLog raftLog ) throws IOException
     {
         if ( raftLog.entryExists( baseIndex + offset ) )
         {

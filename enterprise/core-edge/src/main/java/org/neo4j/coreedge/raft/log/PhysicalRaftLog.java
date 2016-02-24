@@ -91,7 +91,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
     }
 
     @Override
-    public long append( RaftLogEntry entry ) throws RaftStorageException
+    public long append( RaftLogEntry entry ) throws IOException
     {
         if ( entry.term() >= term )
         {
@@ -99,32 +99,25 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         }
         else
         {
-            throw new RaftStorageException( format( "Non-monotonic term %d for in entry %s in term %d",
+            throw new IllegalStateException( format( "Non-monotonic term %d for in entry %s in term %d",
                     entry.term(), entry.toString(), term ) );
         }
 
-        try
-        {
-            appendIndex.incrementAndGet();
-            LogPositionMarker entryStartPosition = writer.getCurrentPosition( positionMarker );
-            writer.put( RecordType.APPEND.value );
-            writer.putLong( appendIndex.get() );
-            writer.putLong( entry.term() );
-            marshal.marshal( entry.content(), writer );
-            metadataCache.cacheMetadata( appendIndex.get(), entry.term(), entryStartPosition.newPosition() );
-            writer.prepareForFlush().flush();
+        appendIndex.incrementAndGet();
+        LogPositionMarker entryStartPosition = writer.getCurrentPosition( positionMarker );
+        writer.put( RecordType.APPEND.value );
+        writer.putLong( appendIndex.get() );
+        writer.putLong( entry.term() );
+        marshal.marshal( entry.content(), writer );
+        metadataCache.cacheMetadata( appendIndex.get(), entry.term(), entryStartPosition.newPosition() );
+        writer.prepareForFlush().flush();
 
-            logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
-        }
-        catch ( IOException e )
-        {
-            throw new RaftStorageException( e );
-        }
+        logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
         return appendIndex.get();
     }
 
     @Override
-    public void truncate( long fromIndex ) throws RaftStorageException
+    public void truncate( long fromIndex ) throws IOException
     {
         if ( fromIndex <= commitIndex )
         {
@@ -136,23 +129,16 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         {
             appendIndex.set( fromIndex - 1 );
 
-            try
-            {
-                writer.put( RecordType.TRUNCATE.value );
-                writer.putLong( fromIndex );
-                writer.prepareForFlush().flush();
-                logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
-            }
-            catch ( IOException e )
-            {
-                throw new RaftStorageException( e );
-            }
+            writer.put( RecordType.TRUNCATE.value );
+            writer.putLong( fromIndex );
+            writer.prepareForFlush().flush();
+            logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
         }
         term = readEntryTerm( appendIndex.get() );
     }
 
     @Override
-    public void commit( long newCommitIndex ) throws RaftStorageException
+    public void commit( long newCommitIndex ) throws IOException
     {
         if ( appendIndex.get() == -1 || commitIndex == appendIndex.get() )
         {
@@ -165,17 +151,10 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         {
             commitIndex++;
         }
-        try
-        {
-            writer.put( RecordType.COMMIT.value );
-            writer.putLong( commitIndex );
-            writer.prepareForFlush().flush();
-            logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
-        }
-        catch ( IOException e )
-        {
-            throw new RaftStorageException( e );
-        }
+        writer.put( RecordType.COMMIT.value );
+        writer.putLong( commitIndex );
+        writer.prepareForFlush().flush();
+        logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
     }
 
     @Override
@@ -190,8 +169,33 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         return commitIndex;
     }
 
+    public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
+    {
+        final IOCursor<RaftLogAppendRecord> inner = entryStore.getEntriesFrom( fromIndex );
+        return new IOCursor<RaftLogEntry>()
+        {
+            @Override
+            public boolean next() throws IOException
+            {
+                return inner.next();
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                inner.close();
+            }
+
+            @Override
+            public RaftLogEntry get()
+            {
+                return inner.get().getLogEntry();
+            }
+        };
+    }
+
     @Override
-    public RaftLogEntry readLogEntry( long logIndex ) throws RaftStorageException
+    public RaftLogEntry readLogEntry( long logIndex ) throws IOException
     {
         try ( IOCursor<RaftLogAppendRecord> entriesFrom = entryStore.getEntriesFrom( logIndex ) )
         {
@@ -209,22 +213,18 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
                 }
             }
         }
-        catch ( IOException e )
-        {
-            throw new RaftStorageException( e );
-        }
         return null;
     }
 
     @Override
-    public ReplicatedContent readEntryContent( long logIndex ) throws RaftStorageException
+    public ReplicatedContent readEntryContent( long logIndex ) throws IOException
     {
         RaftLogEntry raftLogEntry = readLogEntry( logIndex );
         return raftLogEntry == null ? null : raftLogEntry.content();
     }
 
     @Override
-    public long readEntryTerm( long logIndex ) throws RaftStorageException
+    public long readEntryTerm( long logIndex ) throws IOException
     {
         long resultTerm = -1;
         RaftLogMetadataCache.RaftLogEntryMetadata metadata = metadataCache.getMetadata( logIndex );
@@ -245,9 +245,9 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
     }
 
     @Override
-    public boolean entryExists( long logIndex ) throws RaftStorageException
+    public boolean entryExists( long logIndex ) throws IOException
     {
-        return readLogEntry( logIndex ) != null;
+        return appendIndex.get() >= logIndex;
     }
 
     @Override

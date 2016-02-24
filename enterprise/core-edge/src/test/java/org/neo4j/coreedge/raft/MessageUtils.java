@@ -29,8 +29,6 @@ import org.neo4j.helpers.collection.IteratorUtil;
 
 import static java.lang.String.format;
 
-import static org.junit.Assert.fail;
-
 public class MessageUtils
 {
     public static RaftMessages.RaftMessage<RaftTestMember> messageFor( Outcome<RaftTestMember> outcome, final RaftTestMember member )

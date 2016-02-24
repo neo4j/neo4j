@@ -19,7 +19,10 @@
  */
 package org.neo4j.coreedge.raft.log;
 
+import java.io.IOException;
+
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.cursor.IOCursor;
 
 public interface ReadableRaftLog
 {
@@ -39,7 +42,7 @@ public interface ReadableRaftLog
      * @param logIndex The index of the log entry.
      * @return The log entry.
      */
-    RaftLogEntry readLogEntry( long logIndex ) throws RaftStorageException;
+    RaftLogEntry readLogEntry( long logIndex ) throws IOException;
 
     /**
      * Reads the content of the log entry at the supplied index.
@@ -47,7 +50,7 @@ public interface ReadableRaftLog
      * @param logIndex The index of the log entry.
      * @return The log entry content.
      */
-    ReplicatedContent readEntryContent( long logIndex ) throws RaftStorageException;
+    ReplicatedContent readEntryContent( long logIndex ) throws IOException;
 
     /**
      * Reads the term associated with the entry at the supplied index.
@@ -55,7 +58,7 @@ public interface ReadableRaftLog
      * @param logIndex The index of the log entry.
      * @return The term of the entry, or -1 if the entry does not exist
      */
-    long readEntryTerm( long logIndex ) throws RaftStorageException;
+    long readEntryTerm( long logIndex ) throws IOException;
 
     /**
      * Tells if a entry exists in the log at the supplied index.
@@ -63,5 +66,11 @@ public interface ReadableRaftLog
      * @param logIndex The index of the log entry.
      * @return True if the entry exists, otherwise false.
      */
-    boolean entryExists( long logIndex ) throws RaftStorageException;
+    boolean entryExists( long logIndex ) throws IOException;
+
+    /**
+     * Returns an {@link IOCursor} of {@link RaftLogEntry}s from the specified index until the end of the log
+     * @param fromIndex The log index at which the cursor should be positioned
+     */
+    public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException;
 }
