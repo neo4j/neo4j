@@ -19,27 +19,28 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.io.File;
+import java.util.HashMap;
+import java.util.List;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.logging.Log;
 import org.neo4j.server.configuration.BaseServerConfigLoader;
 
 import static java.util.Arrays.asList;
 
+import static org.neo4j.server.enterprise.EnterpriseServerSettings.mode;
+
 public class EnterpriseServerConfigLoader extends BaseServerConfigLoader
 {
     @Override
-    public Config loadConfig( File configFile, File legacyConfigFile, Log log, Pair<String,String>... configOverrides )
+    protected List<Class<?>> settingsClasses( HashMap<String, String> settings )
     {
-        Config config = super.loadConfig( configFile, legacyConfigFile, log, configOverrides );
-        if ( config.get( EnterpriseServerSettings.mode ).equals( "HA" ) )
+        List<Class<?>> classes = super.settingsClasses( settings );
+        if ( new Config( settings, EnterpriseServerSettings.class ).get( mode ).equals( "HA" ) )
         {
-            config.registerSettingsClasses( asList( HaSettings.class, ClusterSettings.class ) );
+            classes.addAll( asList( HaSettings.class, ClusterSettings.class ) );
         }
-        return config;
+        return classes;
     }
 }

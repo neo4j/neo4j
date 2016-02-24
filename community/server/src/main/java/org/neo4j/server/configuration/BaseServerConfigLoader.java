@@ -22,6 +22,7 @@ package org.neo4j.server.configuration;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.BoltKernelExtension;
@@ -45,9 +46,14 @@ public class BaseServerConfigLoader
             throw new IllegalArgumentException( "log cannot be null " );
         }
         HashMap<String, String> settings = calculateSettings( configFile, legacyConfigFile, log, configOverrides );
-        Config config = new Config( settings, getDefaultSettingsClasses() );
+        Config config = new Config( settings, settingsClasses(settings) );
         config.setLogger( log );
         return config;
+    }
+
+    protected List<Class<?>> settingsClasses( HashMap<String, String> settings )
+    {
+        return getDefaultSettingsClasses();
     }
 
     private HashMap<String, String> calculateSettings( File configFile, File legacyConfigFile, Log log,
@@ -85,7 +91,7 @@ public class BaseServerConfigLoader
         config.putIfAbsent( BoltKernelExtension.Settings.enabled.name(), "true" );
     }
 
-    protected static Iterable<Class<?>> getDefaultSettingsClasses()
+    protected static List<Class<?>> getDefaultSettingsClasses()
     {
         return asList( ServerSettings.class, GraphDatabaseSettings.class );
     }
