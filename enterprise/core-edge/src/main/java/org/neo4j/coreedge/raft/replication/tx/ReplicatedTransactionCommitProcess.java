@@ -86,7 +86,11 @@ public class ReplicatedTransactionCommitProcess implements TransactionCommitProc
         {
             for ( long numberOfRetries = 1; true; numberOfRetries++ )
             {
-                log.info( "Replicating transaction %s, attempt: %d ", operationContext, numberOfRetries );
+                if ( numberOfRetries > 1 )
+                {
+                    log.info( "Replicating transaction %s, attempt: %d ", operationContext, numberOfRetries );
+                }
+
                 try
                 {
                     replicator.replicate( transaction );

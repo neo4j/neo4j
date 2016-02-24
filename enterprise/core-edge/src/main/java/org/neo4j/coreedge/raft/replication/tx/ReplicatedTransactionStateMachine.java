@@ -133,7 +133,6 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
 
                     throw new IllegalStateException( "Failed to locally commit a transaction that has already been " +
                             "committed to the RAFT log. This server cannot process later transactions and needs to be " +
-
                             "restarted once the underlying cause has been addressed.", e );
                 }
 
