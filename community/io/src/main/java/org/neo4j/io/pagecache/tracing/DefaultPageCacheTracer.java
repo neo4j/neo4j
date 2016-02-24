@@ -43,6 +43,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         try
         {
             // A hidden setting to have pin/unpin monitoring enabled from the start by default.
+            // NOTE: This flag is documented in jmx.asciidoc
             boolean alwaysEnabled = packageFlag( DefaultPageCacheTracer.class, "tracePinUnpin", false );
 
             MethodType type = MethodType.methodType( PinEvent.class );

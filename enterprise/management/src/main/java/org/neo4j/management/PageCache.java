@@ -29,13 +29,13 @@ public interface PageCache
 {
     String NAME = "Page cache";
 
-    @Description( "Number of page faults. How often desired data was not found in memory, and had to be loaded." )
+    @Description( "Number of page faults. How often requested data was not found in memory and had to be loaded." )
     long getFaults();
 
-    @Description( "Number of page evictions. How many pages have been removed from memory, to make room for other pages." )
+    @Description( "Number of page evictions. How many pages have been removed from memory to make room for other pages." )
     long getEvictions();
 
-    @Description( "Number of page pins. Or the number of page accesses - this monitoring has to be separately enabled." )
+    @Description( "Number of page pins. How many pages have been accessed (monitoring must be enabled separately)." )
     long getPins();
 
     @Description( "Number of page flushes. How many dirty pages have been written to durable storage." )
