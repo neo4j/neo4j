@@ -206,6 +206,22 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     NodeIndexContainsScan(idName, label, propertyKey, valueExpr, argumentIds)(solved)
   }
 
+  def planNodeIndexEndsWithScan(idName: IdName,
+                                label: ast.LabelToken,
+                                propertyKey: ast.PropertyKeyToken,
+                                solvedPredicates: Seq[Expression],
+                                solvedHint: Option[UsingIndexHint],
+                                valueExpr: Expression,
+                                argumentIds: Set[IdName])(implicit context: LogicalPlanningContext) = {
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
+      .addPatternNodes(idName)
+      .addPredicates(solvedPredicates: _*)
+      .addHints(solvedHint)
+      .addArgumentIds(argumentIds.toSeq)
+    )
+    NodeIndexEndsWithScan(idName, label, propertyKey, valueExpr, argumentIds)(solved)
+  }
+
   def planLegacyHintSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])
                         (implicit context: LogicalPlanningContext) = {
     val patternNode = hint match {

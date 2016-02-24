@@ -37,6 +37,10 @@ object indexScanLeafPlanner extends LeafPlanner {
       case predicate@Contains(prop@Property(Variable(name), propertyKey), expr) =>
         produce(name, propertyKey.name, qg, prop, predicate, lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _))
 
+      // MATCH (n:User) WHERE n.prop ENDS WITH 'substring' RETURN n
+      case predicate@EndsWith(prop@Property(Variable(name), propertyKey), expr) =>
+        produce(name, propertyKey.name, qg, prop, predicate, lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _))
+
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case predicate@AsPropertyScannable(scannable) =>
         val name = scannable.name
