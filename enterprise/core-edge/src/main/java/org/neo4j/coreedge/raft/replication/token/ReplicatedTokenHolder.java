@@ -43,13 +43,11 @@ import org.neo4j.kernel.impl.core.NonUniqueTokenException;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
@@ -95,9 +93,11 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         this.tokenFactory = tokenFactory;
         this.type = type;
         this.timeoutMillis = timeoutMillis;
-        this.tokenCache = new InMemoryTokenCache<>( this.getClass() );
+        this.tokenCache = new InMemoryTokenCache<>(tokenType() );
         this.log = logProvider.getLog( getClass() );
     }
+
+    protected abstract String tokenType();
 
     @Override
     public void start()

@@ -39,6 +39,12 @@ public class ReplicatedLabelTokenHolder extends ReplicatedTokenHolder<Token,Labe
     }
 
     @Override
+    protected String tokenType()
+    {
+        return "Label";
+    }
+
+    @Override
     protected void createToken( TransactionState txState, String tokenName, int tokenId )
     {
         txState.labelDoCreateForName( tokenName, tokenId );

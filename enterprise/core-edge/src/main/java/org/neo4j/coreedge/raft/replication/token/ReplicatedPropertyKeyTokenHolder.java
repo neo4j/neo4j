@@ -39,6 +39,12 @@ public class ReplicatedPropertyKeyTokenHolder extends ReplicatedTokenHolder<Toke
     }
 
     @Override
+    protected String tokenType()
+    {
+        return "PropertyKey";
+    }
+
+    @Override
     protected void createToken( TransactionState txState, String tokenName, int tokenId )
     {
         txState.propertyKeyDoCreateForName( tokenName, tokenId );

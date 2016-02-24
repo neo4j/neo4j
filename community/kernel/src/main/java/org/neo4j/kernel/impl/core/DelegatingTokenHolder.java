@@ -33,9 +33,12 @@ import org.neo4j.storageengine.api.TokenFactory;
  * When asked for a token that isn't in the cache, delegates to a TokenCreator to create the token,
  * then stores it in the cache.
  */
-public class DelegatingTokenHolder<TOKEN extends Token> extends LifecycleAdapter implements TokenHolder<TOKEN>
+public abstract class DelegatingTokenHolder<TOKEN extends Token> extends LifecycleAdapter implements TokenHolder<TOKEN>
 {
-    protected InMemoryTokenCache<TOKEN> tokenCache = new InMemoryTokenCache<>( this.getClass() );
+    protected InMemoryTokenCache<TOKEN> tokenCache = new InMemoryTokenCache<>( tokenType() );
+
+    protected abstract String tokenType();
+
     private final TokenCreator tokenCreator;
     private final TokenFactory<TOKEN> tokenFactory;
 
