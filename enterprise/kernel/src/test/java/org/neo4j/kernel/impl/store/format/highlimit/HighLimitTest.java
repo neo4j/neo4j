@@ -55,7 +55,7 @@ public class HighLimitTest
     @Test
     public void shouldResolveNoRecordFormatToHighLimitDefault() throws Exception
     {
-        Config config = new Config();
+        Config config = Config.empty();
         RecordFormats formatSelector = InternalRecordFormatSelector.select( config, NullLogService.getInstance() );
         assertEquals( HighLimit.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
     }

@@ -42,7 +42,7 @@ public class JettyThreadLimitTest
     @Test
     public void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
     {
-        Jetty9WebServer server = new Jetty9WebServer( NullLogProvider.getInstance(), new Config() );
+        Jetty9WebServer server = new Jetty9WebServer( NullLogProvider.getInstance(), Config.empty() );
         int numCores = 1;
         int configuredMaxThreads = 12; // 12 is the new min max Threads value, for one core
         int acceptorThreads = 1; // In this configuration, 1 thread will become an acceptor...

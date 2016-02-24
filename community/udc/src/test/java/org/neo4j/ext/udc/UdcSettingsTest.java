@@ -67,7 +67,7 @@ public class UdcSettingsTest
     public void shouldBeEnabledByDefault()
     {
         assertTrue( configuration.config( UdcSettings.class ).get( udc_enabled ) );
-        assertTrue( new Config().get( udc_enabled ) );
+        assertTrue( Config.defaults().get( udc_enabled ) );
     }
 
     @Test

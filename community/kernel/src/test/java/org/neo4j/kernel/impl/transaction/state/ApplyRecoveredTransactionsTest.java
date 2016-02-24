@@ -112,7 +112,7 @@ public class ApplyRecoveredTransactionsTest
     {
         FileSystemAbstraction fs = fsr.get();
         File storeDir = new File( "dir" );
-        StoreFactory storeFactory = new StoreFactory( storeDir, new Config(), new DefaultIdGeneratorFactory( fs ),
+        StoreFactory storeFactory = new StoreFactory( storeDir, Config.empty(), new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
     }

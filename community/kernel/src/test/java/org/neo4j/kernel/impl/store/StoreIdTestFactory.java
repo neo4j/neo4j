@@ -27,7 +27,7 @@ import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.se
 
 public class StoreIdTestFactory
 {
-    private static RecordFormats select = select(new Config(), NullLogService.getInstance());
+    private static RecordFormats select = select(Config.empty(), NullLogService.getInstance());
 
     private static long currentStoreVersionAsLong()
     {

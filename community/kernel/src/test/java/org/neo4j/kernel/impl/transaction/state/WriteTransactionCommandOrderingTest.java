@@ -206,8 +206,8 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, NullLogProvider.getInstance(), null, null, null,
-                    select( new Config(), NullLogService.getInstance() ) );
+            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null, null, null,
+                    select( Config.empty(), NullLogService.getInstance() ) );
             this.currentRecording = currentRecording;
         }
 
@@ -234,8 +234,8 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, NullLogProvider.getInstance(), null,
-                    select( new Config(), NullLogService.getInstance() ) );
+            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null,
+                    select( Config.empty(), NullLogService.getInstance() ) );
             this.currentRecording = currentRecording;
         }
 
@@ -270,8 +270,8 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, NullLogProvider.getInstance(),
-                    select( new Config(), NullLogService.getInstance() ) );
+            super( null, Config.empty(), null, null, NullLogProvider.getInstance(),
+                    select( Config.empty(), NullLogService.getInstance() ) );
             this.currentRecording = currentRecording;
         }
 

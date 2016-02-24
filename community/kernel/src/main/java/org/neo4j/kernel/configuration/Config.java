@@ -58,7 +58,7 @@ import static java.util.stream.Collectors.toList;
 public class Config implements DiagnosticsProvider, Configuration
 {
     private final List<ConfigurationChangeListener> listeners = new CopyOnWriteArrayList<>();
-    private final Map<String, String> params = new ConcurrentHashMap<>(  );
+    private final Map<String, String> params = new ConcurrentHashMap<>();
     private final ConfigValues settingsFunction;
 
     // Messages to this log get replayed into a real logger once logging has been
@@ -69,6 +69,16 @@ public class Config implements DiagnosticsProvider, Configuration
     private Iterable<Class<?>> settingsClasses = emptyList();
     private ConfigurationMigrator migrator;
     private ConfigurationValidator validator;
+
+    public static Config empty()
+    {
+        return new Config();
+    }
+
+    public static Config defaults()
+    {
+        return new Config();
+    }
 
     public Config()
     {
@@ -94,6 +104,7 @@ public class Config implements DiagnosticsProvider, Configuration
 
     /**
      * Returns a copy of this config with the given modifications.
+     *
      * @return a new modified config, leaves this config unchanged.
      */
     public Config with( Map<String, String> additionalConfig )
@@ -125,7 +136,7 @@ public class Config implements DiagnosticsProvider, Configuration
      * the raw setting data, meaning it can provide functionality that cross multiple settings
      * and other more advanced use cases.
      */
-    public <T> T view( Function<ConfigValues,T> projection )
+    public <T> T view( Function<ConfigValues, T> projection )
     {
         return projection.apply( settingsFunction );
     }
@@ -133,11 +144,12 @@ public class Config implements DiagnosticsProvider, Configuration
     /**
      * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
      * non-overlapping ones.
+     *
      * @param changes settings to add and override
      */
-    public Config augment( Map<String,String> changes )
+    public Config augment( Map<String, String> changes )
     {
-        Map<String,String> params = getParams();
+        Map<String, String> params = getParams();
         params.putAll( changes );
         applyChanges( params );
         return this;
@@ -204,7 +216,9 @@ public class Config implements DiagnosticsProvider, Configuration
         return this;
     }
 
-    /** Add more settings classes. */
+    /**
+     * Add more settings classes.
+     */
     public Config registerSettingsClasses( Iterable<Class<?>> settingsClasses )
     {
         this.settingsClasses = Iterables.concat( settingsClasses, this.settingsClasses );
@@ -281,24 +295,27 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     /**
-     * This mechanism can be used as an argument to {@link #view(Function)} to view a set of config options that share a common base config key as a group.
-     * This specific version handles multiple groups, so the common base key should be followed by a number denoting the group, followed by the group config
+     * This mechanism can be used as an argument to {@link #view(Function)} to view a set of config options that
+     * share a common base config key as a group.
+     * This specific version handles multiple groups, so the common base key should be followed by a number denoting
+     * the group, followed by the group config
      * values, eg:
-     *
+     * <p>
      * {@code <base name>.<group key>.<config key>}
-     *
-     * The config of each group can then be accessed as if the {@code config key} in the pattern above was the entire config key. For example, given the
+     * <p>
+     * The config of each group can then be accessed as if the {@code config key} in the pattern above was the entire
+     * config key. For example, given the
      * following configuration:
-     *
+     * <p>
      * <pre>
      *     dbms.books.0.name=Hansel & Gretel
      *     dbms.books.0.author=JJ Abrams
      *     dbms.books.1.name=NKJV
      *     dbms.books.1.author=Jesus
      * </pre>
-     *
+     * <p>
      * We can then access these config values as groups:
-     *
+     * <p>
      * <pre>
      * {@code
      *     Setting<String> bookName = setting("name", STRING); // note that the key here is only 'name'
@@ -309,27 +326,28 @@ public class Config implements DiagnosticsProvider, Configuration
      * }
      * </pre>
      *
-     * @param baseName the base name for the groups, this will be the first part of the config key, followed by a grouping number, followed by the group
+     * @param baseName the base name for the groups, this will be the first part of the config key, followed by a
+     *                 grouping number, followed by the group
      *                 config options
      * @return a list of grouped config options
      */
-    public static Function<ConfigValues,List<Configuration>> groups( String baseName )
+    public static Function<ConfigValues, List<Configuration>> groups( String baseName )
     {
         Pattern pattern = Pattern.compile( Pattern.quote( baseName ) + "\\.(\\d+)\\.(.+)" );
 
         return ( values ) -> {
-            Map<String,Map<String,String>> groups = new HashMap<>();
-            for ( Pair<String,String> entry : values.rawConfiguration() )
+            Map<String, Map<String, String>> groups = new HashMap<>();
+            for ( Pair<String, String> entry : values.rawConfiguration() )
             {
                 Matcher matcher = pattern.matcher( entry.first() );
 
-                if( matcher.matches() )
+                if ( matcher.matches() )
                 {
                     String index = matcher.group( 1 );
                     String configName = matcher.group( 2 );
                     String value = entry.other();
 
-                    Map<String,String> groupConfig = groups.get( index );
+                    Map<String, String> groupConfig = groups.get( index );
                     if ( groupConfig == null )
                     {
                         groupConfig = new HashMap<>();
@@ -339,7 +357,7 @@ public class Config implements DiagnosticsProvider, Configuration
                 }
             }
 
-            Function<Map<String,String>,Configuration> mapper = m -> new Configuration()
+            Function<Map<String, String>, Configuration> mapper = m -> new Configuration()
             {
                 @Override
                 public <T> T get( Setting<T> setting )

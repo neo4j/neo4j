@@ -56,7 +56,7 @@ public class CommunityCommitProcessFactoryTest
         CommunityCommitProcessFactory factory = new CommunityCommitProcessFactory();
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
-                mock( StorageEngine.class ), new Config() );
+                mock( StorageEngine.class ), Config.empty() );
 
         assertThat( commitProcess, instanceOf( TransactionRepresentationCommitProcess.class ) );
     }
