@@ -48,6 +48,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -126,7 +127,7 @@ public class MultipleIndexPopulationStressIT
     private void readConfigAndRunTest( boolean multiThreaded ) throws Exception
     {
         // GIVEN a database with random data in it
-        int nodeCount = (int) Config.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "1m" ) );
+        int nodeCount = (int) Settings.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "1m" ) );
         long duration = TimeUtil.parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "5s" ) );
         createRandomData( nodeCount );
         long endTime = currentTimeMillis() + duration;

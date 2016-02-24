@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.configuration;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,7 +41,6 @@ import org.neo4j.logging.BufferingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
-import static java.lang.Character.isDigit;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
@@ -94,17 +92,15 @@ public class Config implements DiagnosticsProvider, Configuration
         registerSettingsClasses( settingsClasses );
     }
 
-    /** Add more settings classes. */
-    public Config registerSettingsClasses( Iterable<Class<?>> settingsClasses )
+    /**
+     * Returns a copy of this config with the given modifications.
+     * @return a new modified config, leaves this config unchanged.
+     */
+    public Config with( Map<String, String> additionalConfig )
     {
-        this.settingsClasses = Iterables.concat( settingsClasses, this.settingsClasses );
-        this.migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
-        this.validator = new ConfigurationValidator( settingsClasses );
-
-        // Apply the requirements and changes the new settings classes introduce
-        this.applyChanges( getParams() );
-
-        return this;
+        Map<String, String> newParams = getParams(); // copy is returned
+        newParams.putAll( additionalConfig );
+        return new Config( newParams );
     }
 
     // TODO: Get rid of this, to allow us to have something more
@@ -208,6 +204,19 @@ public class Config implements DiagnosticsProvider, Configuration
         return this;
     }
 
+    /** Add more settings classes. */
+    public Config registerSettingsClasses( Iterable<Class<?>> settingsClasses )
+    {
+        this.settingsClasses = Iterables.concat( settingsClasses, this.settingsClasses );
+        this.migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
+        this.validator = new ConfigurationValidator( settingsClasses );
+
+        // Apply the requirements and changes the new settings classes introduce
+        this.applyChanges( getParams() );
+
+        return this;
+    }
+
     public Iterable<Class<?>> getSettingsClasses()
     {
         return settingsClasses;
@@ -269,37 +278,6 @@ public class Config implements DiagnosticsProvider, Configuration
         }
 
         return output.toString();
-    }
-
-    public static long parseLongWithUnit( String numberWithPotentialUnit )
-    {
-        int firstNonDigitIndex = findFirstNonDigit( numberWithPotentialUnit );
-        String number = numberWithPotentialUnit.substring( 0, firstNonDigitIndex );
-
-        long multiplier = 1;
-        if ( firstNonDigitIndex < numberWithPotentialUnit.length() )
-        {
-            String unit = numberWithPotentialUnit.substring( firstNonDigitIndex );
-            if ( unit.equalsIgnoreCase( "k" ) )
-            {
-                multiplier = 1024;
-            }
-            else if ( unit.equalsIgnoreCase( "m" ) )
-            {
-                multiplier = 1024 * 1024;
-            }
-            else if ( unit.equalsIgnoreCase( "g" ) )
-            {
-                multiplier = 1024 * 1024 * 1024;
-            }
-            else
-            {
-                throw new IllegalArgumentException(
-                        "Illegal unit '" + unit + "' for number '" + numberWithPotentialUnit + "'" );
-            }
-        }
-
-        return Long.parseLong( number ) * multiplier;
     }
 
     /**
@@ -373,50 +351,5 @@ public class Config implements DiagnosticsProvider, Configuration
                     .map( mapper )
                     .collect( toList() );
         };
-    }
-
-
-    /**
-     * @return index of first non-digit character in {@code numberWithPotentialUnit}. If all digits then
-     * {@code numberWithPotentialUnit.length()} is returned.
-     */
-    private static int findFirstNonDigit( String numberWithPotentialUnit )
-    {
-        int firstNonDigitIndex = numberWithPotentialUnit.length();
-        for ( int i = 0; i < numberWithPotentialUnit.length(); i++ )
-        {
-            if ( !isDigit( numberWithPotentialUnit.charAt( i ) ) )
-            {
-                firstNonDigitIndex = i;
-                break;
-            }
-        }
-        return firstNonDigitIndex;
-    }
-
-    /**
-     * Returns a copy of this config with the given modifications.
-     * @return a new modified config, leaves this config unchanged.
-     */
-    public Config with( Map<String, String> additionalConfig )
-    {
-        Map<String, String> newParams = getParams(); // copy is returned
-        newParams.putAll( additionalConfig );
-        return new Config( newParams );
-    }
-
-    /**
-     * Looks at configured file {@code absoluteOrRelativeFile} and just returns it if absolute, otherwise
-     * returns a {@link File} with {@code baseDirectoryIfRelative} as parent.
-     *
-     * @param baseDirectoryIfRelative base directory to use as parent if {@code absoluteOrRelativeFile}
-     * is relative, otherwise unused.
-     * @param absoluteOrRelativeFile file to return as absolute or relative to {@code baseDirectoryIfRelative}.
-     */
-    public static File absoluteFileOrRelativeTo( File baseDirectoryIfRelative, File absoluteOrRelativeFile )
-    {
-        return absoluteOrRelativeFile.isAbsolute()
-                ? absoluteOrRelativeFile
-                : new File( baseDirectoryIfRelative, absoluteOrRelativeFile.getPath() );
     }
 }

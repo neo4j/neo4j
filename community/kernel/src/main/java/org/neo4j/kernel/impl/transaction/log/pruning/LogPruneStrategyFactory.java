@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 
-import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
+import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 
 public class LogPruneStrategyFactory
 {
