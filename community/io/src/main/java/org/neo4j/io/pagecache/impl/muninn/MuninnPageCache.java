@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
@@ -308,6 +309,8 @@ public class MuninnPageCache implements PageCache
         }
         boolean createIfNotExists = false;
         boolean truncateExisting = false;
+        boolean deleteOnClose = false;
+        boolean exclusiveMapping = false;
         for ( OpenOption option : openOptions )
         {
             if ( option.equals( StandardOpenOption.CREATE ) )
@@ -317,6 +320,14 @@ public class MuninnPageCache implements PageCache
             else if ( option.equals( StandardOpenOption.TRUNCATE_EXISTING ) )
             {
                 truncateExisting = true;
+            }
+            else if ( option.equals( StandardOpenOption.DELETE_ON_CLOSE ) )
+            {
+                deleteOnClose = true;
+            }
+            else if ( option.equals( PageCacheOpenOptions.EXCLUSIVE ) )
+            {
+                exclusiveMapping = true;
             }
             else if ( !ignoredOpenOptions.contains( option ) )
             {
@@ -345,7 +356,21 @@ public class MuninnPageCache implements PageCache
                 {
                     throw new UnsupportedOperationException( "Cannot truncate a file that is already mapped" );
                 }
+                if ( exclusiveMapping || pagedFile.isExclusiveMapping() )
+                {
+                    String msg;
+                    if ( exclusiveMapping )
+                    {
+                        msg = "Cannot exclusively map file because it is already mapped: " + file;
+                    }
+                    else
+                    {
+                        msg = "Cannot map file because it is already exclusively mapped: " + file;
+                    }
+                    throw new IOException( msg );
+                }
                 pagedFile.incrementRefCount();
+                pagedFile.markDeleteOnClose( deleteOnClose );
                 return pagedFile;
             }
             current = current.next;
@@ -359,8 +384,10 @@ public class MuninnPageCache implements PageCache
                 swapperFactory,
                 tracer,
                 createIfNotExists,
-                truncateExisting );
+                truncateExisting,
+                exclusiveMapping );
         pagedFile.incrementRefCount();
+        pagedFile.markDeleteOnClose( deleteOnClose );
         current = new FileMapping( file, pagedFile );
         current.next = mappedFiles;
         mappedFiles = current;

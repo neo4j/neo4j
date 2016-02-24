@@ -60,6 +60,10 @@ final class MuninnPagedFile implements PagedFile
 
     final PageSwapper swapper;
     private final CursorPool cursorPool;
+    private final boolean exclusiveMapping;
+
+    // Guarded by the monitor lock on MuninnPageCache (map and unmap)
+    private boolean deleteOnClose;
 
     /**
      * The header state includes both the reference count of the PagedFile – 15 bits – and the ID of the last page in
@@ -85,12 +89,14 @@ final class MuninnPagedFile implements PagedFile
             PageSwapperFactory swapperFactory,
             PageCacheTracer tracer,
             boolean createIfNotExists,
-            boolean truncateExisting ) throws IOException
+            boolean truncateExisting,
+            boolean exclusiveMapping ) throws IOException
     {
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
         this.cursorPool = new CursorPool( this );
         this.tracer = tracer;
+        this.exclusiveMapping = exclusiveMapping;
 
         // The translation table is an array of arrays of references to either null, MuninnPage objects, or Latch
         // objects. The table only grows the outer array, and all the inner "chunks" all stay the same size. This
@@ -175,7 +181,14 @@ final class MuninnPagedFile implements PagedFile
 
     void closeSwapper() throws IOException
     {
-        swapper.close();
+        if ( !deleteOnClose )
+        {
+            swapper.close();
+        }
+        else
+        {
+            swapper.closeAndDelete();
+        }
     }
 
     @Override
@@ -381,6 +394,11 @@ final class MuninnPagedFile implements PagedFile
                 && !UnsafeUtil.compareAndSwapLong( this, headerStateOffset, current, update ) );
     }
 
+    boolean isExclusiveMapping()
+    {
+        return exclusiveMapping;
+    }
+
     /**
      * Atomically increment the reference count for this mapped file.
      */
@@ -431,6 +449,11 @@ final class MuninnPagedFile implements PagedFile
     int getRefCount()
     {
         return (int) refCountOf( getHeaderState() );
+    }
+
+    void markDeleteOnClose( boolean deleteOnClose )
+    {
+        this.deleteOnClose |= deleteOnClose;
     }
 
     /**

@@ -106,10 +106,16 @@ public interface PageSwapper
     File file();
 
     /**
-     * Close and release all resources associated with the file underlying this
-     * PageSwapper.
+     * Close and release all resources associated with the file underlying this PageSwapper.
      */
     void close() throws IOException;
+
+    /**
+     * Close and release all resources associated with the file underlying this PageSwapper, and then delete that file.
+     * @throws IOException If an {@link IOException} occurs during either the closing or the deleting of the file. This
+     * may leave the file on the file system.
+     */
+    void closeAndDelete() throws IOException;
 
     /**
      * Forces all writes done by this PageSwapper to the underlying storage device, such that the writes are durable

@@ -76,6 +76,12 @@ public class DelegatingPageSwapper implements PageSwapper
         delegate.truncate();
     }
 
+    @Override
+    public void closeAndDelete() throws IOException
+    {
+        delegate.closeAndDelete();
+    }
+
     public long read( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
     {
         return delegate.read( startFilePageId, pages, arrayOffset, length );

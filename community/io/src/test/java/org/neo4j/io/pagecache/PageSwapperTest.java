@@ -37,7 +37,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -56,14 +55,8 @@ import static org.junit.Assert.fail;
 
 public abstract class PageSwapperTest
 {
-    public static final PageEvictionCallback NO_CALLBACK = new PageEvictionCallback()
-    {
-        @Override
-        public void onEvict( long pageId, Page page )
-        {
-        }
-    };
-    public static final long X = 0xcafebabedeadbeefl;
+    public static final PageEvictionCallback NO_CALLBACK = ( pageId, page ) -> {};
+    public static final long X = 0xcafebabedeadbeefL;
     public static final long Y = X ^ (X << 1);
     public static final int Z = 0xfefefefe;
 
@@ -546,14 +539,9 @@ public abstract class PageSwapperTest
     {
         final AtomicLong callbackFilePageId = new AtomicLong();
         final AtomicReference<Page> callbackPage = new AtomicReference<>();
-        PageEvictionCallback callback = new PageEvictionCallback()
-        {
-            @Override
-            public void onEvict( long filePageId, Page page )
-            {
-                callbackFilePageId.set( filePageId );
-                callbackPage.set( page );
-            }
+        PageEvictionCallback callback = ( filePageId, page ) -> {
+            callbackFilePageId.set( filePageId );
+            callbackPage.set( page );
         };
         File file = file( "file" );
         PageSwapperFactory factory = swapperFactory();
@@ -568,14 +556,7 @@ public abstract class PageSwapperTest
     public void mustNotIssueEvictionCallbacksAfterSwapperHasBeenClosed() throws Exception
     {
         final AtomicBoolean gotCallback = new AtomicBoolean();
-        PageEvictionCallback callback = new PageEvictionCallback()
-        {
-            @Override
-            public void onEvict( long filePageId, Page page )
-            {
-                gotCallback.set( true );
-            }
-        };
+        PageEvictionCallback callback = ( filePageId, page ) -> gotCallback.set( true );
         File file = file( "file" );
         PageSwapperFactory factory = swapperFactory();
         PageSwapper swapper = createSwapper( factory, file, cachePageSize(), callback, true );
@@ -824,59 +805,49 @@ public abstract class PageSwapperTest
             swapper.write( i, output );
         }
 
-        Callable<Void> work = new Callable<Void>()
-        {
-            @Override
-            public Void call() throws Exception
+        Callable<Void> work = () -> {
+            ThreadLocalRandom rng = ThreadLocalRandom.current();
+            ByteBufferPage[] pages = new ByteBufferPage[10];
+            for ( int i = 0; i < pages.length; i++ )
             {
-                ThreadLocalRandom rng = ThreadLocalRandom.current();
-                ByteBufferPage[] pages = new ByteBufferPage[10];
-                for ( int i = 0; i < pages.length; i++ )
-                {
-                    pages[i] = createPage( 4 );
-                }
-
-                startLatch.await();
-                for ( int i = 0; i < iterations; i++ )
-                {
-                    long startFilePageId = rng.nextLong( 0, pageCount - pages.length );
-                    if ( rng.nextBoolean() )
-                    {
-                        // Do read
-                        long bytesRead = swapper.read( startFilePageId, pages, 0, pages.length );
-                        assertThat( bytesRead, is( pages.length * 4L ) );
-                        for ( int j = 0; j < pages.length; j++ )
-                        {
-                            int expectedValue = (int) (1 + j + startFilePageId);
-                            int actualValue = pages[j].getInt( 0 );
-                            assertThat( actualValue, is( expectedValue ) );
-                        }
-                    }
-                    else
-                    {
-                        // Do write
-                        for ( int j = 0; j < pages.length; j++ )
-                        {
-                            int value = (int) (1 + j + startFilePageId);
-                            pages[j].putInt( value, 0 );
-                        }
-                        assertThat( swapper.write( startFilePageId, pages, 0, pages.length ), is( pages.length * 4L ) );
-                    }
-                }
-                return null;
+                pages[i] = createPage( 4 );
             }
+
+            startLatch.await();
+            for ( int i = 0; i < iterations; i++ )
+            {
+                long startFilePageId = rng.nextLong( 0, pageCount - pages.length );
+                if ( rng.nextBoolean() )
+                {
+                    // Do read
+                    long bytesRead = swapper.read( startFilePageId, pages, 0, pages.length );
+                    assertThat( bytesRead, is( pages.length * 4L ) );
+                    for ( int j = 0; j < pages.length; j++ )
+                    {
+                        int expectedValue = (int) (1 + j + startFilePageId);
+                        int actualValue = pages[j].getInt( 0 );
+                        assertThat( actualValue, is( expectedValue ) );
+                    }
+                }
+                else
+                {
+                    // Do write
+                    for ( int j = 0; j < pages.length; j++ )
+                    {
+                        int value = (int) (1 + j + startFilePageId);
+                        pages[j].putInt( value, 0 );
+                    }
+                    assertThat( swapper.write( startFilePageId, pages, 0, pages.length ), is( pages.length * 4L ) );
+                }
+            }
+            return null;
         };
 
         int threads = 8;
-        ExecutorService executor = Executors.newFixedThreadPool( threads, new ThreadFactory()
-        {
-            @Override
-            public Thread newThread( Runnable r )
-            {
-                Thread thread = Executors.defaultThreadFactory().newThread( r );
-                thread.setDaemon( true );
-                return thread;
-            }
+        ExecutorService executor = Executors.newFixedThreadPool( threads, r -> {
+            Thread thread = Executors.defaultThreadFactory().newThread( r );
+            thread.setDaemon( true );
+            return thread;
         } );
         List<Future<Void>> futures = new ArrayList<>( threads );
         for ( int i = 0; i < threads; i++ )
@@ -1222,5 +1193,24 @@ public abstract class PageSwapperTest
         int[] expectedValues = {1, 2};
         int[] actualValues = {pageA.getInt( 0 ), pageB.getInt( 0 )};
         assertThat( actualValues, is( expectedValues ) );
+    }
+
+    @Test
+    public void mustDeleteFileIfClosedWithCloseAndDelete() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = createSwapper( factory, file, 4, NO_CALLBACK, true );
+        swapper.closeAndDelete();
+
+        try
+        {
+            createSwapper( factory, file, 4, NO_CALLBACK, false );
+            fail( "should not have been able to create a page swapper for non-existing file" );
+        }
+        catch ( IOException ignore )
+        {
+            // Just as planned!
+        }
     }
 }

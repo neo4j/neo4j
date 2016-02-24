@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 
 /**
  * A page caching mechanism that allows caching multiple files and accessing their data
@@ -43,15 +44,20 @@ public interface PageCache extends AutoCloseable
      * @param file The file to map.
      * @param pageSize The file page size to use for this mapping. If the file is already mapped with a different page
      * size, an exception will be thrown.
-     * @param openOptions The set of open options to use for mapping this file. The
-     * {@link java.nio.file.StandardOpenOption#READ} and {@link java.nio.file.StandardOpenOption#WRITE} options always
-     * implicitly specified. The {@link java.nio.file.StandardOpenOption#CREATE} open option will create the given
-     * file if it does not already exist, and the {@link java.nio.file.StandardOpenOption#TRUNCATE_EXISTING} will
-     * truncate any existing file <em>iff</em> it has not already been mapped.
+     * @param openOptions The set of open options to use for mapping this file.
+     * The {@link StandardOpenOption#READ} and {@link StandardOpenOption#WRITE} options always implicitly specified.
+     * The {@link StandardOpenOption#CREATE} open option will create the given file if it does not already exist, and
+     * the {@link StandardOpenOption#TRUNCATE_EXISTING} will truncate any existing file <em>iff</em> it has not already
+     * been mapped.
+     * The {@link StandardOpenOption#DELETE_ON_CLOSE} will cause the file to be deleted after the last unmapping.
+     * The {@link PageCacheOpenOptions#EXCLUSIVE} will cause the {@code map} method to throw if the file is already
+     * mapped. Otherwise, the file will be mapped exclusively, and subsequent attempts at mapping the file will fail
+     * with an exception until the exclusively mapped file is closed.
      * All other options are either silently ignored, or will cause an exception to be thrown.
      * @throws java.nio.file.NoSuchFileException if the given file does not exist, and the
-     * {@link java.nio.file.StandardOpenOption#CREATE} option was not specified.
-     * @throws IOException if the file could otherwise not be mapped.
+     * {@link StandardOpenOption#CREATE} option was not specified.
+     * @throws IOException if the file could otherwise not be mapped. Causes include the file being locked, or exclusive
+     * mapping conflicts.
      */
     PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException;
 

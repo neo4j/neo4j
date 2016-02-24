@@ -1599,6 +1599,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             try
             {
+                //noinspection InfiniteLoopStatement
                 for ( long i = 0;; i++ )
                 {
                     PageCursor cursor = pf.io( i, PF_SHARED_WRITE_LOCK );
@@ -2275,7 +2276,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IllegalStateException.class )
-    public void pageCacheCloseMustThrowIfFilesAreStillMapped() throws IOException
+    public void closeOnPageCacheMustThrowIfFilesAreStillMapped() throws IOException
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
@@ -3482,7 +3483,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
         verifyMappingWithOpenOptionThrows( StandardOpenOption.CREATE_NEW );
-        verifyMappingWithOpenOptionThrows( StandardOpenOption.DELETE_ON_CLOSE );
         verifyMappingWithOpenOptionThrows( StandardOpenOption.SYNC );
         verifyMappingWithOpenOptionThrows( StandardOpenOption.DSYNC );
         verifyMappingWithOpenOptionThrows( new OpenOption()
@@ -3546,5 +3546,58 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PagedFile pf = pageCache.map( file( "a" ), filePageSize );
         pf.close();
         pf.close();
+    }
+
+    @Test( expected = NoSuchFileException.class )
+    public void fileMappedWithDeleteOnCloseMustNotExistAfterUnmap() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        pageCache.map( file( "a" ), filePageSize, StandardOpenOption.DELETE_ON_CLOSE ).close();
+        pageCache.map( file( "a" ), filePageSize );
+    }
+
+    @Test( expected = NoSuchFileException.class )
+    public void fileMappedWithDeleteOnCloseMustNotExistAfterLastUnmap() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        File file = file( "a" );
+        try ( PagedFile ignore = pageCache.map( file, filePageSize ) )
+        {
+            pageCache.map( file, filePageSize, StandardOpenOption.DELETE_ON_CLOSE ).close();
+        }
+        pageCache.map( file, filePageSize );
+    }
+
+    @Test
+    public void mustAllowMappingFileWithExclusiveOpenOption() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize, PageCacheOpenOptions.EXCLUSIVE );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ))
+        {
+            assertTrue( cursor.next() );
+        }
+    }
+
+    @Test( expected = IOException.class )
+    public void mustThrowWhenMappingFileAlreadyMappedWithExclusive() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile ignore = pageCache.map( file( "a" ), filePageSize, PageCacheOpenOptions.EXCLUSIVE ) )
+        {
+            pageCache.map( file( "a" ), filePageSize );
+            fail( "mapping should have thrown" );
+        }
+    }
+
+    @Test( expected = IOException.class )
+    public void mustThrowWhenExclusivelyMappingAlreadyMappedFile() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile ignore = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            pageCache.map( file( "a" ), filePageSize, PageCacheOpenOptions.EXCLUSIVE );
+            fail( "mapping should have thrown" );
+        }
     }
 }
