@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -33,23 +28,28 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
-import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -371,7 +371,6 @@ public class UpgradeStoreIT
 
     private static class RelationshipTypeTokenStoreWithOneOlderVersion extends RelationshipTypeTokenStore
     {
-        private static final Config config = new Config( stringMap() );
         private boolean versionCalled;
 
         public RelationshipTypeTokenStoreWithOneOlderVersion(
@@ -380,8 +379,9 @@ public class UpgradeStoreIT
                 FileSystemAbstraction fs,
                 PageCache pageCache )
         {
-            super( fileName, config, new NoLimitIdGeneratorFactory( fs ), pageCache, NullLogProvider.getInstance(),
-                    stringStore, select().relationshipTypeToken(), select().storeVersion() );
+            super( fileName, new Config(), new NoLimitIdGeneratorFactory( fs ), pageCache,
+                    NullLogProvider.getInstance(), stringStore, select().relationshipTypeToken(),
+                    select().storeVersion() );
         }
 
         @Override

@@ -19,28 +19,26 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.NullLogProvider;
@@ -64,12 +62,10 @@ public class TestArrayStore
     public void before() throws Exception
     {
         File dir = testDirectory.graphDbDir();
-        Map<String, String> configParams = MapUtil.stringMap();
-        Config config = new Config( configParams );
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory factory = new StoreFactory( dir, config, idGeneratorFactory, pageCache, fs,
+        StoreFactory factory = new StoreFactory( dir, new Config(), idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance() );
         neoStores = factory.openAllNeoStores( true );
         arrayStore = neoStores.getPropertyStore().getArrayStore();

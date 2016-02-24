@@ -228,11 +228,6 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         return GraphDatabaseBuilderTestTools.createConfigCopy( databaseBuilder );
     }
 
-    public void resetConfig()
-    {
-        GraphDatabaseBuilderTestTools.clearConfig( databaseBuilder );
-    }
-
     /**
      * {@link DatabaseRule} now implements {@link GraphDatabaseAPI} directly, so no need. Also for ensuring
      * a lazily started database is created, use {@link #ensureStarted()} instead.
