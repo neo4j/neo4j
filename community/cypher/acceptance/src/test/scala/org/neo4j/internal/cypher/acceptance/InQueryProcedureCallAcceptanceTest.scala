@@ -36,7 +36,7 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
     createLabeledNode("C")
 
     //When
-    val result = execute("CALL db.labels YIELD label RETURN *")
+    val result = execute("CALL db.labels() YIELD label RETURN *")
 
     // Then
     result.toList should equal(
@@ -53,7 +53,7 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
     createLabeledNode(Map("name" -> "Toc"), "C")
 
     //When
-    val result = execute("MATCH (n {name: 'Toc'}) WITH n.name AS name CALL db.labels YIELD label RETURN *")
+    val result = execute("MATCH (n {name: 'Toc'}) WITH n.name AS name CALL db.labels() YIELD label RETURN *")
 
     // Then
     result.toList should equal(
@@ -63,10 +63,10 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
         Map("name" -> "Toc", "label" -> "C")))
   }
 
-  test("sys.db.labels work on an empty database") {
+  test("sys.db.labels works on an empty database") {
     // Given an empty database
     //When
-    val result = execute("CALL db.labels YIELD label RETURN *")
+    val result = execute("CALL db.labels() YIELD label RETURN *")
 
     // Then
     result.toList shouldBe empty
@@ -78,17 +78,6 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
 
     // When
     val result = execute("CALL my.first.proc('42', 42) YIELD out0, out1 RETURN *")
-
-    // Then
-    result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
-  }
-
-  test("should be able to call procedure with implicit arguments") {
-    // Given
-    register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
-
-    // When
-    val result = execute("CALL my.first.proc YIELD out0, out1 RETURN *", "in0" -> "42", "in1" -> 42)
 
     // Then
     result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
@@ -155,14 +144,6 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
     an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42) YIELD x, y, z RETURN *"))
   }
 
-  test("should fail if implicit argument is missing") {
-    // Given
-    register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
-
-    // Then
-    an [ParameterNotFoundException] shouldBe thrownBy(execute("CALL my.first.proc YIELD out0 AS x, out1 AS y RETURN *", "x" -> "42", "y" -> 42))
-  }
-
   test("should be able to call a procedure with explain") {
     // Given
     register(Neo4jTypes.NTNumber)
@@ -176,6 +157,25 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
 
   test("should fail if calling non-existent procedure") {
     a [CypherExecutionException] shouldBe thrownBy(execute("CALL no.such.thing.exists(42) YIELD x RETURN *"))
+  }
+
+
+  test("should fail if arguments are missing when calling procedure in a query") {
+    a [SyntaxException] shouldBe thrownBy(execute("CALL db.labels YIELD label RETURN *"))
+  }
+
+  test("should fail if outputs are missing when calling procedure in a query") {
+    a [SyntaxException] shouldBe thrownBy(execute("CALL db.labels() RETURN *"))
+  }
+
+  test("should fail if outputs and arguments are missing when calling procedure in a query") {
+    a [SyntaxException] shouldBe thrownBy(execute("CALL db.labels RETURN *"))
+  }
+
+  test("should fail if calling procedure via rule planner") {
+    a [InternalException] shouldBe thrownBy(execute(
+      "CYPHER planner=rule CALL db.labels() YIELD label RETURN *"
+    ))
   }
 
   private def register(types: Neo4jTypes.AnyType*) = {
