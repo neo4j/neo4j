@@ -7,11 +7,11 @@ Cypher supports comparing values (see <<cypher-values>>) by equality using the `
 
 Values of the same type are only equal if they are the same identical value (e.g. `3 = 3` and `"x" <> "xy"`).
 
-Maps are only equal if they map exactly the same keys to equal values and collections are only equal if they contain the same sequence of equal values (e.g. `[3, 4] = [1+2, 8/2]`).
+Maps are only equal if they map exactly the same keys to equal values and lists are only equal if they contain the same sequence of equal values (e.g. `[3, 4] = [1+2, 8/2]`).
 
 Values of different types are considered as equal according to the following rules:
 
-* Paths are treated as collections of alternating nodes and relationships and are equal to all collections that contain that very same sequence of nodes and relationships.
+* Paths are treated as lists of alternating nodes and relationships and are equal to all lists that contain that very same sequence of nodes and relationships.
 * Testing any value against `NULL` with both the `=` and the `<>` operators always is `NULL`.
 This includes `NULL = NULL` and `NULL <> NULL`.
 The only way to reliably test if a value `v` is  `NULL` is by using the special `v IS NULL`, or `v IS NOT NULL` equality operators.

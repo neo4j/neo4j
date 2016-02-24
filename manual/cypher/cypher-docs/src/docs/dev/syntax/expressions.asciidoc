@@ -15,7 +15,7 @@ An expression in Cypher can be:
 * A property: `n.prop`, `x.prop`, `rel.thisProperty`, +myFancyVariable.\`(weird property name)`+.
 * A dynamic property: `n["prop"]`, `rel[n.city + n.zip]`, `map[coll[0]]`.
 * A parameter: `{param}`, `{0}`
-* A collection of expressions: `["a", "b"]`, `[1,2,3]`, `["a", 2, n.property, {param}]`, `[ ]`.
+* A list of expressions: `["a", "b"]`, `[1,2,3]`, `["a", 2, n.property, {param}]`, `[ ]`.
 * A function call: `length(p)`, `nodes(p)`.
 * An aggregate function: `avg(x.prop)`, `count(*)`.
 * A path-pattern: `(a)-->()<--(b)`.

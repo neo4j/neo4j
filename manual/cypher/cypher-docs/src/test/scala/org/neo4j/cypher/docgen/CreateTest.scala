@@ -108,8 +108,8 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
 
     prepareAndTestQuery(
       title = "Set a property to an array",
-      text = """When you set a property to an expression that returns a collection of values,
-Cypher will turn that into an array. All the elements in the collection must be of the same type
+      text = """When you set a property to an expression that returns a list of values,
+Cypher will turn that into an array. All the elements in the list must be of the same type
 for this to work.""",
       queryText = "match (n) where exists(n.name) with collect(n.name) as names create (new { name : names }) return new",
       optionalResultExplanation = "A node with an array property named name is returned.",

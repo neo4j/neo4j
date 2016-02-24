@@ -26,38 +26,38 @@ class CollectionsAndMapsTest extends ArticleTest {
 
   val graphDescription = List()
 
-  val title = "Collections"
+  val title = "Lists"
   val section = "Syntax"
   val text =
     """
-Collections
-===========
+Lists
+=====
 
-Cypher has good support for collections.
+Cypher has good support for lists.
 
-== Collections in general ==
+== Lists in general ==
 
-A literal collection is created by using brackets and separating the elements in the collection with commas.
+A literal list is created by using brackets and separating the elements in the list with commas.
 
 ###
-RETURN [0,1,2,3,4,5,6,7,8,9] as collection###
+RETURN [0,1,2,3,4,5,6,7,8,9] as list###
 
 In our examples, we'll use the range function.
-It gives you a collection containing all numbers between given start and end numbers.
+It gives you a list containing all numbers between given start and end numbers.
 Range is inclusive in both ends.
 
-To access individual elements in the collection, we use the square brackets again.
+To access individual elements in the list, we use the square brackets again.
 This will extract from the start index and up to but not including the end index.
 
 ###
 RETURN range(0,10)[3]###
 
-You can also use negative numbers, to start from the end of the collection instead.
+You can also use negative numbers, to start from the end of the list instead.
 
 ###
 RETURN range(0,10)[-3]###
 
-Finally, you can use ranges inside the brackets to return ranges of the collection.
+Finally, you can use ranges inside the brackets to return ranges of the list.
 
 ###
 RETURN range(0,10)[0..3]###
@@ -76,14 +76,14 @@ RETURN range(0,10)[15]###
 ###
 RETURN range(0,10)[5..15]###
 
-You can get the size of a collection like this:
+You can get the size of a list like this:
 
 ###
 RETURN size(range(0,10)[0..3])###
 
 == List comprehension ==
 
-List comprehension is a syntactic construct available in Cypher for creating a collection based on existing collections.
+List comprehension is a syntactic construct available in Cypher for creating a list based on existing lists.
 It follows the form of the mathematical set-builder notation (set comprehension) instead of the use of map
 and filter functions.
 
@@ -103,7 +103,7 @@ RETURN [x IN range(0,10) | x^3 ] AS result###
 From Cypher, you can also construct maps. Through REST you will get JSON objects; in Java they will be `java.util.Map<String,Object>`.
 
 ###
-RETURN { key : "Value", collectionKey: [ { inner: "Map1" }, { inner: "Map2" } ] } AS result###
-    """
+RETURN { key : "Value", listKey: [ { inner: "Map1" }, { inner: "Map2" } ] } AS result###
+"""
 }
 

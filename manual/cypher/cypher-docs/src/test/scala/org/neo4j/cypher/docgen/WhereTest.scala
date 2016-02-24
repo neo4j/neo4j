@@ -213,8 +213,8 @@ class WhereTest extends DocumentingTestBase {
   @Test def filter_on_patterns() {
     testQuery(
       title = "Filter on patterns",
-      text = """Patterns are expressions in Cypher, expressions that return a collection of paths. Collection
-expressions are also predicates -- an empty collection represents `false`, and a non-empty represents `true`.
+      text = """Patterns are expressions in Cypher, expressions that return a list of paths. List
+expressions are also predicates -- an empty list represents `false`, and a non-empty represents `true`.
 
 So, patterns are not only expressions, they are also predicates. The only limitation to your pattern is that you must be
 able to express it in a single path. You can not use commas between multiple paths like you do in `MATCH`. You can achieve
@@ -251,9 +251,9 @@ subgraphs where `a` and `b` do not have a directed relationship chain between th
   @Test def in_operator() {
     testQuery(
       title = "IN operator",
-      text = "To check if an element exists in a collection, you can use the `IN` operator.",
+      text = "To check if an element exists in a list, you can use the `IN` operator.",
       queryText = """match (a) where a.name IN ["Peter", "Tobias"] return a""",
-      optionalResultExplanation = "This query shows how to check if a property exists in a literal collection.",
+      optionalResultExplanation = "This query shows how to check if a property exists in a literal list.",
       assertions = (p) => assertEquals(List(node("Tobias"),node("Peter")), p.columnAs[Node]("a").toList))
   }
 

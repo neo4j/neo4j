@@ -90,7 +90,7 @@ include::filtering-on-relationship-type.asciidoc[]
 
 :leveloffset: 2
 
-== Collections ==
+== Lists ==
 
 :leveloffset: 3
 

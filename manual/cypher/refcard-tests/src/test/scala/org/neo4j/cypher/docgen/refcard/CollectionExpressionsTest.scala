@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 
 class CollectionExpressionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
-  val title = "Collection Expressions"
+  val title = "List Expressions"
   val css = "general c3-2 c4-4 c5-3 c6-6"
   override val linkId = "query-function"
 
@@ -68,7 +68,7 @@ RETURN
 size({coll})
 ###
 
-Number of elements in the collection.
+Number of elements in the list.
 
 ###assertion=returns-one parameters=coll
 RETURN
@@ -77,8 +77,8 @@ head({coll}), last({coll}), tail({coll})
 ###
 
 +head+ returns the first, +last+ the last element
-of the collection. +tail+ returns all but the first element.
-All return `NULL` for an empty collection.
+of the list. +tail+ returns all but the first element.
+All return `NULL` for an empty list.
 
 ###assertion=returns-one parameters=value
 MATCH path = (n)-->(m)
@@ -99,7 +99,7 @@ RETURN
 extract(x IN coll | x.prop)
 ###
 
-A collection of the value of the expression for each element in the original collection.
+A list of the value of the expression for each element in the original list.
 
 ###assertion=returns-one parameters=value
 MATCH (n) WHERE id(n) = %A%
@@ -109,7 +109,7 @@ RETURN
 filter(x IN coll WHERE x.prop <> {value})
 ###
 
-A filtered collection of the elements where the predicate is `TRUE`.
+A filtered list of the elements where the predicate is `TRUE`.
 
 ###assertion=returns-one
 MATCH (n) WHERE id(n) = %A%
@@ -119,6 +119,6 @@ RETURN
 reduce(s = "", x IN coll | s + x.prop)
 ###
 
-Evaluate expression for each element in the collection, accumulate the results.
+Evaluate expression for each element in the list, accumulate the results.
              """
 }

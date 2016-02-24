@@ -93,7 +93,7 @@ RETURN movie, filter(actor IN cast WHERE actor.name STARTS WITH "M")
 
 Sometimes you have collected information into a list, but want to use each element individually as a row.
 For instance, you might want to further match patterns in the graph.
-Or you passed in a collection of values but now want to create or match a node or relationship for each element.
+Or you passed in a list of values but now want to create or match a node or relationship for each element.
 Then you can use the `UNWIND` clause to unroll a list into a sequence of rows again.
 
 For instance, a query to find the top 3 co-actors and then follow their movies and again list the cast for each of those movies:

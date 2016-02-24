@@ -70,7 +70,7 @@ RETURN
 ###
 
 Literal maps are declared in curly braces much like property maps.
-Nested maps and collections are supported.
+Nested maps and list are supported.
 
 ###assertion=returns-one-merge parameters=map
 //

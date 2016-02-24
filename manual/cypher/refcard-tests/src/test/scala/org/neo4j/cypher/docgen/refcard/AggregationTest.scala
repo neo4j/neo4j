@@ -94,7 +94,7 @@ RETURN
 collect(n.property)
 ###
 
-Collection from the values, ignores `NULL`.
+List from the values, ignores `NULL`.
 
 ###assertion=returns-one
 MATCH (n) WHERE id(n) IN [%A%, %B%, %C%]
