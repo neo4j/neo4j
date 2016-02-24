@@ -39,7 +39,7 @@ import javax.rmi.ssl.SslRMIServerSocketFactory;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementSupport;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
