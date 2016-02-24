@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-// Generated from /Users/mats/gitRoots/3.0-main/neo4j/community/cypher/compatibility-suite/src/main/resources/FeatureResults.g4 by ANTLR 4.5.1
+// Generated from /Users/mats/gitRoots/3.0-copy/neo4j/community/cypher/compatibility-suite/src/main/resources/FeatureResults.g4 by ANTLR 4.5.1
 package cypher.feature.parser.generated;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -59,6 +59,18 @@ public class FeatureResultsBaseListener implements FeatureResultsListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterNodeDesc(FeatureResultsParser.NodeDescContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitNodeDesc(FeatureResultsParser.NodeDescContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterRelationship(FeatureResultsParser.RelationshipContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -66,6 +78,18 @@ public class FeatureResultsBaseListener implements FeatureResultsListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitRelationship(FeatureResultsParser.RelationshipContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterRelationshipDesc(FeatureResultsParser.RelationshipDescContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitRelationshipDesc(FeatureResultsParser.RelationshipDescContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -83,13 +107,49 @@ public class FeatureResultsBaseListener implements FeatureResultsListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterPathElement(FeatureResultsParser.PathElementContext ctx) { }
+	@Override public void enterPathBody(FeatureResultsParser.PathBodyContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitPathElement(FeatureResultsParser.PathElementContext ctx) { }
+	@Override public void exitPathBody(FeatureResultsParser.PathBodyContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterPathLink(FeatureResultsParser.PathLinkContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitPathLink(FeatureResultsParser.PathLinkContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterForwardsRelationship(FeatureResultsParser.ForwardsRelationshipContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitForwardsRelationship(FeatureResultsParser.ForwardsRelationshipContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterBackwardsRelationship(FeatureResultsParser.BackwardsRelationshipContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBackwardsRelationship(FeatureResultsParser.BackwardsRelationshipContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
