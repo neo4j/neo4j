@@ -44,6 +44,8 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.record.NeoStoreActualRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -591,6 +593,42 @@ public class MetaDataStoreTest
                 actualValues.add( record.getValue() );
                 return false;
             } );
+        }
+
+        List<Long> expectedValues = Arrays.stream( positions ).map(
+                p -> p.ordinal() + 1L ).collect( Collectors.toList() );
+
+        assertThat( actualValues, is( expectedValues ) );
+    }
+
+    @Test
+    public void mustSupportScanningAllRecordsWithRecordCursor() throws Exception
+    {
+        File file = new File( STORE_DIR, MetaDataStore.DEFAULT_NAME );
+        fs.mkdir( STORE_DIR );
+        fs.create( file ).close();
+        MetaDataStore.Position[] positions = MetaDataStore.Position.values();
+        for ( MetaDataStore.Position position : positions )
+        {
+            MetaDataStore.setRecord( pageCache, file, position, position.ordinal() + 1 );
+        }
+
+        List<Long> actualValues = new ArrayList<>();
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            NeoStoreActualRecord record = store.newRecord();
+            try ( RecordCursor<NeoStoreActualRecord> cursor = store.newRecordCursor( record ) )
+            {
+                store.placeRecordCursor( 0, cursor, RecordLoad.NORMAL );
+                long highId = store.getHighId();
+                for ( long id = 0; id < highId; id++ )
+                {
+                    if ( cursor.next( id ) )
+                    {
+                        actualValues.add( record.getValue() );
+                    }
+                }
+            }
         }
 
         List<Long> expectedValues = Arrays.stream( positions ).map(
