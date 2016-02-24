@@ -22,6 +22,7 @@ package cypher.feature.parser
 import java.util
 
 import cucumber.api.DataTable
+import cypher.feature.parser.matchers.ValueMatcher
 
 import scala.collection.JavaConverters._
 
@@ -32,6 +33,16 @@ object scalaResultsParser {
 
   def apply(input: String): AnyRef = {
     parser.parse(input, listener)
+  }
+}
+
+object matcherParser extends (String => ValueMatcher) {
+
+  private def parser = new ResultsParser
+  private val listener = new CypherMatchersCreator
+
+  def apply(input: String): ValueMatcher = {
+    parser.matcherParse(input, listener)
   }
 }
 

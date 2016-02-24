@@ -21,6 +21,7 @@ package cypher.feature.parser;
 
 import cypher.feature.parser.generated.FeatureResultsLexer;
 import cypher.feature.parser.generated.FeatureResultsParser;
+import cypher.feature.parser.matchers.ValueMatcher;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
@@ -39,6 +40,13 @@ public class ResultsParser
     }
 
     Object parse( String value, CypherValuesCreator listener )
+    {
+        lexer.setInputStream( new ANTLRInputStream( value ) );
+        walker.walk( listener, parser.value() );
+        return listener.parsed();
+    }
+
+    ValueMatcher matcherParse( String value, CypherMatchersCreator listener )
     {
         lexer.setInputStream( new ANTLRInputStream( value ) );
         walker.walk( listener, parser.value() );
