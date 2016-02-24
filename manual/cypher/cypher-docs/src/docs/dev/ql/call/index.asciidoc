@@ -34,3 +34,12 @@ include::call-a-procedure-with-parameter-arguments.asciidoc[]
 :leveloffset: 2
 
 include::call-a-procedure-with-mixed-literal-and-parameter-arguments.asciidoc[]
+
+:leveloffset: 2
+
+include::call-a-procedure-within-a-complex-query.asciidoc[]
+
+:leveloffset: 2
+
+include::call-a-procedure-within-a-complex-query-and-rename-its-outputs.asciidoc[]
+
