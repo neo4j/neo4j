@@ -22,7 +22,9 @@ package org.neo4j.consistency.checking.full;
 import java.util.Iterator;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.consistency.checking.full.QueueDistribution.QueueDistributor;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 
@@ -37,7 +39,8 @@ public class RecordDistributor
             int queueSize,
             Iterable<RECORD> records,
             ProgressListener progress,
-            RecordProcessor<RECORD> processor )
+            RecordProcessor<RECORD> processor,
+            QueueDistributor<RECORD> idDistributor )
     {
         Iterator<RECORD> iterator = records.iterator();
 
@@ -55,24 +58,32 @@ public class RecordDistributor
             return;
         }
 
-        ArrayBlockingQueue<RECORD>[] recordQ = new ArrayBlockingQueue[numberOfThreads];
-        Workers<Worker<RECORD>> workers = new Workers<>( workerNames );
+        final ArrayBlockingQueue<RECORD>[] recordQ = new ArrayBlockingQueue[numberOfThreads];
+        final Workers<Worker<RECORD>> workers = new Workers<>( workerNames );
+        final AtomicInteger idGroup = new AtomicInteger( -1 );
         for ( int threadId = 0; threadId < numberOfThreads; threadId++ )
         {
             recordQ[threadId] = new ArrayBlockingQueue<>( queueSize );
-            workers.start( new Worker<>( recordQ[threadId], processor ) );
+            workers.start( new Worker<>( threadId, idGroup, recordQ[threadId], processor ) );
         }
 
-        int[] recsProcessed = new int[numberOfThreads];
-        int qIndex = 0;
+        final int[] recsProcessed = new int[numberOfThreads];
+        RecordConsumer<RECORD> recordConsumer = new RecordConsumer<RECORD>()
+        {
+            @Override
+            public void accept( RECORD record, int qIndex ) throws InterruptedException
+            {
+                recordQ[qIndex].put( record );
+                recsProcessed[qIndex]++;
+            }
+        };
 
         RECORD last = null;
         while ( iterator.hasNext() )
         {
             try
             {
-                // Put records round-robin style into the queue of each thread, where a Worker
-                // will sit and pull from and process.
+                // Put records into the queues using the queue distributor. Each Worker will pull and process.
                 RECORD record = iterator.next();
 
                 // Detect the last record and defer processing that until after all the others
@@ -83,9 +94,7 @@ public class RecordDistributor
                     last = record;
                     break;
                 }
-                qIndex = (qIndex + 1)%numberOfThreads;
-                recordQ[qIndex].put( record );
-                recsProcessed[qIndex]++;
+                idDistributor.distribute( record, recordConsumer );
             }
             catch ( InterruptedException e )
             {
@@ -120,9 +129,9 @@ public class RecordDistributor
     {
         private final RecordProcessor<RECORD> processor;
 
-        Worker( BlockingQueue<RECORD> recordsQ, RecordProcessor<RECORD> processor )
+        Worker( int id, AtomicInteger idGroup, BlockingQueue<RECORD> recordsQ, RecordProcessor<RECORD> processor )
         {
-            super( recordsQ );
+            super( id, idGroup, recordsQ );
             this.processor = processor;
         }
 
@@ -131,5 +140,24 @@ public class RecordDistributor
         {
             processor.process( record );
         }
+    }
+
+    /**
+     * Consumers records from a {@link QueueDistribution}, feeding into correct queue.
+     */
+    interface RecordConsumer<RECORD>
+    {
+        void accept( RECORD record, int qIndex ) throws InterruptedException;
+    }
+
+    public static long calculateRecodsPerCpu( long highId, int numberOfThreads )
+    {
+        boolean hasRest = highId % numberOfThreads > 0;
+        long result = highId / numberOfThreads;
+        if ( hasRest )
+        {
+            result++;
+        }
+        return result;
     }
 }

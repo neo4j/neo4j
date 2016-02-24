@@ -24,7 +24,16 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.consistency.checking.full.QueueDistribution.QueueDistributor;
+import org.neo4j.consistency.checking.full.QueueDistribution.RelationshipNodesQueueDistributor;
+import org.neo4j.consistency.checking.full.QueueDistribution.RoundRobinQueueDistributor;
+import org.neo4j.consistency.checking.full.RecordDistributor.RecordConsumer;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import static java.util.Arrays.asList;
 
@@ -63,9 +72,43 @@ public class RecordDistributorTest
         };
 
         // WHEN
-        RecordDistributor.distributeRecords( count, getClass().getSimpleName(), 100, records, NONE, processor );
+        RecordDistributor.distributeRecords( count, getClass().getSimpleName(), 100, records, NONE, processor,
+                new RoundRobinQueueDistributor<Integer>( count ) );
 
         // THEN
         assertEquals( count, calls.get() );
+    }
+
+    @Test
+    public void shouldDistributeRelationshipRecordsByNodeId() throws Exception
+    {
+        // GIVEN
+        int numberOfThreads = 5;
+        QueueDistributor<RelationshipRecord> distributor = new RelationshipNodesQueueDistributor( 5 );
+        RecordConsumer<RelationshipRecord> consumer = mock( RecordConsumer.class );
+
+        // WHEN/THEN
+        RelationshipRecord relationship = relationship( 0, 0, 1 );
+        distributor.distribute( relationship, consumer );
+        verify( consumer, times( 1 ) ).accept( relationship, 0 );
+
+        relationship = relationship( 1, 0, 7 );
+        distributor.distribute( relationship, consumer );
+        verify( consumer, times( 1 ) ).accept( relationship, 0 );
+        verify( consumer, times( 1 ) ).accept( relationship, 1 );
+
+        relationship = relationship( 3, 26, 11 );
+        distributor.distribute( relationship, consumer );
+        verify( consumer, times( 1 ) ).accept( relationship, 5 );
+        verify( consumer, times( 1 ) ).accept( relationship, 2 );
+    }
+
+    private RelationshipRecord relationship( long id, long startNodeId, long endNodeId )
+    {
+        RelationshipRecord record = new RelationshipRecord( id );
+        record.setInUse( true );
+        record.setFirstNode( startNodeId );
+        record.setSecondNode( endNodeId );
+        return record;
     }
 }

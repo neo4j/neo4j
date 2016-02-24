@@ -25,6 +25,7 @@ import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.SchemaRecordCheck;
 import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.full.QueueDistribution.QueueDistributor;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
@@ -205,6 +206,7 @@ public class StoreProcessor extends AbstractStoreProcessor
 
     public <R extends AbstractBaseRecord> void applyFilteredParallel( final RecordStore<R> store,
             final ProgressListener progressListener, int numberOfThreads, long recordsPerCpu,
+            final QueueDistributor<R> distributor,
             Predicate<? super R>... filters )
             throws Exception
     {
@@ -223,6 +225,6 @@ public class StoreProcessor extends AbstractStoreProcessor
             }
         };
         distributeRecords( numberOfThreads, getClass().getSimpleName(), qSize,
-                scan( store, stage.isForward(), filters ), progressListener, processor );
+                scan( store, stage.isForward(), filters ), progressListener, processor, distributor );
     }
 }

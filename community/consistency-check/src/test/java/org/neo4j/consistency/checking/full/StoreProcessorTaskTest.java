@@ -52,7 +52,8 @@ public class StoreProcessorTaskTest
         StoreProcessorTask<NodeRecord> task = new StoreProcessorTask<>( "nodes", Statistics.NONE, 1,
                 store, null, "nodes", ProgressMonitorFactory.NONE.multipleParts( "check" ),
                 CacheAccess.EMPTY,
-                singlePassProcessor );
+                singlePassProcessor,
+                QueueDistribution.ROUND_ROBIN );
 
         // when
         task.run();

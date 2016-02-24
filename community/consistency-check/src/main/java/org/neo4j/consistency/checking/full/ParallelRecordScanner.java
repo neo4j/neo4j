@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checking.full;
 
 import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.full.QueueDistribution.QueueDistributor;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.helpers.progress.ProgressMonitorFactory.MultiPartBuilder;
 import org.neo4j.kernel.api.direct.BoundedIterable;
@@ -30,22 +31,26 @@ import static org.neo4j.consistency.checking.full.RecordDistributor.distributeRe
 public class ParallelRecordScanner<RECORD> extends RecordScanner<RECORD>
 {
     private final CacheAccess cacheAccess;
+    private final QueueDistribution distribution;
 
     public ParallelRecordScanner( String name, Statistics statistics, int threads, BoundedIterable<RECORD> store,
             MultiPartBuilder builder, RecordProcessor<RECORD> processor, CacheAccess cacheAccess,
+            QueueDistribution distribution,
             IterableStore... warmUpStores )
     {
         super( name, statistics, threads, store, builder, processor, warmUpStores );
         this.cacheAccess = cacheAccess;
+        this.distribution = distribution;
     }
 
     @Override
     protected void scan()
     {
-        long recordsPerCPU = (store.maxCount() / numberOfThreads) + 1;
+        long recordsPerCPU = RecordDistributor.calculateRecodsPerCpu( store.maxCount(), numberOfThreads );
         cacheAccess.prepareForProcessingOfSingleStore( recordsPerCPU );
 
+        QueueDistributor<RECORD> distributor = distribution.distributor( recordsPerCPU, numberOfThreads );
         distributeRecords( numberOfThreads, getClass().getSimpleName() + "-" + name,
-                DEFAULT_QUEUE_SIZE, store, progress, processor );
+                DEFAULT_QUEUE_SIZE, store, progress, processor, distributor );
     }
 }

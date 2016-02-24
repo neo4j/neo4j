@@ -37,10 +37,11 @@ public class SchemaStoreProcessorTask<R extends AbstractBaseRecord> extends Stor
             SchemaRecordCheck schemaRecordCheck,
             ProgressMonitorFactory.MultiPartBuilder builder,
             CacheAccess cacheAccess,
-            StoreProcessor processor )
+            StoreProcessor processor,
+            QueueDistribution distribution )
     {
         super( name, statistics, threads, store, storeAccess, builderPrefix,
-                builder, cacheAccess, processor );
+                builder, cacheAccess, processor, distribution );
         this.schemaRecordCheck = schemaRecordCheck;
     }
 
