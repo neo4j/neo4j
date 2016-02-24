@@ -80,9 +80,9 @@ public class Config implements DiagnosticsProvider, Configuration
         return new Config();
     }
 
-    public Config()
+    private Config()
     {
-        this( new HashMap<>(), Collections.<Class<?>>emptyList() );
+        this( new HashMap<>() );
     }
 
     public Config( Map<String, String> inputParams )

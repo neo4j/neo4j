@@ -33,6 +33,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.shell.ShellSettings;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
 
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
@@ -45,7 +46,7 @@ public class BaseServerConfigLoader
             throw new IllegalArgumentException( "log cannot be null ");
         }
 
-        Config config = new Config();
+        Config config = new Config( emptyMap(), getDefaultSettingsClasses() );
         config.setLogger( log );
 
         // For now, don't print warnings if this file is not specified
@@ -58,8 +59,6 @@ public class BaseServerConfigLoader
 
         overrideEmbeddedDefaults( config );
         applyUserOverrides( config, configOverrides );
-
-        config.registerSettingsClasses( getDefaultSettingsClasses() );
 
         return config;
     }

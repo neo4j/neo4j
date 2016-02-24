@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
@@ -37,6 +37,7 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
@@ -62,8 +63,7 @@ public class ConfiguringPageCacheFactoryTest
         // Given
         final int pageSize = 4096;
         final int maxPages = 60;
-        Config config = new Config();
-        config.applyChanges( stringMap(
+        Config config = new Config( stringMap(
                 mapped_memory_page_size.name(), "" + pageSize,
                 pagecache_memory.name(), Integer.toString( pageSize * maxPages ) ) );
 
@@ -83,8 +83,7 @@ public class ConfiguringPageCacheFactoryTest
     public void mustUseConfiguredPageSwapper() throws Exception
     {
         // Given
-        Config config = new Config();
-        config.applyChanges( stringMap(
+        Config config = new Config( stringMap(
                 pagecache_memory.name(), "8m",
                 pagecache_swapper.name(), "test" ) );
 
@@ -102,8 +101,7 @@ public class ConfiguringPageCacheFactoryTest
         // Given
         int cachePageSizeHint = 16 * 1024;
         PageSwapperFactoryForTesting.cachePageSizeHint.set( cachePageSizeHint );
-        Config config = new Config();
-        config.applyChanges( stringMap(
+        Config config = new Config( stringMap(
                 GraphDatabaseSettings.pagecache_swapper.name(), "test" ) );
 
         // When
@@ -124,8 +122,7 @@ public class ConfiguringPageCacheFactoryTest
         int cachePageSizeHint = 16 * 1024;
         PageSwapperFactoryForTesting.cachePageSizeHint.set( cachePageSizeHint );
         PageSwapperFactoryForTesting.cachePageSizeHintIsStrict.set( true );
-        Config config = new Config();
-        config.applyChanges( stringMap(
+        Config config = new Config( stringMap(
                 GraphDatabaseSettings.mapped_memory_page_size.name(), "4096",
                 GraphDatabaseSettings.pagecache_swapper.name(), "test" ) );
 

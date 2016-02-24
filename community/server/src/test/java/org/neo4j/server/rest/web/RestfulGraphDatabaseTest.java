@@ -68,7 +68,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static java.lang.Long.parseLong;
-import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -95,25 +95,27 @@ public class RestfulGraphDatabaseTest
     private static Database database;
     private static GraphDbHelper helper;
     private static EntityOutputFormat output;
-    private static LeaseManager leaseManager;
     private static GraphDatabaseAPI graph;
 
     @BeforeClass
     public static void doBefore() throws IOException
     {
-        graph = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        database = new WrappedDatabase(graph);
+        graph = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        database = new WrappedDatabase( graph );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
-        leaseManager = new LeaseManager( new FakeClock() );
-
-        Config config = new Config();
-        config.registerSettingsClasses( asList( ServerSettings.class, GraphDatabaseSettings.class ));
-
-        service = new RestfulGraphDatabase( new JsonFormat(), output,
-                new DatabaseActions( leaseManager, true, database.getGraph() ), new ConfigWrappingConfiguration(
-                config ) );
-        service = new TransactionWrappingRestfulGraphDatabase( graph, service );
+        service = new TransactionWrappingRestfulGraphDatabase(
+                graph,
+                new RestfulGraphDatabase(
+                        new JsonFormat(),
+                        output,
+                        new DatabaseActions( new LeaseManager( new FakeClock() ), true, database.getGraph() ),
+                        new ConfigWrappingConfiguration(
+                                new Config( emptyMap(),
+                                        ServerSettings.class, GraphDatabaseSettings.class )
+                        )
+                )
+        );
     }
 
     @Before
@@ -348,7 +350,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith200ForGetNodeProperties() throws Exception
     {
         long nodeId = helper.createNode();
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         helper.setNodeProperties( nodeId, properties );
         Response response = service.getAllNodeProperties( nodeId );
@@ -361,7 +363,7 @@ public class RestfulGraphDatabaseTest
     public void shouldGetPropertiesForGetNodeProperties() throws Exception
     {
         long nodeId = helper.createNode();
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "number", 15 );
         properties.put( "double", 15.7 );
@@ -592,7 +594,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith204ForRemoveNodeProperties()
     {
         long nodeId = helper.createNode();
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "number", 15 );
         helper.setNodeProperties( nodeId, properties );
@@ -604,7 +606,7 @@ public class RestfulGraphDatabaseTest
     public void shouldBeAbleToRemoveNodeProperties()
     {
         long nodeId = helper.createNode();
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "number", 15 );
         helper.setNodeProperties( nodeId, properties );
@@ -626,7 +628,7 @@ public class RestfulGraphDatabaseTest
     public void shouldBeAbleToRemoveNodeProperty()
     {
         long nodeId = helper.createNode();
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "number", 15 );
         helper.setNodeProperties( nodeId, properties );
@@ -639,7 +641,7 @@ public class RestfulGraphDatabaseTest
     public void shouldGet404WhenRemovingNonExistingProperty() throws Exception
     {
         long nodeId = helper.createNode();
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         properties.put( "number", 15 );
         helper.setNodeProperties( nodeId, properties );
@@ -679,7 +681,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith200AndDataForGetRelationshipProperties() throws Exception
     {
         long relationshipId = helper.createRelationship( "knows" );
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "foo", "bar" );
         helper.setRelationshipProperties( relationshipId, properties );
         Response response = service.getAllRelationshipProperties( relationshipId );
@@ -697,7 +699,7 @@ public class RestfulGraphDatabaseTest
     {
 
         long relationshipId = helper.createRelationship( "knows" );
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "some-key", "some-value" );
         helper.setRelationshipProperties( relationshipId, properties );
 
@@ -829,7 +831,7 @@ public class RestfulGraphDatabaseTest
         String json = "{\"name\": \"Mattias\", \"age\": 30}";
         Response response = service.setAllRelationshipProperties( relationshipId, json );
         assertEquals( 204, response.getStatus() );
-        Map<String, Object> setProperties = new HashMap<String, Object>();
+        Map<String, Object> setProperties = new HashMap<>();
         setProperties.put( "name", "Mattias" );
         setProperties.put( "age", 30 );
         assertEquals( setProperties, helper.getRelationshipProperties( relationshipId ) );
@@ -981,7 +983,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getNodeIndexRoot();
         assertEquals( 200, response.getStatus() );
 
-        try ( Transaction transaction = graph.beginTx() )
+        try ( Transaction ignored = graph.beginTx() )
         {
             Map<String, Object> resultAsMap = output.getResultAsMap();
             assertThat( resultAsMap.size(), is( numberOfAutoIndexesWhichCouldNotBeDeletedAtTestSetup + 1 ) );
@@ -1004,7 +1006,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getRelationshipIndexRoot();
         assertEquals( 200, response.getStatus() );
 
-        try ( Transaction transaction = graph.beginTx() )
+        try ( Transaction ignored = graph.beginTx() )
         {
             Map<String, Object> resultAsMap = output.getResultAsMap();
             assertThat( resultAsMap.size(), is( 1 ) );
@@ -1058,7 +1060,7 @@ public class RestfulGraphDatabaseTest
         URI nodeUri = (URI) response.getMetadata()
                 .getFirst( "Location" );
 
-        Map<String, String> postBody = new HashMap<String, String>();
+        Map<String, String> postBody = new HashMap<>();
         postBody.put( "key", "mykey" );
         postBody.put( "value", "my/key" );
         postBody.put( "uri", nodeUri.toString() );
@@ -1101,7 +1103,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldBeAbleToIndexNodeUniquely()
     {
-        Map<String, String> postBody = new HashMap<String, String>();
+        Map<String, String> postBody = new HashMap<>();
         postBody.put( "key", "mykey" );
         postBody.put( "value", "my/key" );
 
@@ -1121,7 +1123,7 @@ public class RestfulGraphDatabaseTest
     public void shouldNotBeAbleToIndexNodeUniquelyWithBothUriAndPropertiesInPayload() throws Exception
     {
         URI node = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
-        Map<String, Object> postBody = new HashMap<String, Object>();
+        Map<String, Object> postBody = new HashMap<>();
         postBody.put( "key", "mykey" );
         postBody.put( "value", "my/key" );
         postBody.put( "uri", node.toString() );
@@ -1138,7 +1140,7 @@ public class RestfulGraphDatabaseTest
     {
         final String key = "somekey", value = "somevalue";
 
-        Map<String, Object> postBody = new HashMap<String, Object>();
+        Map<String, Object> postBody = new HashMap<>();
         postBody.put( "key", key );
         postBody.put( "value", value );
 
@@ -1159,10 +1161,10 @@ public class RestfulGraphDatabaseTest
     {
         final String key = "a_key", value = "a value";
 
-        Map<String, Object> postBody = new HashMap<String, Object>();
+        Map<String, Object> postBody = new HashMap<>();
         postBody.put( "key", key );
         postBody.put( "value", value );
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "name", "Jürgen" );
         properties.put( "age", "42" );
         properties.put( "occupation", "crazy" );
@@ -1183,13 +1185,13 @@ public class RestfulGraphDatabaseTest
     {
         URI node = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
 
-        Map<String, String> createRel = new HashMap<String, String>();
+        Map<String, String> createRel = new HashMap<>();
         createRel.put( "to", node.toString() );
         createRel.put( "type", "knows" );
         URI rel = (URI) service.createRelationship( helper.createNode(), JsonHelper.createJsonFrom( createRel
         ) ).getMetadata().getFirst( "Location" );
 
-        Map<String, String> indexPostBody = new HashMap<String, String>();
+        Map<String, String> indexPostBody = new HashMap<>();
         indexPostBody.put( "key", "mykey" );
         indexPostBody.put( "value", "myvalue" );
 
@@ -1201,7 +1203,7 @@ public class RestfulGraphDatabaseTest
         response = service.addToRelationshipIndex( "", "", "", JsonHelper.createJsonFrom( indexPostBody ) );
         assertEquals( "http bad request when trying to create an index with empty name", 400, response.getStatus() );
 
-        Map<String, String> basicIndexCreation = new HashMap<String, String>();
+        Map<String, String> basicIndexCreation = new HashMap<>();
         basicIndexCreation.put( "name", "" );
 
         response = service.jsonCreateNodeIndex( JsonHelper.createJsonFrom( basicIndexCreation ) );
@@ -1215,12 +1217,12 @@ public class RestfulGraphDatabaseTest
     public void shouldNotBeAbleToIndexNodeUniquelyWithRequiredParameterMissing() throws Exception
     {
         service.createNode( null ).getMetadata().getFirst( "Location" );
-        Map<String, Object> body = new HashMap<String, Object>();
+        Map<String, Object> body = new HashMap<>();
         body.put( "key", "mykey" );
         body.put( "value", "my/key" );
         for ( String key : body.keySet() )
         {
-            Map<String, Object> postBody = new HashMap<String, Object>( body );
+            Map<String, Object> postBody = new HashMap<>( body );
             postBody.remove( key );
             Response response = service.addToNodeIndex( "unique-nodes", "", "",
                     JsonHelper.createJsonFrom( postBody ) );
@@ -1234,7 +1236,7 @@ public class RestfulGraphDatabaseTest
     {
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
-        Map<String, String> postBody = new HashMap<String, String>();
+        Map<String, String> postBody = new HashMap<>();
         postBody.put( "key", "mykey" );
         postBody.put( "value", "my/key" );
         postBody.put( "start", start.toString() );
@@ -1261,7 +1263,7 @@ public class RestfulGraphDatabaseTest
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
 
-        Map<String, Object> postBody = new HashMap<String, Object>();
+        Map<String, Object> postBody = new HashMap<>();
         postBody.put( "key", key );
         postBody.put( "value", value );
         postBody.put( "start", start.toString() );
@@ -1287,13 +1289,13 @@ public class RestfulGraphDatabaseTest
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
 
-        Map<String, Object> postBody = new HashMap<String, Object>();
+        Map<String, Object> postBody = new HashMap<>();
         postBody.put( "key", key );
         postBody.put( "value", value );
         postBody.put( "start", start.toString() );
         postBody.put( "end", end.toString() );
         postBody.put( "type", "knows" );
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         properties.put( "name", "Jürgen" );
         properties.put( "age", "42" );
         properties.put( "occupation", "crazy" );
@@ -1318,14 +1320,14 @@ public class RestfulGraphDatabaseTest
         URI rel = (URI) service.createRelationship( parseLong( path.substring( path.lastIndexOf( '/' ) + 1 ) ),
                 "{\"to\":\"" + end + "\",\"type\":\"knows\"}" ).getMetadata()
                 .getFirst( "Location" );
-        Map<String, Object> unwanted = new HashMap<String, Object>();
+        Map<String, Object> unwanted = new HashMap<>();
         unwanted.put( "properties", new HashMap() );
         unwanted.put( "start", start.toString() );
         unwanted.put( "end", end.toString() );
         unwanted.put( "type", "friend" );
         for ( Map.Entry<String, Object> bad : unwanted.entrySet() )
         {
-            Map<String, Object> postBody = new HashMap<String, Object>();
+            Map<String, Object> postBody = new HashMap<>();
             postBody.put( "key", "mykey" );
             postBody.put( "value", "my/key" );
             postBody.put( "uri", rel.toString() );
@@ -1342,7 +1344,7 @@ public class RestfulGraphDatabaseTest
     {
         URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
         URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
-        Map<String, Object> body = new HashMap<String, Object>();
+        Map<String, Object> body = new HashMap<>();
         body.put( "key", "mykey" );
         body.put( "value", "my/key" );
         body.put( "start", start.toString() );
@@ -1350,7 +1352,7 @@ public class RestfulGraphDatabaseTest
         body.put( "type", "knows" );
         for ( String key : body.keySet() )
         {
-            Map<String, Object> postBody = new HashMap<String, Object>( body );
+            Map<String, Object> postBody = new HashMap<>( body );
             postBody.remove( key );
             Response response = service.addToRelationshipIndex( "unique-relationships", "", "",
                     JsonHelper.createJsonFrom( postBody ) );
@@ -1731,7 +1733,7 @@ public class RestfulGraphDatabaseTest
     {
         long startNode = helper.createNode();
 
-        try ( Transaction transaction = graph.beginTx() )
+        try ( Transaction ignored = graph.beginTx() )
         {
             Response response = service.traverse( startNode, TraverserReturnType.node, "" );
             assertEquals( Status.OK.getStatusCode(), response.getStatus() );
@@ -1839,10 +1841,10 @@ public class RestfulGraphDatabaseTest
         Response response = service.singlePath( n1, payload );
 
         assertThat( response.getStatus(), is( 200 ) );
-        try ( Transaction transaction = graph.beginTx() )
+        try ( Transaction ignored = graph.beginTx() )
         {
             Map<String, Object> resultAsMap = output.getResultAsMap();
-            assertThat( (Integer) resultAsMap.get( "length" ), is( 1 ) );
+            assertThat( resultAsMap.get( "length" ), is( 1 ) );
         }
     }
 
@@ -1859,7 +1861,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.allPaths( n1, payload );
 
         assertThat( response.getStatus(), is( 200 ) );
-        try ( Transaction transaction = graph.beginTx() )
+        try ( Transaction ignored = graph.beginTx() )
         {
             List<Object> resultAsList = output.getResultAsList();
             assertThat( resultAsList.size(), is( 1 ) );
@@ -1962,7 +1964,7 @@ public class RestfulGraphDatabaseTest
 
         service.createNode( "{\"myAutoIndexedProperty\" : \"value\"}" );
 
-        try ( Transaction transaction = graph.beginTx() )
+        try ( Transaction ignored = graph.beginTx() )
         {
             IndexHits<Node> indexResult = database.getGraph().index().getNodeAutoIndexer().getAutoIndex().get(
                     "myAutoIndexedProperty", "value" );
