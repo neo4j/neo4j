@@ -38,7 +38,7 @@ public class TestOnlyEdgeDiscoveryService extends LifecycleAdapter implements Ed
 
     private InstanceId toEdge( Config config )
     {
-        return new InstanceId( Integer.valueOf( config.getParams().get( ClusterSettings.server_id.name() ) ) );
+        return config.get( ClusterSettings.server_id );
     }
 
     @Override

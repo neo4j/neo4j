@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -32,6 +27,11 @@ import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -62,6 +62,7 @@ import org.neo4j.unsafe.batchinsert.BatchInserters;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
@@ -371,7 +372,6 @@ public class UpgradeStoreIT
 
     private static class RelationshipTypeTokenStoreWithOneOlderVersion extends RelationshipTypeTokenStore
     {
-        private static final Config config = new Config( stringMap() );
         private boolean versionCalled;
 
         public RelationshipTypeTokenStoreWithOneOlderVersion(
@@ -380,8 +380,8 @@ public class UpgradeStoreIT
                 FileSystemAbstraction fs,
                 PageCache pageCache )
         {
-            super( fileName, config, new NoLimitIdGeneratorFactory( fs ), pageCache, NullLogProvider.getInstance(),
-                    stringStore, select(config, NullLogService.getInstance() ) );
+            super( fileName, new Config(), new NoLimitIdGeneratorFactory( fs ), pageCache,
+                    NullLogProvider.getInstance(), stringStore, select(new Config(), NullLogService.getInstance() ) );
         }
 
         @Override
