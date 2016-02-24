@@ -39,8 +39,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldNotAllowWriteAccessInReadMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.setMode( AccessMode.READ );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.READ );
 
         // Expect
         exception.expect( KernelException.class );
@@ -53,8 +52,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldNotAllowSchemaWriteAccessInReadMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.setMode( AccessMode.READ );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.READ );
 
         // Expect
         exception.expect( KernelException.class );
@@ -67,8 +65,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldNotAllowSchemaWriteAccessInWriteMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.setMode( AccessMode.WRITE );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.WRITE );
 
         // Expect
         exception.expect( KernelException.class );
@@ -81,8 +78,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldAllowWritesInWriteMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.setMode( AccessMode.WRITE );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.WRITE );
 
         // When
         DataWriteOperations writes = tx.acquireStatement().dataWriteOperations();
@@ -95,8 +91,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldAllowWritesInFullMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.setMode( AccessMode.FULL );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.FULL );
 
         // When
         DataWriteOperations writes = tx.acquireStatement().dataWriteOperations();
@@ -109,8 +104,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldAllowSchemaWriteAccessInFullMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction();
-        tx.setMode( AccessMode.FULL );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.FULL );
 
         // When
         SchemaWriteOperations writes = tx.acquireStatement().schemaWriteOperations();

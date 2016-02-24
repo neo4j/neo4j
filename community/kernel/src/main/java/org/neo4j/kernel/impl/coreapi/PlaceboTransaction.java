@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 
@@ -88,5 +89,11 @@ public class PlaceboTransaction implements InternalTransaction
     public KernelTransaction.Type transactionType()
     {
         return currentTransaction.get().transactionType();
+    }
+
+    @Override
+    public AccessMode mode()
+    {
+        return currentTransaction.get().mode();
     }
 }

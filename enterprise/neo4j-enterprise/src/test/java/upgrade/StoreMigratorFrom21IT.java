@@ -37,12 +37,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
@@ -158,7 +159,7 @@ public class StoreMigratorFrom21IT
         // Verify that there are no two properties on the entities, that have the same key:
         // (This is important because the verification above cannot tell if we have two keys with the same value)
         KernelAPI kernel = dependencyResolver.resolveDependency( KernelAPI.class );
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit );
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.READ );
               Statement statement = tx.acquireStatement() )
         {
             IteratorUtil.asUniqueSet( statement.readOperations().nodeGetPropertyKeys( 0 ) );

@@ -79,16 +79,17 @@ public class KernelTransactionTestBase
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
     }
 
-    public KernelTransactionImplementation newTransaction()
+    public KernelTransactionImplementation newTransaction( AccessMode accessMode )
     {
-        return newTransaction( 0 );
+        return newTransaction( 0, accessMode );
     }
 
-    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted )
+    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode )
     {
         return new KernelTransactionImplementation( null, schemaWriteGuard, hooks, null, null, headerInformationFactory,
                 commitProcess, transactionMonitor, legacyIndexStateSupplier, txPool, clock, TransactionTracer.NULL,
-                storageEngine ).initialize( lastTransactionIdWhenStarted, new NoOpClient(), Type.implicit );
+                storageEngine ).initialize( lastTransactionIdWhenStarted, new NoOpClient(), Type.implicit,
+                accessMode );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

@@ -24,7 +24,7 @@ import org.junit.Before;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseBuilder;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -53,28 +54,28 @@ public abstract class KernelIntegrationTest
 
     protected TokenWriteOperations tokenWriteOperationsInNewTransaction() throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.WRITE );
         statement = transaction.acquireStatement();
         return statement.tokenWriteOperations();
     }
 
     protected DataWriteOperations dataWriteOperationsInNewTransaction() throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.WRITE );
         statement = transaction.acquireStatement();
         return statement.dataWriteOperations();
     }
 
     protected SchemaWriteOperations schemaWriteOperationsInNewTransaction() throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
         statement = transaction.acquireStatement();
         return statement.schemaWriteOperations();
     }
 
     protected ReadOperations readOperationsInNewTransaction() throws TransactionFailureException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.READ );
         statement = transaction.acquireStatement();
         return statement.readOperations();
     }

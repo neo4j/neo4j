@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
@@ -173,7 +174,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type )
+    public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
     {
         throw new UnsupportedOperationException();
     }

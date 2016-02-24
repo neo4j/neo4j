@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 
 public class KernelTransactionFactory
 {
-    static KernelTransaction kernelTransaction()
+    static KernelTransaction kernelTransaction( AccessMode accessMode )
     {
         TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
         TransactionHeaderInformationFactory headerInformationFactory = mock( TransactionHeaderInformationFactory.class );
@@ -64,6 +64,6 @@ public class KernelTransactionFactory
                 mock( Pool.class ),
                 Clock.SYSTEM_CLOCK,
                 TransactionTracer.NULL,
-                storageEngine ).initialize( 0, new NoOpClient(), KernelTransaction.Type.implicit );
+                storageEngine ).initialize( 0, new NoOpClient(), KernelTransaction.Type.implicit, accessMode );
     }
 }

@@ -27,6 +27,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -128,5 +129,11 @@ public class TopLevelTransaction implements InternalTransaction
     public KernelTransaction.Type transactionType()
     {
         return transaction.transactionType();
+    }
+
+    @Override
+    public AccessMode mode()
+    {
+        return transaction.mode();
     }
 }

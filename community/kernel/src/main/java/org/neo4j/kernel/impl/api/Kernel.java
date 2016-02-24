@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
@@ -81,10 +82,10 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public KernelTransaction newTransaction( KernelTransaction.Type type ) throws TransactionFailureException
+    public KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode ) throws TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
-        KernelTransaction transaction = transactions.newInstance( type );
+        KernelTransaction transaction = transactions.newInstance( type, accessMode );
         transactionMonitor.transactionStarted();
         return transaction;
     }

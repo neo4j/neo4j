@@ -20,9 +20,11 @@
 package org.neo4j.kernel.impl.coreapi;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 
 public interface InternalTransaction extends Transaction
 {
     KernelTransaction.Type transactionType();
+    AccessMode mode();
 }

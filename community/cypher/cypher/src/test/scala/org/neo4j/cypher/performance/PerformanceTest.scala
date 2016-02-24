@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.graphdb.{Node, RelationshipType}
-import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
 import org.neo4j.kernel.impl.query.QueryEngineProvider
 
 import scala.util.Random
@@ -49,7 +49,7 @@ class PerformanceTest extends CypherFunSuite {
   ignore("createDatabase") {
 
     val startPoints = (0 to 10).map(x => {
-      val tx = db.beginTransaction( KernelTransaction.Type.explicit )
+      val tx = db.beginTransaction(KernelTransaction.Type.explicit, AccessMode.WRITE)
 
       val a = createNode()
       (0 to 10).foreach(y => {

@@ -29,6 +29,7 @@ import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Clock;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
@@ -140,11 +141,11 @@ public class KernelTransactions extends LifecycleAdapter
         }
     };
 
-    public KernelTransaction newInstance( KernelTransaction.Type type )
+    public KernelTransaction newInstance( KernelTransaction.Type type, AccessMode accessMode )
     {
         assertDatabaseIsRunning();
         return localTxPool.acquire()
-                .initialize( transactionIdStore.getLastCommittedTransactionId(), locks.newClient(), type );
+                .initialize( transactionIdStore.getLastCommittedTransactionId(), locks.newClient(), type, accessMode );
     }
 
     /**

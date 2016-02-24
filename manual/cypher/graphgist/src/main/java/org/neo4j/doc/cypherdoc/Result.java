@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 
 class Result
@@ -44,7 +45,7 @@ class Result
     {
         this.query = query;
         text = result.dumpToString();
-        try (Transaction tx = database.beginTransaction( KernelTransaction.Type.explicit ))
+        try (Transaction tx = database.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ))
         {
             extract( result.javaIterator() );
         }

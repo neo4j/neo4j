@@ -33,6 +33,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils
+import org.neo4j.kernel.api.AccessMode
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.{NeoStoreDataSource}
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -647,7 +648,7 @@ order by a.COL1""")
 
     // Until we have a clean cut way where statement context is injected into cypher,
     // I don't know a non-hairy way to tell if this was done correctly, so here goes:
-    val tx  = graph.beginTransaction( Type.explicit )
+    val tx  = graph.beginTransaction( Type.explicit, AccessMode.NONE )
     val isTopLevelTx = tx.getClass === classOf[TopLevelTransaction]
     tx.close()
 

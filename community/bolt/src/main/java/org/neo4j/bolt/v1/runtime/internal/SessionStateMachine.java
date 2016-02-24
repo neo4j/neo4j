@@ -28,6 +28,7 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -89,7 +90,7 @@ public class SessionStateMachine implements Session, SessionState
                     public State beginTransaction( SessionStateMachine ctx )
                     {
                         assert ctx.currentTransaction == null;
-                        ctx.db.beginTransaction( KernelTransaction.Type.explicit );
+                        ctx.db.beginTransaction( KernelTransaction.Type.explicit, AccessMode.FULL);
                         ctx.currentTransaction = ctx.txBridge.getKernelTransactionBoundToThisThread( false );
                         return IN_TRANSACTION;
                     }
@@ -121,7 +122,7 @@ public class SessionStateMachine implements Session, SessionState
                     public State beginImplicitTransaction( SessionStateMachine ctx )
                     {
                         assert ctx.currentTransaction == null;
-                        ctx.db.beginTransaction( KernelTransaction.Type.implicit );
+                        ctx.db.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL);
                         ctx.currentTransaction = ctx.txBridge.getKernelTransactionBoundToThisThread( false );
                         return IN_TRANSACTION;
                     }

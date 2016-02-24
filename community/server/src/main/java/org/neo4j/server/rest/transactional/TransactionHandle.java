@@ -29,6 +29,7 @@ import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -67,13 +68,14 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final TransactionRegistry registry;
     private final TransactionUriScheme uriScheme;
     private final boolean implicitTransaction;
+    private final AccessMode mode;
     private final Log log;
     private final long id;
     private final QuerySessionProvider sessionFactory;
     private TransitionalTxManagementKernelTransaction context;
 
     public TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine,
-            TransactionRegistry registry, TransactionUriScheme uriScheme, boolean implicitTransaction,
+            TransactionRegistry registry, TransactionUriScheme uriScheme, boolean implicitTransaction, AccessMode mode,
             LogProvider logProvider, QuerySessionProvider sessionFactory )
     {
         this.txManagerFacade = txManagerFacade;
@@ -81,6 +83,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         this.registry = registry;
         this.uriScheme = uriScheme;
         this.implicitTransaction = implicitTransaction;
+        this.mode = mode;
         this.log = logProvider.getLog( getClass() );
         this.id = registry.begin( this );
         this.sessionFactory = sessionFactory;
@@ -197,7 +200,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         {
             try
             {
-                context = txManagerFacade.newTransaction( implicitTransaction );
+                context = txManagerFacade.newTransaction( implicitTransaction, mode );
             }
             catch ( RuntimeException e )
             {

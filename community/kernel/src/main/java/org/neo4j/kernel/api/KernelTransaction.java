@@ -122,12 +122,6 @@ public interface KernelTransaction extends AutoCloseable
     AccessMode mode();
 
     /**
-     * Set the mode this transaction should execute in. This controls which capabilities the transaction has.
-     * @param mode mode to use.
-     */
-    void setMode( AccessMode mode );
-
-    /**
      * @return {@code true} if {@link #markForTermination()} has been invoked, otherwise {@code false}.
      */
     boolean shouldBeTerminated();
@@ -155,4 +149,12 @@ public interface KernelTransaction extends AutoCloseable
      * @return the transaction type: implicit or explicit
      */
     Type transactionType();
+
+    Revertable restrict( AccessMode read );
+
+    interface Revertable extends AutoCloseable
+    {
+        @Override
+        void close();
+    }
 }

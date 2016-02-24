@@ -32,7 +32,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentReadStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction();
+        KernelTransaction tx = kernelTransaction( AccessMode.READ );
         ReadOperations stmt1 = tx.acquireStatement().readOperations();
 
         // when
@@ -46,7 +46,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentReadStatementAndDataStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction();
+        KernelTransaction tx = kernelTransaction( AccessMode.WRITE );
         ReadOperations stmt1 = tx.acquireStatement().readOperations();
 
         // when
@@ -60,7 +60,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentReadStatementAndSchemaStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction();
+        KernelTransaction tx = kernelTransaction( AccessMode.FULL );
         ReadOperations stmt1 = tx.acquireStatement().readOperations();
 
         // when
@@ -74,7 +74,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentDataStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction();
+        KernelTransaction tx = kernelTransaction( AccessMode.WRITE );
         DataWriteOperations stmt1 = tx.acquireStatement().dataWriteOperations();
 
         // when
@@ -88,7 +88,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentDataStatementAndDataStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction();
+        KernelTransaction tx = kernelTransaction( AccessMode.WRITE );
         DataWriteOperations stmt1 = tx.acquireStatement().dataWriteOperations();
 
         // when
@@ -102,7 +102,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentSchemaStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction();
+        KernelTransaction tx = kernelTransaction( AccessMode.FULL );
         SchemaWriteOperations stmt1 = tx.acquireStatement().schemaWriteOperations();
 
         // when
@@ -116,7 +116,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentSchemaStatementAndSchemaStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction();
+        KernelTransaction tx = kernelTransaction( AccessMode.FULL );
         SchemaWriteOperations stmt1 = tx.acquireStatement().schemaWriteOperations();
 
         // when
@@ -130,7 +130,7 @@ public class TransactionStatementSharingTest
     public void shouldNotShareStateForSequentialReadStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction();
+        KernelTransaction tx = kernelTransaction( AccessMode.READ );
         Statement statement = tx.acquireStatement();
         ReadOperations ops1 = statement.readOperations();
         statement.close();
