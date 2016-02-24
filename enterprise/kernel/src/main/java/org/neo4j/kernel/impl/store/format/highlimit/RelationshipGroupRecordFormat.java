@@ -5,26 +5,26 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.aligned;
+package org.neo4j.kernel.impl.store.format.highlimit;
 
 import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.store.format.aligned.Reference.DataAdapter;
+import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-class RelationshipGroupRecordFormat extends BaseAlignedRecordFormat<RelationshipGroupRecord>
+class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<RelationshipGroupRecord>
 {
     private static final int RECORD_SIZE = 32;
     private static final int HAS_OUTGOING_BIT = 0b0000_1000;
@@ -32,9 +32,9 @@ class RelationshipGroupRecordFormat extends BaseAlignedRecordFormat<Relationship
     private static final int HAS_LOOP_BIT     = 0b0010_0000;
     private static final int HAS_NEXT_BIT     = 0b0100_0000;
 
-    public RelationshipGroupRecordFormat( RecordIO<RelationshipGroupRecord> recordIO )
+    public RelationshipGroupRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, recordIO );
+        super( fixedRecordSize( RECORD_SIZE ), 0 );
     }
 
     @Override

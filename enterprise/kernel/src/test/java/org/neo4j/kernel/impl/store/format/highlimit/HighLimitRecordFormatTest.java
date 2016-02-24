@@ -17,17 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format;
+package org.neo4j.kernel.impl.store.format.highlimit;
 
-import org.neo4j.kernel.impl.store.format.aligned.EnterpriseAligned;
+import org.neo4j.kernel.impl.store.format.LimitedRecordGenerators;
+import org.neo4j.kernel.impl.store.format.RecordFormatTest;
+import org.neo4j.kernel.impl.store.format.RecordGenerators;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 
-public class EnterpriseAlignedRecordFormatTest extends RecordFormatTest
+public class HighLimitRecordFormatTest extends RecordFormatTest
 {
-    protected static final RecordGenerators _58_BIT_LIMITS = new LimitedRecordGenerators( random, 58, 58, 58, 16, NULL );
     protected static final RecordGenerators _50_BIT_LIMITS = new LimitedRecordGenerators( random, 50, 50, 50, 16, NULL );
 
-    public EnterpriseAlignedRecordFormatTest()
+    public HighLimitRecordFormatTest()
     {
-        super( EnterpriseAligned.RECORD_FORMATS, _50_BIT_LIMITS );
+        super( HighLimit.RECORD_FORMATS, _50_BIT_LIMITS );
     }
 }

@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.aligned;
+package org.neo4j.kernel.impl.store.format.highlimit;
 
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.format.aligned.BaseAlignedRecordFormat;
-import org.neo4j.kernel.impl.store.format.aligned.Reference.DataAdapter;
+import org.neo4j.kernel.impl.store.format.highlimit.BaseHighLimitRecordFormat;
+import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 
 /**
  * {@link DataAdapter} able to acquire a secondary {@link PageCursor} on potentially a different page
@@ -62,8 +62,8 @@ class SecondaryPageCursorReadDataAdapter implements DataAdapter<PageCursor>, Sec
                 // is in fact a secondary record.
                 // TODO can we do this in BaseHighLimitRecordFormat (the place where this adapter is created) instead?
                 byte secondaryHeaderByte = secondaryCursor.getByte();
-                assert (secondaryHeaderByte & BaseAlignedRecordFormat.HEADER_BIT_RECORD_UNIT) != 0;
-                assert (secondaryHeaderByte & BaseAlignedRecordFormat.HEADER_BIT_FIRST_RECORD_UNIT) == 0;
+                assert (secondaryHeaderByte & BaseHighLimitRecordFormat.HEADER_BIT_RECORD_UNIT) != 0;
+                assert (secondaryHeaderByte & BaseHighLimitRecordFormat.HEADER_BIT_FIRST_RECORD_UNIT) == 0;
                 switched = true;
             }
             return secondaryCursor.getByte();
