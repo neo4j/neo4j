@@ -46,9 +46,14 @@ public class BaseServerConfigLoader
         }
 
         HashMap<String, String> settings = calculateSettings( configFile, legacyConfigFile, log, configOverrides );
-        Config config = new Config( settings, asList( ServerSettings.class, GraphDatabaseSettings.class ) );
+        Config config = new Config( settings, settingsClasses(settings) );
         config.setLogger( log );
         return config;
+    }
+
+    protected Iterable<Class<?>> settingsClasses( HashMap<String, String> settings )
+    {
+        return asList( ServerSettings.class, GraphDatabaseSettings.class );
     }
 
     private HashMap<String, String> calculateSettings( File configFile, File legacyConfigFile, Log log,

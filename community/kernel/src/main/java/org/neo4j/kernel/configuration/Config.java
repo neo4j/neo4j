@@ -31,7 +31,6 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.logging.BufferingLog;
@@ -39,32 +38,29 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 
 /**
- * This class holds the overall configuration of a Neo4j database instance. Use the accessors
- * to convert the internal key-value settings to other types.
+ * This class holds the overall configuration of a Neo4j database instance. Use the accessors to convert the internal
+ * key-value settings to other types.
  * <p>
- * Users can assume that old settings have been migrated to their new counterparts, and that defaults
- * have been applied.
+ * Users can assume that old settings have been migrated to their new counterparts, and that defaults have been applied.
  * <p>
- * UI's can change configuration by calling applyChanges. Any listener, such as services that use
- * this configuration, can be notified of changes by implementing the {@link ConfigurationChangeListener} interface.
+ * UI's can change configuration by calling augment(). Any listener, such as services that use this configuration, can
+ * be notified of changes by implementing the {@link ConfigurationChangeListener} interface.
  */
 public class Config implements DiagnosticsProvider, Configuration
 {
     private final List<ConfigurationChangeListener> listeners = new CopyOnWriteArrayList<>();
     private final Map<String, String> params = new ConcurrentHashMap<>();
-    private final ConfigValues settingsFunction;
+    private final Iterable<Class<?>> settingsClasses;
+    private final ConfigurationMigrator migrator;
+    private final ConfigurationValidator validator;
 
-    // Messages to this log get replayed into a real logger once logging has been
-    // instantiated.
+    private ConfigValues settingsFunction;
+
+    // Messages to this log get replayed into a real logger once logging has been instantiated.
     private final BufferingLog bufferedLog = new BufferingLog();
     private Log log = bufferedLog;
-
-    private Iterable<Class<?>> settingsClasses = emptyList();
-    private ConfigurationMigrator migrator;
-    private ConfigurationValidator validator;
 
     public static Config empty()
     {
@@ -91,11 +87,12 @@ public class Config implements DiagnosticsProvider, Configuration
         this( inputParams, asList( settingsClasses ) );
     }
 
-    public Config( Map<String, String> inputParams, Iterable<Class<?>> settingsClasses )
+    public Config( Map<String, String> params, Iterable<Class<?>> settingsClasses )
     {
-        this.params.putAll( inputParams );
-        this.settingsFunction = new ConfigValues( params );
-        registerSettingsClasses( settingsClasses );
+        this.settingsClasses = settingsClasses;
+        migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
+        validator = new ConfigurationValidator( settingsClasses );
+        replaceSettings( params );
     }
 
     /**
@@ -148,21 +145,6 @@ public class Config implements DiagnosticsProvider, Configuration
         Map<String, String> params = getParams();
         params.putAll( changes );
         replaceSettings( params );
-        return this;
-    }
-
-    /**
-     * Add more settings classes.
-     */
-    public Config registerSettingsClasses( Iterable<Class<?>> settingsClasses )
-    {
-        this.settingsClasses = Iterables.concat( settingsClasses, this.settingsClasses );
-        this.migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
-        this.validator = new ConfigurationValidator( settingsClasses );
-
-        // Apply the requirements and changes the new settings classes introduce
-        this.replaceSettings( getParams() );
-
         return this;
     }
 
@@ -229,7 +211,7 @@ public class Config implements DiagnosticsProvider, Configuration
         return output.toString();
     }
 
-    private synchronized Config replaceSettings( Map<String, String> newValues )
+    private synchronized void replaceSettings( Map<String, String> newValues )
     {
         newValues = migrator.apply( newValues, log );
 
@@ -261,7 +243,7 @@ public class Config implements DiagnosticsProvider, Configuration
             if ( configurationChanges.isEmpty() )
             {
                 // Don't bother... nothing changed.
-                return this;
+                return;
             }
 
             // Make the change
@@ -283,7 +265,6 @@ public class Config implements DiagnosticsProvider, Configuration
                 listener.notifyConfigurationChanges( configurationChanges );
             }
         }
-
-        return this;
+        settingsFunction = new ConfigValues( this.params );
     }
 }

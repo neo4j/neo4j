@@ -19,27 +19,37 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.io.File;
+import java.util.HashMap;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.logging.Log;
 import org.neo4j.server.configuration.BaseServerConfigLoader;
 
 import static java.util.Arrays.asList;
 
+import static org.neo4j.server.enterprise.EnterpriseServerSettings.mode;
+
 public class EnterpriseServerConfigLoader extends BaseServerConfigLoader
 {
     @Override
-    public Config loadConfig( File configFile, File legacyConfigFile, Log log, Pair<String,String>... configOverrides )
+    protected Iterable<Class<?>> settingsClasses( HashMap<String, String> settings )
     {
-        Config config = super.loadConfig( configFile, legacyConfigFile, log, configOverrides );
-        if ( config.get( EnterpriseServerSettings.mode ).equals( "HA" ) )
+        if ( isHAMode( settings ) )
         {
-            config.registerSettingsClasses( asList( HaSettings.class, ClusterSettings.class ) );
+            return Iterables.concat(
+                    super.settingsClasses( settings ),
+                    asList( HaSettings.class, ClusterSettings.class ) );
         }
-        return config;
+        else
+        {
+            return super.settingsClasses( settings );
+        }
+    }
+
+    private boolean isHAMode( HashMap<String, String> settings )
+    {
+        return new Config( settings, EnterpriseServerSettings.class ).get( mode ).equals( "HA" );
     }
 }

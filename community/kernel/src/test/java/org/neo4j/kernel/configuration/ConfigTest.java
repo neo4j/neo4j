@@ -32,8 +32,6 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 
-import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
@@ -124,20 +122,6 @@ public class ConfigTest
     {
         new Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ), MySettingsWithDefaults.class );
         fail( "Expected validation to fail." );
-    }
-
-    @Test
-    public void shouldBeAbleToRegisterSettingsClassesAfterInstantiation() throws Exception
-    {
-        // Given
-        Config config = new Config( stringMap( "old", "hello!" ) );
-
-        // When
-        config.registerSettingsClasses( asList( MySettingsWithDefaults.class, MyMigratingSettings.class ) );
-
-        // Then
-        assertThat( config.get( MyMigratingSettings.newer ), equalTo( "hello!" ) );
-        assertThat( config.get( MySettingsWithDefaults.hello ), equalTo( "Hello, World!" ) );
     }
 
     @Test
