@@ -31,7 +31,7 @@ import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.state.StateStorage;
-import org.neo4j.coreedge.raft.state.StubStateStorage;
+import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
@@ -61,7 +61,7 @@ public class RaftMembershipManagerTest
         RaftMembershipManager<RaftTestMember> membershipManager = new RaftMembershipManager<>(
                 null, RaftTestMemberSetBuilder.INSTANCE, log,
                 NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new StubStateStorage<>( new RaftMembershipState<>() ) );
+                1000, new InMemoryStateStorage<>( new RaftMembershipState<>() ) );
 
         // when
         membershipManager.processLog( asList(
@@ -84,7 +84,7 @@ public class RaftMembershipManagerTest
         RaftMembershipManager<RaftTestMember> membershipManager = new RaftMembershipManager<>(
                 null,
                 RaftTestMemberSetBuilder.INSTANCE, log, NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new StubStateStorage<>( new RaftMembershipState<>() ) );
+                1000, new InMemoryStateStorage<>( new RaftMembershipState<>() ) );
 
         // when
         List<LogCommand> logCommands = asList(
@@ -114,7 +114,7 @@ public class RaftMembershipManagerTest
         RaftMembershipManager<RaftTestMember> membershipManager = new RaftMembershipManager<>(
                 null,
                 RaftTestMemberSetBuilder.INSTANCE, log, NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new StubStateStorage<>( new RaftMembershipState<>() ) );
+                1000, new InMemoryStateStorage<>( new RaftMembershipState<>() ) );
 
         // when
         List<LogCommand> logCommands = asList(

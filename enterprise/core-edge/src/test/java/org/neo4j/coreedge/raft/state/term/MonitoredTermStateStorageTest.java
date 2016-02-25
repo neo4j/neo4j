@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft.state.term;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.log.monitoring.RaftTermMonitor;
-import org.neo4j.coreedge.raft.state.StubStateStorage;
+import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.junit.Assert.assertEquals;
@@ -38,7 +38,7 @@ public class MonitoredTermStateStorageTest
         monitors.addMonitorListener( raftTermMonitor );
         TermState state = new TermState();
         MonitoredTermStateStorage monitoredTermStateStorage =
-                new MonitoredTermStateStorage( new StubStateStorage<>( new TermState() ), monitors );
+                new MonitoredTermStateStorage( new InMemoryStateStorage<>( new TermState() ), monitors );
 
         // when
         state.update( 7 );

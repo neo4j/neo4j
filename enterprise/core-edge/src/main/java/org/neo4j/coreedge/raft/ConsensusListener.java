@@ -17,28 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state;
+package org.neo4j.coreedge.raft;
 
-import java.io.IOException;
-
-public class StubStateStorage<STATE> implements StateStorage<STATE>
+/**
+ * A consensus listener is notified when a particular index in the consensus log
+ * is considered committed.
+ */
+public interface ConsensusListener
 {
-    private final STATE state;
-
-    public StubStateStorage( STATE state )
-    {
-        this.state = state;
-    }
-
-    @Override
-    public STATE getInitialState()
-    {
-        return state;
-    }
-
-    @Override
-    public void persistStoreData( STATE state ) throws IOException
-    {
-
-    }
+    /**
+     * Called when the highest committed index increases.
+     */
+    void notifyCommitted();
 }

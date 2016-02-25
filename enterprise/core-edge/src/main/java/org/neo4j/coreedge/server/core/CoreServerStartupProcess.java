@@ -29,6 +29,7 @@ import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
+import org.neo4j.coreedge.raft.state.StateMachineApplier;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -41,22 +42,25 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class CoreServerStartupProcess
 {
 
-    public static LifeSupport createLifeSupport( DataSourceManager dataSourceManager,
-                                                 ReplicatedIdGeneratorFactory idGeneratorFactory,
-                                                 RaftInstance<CoreMember> raft, RaftLogReplay raftLogReplay, RaftServer<CoreMember> raftServer,
-                                                 CatchupServer catchupServer,
-                                                 DelayedRenewableTimeoutService raftTimeoutService,
-                                                 MembershipWaiter<CoreMember> membershipWaiter,
-                                                 long joinCatchupTimeout,
-                                                 RecoverTransactionLogState recoverTransactionLogState,
-                                                 Lifecycle tokenLife )
+    public static LifeSupport createLifeSupport(
+            DataSourceManager dataSourceManager,
+            ReplicatedIdGeneratorFactory idGeneratorFactory,
+            RaftInstance<CoreMember> raft,
+            StateMachineApplier recoverableStateMachine,
+            RaftServer<CoreMember> raftServer,
+            CatchupServer catchupServer,
+            DelayedRenewableTimeoutService raftTimeoutService,
+            MembershipWaiter<CoreMember> membershipWaiter,
+            long joinCatchupTimeout,
+            RecoverTransactionLogState recoverTransactionLogState,
+            Lifecycle tokenLife )
     {
         LifeSupport services = new LifeSupport();
         services.add( dataSourceManager );
         services.add( idGeneratorFactory );
         services.add( recoverTransactionLogState );
         services.add( tokenLife );
-        services.add( raftLogReplay );
+        services.add( recoverableStateMachine );
         services.add( raftServer );
         services.add( catchupServer );
         services.add( raftTimeoutService );
@@ -98,5 +102,4 @@ public class CoreServerStartupProcess
             }
         }
     }
-
 }
