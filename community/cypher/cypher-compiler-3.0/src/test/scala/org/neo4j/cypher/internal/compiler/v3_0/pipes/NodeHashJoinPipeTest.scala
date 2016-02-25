@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 
+import scala.reflect.ClassTag
+
 class NodeHashJoinPipeTest extends CypherFunSuite {
 
   implicit val monitor = mock[PipeMonitor]
@@ -207,6 +209,39 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     // then
     result shouldBe empty
     lhsIterator.fetched should equal(0)
+  }
+
+  test("role reversal should not allow a probe table to get too large") {
+    // given
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+
+    val innerL = ((0 to 1000) map { i => row("b" -> newMockedNode(i)) }).iterator
+    val lhsIterator = new TestableIterator(innerL)
+    when(left.createResults(queryState)).thenReturn(lhsIterator)
+
+    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    val innerR = ((0 to 10) map { i => row("b" -> newMockedNode(i)) }).iterator
+    val rhsIterator = new TestableIterator(innerR)
+    when(right.createResults(queryState)).thenReturn(rhsIterator)
+
+    val creator = new FailingProbeTableCreator(failAt = 20)
+    // when
+    val result = NodeHashJoinPipe(Set("b"), left, right, reversalSize = 10, probeTableCreator = creator)().createResults(queryState)
+
+    // then
+    result should have size 11
+  }
+
+  class FailingProbeTableCreator(failAt: Long = 100) extends ProbeTableCreator {
+    override def create[K: ClassTag, V: ClassTag] = new HashMapProbeTable[K, V]() {
+      override def add(k: K, v: V) = {
+        if (size > failAt)
+          fail("Added too many elements to probe table")
+        super.add(k, v)
+      }
+    }
   }
 
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
