@@ -26,6 +26,7 @@ import cypher.feature.parser.matchers.FloatMatcher;
 import cypher.feature.parser.matchers.IntegerMatcher;
 import cypher.feature.parser.matchers.ListMatcher;
 import cypher.feature.parser.matchers.MapMatcher;
+import cypher.feature.parser.matchers.NodeMatcher;
 import cypher.feature.parser.matchers.NullMatcher;
 import cypher.feature.parser.matchers.StringMatcher;
 import cypher.feature.parser.matchers.ValueMatcher;
@@ -33,8 +34,10 @@ import cypher.feature.parser.matchers.ValueMatcher;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
@@ -171,26 +174,14 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
     @Override
     public void exitNode( FeatureResultsParser.NodeContext ctx )
     {
-        final Map<String,Object> properties = getMapOrEmpty();
-        final ArrayList<Label> nodeLabels = new ArrayList<>();
+        MapMatcher properties = getMapMatcher();
+
+        Set<String> labelNames = new HashSet<>();
         while ( !names.isEmpty() )
         {
-            nodeLabels.add( Label.label( names.pop() ) );
+            labelNames.add(  names.pop() );
         }
-        oldworkload.push( new ParsedNode()
-        {
-            @Override
-            public Map<String,Object> getAllProperties()
-            {
-                return properties;
-            }
-
-            @Override
-            public Iterable<Label> getLabels()
-            {
-                return nodeLabels;
-            }
-        } );
+        workload.push( new NodeMatcher( labelNames, properties ) );
     }
 
     private Map<String,Object> getMapOrEmpty()
@@ -202,6 +193,18 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
         else
         {
             return (Map<String,Object>) oldworkload.pop();
+        }
+    }
+
+    private MapMatcher getMapMatcher()
+    {
+        if ( workload.isEmpty() )
+        {
+            return MapMatcher.EMPTY;
+        }
+        else
+        {
+            return (MapMatcher) workload.pop();
         }
     }
 

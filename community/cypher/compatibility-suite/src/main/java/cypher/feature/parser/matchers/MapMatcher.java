@@ -19,11 +19,20 @@
  */
 package cypher.feature.parser.matchers;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
 public class MapMatcher implements ValueMatcher
 {
+    public static final MapMatcher EMPTY = new MapMatcher( Collections.emptyMap() ) {
+        @Override
+        public String toString()
+        {
+            return "{ MapMatcher matching the empty map }";
+        }
+    };
+
     private final Map<String,ValueMatcher> map;
 
     public MapMatcher( Map<String,ValueMatcher> map )
@@ -51,5 +60,11 @@ public class MapMatcher implements ValueMatcher
             }
         }
         return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "{ MapMatcher matching a map with keys " + map.keySet().toString() + " and values " + map.values().toString() + " }";
     }
 }
