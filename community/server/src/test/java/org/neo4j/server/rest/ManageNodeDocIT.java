@@ -136,40 +136,6 @@ public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
         assertTrue( response.getLocation()
                 .toString()
                 .matches( NODE_URI_PATTERN ) );
-        checkGeneratedFiles();
-    }
-
-    private void checkGeneratedFiles()
-    {
-        String requestDocs, responseDocs, graphDocs;
-        try
-        {
-            requestDocs = TestJavaTestDocsGenerator.readFileAsString( new File(
-                    "target/docs/dev/rest-api/includes/create-node-with-properties.request.asciidoc" ) );
-            responseDocs = TestJavaTestDocsGenerator.readFileAsString( new File(
-                    "target/docs/dev/rest-api/includes/create-node-with-properties.response.asciidoc" ) );
-            graphDocs = TestJavaTestDocsGenerator.readFileAsString( new File(
-                    "target/docs/dev/rest-api/includes/create-node-with-properties.graph.asciidoc" ) );
-        }
-        catch ( IOException ioe )
-        {
-            throw new RuntimeException(
-                    "Error reading generated documentation file: ", ioe );
-        }
-        for ( String s : new String[] { "POST", "Accept", "application/json",
-                "Content-Type", "{", "foo", "bar", "}" } )
-        {
-            assertThat( requestDocs, containsString( s ) );
-        }
-        for ( String s : new String[] { "201", "Created", "Content-Length",
-                "Content-Type", "Location", "{", "foo", "bar", "}" } )
-        {
-            assertThat( responseDocs, containsString( s ) );
-        }
-        for ( String s : new String[] { "foo", "bar" } )
-        {
-            assertThat( graphDocs, containsString( s ) );
-        }
     }
 
     @Test
