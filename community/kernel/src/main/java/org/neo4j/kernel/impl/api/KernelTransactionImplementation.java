@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
@@ -128,6 +129,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionType transactionType; // Tracks current state of transaction, which will upgrade to WRITE or SCHEMA mode when necessary
     private TransactionHooks.TransactionHooksState hooksState;
     private final KernelStatement currentStatement;
+    private final StorageStatement storageStatement;
     private CloseListener closeListener;
     private AccessMode accessMode; // Defines whether a transaction/statement is allowed to perform read, write or schema commands
     private Locks.Client locks;
@@ -166,8 +168,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.pool = pool;
         this.clock = clock;
         this.tracer = tracer;
-        this.currentStatement = new KernelStatement( this, this, operations,
-                storeLayer.acquireStatement(), procedures );
+        this.storageStatement = storeLayer.acquireStatement();
+        this.currentStatement = new KernelStatement( this, this, operations, storageStatement, procedures );
     }
 
     /**
@@ -405,7 +407,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 try
                 {
-                    hooksState = hooks.beforeCommit( txState, this, storageEngine.storeReadLayer() );
+                    hooksState = hooks.beforeCommit( txState, this, storageEngine.storeReadLayer(), storageStatement );
                     if ( hooksState != null && hooksState.failed() )
                     {
                         TransactionHookException cause = hooksState.failure();
@@ -426,6 +428,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 storageEngine.createCommands(
                         extractedCommands,
                         txState,
+                        storageStatement,
                         locks,
                         lastTransactionIdWhenStarted );
                 if ( hasLegacyIndexChanges() )

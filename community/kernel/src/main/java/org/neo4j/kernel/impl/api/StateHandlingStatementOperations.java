@@ -1173,7 +1173,7 @@ public class StateHandlingStatementOperations implements
             try
             {
                 statement.txState().accept( new TransactionCountingStateVisitor( EMPTY, storeLayer,
-                        statement.txState(), counts ) );
+                        statement.getStoreStatement(), statement.txState(), counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
@@ -1203,7 +1203,7 @@ public class StateHandlingStatementOperations implements
             try
             {
                 statement.txState().accept( new TransactionCountingStateVisitor( EMPTY, storeLayer,
-                        statement.txState(), counts ) );
+                        statement.getStoreStatement(), statement.txState(), counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() )

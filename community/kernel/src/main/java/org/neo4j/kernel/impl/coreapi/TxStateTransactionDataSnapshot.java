@@ -75,19 +75,17 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     public TxStateTransactionDataSnapshot(
             ReadableTransactionState state,
             NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions relationshipActions,
-            StoreReadLayer storeReadLayer )
+            StoreReadLayer storeReadLayer, StorageStatement storageStatement )
     {
         this.state = state;
         this.nodeActions = nodeActions;
         this.relationshipActions = relationshipActions;
-        this.storeStatement = storeReadLayer.acquireStatement();
+        this.storeStatement = storageStatement;
         this.store = storeReadLayer;
 
         // Load changes that require store access eagerly, because we won't have access to the after-state
         // after the tx has been committed.
         takeSnapshot();
-
-        storeStatement.close();
     }
 
     @Override

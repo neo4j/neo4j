@@ -196,6 +196,7 @@ public class KernelTransactionsTest
         } ).when( storageEngine ).createCommands(
                 anyCollection(),
                 any( ReadableTransactionState.class ),
+                any( StorageStatement.class ),
                 any( ResourceLocker.class ),
                 anyLong() );
 

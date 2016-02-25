@@ -297,6 +297,6 @@ public class TxStateTransactionDataViewTest
     {
         NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
         final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
-        return new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops );
+        return new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops, storeStatement );
     }
 }

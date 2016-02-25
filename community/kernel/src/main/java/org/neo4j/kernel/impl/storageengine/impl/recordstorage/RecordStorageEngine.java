@@ -103,6 +103,7 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
@@ -150,7 +151,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final NeoStoreIndexStoreView indexStoreView;
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
-    private final Supplier<StoreStatement> storeStatementSupplier;
+    private final Supplier<StorageStatement> storeStatementSupplier;
 
     // Immutable state for creating/applying commands
     private final Loaders loaders;
@@ -248,7 +249,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
     }
 
-    private Supplier<StoreStatement> storeStatementSupplier(
+    private Supplier<StorageStatement> storeStatementSupplier(
             NeoStores neoStores, Config config, LockService lockService )
     {
         final LockService currentLockService =
@@ -275,6 +276,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void createCommands(
             Collection<StorageCommand> commands,
             ReadableTransactionState txState,
+            StorageStatement storageStatement,
             ResourceLocker locks,
             long lastTransactionIdWhenStarted )
             throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationKernelException
@@ -295,7 +297,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     txState,
                     txStateVisitor );
             txStateVisitor = new TransactionCountingStateVisitor(
-                    txStateVisitor, storeLayer, txState, countsRecordState );
+                    txStateVisitor, storeLayer, storageStatement, txState, countsRecordState );
             try ( TxStateVisitor visitor = txStateVisitor )
             {
                 txState.accept( txStateVisitor );

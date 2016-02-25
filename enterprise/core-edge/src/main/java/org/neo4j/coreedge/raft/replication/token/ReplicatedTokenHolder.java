@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 
@@ -118,9 +119,9 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token> implements Toke
         TransactionState txState = new TxState();
         int tokenId = Math.toIntExact( idGeneratorFactory.get( tokenIdType ).nextId() );
         createToken( txState, tokenName, tokenId );
-        try
+        try ( StorageStatement statement = storageEngine.storeReadLayer().acquireStatement() )
         {
-            storageEngine.createCommands( commands, txState, ResourceLocker.NONE, Long.MAX_VALUE );
+            storageEngine.createCommands( commands, txState, statement, ResourceLocker.NONE, Long.MAX_VALUE );
         }
         catch ( CreateConstraintFailureException | TransactionFailureException | ConstraintValidationKernelException e )
         {

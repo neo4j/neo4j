@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.PageCacheRule;
@@ -195,7 +196,10 @@ public class IndexWorkSyncTransactionApplicationStressIT
                     noNodeProperty( nodeId, propertyKeyId ),
                     property( propertyKeyId, propertyValue( id, progress ) ) );
             Collection<StorageCommand> commands = new ArrayList<>();
-            storageEngine.createCommands( commands, txState, null, 0 );
+            try ( StorageStatement statement = storageEngine.storeReadLayer().acquireStatement() )
+            {
+                storageEngine.createCommands( commands, txState, statement, null, 0 );
+            }
             return tx( commands );
         }
 
