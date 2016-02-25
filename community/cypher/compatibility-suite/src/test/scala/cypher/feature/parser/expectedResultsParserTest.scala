@@ -30,6 +30,8 @@ import org.neo4j.graphdb._
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{FunSuite, Matchers}
 
+import scala.collection.JavaConverters._
+
 class expectedResultsParserTest extends FunSuite with Matchers {
 
   test("should parse null") {
@@ -83,26 +85,33 @@ class expectedResultsParserTest extends FunSuite with Matchers {
   }
 
   test("should parse list") {
-    valueParse("[]") should equal(emptyList())
-    valueParse("['\"\n\r\f\t']") should equal(asList("\"\n\r\f\t"))
-    valueParse("[0, 1.0e-10, '$', true]") should equal(asList(0L, 1e-10, "$", TRUE))
-    valueParse("['', ',', ' ', ', ', 'end']") should equal(asList("", ",", " ", ", ", "end"))
+    parse("[]") should accept(List.empty.asJava)
+    parse("['\"\n\r\f\t']") should accept(List("\"\n\r\f\t").asJava)
+    parse("[0, 1.0e-10, '$', true]") should accept(List(0L, 1e-10, "$", TRUE).asJava)
+    parse("['', ',', ' ', ', ', 'end']") should accept(List("", ",", " ", ", ", "end").asJava)
   }
 
   test("should parse nested list") {
-    valueParse("[[]]") should equal(asList(emptyList()))
-    valueParse("[[[0]], [0], 0]") should equal(asList(asList(asList(0L)), asList(0L), 0L))
+    parse("[[]]") should accept(List(List.empty.asJava).asJava)
+    parse("[[[0]], [0], 0]") should accept(List(List(List(0L).asJava).asJava, List(0L).asJava, 0L).asJava)
   }
 
   test("should parse maps") {
-    valueParse("{}") should equal(emptyMap())
-    valueParse("{k0:'\n\r\f\t'}") should equal(asMap(Map("k0" -> "\n\r\f\t")))
-    valueParse("{k0:0, k1:1.0e-10, k2:null, k3:true}") should equal(
-      asMap(Map("k0" -> Long.valueOf(0), "k1" -> lang.Double.valueOf(1e-10), "k2" -> null, "k3" -> TRUE)))
+    parse("{}") should accept(Map.empty.asJava)
+    parse("{k0:'\n\r\f\t'}") should accept(Map("k0" -> "\n\r\f\t").asJava)
+
+    parse("{k0:0, k1:1.0e-10, k2:null, k3:true}") should accept(
+      Map("k0" -> Long.valueOf(0), "k1" -> lang.Double.valueOf(1e-10), "k2" -> null, "k3" -> TRUE).asJava)
+  }
+
+  test("should parse nested maps") {
+    parse("{key: {key: 'value', key2: {}}, key2: []}") should accept(
+      Map("key" -> Map("key" -> "value", "key2" -> Map.empty.asJava).asJava, "key2" -> List.empty.asJava).asJava)
   }
 
   test("should allow whitespace between key and value") {
-    valueParse("{key:'value'}") should equal(valueParse("{key: 'value'}"))
+    parse("{key:'value'}") should accept(Map("key" -> "value").asJava)
+    parse("{key: 'value'}") should accept(Map("key" -> "value").asJava)
   }
 
   test("should parse nodes with labels") {

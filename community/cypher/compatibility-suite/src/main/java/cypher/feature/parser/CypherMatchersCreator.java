@@ -24,6 +24,8 @@ import cypher.feature.parser.generated.FeatureResultsParser;
 import cypher.feature.parser.matchers.BooleanMatcher;
 import cypher.feature.parser.matchers.FloatMatcher;
 import cypher.feature.parser.matchers.IntegerMatcher;
+import cypher.feature.parser.matchers.ListMatcher;
+import cypher.feature.parser.matchers.MapMatcher;
 import cypher.feature.parser.matchers.NullMatcher;
 import cypher.feature.parser.matchers.StringMatcher;
 import cypher.feature.parser.matchers.ValueMatcher;
@@ -118,14 +120,14 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
     @Override
     public void exitList( FeatureResultsParser.ListContext ctx )
     {
-        // Using a Deque here in order to be able to prepend
-        Deque<Object> temp = new LinkedList<>();
+        // Using a LinkedList here in order to be able to prepend
+        LinkedList<ValueMatcher> temp = new LinkedList<>();
         int counter = listCounters.pop();
         for ( int i = 0; i < counter; ++i )
         {
-            temp.addFirst( oldworkload.pop() );
+            temp.addFirst( workload.pop() );
         }
-        oldworkload.push( temp );
+        workload.push( new ListMatcher( temp ) );
     }
 
     @Override
@@ -144,14 +146,14 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
     public void exitPropertyMap( FeatureResultsParser.PropertyMapContext ctx )
     {
         int counter = mapCounters.pop();
-        Map<String,Object> map = new HashMap<>();
+        Map<String,ValueMatcher> map = new HashMap<>();
         for ( int i = 0; i < counter; ++i )
         {
-            Object value = oldworkload.pop();
+            ValueMatcher value = workload.pop();
             String key = oldworkload.pop().toString();
             map.put( key, value );
         }
-        oldworkload.push( map );
+        workload.push( new MapMatcher(map) );
     }
 
     @Override
