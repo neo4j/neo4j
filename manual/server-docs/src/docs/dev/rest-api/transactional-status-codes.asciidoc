@@ -1,5 +1,5 @@
 [[status-codes]]
-== Neo4j Status Codes ==
+== Neo4j Status Codes
 
 The transactional endpoint may in any response include zero or more status codes, indicating issues or information for
 the client. Each status code follows the same format: "Neo.[Classification].[Category].[Title]". The fact
@@ -12,12 +12,12 @@ What the effect of the status code is can be determined by its classification.
 This is not the same thing as HTTP status codes. Neo4j Status Codes are returned in the response body, at the very end
 of the response.
 
-=== Classifications ===
+=== Classifications
 
 include::status-code-classifications.asccidoc[]
 
 
-=== Status codes ===
+=== Status codes
 
 This is a complete list of all status codes Neo4j may return, and what they mean.
 

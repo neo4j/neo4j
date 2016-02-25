@@ -1,0 +1,27 @@
+[[rest-api-schema-constraints]]
+==  Constraints ==
+
+:enterprise-server-docs-docs: ../../../neo4j-enterprise-server-docs-docs-jar/rest-api/
+
+include::create-uniqueness-constraint.asciidoc[]
+
+include::get-a-specific-uniqueness-constraint.asciidoc[]
+
+include::get-all-uniqueness-constraints-for-a-label.asciidoc[]
+
+include::drop-uniqueness-constraint.asciidoc[]
+
+include::{enterprise-server-docs-docs}get-a-specific-node-property-existence-constraint.asciidoc[]
+
+include::{enterprise-server-docs-docs}get-all-node-property-existence-constraints-for-a-label.asciidoc[]
+
+include::get-all-constraints-for-a-label.asciidoc[]
+
+include::{enterprise-server-docs-docs}get-a-specific-relationship-property-existence-constraint.asciidoc[]
+
+include::{enterprise-server-docs-docs}get-all-relationship-property-existence-constraints-for-a-type.asciidoc[]
+
+include::get-all-constraints.asciidoc[]
+
+
+

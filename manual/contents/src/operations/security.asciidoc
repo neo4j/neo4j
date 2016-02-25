@@ -8,5 +8,5 @@ See <<security-server>> for details.
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-server-docs-jar/ops/security.asciidoc[]
+include::{importdir}/neo4j-server-docs-docs-jar/ops/security.asciidoc[]
 
