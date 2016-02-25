@@ -514,14 +514,9 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
 
     private void refreshFields()
     {
-        scanAllFields( PF_SHARED_READ_LOCK, new Visitor<PageCursor,IOException>()
-        {
-            @Override
-            public boolean visit( PageCursor element ) throws IOException
-            {
-                readAllFields( element );
-                return false;
-            }
+        scanAllFields( PF_SHARED_READ_LOCK, element -> {
+            readAllFields( element );
+            return false;
         } );
     }
 
@@ -801,23 +796,18 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
 
     public void logRecords( final Logger msgLog )
     {
-        scanAllFields( PF_SHARED_READ_LOCK, new Visitor<PageCursor,IOException>()
-        {
-            @Override
-            public boolean visit( PageCursor element ) throws IOException
+        scanAllFields( PF_SHARED_READ_LOCK, element -> {
+            for ( Position position : Position.values() )
             {
-                for ( Position position : Position.values() )
+                long value;
+                do
                 {
-                    long value;
-                    do
-                    {
-                        value = getRecordValue( element, position );
-                    }
-                    while ( element.shouldRetry() );
-                    msgLog.log( position.name() + " (" + position.description() + "): " + value );
+                    value = getRecordValue( element, position );
                 }
-                return false;
+                while ( element.shouldRetry() );
+                msgLog.log( position.name() + " (" + position.description() + "): " + value );
             }
+            return false;
         } );
     }
 
@@ -838,7 +828,17 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
     @Override
     protected void readRecord( PageCursor cursor, NeoStoreActualRecord record, RecordLoad mode )
     {
-        throw new UnsupportedOperationException();
+        int id = record.getIntId();
+        Position[] values = Position.values();
+        if ( id >= values.length )
+        {
+            record.initialize( false, FIELD_NOT_PRESENT );
+            return;
+        }
+
+        long value = getRecordValue( cursor, values[id] );
+        boolean inUse = value != FIELD_NOT_INITIALIZED && value != FIELD_NOT_PRESENT;
+        record.initialize( inUse, value );
     }
 
     @Override
