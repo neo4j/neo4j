@@ -21,8 +21,11 @@ package cypher.feature.parser;
 
 import cypher.feature.parser.generated.FeatureResultsBaseListener;
 import cypher.feature.parser.generated.FeatureResultsParser;
+import cypher.feature.parser.matchers.BooleanMatcher;
 import cypher.feature.parser.matchers.FloatMatcher;
 import cypher.feature.parser.matchers.IntegerMatcher;
+import cypher.feature.parser.matchers.NullMatcher;
+import cypher.feature.parser.matchers.StringMatcher;
 import cypher.feature.parser.matchers.ValueMatcher;
 
 import java.util.ArrayList;
@@ -61,13 +64,13 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
     @Override
     public void enterInteger( FeatureResultsParser.IntegerContext ctx )
     {
-        workload.push( new IntegerMatcher( Long.valueOf( ctx.getText() )) );
+        workload.push( new IntegerMatcher( Long.valueOf( ctx.getText() ) ) );
     }
 
     @Override
     public void enterNullValue( FeatureResultsParser.NullValueContext ctx )
     {
-        oldworkload.push( null );
+        workload.push( new NullMatcher() );
     }
 
     @Override
@@ -76,18 +79,18 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
         String text = ctx.getText();
         if ( text.contains( INFINITY ) )
         {
-            workload.push( new FloatMatcher(Double.parseDouble( text + "inity" ) ));
+            workload.push( new FloatMatcher( Double.parseDouble( text + "inity" ) ) );
         }
         else
         {
-            workload.push( new FloatMatcher(Double.parseDouble( text ) ));
+            workload.push( new FloatMatcher( Double.parseDouble( text ) ) );
         }
     }
 
     @Override
     public void enterBool( FeatureResultsParser.BoolContext ctx )
     {
-        oldworkload.push( Boolean.valueOf( ctx.getText() ) );
+        workload.push( new BooleanMatcher( Boolean.valueOf( ctx.getText() ) ) );
     }
 
     @Override
@@ -97,7 +100,7 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
         String substring = text.substring( 1,
                 text.length() - 1 ); // remove wrapping quotes -- because I can't get the parser rules correct :(
         String escaped = substring.replace( "\\'", "'" ); // remove escaping backslash -- see above comment
-        oldworkload.push( escaped );
+        workload.push( new StringMatcher( escaped ) );
     }
 
     @Override

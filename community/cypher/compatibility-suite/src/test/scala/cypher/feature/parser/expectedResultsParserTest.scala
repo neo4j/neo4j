@@ -64,22 +64,22 @@ class expectedResultsParserTest extends FunSuite with Matchers {
   }
 
   test("should parse boolean") {
-    valueParse("true") should equal(TRUE)
-    valueParse("false") should equal(FALSE)
+    parse("true") should accept(TRUE)
+    parse("false") should accept(FALSE)
   }
 
   test("should parse string") {
     Seq("", "string", " ", "s p a c e d ", "\n\r\f\t").foreach { s =>
-      valueParse(s"'$s'") should equal(s"$s")
+      parse(s"'$s'") should accept(s"$s")
     }
   }
 
   test("should parse escaped string delimiter") {
-    valueParse("''") should equal("")
-    valueParse("'\\''") should equal("'")
-    valueParse("'\\'\\''") should equal("''")
-    valueParse("'\\'hey\\''") should equal("'hey'")
-    valueParse("'\\'") should equal("\\")
+    parse("''") should accept("")
+    parse("'\\''") should accept("'")
+    parse("'\\'\\''") should accept("''")
+    parse("'\\'hey\\''") should accept("'hey'")
+    parse("'\\'") should accept("\\")
   }
 
   test("should parse list") {
