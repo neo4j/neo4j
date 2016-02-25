@@ -19,19 +19,18 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Timer;
 
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.StartupStatistics;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.udc.UsageData;
@@ -59,9 +58,6 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
         StartupStatistics startupStats();
     }
 
-    /**
-     * No-arg constructor, sets the extension key to "kernel udc".
-     */
     public UdcKernelExtensionFactory()
     {
         super( KEY );
@@ -78,7 +74,7 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
             throws Throwable
     {
         return new UdcKernelExtension(
-                loadConfig( dependencies.config() ),
+                dependencies.config().with( loadUdcProperties() ),
                 dependencies.dataSourceManager(),
                 dependencies.idGeneratorFactory(),
                 dependencies.startupStats(),
@@ -91,33 +87,15 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
         return true;
     }
 
-    private Config loadConfig( Config config )
+    private Map<String, String> loadUdcProperties()
     {
-        Properties udcProps = loadUdcProperties();
-        HashMap<String, String> configParams = new HashMap<String, String>( config.getParams() );
-        for ( Map.Entry<Object, Object> entry : udcProps.entrySet() )
-        {
-            configParams.put( (String) entry.getKey(), (String) entry.getValue() );
-        }
-        return new Config( configParams );
-    }
-
-    private Properties loadUdcProperties()
-    {
-        Properties sysProps = new Properties();
         try
         {
-            InputStream resource = getClass().getResourceAsStream( "/org/neo4j/ext/udc/udc.properties" );
-            if ( resource != null )
-            {
-                sysProps.load( resource );
-            }
+            return MapUtil.load( getClass().getResourceAsStream( "/org/neo4j/ext/udc/udc.properties" ) );
         }
         catch ( Exception e )
         {
-            // AN: commenting out as this provides no value to the user
-            //System.err.println( "failed to load udc.properties, because: " + e );
+            return new HashMap<>();
         }
-        return sysProps;
     }
 }

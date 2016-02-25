@@ -43,6 +43,10 @@ import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.Settings.setting;
+
 @Service.Implementation( ManagementSupport.class )
 public class HotspotManagementSupport extends AdvancedManagementSupport
 {
@@ -76,11 +80,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
         {
             log.warn( "Failed to load local JMX connection URL.", e.getTargetException() );
         }
-        catch ( LinkageError e )
-        {
-            log.warn( "Failed to load local JMX connection URL.", e );
-        }
-        catch ( Exception e )
+        catch ( LinkageError | Exception e )
         {
             log.warn( "Failed to load local JMX connection URL.", e );
         }
@@ -90,7 +90,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
             int port = 0;
             try
             {
-                port = Integer.parseInt( kernel.getConfig().getParams().get( "jmx.port" ) );
+                port = kernel.getConfig().get( setting( "jmx.port", INTEGER, "0" ) );
             }
             catch ( NumberFormatException ok )
             {
@@ -98,7 +98,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
             }
             if ( port > 0 )
             {
-                boolean useSSL = Boolean.parseBoolean( kernel.getConfig().getParams().get( "jmx.use_ssl" ) );
+                boolean useSSL = kernel.getConfig().get( setting( "jmx.use_ssl", BOOLEAN, "false" ) );
                 log.debug( "Creating new MBean server on port %s%s", port, useSSL ? " using ssl" : "" );
                 JMXConnectorServer server = createServer( port, useSSL, log );
                 if ( server != null )
@@ -133,7 +133,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
 
     private JMXServiceURL getUrlFrom( Map<String, String> remote )
     {
-        Set<Integer> instances = new HashSet<Integer>();
+        Set<Integer> instances = new HashSet<>();
         for ( String key : remote.keySet() )
         {
             if ( key.startsWith( "sun.management.JMXConnectorServer" ) )
@@ -248,7 +248,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
             log.warn( "Failed to start JMX Server", e );
             return null;
         }
-        Map<String, Object> env = new HashMap<String, Object>();
+        Map<String, Object> env = new HashMap<>();
         if ( useSSL )
         {
             env.put( RMIConnectorServer.RMI_CLIENT_SOCKET_FACTORY_ATTRIBUTE, new SslRMIClientSocketFactory() );

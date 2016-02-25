@@ -40,6 +40,8 @@ import org.neo4j.logging.Logger;
 
 import static java.util.Arrays.asList;
 
+import static org.neo4j.helpers.collection.Iterables.concat;
+
 /**
  * This class holds the overall configuration of a Neo4j database instance. Use the accessors to convert the internal
  * key-value settings to other types.
@@ -101,11 +103,11 @@ public class Config implements DiagnosticsProvider, Configuration
      *
      * @return a new modified config, leaves this config unchanged.
      */
-    public Config with( Map<String, String> additionalConfig )
+    public Config with( Map<String, String> additionalConfig, Class<?>... settingsClasses )
     {
         Map<String, String> newParams = getParams(); // copy is returned
         newParams.putAll( additionalConfig );
-        return new Config( newParams );
+        return new Config( newParams, concat( this.settingsClasses, asList( settingsClasses ) ) );
     }
 
     // TODO: Get rid of this, to allow us to have something more
