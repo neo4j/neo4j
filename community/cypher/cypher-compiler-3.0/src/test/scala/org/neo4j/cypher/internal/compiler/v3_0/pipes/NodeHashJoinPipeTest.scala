@@ -234,6 +234,46 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     result should have size 11
   }
 
+  ignore("measure reversal impact") {
+
+    def testWithSizes(leftSize: Int, rightSize: Int, reverse: Boolean): Unit = {
+      val queryState = QueryStateHelper.empty
+
+      val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+
+      val innerL = (0 to leftSize map { i => row("b" -> newMockedNode(i)) }).iterator
+      when(left.createResults(queryState)).thenReturn(innerL)
+
+      val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+      val innerR = (0 to rightSize map { i => row("b" -> newMockedNode(i)) }).iterator
+      when(right.createResults(queryState)).thenReturn(innerR)
+
+      // when
+      val result = NodeHashJoinPipe(Set("b"), left, right, dynamicReverse = reverse)().createResults(queryState)
+
+      // then
+      result.size
+    }
+
+    def time(f: => Unit) = {
+      val now = System.nanoTime()
+      f
+      System.nanoTime() - now
+    }
+
+    // warmup stuff
+    testWithSizes(1000, 1000, true)
+
+    for (l <- 0 to 5; r <- 0 to 5) {
+      val leftSize = Math.pow(10, l).toInt
+      val rightSize = Math.pow(10, r).toInt
+      val timeTaken1 = time(testWithSizes(leftSize,  rightSize, true))
+      val timeTaken2 = time(testWithSizes(leftSize,  rightSize, false))
+      println(s"$l $r reversed: ${timeTaken1 / 1000000} standard: ${timeTaken2 / 1000000}")
+    }
+
+  }
+
   class FailingProbeTableCreator(failAt: Long = 100) extends ProbeTableCreator {
     override def create[K: ClassTag, V: ClassTag] = new HashMapProbeTable[K, V]() {
       override def add(k: K, v: V) = {

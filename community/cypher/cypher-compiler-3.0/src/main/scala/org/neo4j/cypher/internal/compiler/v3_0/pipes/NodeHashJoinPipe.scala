@@ -30,7 +30,7 @@ import scala.collection.mutable
 import scala.reflect.ClassTag
 
 case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe,
-                            probeTableCreator: ProbeTableCreator = HashMapProbeTableCreator, reversalSize: Long = 8192L)
+                            probeTableCreator: ProbeTableCreator = HashMapProbeTableCreator, reversalSize: Long = 8192L, dynamicReverse: Boolean = true)
                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
 
@@ -43,7 +43,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe,
     if (rhsIterator.isEmpty)
       return Iterator.empty
 
-    val table = buildProbeTable(input, continueAfterMaxSize = false)
+    val table = buildProbeTable(input, continueAfterMaxSize = !dynamicReverse)
 
     if (table.isEmpty)
       return Iterator.empty
