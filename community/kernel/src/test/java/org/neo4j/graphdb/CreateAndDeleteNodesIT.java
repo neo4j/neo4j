@@ -38,7 +38,7 @@ public class CreateAndDeleteNodesIT
     public void addingALabelUsingAValidIdentifierShouldSucceed() throws Exception
     {
         // Given
-        GraphDatabaseService dataBase = dbRule.getGraphDatabaseService();
+        GraphDatabaseService dataBase = dbRule.getGraphDatabaseAPI();
         Node myNode;
 
         // When

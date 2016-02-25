@@ -59,7 +59,7 @@ public class NodeCountsTest
     public void shouldReportNumberOfNodes() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.createNode();
@@ -78,7 +78,7 @@ public class NodeCountsTest
     public void shouldReportAccurateNumberOfNodesAfterDeletion() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         Node one;
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -103,7 +103,7 @@ public class NodeCountsTest
     public void shouldIncludeNumberOfNodesAddedInTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.createNode();
@@ -128,7 +128,7 @@ public class NodeCountsTest
     public void shouldIncludeNumberOfNodesDeletedInTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         Node one;
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -154,7 +154,7 @@ public class NodeCountsTest
     public void shouldNotSeeNodeCountsOfOtherTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         final Barrier.Control barrier = new Barrier.Control();
         long before = numberOfNodes();
         Future<Long> done = threading.execute( new NamedFunction<GraphDatabaseService, Long>( "create-nodes" )
@@ -191,7 +191,7 @@ public class NodeCountsTest
     /** Transactional version of {@link #countsForNode()} */
     private long numberOfNodes()
     {
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
         {
             long nodeCount = countsForNode();
             tx.success();

@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
@@ -27,7 +28,7 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -38,11 +39,13 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class DatabaseMetadataServiceTest
 {
-    @Test
-    public void shouldAdvertiseRelationshipTypesThatCurrentlyExistInTheDatabase() throws Throwable
+    private GraphDatabaseFacade db;
+    private long relId;
+
+    @Before
+    public void setup()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        long relId;
+        db = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
@@ -51,7 +54,11 @@ public class DatabaseMetadataServiceTest
             relId = node.createRelationshipTo( db.createNode(), withName( "c" ) ).getId();
             tx.success();
         }
+    }
 
+    @Test
+    public void shouldAdvertiseRelationshipTypesThatCurrentlyExistInTheDatabase() throws Throwable
+    {
         try ( Transaction tx = db.beginTx() )
         {
             db.getRelationshipById( relId ).delete();
@@ -76,17 +83,6 @@ public class DatabaseMetadataServiceTest
     @Test
     public void shouldAdvertiseRelationshipTypesThatCurrentlyInUseInTheDatabase() throws Throwable
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        long relId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.createNode();
-            node.createRelationshipTo( db.createNode(), withName( "a" ) );
-            node.createRelationshipTo( db.createNode(), withName( "b" ) );
-            relId = node.createRelationshipTo( db.createNode(), withName( "c" ) ).getId();
-            tx.success();
-        }
-
         try ( Transaction tx = db.beginTx() )
         {
             db.getRelationshipById( relId ).delete();

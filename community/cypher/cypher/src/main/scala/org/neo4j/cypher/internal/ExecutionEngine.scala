@@ -80,35 +80,16 @@ class ExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider
   private val javaValues = new JavaResultValueConverter(isGraphKernelResultValue)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String): ExtendedExecutionResult = profile(query, Map[String, Any](), QueryEngineProvider.embeddedSession)
+  def profile(query: String, params: JavaMap[String, Any], session: QuerySession): ExtendedExecutionResult =
+    profile(query, params.asScala.toMap, session)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, params: JavaMap[String, Any]): ExtendedExecutionResult = profile(query, params.asScala.toMap, QueryEngineProvider.embeddedSession)
-
-  @throws(classOf[SyntaxException])
-  def profile(query: String, params: Map[String, Any]): ExtendedExecutionResult = profile(query, params, QueryEngineProvider.embeddedSession)
-
-  @throws(classOf[SyntaxException])
-  def profile(query: String, params: Map[String, Any],session: QuerySession): ExtendedExecutionResult = {
+  def profile(query: String, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
     val javaParams = javaValues.asDeepJavaResultMap(params).asInstanceOf[JavaMap[String, AnyRef]]
     executionMonitor.startQueryExecution(session, query, javaParams)
     val (preparedPlanExecution, transactionalContext) = planQuery(query)
     preparedPlanExecution.profile(transactionalContext, params, session)
   }
-
-  @throws(classOf[SyntaxException])
-  def profile(query: String, params: JavaMap[String, Any], session: QuerySession): ExtendedExecutionResult =
-    profile(query, params.asScala.toMap, session)
-
-  @throws(classOf[SyntaxException])
-  def execute(query: String): ExtendedExecutionResult = execute(query, Map[String, Any]())
-
-  @throws(classOf[SyntaxException])
-  def execute(query: String, params: JavaMap[String, Any]): ExtendedExecutionResult = execute(query, params.asScala.toMap, QueryEngineProvider.embeddedSession)
-
-  @throws(classOf[SyntaxException])
-  def execute(query: String, params: Map[String, Any]): ExtendedExecutionResult =
-    execute(query, params, QueryEngineProvider.embeddedSession)
 
   @throws(classOf[SyntaxException])
   def execute(query: String, params: JavaMap[String, Any], session: QuerySession): ExtendedExecutionResult =

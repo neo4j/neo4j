@@ -51,7 +51,7 @@ public class LabelScanStoreIT
         Node node3 = createLabeledNode( Labels.Third );
         Node node4 = createLabeledNode( Labels.First, Labels.Second, Labels.Third );
         Node node5 = createLabeledNode( Labels.First, Labels.Third );
-        
+
         // THEN
         assertEquals(
                 asSet( node1, node4, node5 ),
@@ -63,7 +63,7 @@ public class LabelScanStoreIT
                 asSet( node3, node4, node5 ),
                 asSet( getAllNodesWithLabel( Labels.Third ) ) );
     }
-    
+
     @Test
     public void shouldGetNodesWithAddedLabel() throws Exception
     {
@@ -73,11 +73,11 @@ public class LabelScanStoreIT
         Node node3 = createLabeledNode( Labels.Third );
         Node node4 = createLabeledNode( Labels.First );
         Node node5 = createLabeledNode( Labels.First );
-        
+
         // WHEN
         addLabels( node4, Labels.Second, Labels.Third );
         addLabels( node5, Labels.Third );
-        
+
         // THEN
         assertEquals(
                 asSet( node1, node4, node5 ),
@@ -89,17 +89,17 @@ public class LabelScanStoreIT
                 asSet( node3, node4, node5 ),
                 asSet( getAllNodesWithLabel( Labels.Third ) ) );
     }
-    
+
     @Test
     public void shouldGetNodesAfterDeletedNodes() throws Exception
     {
         // GIVEN
         Node node1 = createLabeledNode( Labels.First, Labels.Second );
         Node node2 = createLabeledNode( Labels.First, Labels.Third );
-        
+
         // WHEN
         deleteNode( node1 );
-        
+
         // THEN
         assertEquals(
                 asSet( node2 ),
@@ -111,18 +111,18 @@ public class LabelScanStoreIT
                 asSet( node2 ),
                 getAllNodesWithLabel( Labels.Third ) );
     }
-    
+
     @Test
     public void shouldGetNodesAfterRemovedLabels() throws Exception
     {
         // GIVEN
         Node node1 = createLabeledNode( Labels.First, Labels.Second );
         Node node2 = createLabeledNode( Labels.First, Labels.Third );
-        
+
         // WHEN
         removeLabels( node1, Labels.First );
         removeLabels( node2, Labels.Third );
-        
+
         // THEN
         assertEquals(
                 asSet( node2 ),
@@ -176,10 +176,10 @@ public class LabelScanStoreIT
             }
         }
     }
-    
+
     private void removeLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
             for ( Label label : labels )
             {
@@ -191,7 +191,7 @@ public class LabelScanStoreIT
 
     private void deleteNode( Node node )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
             node.delete();
             tx.success();
@@ -200,25 +200,25 @@ public class LabelScanStoreIT
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
-            return asSet( dbRule.getGraphDatabaseService().findNodes( label ) );
+            return asSet( dbRule.getGraphDatabaseAPI().findNodes( label ) );
         }
     }
 
     private Node createLabeledNode( Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
-            Node node = dbRule.getGraphDatabaseService().createNode( labels );
+            Node node = dbRule.getGraphDatabaseAPI().createNode( labels );
             tx.success();
             return node;
         }
     }
-    
+
     private void addLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
             for ( Label label : labels )
             {

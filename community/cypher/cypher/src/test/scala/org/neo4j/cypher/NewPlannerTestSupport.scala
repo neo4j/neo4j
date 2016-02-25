@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherTestSupport
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Exceptions
+import org.neo4j.kernel.impl.query.QueryEngineProvider
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.util.{Failure, Success, Try}
@@ -274,7 +275,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   }
 
   protected def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult =
-    eengine.execute(queryText, params.toMap) match {
+    eengine.execute(queryText, params.toMap, QueryEngineProvider.embeddedSession()) match {
       case e:ExecutionResultWrapperFor3_0 => RewindableExecutionResult(e)
       case e:ExecutionResultWrapperFor2_3 => RewindableExecutionResult(e)
     }

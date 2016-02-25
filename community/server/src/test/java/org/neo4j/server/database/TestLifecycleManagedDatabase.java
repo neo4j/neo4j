@@ -19,18 +19,19 @@
  */
 package org.neo4j.server.database;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.configuration.ServerSettings;
@@ -43,7 +44,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
@@ -72,7 +72,7 @@ public class TestLifecycleManagedDatabase
 
         dbFactory = mock( LifecycleManagingDatabase.GraphFactory.class );
         when(dbFactory.newGraphDatabase( any( Config.class ), any( GraphDatabaseFacadeFactory.Dependencies.class ) ))
-                .thenReturn( dbRule.getGraphDatabaseAPI() );
+                .thenReturn( (GraphDatabaseFacade) dbRule.getGraphDatabaseAPI() );
         dbConfig = new Config(stringMap( ServerSettings.data_directory.name(), dataDirectory.getAbsolutePath() ) );
         theDatabase = newDatabase();
     }

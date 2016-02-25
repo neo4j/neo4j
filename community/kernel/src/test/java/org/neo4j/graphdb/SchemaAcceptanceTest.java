@@ -498,7 +498,7 @@ public class SchemaAcceptanceTest
     @Before
     public void init()
     {
-        db = dbRule.getGraphDatabaseService();
+        db = dbRule.getGraphDatabaseAPI();
     }
 
     private void dropConstraint( GraphDatabaseService db, ConstraintDefinition constraint )

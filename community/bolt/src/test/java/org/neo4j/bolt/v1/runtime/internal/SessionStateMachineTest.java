@@ -29,12 +29,13 @@ import java.util.Collections;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
@@ -51,7 +52,7 @@ import static org.mockito.Mockito.when;
 
 public class SessionStateMachineTest
 {
-    private final GraphDatabaseService db = mock( GraphDatabaseService.class );
+    private final GraphDatabaseFacade db = mock( GraphDatabaseFacade.class );
     private final ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
     private final Transaction tx = mock( TopLevelTransaction.class );
     private final KernelTransaction ktx = mock( KernelTransaction.class );
@@ -131,7 +132,7 @@ public class SessionStateMachineTest
 
         // Then
         assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.STOPPED ) );
-        verify( db ).beginTx();
+        verify( db ).beginTransaction( any( KernelTransaction.Type.class ), any( AccessMode.class ));
         verify( ktx ).close();
     }
 

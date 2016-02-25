@@ -22,7 +22,9 @@ package org.neo4j.cypher
 import java.util
 
 import org.neo4j.graphdb._
+import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.query.QueryEngineProvider
 import org.scalatest.Assertions
 
 import scala.collection.JavaConverters._
@@ -219,7 +221,9 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
       Map("name" -> "Michael", "prefers" -> "Java"),
       Map("name" -> "Peter", "prefers" -> "Java"))
 
-    intercept[CypherTypeException](eengine.execute("cypher planner=rule create ({params})", Map("params" -> maps)))
+    intercept[CypherTypeException](
+      eengine.execute("cypher planner=rule create ({params})", Map("params" -> maps), QueryEngineProvider.embeddedSession())
+    )
   }
 
   test("fail to create from two iterables") {
@@ -392,7 +396,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("failure_only_fails_inner_transaction") {
-    val tx = graph.beginTx()
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
     try {
       executeWithRulePlanner("match (a) where id(a) = {id} set a.foo = 'bar' return a","id"->"0")
     } catch {

@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 
 /**
  * To run a Cypher query, use this class.
@@ -44,95 +43,11 @@ public class ExecutionEngine implements QueryExecutionEngine
     /**
      * Creates an execution engine around the give graph database
      * @param database The database to wrap
-     */
-    public ExecutionEngine( GraphDatabaseQueryService database )
-    {
-        inner = createInnerEngine( database, NullLogProvider.getInstance() );
-    }
-
-    /**
-     * Creates an execution engine around the give graph database
-     * @param database The database to wrap
      * @param logProvider A {@link LogProvider} for cypher-statements
      */
     public ExecutionEngine( GraphDatabaseQueryService database, LogProvider logProvider )
     {
-        inner = createInnerEngine( database, logProvider );
-    }
-
-    protected org.neo4j.cypher.internal.ExecutionEngine createInnerEngine( GraphDatabaseQueryService database, LogProvider logProvider )
-    {
-        return new org.neo4j.cypher.internal.ExecutionEngine( database, logProvider );
-    }
-
-    /**
-     * Executes a query and returns an iterable that contains the result set
-     * @param query The query to execute
-     * @return A ExecutionResult that contains the result set
-     * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
-     * a SyntaxException exception might be thrown
-     */
-    public ExecutionResult execute( String query ) throws CypherException
-    {
-        return new ExecutionResult( inner.execute( query ) );
-    }
-
-    /**
-     * Executes a query and returns an iterable that contains the result set
-     * @param query The query to execute
-     * @param params Parameters for the query
-     * @return A ExecutionResult that contains the result set
-     * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
-     * a SyntaxException exception might be thrown
-     */
-    public ExecutionResult execute( String query, Map<String, Object> params) throws CypherException
-    {
-        return new ExecutionResult( inner.execute( query, params ) );
-    }
-
-    /**
-     * Profiles a query and returns an iterable that contains the result set.
-     * Note that in order to gather profiling information, this actually executes
-     * the query as well. You can wrap a call to this in a transaction that you
-     * roll back if you don't want the query to have an actual effect on the data.
-     *
-     * @param query The query to profile
-     * @return A ExecutionResult that contains the result set
-     * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
-     * a SyntaxException exception might be thrown
-     */
-    public ExecutionResult profile( String query ) throws CypherException
-    {
-        return new ExecutionResult( inner.profile( query ) );
-    }
-
-    /**
-     * Profiles a query and returns an iterable that contains the result set.
-     * Note that in order to gather profiling information, this actually executes
-     * the query as well. You can wrap a call to this in a transaction that you
-     * roll back if you don't want the query to have an actual effect on the data.
-     *
-     * @param query The query to profile
-     * @param params Parameters for the query
-     * @return A ExecutionResult that contains the result set
-     * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
-     * a SyntaxException exception might be thrown
-     */
-    public ExecutionResult profile( String query, Map<String, Object> params) throws CypherException
-    {
-        return new ExecutionResult( inner.profile( query, params ) );
-    }
-
-    /**
-     * Turns a valid Cypher query and returns it with keywords in uppercase,
-     * and new-lines in the appropriate places.
-     *
-     * @param query The query to make pretty
-     * @return The same query, but prettier
-     */
-    public String prettify( String query )
-    {
-        return inner.prettify( query );
+        inner = new org.neo4j.cypher.internal.ExecutionEngine( database, logProvider );
     }
 
     @Override
@@ -150,12 +65,6 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     @Override
-    public boolean isPeriodicCommit( String query )
-    {
-        return inner.isPeriodicCommit( query );
-    }
-
-    @Override
     public Result profileQuery( String query, Map<String, Object> parameters, QuerySession session ) throws QueryExecutionKernelException
     {
         try
@@ -166,5 +75,24 @@ public class ExecutionEngine implements QueryExecutionEngine
         {
             throw new QueryExecutionKernelException( e );
         }
+    }
+
+    @Override
+    public boolean isPeriodicCommit( String query )
+    {
+        return inner.isPeriodicCommit( query );
+    }
+
+    /**
+     * Turns a valid Cypher query and returns it with keywords in uppercase,
+     * and new-lines in the appropriate places.
+     *
+     * @param query The query to make pretty
+     * @return The same query, but prettier
+     */
+    @Override
+    public String prettify( String query )
+    {
+        return inner.prettify( query );
     }
 }

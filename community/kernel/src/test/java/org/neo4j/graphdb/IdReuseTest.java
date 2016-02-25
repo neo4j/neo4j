@@ -36,7 +36,7 @@ public class IdReuseTest
     public void shouldReuseNodeIdsFromRolledBackTransaction() throws Exception
     {
         // Given
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try (Transaction tx = db.beginTx())
         {
             db.createNode();
@@ -63,7 +63,7 @@ public class IdReuseTest
     public void shouldReuseRelationshipIdsFromRolledBackTransaction() throws Exception
     {
         // Given
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Node node1, node2;
         try (Transaction tx = db.beginTx())
         {

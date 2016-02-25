@@ -21,8 +21,8 @@ package org.neo4j.bolt.v1.runtime.internal;
 
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.Sessions;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -35,7 +35,7 @@ import org.neo4j.udc.UsageData;
  */
 public class StandardSessions extends LifecycleAdapter implements Sessions
 {
-    private final GraphDatabaseAPI gds;
+    private final GraphDatabaseFacade gds;
     private final LifeSupport life = new LifeSupport();
     private final UsageData usageData;
     private final LogService logging;
@@ -43,8 +43,7 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     private CypherStatementRunner statementRunner;
     private ThreadToStatementContextBridge txBridge;
 
-    public StandardSessions( GraphDatabaseAPI gds,
-            UsageData usageData, LogService logging,
+    public StandardSessions( GraphDatabaseFacade gds, UsageData usageData, LogService logging,
             ThreadToStatementContextBridge txBridge)
     {
         this.gds = gds;
@@ -62,9 +61,9 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     @Override
     public void start() throws Throwable
     {
-        QueryExecutionEngine engine =
+        QueryExecutionEngine queryExecutionEngine =
                 gds.getDependencyResolver().resolveDependency( QueryExecutionEngine.class );
-        statementRunner = new CypherStatementRunner( gds, engine );
+        statementRunner = new CypherStatementRunner( queryExecutionEngine );
         life.start();
     }
 

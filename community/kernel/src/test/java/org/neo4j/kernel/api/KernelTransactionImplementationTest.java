@@ -22,8 +22,6 @@ package org.neo4j.kernel.api;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -40,6 +38,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.test.DoubleLatch;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -50,8 +49,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @RunWith( Parameterized.class )
 public class KernelTransactionImplementationTest extends KernelTransactionTestBase
@@ -81,7 +78,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldCommitSuccessfulTransaction() throws Exception
     {
         // GIVEN
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
             transactionConsumer.accept( transaction );
@@ -93,11 +90,16 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
+    private AccessMode accessMode()
+    {
+        return isWriteTx ? AccessMode.WRITE : AccessMode.READ;
+    }
+
     @Test
     public void shouldRollbackUnsuccessfulTransaction() throws Exception
     {
         // GIVEN
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
             transactionConsumer.accept( transaction );
@@ -112,7 +114,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldRollbackFailedTransaction() throws Exception
     {
         // GIVEN
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
             transactionConsumer.accept( transaction );
@@ -129,7 +131,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         // GIVEN
         boolean exceptionReceived = false;
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
             transactionConsumer.accept( transaction );
@@ -153,7 +155,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         // GIVEN
         boolean exceptionReceived = false;
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
             transactionConsumer.accept( transaction );
@@ -178,7 +180,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void shouldRollbackOnClosingSuccessfulButTerminatedTransaction() throws Exception
     {
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
             transactionConsumer.accept( transaction );
@@ -197,7 +199,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         // GIVEN
         boolean exceptionReceived = false;
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
             transactionConsumer.accept( transaction );
@@ -221,7 +223,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void shouldNotDowngradeFailureState() throws Exception
     {
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
             transactionConsumer.accept( transaction );
@@ -239,7 +241,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void shouldIgnoreTerminateAfterCommit() throws Exception
     {
-        KernelTransaction transaction = newTransaction();
+        KernelTransaction transaction = newTransaction( accessMode() );
         transactionConsumer.accept( transaction );
         transaction.success();
         transaction.close();
@@ -253,7 +255,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void shouldIgnoreTerminateAfterRollback() throws Exception
     {
-        KernelTransaction transaction = newTransaction();
+        KernelTransaction transaction = newTransaction( accessMode() );
         transactionConsumer.accept( transaction );
         transaction.close();
         transaction.markForTermination();
@@ -266,7 +268,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test( expected = TransactionFailureException.class )
     public void shouldThrowOnTerminationInCommit() throws Exception
     {
-        KernelTransaction transaction = newTransaction();
+        KernelTransaction transaction = newTransaction( accessMode() );
         transactionConsumer.accept( transaction );
         transaction.success();
         transaction.markForTermination();
@@ -276,7 +278,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void shouldIgnoreTerminationDuringRollback() throws Exception
     {
-        KernelTransaction transaction = newTransaction();
+        KernelTransaction transaction = newTransaction( accessMode() );
         transactionConsumer.accept( transaction );
         transaction.markForTermination();
         transaction.close();
@@ -298,24 +300,19 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         // GIVEN
         final ChildException childException = new ChildException();
         final DoubleLatch latch = new DoubleLatch( 1 );
-        final KernelTransaction transaction = newTransaction();
+        final KernelTransaction transaction = newTransaction( accessMode() );
         transactionConsumer.accept( transaction );
 
-        Thread thread = new Thread( new Runnable()
-        {
-            @Override
-            public void run()
+        Thread thread = new Thread( () -> {
+            try
             {
-                try
-                {
-                    latch.awaitStart();
-                    transaction.markForTermination();
-                    latch.finish();
-                }
-                catch ( Exception e )
-                {
-                    childException.exception = e;
-                }
+                latch.awaitStart();
+                transaction.markForTermination();
+                latch.finish();
+            }
+            catch ( Exception e )
+            {
+                childException.exception = e;
             }
         } );
 
@@ -353,24 +350,19 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         // GIVEN a transaction starting at one point in time
         long startingTime = clock.currentTimeMillis();
         when( legacyIndexState.hasChanges() ).thenReturn( true );
-        doAnswer( new Answer<Void>()
-        {
-            @Override
-            public Void answer( InvocationOnMock invocation ) throws Throwable
-            {
-                Collection<StorageCommand> commands = invocation.getArgumentAt( 0, Collection.class );
-                commands.add( mock( Command.class ) );
-                return null;
-            }
+        doAnswer( invocation -> {
+            Collection<StorageCommand> commands = invocation.getArgumentAt( 0, Collection.class );
+            commands.add( mock( Command.class ) );
+            return null;
         } ).when( storageEngine ).createCommands(
                 any( Collection.class ),
                 any( TransactionState.class ),
                 any( ResourceLocker.class ),
                 anyLong() );
 
-        try ( KernelTransactionImplementation transaction = newTransaction() )
+        try ( KernelTransactionImplementation transaction = newTransaction( accessMode() ) )
         {
-            transaction.initialize( 5L, mock( Locks.Client.class ) );
+            transaction.initialize( 5L, mock( Locks.Client.class ), KernelTransaction.Type.implicit, AccessMode.FULL );
             try ( KernelStatement statement = transaction.acquireStatement() )
             {
                 statement.legacyIndexTxState(); // which will pull it from the supplier and the mocking above
@@ -392,7 +384,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void successfulTxShouldNotifyKernelTransactionsThatItIsClosed() throws TransactionFailureException
     {
-        KernelTransactionImplementation tx = newTransaction();
+        KernelTransactionImplementation tx = newTransaction( accessMode() );
 
         tx.success();
         tx.close();
@@ -403,7 +395,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void failedTxShouldNotifyKernelTransactionsThatItIsClosed() throws TransactionFailureException
     {
-        KernelTransactionImplementation tx = newTransaction();
+        KernelTransactionImplementation tx = newTransaction( accessMode() );
 
         tx.failure();
         tx.close();

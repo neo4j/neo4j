@@ -17,43 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.database;
+package org.neo4j.kernel.impl.coreapi;
 
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.KernelTransaction;
 
-public class WrappedDatabase extends LifecycleAdapter implements Database
+public interface InternalTransaction extends Transaction
 {
-    private final GraphDatabaseFacade graph;
-
-    public WrappedDatabase( GraphDatabaseFacade graph )
-    {
-        this.graph = graph;
-        try
-        {
-            start();
-        }
-        catch ( Throwable throwable )
-        {
-            throw new RuntimeException( throwable );
-        }
-    }
-
-    @Override
-    public String getLocation()
-    {
-        return graph.getStoreDir();
-    }
-
-    @Override
-    public GraphDatabaseFacade getGraph()
-    {
-        return graph;
-    }
-
-    @Override
-    public boolean isRunning()
-    {
-        return true;
-    }
+    KernelTransaction.Type transactionType();
+    AccessMode mode();
 }

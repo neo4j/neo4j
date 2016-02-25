@@ -27,7 +27,11 @@ import org.junit.Test;
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.not;
@@ -38,18 +42,19 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class CypherUpdateMapTest
 {
-
     private ExecutionEngine engine;
     private GraphDatabaseCypherService gdb;
+    private QuerySession session = QueryEngineProvider.embeddedSession();
 
     @Test
-    public void updateNodeByMapParameter()
+    public void updateNodeByMapParameter() throws Throwable
     {
-        engine.execute(
+        engine.executeQuery(
                 "CREATE (n:Reference) SET n = {data} RETURN n" ,
                 map( "data",
                         map("key1", "value1", "key2", 1234)
-                )
+                ),
+                session
         );
 
         Node node1 = getNodeByIdInTx( 0 );
@@ -57,11 +62,12 @@ public class CypherUpdateMapTest
         assertThat( node1, inTxS( hasProperty( "key1" ).withValue( "value1" ) ) );
         assertThat( node1, inTxS( hasProperty( "key2" ).withValue( 1234 ) ) );
 
-        engine.execute(
+        engine.executeQuery(
                 "MATCH (n:Reference) SET n = {data} RETURN n",
                 map( "data",
                         map("key1", null, "key3", 5678)
-                )
+                ),
+                session
         );
 
         Node node2 = getNodeByIdInTx( 0 );
@@ -78,7 +84,7 @@ public class CypherUpdateMapTest
 
     private Node getNodeByIdInTx( int nodeId )
     {
-        try ( Transaction ignored = gdb.beginTx(); )
+        try ( Transaction ignored = gdb.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ) )
         {
             return gdb.getNodeById( nodeId );
         }
@@ -87,8 +93,8 @@ public class CypherUpdateMapTest
     @Before
     public void setup()
     {
-        gdb = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase());
-        engine = new ExecutionEngine(gdb);
+        gdb = new GraphDatabaseCypherService( new TestGraphDatabaseFactory().newImpermanentDatabase() );
+        engine = new ExecutionEngine( gdb, NullLogProvider.getInstance() );
     }
 
     @After

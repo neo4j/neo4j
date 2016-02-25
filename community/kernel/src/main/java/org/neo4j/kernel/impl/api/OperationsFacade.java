@@ -1024,6 +1024,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallWrite( ProcedureName name, Object[] input ) throws ProcedureException
     {
+        // FIXME: should this be AccessMode.WRITE instead?
         return callProcedure( name, input, AccessMode.FULL );
     }
     // </DataWrite>
@@ -1396,17 +1397,12 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws ProcedureException
     {
         statement.assertOpen();
-        AccessMode originalMode = tx.mode();
-        try
+
+        try ( KernelTransaction.Revertable revertable = tx.restrict( read ) )
         {
-            tx.setMode( read );
             CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
             ctx.put( CallableProcedure.Context.KERNEL_TRANSACTION, tx );
             return procedures.call( ctx, name, input );
-        }
-        finally
-        {
-            tx.setMode( originalMode );
         }
     }
 }

@@ -30,7 +30,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.TestGraphDatabaseFactory
 
-class ExecutionEngineIT extends CypherFunSuite {
+class ExecutionEngineIT extends CypherFunSuite with TestFriendlyExecutionEngine {
 
   test("by default when using cypher 2.3 some queries should default to COST") {
     //given

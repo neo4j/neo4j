@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSear
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.kernel.api.{DataWriteOperations, KernelAPI}
+import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.monitoring
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -145,14 +145,6 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     while (nodeIterator.hasNext) {
       nodeIterator.next().delete()
     }
-  }
-
-  def execStatement[T](f: (DataWriteOperations => T)): T = {
-    val tx = graph.beginTx
-    val result = f(statement.dataWriteOperations())
-    tx.success()
-    tx.close()
-    result
   }
 
   def nodeIds = nodes.map(_.getId).toArray

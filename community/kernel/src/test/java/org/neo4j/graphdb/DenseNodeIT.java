@@ -40,7 +40,7 @@ public class DenseNodeIT
     public void testBringingNodeOverDenseThresholdIsConsistent() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = databaseRule.getGraphDatabaseService();
+        GraphDatabaseService db = databaseRule.getGraphDatabaseAPI();
 
 
         Node root;
@@ -84,7 +84,7 @@ public class DenseNodeIT
     public void deletingRelationshipsFromDenseNodeIsConsistent() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = databaseRule.getGraphDatabaseService();
+        GraphDatabaseService db = databaseRule.getGraphDatabaseAPI();
 
         Node root;
         try( Transaction tx = db.beginTx() )
@@ -118,7 +118,7 @@ public class DenseNodeIT
     public void movingBilaterallyOfTheDenseNodeThresholdIsConsistent() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = databaseRule.getGraphDatabaseService();
+        GraphDatabaseService db = databaseRule.getGraphDatabaseAPI();
 
         Node root;
         // WHEN
@@ -149,7 +149,7 @@ public class DenseNodeIT
     public void testBringingTwoConnectedNodesOverDenseThresholdIsConsistent() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = databaseRule.getGraphDatabaseService();
+        GraphDatabaseService db = databaseRule.getGraphDatabaseAPI();
 
         Node source;
         Node sink;

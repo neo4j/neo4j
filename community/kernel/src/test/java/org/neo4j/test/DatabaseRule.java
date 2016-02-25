@@ -66,7 +66,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     private boolean startEagerly = true;
 
     /**
-     * Means the database will be started on first {@link #getGraphDatabaseAPI()}, {@link #getGraphDatabaseService()}
+     * Means the database will be started on first {@link #getGraphDatabaseAPI()}}
      * or {@link #ensureStarted()} call.
      */
     public DatabaseRule startLazily()
@@ -77,7 +77,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 
     public <T> T when( Function<GraphDatabaseService, T> function )
     {
-        return function.apply( getGraphDatabaseService() );
+        return function.apply( getGraphDatabaseAPI() );
     }
 
     public void executeAndCommit( Consumer<? super GraphDatabaseService> consumer )
@@ -106,7 +106,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 
     private <T> T transaction( Function<? super GraphDatabaseService, T> function, boolean commit )
     {
-        GraphDatabaseService db = getGraphDatabaseService();
+        GraphDatabaseService db = getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             T result = function.apply( db );
@@ -146,13 +146,13 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     @Override
     public Node getNodeById( long id )
     {
-        return getGraphDatabaseService().getNodeById( id );
+        return getGraphDatabaseAPI().getNodeById( id );
     }
 
     @Override
     public IndexManager index()
     {
-        return getGraphDatabaseService().index();
+        return getGraphDatabaseAPI().index();
     }
 
     @Override
@@ -231,16 +231,6 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     public void resetConfig()
     {
         GraphDatabaseBuilderTestTools.clearConfig( databaseBuilder );
-    }
-
-    /**
-     * {@link DatabaseRule} now implements {@link GraphDatabaseAPI} directly, so no need. Also for ensuring
-     * a lazily started database is created, use {@link #ensureStarted()} instead.
-     */
-    @Deprecated
-    public GraphDatabaseService getGraphDatabaseService()
-    {
-        return getGraphDatabaseAPI();
     }
 
     /**

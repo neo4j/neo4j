@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.EstimatedRows
+import org.neo4j.kernel.impl.query.QueryEngineProvider
 
 /**
  * Runs the 14 LDBC queries and checks so that the result is what is expected.
@@ -32,7 +33,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     test(ldbcQuery.name) {
       try {
         //given
-        eengine.execute(ldbcQuery.createQuery, ldbcQuery.createParams)
+        eengine.execute(ldbcQuery.createQuery, ldbcQuery.createParams, QueryEngineProvider.embeddedSession())
         ldbcQuery.constraintQueries.foreach(updateWithBothPlannersAndCompatibilityMode(_))
 
         //when

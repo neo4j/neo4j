@@ -38,6 +38,7 @@ package org.neo4j.cypher.docgen.tooling
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import org.neo4j.cypher.TestFriendlyExecutionEngine
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -45,7 +46,9 @@ import org.neo4j.test.TestGraphDatabaseFactory
 import scala.util.Try
 
 /* I exist so my users can have a restartable database that is lazily created */
-class RestartableDatabase(init: Seq[String], factory: TestGraphDatabaseFactory = new TestGraphDatabaseFactory()) {
+class RestartableDatabase(init: Seq[String], factory: TestGraphDatabaseFactory = new TestGraphDatabaseFactory())
+  extends TestFriendlyExecutionEngine {
+
   private var _db: GraphDatabaseCypherService = null
   private var _engine: ExecutionEngine = null
   private var _failures: Seq[QueryRunResult] = null
@@ -101,5 +104,4 @@ class RestartableDatabase(init: Seq[String], factory: TestGraphDatabaseFactory =
       val result = Try(engine.execute(q))
       result.failed.toOption.map((e: Throwable) => QueryRunResult(q, new ErrorPlaceHolder(), Left(e)))
     }
-
 }

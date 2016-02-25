@@ -124,7 +124,7 @@ public class LabelsAcceptanceTest
     public void addingALabelUsingAValidIdentifierShouldSucceed() throws Exception
     {
         // Given
-        GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
         Node myNode = null;
 
         // When
@@ -144,7 +144,7 @@ public class LabelsAcceptanceTest
     public void addingALabelUsingAnInvalidIdentifierShouldFail() throws Exception
     {
         // Given
-        GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
 
         // When I set an empty label
         try ( Transaction tx = graphDatabase.beginTx() )
@@ -171,7 +171,7 @@ public class LabelsAcceptanceTest
     public void addingALabelThatAlreadyExistsBehavesAsNoOp() throws Exception
     {
         // Given
-        GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
         Node myNode = null;
 
         // When
@@ -213,7 +213,7 @@ public class LabelsAcceptanceTest
     public void removingCommittedLabel() throws Exception
     {
         // Given
-        GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
         Label label = Labels.MY_LABEL;
         Node myNode = createNode( graphDatabase, label );
 
@@ -232,7 +232,7 @@ public class LabelsAcceptanceTest
     public void createNodeWithLabels() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
         // WHEN
         Node node = null;
@@ -250,7 +250,7 @@ public class LabelsAcceptanceTest
     public void removingNonExistentLabel() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Label label = Labels.MY_LABEL;
 
         // When
@@ -270,7 +270,7 @@ public class LabelsAcceptanceTest
     public void removingExistingLabelFromUnlabeledNode() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Label label = Labels.MY_LABEL;
         createNode( beansAPI, label );
         Node myNode = createNode( beansAPI );
@@ -290,7 +290,7 @@ public class LabelsAcceptanceTest
     public void removingUncommittedLabel() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Label label = Labels.MY_LABEL;
 
         // When
@@ -312,7 +312,7 @@ public class LabelsAcceptanceTest
     public void shouldBeAbleToListLabelsForANode() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Node node = null;
         Set<String> expected = asSet( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() );
         try (Transaction tx = beansAPI.beginTx())
@@ -332,7 +332,7 @@ public class LabelsAcceptanceTest
     public void shouldReturnEmptyListIfNoLabels() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Node node = createNode( beansAPI );
 
         // WHEN THEN
@@ -343,7 +343,7 @@ public class LabelsAcceptanceTest
     public void getNodesWithLabelCommitted() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
 
         // When
         Node node = null;
@@ -363,7 +363,7 @@ public class LabelsAcceptanceTest
     public void getNodesWithLabelsWithTxAddsAndRemoves() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Node node1 = createNode( beansAPI, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
         Node node2 = createNode( beansAPI, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
 
@@ -389,7 +389,7 @@ public class LabelsAcceptanceTest
     public void shouldListLabels() throws Exception
     {
         // Given
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         createNode( db, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
         List<Label> labels = null;
 
@@ -415,7 +415,7 @@ public class LabelsAcceptanceTest
     public void deleteAllNodesAndTheirLabels() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         final Label label = label( "A" );
         try ( Transaction tx = db.beginTx() )
         {
@@ -447,7 +447,7 @@ public class LabelsAcceptanceTest
     public void removingLabelDoesNotBreakPreviouslyCreatedLabelsIterator()
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Label label1 = label( "A" );
         Label label2 = label( "B" );
 
@@ -467,7 +467,7 @@ public class LabelsAcceptanceTest
     public void removingPropertyDoesNotBreakPreviouslyCreatedNodePropertyKeysIterator()
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -491,7 +491,7 @@ public class LabelsAcceptanceTest
     {
         // given
         final int TOTAL_NUMBER_OF_LABELS = 200, NUMBER_OF_PRESERVED_LABELS = 20;
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
@@ -532,7 +532,7 @@ public class LabelsAcceptanceTest
     public void shouldAllowManyLabelsAndPropertyCursor()
     {
         // given
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Node node;
         try ( Transaction tx = db.beginTx() )
         {

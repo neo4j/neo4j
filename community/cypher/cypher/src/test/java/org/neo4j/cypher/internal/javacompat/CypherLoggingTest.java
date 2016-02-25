@@ -19,39 +19,39 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import java.io.IOException;
-
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class CypherLoggingTest
 {
+    private static final Map<String,Object> NO_PARAMS = Collections.emptyMap();
+    private static final QuerySession SESSION = QueryEngineProvider.embeddedSession();
+
     @Test
     public void shouldNotLogQueries() throws Exception
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        ExecutionEngine engine = engineWithLogger( logProvider );
+        GraphDatabaseCypherService database =
+                new GraphDatabaseCypherService( new TestGraphDatabaseFactory().newImpermanentDatabase() );
+        ExecutionEngine engine = new ExecutionEngine( database, logProvider );
 
         // when
-        engine.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" );
-        engine.execute( "MATCH (n) RETURN n" );
+        engine.executeQuery( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n", NO_PARAMS, SESSION );
+        engine.executeQuery( "MATCH (n) RETURN n", NO_PARAMS, SESSION );
 
         // then
         inLog( org.neo4j.cypher.internal.ExecutionEngine.class );
         logProvider.assertNoLoggingOccurred();
-    }
-
-    private ExecutionEngine engineWithLogger( LogProvider logProvider ) throws IOException
-    {
-        return new ExecutionEngine(
-                new GraphDatabaseCypherService( new TestGraphDatabaseFactory().newImpermanentDatabase() ),
-                logProvider );
     }
 }

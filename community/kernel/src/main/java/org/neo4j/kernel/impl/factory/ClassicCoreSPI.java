@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -157,12 +158,12 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction()
+    public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
     {
         try
         {
             availability.assertDatabaseAvailable();
-            KernelTransaction kernelTx = dataSource.kernelAPI.get().newTransaction();
+            KernelTransaction kernelTx = dataSource.kernelAPI.get().newTransaction( type, accessMode );
             kernelTx.registerCloseListener( (s) -> dataSource.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
             dataSource.threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );
             return kernelTx;

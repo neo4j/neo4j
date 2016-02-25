@@ -40,14 +40,12 @@ import org.neo4j.kernel.impl.store.StoreId;
 
 public class ProcedureGDSFactory implements ThrowingFunction<CallableProcedure.Context,GraphDatabaseService,ProcedureException>
 {
-    private final Config config;
     private final File storeDir;
     private final DependencyResolver resolver;
     private final Supplier<StoreId> storeId;
     private final Supplier<QueryExecutionEngine> queryExecutor;
     private final CoreAPIAvailabilityGuard availability;
     private final ThrowingFunction<URL, URL, URLAccessValidationError> urlValidator;
-    private final AutoIndexing autoIndexing = AutoIndexing.UNSUPPORTED;
 
     public ProcedureGDSFactory( Config config,
                                 File storeDir,
@@ -57,7 +55,6 @@ public class ProcedureGDSFactory implements ThrowingFunction<CallableProcedure.C
                                 CoreAPIAvailabilityGuard availability,
                                 URLAccessRule urlAccessRule )
     {
-        this.config = config;
         this.storeDir = storeDir;
         this.resolver = resolver;
         this.storeId = storeId;
@@ -70,10 +67,9 @@ public class ProcedureGDSFactory implements ThrowingFunction<CallableProcedure.C
     public GraphDatabaseService apply( CallableProcedure.Context context ) throws ProcedureException
     {
         KernelTransaction transaction = context.get( CallableProcedure.Context.KERNEL_TRANSACTION );
-
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
-        facade.init( config, new ProcedureGDBFacadeSPI( transaction, queryExecutor, storeDir, resolver, AutoIndexing.UNSUPPORTED, storeId, availability, urlValidator ) );
-
+        facade.init( new ProcedureGDBFacadeSPI( transaction, queryExecutor, storeDir, resolver,
+                AutoIndexing.UNSUPPORTED, storeId, availability, urlValidator ) );
         return facade;
     }
 

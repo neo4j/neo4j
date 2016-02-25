@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.util.Collection;
+
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -58,7 +58,6 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
@@ -71,9 +70,9 @@ public class KernelTransactionsTest
         KernelTransactions registry = newKernelTransactions();
 
         // When
-        KernelTransaction first = registry.newInstance();
-        KernelTransaction second = registry.newInstance();
-        KernelTransaction third = registry.newInstance();
+        KernelTransaction first = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction second = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction third = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
 
         first.close();
 
@@ -89,9 +88,9 @@ public class KernelTransactionsTest
 
         registry.disposeAll();
 
-        KernelTransaction first = registry.newInstance();
-        KernelTransaction second = registry.newInstance();
-        KernelTransaction leftOpen = registry.newInstance();
+        KernelTransaction first = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction second = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction leftOpen = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
         first.close();
         second.close();
 
@@ -99,7 +98,7 @@ public class KernelTransactionsTest
         registry.disposeAll();
 
         // Then
-        KernelTransaction postDispose = registry.newInstance();
+        KernelTransaction postDispose = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
         assertThat( postDispose, not( equalTo( first ) ) );
         assertThat( postDispose, not( equalTo( second ) ) );
 
@@ -115,7 +114,7 @@ public class KernelTransactionsTest
         KernelTransactions registry = newKernelTransactions( newRememberingCommitProcess( transactionRepresentation ) );
 
         // When
-        try ( KernelTransaction transaction = registry.newInstance() )
+        try ( KernelTransaction transaction = registry.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE ) )
         {
             // Just pick anything that can flag that changes have been made to this transaction
             ((KernelTransactionImplementation) transaction).txState().nodeDoCreate( 0 );
@@ -133,9 +132,9 @@ public class KernelTransactionsTest
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
 
-        KernelTransaction tx1 = kernelTransactions.newInstance();
-        KernelTransaction tx2 = kernelTransactions.newInstance();
-        KernelTransaction tx3 = kernelTransactions.newInstance();
+        KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit,AccessMode.NONE );
+        KernelTransaction tx3 = kernelTransactions.newInstance( KernelTransaction.Type.implicit,AccessMode.NONE );
 
         tx1.close();
         tx3.close();
@@ -148,9 +147,9 @@ public class KernelTransactionsTest
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
 
-        KernelTransaction tx1 = kernelTransactions.newInstance();
-        KernelTransaction tx2 = kernelTransactions.newInstance();
-        KernelTransaction tx3 = kernelTransactions.newInstance();
+        KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction tx3 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
 
         tx2.close();
 
@@ -162,9 +161,9 @@ public class KernelTransactionsTest
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
 
-        KernelTransaction tx1 = kernelTransactions.newInstance();
-        KernelTransaction tx2 = kernelTransactions.newInstance();
-        KernelTransaction tx3 = kernelTransactions.newInstance();
+        KernelTransaction tx1 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
+        KernelTransaction tx2 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode .NONE );
+        KernelTransaction tx3 = kernelTransactions.newInstance( KernelTransaction.Type.implicit, AccessMode.NONE );
 
         kernelTransactions.disposeAll();
 
@@ -187,25 +186,13 @@ public class KernelTransactionsTest
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
         StoreReadLayer readLayer = mock( StoreReadLayer.class );
-        when( readLayer.acquireStatement() ).thenAnswer( new Answer<StorageStatement>()
-        {
-            @Override
-            public StorageStatement answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return mock( StorageStatement.class );
-            }
-        } );
+        when( readLayer.acquireStatement() ).thenAnswer( invocation -> mock( StorageStatement.class ) );
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
-        doAnswer( new Answer<Void>()
-        {
-            @Override
-            public Void answer( InvocationOnMock invocation ) throws Throwable
-            {
-                invocation.getArgumentAt( 0, Collection.class ).add( mock( StorageCommand.class ) );
-                return null;
-            }
+        doAnswer( invocation -> {
+            invocation.getArgumentAt( 0, Collection.class ).add( mock( StorageCommand.class ) );
+            return null;
         } ).when( storageEngine ).createCommands(
                 anyCollection(),
                 any( ReadableTransactionState.class ),

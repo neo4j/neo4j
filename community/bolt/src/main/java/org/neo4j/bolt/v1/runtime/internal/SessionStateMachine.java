@@ -26,10 +26,11 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
@@ -78,8 +79,7 @@ public class SessionStateMachine implements Session, SessionState
                     public State beginTransaction( SessionStateMachine ctx )
                     {
                         assert ctx.currentTransaction == null;
-                        ctx.implicitTransaction = false;
-                        ctx.db.beginTx();
+                        ctx.db.beginTransaction( KernelTransaction.Type.explicit, AccessMode.FULL);
                         ctx.currentTransaction = ctx.txBridge.getKernelTransactionBoundToThisThread( false );
                         return IN_TRANSACTION;
                     }
@@ -111,8 +111,7 @@ public class SessionStateMachine implements Session, SessionState
                     public State beginImplicitTransaction( SessionStateMachine ctx )
                     {
                         assert ctx.currentTransaction == null;
-                        ctx.implicitTransaction = true;
-                        ctx.db.beginTx();
+                        ctx.db.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL);
                         ctx.currentTransaction = ctx.txBridge.getKernelTransactionBoundToThisThread( false );
                         return IN_TRANSACTION;
                     }
@@ -213,7 +212,7 @@ public class SessionStateMachine implements Session, SessionState
                             {
                                 return IDLE;
                             }
-                            else if ( ctx.implicitTransaction )
+                            else if ( ctx.currentTransaction.transactionType() == KernelTransaction.Type.implicit )
                             {
                                 return IN_TRANSACTION.commitTransaction( ctx );
                             }
@@ -379,7 +378,8 @@ public class SessionStateMachine implements Session, SessionState
             {
                 // Is this error bad enough that we should roll back, or did the failure occur in an implicit
                 // transaction?
-                if(  err.status().code().classification().rollbackTransaction() || ctx.implicitTransaction )
+                if(  err.status().code().classification().rollbackTransaction() ||
+                     ctx.currentTransaction.transactionType() == KernelTransaction.Type.implicit )
                 {
                     try
                     {
@@ -413,7 +413,7 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     private final UsageData usageData;
-    private final GraphDatabaseService db;
+    private final GraphDatabaseFacade db;
     private final StatementRunner statementRunner;
     private final ErrorReporter errorReporter;
     private final Log log;
@@ -446,17 +446,9 @@ public class SessionStateMachine implements Session, SessionState
 
     private ThreadToStatementContextBridge txBridge;
 
-    /**
-     * Flag to indicate whether the current transaction, if present, is implicit. An
-     * implicit transaction is one not explicitly requested by the user but implicitly
-     * added to wrap a statement for execution. An implicit transaction will always
-     * commit when its result is closed.
-     */
-    private boolean implicitTransaction = false;
-
     // Note: We shouldn't depend on GDB like this, I think. Better to define an SPI that we can shape into a spec
     // for exactly the kind of underlying support the state machine needs.
-    public SessionStateMachine( UsageData usageData, GraphDatabaseService db, ThreadToStatementContextBridge txBridge,
+    public SessionStateMachine( UsageData usageData, GraphDatabaseFacade db, ThreadToStatementContextBridge txBridge,
                                 StatementRunner engine, LogService logging )
     {
         this.usageData = usageData;

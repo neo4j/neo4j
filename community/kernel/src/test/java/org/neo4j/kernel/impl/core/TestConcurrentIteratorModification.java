@@ -43,7 +43,7 @@ public class TestConcurrentIteratorModification {
     public void shouldNotThrowConcurrentModificationExceptionWhenUpdatingWhileIterating()
     {
         // given
-        GraphDatabaseService graph = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();
         Label label = Label.label( "Bird" );
 
         Node node1, node2, node3;
