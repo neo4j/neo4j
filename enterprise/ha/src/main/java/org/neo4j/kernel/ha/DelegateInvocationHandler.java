@@ -163,7 +163,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
      * we don't want to change the API from throwing `TransactionFailureException` for
      * backwards compat reasons, we throw this sub-class that adds a status code.
      */
-    public static class StateChangedTransactionFailureException extends TransactionFailureException implements Status.HasStatus
+    static class StateChangedTransactionFailureException extends TransactionFailureException implements Status.HasStatus
     {
         public StateChangedTransactionFailureException( String msg )
         {
