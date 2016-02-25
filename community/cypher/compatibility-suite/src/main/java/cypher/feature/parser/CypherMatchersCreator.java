@@ -21,14 +21,7 @@ package cypher.feature.parser;
 
 import cypher.feature.parser.generated.FeatureResultsBaseListener;
 import cypher.feature.parser.generated.FeatureResultsParser;
-import cypher.feature.parser.matchers.BooleanMatcher;
-import cypher.feature.parser.matchers.FloatMatcher;
-import cypher.feature.parser.matchers.IntegerMatcher;
-import cypher.feature.parser.matchers.ListMatcher;
-import cypher.feature.parser.matchers.MapMatcher;
-import cypher.feature.parser.matchers.NodeMatcher;
-import cypher.feature.parser.matchers.StringMatcher;
-import cypher.feature.parser.matchers.ValueMatcher;
+import cypher.feature.parser.matchers.*;
 
 import java.util.Deque;
 import java.util.HashMap;
@@ -37,14 +30,12 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.graphdb.RelationshipType;
-
 class CypherMatchersCreator extends FeatureResultsBaseListener
 {
-    private Deque<Object> oldworkload;
     private Deque<ValueMatcher> workload;
     private Deque<Integer> listCounters;
     private Deque<Integer> mapCounters;
+    private Deque<String> keys;
     private Deque<String> names;
 
     private static final String INFINITY = "Inf";
@@ -52,7 +43,7 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
     CypherMatchersCreator()
     {
         this.workload = new LinkedList<>();
-        this.oldworkload = new LinkedList<>();
+        this.keys = new LinkedList<>();
         this.listCounters = new LinkedList<>();
         this.mapCounters = new LinkedList<>();
         this.names = new LinkedList<>();
@@ -150,16 +141,16 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
         for ( int i = 0; i < counter; ++i )
         {
             ValueMatcher value = workload.pop();
-            String key = oldworkload.pop().toString();
+            String key = keys.pop();
             map.put( key, value );
         }
-        workload.push( new MapMatcher(map) );
+        workload.push( new MapMatcher( map ) );
     }
 
     @Override
     public void enterPropertyKey( FeatureResultsParser.PropertyKeyContext ctx )
     {
-        oldworkload.push( ctx.getText() );
+        keys.push( ctx.getText() );
     }
 
     @Override
@@ -176,21 +167,9 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
         Set<String> labelNames = new HashSet<>();
         while ( !names.isEmpty() )
         {
-            labelNames.add(  names.pop() );
+            labelNames.add( names.pop() );
         }
         workload.push( new NodeMatcher( labelNames, properties ) );
-    }
-
-    private Map<String,Object> getMapOrEmpty()
-    {
-        if ( oldworkload.isEmpty() )
-        {
-            return new HashMap<>();
-        }
-        else
-        {
-            return (Map<String,Object>) oldworkload.pop();
-        }
     }
 
     private MapMatcher getMapMatcher()
@@ -214,21 +193,8 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
     @Override
     public void exitRelationship( FeatureResultsParser.RelationshipContext ctx )
     {
-        final Map<String,Object> properties = getMapOrEmpty();
-        final RelationshipType type = RelationshipType.withName( names.pop() );
-        oldworkload.push( new ParsedRelationship()
-        {
-            @Override
-            public RelationshipType getType()
-            {
-                return type;
-            }
-
-            @Override
-            public Map<String,Object> getAllProperties()
-            {
-                return properties;
-            }
-        } );
+        MapMatcher properties = getMapMatcher();
+        String relTypeName = names.pop();
+        workload.push( new RelationshipMatcher( relTypeName, properties ) );
     }
 }

@@ -34,7 +34,7 @@ import org.scalatest.{FunSuite, Matchers}
 class expectedResultsParserTest extends ParsingTestSupport {
 
   test("should parse null") {
-    valueParse("null") should equal(null)
+    parse("null") should accept(null)
   }
 
   test("should parse integer") {
@@ -133,8 +133,8 @@ class expectedResultsParserTest extends ParsingTestSupport {
   }
 
   test("should parse relationships") {
-    valueParse("[:T]") should equal(parsedRelationship("T"))
-    valueParse("[:T {k:0}]") should equal(parsedRelationship("T", Map("k" -> Long.valueOf(0L))))
+    parse("[:T]") should accept(relationship("T"))
+    parse("[:T {k:0}]") should accept(relationship("T", Map("k" -> Long.valueOf(0L))))
   }
 
   //  test("should parse the zero-length path") {
