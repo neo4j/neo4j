@@ -25,10 +25,6 @@ import java.util.Collections.emptyList
 import java.{lang, util}
 
 import cypher.feature.parser.matchers.ValueMatcher
-import org.mockito.Mockito.{mock, when}
-import org.neo4j.graphdb._
-import org.scalatest.matchers.{MatchResult, Matcher}
-import org.scalatest.{FunSuite, Matchers}
 
 
 class expectedResultsParserTest extends ParsingTestSupport {
@@ -165,28 +161,8 @@ class expectedResultsParserTest extends ParsingTestSupport {
   //    parse(value) should equal(parsedPath(nodes, relationships))
   //  }
 
-  private def valueParse(value: String) = {
-    scalaResultsParser(value)
-  }
-
   private def parse(value: String): ValueMatcher = {
     matcherParser(value)
-  }
-
-  private def parsedRelationship(typ: String, properties: Map[String, AnyRef] = Map.empty): Relationship = {
-    ParsedRelationship.parsedRelationship(RelationshipType.withName(typ), asMap(properties))
-  }
-
-  private def parsedNode(labels: Seq[String] = Seq.empty, properties: Map[String, AnyRef] = Map.empty): Node = {
-    val list = new util.ArrayList[Label]()
-    labels.foreach(name => list.add(Label.label(name)))
-
-    ParsedNode.parsedNode(list, asMap(properties))
-  }
-
-  private def parsedPath(nodes: Seq[Node] = Seq.empty, rels: Seq[Relationship] = Seq.empty): Path = {
-    //    ParsedPath.parsedPath(nodes.toIterable.asJava, rels.toIterable.asJava)
-    ???
   }
 
   private def asMap(scalaMap: Map[String, AnyRef]): util.Map[String, AnyRef] = {
