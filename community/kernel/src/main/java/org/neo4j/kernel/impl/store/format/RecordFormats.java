@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -30,6 +31,17 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 public interface RecordFormats
 {
+
+    abstract class Factory extends Service
+    {
+        public Factory( String key, String... altKeys )
+        {
+            super( key, altKeys );
+        }
+
+        public abstract RecordFormats newInstance();
+    }
+
     String storeVersion();
 
     RecordFormat<NodeRecord> node();

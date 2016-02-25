@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
 /**
  * Selects format to use for databases in this JVM, using a system property. By default uses the safest
@@ -28,16 +30,29 @@ import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
  */
 public class InternalRecordFormatSelector
 {
-    public static RecordFormats select()
+    public static RecordFormats select( Config config )
     {
-        String formatsClassName = System.getProperty( RecordFormats.class.getName(), LowLimit.class.getName() );
-        try
+        String key = config.get( GraphDatabaseFacadeFactory.Configuration.record_type );
+        RecordFormats.Factory potentialCandidate = null;
+        for ( RecordFormats.Factory candidate : Service.load( RecordFormats.Factory.class ) )
         {
-            return Class.forName( formatsClassName ).asSubclass( RecordFormats.class ).newInstance();
+            String candidateId = candidate.getKeys().iterator().next();
+            if ( candidateId.equals( key ) )
+            {
+                return candidate.newInstance();
+            }
+            else if ( potentialCandidate == null || candidateId.equals( "highlimit" ) )
+            {
+                potentialCandidate = candidate;
+            }
         }
-        catch ( Exception e )
+        if ( key.equals( "" ) )
         {
-            throw new Error( "Couldn't load specified record format class '" + formatsClassName + "'", e );
+            return potentialCandidate.newInstance();
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Invalid configuration for record format." );
         }
     }
 }
