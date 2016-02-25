@@ -413,10 +413,12 @@ public class EnterpriseCoreEditionModule
             case PHYSICAL:
                 long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
                 int entryCacheSize = config.get( CoreEdgeClusterSettings.raft_log_meta_data_cache_size );
+                int headerCacheSize = config.get( CoreEdgeClusterSettings.raft_log_header_cache_size );
+
                 return life.add( new PhysicalRaftLog(
                         fileSystem,
                         new File( clusterStateDirectory, PhysicalRaftLog.DIRECTORY_NAME ),
-                        rotateAtSize, entryCacheSize, new PhysicalLogFile.Monitor.Adapter(),
+                        rotateAtSize, entryCacheSize, headerCacheSize, new PhysicalLogFile.Monitor.Adapter(),
                         marshal, databaseHealthSupplier, logProvider ) );
             case NAIVE:
             default:

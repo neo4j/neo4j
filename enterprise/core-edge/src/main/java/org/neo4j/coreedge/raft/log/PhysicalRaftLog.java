@@ -70,7 +70,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
     private final PhysicalLogFiles logFiles;
 
     public PhysicalRaftLog( FileSystemAbstraction fileSystem, File directory, long rotateAtSize,
-                            int entryCacheSize, PhysicalLogFile.Monitor monitor,
+                            int entryCacheSize, int headerCacheSize, PhysicalLogFile.Monitor monitor,
                             ChannelMarshal<ReplicatedContent> marshal, Supplier<DatabaseHealth> databaseHealthSupplier,
                             LogProvider logProvider )
     {
@@ -84,7 +84,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         LogVersionRepository logVersionRepository = new FilenameBasedLogVersionRepository( logFiles );
 
         logFile = new PhysicalLogFile( fileSystem, logFiles, rotateAtSize,
-                appendIndex::get, logVersionRepository, monitor, new LogHeaderCache( 10 ) );
+                appendIndex::get, logVersionRepository, monitor, new LogHeaderCache( headerCacheSize ) );
 
         this.metadataCache = new RaftLogMetadataCache( entryCacheSize );
         this.entryStore = new PhysicalRaftEntryStore( logFile, metadataCache, marshal );

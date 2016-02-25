@@ -58,7 +58,7 @@ public class PhysicalRaftLogRotationTest
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
 
-        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, rotateAtSize, 100,
+        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, rotateAtSize, 100, 10,
                 logFileMonitor, new DummyRaftableContentSerializer(),  () -> mock( DatabaseHealth.class ),
                 NullLogProvider.getInstance() );
         life.add( newRaftLog );
