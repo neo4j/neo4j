@@ -113,7 +113,7 @@ public class DbStructureCollector implements DbStructureVisitor
             public long nodesWithLabelCardinality( int labelId )
             {
                 Long result = labelId == -1 ? allNodesCount : nodeCounts.get( labelId );
-                return result == null ? 0l : result;
+                return result == null ? 0L : result;
             }
 
             @Override
@@ -121,7 +121,7 @@ public class DbStructureCollector implements DbStructureVisitor
             {
                 RelSpecifier specifier = new RelSpecifier( fromLabelId, relTypeId, toLabelId );
                 Long result = relCounts.get( specifier );
-                return result == null ? 0l : result;
+                return result == null ? 0L : result;
             }
 
             @Override
@@ -225,7 +225,7 @@ public class DbStructureCollector implements DbStructureVisitor
         if ( nodeCounts.put( labelId, nodeCount ) != null )
         {
             throw new IllegalArgumentException(
-                    format( "Duplicate node count %s for label with id % s", nodeCount, labelName )
+                    format( "Duplicate node count %s for label with id %s", nodeCount, labelName )
             );
         }
     }
