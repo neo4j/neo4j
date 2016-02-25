@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
@@ -34,6 +33,7 @@ import org.neo4j.kernel.ha.com.master.MasterImplTest;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -41,9 +41,9 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 public class MasterEpochTest
 {
@@ -55,7 +55,7 @@ public class MasterEpochTest
         IdAllocation servedIdAllocation = idAllocation( 0, 999 );
         when( spi.allocateIds( any( IdType.class ) ) ).thenReturn( servedIdAllocation );
         when( spi.getTransactionChecksum( anyLong() ) ).thenReturn( 10L );
-        StoreId storeId = new StoreId();
+        StoreId storeId = newStoreIdForCurrentVersion();
         MasterImpl master = new MasterImpl( spi,
                 mock( ConversationManager.class ), mock( MasterImpl.Monitor.class ),
                 new Config( stringMap( ClusterSettings.server_id.name(), "1" ) ) );

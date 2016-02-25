@@ -29,7 +29,7 @@ import org.neo4j.com.Response;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreIdTestFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -57,7 +57,7 @@ public class ResponsePackerTest
         final long targetTransactionId = 8L;
         final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( targetTransactionId, 0, 0, 0 );
         ResponsePacker packer = new ResponsePacker( transactionStore, transactionIdStore,
-                Suppliers.singleton( new StoreId() ) );
+                Suppliers.singleton( StoreIdTestFactory.newStoreIdForCurrentVersion() ) );
 
         // WHEN
         Response<Object> response = packer.packTransactionStreamResponse( requestContextStartingAt( 5L ), null );

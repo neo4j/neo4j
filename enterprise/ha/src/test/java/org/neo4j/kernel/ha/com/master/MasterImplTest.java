@@ -65,6 +65,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 public class MasterImplTest
 {
@@ -106,7 +107,7 @@ public class MasterImplTest
         MasterImpl instance = new MasterImpl( spi, mock(
                 ConversationManager.class ), mock( MasterImpl.Monitor.class ), config );
         instance.start();
-        HandshakeResult handshake = instance.handshake( 1, new StoreId() ).response();
+        HandshakeResult handshake = instance.handshake( 1, newStoreIdForCurrentVersion() ).response();
 
         // When
         try
@@ -135,7 +136,7 @@ public class MasterImplTest
 
         MasterImpl instance = new MasterImpl( spi, conversationManager, mock( MasterImpl.Monitor.class ), config );
         instance.start();
-        Response<HandshakeResult> response = instance.handshake( 1, new StoreId() );
+        Response<HandshakeResult> response = instance.handshake( 1, newStoreIdForCurrentVersion() );
         HandshakeResult handshake = response.response();
 
         // When
@@ -190,7 +191,7 @@ public class MasterImplTest
             ConversationManager conversationManager = new ConversationManager( conversationSpi, config );
             final MasterImpl master = new MasterImpl( spi, conversationManager, mock( Monitor.class ), config );
             master.start();
-            HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
+            HandshakeResult handshake = master.handshake( 1, newStoreIdForCurrentVersion() ).response();
 
             // WHEN
             final RequestContext context = new RequestContext( handshake.epoch(), 1, 2, 0, 0 );
@@ -234,7 +235,7 @@ public class MasterImplTest
 
         MasterImpl master = new MasterImpl( spi, conversationManager, mock( MasterImpl.Monitor.class ), config );
         master.start();
-        HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
+        HandshakeResult handshake = master.handshake( 1, newStoreIdForCurrentVersion() ).response();
 
         RequestContext ctx = new RequestContext( handshake.epoch(), 1, 2, 0, 0 );
 
@@ -269,7 +270,7 @@ public class MasterImplTest
 
         MasterImpl master = new MasterImpl( spi, conversationManager, mock( MasterImpl.Monitor.class ), config );
         master.start();
-        HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
+        HandshakeResult handshake = master.handshake( 1, newStoreIdForCurrentVersion() ).response();
 
         int no_lock_session = -1;
         RequestContext ctx = new RequestContext( handshake.epoch(), 1, no_lock_session, 0, 0 );
@@ -298,7 +299,7 @@ public class MasterImplTest
         when( spi.isAccessible() ).thenReturn( true );
         when( conversationSpi.acquireClient() ).thenReturn( client );
         master.start();
-        HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
+        HandshakeResult handshake = master.handshake( 1, newStoreIdForCurrentVersion() ).response();
         RequestContext requestContext = new RequestContext( handshake.epoch(), machineId, 0, 0, 0);
 
         // When

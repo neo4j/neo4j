@@ -38,8 +38,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.function.Suppliers.singleton;
+import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 public class ApplyPulledTransactionsTest
 {
@@ -47,7 +47,7 @@ public class ApplyPulledTransactionsTest
     public void shouldApplyTransaction() throws Exception
     {
         // given
-        StoreId storeId = new StoreId( 1, 1, 1, 1 );
+        StoreId storeId = newStoreIdForCurrentVersion( 1, 1, 1, 1 );
 
         TransactionApplier transactionApplier = mock( TransactionApplier.class );
 
@@ -73,7 +73,7 @@ public class ApplyPulledTransactionsTest
     public void shouldLogIfTransactionCannotBeApplied() throws Exception
     {
         // given
-        StoreId storeId = new StoreId( 1, 1, 1, 1 );
+        StoreId storeId = newStoreIdForCurrentVersion( 1, 1, 1, 1 );
 
         TransactionApplier transactionApplier = mock( TransactionApplier.class );
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
@@ -105,7 +105,7 @@ public class ApplyPulledTransactionsTest
     public void shouldNotApplyTransactionsThatHaveAlreadyBeenApplied() throws Exception
     {
         // given
-        StoreId storeId = new StoreId( 1, 1, 1, 1 );
+        StoreId storeId = newStoreIdForCurrentVersion( 1, 1, 1, 1 );
 
         TransactionApplier transactionApplier = mock( TransactionApplier.class );
 

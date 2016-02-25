@@ -99,6 +99,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcherTest.storeSupplierMock;
+import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 public class HighAvailabilityMemberStateMachineTest
 {
@@ -339,7 +340,7 @@ public class HighAvailabilityMemberStateMachineTest
     public void whenHAModeSwitcherSwitchesToSlaveTheOtherModeSwitcherDoNotGetTheOldMasterClient() throws Throwable
     {
         InstanceId me = new InstanceId( 1 );
-        StoreId storeId = new StoreId();
+        StoreId storeId = newStoreIdForCurrentVersion();
         HighAvailabilityMemberContext context = mock( HighAvailabilityMemberContext.class );
         when( context.getMyId() ).thenReturn( me );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );

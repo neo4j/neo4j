@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
+import static java.lang.System.currentTimeMillis;
+import static java.lang.Thread.yield;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -48,13 +50,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
-import static java.lang.System.currentTimeMillis;
-import static java.lang.Thread.yield;
-
 import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
 import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
+import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 public class TestCommunication
 {
@@ -69,7 +68,7 @@ public class TestCommunication
     @Before
     public void doBefore()
     {
-        storeIdToUse = new StoreId();
+        storeIdToUse = newStoreIdForCurrentVersion();
         builder = new Builder();
     }
 
@@ -109,7 +108,7 @@ public class TestCommunication
     public void makeSureClientStoreIdsMustMatch() throws Throwable
     {
         MadeUpServer server = builder.server();
-        MadeUpClient client = builder.storeId( new StoreId( 10, 10, 10, 10 ) ).client();
+        MadeUpClient client = builder.storeId( newStoreIdForCurrentVersion( 10, 10, 10, 10 ) ).client();
         addToLifeAndStart( server, client );
 
         client.multiply( 1, 2 );
@@ -118,7 +117,7 @@ public class TestCommunication
     @Test(expected = MismatchingStoreIdException.class)
     public void makeSureServerStoreIdsMustMatch() throws Throwable
     {
-        MadeUpServer server = builder.storeId( new StoreId( 10, 10, 10, 10 ) ).server();
+        MadeUpServer server = builder.storeId( newStoreIdForCurrentVersion( 10, 10, 10, 10 ) ).server();
         MadeUpClient client = builder.client();
         addToLifeAndStart( server, client );
 

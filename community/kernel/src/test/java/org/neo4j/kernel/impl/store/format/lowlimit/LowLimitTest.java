@@ -17,24 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format;
+package org.neo4j.kernel.impl.store.format.lowlimit;
 
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.junit.Test;
 
-/**
- * Selects format to use for databases in this JVM, using a system property. By default uses the safest
- * and established format. During development this may be switched in builds to experimental formats
- * to gain more testing there.
- */
-public class InternalRecordFormatSelector
+import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+
+import static org.junit.Assert.assertEquals;
+
+public class LowLimitTest
 {
-    public static RecordFormats select()
+    @Test
+    public void shouldResolveLowLimitsRecordFormat() throws Exception
     {
-        //todo: uncomment this loop once high-limits store migration is done.
-//        for ( RecordFormats.Factory candidate : Service.load( RecordFormats.Factory.class ) )
-//        {
-//            return candidate.newInstance();
-//        }
-        return LowLimit.RECORD_FORMATS;
+        assertEquals( LowLimit.RECORD_FORMATS.storeVersion(), InternalRecordFormatSelector.select().storeVersion() );
     }
 }

@@ -19,20 +19,19 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.junit.Ignore;
+import org.junit.Test;
 
-@Service.Implementation(RecordFormats.Factory.class)
-public class HighLimitFactory extends RecordFormats.Factory
+import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+
+import static org.junit.Assert.assertEquals;
+
+public class HighLimitTest
 {
-    public HighLimitFactory()
+    @Ignore("enable once other features are done.")
+    @Test
+    public void shouldResolveHighLimitsRecordFormat() throws Exception
     {
-        super( "highlimit" );
-    }
-
-    @Override
-    public RecordFormats newInstance()
-    {
-        return HighLimit.RECORD_FORMATS;
+        assertEquals( HighLimit.RECORD_FORMATS.storeVersion(), InternalRecordFormatSelector.select().storeVersion());
     }
 }
