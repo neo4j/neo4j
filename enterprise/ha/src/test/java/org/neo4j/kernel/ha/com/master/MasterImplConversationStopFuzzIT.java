@@ -42,7 +42,6 @@ import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.ConversationSPI;
@@ -52,6 +51,7 @@ import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -66,6 +66,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.cluster.ClusterSettings.server_id;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.lock_read_timeout;
+import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 /**
  *  Current test will try to emulate client master conversation lifecycle
@@ -83,7 +84,7 @@ public class MasterImplConversationStopFuzzIT
     private static final int numberOfOperations = 1_000;
     private static final int numberOfResources = 100;
 
-    public static final StoreId StoreId = new StoreId();
+    public static final StoreId StoreId = newStoreIdForCurrentVersion();
 
     private final LifeSupport life = new LifeSupport();
     private final ExecutorService executor = Executors.newFixedThreadPool( numberOfWorkers + 1 );

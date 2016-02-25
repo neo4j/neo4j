@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.StoreIdTestFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -73,7 +74,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -99,12 +99,13 @@ public class MasterClientTest
     public void newClientsShouldNotIgnoreStoreIdDifferences() throws Throwable
     {
         // Given
-        MasterImpl.SPI masterImplSPI = MasterImplTest.mockedSpi( new StoreId( 1, 2, 3, 4 ) );
+        MasterImpl.SPI masterImplSPI =
+                MasterImplTest.mockedSpi( StoreIdTestFactory.newStoreIdForCurrentVersion( 1, 2, 3, 4 ) );
         when( masterImplSPI.getTransactionChecksum( anyLong() ) ).thenReturn( 5L );
 
         newMasterServer( masterImplSPI );
 
-        StoreId storeId = new StoreId( 5, 6, 7, 8 );
+        StoreId storeId = StoreIdTestFactory.newStoreIdForCurrentVersion( 5, 6, 7, 8 );
         MasterClient214 masterClient214 = newMasterClient214( storeId );
 
         // When

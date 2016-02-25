@@ -19,13 +19,11 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
-import java.io.File;
-
 import org.junit.Test;
 
+import java.io.File;
+
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -34,8 +32,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.function.Suppliers.singleton;
+import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 public class LocalDatabaseTest
 {
@@ -43,7 +41,7 @@ public class LocalDatabaseTest
     public void shouldRetrieveStoreId() throws Throwable
     {
         // given
-        StoreId storeId = new StoreId();
+        StoreId storeId = newStoreIdForCurrentVersion();
 
         // when
         NeoStoreDataSource neoStoreDataSource = mock( NeoStoreDataSource.class );

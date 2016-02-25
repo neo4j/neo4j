@@ -28,10 +28,9 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.NeoStoreActualRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -152,7 +151,8 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
     {
         super.initialiseNewStoreFile( file );
 
-        StoreId storeId = new StoreId();
+        long storeVersionAsLong = MetaDataStore.versionStringToLong( storeVersion );
+        StoreId storeId = new StoreId( storeVersionAsLong );
 
         storeFile = file;
         setCreationTime( storeId.getCreationTime() );
@@ -164,7 +164,7 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
         setCurrentLogVersion( 0 );
         setLastCommittedAndClosedTransactionId(
                 BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
-        setStoreVersion( MetaDataStore.versionStringToLong( LowLimit.STORE_VERSION ) );
+        setStoreVersion( storeVersionAsLong );
         setGraphNextProp( -1 );
         setLatestConstraintIntroducingTx( 0 );
 
@@ -298,7 +298,7 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
 
     public StoreId getStoreId()
     {
-        return new StoreId( getCreationTime(), getRandomNumber(), getUpgradeTime(), upgradeTxIdField );
+        return new StoreId( getCreationTime(), getRandomNumber(), getStoreVersion(), getUpgradeTime(), upgradeTxIdField );
     }
 
     public long getUpgradeTime()

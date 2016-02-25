@@ -35,7 +35,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -46,6 +45,7 @@ import org.neo4j.test.PageCacheRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 public class ResponsePackerIT
 {
@@ -77,7 +77,8 @@ public class ResponsePackerIT
             final long expectedTxId = 8L;
             store.transactionCommitted( expectedTxId, 777 );
 
-            ResponsePacker packer = new ResponsePacker( transactionStore, store, Suppliers.singleton( new StoreId() ) );
+            ResponsePacker packer =
+                    new ResponsePacker( transactionStore, store, Suppliers.singleton( newStoreIdForCurrentVersion() ) );
 
             // WHEN
             Response<Object> response =
