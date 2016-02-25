@@ -45,14 +45,6 @@ public interface ReadableRaftLog
     RaftLogEntry readLogEntry( long logIndex ) throws IOException;
 
     /**
-     * Reads the content of the log entry at the supplied index.
-     *
-     * @param logIndex The index of the log entry.
-     * @return The log entry content.
-     */
-    ReplicatedContent readEntryContent( long logIndex ) throws IOException;
-
-    /**
      * Reads the term associated with the entry at the supplied index.
      *
      * @param logIndex The index of the log entry.

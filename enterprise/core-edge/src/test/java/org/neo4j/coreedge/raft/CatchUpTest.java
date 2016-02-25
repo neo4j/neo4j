@@ -120,7 +120,7 @@ public class CatchUpTest
 
         for ( long logIndex = 0; logIndex <= log.appendIndex(); logIndex++ )
         {
-            ReplicatedContent content = log.readEntryContent( logIndex );
+            ReplicatedContent content = log.readLogEntry( logIndex ).content();
             if ( content instanceof ReplicatedInteger )
             {
                 ReplicatedInteger integer = (ReplicatedInteger) content;

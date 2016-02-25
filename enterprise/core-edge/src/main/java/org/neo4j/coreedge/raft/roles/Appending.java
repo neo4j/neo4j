@@ -104,7 +104,7 @@ public class Appending
         long prevLogTerm = prevLogIndex == -1 ? -1 :
                 prevLogIndex > ctx.lastLogIndexBeforeWeBecameLeader() ?
                         ctx.term() :
-                        ctx.entryLog().readLogEntry( prevLogIndex ).term();
+                        ctx.entryLog().readEntryTerm( prevLogIndex );
 
         RaftLogEntry newLogEntry = new RaftLogEntry( ctx.term(), content );
 

@@ -181,7 +181,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
 
         if ( logIndex != null )
         {
-            RaftGroup<MEMBER> lastMembershipEntry = (RaftGroup<MEMBER>) entryLog.readEntryContent( logIndex );
+            RaftGroup<MEMBER> lastMembershipEntry = (RaftGroup<MEMBER>) entryLog.readLogEntry( logIndex ).content();
             raftMembershipState.setVotingMembers( lastMembershipEntry.getMembers() );
             raftMembershipState.logIndex( logIndex );
             stateStorage.persistStoreData( raftMembershipState );
@@ -194,7 +194,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
         uncommittedMemberChanges = 0;
         for ( long i = entryLog.commitIndex() + 1; i <= entryLog.appendIndex(); i++ )
         {
-            ReplicatedContent content = entryLog.readEntryContent( i );
+            ReplicatedContent content = entryLog.readLogEntry( i ).content();
             if ( content instanceof RaftGroup )
             {
                 uncommittedMemberChanges++;

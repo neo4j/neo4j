@@ -169,6 +169,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         return commitIndex;
     }
 
+    @Override
     public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
     {
         final IOCursor<RaftLogAppendRecord> inner = entryStore.getEntriesFrom( fromIndex );
@@ -217,15 +218,14 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
     }
 
     @Override
-    public ReplicatedContent readEntryContent( long logIndex ) throws IOException
-    {
-        RaftLogEntry raftLogEntry = readLogEntry( logIndex );
-        return raftLogEntry == null ? null : raftLogEntry.content();
-    }
-
-    @Override
     public long readEntryTerm( long logIndex ) throws IOException
     {
+        // -1 is not an existing log index, but represents the beginning of the log. It is a valid value to request the
+        // term for, and the term is -1.
+        if( logIndex == -1 || ( logIndex > appendIndex.get() ) )
+        {
+            return -1;
+        }
         long resultTerm = -1;
         RaftLogMetadataCache.RaftLogEntryMetadata metadata = metadataCache.getMetadata( logIndex );
         if ( metadata != null )

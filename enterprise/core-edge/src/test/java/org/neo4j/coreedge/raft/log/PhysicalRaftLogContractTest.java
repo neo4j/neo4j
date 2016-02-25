@@ -97,7 +97,7 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
 
         // Then
         assertTrue( raftLog.entryExists( entryIndex ) );
-        assertEquals( content, raftLog.readEntryContent( entryIndex ) );
+        assertEquals( content, raftLog.readLogEntry( entryIndex ).content() );
         assertEquals( term, raftLog.readEntryTerm( entryIndex ) );
     }
 
@@ -118,12 +118,12 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         // Then
         // entry 1 should be there
         assertTrue( raftLog.entryExists( entryIndex1 ) );
-        assertEquals( content1, raftLog.readEntryContent( entryIndex1 ) );
+        assertEquals( content1, raftLog.readLogEntry( entryIndex1 ).content() );
         assertEquals( term, raftLog.readEntryTerm( entryIndex1 ) );
 
         // entry 2 should be there also
         assertTrue( raftLog.entryExists( entryIndex2 ) );
-        assertEquals( content2, raftLog.readEntryContent( entryIndex2 ) );
+        assertEquals( content2, raftLog.readLogEntry( entryIndex2 ).content() );
         assertEquals( term, raftLog.readEntryTerm( entryIndex2 ) );
     }
 

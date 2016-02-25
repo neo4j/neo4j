@@ -23,7 +23,6 @@ import java.io.IOException;
 
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogAppendIndexMonitor;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -86,12 +85,6 @@ public class MonitoredRaftLog implements RaftLog
     public RaftLogEntry readLogEntry( long logIndex ) throws IOException
     {
         return delegate.readLogEntry( logIndex );
-    }
-
-    @Override
-    public ReplicatedContent readEntryContent( long logIndex ) throws IOException
-    {
-        return delegate.readEntryContent( logIndex );
     }
 
     @Override

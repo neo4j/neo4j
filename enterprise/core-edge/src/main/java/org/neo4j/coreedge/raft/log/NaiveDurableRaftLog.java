@@ -252,12 +252,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public ReplicatedContent readEntryContent( long logIndex ) throws IOException
-    {
-        return readLogEntry( logIndex ).content();
-    }
-
-    @Override
     public long readEntryTerm( long logIndex ) throws IOException
     {
         return readEntry( logIndex ).term;

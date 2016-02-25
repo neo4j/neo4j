@@ -93,12 +93,6 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
-    public ReplicatedContent readEntryContent( long logIndex )
-    {
-        return readLogEntry( logIndex ).content();
-    }
-
-    @Override
     public long readEntryTerm( long logIndex )
     {
         if ( logIndex < 0 || logIndex > appendIndex )

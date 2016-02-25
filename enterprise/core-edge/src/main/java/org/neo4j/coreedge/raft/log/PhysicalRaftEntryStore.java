@@ -46,21 +46,30 @@ public class PhysicalRaftEntryStore implements RaftEntryStore
 
     @Override
     public IOCursor<RaftLogAppendRecord> getEntriesFrom( final long indexToStartFrom ) throws IOException
-
     {
         // look up in position cache
         RaftLogMetadataCache.RaftLogEntryMetadata metadata = metadataCache.getMetadata( indexToStartFrom );
-        LogPosition startPosition = null;
+        LogPosition startPosition;
+        boolean positionedCorrectly = false;
         if ( metadata != null )
         {
             startPosition = metadata.getStartPosition();
+            positionedCorrectly = true;
         }
         else
         {
             // ask LogFile about the version it may be in
             LogVersionLocator headerVisitor = new LogVersionLocator( indexToStartFrom );
             logFile.accept( headerVisitor );
-            startPosition = headerVisitor.getLogPosition();
+            startPosition = headerVisitor.foundPosition;
+            if ( headerVisitor.firstLogIndexForFoundFile == indexToStartFrom )
+            {
+                /*
+                 * we need to know if the first entry (the one the cursor will return next) is the one we are looking
+                 * for, because if it isn't, then we need to skip forward until we find it
+                 */
+                positionedCorrectly = true;
+            }
         }
         if ( startPosition == null )
         {
@@ -68,15 +77,26 @@ public class PhysicalRaftEntryStore implements RaftEntryStore
         }
         ReadableLogChannel reader = logFile.getReader( startPosition );
 
-        return new PhysicalRaftLogEntryCursor( new RaftRecordCursor<>( reader, marshal ) );
+        PhysicalRaftLogEntryCursor physicalRaftLogEntryCursor = new PhysicalRaftLogEntryCursor( new
+                RaftRecordCursor<>( reader, marshal ) );
+
+        if ( !positionedCorrectly )
+        {
+            /*
+             * At this point we know the first entry is not the entry we look for. Iterate until we find it.
+             */
+            while( physicalRaftLogEntryCursor.next() && physicalRaftLogEntryCursor.get().getLogIndex() < indexToStartFrom - 1 );
+        }
+        return physicalRaftLogEntryCursor;
     }
 
-    public static final class LogVersionLocator implements LogHeaderVisitor
+    private static final class LogVersionLocator implements LogHeaderVisitor
     {
         private final long logEntryIndex;
         private LogPosition foundPosition;
+        private long firstLogIndexForFoundFile;
 
-        public LogVersionLocator( long logEntryIndex )
+        LogVersionLocator( long logEntryIndex )
         {
             this.logEntryIndex = logEntryIndex;
         }
@@ -87,14 +107,10 @@ public class PhysicalRaftEntryStore implements RaftEntryStore
             boolean foundIt = logEntryIndex >= firstLogIndex && logEntryIndex <= lastLogIndex;
             if ( foundIt )
             {
+                this.firstLogIndexForFoundFile = firstLogIndex;
                 foundPosition = position;
             }
             return !foundIt; // continue as long we don't find it
-        }
-
-        public LogPosition getLogPosition()
-        {
-            return foundPosition;
         }
     }
 }

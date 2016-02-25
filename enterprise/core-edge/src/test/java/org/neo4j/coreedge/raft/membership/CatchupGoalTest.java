@@ -85,11 +85,6 @@ public class CatchupGoalTest
             return null;
         }
 
-        @Override public ReplicatedContent readEntryContent( long logIndex ) throws IOException
-        {
-            return null;
-        }
-
         @Override public long readEntryTerm( long logIndex ) throws IOException
         {
             return 0;

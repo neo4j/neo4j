@@ -296,7 +296,7 @@ public class RaftInstanceTest
         raft.handle( voteResponse().from( member1 ).term( 1 ).grant().build() );
 
         // Then
-        assertEquals( new NewLeaderBarrier(), raftLog.readEntryContent( raftLog.appendIndex() ) );
+        assertEquals( new NewLeaderBarrier(), raftLog.readLogEntry( raftLog.appendIndex() ).content() );
     }
 
     @Test
@@ -369,7 +369,7 @@ public class RaftInstanceTest
 
         // then
         assertEquals( 1, raftLog.appendIndex() );
-        assertEquals( data1, raftLog.readEntryContent( 1 ) );
+        assertEquals( data1, raftLog.readLogEntry( 1 ).content() );
     }
 
     @Test
@@ -539,12 +539,6 @@ public class RaftInstanceTest
         public RaftLogEntry readLogEntry( long logIndex ) throws IOException
         {
             throw new IOException( "Boom! readLogEntry" );
-        }
-
-        @Override
-        public ReplicatedContent readEntryContent( long logIndex ) throws IOException
-        {
-            throw new IOException( "Boom! readEntryContent" );
         }
 
         @Override

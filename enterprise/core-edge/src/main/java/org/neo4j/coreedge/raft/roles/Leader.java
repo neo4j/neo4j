@@ -48,10 +48,10 @@ public class Leader implements RaftMessageHandler
 
     static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome ) throws IOException
     {
+        long commitIndex = ctx.leaderCommit();
+        long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
         for ( MEMBER to : replicationTargets( ctx ) )
         {
-            long commitIndex = ctx.leaderCommit();
-            long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
             Heartbeat<MEMBER> heartbeat = new Heartbeat<>( ctx.myself(), ctx.term(), commitIndex, commitIndexTerm );
             outcome.addOutgoingMessage( new RaftMessages.Directed<>( to, heartbeat ) );
         }
