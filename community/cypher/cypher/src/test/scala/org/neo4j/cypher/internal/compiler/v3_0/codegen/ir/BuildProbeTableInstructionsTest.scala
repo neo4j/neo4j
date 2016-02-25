@@ -31,10 +31,10 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticTable, symbols}
 import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
+import org.neo4j.kernel.internal.GraphDatabaseAPI
 
 import scala.collection.mutable
 

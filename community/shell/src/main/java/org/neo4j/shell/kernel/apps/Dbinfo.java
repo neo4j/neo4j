@@ -35,7 +35,7 @@ import javax.management.openmbean.CompositeData;
 
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.impl.JmxKernelExtension;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
 import org.neo4j.shell.OptionDefinition;

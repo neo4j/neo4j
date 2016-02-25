@@ -28,7 +28,7 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.KernelEventHandlers;
+import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;

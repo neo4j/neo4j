@@ -45,7 +45,7 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.Status.Request;
 import org.neo4j.kernel.api.exceptions.Status.Schema;
 import org.neo4j.kernel.api.exceptions.Status.Statement;

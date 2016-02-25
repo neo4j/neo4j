@@ -40,7 +40,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.internal;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -29,10 +29,7 @@ import org.neo4j.logging.Log;
 
 /**
  * Handle the collection of kernel event handlers, and fire events as needed.
- *
- * @deprecated This will be moved to internal packages in the next major release.
  */
-@Deprecated
 public class KernelEventHandlers
     implements Lifecycle
 {

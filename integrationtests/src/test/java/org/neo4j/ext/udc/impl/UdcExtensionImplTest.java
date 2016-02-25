@@ -48,7 +48,7 @@ import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.RegexMatcher;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;

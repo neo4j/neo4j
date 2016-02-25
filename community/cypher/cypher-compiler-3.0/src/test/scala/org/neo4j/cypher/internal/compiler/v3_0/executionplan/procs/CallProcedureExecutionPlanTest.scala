@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Add, Expression, SignedDecimalIntegerLiteral, StringLiteral}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{ParameterNotFoundException, DummyPosition, InvalidArgumentException, symbols}
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.txstate.TxStateHolder
+import org.neo4j.kernel.internal.GraphDatabaseAPI
 
 import scala.collection.mutable
 

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.factory;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.KernelDiagnostics;
+import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;

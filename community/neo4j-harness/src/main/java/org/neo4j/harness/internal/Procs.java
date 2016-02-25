@@ -22,7 +22,7 @@ package org.neo4j.harness.internal;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.proc.Procedures;
 

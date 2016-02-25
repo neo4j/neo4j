@@ -41,12 +41,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols.CTInteger
 import org.neo4j.cypher.internal.spi.v3_0.MonoDirectionalTraversalMatcher
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.api.OperationsFacade
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
+import org.neo4j.kernel.internal.GraphDatabaseAPI
 
 // TODO: this test is horribly broken, it relies on mocking the core API for verification, but the internals don't use the core API
 class LazyTest extends ExecutionEngineFunSuite {

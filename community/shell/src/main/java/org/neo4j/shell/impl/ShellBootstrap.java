@@ -25,7 +25,7 @@ import java.io.ObjectOutputStream;
 import java.rmi.RemoteException;
 import java.util.Base64;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;

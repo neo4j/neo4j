@@ -29,7 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;

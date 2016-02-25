@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
 import static org.junit.Assert.assertEquals;

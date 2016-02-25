@@ -31,7 +31,7 @@ import org.neo4j.bolt.v1.messaging.message.Messages;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.metrics.source.db.BoltMetrics;
 import org.neo4j.test.TestGraphDatabaseFactory;
 

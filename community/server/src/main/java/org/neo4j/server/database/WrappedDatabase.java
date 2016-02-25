@@ -20,7 +20,7 @@
 package org.neo4j.server.database;
 
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 

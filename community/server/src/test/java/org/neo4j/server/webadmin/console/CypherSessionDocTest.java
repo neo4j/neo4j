@@ -24,7 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;

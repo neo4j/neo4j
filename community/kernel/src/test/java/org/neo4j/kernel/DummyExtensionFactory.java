@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class DummyExtensionFactory extends KernelExtensionFactory<DummyExtensionFactory.Dependencies>

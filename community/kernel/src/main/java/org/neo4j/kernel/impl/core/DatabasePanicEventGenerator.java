@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.neo4j.graphdb.event.ErrorState;
-import org.neo4j.kernel.KernelEventHandlers;
+import org.neo4j.kernel.internal.KernelEventHandlers;
 
 public class DatabasePanicEventGenerator
 {
@@ -33,7 +33,7 @@ public class DatabasePanicEventGenerator
     {
         this.kernelEventHandlers = kernelEventHandlers;
     }
-    
+
     public void generateEvent( final ErrorState error, final Throwable cause )
     {
         ExecutorService executor = Executors.newSingleThreadExecutor(  );
