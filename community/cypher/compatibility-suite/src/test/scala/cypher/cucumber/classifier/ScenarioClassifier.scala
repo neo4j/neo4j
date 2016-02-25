@@ -55,12 +55,18 @@ class ScenarioClassifier {
           val definition = glue.stepDefinitionMatch(featurePath, step, i18n)
           val docString = parseDocString(step.getDocString)
           definition.getPattern match {
+            case ANY =>
+              Init("", docString)
             case INIT_DB =>
               val query = definition.getArguments.get(0).getVal
               Init(query, docString)
             case USING_DB =>
               val databaseName = definition.getArguments.get(0).getVal
               Using(databaseName, docString)
+            case EXECUTING_QUERY =>
+              val query = definition.getArguments.get(0).getVal
+              val tags = QueryTagger(query)
+              Run(query, tags, None, docString)
             case RUNNING_QUERY =>
               val query = definition.getArguments.get(0).getVal
               val tags = QueryTagger(query)
@@ -73,6 +79,11 @@ class ScenarioClassifier {
               assert(params.size == 1)
               val tags = QueryTagger(query)
               Run(query, tags, Some(params.head), docString)
+            case EXPECT_RESULT =>
+              val converter = new TableConverter(streams.get(i18n.getLocale), null)
+              val table = new DataTable(step.getRows, converter)
+              val data = table.asScala[String].map { m => Map(m.toList: _*) }
+              Result(data, docString)
             case RESULT =>
               val converter = new TableConverter(streams.get(i18n.getLocale), null)
               val table = new DataTable(step.getRows, converter)

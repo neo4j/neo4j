@@ -20,14 +20,15 @@
 package cypher.cucumber.reporter
 
 import java.io.{File, PrintStream}
-import java.net.URL
 
+import cypher.GlueSteps
 import cypher.cucumber.CucumberAdapter
 import gherkin.formatter.model.{Match, Result, Step}
 
 import scala.util.matching.Regex
 
 object CypherResultReporter {
+
   def createPrintStream(path: File, filename: String): PrintStream = {
     path.mkdirs()
     new PrintStream(new File(path, filename))
@@ -37,12 +38,13 @@ object CypherResultReporter {
 class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream) extends CucumberAdapter {
 
   def this(reportDir: File) = {
-    this(producer = JsonProducer, jsonWriter = CypherResultReporter.createPrintStream(reportDir, "compact.json") )
+    this(producer = JsonProducer, jsonWriter = CypherResultReporter.createPrintStream(reportDir, "compact.json"))
   }
 
   private var query: String = null
   private var status: String = Result.PASSED
   private val pattern: Regex = """running( parametrized)?: (.*)""".r
+  private val newPattern: Regex = GlueSteps.EXECUTING_QUERY.r
 
   override def done(): Unit = {
     jsonWriter.println(producer.dump())
@@ -54,9 +56,11 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream) ex
   }
 
   override def step(step: Step) {
-    if(step.getKeyword.trim == "When") {
-      val pattern(_, q) = step.getName
-      query = q
+    if (step.getKeyword.trim == "When") {
+      step.getName match {
+        case pattern(_, q) => query = q
+        case newPattern(q) => query = q
+      }
     }
   }
 
