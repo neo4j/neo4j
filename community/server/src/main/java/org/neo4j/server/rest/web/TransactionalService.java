@@ -190,7 +190,7 @@ public class TransactionalService
                                                         final HttpServletRequest request )
     {
         return output -> {
-            OutputStream wrappedOutput = transactionHandle.isPristine()
+            OutputStream wrappedOutput = transactionHandle.isImplicit()
                                          ? new InterruptingOutputStream( output, transactionHandle )
                                          : output;
             transactionHandle.commit(

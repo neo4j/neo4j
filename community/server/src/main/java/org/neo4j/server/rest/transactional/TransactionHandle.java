@@ -94,7 +94,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         return uriScheme.txUri( id );
     }
 
-    public boolean isPristine()
+    public boolean isImplicit()
     {
         return implicitTransaction;
     }
