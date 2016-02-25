@@ -17,24 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.feature.parser.matchers;
+package cypher.feature.parser.matchers
 
-public interface ValueMatcher
-{
-    boolean matches( Object value );
+import cypher.feature.parser.accept
+import cypher.feature.parser.matchers.ValueMatcher.NULL_MATCHER
+import org.scalatest.FunSuite
+import org.scalatest.Matchers._
 
-    ValueMatcher NULL_MATCHER = new ValueMatcher()
-    {
-        @Override
-        public boolean matches( Object value )
-        {
-            return value == null;
-        }
+class ValueMatcherTest extends FunSuite {
 
-        @Override
-        public String toString()
-        {
-            return "NullMatcher";
-        }
-    };
+  test("null matcher should match null") {
+    NULL_MATCHER should accept(null)
+  }
+
+  test("null matcher should not accept non-null") {
+    NULL_MATCHER shouldNot accept(0)
+    NULL_MATCHER shouldNot accept("")
+    NULL_MATCHER shouldNot accept(new Object())
+  }
+
 }

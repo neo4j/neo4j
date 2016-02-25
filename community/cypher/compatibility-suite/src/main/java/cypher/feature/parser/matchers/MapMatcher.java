@@ -25,13 +25,7 @@ import java.util.Set;
 
 public class MapMatcher implements ValueMatcher
 {
-    public static final MapMatcher EMPTY = new MapMatcher( Collections.emptyMap() ) {
-        @Override
-        public String toString()
-        {
-            return "{ MapMatcher matching the empty map }";
-        }
-    };
+    public static final MapMatcher EMPTY = new MapMatcher( Collections.emptyMap() );
 
     private final Map<String,ValueMatcher> map;
 
@@ -65,6 +59,6 @@ public class MapMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "{ MapMatcher matching a map with keys " + map.keySet().toString() + " and values " + map.values().toString() + " }";
+        return "MapMatcher for " + map.toString();
     }
 }

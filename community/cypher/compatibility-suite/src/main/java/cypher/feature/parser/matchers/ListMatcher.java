@@ -37,12 +37,23 @@ public class ListMatcher implements ValueMatcher
         {
             List realList = (List) value;
             boolean match = realList.size() == list.size();
-            for ( int i = 0; i < list.size(); ++i )
+            if ( match )
             {
-                match &= list.get( i ).matches( realList.get( i ) );
+                for ( int i = 0; i < list.size(); ++i )
+                {
+                    ValueMatcher valueMatcher = list.get( i );
+                    Object value1 = realList.get( i );
+                    match &= valueMatcher.matches( value1 );
+                }
             }
             return match;
         }
         return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "ListMatcher for " + list.toString();
     }
 }

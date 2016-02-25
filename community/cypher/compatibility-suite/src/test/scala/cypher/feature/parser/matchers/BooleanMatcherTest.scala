@@ -17,13 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.feature.parser.matchers;
+package cypher.feature.parser.matchers
 
-public class NullMatcher implements ValueMatcher
-{
-    @Override
-    public boolean matches( Object value )
-    {
-        return value == null;
-    }
+import cypher.feature.parser.accept
+import org.scalatest.FunSuite
+import org.scalatest.Matchers._
+
+class BooleanMatcherTest extends FunSuite {
+
+  test("should match true") {
+    new BooleanMatcher(true) should accept(true)
+  }
+
+  test("should match false") {
+    new BooleanMatcher(false) should accept(false)
+  }
+
+  test("should not match other values") {
+    new BooleanMatcher(true) shouldNot accept(false)
+    new BooleanMatcher(true) shouldNot accept(null)
+    new BooleanMatcher(true) shouldNot accept("")
+
+    new BooleanMatcher(false) shouldNot accept(true)
+    new BooleanMatcher(false) shouldNot accept(null)
+    new BooleanMatcher(false) shouldNot accept("")
+  }
+
 }

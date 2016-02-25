@@ -33,4 +33,10 @@ public class IntegerMatcher implements ValueMatcher
     {
         return value instanceof Long && (Long) value == this.value;
     }
+
+    @Override
+    public String toString()
+    {
+        return "IntegerMatcher for " + value;
+    }
 }

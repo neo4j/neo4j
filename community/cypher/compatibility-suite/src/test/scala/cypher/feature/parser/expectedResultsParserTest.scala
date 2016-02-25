@@ -21,14 +21,11 @@ package cypher.feature.parser
 
 import java.lang.Boolean.{FALSE, TRUE}
 import java.lang.Long
-import java.util.Arrays.asList
-import java.util.Collections.{emptyList, emptyMap}
+import java.util.Collections.emptyList
 import java.{lang, util}
 
-import org.mockito.Mockito._
-import org.mockito.Mockito.{when, mock, _}
-
 import cypher.feature.parser.matchers.ValueMatcher
+import org.mockito.Mockito.{mock, when}
 import org.neo4j.graphdb._
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{FunSuite, Matchers}
@@ -206,16 +203,6 @@ class expectedResultsParserTest extends FunSuite with Matchers {
       case (k, v) => map.put(k, v)
     }
     map
-  }
-
-  case class accept(expected: Any)
-    extends Matcher[ValueMatcher] {
-
-    override def apply(actual: ValueMatcher): MatchResult = {
-      MatchResult(matches = actual.matches(expected),
-                  s"Mismatch! Expected value $actual did not match $expected",
-                  s"No mismatch found; $actual unexpectedly matched $expected")
-    }
   }
 
 }

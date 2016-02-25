@@ -33,4 +33,10 @@ public class FloatMatcher implements ValueMatcher
     {
         return value instanceof Double && value.equals( this.value );
     }
+
+    @Override
+    public String toString()
+    {
+        return "FloatMatcher for " + value;
+    }
 }

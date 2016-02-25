@@ -27,11 +27,9 @@ import cypher.feature.parser.matchers.IntegerMatcher;
 import cypher.feature.parser.matchers.ListMatcher;
 import cypher.feature.parser.matchers.MapMatcher;
 import cypher.feature.parser.matchers.NodeMatcher;
-import cypher.feature.parser.matchers.NullMatcher;
 import cypher.feature.parser.matchers.StringMatcher;
 import cypher.feature.parser.matchers.ValueMatcher;
 
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,7 +37,6 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 
 class CypherMatchersCreator extends FeatureResultsBaseListener
@@ -75,7 +72,7 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
     @Override
     public void enterNullValue( FeatureResultsParser.NullValueContext ctx )
     {
-        workload.push( new NullMatcher() );
+        workload.push( ValueMatcher.NULL_MATCHER );
     }
 
     @Override

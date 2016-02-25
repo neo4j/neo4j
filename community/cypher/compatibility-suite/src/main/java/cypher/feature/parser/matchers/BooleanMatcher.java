@@ -33,4 +33,10 @@ public class BooleanMatcher implements ValueMatcher
     {
         return value instanceof Boolean && (Boolean) value == this.value;
     }
+
+    @Override
+    public String toString()
+    {
+        return "BooleanMatcher for " + value;
+    }
 }

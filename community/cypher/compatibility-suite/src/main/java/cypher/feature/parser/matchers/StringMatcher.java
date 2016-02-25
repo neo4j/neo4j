@@ -21,16 +21,22 @@ package cypher.feature.parser.matchers;
 
 public class StringMatcher implements ValueMatcher
 {
-    private final String value;
+    private final String string;
 
-    public StringMatcher( String value )
+    public StringMatcher( String string )
     {
-        this.value = value;
+        this.string = string;
     }
 
     @Override
     public boolean matches( Object value )
     {
-        return value instanceof String && value.toString().equals( value );
+        return value instanceof String && value.toString().equals( string );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "StringMatcher for " + string;
     }
 }
