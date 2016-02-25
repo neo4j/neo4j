@@ -26,8 +26,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.bolt.v1.messaging.MessageBoundaryHook;
-import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackOutput;
+import org.neo4j.bolt.v1.packstream.PackStream;
 
 import static java.lang.Math.max;
 
@@ -61,7 +61,7 @@ public class ChunkedOutput implements PackOutput, MessageBoundaryHook
     @Override
     public PackOutput flush() throws IOException
     {
-        if ( buffer.readableBytes() > 0 )
+        if ( buffer != null && buffer.readableBytes() > 0 )
         {
             closeChunkIfOpen();
 
