@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
@@ -42,9 +43,9 @@ import static java.util.Arrays.asList;
 /**
  * This class holds the overall configuration of a Neo4j database instance. Use the accessors to convert the internal
  * key-value settings to other types.
- * <p>
+ * <p/>
  * Users can assume that old settings have been migrated to their new counterparts, and that defaults have been applied.
- * <p>
+ * <p/>
  * UI's can change configuration by calling augment(). Any listener, such as services that use this configuration, can
  * be notified of changes by implementing the {@link ConfigurationChangeListener} interface.
  */
@@ -211,60 +212,38 @@ public class Config implements DiagnosticsProvider, Configuration
         return output.toString();
     }
 
-    private synchronized void replaceSettings( Map<String, String> newValues )
+    private synchronized void replaceSettings( Map<String, String> newSettings )
     {
-        newValues = migrator.apply( newValues, log );
+        HashMap<String, String> oldSettings = new HashMap<>( params );
 
-        // Make sure all changes are valid
-        validator.validate( newValues );
+        newSettings = migrator.apply( newSettings, log );
+        validator.validate( newSettings );
+        params.clear();
+        params.putAll( newSettings );
+        settingsFunction = new ConfigValues( params );
 
-        // Figure out what changed
-        if ( listeners.isEmpty() )
+        notifyListeners( newSettings, oldSettings );
+    }
+
+    private void notifyListeners( Map<String, String> newSettings, HashMap<String, String> oldSettings )
+    {
+        List<ConfigurationChange> configurationChanges = new ArrayList<>();
+        for ( Map.Entry<String, String> setting : newSettings.entrySet() )
         {
-            // Make the change
-            params.clear();
-            params.putAll( newValues );
+            String oldValue = oldSettings.get( setting.getKey() );
+            String newValue = setting.getValue();
+            if ( !Objects.equals( oldValue, newValue ) )
+            {
+                configurationChanges.add( new ConfigurationChange( setting.getKey(), oldValue, newValue ) );
+            }
         }
-        else
+
+        if ( !configurationChanges.isEmpty() )
         {
-            List<ConfigurationChange> configurationChanges = new ArrayList<>();
-            for ( Map.Entry<String, String> stringStringEntry : newValues.entrySet() )
-            {
-                String oldValue = params.get( stringStringEntry.getKey() );
-                String newValue = stringStringEntry.getValue();
-                if ( !(oldValue == null && newValue == null) &&
-                        (oldValue == null || newValue == null || !oldValue.equals( newValue )) )
-                {
-                    configurationChanges.add( new ConfigurationChange( stringStringEntry.getKey(), oldValue,
-                            newValue ) );
-                }
-            }
-
-            if ( configurationChanges.isEmpty() )
-            {
-                // Don't bother... nothing changed.
-                return;
-            }
-
-            // Make the change
-            params.clear();
-            for ( Map.Entry<String, String> entry : newValues.entrySet() )
-            {
-                // Filter out nulls because we are using a ConcurrentHashMap under the covers, which doesn't support
-                // null keys or values.
-                String value = entry.getValue();
-                if ( value != null )
-                {
-                    params.put( entry.getKey(), value );
-                }
-            }
-
-            // Notify listeners
             for ( ConfigurationChangeListener listener : listeners )
             {
                 listener.notifyConfigurationChanges( configurationChanges );
             }
         }
-        settingsFunction = new ConfigValues( this.params );
     }
 }
