@@ -3600,4 +3600,16 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             fail( "mapping should have thrown" );
         }
     }
+
+    @Test
+    public void mustNotThrowWhenMappingFileWithDifferentFilePageSizeAndAnyPageSizeIsSpecified() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile ignore = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            pageCache.map( file( "a" ), filePageSize + 1, PageCacheOpenOptions.ANY_PAGE_SIZE ).close();
+        }
+    }
+    // TODO must copy into write page cursor
+
 }
