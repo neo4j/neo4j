@@ -112,6 +112,15 @@ public interface Status
         "in a way that it will wait indefinitely, and the database has aborted it. Retrying this transaction " +
         "will most likely be successful."),
 
+        InstanceStateChanged( TransientError,
+                "Transactions rely on assumptions around the state of the Neo4j instance they " +
+                "execute on. For instance, transactions in a cluster may expect that " +
+                "they are executing on an instance that can perform writes. However, " +
+                "instances may change state while the transaction is running. This causes " +
+                "assumptions the instance has made about how to execute the transaction " +
+                "to be violated - meaning the transaction must be rolled " +
+                "back. If you see this error, you should retry your operation in a new transaction."),
+
         EventHandlerThrewException( ClientError, "A transaction event handler threw an exception. The transaction " +
         "will be rolled back." ),
 
