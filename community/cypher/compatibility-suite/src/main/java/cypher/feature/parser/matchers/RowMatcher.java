@@ -19,22 +19,36 @@
  */
 package cypher.feature.parser.matchers;
 
-public interface ValueMatcher extends Matcher<Object>
+import java.util.Map;
+import java.util.Set;
+
+public class RowMatcher implements Matcher<Map<String,Object>>
 {
-    boolean matches( Object value );
+    private final Map<String,ValueMatcher> values;
 
-    ValueMatcher NULL_MATCHER = new ValueMatcher()
+    public RowMatcher( Map<String,ValueMatcher> values )
     {
-        @Override
-        public boolean matches( Object value )
-        {
-            return value == null;
-        }
+        this.values = values;
+    }
 
-        @Override
-        public String toString()
+    @Override
+    public boolean matches( Map<String,Object> value )
+    {
+        Set<String> keys = values.keySet();
+        boolean matches = keys.equals( value.keySet() );
+        if ( matches )
         {
-            return "NullMatcher";
+            for ( String key : keys )
+            {
+                matches &= values.get( key ).matches( value.get( key ) );
+            }
         }
-    };
+        return matches;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "RowMatcher with " + values;
+    }
 }

@@ -19,22 +19,7 @@
  */
 package cypher.feature.parser.matchers;
 
-public interface ValueMatcher extends Matcher<Object>
+public interface Matcher<T>
 {
-    boolean matches( Object value );
-
-    ValueMatcher NULL_MATCHER = new ValueMatcher()
-    {
-        @Override
-        public boolean matches( Object value )
-        {
-            return value == null;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "NullMatcher";
-        }
-    };
+    boolean matches( T value );
 }

@@ -19,9 +19,11 @@
  */
 package cypher.feature.parser
 
-import cypher.feature.parser.matchers.ValueMatcher
+import cypher.feature.parser.matchers.{ResultMatcher, RowMatcher, ValueMatcher}
 import org.mockito.Mockito._
-import org.neo4j.graphdb.{RelationshipType, Relationship, Label, Node}
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
+import org.neo4j.graphdb._
 import org.scalatest.{Matchers, FunSuite}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -45,9 +47,40 @@ class ParsingTestSupport extends FunSuite with Matchers with DecorateAsJava {
     rel
   }
 
+  def result(maps: Map[String, AnyRef]*): Result = {
+    val result = mock(classOf[Result])
+    val itr = maps.map(_.asJava).iterator
+    when(result.hasNext).thenAnswer(new Answer[Boolean] {
+      override def answer(invocation: InvocationOnMock): Boolean = itr.hasNext
+    })
+    when(result.next).thenAnswer(new Answer[java.util.Map[String, AnyRef]] {
+      override def answer(invocation: InvocationOnMock) = itr.next
+    })
+    when(result.toString).thenReturn(s"Result:\n${maps.mkString("\n")}")
+    result
+  }
+
   case class accept(value: Any) extends Matcher[ValueMatcher] {
 
     override def apply(matcher: ValueMatcher): MatchResult = {
+      MatchResult(matches = matcher.matches(value),
+                  s"$matcher did not match $value",
+                  s"$matcher unexpectedly matched $value")
+    }
+  }
+
+  case class acceptRow(value: Map[String, AnyRef]) extends Matcher[RowMatcher] {
+
+    override def apply(matcher: RowMatcher): MatchResult = {
+      MatchResult(matches = matcher.matches(value.asJava),
+                  s"$matcher did not match $value",
+                  s"$matcher unexpectedly matched $value")
+    }
+  }
+
+  case class acceptResult(value: Result) extends Matcher[ResultMatcher] {
+
+    override def apply(matcher: ResultMatcher): MatchResult = {
       MatchResult(matches = matcher.matches(value),
                   s"$matcher did not match $value",
                   s"$matcher unexpectedly matched $value")
