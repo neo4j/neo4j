@@ -64,7 +64,7 @@ public abstract class RecordFormatTest
     public static final RandomRule random = new RandomRule();
 
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule( false /*true here later*/ );
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fsRule );
 
@@ -160,46 +160,13 @@ public abstract class RecordFormatTest
                 R written = generator.get( recordSize, format );
                 try
                 {
-                    // write
-                    try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
-                    {
-                        assertedNext( cursor );
-                        if ( written.inUse() )
-                        {
-                            format.prepare( written, recordSize, idSequence );
-                        }
+                    writeRecord( written, format, storeFile, recordSize, idSequence );
 
-                        int offset = Math.toIntExact( written.getId() * recordSize );
-                        cursor.setOffset( offset );
-                        format.write( written, cursor, recordSize, storeFile );
-                    }
                     long recordsUsedForWriting = storeFile.nextCalls();
                     long unusedBytes = storeFile.unusedBytes();
                     storeFile.resetMeasurements();
 
-                    // read
-                    try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
-                    {
-                        assertedNext( cursor );
-                        int offset = Math.toIntExact( written.getId() * recordSize );
-                        cursor.setOffset( offset );
-                        @SuppressWarnings( "unchecked" )
-                        R read = (R) written.clone(); // just to get a new instance
-                        format.read( read, cursor, NORMAL, recordSize, storeFile );
-
-                        // THEN
-                        if ( written.inUse() )
-                        {
-                            assertEquals( written.inUse(), read.inUse() );
-                            assertEquals( written.getId(), read.getId() );
-                            assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
-                            key.assertRecordsEquals( written, read );
-                        }
-                        else
-                        {
-                            assertEquals( written.inUse(), read.inUse() );
-                        }
-                    }
+                    readAndVerifyRecord( written, format, key, storeFile, recordSize );
 
                     if ( written.inUse() )
                     {
@@ -245,6 +212,59 @@ public abstract class RecordFormatTest
                         percent( totalUnusedBytesPrimary + totalUnusedBytesSecondary, i * recordSize ),
                         smallestUnusedBytesPrimary, smallestUnusedBytesPrimary);
             }
+        }
+    }
+
+    private <R extends AbstractBaseRecord> void readAndVerifyRecord( R written, RecordFormat<R> format,
+            RecordKey<R> key, PagedFile storeFile, int recordSize ) throws IOException
+    {
+        try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            assertedNext( cursor );
+            R read = format.newRecord();
+            read.setId( written.getId() );
+
+            /**
+             Retry loop is needed here because format does not handle retries on the primary cursor.
+             Same retry is done on the store level in {@link org.neo4j.kernel.impl.store.CommonAbstractStore}
+             */
+            int offset = Math.toIntExact( written.getId() * recordSize );
+            do
+            {
+                cursor.setOffset( offset );
+                format.read( read, cursor, NORMAL, recordSize, storeFile );
+            }
+            while ( cursor.shouldRetry() );
+
+            // THEN
+            if ( written.inUse() )
+            {
+                assertEquals( written.inUse(), read.inUse() );
+                assertEquals( written.getId(), read.getId() );
+                assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
+                key.assertRecordsEquals( written, read );
+            }
+            else
+            {
+                assertEquals( written.inUse(), read.inUse() );
+            }
+        }
+    }
+
+    private <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PagedFile storeFile,
+            int recordSize, BatchingIdSequence idSequence ) throws IOException
+    {
+        try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            assertedNext( cursor );
+            if ( record.inUse() )
+            {
+                format.prepare( record, recordSize, idSequence );
+            }
+
+            int offset = Math.toIntExact( record.getId() * recordSize );
+            cursor.setOffset( offset );
+            format.write( record, cursor, recordSize, storeFile );
         }
     }
 
