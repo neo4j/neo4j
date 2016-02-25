@@ -19,11 +19,9 @@
  */
 package cypher.feature.parser.matchers
 
-import cypher.feature.parser.accept
-import org.scalatest.FunSuite
-import org.scalatest.Matchers._
+import cypher.feature.parser.ParsingTestSupport
 
-class StringMatcherTest extends FunSuite {
+class StringMatcherTest extends ParsingTestSupport {
 
   test("should match strings") {
     new StringMatcher("test") should accept("test")

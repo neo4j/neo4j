@@ -30,9 +30,8 @@ import org.neo4j.graphdb._
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{FunSuite, Matchers}
 
-import scala.collection.JavaConverters._
 
-class expectedResultsParserTest extends FunSuite with Matchers {
+class expectedResultsParserTest extends ParsingTestSupport {
 
   test("should parse null") {
     valueParse("null") should equal(null)
@@ -115,21 +114,21 @@ class expectedResultsParserTest extends FunSuite with Matchers {
   }
 
   test("should parse nodes with labels") {
-    parse("()") should accept(mockedNode())
-    parse("(:T)") should accept(mockedNode(Seq("T")))
-    parse("(:T:T2:longlabel)") should accept(mockedNode(Seq("T", "T2", "longlabel")))
+    parse("()") should accept(node())
+    parse("(:T)") should accept(node(Seq("T")))
+    parse("(:T:T2:longlabel)") should accept(node(Seq("T", "T2", "longlabel")))
   }
 
   test("should parse nodes with properties") {
-    parse("({key:'value'})") should accept(mockedNode(properties = Map("key" -> "value")))
-    parse("({key:0})") should accept(mockedNode(properties = Map("key" -> Long.valueOf(0L))))
-    parse("({key:null, key2:[]})") should accept(mockedNode(properties = Map("key" -> null, "key2" -> emptyList())))
+    parse("({key:'value'})") should accept(node(properties = Map("key" -> "value")))
+    parse("({key:0})") should accept(node(properties = Map("key" -> Long.valueOf(0L))))
+    parse("({key:null, key2:[]})") should accept(node(properties = Map("key" -> null, "key2" -> emptyList())))
   }
 
   test("should parse nodes with labels and properties") {
-    parse("(:T {k:[]})") should accept(mockedNode(Seq("T"), Map("k" -> emptyList())))
-    val expected = mockedNode(Seq("T", "longlabel"),
-                              Map("k" -> emptyList(), "verylongkeywithonlyletters" -> lang.Double.valueOf("Infinity")))
+    parse("(:T {k:[]})") should accept(node(Seq("T"), Map("k" -> emptyList())))
+    val expected = node(Seq("T", "longlabel"),
+                        Map("k" -> emptyList(), "verylongkeywithonlyletters" -> lang.Double.valueOf("Infinity")))
     parse("(:T:longlabel {k:[], verylongkeywithonlyletters:Inf})") should accept(expected)
   }
 
@@ -183,13 +182,6 @@ class expectedResultsParserTest extends FunSuite with Matchers {
     labels.foreach(name => list.add(Label.label(name)))
 
     ParsedNode.parsedNode(list, asMap(properties))
-  }
-
-  private def mockedNode(labels: Seq[String] = Seq.empty, properties: Map[String, AnyRef] = Map.empty): Node = {
-    val node = mock(classOf[Node])
-    when(node.getLabels).thenReturn(labels.map(Label.label).toIterable.asJava)
-    when(node.getAllProperties).thenReturn(properties.asJava)
-    node
   }
 
   private def parsedPath(nodes: Seq[Node] = Seq.empty, rels: Seq[Relationship] = Seq.empty): Path = {

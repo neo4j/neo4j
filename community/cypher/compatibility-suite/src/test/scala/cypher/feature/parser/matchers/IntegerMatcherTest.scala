@@ -19,11 +19,9 @@
  */
 package cypher.feature.parser.matchers
 
-import cypher.feature.parser.accept
-import org.scalatest.FunSuite
-import org.scalatest.Matchers._
+import cypher.feature.parser.ParsingTestSupport
 
-class IntegerMatcherTest extends FunSuite {
+class IntegerMatcherTest extends ParsingTestSupport {
 
   test("should match integers") {
     new IntegerMatcher(0) should accept(0L)

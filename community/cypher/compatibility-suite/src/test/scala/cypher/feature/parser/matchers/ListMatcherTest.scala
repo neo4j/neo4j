@@ -22,12 +22,10 @@ package cypher.feature.parser.matchers
 import java.util.Arrays.asList
 import java.util.Collections.emptyList
 
-import cypher.feature.parser.accept
+import cypher.feature.parser.ParsingTestSupport
 import cypher.feature.parser.matchers.ValueMatcher.NULL_MATCHER
-import org.scalatest.FunSuite
-import org.scalatest.Matchers._
 
-class ListMatcherTest extends FunSuite {
+class ListMatcherTest extends ParsingTestSupport {
 
   test("should match lists") {
     new ListMatcher(asList(NULL_MATCHER)) should accept(asList(null))

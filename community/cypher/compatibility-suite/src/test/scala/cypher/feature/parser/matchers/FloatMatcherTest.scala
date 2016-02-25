@@ -19,11 +19,9 @@
  */
 package cypher.feature.parser.matchers
 
-import cypher.feature.parser.accept
-import org.scalatest.FunSuite
-import org.scalatest.Matchers._
+import cypher.feature.parser.ParsingTestSupport
 
-class FloatMatcherTest extends FunSuite {
+class FloatMatcherTest extends ParsingTestSupport {
 
   test("should match simple float") {
     new FloatMatcher(1.0) should accept(1.0)

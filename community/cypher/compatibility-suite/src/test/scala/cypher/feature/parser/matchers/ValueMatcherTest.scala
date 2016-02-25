@@ -19,12 +19,10 @@
  */
 package cypher.feature.parser.matchers
 
-import cypher.feature.parser.accept
+import cypher.feature.parser.ParsingTestSupport
 import cypher.feature.parser.matchers.ValueMatcher.NULL_MATCHER
-import org.scalatest.FunSuite
-import org.scalatest.Matchers._
 
-class ValueMatcherTest extends FunSuite {
+class ValueMatcherTest extends ParsingTestSupport {
 
   test("null matcher should match null") {
     NULL_MATCHER should accept(null)

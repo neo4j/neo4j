@@ -19,13 +19,10 @@
  */
 package cypher.feature.parser.matchers
 
-import cypher.feature.parser.accept
+import cypher.feature.parser.ParsingTestSupport
 import cypher.feature.parser.matchers.ValueMatcher.NULL_MATCHER
-import org.scalatest.FunSuite
-import org.scalatest.Matchers._
-import scala.collection.JavaConverters._
 
-class MapMatcherTest extends FunSuite {
+class MapMatcherTest extends ParsingTestSupport {
 
   test("should match maps") {
     new MapMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("value")).asJava) should accept(Map("key" -> "value").asJava)
