@@ -19,14 +19,20 @@
  */
 package org.neo4j.bolt.v1.runtime.internal;
 
+import org.neo4j.bolt.security.auth.Authentication;
+import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.udc.UsageData;
 
 /**
@@ -39,6 +45,7 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     private final LifeSupport life = new LifeSupport();
     private final UsageData usageData;
     private final LogService logging;
+    private final Authentication authentication;
 
     private CypherStatementRunner statementRunner;
     private ThreadToStatementContextBridge txBridge;
@@ -51,6 +58,9 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
         this.usageData = usageData;
         this.logging = logging;
         this.txBridge = txBridge;
+        DependencyResolver dependencyResolver = gds.getDependencyResolver();
+        this.txBridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
+        this.authentication = authentication( dependencyResolver );
     }
 
     @Override
@@ -83,6 +93,20 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     @Override
     public Session newSession( boolean isEncrypted )
     {
-        return new SessionStateMachine( usageData, gds, txBridge, statementRunner, logging );
+        return new SessionStateMachine( usageData, gds, txBridge, statementRunner, logging, authentication );
+    }
+
+    private Authentication authentication( DependencyResolver dependencyResolver )
+    {
+        Config config = dependencyResolver.resolveDependency( Config.class );
+
+        if ( config.get( GraphDatabaseSettings.auth_enabled ) )
+        {
+            return new BasicAuthentication( dependencyResolver.resolveDependency( BasicAuthManager.class ), logging.getUserLogProvider() );
+        }
+        else
+        {
+            return Authentication.NONE;
+        }
     }
 }

@@ -65,6 +65,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.bolt.BoltKernelExtension.EncryptionLevel.OPTIONAL;
@@ -87,11 +88,11 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 {
     public static class Settings
     {
-        public static final Function<ConfigValues,List<Configuration>> connector_group = Config.groups( "dbms.connector" );
+        public static final Function<ConfigValues,List<Configuration>> connector_group =
+                Config.groups( "dbms.connector" );
 
         @Description( "Enable Neo4j Bolt" )
-        public static final Setting<Boolean> enabled =
-                setting( "enabled", BOOLEAN, "false" );
+        public static final Setting<Boolean> enabled = setting( "enabled", BOOLEAN, "false" );
 
         @Description( "Set the encryption level for Neo4j Bolt protocol ports" )
         public static final Setting<EncryptionLevel> tls_level =
@@ -156,7 +157,9 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
     public enum EncryptionLevel
     {
-        REQUIRED, OPTIONAL, DISABLED
+        REQUIRED,
+        OPTIONAL,
+        DISABLED
     }
 
     public interface Dependencies
@@ -206,7 +209,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         List<NettyServer.ProtocolInitializer> connectors = new ArrayList<>();
 
         List<Configuration> view = config.view( Settings.connector_group );
-        for( Configuration connector: view )
+        for ( Configuration connector : view )
         {
             final HostnamePort socketAddress = connector.get( Settings.socket_address );
 
@@ -223,7 +226,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                     // no break here
                 case OPTIONAL:
                     KeyStoreInformation keyStore = createKeyStore( config, log );
-                    sslCtx = SslContextBuilder.forServer( keyStore.getCertificatePath(), keyStore.getPrivateKeyPath() ).build();
+                    sslCtx = SslContextBuilder.forServer( keyStore.getCertificatePath(), keyStore.getPrivateKeyPath() )
+                            .build();
                     break;
                 default:
                     // case DISABLED:
@@ -233,11 +237,11 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
                 connectors.add( new SocketTransport( socketAddress, sslCtx, logging.getInternalLogProvider(),
                         newVersions( logging,
-                                requireEncryption ? new EncryptionRequiredSessions( sessions ) : sessions ) ) );
+                                requireEncryption ? new EncryptionRequiredSessions( sessions ) : sessions) ) );
             }
         }
 
-        if( connectors.size() > 0 )
+        if ( connectors.size() > 0 )
         {
             life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), connectors ) );
             log.info( "Bolt Server extension loaded." );
@@ -250,6 +254,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
             Sessions sessions )
     {
         PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions = longObjectMap();
+
+
         availableVersions.put(
                 BoltProtocolV1.VERSION,
                 ( channel, isEncrypted ) -> new BoltProtocolV1( logging, sessions.newSession( isEncrypted ), channel )

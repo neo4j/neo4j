@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.server.configuration.ServerSettings;
 
@@ -46,7 +47,7 @@ public class BatchEndpointIT
                     getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_key_file ) )
             .withConfig( ServerSettings.tls_certificate_file.name(),
                     getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_certificate_file ) )
-            .withConfig( ServerSettings.auth_enabled, "false" );
+            .withConfig( GraphDatabaseSettings.auth_enabled, "false" );
 
     @Test
     public void requestsShouldNotFailWhenHttpLoggingIsOn()

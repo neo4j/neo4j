@@ -27,9 +27,11 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.bolt.v1.messaging.message.Messages;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.metrics.source.db.BoltMetrics;
@@ -41,6 +43,7 @@ import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
 import static org.neo4j.bolt.BoltKernelExtension.Settings.enabled;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.acceptedVersions;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.metrics.CoreEdgeMetricsIT.metricsCsv;
 import static org.neo4j.metrics.CoreEdgeMetricsIT.readLastValue;
 import static org.neo4j.test.Assert.assertEventually;
@@ -60,6 +63,11 @@ public class BoltMetricsIT
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
                 .setConfig( connector( 0, enabled ), "true" )
+                .setConfig( GraphDatabaseSettings.auth_enabled, "false" )
+                .setConfig( BoltKernelExtension.Settings.tls_certificate_file,
+                        tmpDir.getRoot().toPath().resolve( BoltKernelExtension.Settings.tls_certificate_file.getDefaultValue() ).toString())
+                .setConfig( BoltKernelExtension.Settings.tls_key_file,
+                        tmpDir.getRoot().toPath().resolve( BoltKernelExtension.Settings.tls_key_file.getDefaultValue() ).toString())
                 .setConfig( MetricsSettings.boltMessagesEnabled, "true" )
                 .setConfig( MetricsSettings.csvEnabled, "true" )
                 .setConfig( MetricsSettings.csvPath, metricsFolder.getAbsolutePath() )
@@ -69,7 +77,7 @@ public class BoltMetricsIT
         conn = new SocketConnection()
                 .connect( new HostnamePort( "localhost", 7687 ) )
                 .send( acceptedVersions( 1, 0, 0, 0 ) )
-                .send( chunk( Messages.init( "TestClient" ) ) );
+                .send( chunk( Messages.init( "TestClient", map("scheme", "basic", "principal", "neo4j", "credentials", "neo4j") ) ) );
 
         // Then
         assertEventually( "init request shows up as recieved",

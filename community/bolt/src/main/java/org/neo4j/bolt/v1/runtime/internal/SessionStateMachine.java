@@ -22,6 +22,8 @@ package org.neo4j.bolt.v1.runtime.internal;
 import java.util.Map;
 import java.util.UUID;
 
+import org.neo4j.bolt.security.auth.Authentication;
+import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
@@ -42,6 +44,7 @@ import org.neo4j.udc.UsageDataKeys;
  */
 public class SessionStateMachine implements Session, SessionState
 {
+
     /**
      * The session state machine, this is the heart of how a session operates. This enumerates the various discrete
      * states a session can be in, and describes how it behaves in those states.
@@ -54,10 +57,18 @@ public class SessionStateMachine implements Session, SessionState
         UNINITIALIZED
                 {
                     @Override
-                    public State init( SessionStateMachine ctx, String clientName )
+                    public State init( SessionStateMachine ctx, String clientName, Map<String,Object> authToken )
                     {
-                        ctx.usageData.get( UsageDataKeys.clientNames ).add( clientName );
-                        return IDLE;
+                        try
+                        {
+                            ctx.authentication.authenticate( authToken );
+                            ctx.usageData.get( UsageDataKeys.clientNames ).add( clientName );
+                            return IDLE;
+                        }
+                        catch ( AuthenticationException e)
+                        {
+                            return error( ctx, new Neo4jError( e.status(), e.getMessage(), e) );
+                        }
                     }
 
                     @Override
@@ -299,7 +310,7 @@ public class SessionStateMachine implements Session, SessionState
 
         // Operations that a session can perform. Individual states override these if they want to support them.
 
-        public State init( SessionStateMachine ctx, String clientName )
+        public State init( SessionStateMachine ctx, String clientName, Map<String,Object> authToken )
         {
             return onNoImplementation( ctx, "initializing the session" );
         }
@@ -418,6 +429,7 @@ public class SessionStateMachine implements Session, SessionState
     private final ErrorReporter errorReporter;
     private final Log log;
     private final String id;
+    private final Authentication authentication;
 
     /** A re-usable statement metadata instance that always represents the currently running statement */
     private final StatementMetadata currentStatementMetadata = new StatementMetadata()
@@ -457,7 +469,7 @@ public class SessionStateMachine implements Session, SessionState
     // Note: We shouldn't depend on GDB like this, I think. Better to define an SPI that we can shape into a spec
     // for exactly the kind of underlying support the state machine needs.
     public SessionStateMachine( UsageData usageData, GraphDatabaseService db, ThreadToStatementContextBridge txBridge,
-                                StatementRunner engine, LogService logging )
+            StatementRunner engine, LogService logging, Authentication authentication )
     {
         this.usageData = usageData;
         this.db = db;
@@ -466,6 +478,7 @@ public class SessionStateMachine implements Session, SessionState
         this.errorReporter = new ErrorReporter( logging, this.usageData );
         this.log = logging.getInternalLog( getClass() );
         this.id = UUID.randomUUID().toString();
+        this.authentication = authentication;
     }
 
     @Override
@@ -475,12 +488,12 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void init( String clientName, A attachment, Callback<Void,A> callback )
+    public <A> void init( String clientName, Map<String,Object> authToken, A attachment, Callback<Void,A> callback )
     {
         before( attachment, callback );
         try
         {
-            state = state.init( this, clientName );
+            state = state.init( this, clientName, authToken);
         }
         finally { after(); }
     }

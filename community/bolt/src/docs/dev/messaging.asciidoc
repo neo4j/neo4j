@@ -81,21 +81,25 @@ All parameters in the `INIT` message are required.
 
 .Response
 - `SUCCESS {}` if initialization has completed successfully
-- `FAILURE {"code": ..., "message": ...}` if the request was malformed or if initialization cannot be performed at this time
+- `FAILURE {"code": ..., "message": ...}` if the request was malformed, or if initialization cannot be performed at this time, or if the authorization failed.
 
 [source,bolt_message_struct]
 ----
 InitMessage (signature=0x01) {
     String clientName
+    Map<String,Value> authToken
 }
 ----
 
 .Example
 [source,bolt_packstream_type]
 ----
-Value: INIT "MyClient/1.0"
+Value: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credentials": "secret"}
 
-B1 01 8C 4D  79 43 6C 69  65 6E 74 2F  31 2E 30
+B1 01 8C 4D  79 43 6C 69  65 6E 74 2F  31 2E 30 A3
+86 73 63 68  65 6D 65 85  62 61 73 69  63 89 70 72
+69 6E 63 69  70 61 6C 85  6E 65 6F 34  6A 8B 63 72
+65 64 65 6E  74 69 61 6C  73 86 73 65  63 72 65 74
 ----
 
 .Initialize message parameters
@@ -103,6 +107,7 @@ B1 01 8C 4D  79 43 6C 69  65 6E 74 2F  31 2E 30
 |=======================
 |Parameter   |Description
 |clientName  |A name and version for the client, if the user has allowed usage data collection, this is used to track popular clients. Example: "MyClient/1.0"
+|authToken   |An authorization token used to authenticate to the database. The token must contain the keys `scheme`, `principal`, and `credentials`. Example { "scheme": "basic", "principal": "neo4j", "credentials": "secret"}"
 |=======================
 
 [[bolt-message-structs-reset]]

@@ -349,6 +349,7 @@ public class EnterpriseCoreEditionModule
 
         dependencies.satisfyDependency( createKernelData( fileSystem, platformModule.pageCache, storeDir,
                 config, graphDatabaseFacade, life ) );
+        dependencies.satisfyDependencies( createAuthManager(config, life, logging.getUserLogProvider()) );
 
         headerInformationFactory = createHeaderInformationFactory();
 

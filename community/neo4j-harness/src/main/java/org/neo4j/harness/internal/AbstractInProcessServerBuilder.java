@@ -43,6 +43,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.AbstractNeoServer;
+import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 
@@ -74,12 +75,17 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     private void init( File workingDir )
     {
         setDirectory( workingDir );
-        withConfig( ServerSettings.auth_enabled, "false" );
+        withConfig( GraphDatabaseSettings.auth_enabled, "false" );
+        withConfig( GraphDatabaseSettings.auth_store,
+                ServerTestUtils.getRelativePath( workingDir, GraphDatabaseSettings.auth_store ) );
         withConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-        withConfig( ServerSettings.webserver_port.name(), Integer.toString( freePort(7474, 10000) ) );
-
+        withConfig( ServerSettings.webserver_port.name(), Integer.toString( freePort( 7474, 10000 ) ) );
+        withConfig( ServerSettings.tls_key_file,
+                ServerTestUtils.getRelativePath( workingDir, ServerSettings.tls_key_file ) );
+        withConfig( ServerSettings.tls_certificate_file,
+                        ServerTestUtils.getRelativePath( workingDir, ServerSettings.tls_certificate_file ) );
         withConfig( connector( 0, enabled ), "true" );
-        withConfig( connector( 0, socket_address ), "localhost:" + Integer.toString( freePort(7687, 10000) ) );
+        withConfig( connector( 0, socket_address ), "localhost:" + Integer.toString( freePort( 7687, 10000 ) ) );
     }
 
 

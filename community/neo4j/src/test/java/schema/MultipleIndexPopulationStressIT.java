@@ -149,6 +149,7 @@ public class MultipleIndexPopulationStressIT
         final GraphDatabaseService db = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.absolutePath() )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
+                .setConfig( GraphDatabaseSettings.auth_store, directory.file( "auth" ).getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreaded + "" )
                 .newGraphDatabase();
         createIndexes( db );
@@ -188,6 +189,7 @@ public class MultipleIndexPopulationStressIT
         GraphDatabaseService db = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.absolutePath() )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
+                .setConfig( GraphDatabaseSettings.auth_store, directory.file( "auth" ).getAbsolutePath() )
                 .newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {

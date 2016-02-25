@@ -81,7 +81,7 @@ public class BatchOperationsTest {
         // Given
         HttpServletRequest mock = mock( HttpServletRequest.class );
 
-        when(mock.getAuthType()).thenReturn( "auth" );
+        when(mock.getAuthType()).thenReturn( "authorization/auth" );
         when(mock.getRemoteAddr()).thenReturn( "127.0.0.1" );
         when(mock.getRemoteHost()).thenReturn( "localhost" );
         when(mock.getRemotePort()).thenReturn( 1 );
@@ -93,7 +93,7 @@ public class BatchOperationsTest {
                 mock );
 
         // When & then
-        assertEquals( "auth", req.getAuthType());
+        assertEquals( "authorization/auth", req.getAuthType());
         assertEquals( "127.0.0.1", req.getRemoteAddr());
         assertEquals( "localhost", req.getRemoteHost());
         assertEquals( 1, req.getRemotePort());

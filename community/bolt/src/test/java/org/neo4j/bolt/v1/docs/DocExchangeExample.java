@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.v1.docs;
 
-import org.jsoup.nodes.Element;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -42,14 +40,8 @@ public class DocExchangeExample implements Iterable<DocExchangeExample.Event>
 {
     public static DocPartParser<DocExchangeExample> exchange_example =
         DocPartParser.Decoration
-                .withDetailedExceptions( DocExchangeExample.class, new DocPartParser<DocExchangeExample>()
-                        {
-                            @Override
-                            public DocExchangeExample parse( String fileName, String title, Element s )
-                            {
-                                return new DocExchangeExample( DocPartName.create( fileName, title ), s.text() );
-                            }
-                        }
+                .withDetailedExceptions( DocExchangeExample.class,
+                        ( fileName, title, s ) -> new DocExchangeExample( DocPartName.create( fileName, title ), s.text() )
                 );
 
     public enum Type
@@ -66,11 +58,6 @@ public class DocExchangeExample implements Iterable<DocExchangeExample.Event>
         private final Type type;
         private final byte[] payload;
         private final String message;
-
-        public Event( String from, Type type )
-        {
-            this( from, type, new byte[0], type.name() );
-        }
 
         public Event( String from, Type type, byte[] payload, String message )
         {

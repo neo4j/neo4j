@@ -27,13 +27,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.bolt.v1.runtime.internal.StandardSessions;
 import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -57,7 +61,9 @@ public class TestSessions implements TestRule, Sessions
             @Override
             public void evaluate() throws Throwable
             {
-                gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+                Map<Setting<?>,String> config = new HashMap<>();
+                config.put( GraphDatabaseSettings.auth_enabled, "false" );
+                gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( config );
                 Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
                 DependencyResolver resolver = gdb.getDependencyResolver();
                 StandardSessions sessions = life.add(

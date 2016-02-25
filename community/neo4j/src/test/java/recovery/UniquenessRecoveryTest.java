@@ -19,6 +19,11 @@
  */
 package recovery;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -29,11 +34,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -41,6 +41,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.helpers.collection.Iterables;
@@ -290,7 +291,10 @@ public class UniquenessRecoveryTest
 
     private static GraphDatabaseService graphdb( String path )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        return new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( path )
+                .setConfig( GraphDatabaseSettings.auth_store, new File(path, "auth").getAbsolutePath() )
+                .newGraphDatabase();
     }
 
     private static void flushPageCache( GraphDatabaseService db )

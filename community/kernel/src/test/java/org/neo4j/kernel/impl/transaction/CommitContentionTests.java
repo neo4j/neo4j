@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -183,7 +184,9 @@ public class CommitContentionTests
                     }
                 };
             }
-        }.newFacade( storeLocation.graphDbDir(), stringMap(), state.databaseDependencies() );
+        }.newFacade( storeLocation.graphDbDir(),
+                stringMap( GraphDatabaseSettings.auth_store.name(), storeLocation.file( "auth" ).getAbsolutePath() ),
+                state.databaseDependencies() );
     }
 
     private void waitForFirstTransactionToStartPushing() throws InterruptedException
