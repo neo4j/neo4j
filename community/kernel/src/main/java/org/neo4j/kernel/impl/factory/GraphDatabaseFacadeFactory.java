@@ -90,6 +90,7 @@ public abstract class GraphDatabaseFacadeFactory
 
         // Kept here to have it not be publicly documented.
         public static final Setting<String> lock_manager = setting( "lock_manager", Settings.STRING, "" );
+        public static final Setting<String> record_format = setting( "record_format", Settings.STRING, "" );
         public static final Setting<String> tracer =
                 setting( "dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
 

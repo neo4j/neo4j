@@ -560,7 +560,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                         labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
                         tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
                         labelScanStore, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
-                        InternalRecordFormatSelector.select() ) );
+                        InternalRecordFormatSelector.select(config, logService) ) );
     }
 
     private TransactionLogModule buildTransactionLogs(

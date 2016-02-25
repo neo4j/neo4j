@@ -19,14 +19,18 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+
+import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
 
 public class StoreIdTestFactory
 {
+    private static RecordFormats select = select(new Config(), NullLogService.getInstance());
+
     private static long currentStoreVersionAsLong()
     {
-        RecordFormats select = InternalRecordFormatSelector.select();
         return MetaDataStore.versionStringToLong( select.storeVersion() );
     }
 
@@ -38,7 +42,6 @@ public class StoreIdTestFactory
     public static StoreId newStoreIdForCurrentVersion( long creationTime, long randomId, long upgradeTime, long
             upgradeId )
     {
-        RecordFormats select = InternalRecordFormatSelector.select();
         return new StoreId( creationTime, randomId, MetaDataStore.versionStringToLong( select.storeVersion() ),
                 upgradeTime, upgradeId );
     }

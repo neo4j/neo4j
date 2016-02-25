@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 
 /**
@@ -28,13 +34,34 @@ import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
  */
 public class InternalRecordFormatSelector
 {
-    public static RecordFormats select()
+    public static RecordFormats select( Config config, LogService logging )
     {
-        //todo: uncomment this loop once high-limits store migration is done.
-//        for ( RecordFormats.Factory candidate : Service.load( RecordFormats.Factory.class ) )
-//        {
-//            return candidate.newInstance();
-//        }
-        return LowLimit.RECORD_FORMATS;
+        String key = config.get( GraphDatabaseFacadeFactory.Configuration.record_format );
+        for ( RecordFormats.Factory candidate : Service.load( RecordFormats.Factory.class ) )
+        {
+            String candidateId = candidate.getKeys().iterator().next();
+            if ( candidateId.equals( key ) )
+            {
+                return candidate.newInstance();
+            }
+            else if ( key.equals( "" ) )
+            {
+                logging.getInternalLog( CommunityFacadeFactory.class )
+                        .info( "No locking implementation specified, defaulting to '" + candidateId + "'" );
+            }
+        }
+
+        if ( key.equals( "community" ) )
+        {
+            return LowLimit.RECORD_FORMATS;
+        }
+        else if ( key.equals( "" ) )
+        {
+            logging.getInternalLog( CommunityFacadeFactory.class )
+                    .info( "No record format specified, defaulting to 'community'" );
+            return LowLimit.RECORD_FORMATS;
+        }
+
+        throw new IllegalArgumentException( "No record format found with the name '" + key + "'." );
     }
 }

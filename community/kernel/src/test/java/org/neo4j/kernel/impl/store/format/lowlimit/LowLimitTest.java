@@ -21,15 +21,18 @@ package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.NullLogService;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
 
 public class LowLimitTest
 {
     @Test
     public void shouldResolveLowLimitsRecordFormat() throws Exception
     {
-        assertEquals( LowLimit.RECORD_FORMATS.storeVersion(), InternalRecordFormatSelector.select().storeVersion() );
+        assertEquals( LowLimit.RECORD_FORMATS.storeVersion(),
+                select( new Config(), NullLogService.getInstance() ).storeVersion() );
     }
 }

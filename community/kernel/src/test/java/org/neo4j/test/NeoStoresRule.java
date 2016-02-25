@@ -24,13 +24,14 @@ import java.io.File;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 
@@ -50,7 +51,6 @@ public class NeoStoresRule extends ExternalResource
     private EphemeralFileSystemAbstraction efs;
     private PageCache pageCache;
     private StoreFactory storeFactory;
-    private final RecordFormats format = InternalRecordFormatSelector.select();
 
     public NeoStoresRule( Class<?> testClass )
     {
@@ -59,15 +59,11 @@ public class NeoStoresRule extends ExternalResource
 
     public NeoStores open( String... config )
     {
-        return open( InternalRecordFormatSelector.select(), config );
-    }
-
-    public NeoStores open( RecordFormats format, String... config )
-    {
         efs = new EphemeralFileSystemAbstraction();
         Config conf = new Config( stringMap( config ) );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( efs, conf, NULL,
                 NullLog.getInstance() );
+        RecordFormats format = InternalRecordFormatSelector.select( conf, NullLogService.getInstance() );
         pageCache = pageCacheFactory.getOrCreatePageCache();
         return open( efs, pageCache, format, config );
     }
@@ -81,10 +77,6 @@ public class NeoStoresRule extends ExternalResource
         storeFactory = new StoreFactory( storeDir, configuration, new DefaultIdGeneratorFactory( fs ),
                 pageCache, fs, NullLogProvider.getInstance(), format );
         return neoStores = storeFactory.openAllNeoStores( true );
-    }
-
-    public NeoStores reopen() {
-        return storeFactory.openAllNeoStores();
     }
 
     @Override

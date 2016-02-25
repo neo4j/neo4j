@@ -19,19 +19,23 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 
 import static org.junit.Assert.assertEquals;
 
 public class HighLimitTest
 {
-    @Ignore("enable once other features are done.")
     @Test
     public void shouldResolveHighLimitsRecordFormat() throws Exception
     {
-        assertEquals( HighLimit.RECORD_FORMATS.storeVersion(), InternalRecordFormatSelector.select().storeVersion());
+        Config config = new Config( MapUtil.stringMap( "record_format", "highlimit" ) );
+        RecordFormats formatSelector = InternalRecordFormatSelector.select( config, NullLogService.getInstance() );
+        assertEquals( HighLimit.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
     }
 }
