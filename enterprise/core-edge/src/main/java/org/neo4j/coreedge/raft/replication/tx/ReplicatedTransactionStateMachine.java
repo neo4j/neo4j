@@ -81,7 +81,7 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
     }
 
     @Override
-    public void flush() throws IOException
+    public synchronized void flush() throws IOException
     {
         sessionTrackerStorage.persistStoreData( sessionTrackerState );
     }
