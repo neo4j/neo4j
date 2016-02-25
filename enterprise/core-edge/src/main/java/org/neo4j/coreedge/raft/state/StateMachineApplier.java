@@ -76,7 +76,6 @@ public class StateMachineApplier extends LifecycleAdapter implements ConsensusLi
         {
             this.commitIndex = commitIndex;
             executor.execute( () -> {
-
                 try
                 {
                     applyUpTo( commitIndex );
