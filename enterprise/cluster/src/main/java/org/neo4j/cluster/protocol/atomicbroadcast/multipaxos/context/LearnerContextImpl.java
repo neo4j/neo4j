@@ -178,7 +178,7 @@ class LearnerContextImpl
         learnMissLogger.warn( "Did not have learned value for Paxos instance " + instanceId + ". " +
                               "This generally indicates that this instance has missed too many cluster events and is " +
                               "failing to catch up. If this error does not resolve soon it may become necessary to " +
-                              "restart this cluster member so normal operation can resume.", null );
+                              "restart this cluster member so normal operation can resume." );
     }
 
     public LearnerContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,

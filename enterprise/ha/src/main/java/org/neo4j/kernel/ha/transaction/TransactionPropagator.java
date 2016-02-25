@@ -271,7 +271,7 @@ public class TransactionPropagator implements Lifecycle
             if ( !(successfulReplications >= replicationFactor) )
             {
                 pushedToTooFewSlaveLogger.info( "Transaction " + txId + " couldn't commit on enough slaves, desired " +
-                        replicationFactor + ", but could only commit at " + successfulReplications, null );
+                        replicationFactor + ", but could only commit at " + successfulReplications );
             }
         }
         catch ( Throwable t )

@@ -41,9 +41,7 @@ import org.neo4j.logging.Log;
 import static java.util.Arrays.asList;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -97,7 +95,7 @@ public class TransactionPropagatorTest
         }
 
         // THEN
-        verify( logger, times( 1 ) ).info( anyString(), any( Throwable.class ) );
+        verify( logger, times( 1 ) ).info( anyString() );
     }
 
     @Test

@@ -52,11 +52,27 @@ public class CappedLogger
         this.delegate = delegate;
     }
 
+    public void debug( String msg )
+    {
+        if ( filter.accept( msg, null ) )
+        {
+            delegate.debug( msg );
+        }
+    }
+
     public void debug( String msg, Throwable cause )
     {
         if ( filter.accept( msg, cause ) )
         {
             delegate.debug( msg, cause );
+        }
+    }
+    
+    public void info( String msg )
+    {
+        if ( filter.accept( msg, null ) )
+        {
+            delegate.info( msg );
         }
     }
 
@@ -67,12 +83,28 @@ public class CappedLogger
             delegate.info( msg, cause );
         }
     }
+    
+    public void warn( String msg )
+    {
+        if ( filter.accept( msg, null ) )
+        {
+            delegate.warn( msg );
+        }
+    }
 
     public void warn( String msg, Throwable cause )
     {
         if ( filter.accept( msg, cause ) )
         {
             delegate.warn( msg, cause );
+        }
+    }
+    
+    public void error( String msg )
+    {
+        if ( filter.accept( msg, null ) )
+        {
+            delegate.error( msg );
         }
     }
 
@@ -246,13 +278,12 @@ public class CappedLogger
             }
             return false;
         }
-
+        
         private synchronized boolean checkDuplicate( String msg, Throwable cause )
         {
             String last = lastMessage;
             Throwable exc = lastException;
-            if ( stringEqual( last, msg )
-                 && ( exc == null ? cause == null : sameClass( cause, exc ) && sameMsg( cause, exc ) ) )
+            if ( stringEqual( last, msg ) && sameClass( cause, exc ) && sameMsg( cause, exc ) )
             {
                 // Duplicate! Filter it out.
                 return false;
@@ -268,7 +299,8 @@ public class CappedLogger
 
         private boolean sameMsg( Throwable cause, Throwable exc )
         {
-            return stringEqual( exc.getMessage(), cause.getMessage() );
+            return ( cause == null && exc == null ) ||
+                    ( cause != null && exc != null && stringEqual( exc.getMessage(), cause.getMessage() ) );
         }
 
         private boolean stringEqual( String a, String b )
@@ -278,7 +310,8 @@ public class CappedLogger
 
         private boolean sameClass( Throwable cause, Throwable exc )
         {
-            return exc.getClass().equals( cause.getClass() );
+            return ( cause == null && exc == null ) ||
+                    ( cause != null && exc != null && exc.getClass().equals( cause.getClass() ) );
         }
 
         public Filter reset()
