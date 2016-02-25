@@ -55,7 +55,7 @@ public class BatchingNeoStoresTest
         // WHEN
         try
         {
-            new BatchingNeoStores( fsr.get(), storeDir, DEFAULT, NullLogService.getInstance(), EMPTY, new Config() );
+            new BatchingNeoStores( fsr.get(), storeDir, DEFAULT, NullLogService.getInstance(), EMPTY, Config.empty() );
             fail( "Should fail on existing data" );
         }
         catch ( IllegalStateException e )

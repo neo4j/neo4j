@@ -202,7 +202,7 @@ public class CountsTrackerTest
             final Barrier.Control barrier = new Barrier.Control();
             CountsTracker tracker = life.add( new CountsTracker(
                     resourceManager.logProvider(), resourceManager.fileSystem(), resourceManager.pageCache(),
-                    new Config(), resourceManager.testPath() )
+                    Config.empty(), resourceManager.testPath() )
             {
                 @Override
                 protected boolean include( CountsKey countsKey, ReadableBuffer value )
@@ -337,7 +337,7 @@ public class CountsTrackerTest
     private CountsTracker newTracker()
     {
         return new CountsTracker( resourceManager.logProvider(), resourceManager.fileSystem(),
-                resourceManager.pageCache(), new Config(), resourceManager.testPath() )
+                resourceManager.pageCache(), Config.empty(), resourceManager.testPath() )
                 .setInitializer( new DataInitializer<CountsAccessor.Updater>()
                 {
                     @Override

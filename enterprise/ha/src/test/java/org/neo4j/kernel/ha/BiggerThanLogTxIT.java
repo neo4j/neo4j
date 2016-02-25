@@ -35,7 +35,7 @@ import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
+import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 
 public class BiggerThanLogTxIT
 {

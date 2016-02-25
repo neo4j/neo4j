@@ -50,7 +50,7 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
     public void shouldBeAbleToUsePortZero() throws Exception
     {
         // Given
-        webServer = new Jetty9WebServer( NullLogProvider.getInstance(), new Config() );
+        webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.empty() );
 
         webServer.setPort( 0 );
 
@@ -64,7 +64,7 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
     public void shouldBeAbleToRestart() throws Throwable
     {
         // given
-        webServer = new Jetty9WebServer( NullLogProvider.getInstance(), new Config() );
+        webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.empty() );
         webServer.setAddress( "127.0.0.1" );
         webServer.setPort( 7878 );
 

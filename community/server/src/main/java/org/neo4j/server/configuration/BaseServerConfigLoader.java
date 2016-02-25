@@ -22,6 +22,7 @@ package org.neo4j.server.configuration;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.BoltKernelExtension;
@@ -38,75 +39,64 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class BaseServerConfigLoader
 {
-    public Config loadConfig( File configFile, File legacyConfigFile, Log log, Pair<String, String> ... configOverrides )
+    public Config loadConfig( File configFile, File legacyConfigFile, Log log, Pair<String, String>... configOverrides )
     {
         if ( log == null )
         {
-            throw new IllegalArgumentException( "log cannot be null ");
+            throw new IllegalArgumentException( "log cannot be null " );
         }
-
-        Config config = new Config();
+        HashMap<String, String> settings = calculateSettings( configFile, legacyConfigFile, log, configOverrides );
+        Config config = new Config( settings, settingsClasses(settings) );
         config.setLogger( log );
-
-        // For now, don't print warnings if this file is not specified
-        if( configFile != null && configFile.exists() )
-        {
-            config.augment( loadFromFile( log, configFile ) );
-        }
-
-        config.augment( loadFromFile( log, legacyConfigFile ) );
-
-        overrideEmbeddedDefaults( config );
-        applyUserOverrides( config, configOverrides );
-
-        config.registerSettingsClasses( getDefaultSettingsClasses() );
-
         return config;
     }
 
-    private void applyUserOverrides( Config config, Pair<String,String>[] configOverrides )
+    protected List<Class<?>> settingsClasses( HashMap<String, String> settings )
     {
-        Map<String,String> params = config.getParams();
-        for ( Pair<String,String> configOverride : configOverrides )
-        {
-            params.put( configOverride.first(), configOverride.other() );
-        }
-        config.applyChanges( params );
+        return getDefaultSettingsClasses();
     }
 
-    /**
-     * This is a smell - this means docs will say defaults are something other than what they are in the server. Better make embedded the special case and
-     * set the defaults to be what the server will have.
-     *
-     * In any case - this overrides embedded defaults.
+    private HashMap<String, String> calculateSettings( File configFile, File legacyConfigFile, Log log,
+                                                       Pair<String, String>[] configOverrides )
+    {
+        HashMap<String, String> settings = new HashMap<>();
+        if ( configFile != null && configFile.exists() )
+        {
+            settings.putAll( loadFromFile( log, configFile ) );
+        }
+        settings.putAll( loadFromFile( log, legacyConfigFile ) );
+        settings.putAll( toMap( configOverrides ) );
+        overrideEmbeddedDefaults( settings );
+        return settings;
+    }
+
+    private Map<String, String> toMap( Pair<String, String>[] configOverrides )
+    {
+        Map<String, String> overrides = new HashMap<>();
+        for ( Pair<String, String> configOverride : configOverrides )
+        {
+            overrides.put( configOverride.first(), configOverride.other() );
+        }
+        return overrides;
+    }
+
+    /*
+     * TODO: This means docs will say defaults are something other than what they are in the server. Better
+     * make embedded the special case and set the defaults to be what the server will have.
      */
-    private static void overrideEmbeddedDefaults( Config config )
+    private static void overrideEmbeddedDefaults( HashMap<String, String> config )
     {
-        Map<String,String> params = config.getParams();
-        if ( !params.containsKey( ShellSettings.remote_shell_enabled.name() ) )
-        {
-            params.put( ShellSettings.remote_shell_enabled.name(), TRUE );
-        }
-
-        if ( !params.containsKey( GraphDatabaseSettings.log_queries_filename.name() ) )
-        {
-            params.put( GraphDatabaseSettings.log_queries_filename.name(), "data/log/queries.log" );
-        }
-
-        if( !params.containsKey( BoltKernelExtension.Settings.enabled.name() ))
-        {
-            params.put( BoltKernelExtension.Settings.enabled.name(), "true" );
-        }
-
-        config.applyChanges( params );
+        config.putIfAbsent( ShellSettings.remote_shell_enabled.name(), TRUE );
+        config.putIfAbsent( GraphDatabaseSettings.log_queries_filename.name(), "data/log/queries.log" );
+        config.putIfAbsent( BoltKernelExtension.Settings.enabled.name(), "true" );
     }
 
-    protected static Iterable<Class<?>> getDefaultSettingsClasses()
+    protected static List<Class<?>> getDefaultSettingsClasses()
     {
         return asList( ServerSettings.class, GraphDatabaseSettings.class );
     }
 
-    private static Map<String,String> loadFromFile( Log log, File file )
+    private static Map<String, String> loadFromFile( Log log, File file )
     {
         if ( file == null )
         {

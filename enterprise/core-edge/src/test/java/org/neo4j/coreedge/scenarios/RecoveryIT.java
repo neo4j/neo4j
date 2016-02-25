@@ -150,7 +150,7 @@ public class RecoveryIT
 
         try
         {
-            result = new ConsistencyCheckService().runFullConsistencyCheck( new File( storeDir ), new Config(),
+            result = new ConsistencyCheckService().runFullConsistencyCheck( new File( storeDir ), Config.defaults(),
                     ProgressMonitorFactory.NONE, FormattedLogProvider.toOutputStream( System.err ), true );
         }
         catch ( ConsistencyCheckIncompleteException e )

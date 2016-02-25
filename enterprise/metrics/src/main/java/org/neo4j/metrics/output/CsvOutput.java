@@ -19,6 +19,11 @@
  */
 package org.neo4j.metrics.output;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.SortedMap;
+import java.util.concurrent.TimeUnit;
+
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.CsvReporter;
 import com.codahale.metrics.Gauge;
@@ -29,17 +34,11 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Timer;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.SortedMap;
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.kernel.configuration.Config.absoluteFileOrRelativeTo;
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvInterval;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
@@ -130,5 +129,20 @@ public class CsvOutput implements Lifecycle, EventReporter
                     dir.getAbsolutePath() );
         }
         return dir;
+    }
+
+    /**
+     * Looks at configured file {@code absoluteOrRelativeFile} and just returns it if absolute, otherwise
+     * returns a {@link File} with {@code baseDirectoryIfRelative} as parent.
+     *
+     * @param baseDirectoryIfRelative base directory to use as parent if {@code absoluteOrRelativeFile}
+     * is relative, otherwise unused.
+     * @param absoluteOrRelativeFile file to return as absolute or relative to {@code baseDirectoryIfRelative}.
+     */
+    private static File absoluteFileOrRelativeTo( File baseDirectoryIfRelative, File absoluteOrRelativeFile )
+    {
+        return absoluteOrRelativeFile.isAbsolute()
+                ? absoluteOrRelativeFile
+                : new File( baseDirectoryIfRelative, absoluteOrRelativeFile.getPath() );
     }
 }

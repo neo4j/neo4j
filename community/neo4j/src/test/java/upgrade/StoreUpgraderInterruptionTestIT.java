@@ -109,7 +109,7 @@ public class StoreUpgraderInterruptionTestIT
                 new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ) );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
-        final Config config = new Config();
+        final Config config = Config.empty();
         StoreMigrator failingStoreMigrator = new StoreMigrator(fs, pageCache, config, logService, schemaIndexProvider )
         {
             @Override
@@ -168,7 +168,7 @@ public class StoreUpgraderInterruptionTestIT
                 new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ) );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
-        final Config config = new Config();
+        final Config config = Config.empty();
         StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, config, logService, schemaIndexProvider )
         {
             @Override

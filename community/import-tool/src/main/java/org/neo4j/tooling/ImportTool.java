@@ -74,6 +74,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
+import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
@@ -430,7 +431,7 @@ public class ImportTool
 
     private static Config loadDbConfig( File file ) throws IOException
     {
-        return file != null && file.exists() ? new Config( MapUtil.load( file ) ) : new Config();
+        return file != null && file.exists() ? new Config( MapUtil.load( file ) ) : Config.defaults();
     }
 
     private static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,

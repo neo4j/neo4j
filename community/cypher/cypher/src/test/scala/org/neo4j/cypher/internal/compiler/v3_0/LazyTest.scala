@@ -190,7 +190,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val dependencies = mock[DependencyResolver]
     val bridge = mock[ThreadToStatementContextBridge]
     val monitors = new org.neo4j.kernel.monitoring.Monitors()
-    val config = new Config()
+    val config = Config.empty()
 
     val fakeDataStatement = mock[OperationsFacade]
     val fakeReadStatement = mock[ReadOperations]
