@@ -463,7 +463,7 @@
     <profile>
       <id>skip-findbugs</id>
       <activation>
-        <activeByDefault>false</activeByDefault>
+        <activeByDefault>true</activeByDefault>
         <property>
           <name>skipFindbugs</name>
         </property>
