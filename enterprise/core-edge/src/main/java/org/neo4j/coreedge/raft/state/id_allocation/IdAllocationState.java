@@ -51,8 +51,9 @@ public class IdAllocationState implements UnallocatedIds
         this( new long[IdType.values().length], -1L );
     }
 
-    private IdAllocationState( long[] firstUnallocated,
+    public IdAllocationState( long[] firstUnallocated,
                                long logIndex )
+
     {
         this.firstUnallocated = firstUnallocated;
         this.logIndex = logIndex;

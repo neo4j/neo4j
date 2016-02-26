@@ -21,7 +21,9 @@ test_expect_success "should fail if command is unrecognized" "
 
 test_expect_success "should fail if --database is missing" "
   assert_failure_with_stderr 'you must provide the --database option with an argument' \
-    neo4j-home/bin/neo4j-admin import --from=/foo --mode=database
+    neo4j-home/bin/neo4j-admin import --from=/foo --mode=database &&
+  assert_failure_with_stderr 'you must provide the --database option with an argument' \
+    neo4j-home/bin/neo4j-admin core-convert
 "
 
 test_expect_success "should fail if --from is missing" "
