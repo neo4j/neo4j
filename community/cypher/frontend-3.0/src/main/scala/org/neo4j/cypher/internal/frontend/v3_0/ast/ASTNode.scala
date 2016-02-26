@@ -20,24 +20,15 @@
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import org.neo4j.cypher.internal.frontend.v3_0.Rewritable._
-import org.neo4j.cypher.internal.frontend.v3_0.perty.PageDocFormatting
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0._
 
 trait ASTNode
   extends Product
   with Foldable
-  with Rewritable
-  with PageDocFormatting /* multi line */
-  // with LineDocFormatting  /* single line */
-//  with ToPrettyString[ASTNode]
-{
+  with Rewritable {
 
   self =>
-
-//  def toDefaultPrettyString(formatter: DocFormatter): String =
-////    toPrettyString(formatter)(DefaultDocHandler.docGen) /* scala like */
-//    toPrettyString(formatter)(InternalDocHandler.docGen) /* see there for more choices */
 
   def position: InputPosition
 
@@ -56,12 +47,6 @@ trait ASTNode
     }
 }
 
-// This is used by pretty printing to distinguish between
-//
-// - expressions
-// - particles (non-expression ast nodes contained in expressions)
-// - terms (neither expressions nor particles, like Clause)
-//
 sealed trait ASTNodeType { self: ASTNode => }
 
 trait ASTExpression extends ASTNodeType { self: ASTNode => }

@@ -22,12 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.perty.PageDocFormatting
 
-case class Predicate(dependencies: Set[IdName], expr: Expression) extends PageDocFormatting { // with ToPrettyString[Predicate] {
-
-//  def toDefaultPrettyString(formatter: DocFormatter) =
-//    toPrettyString(formatter)(InternalDocHandler.docGen)
+case class Predicate(dependencies: Set[IdName], expr: Expression) {
 
   def hasDependenciesMet(symbols: Set[IdName]): Boolean =
     (dependencies -- symbols).isEmpty
@@ -45,11 +41,7 @@ object Selections {
   def from(expressions: Expression*): Selections = new Selections(expressions.flatMap(_.asPredicates).toSet)
 }
 
-case class Selections(predicates: Set[Predicate] = Set.empty) extends PageDocFormatting { // with ToPrettyString[Selections] {
-
-//  def toDefaultPrettyString(formatter: DocFormatter) =
-//    toPrettyString(formatter)(InternalDocHandler.docGen)
-
+case class Selections(predicates: Set[Predicate] = Set.empty) {
   def isEmpty = predicates.isEmpty
 
   def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {

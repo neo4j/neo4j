@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, PatternRelationship, StrictnessMode}
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{PeriodicCommitHint, Hint, LabelName}
-import org.neo4j.cypher.internal.frontend.v3_0.perty._
 
 import scala.annotation.tailrec
 import scala.collection.GenTraversableOnce
@@ -57,15 +56,10 @@ case class MergePlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     MergePlannerQuery(queryGraph, horizon, tail)
 }
 
-sealed trait PlannerQuery extends PageDocFormatting {
+sealed trait PlannerQuery {
   val queryGraph: QueryGraph
   val horizon: QueryHorizon
   val tail: Option[PlannerQuery]
-
-  // with ToPrettyString[PlannerQuery] {
-
-  //  def toDefaultPrettyString(formatter: DocFormatter) =
-  //    toPrettyString(formatter)(InternalDocHandler.docGen)
 
   def preferredStrictness: Option[StrictnessMode] =
     horizon.preferredStrictness orElse tail.flatMap(_.preferredStrictness)

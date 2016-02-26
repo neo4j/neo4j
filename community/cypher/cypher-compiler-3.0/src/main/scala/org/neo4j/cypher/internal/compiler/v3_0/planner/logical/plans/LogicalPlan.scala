@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, P
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_0.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, Variable}
-import org.neo4j.cypher.internal.frontend.v3_0.perty._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, Rewritable}
 
 /*
@@ -38,15 +37,9 @@ to data in the database, to the root, which is the final operator producing the 
 abstract class LogicalPlan
   extends Product
   with Strictness
-  with Rewritable
-  with PageDocFormatting {
+  with Rewritable {
 
   self =>
-
-//  with ToPrettyString[LogicalPlan] {
-
-//  def toDefaultPrettyString(formatter: DocFormatter) =
-//    toPrettyString(formatter)(InternalDocHandler.docGen)
 
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
@@ -133,9 +126,7 @@ abstract class IndexLeafPlan extends NodeLogicalLeafPlan {
   def valueExpr: QueryExpression[Expression]
 }
 
-final case class IdName(name: String) extends PageDocFormatting // with ToPrettyString[IdName] {
-//  def toDefaultPrettyString(formatter: DocFormatter) =
-//    toPrettyString(formatter)(InternalDocHandler.docGen)
+final case class IdName(name: String)
 
 object IdName {
   implicit val byName = Ordering[String].on[IdName](_.name)

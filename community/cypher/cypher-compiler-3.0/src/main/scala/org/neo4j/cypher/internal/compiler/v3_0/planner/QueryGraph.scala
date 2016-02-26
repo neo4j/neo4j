@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.perty._
 
 import scala.collection.{GenTraversableOnce, mutable}
 
@@ -35,7 +34,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       hints: Set[Hint] = Set.empty,
                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty,
                       mutatingPatterns: Seq[MutatingPattern] = Seq.empty)
-  extends UpdateGraph with PageDocFormatting {
+  extends UpdateGraph {
 
   def size = patternRelationships.size
 
