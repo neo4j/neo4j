@@ -37,6 +37,45 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     @Rule public ExpectedException exception = ExpectedException.none();
 
     @Test
+    public void shouldNotAllowReadsInNoneMode() throws Throwable
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction( AccessMode.NONE );
+
+        // Expect
+        exception.expect( AuthorizationViolationException.class );
+
+        // When
+        tx.acquireStatement().readOperations();
+    }
+
+    @Test
+    public void shouldNotAllowWritesInNoneMode() throws Throwable
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction( AccessMode.NONE );
+
+        // Expect
+        exception.expect( AuthorizationViolationException.class );
+
+        // When
+        tx.acquireStatement().dataWriteOperations();
+    }
+
+    @Test
+    public void shouldNotAllowSchemaWritesInNoneMode() throws Throwable
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction( AccessMode.NONE );
+
+        // Expect
+        exception.expect( AuthorizationViolationException.class );
+
+        // When
+        tx.acquireStatement().schemaWriteOperations();
+    }
+
+    @Test
     public void shouldAllowReadsInReadMode() throws Throwable
     {
         // Given

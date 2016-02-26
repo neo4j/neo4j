@@ -108,7 +108,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     }
                 };
 
-        TransactionType enableReadTransaction() throws IllegalStateException
+        TransactionType enableReadTransaction()
         {
             return READ_ONLY;
         }
